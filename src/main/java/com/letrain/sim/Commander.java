@@ -1,4 +1,4 @@
-package sim;
+package com.letrain.sim;
 
 import com.letrain.rail.ForkRail;
 import com.letrain.vehicle.Bulldozer.BulldozerMode;
@@ -7,31 +7,10 @@ import com.letrain.vehicle.Train;
 
 public class Commander {
 	Sim sim;
-	public enum Mode  {
-		TRAINS_MODE,
-		BULLDOZER_MODE,
-		FORKS_MODE,	
-	};
 	Mode  actualMode;
-	
-	public enum Command{
-		SET_BULLDOZER_MODE,
-		SET_TRAINS_MODE,
-		SET_FORKS_MODE,
-		TRAIN_SELECT_NEXT ,
-		TRAIN_SELECT_PREV,
-		TRAIN_INC_SPEED,
-		TRAIN_DEC_SPEED,
-		BULLDOZER_PUT_RAILS_MODE,
-		BULLDOZER_REMOVE_RAILS_MODE,
-		BULLDOZER_MOVE_MODE,
-		BULLDOZER_ROTATE_RIGHT,
-		BULLDOZER_ROTATE_LEFT,
-		BULLDOZER_MOVE,
-		FORK_SELECT_NEXT,
-		FORK_SELECT_PREV ,
-		FORK_INC,
-		FORK_DEC;
+	public Commander(Sim sim) {
+		this.sim = sim;
+		this.actualMode = Mode.BULLDOZER_MODE;
 	}
 	public void doCommand(Command command){
 		switch(command){
@@ -107,6 +86,9 @@ public class Commander {
 	}
 	private void doBulldozerCommand(Command command) {
 		switch(command){
+		case BULLDOZER_PUT_TRAIN_GARAGE:
+			sim.addGarage(sim.getBulldozer().makeGarage());
+			break;
 		case BULLDOZER_PUT_RAILS_MODE:
 			sim.getBulldozer().setMode(BulldozerMode.PAINTING);
 			break;
@@ -146,6 +128,31 @@ public class Commander {
 	void paint(){
 	}
 	void erase(){
+	}
+	public enum Mode  {
+		TRAINS_MODE,
+		BULLDOZER_MODE,
+		FORKS_MODE,	
+	};
+	
+	public enum Command{
+		SET_BULLDOZER_MODE,
+		SET_TRAINS_MODE,
+		SET_FORKS_MODE,
+		TRAIN_SELECT_NEXT ,
+		TRAIN_SELECT_PREV,
+		TRAIN_INC_SPEED,
+		TRAIN_DEC_SPEED,
+		BULLDOZER_PUT_RAILS_MODE,
+		BULLDOZER_REMOVE_RAILS_MODE,
+		BULLDOZER_MOVE_MODE,
+		BULLDOZER_ROTATE_RIGHT,
+		BULLDOZER_ROTATE_LEFT,
+		BULLDOZER_MOVE,
+		FORK_SELECT_NEXT,
+		FORK_SELECT_PREV ,
+		FORK_INC,
+		FORK_DEC, BULLDOZER_PUT_TRAIN_GARAGE;
 	}
  
 }

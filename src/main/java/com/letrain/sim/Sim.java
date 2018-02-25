@@ -1,4 +1,4 @@
-package sim;
+package com.letrain.sim;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +8,7 @@ import com.letrain.map.RailMap;
 import com.letrain.rail.ForkRail;
 import com.letrain.vehicle.Bulldozer;
 import com.letrain.vehicle.Train;
+import com.letrain.vehicle.TrainGarage;
 
 public class Sim {
 
@@ -17,6 +18,7 @@ public class Sim {
 	public RailMap railMap;
 	private int selectedTrainIndex;
 	private int selectedForkIndex;
+	private TrainGarage trainGarage;
 
 	public Sim() {
 		trains = new ArrayList<>();
@@ -25,6 +27,9 @@ public class Sim {
 		bulldozer = new Bulldozer(railMap, new Point(0, 0));
 	}
 
+	public void addTrain(Train t) {
+		this.trains.add(t);
+	}
 	public void selectNextTrain() {
 		selectedTrainIndex++;
 		if (trains.isEmpty()) {
@@ -85,5 +90,13 @@ public class Sim {
 
 	public Bulldozer getBulldozer() {
 		return bulldozer;
+	}
+
+	public void addGarage(TrainGarage garage) {
+		this.trainGarage = garage;
+	}
+
+	public TrainGarage getGarage() {
+		return trainGarage;
 	}
 }

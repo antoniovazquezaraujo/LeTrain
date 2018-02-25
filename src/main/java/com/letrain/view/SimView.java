@@ -1,9 +1,8 @@
 package com.letrain.view;
 
 import com.letrain.map.Point;
+import com.letrain.sim.Sim;
 import com.letrain.vehicle.Vehicle;
-
-import sim.Sim;
 
 public class SimView {
 	Sim  sim;

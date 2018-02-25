@@ -10,6 +10,11 @@ public class Point {
 		this.row = row;
 		this.col = col;
 	}
+	@Override
+	public boolean equals(Object p) {
+		Point q = (Point)p;
+		return q.row == row && q.col == col;
+	}
 	public Point(Point pos) {
 		this(pos.row, pos.col);
 	}

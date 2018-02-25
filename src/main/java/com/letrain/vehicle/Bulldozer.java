@@ -4,11 +4,8 @@ import com.letrain.dir.Dir;
 import com.letrain.dir.DirEnv;
 import com.letrain.map.Point;
 import com.letrain.map.RailMap;
-import com.letrain.rail.ForkRail;
+import com.letrain.rail.GarageRail;
 import com.letrain.rail.Rail;
-import com.letrain.view.Window;
-
-import sim.Sim;
 
 public class Bulldozer extends Vehicle {
 	public enum BulldozerMode {
@@ -114,9 +111,39 @@ public class Bulldozer extends Vehicle {
 		}
 		return newRail;
 	}
+	GarageRail makeNewGarageRail(Rail rail) {
+		DirEnv env = null;
+		if (rail != null) {
+			env = rail.getEnv();
+		} else {
+			env = new DirEnv();
+		}
+		env.addPath(dir.inverse(), dir);
+		
+		GarageRail newRail = new GarageRail(env);
+		newRail.setPos(pos);
+		if (rail != null) {
+			for (Dir d : Dir.values()) {
+				Rail linked = rail.getLinkedRailAt(d);
+				if (linked != null) {
+					newRail.linkRailAt(d, linked);
+				}
+			}
+		}
+		return newRail;
+	}
 
 	Dir getLastDir() {
 		return lastDir;
+	}
+
+	public TrainGarage makeGarage() {
+		Point p = getPos();
+		GarageRail newRail = makeNewGarageRail(railMap.getRailAt(p.getRow(), p.getCol()));
+		railMap.setRail(p.getRow(), p.getCol(), newRail);
+		linkRail(newRail);
+		TrainGarage garage = new TrainGarage(newRail);
+		return garage;
 	}
 
 }
