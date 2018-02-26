@@ -1,8 +1,14 @@
-package com.letrain.vehicle;
+package com.letrain.garage;
 
-import com.letrain.rail.GarageRail;
+import com.letrain.vehicle.Train;
+import com.letrain.vehicle.Wagon;
 import com.letrain.vehicle.Train.TrainSide;
 
+/**
+ * Garage donde se fabrican y reparan trenes.
+ * @author to
+ *
+ */
 public class TrainGarage {
 	
 	GarageRail rail;

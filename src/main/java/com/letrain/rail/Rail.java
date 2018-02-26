@@ -8,7 +8,7 @@ import com.letrain.view.Aspect;
 
 public abstract class Rail {
 	Point pos;
-	RailVehicle vehicle;
+	protected RailVehicle vehicle;
 	DirEnv dirEnv; // entradas y salidas
 	RailEnv railEnv; // enlaces con otros railes para formar una vía
 	Aspect aspect;

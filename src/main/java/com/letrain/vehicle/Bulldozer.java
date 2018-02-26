@@ -2,9 +2,10 @@ package com.letrain.vehicle;
 
 import com.letrain.dir.Dir;
 import com.letrain.dir.DirEnv;
+import com.letrain.garage.GarageRail;
+import com.letrain.garage.TrainGarage;
 import com.letrain.map.Point;
 import com.letrain.map.RailMap;
-import com.letrain.rail.GarageRail;
 import com.letrain.rail.Rail;
 
 public class Bulldozer extends Vehicle {

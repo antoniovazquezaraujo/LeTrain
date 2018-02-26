@@ -1,10 +1,12 @@
-package com.letrain.rail;
+package com.letrain.garage;
 
 import java.util.Deque;
 import java.util.LinkedList;
 
 import com.letrain.dir.Dir;
 import com.letrain.dir.DirEnv;
+import com.letrain.rail.Rail;
+import com.letrain.rail.StraightRail;
 import com.letrain.vehicle.RailVehicle;
 /**
  * FactoryRail es un rail "mágico" que hace de taller de construcción y reparación de trenes.
@@ -20,6 +22,7 @@ import com.letrain.vehicle.RailVehicle;
  */
 public class GarageRail extends StraightRail {
 
+	boolean trainInside;
 	//Vehículos en el taller. Forman parte de un tren
 	private Deque<RailVehicle> vehicles;
 	//Railes sobre los que están. El primero tiene conexión con la salida
@@ -30,10 +33,16 @@ public class GarageRail extends StraightRail {
 	//Rail con el que está conectada la entrada
 	Rail outputRail; 
 	
+	@Override
+	public void linkRailAt(Dir dir, Rail rail) {
+		super.linkRailAt(dir, rail);
+		setInputDir(dir);
+	}
 	public GarageRail(DirEnv env) {
 		super(env);
 		this.vehicles = new LinkedList<>();
 		this.rails = new LinkedList<>();
+		this.trainInside = false;
 	}
 	public void setInputDir(Dir dir) {
 		this.inputDir = dir;

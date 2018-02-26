@@ -3,12 +3,12 @@ package com.letrain.sim;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.letrain.garage.TrainGarage;
 import com.letrain.map.Point;
 import com.letrain.map.RailMap;
 import com.letrain.rail.ForkRail;
 import com.letrain.vehicle.Bulldozer;
 import com.letrain.vehicle.Train;
-import com.letrain.vehicle.TrainGarage;
 
 public class Sim {
 
