@@ -2,10 +2,10 @@ package com.letrain.vehicle;
 
 import com.letrain.dir.Dir;
 import com.letrain.dir.DirEnv;
-import com.letrain.garage.GarageRail;
-import com.letrain.garage.TrainGarage;
 import com.letrain.map.Point;
 import com.letrain.map.RailMap;
+import com.letrain.rail.BasicGateRail;
+import com.letrain.rail.GateRail;
 import com.letrain.rail.Rail;
 
 public class Bulldozer extends Vehicle {
@@ -112,39 +112,16 @@ public class Bulldozer extends Vehicle {
 		}
 		return newRail;
 	}
-	GarageRail makeNewGarageRail(Rail rail) {
-		DirEnv env = null;
-		if (rail != null) {
-			env = rail.getEnv();
-		} else {
-			env = new DirEnv();
-		}
-		env.addPath(dir.inverse(), dir);
-		
-		GarageRail newRail = new GarageRail(env);
-		newRail.setPos(pos);
-		if (rail != null) {
-			for (Dir d : Dir.values()) {
-				Rail linked = rail.getLinkedRailAt(d);
-				if (linked != null) {
-					newRail.linkRailAt(d, linked);
-				}
-			}
-		}
-		return newRail;
-	}
+	 
 
 	Dir getLastDir() {
 		return lastDir;
 	}
 
-	public TrainGarage makeGarage() {
+	public GateRail makeGate() {
 		Point p = getPos();
-		GarageRail newRail = makeNewGarageRail(railMap.getRailAt(p.getRow(), p.getCol()));
-		railMap.setRail(p.getRow(), p.getCol(), newRail);
-		linkRail(newRail);
-		TrainGarage garage = new TrainGarage(newRail);
-		return garage;
+		GateRail ret = new BasicGateRail(); 
+		return ret;
 	}
 
 }

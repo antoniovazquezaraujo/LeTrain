@@ -3,10 +3,10 @@ package com.letrain.sim;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.letrain.garage.TrainGarage;
 import com.letrain.map.Point;
 import com.letrain.map.RailMap;
 import com.letrain.rail.ForkRail;
+import com.letrain.rail.GateRail;
 import com.letrain.vehicle.Bulldozer;
 import com.letrain.vehicle.Train;
 
@@ -18,7 +18,7 @@ public class Sim {
 	public RailMap railMap;
 	private int selectedTrainIndex;
 	private int selectedForkIndex;
-	private TrainGarage trainGarage;
+	private List<GateRail> trainGates;
 
 	public Sim() {
 		trains = new ArrayList<>();
@@ -92,11 +92,9 @@ public class Sim {
 		return bulldozer;
 	}
 
-	public void addGarage(TrainGarage garage) {
-		this.trainGarage = garage;
+	public void addGate(GateRail gate) {
+		this.trainGates.add(gate);
 	}
 
-	public TrainGarage getGarage() {
-		return trainGarage;
-	}
+ 
 }

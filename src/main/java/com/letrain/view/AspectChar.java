@@ -8,7 +8,8 @@ public enum AspectChar {
 	CURVE('.'),
 	CROSS('+'),
 	FINDER('@'),
-	UNKNOWN('?');
+	UNKNOWN('?'), 
+	HASHTAG('#');
 	private char value;
 
 	AspectChar(char value) {

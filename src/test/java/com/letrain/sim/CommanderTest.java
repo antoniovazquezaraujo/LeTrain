@@ -25,18 +25,7 @@ public class CommanderTest {
 		commander = null;
 	}
 
-	@Test
-	public void testBulldozerPutTrainGarage() {
-		assertTrue(commander.sim.getGarage() == null);
-		commander.doCommand(Command.BULLDOZER_PUT_TRAIN_GARAGE);
-		assertTrue(commander.sim.getGarage() != null);
-		Train t = commander.sim.getGarage().makeTrain();
-		assertTrue(commander.sim.trains.isEmpty());
-		commander.sim.addTrain(t);
-		assertTrue(!commander.sim.trains.isEmpty());
-		assertTrue(commander.sim.getGarage().getTrain().equals(t));
-	}
-
+ 
 	@Test
 	public void testBulldozerPaint() {
 		commander.doCommand(Command.BULLDOZER_PUT_RAILS_MODE);
@@ -44,13 +33,6 @@ public class CommanderTest {
 		assertTrue(commander.sim.getBulldozer().getPos().equals(new Point(0, 0)));
 		commander.doCommand(Command.BULLDOZER_MOVE);
 		assertTrue(commander.sim.getBulldozer().getPos().equals(new Point(-1, 0)));
-		commander.doCommand(Command.BULLDOZER_MOVE);
-		commander.doCommand(Command.BULLDOZER_MOVE);
-		commander.doCommand(Command.BULLDOZER_MOVE);
-		commander.doCommand(Command.BULLDOZER_PUT_TRAIN_GARAGE);
-		assertTrue(commander.sim.getGarage().getRail().getPos().equals(new Point(-4,0)));
-		Rail linked = commander.sim.getGarage().getRail().getLinkedRailAt(Dir.S);
-		assertTrue(linked.getPos().equals(new Point(-3,0)));
 
 	}
 

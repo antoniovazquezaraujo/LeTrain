@@ -87,7 +87,7 @@ public class Commander {
 	private void doBulldozerCommand(Command command) {
 		switch(command){
 		case BULLDOZER_PUT_TRAIN_GARAGE:
-			sim.addGarage(sim.getBulldozer().makeGarage());
+			sim.addGate(sim.getBulldozer().makeGate());
 			break;
 		case BULLDOZER_PUT_RAILS_MODE:
 			sim.getBulldozer().setMode(BulldozerMode.PAINTING);

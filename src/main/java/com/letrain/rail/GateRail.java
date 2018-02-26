@@ -1,25 +1,32 @@
-package com.letrain.gate;
+package com.letrain.rail;
 
 import java.util.Deque;
 import java.util.LinkedList;
 
-import com.letrain.rail.Rail;
+import com.letrain.dir.Dir;
 import com.letrain.vehicle.RailVehicle;
 import com.letrain.vehicle.Train;
 
-public abstract class TrainGate extends Rail {
+public abstract class GateRail extends Rail   {
 	Train train;
 	int numVehiclesInside;
 	private int ejectingVehicleIndex;
 	Deque<RailVehicle> vehiclesInside;
 	private boolean ejecting;
+	private Rail inputRail;
+	private Rail outputRail;
+	private Dir inputDir;
+	private Dir outputDir;
 
-	public TrainGate() {
+	public GateRail() {
 		vehiclesInside = new LinkedList<>();
 		this.numVehiclesInside = 0;
 		this.train = null;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.letrain.gate.TrainGate#enterVehicle(com.letrain.vehicle.RailVehicle)
+	 */
 	@Override
 	public boolean enterVehicle(RailVehicle vehicle) {
 		if (numVehiclesInside == 0) {
@@ -31,7 +38,8 @@ public abstract class TrainGate extends Rail {
 			onLastVehicleEnter();
 		}
 		vehiclesInside.addLast(vehicle);
-
+		//lo ponemos apuntando hacia la salida
+		vehicle.setDir(this.outputDir);
 		// dejamos la puerta libre
 		this.vehicle = null;
 		// pero ojo, el vehículo cree que sigue estando en el rail
@@ -40,17 +48,43 @@ public abstract class TrainGate extends Rail {
 		return true;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.letrain.gate.TrainGate#exitVehicle()
+	 */
 	@Override
 	public boolean exitVehicle() {
-		return super.exitVehicle();
+		setRailVehicle(vehiclesInside.removeFirst());
+		numVehiclesInside--;
+		if(numVehiclesInside == 0){
+			onLastVehicleExit();
+			this.train = null;
+		}
+		Rail dest = getLinkedRailAt(outputDir);
+		if (dest != null && dest.enterVehicle(this.vehicle)) {
+			this.vehicle = null;
+			return true;
+		}
+		return false;
 	}
 
 	// Desde qué rail se entra en esta puerta
-	public abstract void connectInputRail(Rail rail);
+	public void connectInputRail(Rail rail){
+		this.inputRail= rail;
+		Dir dir = rail.getEnv().getFirstOpenIn();
+		getEnv().addPath(dir, dir.inverse());
+		this.inputDir = dir.inverse();
+		linkRailAt(inputDir, rail);
+	}
 
 	// A qué raíl se sale desde esta puerta. Puede ser el mismo
-	public abstract void connectOutputRail(Rail rail);
-
+	public   void connectOutputRail(Rail rail){
+		this.outputRail= rail;
+		Dir dir = rail.getEnv().getFirstOpenIn();
+		getEnv().addPath(dir, inputDir.inverse());
+		this.outputDir = inputDir.inverse();
+		linkRailAt(outputDir, rail);
+	}
+ 
 	// aviso de que ha entrado el primer vehículo del tren
 	public void onFirstVehicleEnter() {
 	}
@@ -93,20 +127,4 @@ public abstract class TrainGate extends Rail {
 			}
 		}
 	}
-}
-
-class VanishTrainGate extends TrainGate {
-
-	@Override
-	public void connectInputRail(Rail rail) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void connectOutputRail(Rail rail) {
-		// TODO Auto-generated method stub
-
-	}
-
 }
