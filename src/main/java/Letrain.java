@@ -20,7 +20,7 @@ public class Letrain {
 			int row = (int) (Math.random() * 25);
 			int col = (int) (Math.random() * 80);
 			Rail rail = makeRandomRail();
-			map.setRail(row,col, rail);
+			map.addRail(row,col, rail);
 			Term.putAspect(row, col, rail.getAspect());
 			Term.print();
 			try {

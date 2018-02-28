@@ -28,7 +28,7 @@ public class RailMap {
 		return null;
 	}
 
-	public void setRail(int row, int col, Rail rail) {
+	public void addRail(int row, int col, Rail rail) {
 		if(!rails.containsKey(row)){
 			rails.put(row, new HashMap<Integer, Rail>());
 		}

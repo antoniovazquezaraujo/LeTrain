@@ -56,7 +56,7 @@ public class Bulldozer extends Vehicle {
 
 	public Rail addRail(Point p) {
 		Rail newRail = makeNewRail(railMap.getRailAt(p.getRow(), p.getCol()));
-		railMap.setRail(p.getRow(), p.getCol(), newRail);
+		railMap.addRail(p.getRow(), p.getCol(), newRail);
 		return newRail;
 	}
 
@@ -85,7 +85,7 @@ public class Bulldozer extends Vehicle {
 	public Rail removeRail() {
 		Point p2 = getPos();
 		Rail rail = railMap.getRailAt(p2.getRow(), p2.getCol());
-		railMap.setRail(p2.getRow(), p2.getCol(), null);
+		railMap.addRail(p2.getRow(), p2.getCol(), null);
 		return rail;
 	}
 

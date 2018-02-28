@@ -34,7 +34,7 @@ public abstract class GateRail extends Rail   {
 			onFirstVehicleEnter();
 		}
 		numVehiclesInside++;
-		if (numVehiclesInside >= vehicle.getTrain().getVehicles().size()) {
+		if (numVehiclesInside >= vehicle.getTrain().getSize()) {
 			onLastVehicleEnter();
 		}
 		vehiclesInside.addLast(vehicle);

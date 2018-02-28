@@ -27,7 +27,7 @@ public class RailMapTest {
 	@Test
 	public void testForEach() {
 		for(int n= 0; n<10; n++){
-			map.setRail(n+1, 0, new StraightRail());
+			map.addRail(n+1, 0, new StraightRail());
 		}
 		map.forEach(e -> assertTrue(e.getPos().getCol() == 0));
 		map.forEach(e -> assertTrue(e.getPos().getRow() > 0));
@@ -41,7 +41,7 @@ public class RailMapTest {
 			assertTrue(map.getRailAt(n, 0) == null);
 		}
 		for(int n= 0; n<10; n++){
-			map.setRail(n, 0, new StraightRail());
+			map.addRail(n, 0, new StraightRail());
 		}
 		for(int n= 0; n<10; n++){
 			assertTrue(map.getRailAt(n, 0) != null);

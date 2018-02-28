@@ -1,14 +1,15 @@
 package com.letrain.vehicle;
 
-import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Stack;
 import java.util.function.Consumer;
 
 import com.letrain.dir.Dir;
 import com.letrain.rail.Rail;
 
-public class Train {
+public class Train extends Locomotive {
 	public enum TrainSide {
 		FRONT(0), BACK(1);
 		public int value;
@@ -22,48 +23,42 @@ public class Train {
 		}
 	}
 
-	Deque<RailVehicle> vehicles;
+	Stack<RailVehicle> vehiclesAtBack;
+	Stack<RailVehicle> vehiclesAtFront;
 
 	int numStoppedTurns;
-	float speed;
 
 	Dir trainDir;
 	boolean moved;
 	boolean reversed;
 
 	public Train() {
-		vehicles = new LinkedList<>();
-		reversed=false;
+		vehiclesAtFront = new Stack<>();
+		vehiclesAtBack = new Stack<>();
+		reversed = false;
 	}
 
-	public Deque<RailVehicle> getVehicles() {
-		return vehicles;
+	public int getSize() {
+		return vehiclesAtFront.size()+ 1 + vehiclesAtBack.size();
+	}
+	public Stack<RailVehicle> getVehiclesAtFront() {
+		return vehiclesAtFront;
+	}
+
+	public Stack<RailVehicle> getVehiclesAtBack() {
+		return vehiclesAtBack;
 	}
 
 	public void setMoved(boolean moved) {
 		this.moved = moved;
 	}
 
-	public void setSpeed(float speed) {
-		this.speed = speed;
-	}
-
-	public float getSpeed() {
-		return speed;
-	}
-
-	// void addVehicle(int p, RailVehicle v) {
-	// v.addToTrain(p, this);
-	// }
-
-	public void addWagon(TrainSide p, Wagon w) {
+	public void addVehicle(TrainSide p, Wagon w) {
 		RailVehicle vehicleToLink = null;
 		if (p == TrainSide.FRONT) {
-			vehicleToLink = vehicles.peekFirst();
-			vehicles.addFirst(w);
+			vehiclesAtFront.add(w);
 		} else {
-			vehicleToLink = vehicles.peekLast();
-			vehicles.addLast(w);
+			vehiclesAtBack.add(w);
 		}
 		if (vehicleToLink != null) {
 			Rail linkedRail = w.getRail();
@@ -73,11 +68,11 @@ public class Train {
 	}
 
 	public Dir getDirFromFirst() {
-		return ((vehicles.peekFirst())).getDir();
+		return ((vehiclesAtFront.peek())).getDir();
 	}
 
-	public Dir getDirFromLast() {
-		return ((vehicles.peekLast())).getDir();
+	public Dir getDirFromBack() {
+		return ((vehiclesAtBack.peek())).getDir();
 	}
 
 	// void shiftBackward() {
@@ -87,24 +82,24 @@ public class Train {
 	// }
 
 	public void invert() {
-		vehicles.iterator().forEachRemaining(v -> {
+		vehiclesAtFront.iterator().forEachRemaining(v -> {
+			v.getRail().reverseVehicle();
+		});
+		getRail().reverseVehicle();
+		vehiclesAtBack.iterator().forEachRemaining(v -> {
 			v.getRail().reverseVehicle();
 		});
 		reversed = !reversed;
-
 	}
 
 	public void forEach(Consumer<RailVehicle> c) {
-		forEach(c, true);
-	}
-
-	public void forEach(Consumer<RailVehicle> c, boolean forward) {
 		Iterator<RailVehicle> iterator;
-		if (forward) {
-			iterator = vehicles.iterator();
-		} else {
-			iterator = vehicles.descendingIterator();
-		}
+		iterator = vehiclesAtFront.iterator();
+		iterator.forEachRemaining(v -> {
+			c.accept(v);
+		});
+		c.accept(this);
+		iterator = vehiclesAtBack.iterator();
 		iterator.forEachRemaining(v -> {
 			c.accept(v);
 		});
@@ -137,10 +132,10 @@ public class Train {
 		RailVehicle topVehicle = null;
 		Rail nextRail = null;
 
-		if (!reversed) {
-			topVehicle = vehicles.peekFirst();
+		if (reversed) {
+			topVehicle = vehiclesAtBack.peek();
 		} else {
-			topVehicle = vehicles.peekLast();
+			topVehicle = vehiclesAtFront.peek();
 		}
 		nextRail = topVehicle.getRail().getLinkedRailAt(topVehicle.getDir());
 		return nextRail;
@@ -154,11 +149,11 @@ public class Train {
 
 	public void incSpeed() {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public void decSpeed() {
 		// TODO Auto-generated method stub
-		
+
 	}
 }

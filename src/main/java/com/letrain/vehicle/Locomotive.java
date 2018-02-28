@@ -1,5 +1,5 @@
 package com.letrain.vehicle;
 
-public class Locomotive {
+public class Locomotive extends RailVehicle{
 
 }

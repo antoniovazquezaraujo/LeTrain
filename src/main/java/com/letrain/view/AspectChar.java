@@ -9,7 +9,8 @@ public enum AspectChar {
 	CROSS('+'),
 	FINDER('@'),
 	UNKNOWN('?'), 
-	HASHTAG('#');
+	HASHTAG('#'), 
+	LOCO ('L');
 	private char value;
 
 	AspectChar(char value) {
