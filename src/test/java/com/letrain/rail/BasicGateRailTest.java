@@ -55,7 +55,7 @@ public class BasicGateRailTest {
 		
 		Train t1 = new Train();
 		Wagon v1 = new Wagon();
-		t1.addWagon(TrainSide.BACK, v1);
+		t1.addVehicle(TrainSide.BACK, v1);
 
 		gate.enterVehicle(v1);
 		assertTrue(gate.getTrain().equals(t1));
@@ -81,12 +81,13 @@ public class BasicGateRailTest {
 		gate.connectOutputRail(r1);
 
 		Train t1 = new Train();
+		t1.gotoRail(r1);
 		Wagon v1 = new Wagon();
-		v1.setRail(r1);
+		v1.gotoRail(r2);
 		Wagon v2 = new Wagon();
 		v2.setRail(r2);
-		t1.addWagon(TrainSide.BACK, v1);
-		t1.addWagon(TrainSide.BACK, v2);
+		t1.addVehicle(TrainSide.BACK, v1);
+		t1.addVehicle(TrainSide.BACK, v2);
 		t1.moveTrain();
 	}
 //	@Test
