@@ -42,9 +42,9 @@ public class BasicGateRailTest {
 	public void testConnectEnterAndExitRail() {
 		r1.getEnv().addPath(Dir.W, Dir.E);
 		r2.getEnv().addPath(Dir.W, Dir.E);
-		map.setRail(0, -1, r1);
-		map.setRail(0, 0, gate);
-		map.setRail(0, 1, r2);
+		map.addRail(0, -1, r1);
+		map.addRail(0, 0, gate);
+		map.addRail(0, 1, r2);
 		gate.connectInputRail(r1);
 		gate.connectOutputRail(r2);
 
@@ -74,9 +74,9 @@ public class BasicGateRailTest {
 	public void testEnterAndExitTrain() {
 		r1.getEnv().addPath(Dir.W, Dir.E);
 		r2.getEnv().addPath(Dir.W, Dir.E);
-		map.setRail(0, -1, r1);
-		map.setRail(0, 0, r2);
-		map.setRail(0, 1, gate);
+		map.addRail(0, -1, r1);
+		map.addRail(0, 0, r2);
+		map.addRail(0, 1, gate);
 		gate.connectInputRail(r2);
 		gate.connectOutputRail(r1);
 

@@ -92,7 +92,7 @@ public class TrainTest {
 		w3.setDir(Dir.E);
 		w3.gotoRail(r3);
 		train.addVehicle(TrainSide.FRONT, w3);
-		assertEquals(train.railAhead(), r4);
+		assertEquals(train.nextRail(), r4);
 //		train.moveTrain();
 //		assertEquals(train.railAhead(), null);
 //		train.invert();
@@ -121,7 +121,7 @@ public class TrainTest {
 		w3.setDir(Dir.E);
 		w3.gotoRail(r3);
 		train.addVehicle(TrainSide.FRONT, w3);
-		assertEquals(train.railAhead(), r4);
+		assertEquals(train.nextRail(), r4);
 //		train.moveTrain();
 //		assertEquals(train.railAhead(), r5);
 //		train.moveTrain();

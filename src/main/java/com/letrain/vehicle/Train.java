@@ -1,8 +1,8 @@
 package com.letrain.vehicle;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.Stack;
 import java.util.function.Consumer;
 
@@ -11,41 +11,35 @@ import com.letrain.rail.Rail;
 
 public class Train extends Locomotive {
 	public enum TrainSide {
-		FRONT(0), BACK(1);
-		public int value;
-
-		TrainSide(int value) {
-			this.value = value;
-		}
-
-		int getValue() {
-			return value;
-		}
+		FRONT, BACK;
 	}
 
-	Stack<RailVehicle> vehiclesAtBack;
-	Stack<RailVehicle> vehiclesAtFront;
+	Deque<RailVehicle> vehiclesAtBack;
+	Deque<RailVehicle> vehiclesAtFront;
 
 	int numStoppedTurns;
 
 	Dir trainDir;
 	boolean moved;
 	boolean reversed;
+	TrainSide sense;
 
 	public Train() {
-		vehiclesAtFront = new Stack<>();
-		vehiclesAtBack = new Stack<>();
+		vehiclesAtFront = new ArrayDeque<>();
+		vehiclesAtBack = new ArrayDeque<>();
 		reversed = false;
+		sense = TrainSide.FRONT;
 	}
 
 	public int getSize() {
-		return vehiclesAtFront.size()+ 1 + vehiclesAtBack.size();
+		return vehiclesAtFront.size() + 1 + vehiclesAtBack.size();
 	}
-	public Stack<RailVehicle> getVehiclesAtFront() {
+
+	public Deque<RailVehicle> getVehiclesAtFront() {
 		return vehiclesAtFront;
 	}
 
-	public Stack<RailVehicle> getVehiclesAtBack() {
+	public Deque<RailVehicle> getVehiclesAtBack() {
 		return vehiclesAtBack;
 	}
 
@@ -53,18 +47,42 @@ public class Train extends Locomotive {
 		this.moved = moved;
 	}
 
-	public void addVehicle(TrainSide p, Wagon w) {
+	public void addVehicle(RailVehicle v) {
+		Rail railOfVehicle = v.getRail();
+		if (railOfVehicle != null) {
+			if (railOfVehicle.equals(nextRail(TrainSide.FRONT))) {
+				addVehicle(TrainSide.FRONT, v);
+				return;
+			}
+			if (railOfVehicle.equals(nextRail(TrainSide.BACK))) {
+				addVehicle(TrainSide.BACK, v);
+				return;
+			}
+		}
+	}
+
+	public void updateTrainDir() {
+		Dir d = this.dir;
+		for(RailVehicle v : getVehiclesAtFront()){
+			d = v.acceptDir(d);
+		}
+		d = this.dir;
+		for(RailVehicle v : getVehiclesAtBack()){
+			d = v.acceptDir(d);
+		}
+	}
+
+	public void addVehicle(TrainSide p, RailVehicle w) {
 		RailVehicle vehicleToLink = null;
 		if (p == TrainSide.FRONT) {
+			vehicleToLink = vehiclesAtFront.peek();
 			vehiclesAtFront.add(w);
 		} else {
+			vehicleToLink = vehiclesAtBack.peek();
 			vehiclesAtBack.add(w);
 		}
-		if (vehicleToLink != null) {
-			Rail linkedRail = w.getRail();
-			w.setDir(linkedRail.getPath(vehicleToLink.getDir().inverse()));
-		}
 		w.setTrain(this);
+		updateTrainDir();
 	}
 
 	public Dir getDirFromFirst() {
@@ -74,12 +92,6 @@ public class Train extends Locomotive {
 	public Dir getDirFromBack() {
 		return ((vehiclesAtBack.peek())).getDir();
 	}
-
-	// void shiftBackward() {
-	// vehicles.descendingIterator().forEachRemaining(v -> {
-	// v.getRail().exitVehicle();
-	// });
-	// }
 
 	public void invert() {
 		vehiclesAtFront.iterator().forEachRemaining(v -> {
@@ -92,13 +104,22 @@ public class Train extends Locomotive {
 		reversed = !reversed;
 	}
 
-	public void forEach(Consumer<RailVehicle> c) {
+	public void forEachVehicle(Consumer<RailVehicle> c) {
+		forEachFrontVehicle(c);
+		c.accept(this);
+		forEachBackVehicle(c);
+	}
+
+	public void forEachBackVehicle(Consumer<RailVehicle> c) {
 		Iterator<RailVehicle> iterator;
 		iterator = vehiclesAtFront.iterator();
 		iterator.forEachRemaining(v -> {
 			c.accept(v);
 		});
-		c.accept(this);
+	}
+
+	public void forEachFrontVehicle(Consumer<RailVehicle> c) {
+		Iterator<RailVehicle> iterator;
 		iterator = vehiclesAtBack.iterator();
 		iterator.forEachRemaining(v -> {
 			c.accept(v);
@@ -111,7 +132,7 @@ public class Train extends Locomotive {
 		} else {
 			moved = true;
 		}
-		Rail target = railAhead();
+		Rail target = nextRail();
 		if (target != null) {
 			if (target.getRailVehicle() != null) {
 				throw new RuntimeException("Crash with other vehicle");
@@ -128,11 +149,11 @@ public class Train extends Locomotive {
 		}
 	}
 
-	public Rail railAhead() {
+	public Rail nextRail(TrainSide trainSide) {
 		RailVehicle topVehicle = null;
 		Rail nextRail = null;
 
-		if (reversed) {
+		if (trainSide.equals(TrainSide.BACK)) {
 			topVehicle = vehiclesAtBack.peek();
 		} else {
 			topVehicle = vehiclesAtFront.peek();
