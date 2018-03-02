@@ -99,7 +99,7 @@ public class RailVehicle extends Vehicle {
 		this.moved = moved;
 	}
 
-	public Dir acceptDir(Dir d) {
+	public Dir push(Dir d) {
 		Rail r = getRail();
 		if (r != null) {
 			return r.getEnv().getPath(d.inverse());

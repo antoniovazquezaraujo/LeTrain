@@ -64,11 +64,11 @@ public class Train extends Locomotive {
 	public void updateTrainDir() {
 		Dir d = this.dir;
 		for(RailVehicle v : getVehiclesAtFront()){
-			d = v.acceptDir(d);
+			d = v.push(d);
 		}
 		d = this.dir;
 		for(RailVehicle v : getVehiclesAtBack()){
-			d = v.acceptDir(d);
+			d = v.push(d);
 		}
 	}
 
