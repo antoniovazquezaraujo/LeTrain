@@ -1,9 +1,9 @@
 package com.letrain.vehicle;
 
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.Stack;
+import java.util.List;
 import java.util.function.Consumer;
 
 import com.letrain.dir.Dir;
@@ -14,8 +14,8 @@ public class Train extends Locomotive {
 		FRONT, BACK;
 	}
 
-	Deque<RailVehicle> vehiclesAtBack;
-	Deque<RailVehicle> vehiclesAtFront;
+	List<RailVehicle> vehiclesAtBack;
+	List<RailVehicle> vehiclesAtFront;
 
 	int numStoppedTurns;
 
@@ -25,8 +25,8 @@ public class Train extends Locomotive {
 	TrainSide sense;
 
 	public Train() {
-		vehiclesAtFront = new ArrayDeque<>();
-		vehiclesAtBack = new ArrayDeque<>();
+		vehiclesAtFront = new ArrayList<>();
+		vehiclesAtBack = new ArrayList<>();
 		reversed = false;
 		sense = TrainSide.FRONT;
 	}
@@ -35,11 +35,11 @@ public class Train extends Locomotive {
 		return vehiclesAtFront.size() + 1 + vehiclesAtBack.size();
 	}
 
-	public Deque<RailVehicle> getVehiclesAtFront() {
+	public List<RailVehicle> getVehiclesAtFront() {
 		return vehiclesAtFront;
 	}
 
-	public Deque<RailVehicle> getVehiclesAtBack() {
+	public List<RailVehicle> getVehiclesAtBack() {
 		return vehiclesAtBack;
 	}
 
@@ -47,60 +47,46 @@ public class Train extends Locomotive {
 		this.moved = moved;
 	}
 
-	public void addVehicle(RailVehicle v) {
-		Rail railOfVehicle = v.getRail();
-		if (railOfVehicle != null) {
-			if (railOfVehicle.equals(nextRail(TrainSide.FRONT))) {
-				addVehicle(TrainSide.FRONT, v);
-				return;
-			}
-			if (railOfVehicle.equals(nextRail(TrainSide.BACK))) {
-				addVehicle(TrainSide.BACK, v);
-				return;
-			}
-		}
-	}
-
-	public void updateTrainDir() {
-		Dir d = this.dir;
-		for(RailVehicle v : getVehiclesAtFront()){
-			d = v.push(d);
-		}
-		d = this.dir;
-		for(RailVehicle v : getVehiclesAtBack()){
-			d = v.push(d);
-		}
-	}
+//	public void addVehicle(RailVehicle v) {
+//		Rail railOfVehicle = v.getRail();
+//		if (railOfVehicle != null) {
+//			if (railOfVehicle.equals(nextRail(TrainSide.FRONT))) {
+//				addVehicle(TrainSide.FRONT, v);
+//				return;
+//			}
+//			if (railOfVehicle.equals(nextRail(TrainSide.BACK))) {
+//				addVehicle(TrainSide.BACK, v);
+//				return;
+//			}
+//		}
+//	}
 
 	public void addVehicle(TrainSide p, RailVehicle w) {
 		RailVehicle vehicleToLink = null;
 		if (p == TrainSide.FRONT) {
-			vehicleToLink = vehiclesAtFront.peek();
 			vehiclesAtFront.add(w);
 		} else {
-			vehicleToLink = vehiclesAtBack.peek();
 			vehiclesAtBack.add(w);
 		}
 		w.setTrain(this);
-		updateTrainDir();
 	}
 
-	public Dir getDirFromFirst() {
-		return ((vehiclesAtFront.peek())).getDir();
-	}
-
-	public Dir getDirFromBack() {
-		return ((vehiclesAtBack.peek())).getDir();
-	}
+	// public Dir getDirFromFirst() {
+	// return ((vehiclesAtFront.peek())).getDir();
+	// }
+	//
+	// public Dir getDirFromBack() {
+	// return ((vehiclesAtBack.peek())).getDir();
+	// }
 
 	public void invert() {
-		vehiclesAtFront.iterator().forEachRemaining(v -> {
-			v.getRail().reverseVehicle();
-		});
-		getRail().reverseVehicle();
-		vehiclesAtBack.iterator().forEachRemaining(v -> {
-			v.getRail().reverseVehicle();
-		});
+		// vehiclesAtFront.iterator().forEachRemaining(v -> {
+		// v.getRail().reverseVehicle();
+		// });
+		// getRail().reverseVehicle();
+		// vehiclesAtBack.iterator().forEachRemaining(v -> {
+		// v.getRail().reverseVehicle();
+		// });
 		reversed = !reversed;
 	}
 
@@ -132,40 +118,94 @@ public class Train extends Locomotive {
 		} else {
 			moved = true;
 		}
-		Rail target = nextRail();
-		if (target != null) {
-			if (target.getRailVehicle() != null) {
-				throw new RuntimeException("Crash with other vehicle");
-			} else {
-				if (numStoppedTurns == 0) {
-					moveTrain();
-					numStoppedTurns = 100;
-				} else {
-					numStoppedTurns--;
-				}
-			}
+
+		if (numStoppedTurns == 0) {
+			moveTrain();
+			numStoppedTurns = 100;
 		} else {
-			throw new RuntimeException("Crash. End of railway");
+			numStoppedTurns--;
 		}
+
 	}
 
-	public Rail nextRail(TrainSide trainSide) {
-		RailVehicle topVehicle = null;
-		Rail nextRail = null;
+	// public Rail nextRail() {
+	// return nextRail(reversed?TrainSide.BACK:TrainSide.FRONT);
+	// }
+	// public Rail nextRailAtFront() {
+	// return nextRail(TrainSide.FRONT);
+	// }
+	// public Rail nextRailAtBack() {
+	// return nextRail(TrainSide.BACK);
+	// }
+	// public Rail nextRail(TrainSide trainSide) {
+	// RailVehicle topVehicle = null;
+	// RailVehicle linker = null;
+	// Rail nextRail = null;
+	// if (trainSide.equals(TrainSide.BACK)) {
+	// topVehicle = getLastBackVehicle();
+	// linker = getBackAntecessor(topVehicle);
+	// } else {
+	// topVehicle = getLastFrontVehicle();
+	// linker = getFrontAntecessor(topVehicle);
+	// }
+	// if(linker==null) {
+	// linker = this;
+	// }
+	//
+	//
+	// nextRail = topVehicle.getRail().getLinkedRailAt(topVehicle.getDir());
+	// return nextRail;
+	// }
 
-		if (trainSide.equals(TrainSide.BACK)) {
-			topVehicle = vehiclesAtBack.peek();
-		} else {
-			topVehicle = vehiclesAtFront.peek();
+	public RailVehicle getBackAntecessor(RailVehicle v) {
+		if (vehiclesAtBack.isEmpty()) {
+			return null;
 		}
-		nextRail = topVehicle.getRail().getLinkedRailAt(topVehicle.getDir());
-		return nextRail;
+		int index = vehiclesAtBack.indexOf(v);
+		if (index <= 0) {
+			return null;
+		}
+		return vehiclesAtBack.get(index - 1);
+	}
+
+	public RailVehicle getFrontAntecessor(RailVehicle v) {
+		if (vehiclesAtFront.isEmpty()) {
+			return null;
+		}
+		int index = vehiclesAtFront.indexOf(v);
+		if (index <= 0) {
+			return null;
+		}
+		return vehiclesAtFront.get(index - 1);
+	}
+
+	public RailVehicle getLastFrontVehicle() {
+		return vehiclesAtFront.isEmpty() ? null : vehiclesAtFront.get(vehiclesAtFront.size() - 1);
+	}
+
+	public RailVehicle getLastBackVehicle() {
+		return vehiclesAtBack.isEmpty() ? null : vehiclesAtBack.get(vehiclesAtBack.size() - 1);
 	}
 
 	public void moveTrain() {
-		forEach(v -> {
-			v.getRail().exitVehicle();
-		});
+		Dir d = this.dir;
+		RailVehicle v = this;
+		for (RailVehicle next : vehiclesAtFront) {
+			d = next.push(v);
+			v = next;
+		}
+		for (RailVehicle next : vehiclesAtFront) {
+			next.forward();
+		}
+		v = this;
+		for (RailVehicle next : vehiclesAtBack) {
+			d = next.pull(v);
+			v = next;
+		}
+		this.forward();
+		for (RailVehicle next : vehiclesAtBack) {
+			next.forward();
+		}
 	}
 
 	public void incSpeed() {

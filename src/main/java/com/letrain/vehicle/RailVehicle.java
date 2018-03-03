@@ -99,10 +99,18 @@ public class RailVehicle extends Vehicle {
 		this.moved = moved;
 	}
 
-	public Dir push(Dir d) {
+	public Dir push(RailVehicle v) {
 		Rail r = getRail();
 		if (r != null) {
-			return r.getEnv().getPath(d.inverse());
+			return r.getEnv().getPath(v.getDir().inverse());
+		} else {
+			return null;
+		}
+	}
+	public Dir pull(RailVehicle v) {
+		Rail r = v.getRail();
+		if (r != null) {
+			return r.getEnv().getPath(v.getDir()).inverse();
 		} else {
 			return null;
 		}
