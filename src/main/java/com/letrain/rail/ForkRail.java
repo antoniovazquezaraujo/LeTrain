@@ -1,76 +1,50 @@
 package com.letrain.rail;
 
 import com.letrain.dir.Dir;
-import com.letrain.dir.DirEnv;
+ 
 import com.letrain.view.Aspect;
 import com.letrain.view.ForkAspect;
 
+import static com.letrain.dir.Dir.*;
+import static com.letrain.dir.Dir.SE;
+
 public class ForkRail extends Rail {
-	final int NUM_OUTS= 3;
-	Dir[] outs = new Dir[NUM_OUTS];
-	Dir in;	
-	int selectedOut;
-	int numOuts =0;
+	Dir in;
+	Dir leftOut;
+	Dir rightOut;
+	Dir selectedOut;
 	public ForkRail() {
-		super();
+		super(new ForkAspect());
 	}
 
-	public ForkRail(DirEnv dirEnv) {
-		super(dirEnv);
-		//innecesario!
-		for(int n = 0; n< NUM_OUTS; n++){
-			outs[n] = null;
-		}
-		selectedOut = 0;
-		int numOuts = 0;
-		for (Dir dir: Dir.values()){
-			Dir found = dirEnv.getPath(dir);
-			if(found  != null){
-				if(dirEnv.canBeAForkInput(dir)){
-					in = dir;
-				}else{
-					selectedOut=numOuts;
-					outs[numOuts] = dir;
-					numOuts++;
-				}
-			}
-		}
+
+	@Override
+	public void addPath(Dir from, Dir to) {
+	    // DO NOTHING, USE THE NEXT
+    }
+    public void addPath(Dir from, Dir left, Dir right) {
+        this.in = from;
+        leftOut = left;
+        rightOut = right;
+        selectedOut = left; // by default
+		dirs[left.getValue()] = from;
+		dirs[right.getValue()] = from;
+		dirs[from.getValue()] = left; //by default
 	}
-	void  selectDir(Dir dir){
-		for(int n= 0; n< numOuts; n++){
-			if(outs[n] == dir){
-				selectedOut = n;
-				break;
-			}
-		}	
+	public Dir getSelectedDir(){
+		return selectedOut;
 	}
-	public Dir  getSelectedDir(){
-		return outs[selectedOut];
+	public void  selectLeftOut(){
+        selectedOut = leftOut;
 	}
-	public void  setNextDir(){
-		selectedOut++;
-		selectedOut%=numOuts;
-	}
-	public void  setPrevDir(){
-		selectedOut--;
-		if(selectedOut < 0){
-			selectedOut=numOuts-1;
-		}
+	public void  selectRightOut(){
+        selectedOut = rightOut;
 	}
 	public Dir getPath(Dir dir){
 		if(dir == in){
-			return outs[selectedOut];
+			return selectedOut;
 		}else{
 			return in;
 		}
 	}
-	@Override
-	public Aspect getAspect() {
-		if(aspect == null){
-			aspect = new ForkAspect();
-		}
-		return super.getAspect();
-	}
- 
-
-}
+ }

@@ -60,6 +60,11 @@ public class Point {
 	public void  move(Dir dir){
 		move(dir,1);
 	}
+	public Point copy(Dir dir){
+		Point p = this;
+		p.move(dir);
+		return p;
+	}
 	public void  move(Dir dir, int distance){
 		 
 		switch(dir ) {

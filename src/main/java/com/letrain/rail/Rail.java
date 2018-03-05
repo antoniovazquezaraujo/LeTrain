@@ -1,45 +1,81 @@
 package com.letrain.rail;
 
 import com.letrain.dir.Dir;
-import com.letrain.dir.DirEnv;
+
 import com.letrain.map.Point;
 import com.letrain.vehicle.RailVehicle;
 import com.letrain.view.Aspect;
 
+import static com.letrain.dir.Dir.*;
+
 public abstract class Rail {
 	Point pos;
 	protected RailVehicle vehicle;
-	DirEnv dirEnv; // entradas y salidas
-	RailEnv railEnv; // enlaces con otros railes para formar una vía
 	Aspect aspect;
+	protected Rail[] links; // enlaces con otros railes
+	protected Dir[] dirs;   // caminos de entrada o salida
 
-	public Rail() {
-		this(null);
-	}
 
-	public Rail(DirEnv dirEnv) {
+	public Rail(Aspect aspect) {
+		this.aspect = aspect;
 		this.vehicle = null;
-		this.dirEnv = new DirEnv(dirEnv);
-		this.railEnv = new RailEnv();
+		this.links = new Rail[NUM_DIRS];
+		this.dirs = new Dir[NUM_DIRS];
+	}
+	
+	public Dir getPath(Dir dir) {
+		return dirs[ dir.getValue() ] ;
+	}
+ 
+	public Dir getFirstOpenDir() {
+		for (Dir d : values()) {
+			if (dirs[d.getValue()] != null) {
+				return d;
+			}
+		}
+		return null;
 	}
 
-	public Aspect getAspect() {
-		return aspect;
+  	public int getNumOpenDirs() {
+		int numDirs = 0;
+		for (int n = 0; n < NUM_DIRS; n++) {
+			if (dirs[n] != null) {
+				numDirs++;
+			}
+		}
+		return numDirs;
+	}
+
+	public void addPath(Dir from, Dir to) {
+		dirs[to.getValue()] = from;
+		dirs[from.getValue()] = to;
+	}
+
+	public void removePath(Dir from, Dir to) {
+		dirs[to.getValue()] = null;
+		dirs[from.getValue()] = null;
+	}
+ 
+	public RailVehicle getVehicle() {
+	    return vehicle;
 	}
 
 	/*
-	 * EnterVehicle Si hay un vehículo no entra y devuelve false. Si el rail
-	 * está vacio, entra el vehículo. Cuando entra un vehículo, miramos su
-	 * dirección, y girandola 180 grados obtenemos la puerta por la que está
-	 * entrando (si viene en dirección sur, entra por la puerta norte, etc)
+	 * EnterVehicle Si hay un vehï¿½culo no entra y devuelve false. Si el rail
+	 * estï¿½ vacio, entra el vehï¿½culo. Cuando entra un vehï¿½culo, miramos su
+	 * direcciï¿½n, y girandola 180 grados obtenemos la puerta por la que estï¿½
+	 * entrando (si viene en direcciï¿½n sur, entra por la puerta norte, etc)
 	 * Entonces, obtenemos la puerta a donde va a dar esa entrada, y le ponemos
-	 * al vehículo esa dirección, para que cuando salga, lo haga por ahí.
+	 * al vehï¿½culo esa direcciï¿½n, para que cuando salga, lo haga por ahï¿½.
 	 */
 	public boolean enterVehicle(RailVehicle vehicle) {
 		if (this.vehicle != null) {
 			return false;
 		}
-		setRailVehicle(vehicle);
+		this.vehicle = vehicle;
+		if (vehicle != null) {
+			vehicle.setRail(this);
+		}
 
 		this.vehicle.setPos(pos);
 		this.vehicle.setDir(getPath(vehicle.getDir().inverse()));
@@ -47,11 +83,11 @@ public abstract class Rail {
 	}
 
 	/*
-	 * ExitVehicle Saca el vehículo hacia el rail conectado en la dirección de
-	 * avance del mismo y lo hace entrar en el rail conectado en esa dirección
+	 * ExitVehicle Saca el vehï¿½culo hacia el rail conectado en la direcciï¿½n de
+	 * avance del mismo y lo hace entrar en el rail conectado en esa direcciï¿½n
 	 */
 	public boolean exitVehicle() {
-		Rail dest = getLinkedRailAt(vehicle.getDir());
+		Rail dest = getLinkedRailAt(vehicle.getDir().inverse());
 		if (dest != null && dest.enterVehicle(this.vehicle)) {
 			this.vehicle = null;
 			return true;
@@ -59,47 +95,62 @@ public abstract class Rail {
 		return false;
 	}
 
-	public void linkRailAt(Dir dir, Rail rail) {
-		railEnv.addRail(dir, rail);
-		// enlazamos también a rail con nosotros
-		if (rail != null) {
-			if (rail.getLinkedRailAt(dir.inverse()) != this) {
-				rail.linkRailAt(dir.inverse(), this);
-			}
-		}
+
+	public Rail linkStraight(Dir d) {
+		Rail r = new StraightRail();
+		r.addPath(d.inverse(), d);
+		r.links[d.inverse().getValue()] = this;
+		links[d.getValue()] = r;
+		updatePos(d,r);
+		return r;
 	}
- 
+
+	public Rail linkCurve(Dir d, Dir next) {
+		Rail r = new CurveRail();
+		r.addPath(d.inverse(), next);
+		r.links[d.inverse().getValue()] = this;
+		links[d.getValue()] = r;
+		updatePos(d,r);
+		return r;
+	}
+
+	public Rail linkFork(Dir d, Dir left, Dir right) {
+		ForkRail r = new ForkRail();
+		r.addPath(d.inverse(), left, right);
+		r.links[d.inverse().getValue()] = this;
+		links[d.getValue()] = r;
+		updatePos(d,r);
+		return r;
+	}
+
+	public Rail linkGate(Dir d, Rail nextRail) {
+		GateRail r = new GateRail();  
+		r.addPath(d.inverse(), d);
+		r.links[d.inverse().getValue()] = this;
+		links[d.getValue()] = r;
+		r.setInputRail(d.inverse(), this);
+		r.setOutputRail(d, null);
+		updatePos(d,r);
+		return r;
+	}
+
+	private void updatePos(Dir dir, Rail rail) {
+		Point dest = new Point(this.pos);
+		dest.move(dir);
+		rail.setPos(dest);
+	}
+
 	public Rail getLinkedRailAt(Dir dir) {
-		return railEnv.getRail(dir);
+		return links[dir.getValue()];
 	}
-
-	public Dir getPath(Dir dir) {
-		return dirEnv.getPath(dir);
-	}
-
-	public Dir getAnyPath() {
-		return dirEnv.getFirstOpenOut();
-	}
-
-	public void setRailVehicle(RailVehicle vehicle) {
-		this.vehicle = vehicle;
-		if (vehicle != null) {
-			vehicle.setRail(this);
-		}
-	}
-
-	public RailVehicle getRailVehicle() {
-		return vehicle;
+ 	public Dir getAnyPath() {
+		return getFirstOpenDir();
 	}
 
 	public void reverseVehicle() {
 		vehicle.setDir(getPath(vehicle.getDir()));
 	}
-
-	public DirEnv getEnv() {
-		return dirEnv;
-	}
-
+  
 	public Point getPos() {
 		return pos;
 	}
@@ -110,5 +161,8 @@ public abstract class Rail {
 
 	public void setPos(int row, int col) {
 		this.pos = new Point(row, col);
+	}
+	public Aspect getAspect(){
+		return aspect;
 	}
 }

@@ -77,6 +77,12 @@ public enum Dir {
 	public Dir inverse(){
 		return fromInt(invert(value));
 	}
+	public Dir turnLeft(){
+		return fromInt(value +1);
+	}
+	public Dir turnRight(){
+		return fromInt(value -1);
+	}
 
 	static boolean  isValidValue(int value){
 		return (value >= E.getValue() && value <= SE.getValue());

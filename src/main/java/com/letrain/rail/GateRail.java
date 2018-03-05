@@ -6,8 +6,9 @@ import java.util.LinkedList;
 import com.letrain.dir.Dir;
 import com.letrain.vehicle.RailVehicle;
 import com.letrain.vehicle.Train;
+import com.letrain.view.GateAspect;
 
-public abstract class GateRail extends Rail   {
+public class GateRail extends Rail   {
 	Train train;
 	int numVehiclesInside;
 	private int ejectingVehicleIndex;
@@ -19,6 +20,7 @@ public abstract class GateRail extends Rail   {
 	private Dir outputDir;
 
 	public GateRail() {
+		super(new GateAspect());
 		vehiclesInside = new LinkedList<>();
 		this.numVehiclesInside = 0;
 		this.train = null;
@@ -53,7 +55,7 @@ public abstract class GateRail extends Rail   {
 	 */
 	@Override
 	public boolean exitVehicle() {
-		setRailVehicle(vehiclesInside.removeFirst());
+		this.vehicle = vehiclesInside.removeFirst() ;
 		numVehiclesInside--;
 		if(numVehiclesInside == 0){
 			onLastVehicleExit();
@@ -68,21 +70,15 @@ public abstract class GateRail extends Rail   {
 	}
 
 	// Desde qué rail se entra en esta puerta
-	public void connectInputRail(Rail rail){
+	public void setInputRail(Dir d, Rail rail){
 		this.inputRail= rail;
-		Dir dir = rail.getEnv().getFirstOpenIn();
-		getEnv().addPath(dir, dir.inverse());
-		this.inputDir = dir.inverse();
-		linkRailAt(inputDir, rail);
+		this.inputDir = d ;;
 	}
 
 	// A qué raíl se sale desde esta puerta. Puede ser el mismo
-	public   void connectOutputRail(Rail rail){
+	public   void setOutputRail(Dir d ,Rail rail){
 		this.outputRail= rail;
-		Dir dir = rail.getEnv().getFirstOpenIn();
-		getEnv().addPath(dir, inputDir.inverse());
-		this.outputDir = inputDir.inverse();
-		linkRailAt(outputDir, rail);
+		this.outputDir = d;
 	}
  
 	// aviso de que ha entrado el primer vehículo del tren

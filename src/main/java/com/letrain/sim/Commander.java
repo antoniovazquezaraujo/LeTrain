@@ -71,13 +71,13 @@ public class Commander {
 		case FORK_INC:
 			f = sim.getSelectedFork();
 			if (f != null){
-				f.setNextDir();
+				f.selectLeftOut();
 			}
 			break;
 		case FORK_DEC:
 			f = sim.getSelectedFork();
 			if (f != null){
-				f.setPrevDir();
+				f.selectRightOut();
 			}
 			break;
 		default:
@@ -87,16 +87,16 @@ public class Commander {
 	private void doBulldozerCommand(Command command) {
 		switch(command){
 		case BULLDOZER_PUT_TRAIN_GARAGE:
-			sim.addGate(sim.getBulldozer().makeGate());
+//			sim.addGate(sim.getBulldozer().makeGate());
 			break;
 		case BULLDOZER_PUT_RAILS_MODE:
-			sim.getBulldozer().setMode(BulldozerMode.PAINTING);
+//			sim.getBulldozer().setMode(BulldozerMode.PAINTING);
 			break;
 		case BULLDOZER_REMOVE_RAILS_MODE:
-			sim.getBulldozer().setMode(BulldozerMode.ERASING);
+//			sim.getBulldozer().setMode(BulldozerMode.ERASING);
 			break;
 		case BULLDOZER_MOVE_MODE:
-			sim.getBulldozer().setMode(BulldozerMode.MOVING);
+//			sim.getBulldozer().setMode(BulldozerMode.MOVING);
 			break;
 		case BULLDOZER_ROTATE_RIGHT:
 			sim.getBulldozer().rotateRight();
@@ -105,7 +105,7 @@ public class Commander {
   			sim.bulldozer.rotateLeft();
 			break;
 		case BULLDOZER_MOVE:
-			sim.bulldozer.move();
+//			sim.bulldozer.move();
 			break;
   
 		default:

@@ -1,20 +1,12 @@
 package com.letrain.view;
 
 import com.letrain.dir.Dir;
-import com.letrain.dir.DirEnv;
+ 
 
 public class StraightAspect extends Aspect {
 	AspectChar aspectChar;
 	public StraightAspect(){
 		super();
-	}
-	public Dir getDir(DirEnv env) {
-		for (Dir dir : Dir.values()) {
-			if (env.getPath(dir) != null) {
-				return dir;
-			}
-		}
-		return null;
 	}
 
 	public void selectAspectChar(Dir dir) {

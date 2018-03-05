@@ -8,52 +8,22 @@ public class RailVehicle extends Vehicle {
 	boolean moved;
 	private Train train;
 	int speed;
-
-	// phisics
-	// float impulse;
-	// private float impulseGenerated;
-	// private int mass;
-	// int brakes;
+ 
 
 	public RailVehicle() {
 		super();
 	}
-
-	public void forward() {
-		gotoRail(rail.getLinkedRailAt(dir));
+ 
+	public boolean exitRail(){
+		return rail.exitVehicle();
 	}
-
-	public void backward() {
-		goBackToRail(rail.getLinkedRailAt(rail.getPath(dir)));
-	}
-
-	public boolean goBackToRail(Rail r) {
-		if (r.getRailVehicle() != null) {
-			return false;
-		}
-		// si ya tengo un rail lo vacio
-		if (rail != null) {
-			rail.setRailVehicle(null);
-		}
-		if (dir != null) {
-			dir = r.getPath(dir);
-			dir = dir.inverse();
-		} else {
-			dir = r.getAnyPath();
-		}
-		pos = r.getPos();
-		rail = r;
-		r.setRailVehicle(this);
-		return true;
-	}
-
 	public boolean gotoRail(Rail r) {
-		if (r.getRailVehicle() != null) {
+		// si ya tengo un rail tengo que salir correctamente
+		if (this.rail != null) {
 			return false;
 		}
-		// si ya tengo un rail lo vacio
-		if (rail != null) {
-			rail.setRailVehicle(null);
+		if (r.getVehicle() != null) {
+			return false;
 		}
 		if (dir != null) {
 			Dir inverse = dir.inverse();
@@ -61,10 +31,13 @@ public class RailVehicle extends Vehicle {
 		} else {
 			dir = r.getAnyPath();
 		}
-		pos = r.getPos();
-		rail = r;
-		r.setRailVehicle(this);
-		return true;
+		if(r.enterVehicle(this)){
+			this.pos = r.getPos();
+			this.rail = r;
+			return true ;
+		}else{
+			return false;
+		}
 	}
 
 	public void setSpeed(int speed) {
@@ -102,7 +75,7 @@ public class RailVehicle extends Vehicle {
 	public Dir push(RailVehicle v) {
 		Rail r = getRail();
 		if (r != null) {
-			return r.getEnv().getPath(v.getDir().inverse());
+			return r.  getPath(v.getDir().inverse());
 		} else {
 			return null;
 		}
@@ -110,56 +83,10 @@ public class RailVehicle extends Vehicle {
 	public Dir pull(RailVehicle v) {
 		Rail r = v.getRail();
 		if (r != null) {
-			return r.getEnv().getPath(v.getDir()).inverse();
+			return r. getPath(v.getDir()).inverse();
 		} else {
 			return null;
 		}
 	}
 
-	// Phisics /////////////////////////////////////////
-
-	// int getMass(){
-	// return mass;
-	// }
-	//
-	// float getImpulse(){
-	// return impulse;
-	// }
-	// float receiveImpulse(float impulseReceived, Dir dir){
-	// float consumed = 0;
-	// if(getRail().getPath(dir.inverse()) == this.dir){
-	// consumed = mass - this.impulse;
-	// if(consumed < 0) consumed = 0;
-	// }else{
-	// consumed = mass + this.impulse;
-	// }
-	// if(impulseReceived >= consumed){
-	// this.impulse += consumed;
-	// return impulseReceived - consumed;
-	// }else{
-	// this.impulse += impulseReceived;
-	// return 0;
-	// }
-	// }
-	// void reverseImpulse(){
-	// impulse*= -1;
-	// }
-	// void incImpulseGenerated(float n){
-	// impulseGenerated+=n;
-	// }
-	// void decImpulseGenerated(float n){
-	// impulseGenerated-=n;
-	// }
-	// void generateImpulse(){
-	// impulse+= impulseGenerated;
-	// }
-	// void consumeImpulse(){
-	// impulse =0;
-	// }
-	// int getBrakes(){
-	// return brakes;
-	// }
-	// void setBrakes(int brakes){
-	// this.brakes = brakes;
-	// }
 }

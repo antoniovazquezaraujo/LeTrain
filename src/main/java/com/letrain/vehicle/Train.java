@@ -195,16 +195,16 @@ public class Train extends Locomotive {
 			v = next;
 		}
 		for (RailVehicle next : vehiclesAtFront) {
-			next.forward();
+			next.exitRail();
 		}
 		v = this;
 		for (RailVehicle next : vehiclesAtBack) {
 			d = next.pull(v);
 			v = next;
 		}
-		this.forward();
+		this.exitRail();
 		for (RailVehicle next : vehiclesAtBack) {
-			next.forward();
+			next.exitRail();
 		}
 	}
 

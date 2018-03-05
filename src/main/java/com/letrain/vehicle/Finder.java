@@ -7,7 +7,7 @@ import com.letrain.view.Window;
 
 public class Finder extends RailVehicle {
 	Rail rail;
-
+ 
 public Finder(RailVehicle  r){
 	aspect = new FinderAspect() ;
 	if(r != null){
@@ -33,7 +33,7 @@ public Finder(RailVehicle  r){
 	}
 
 	boolean isEmpty() {
-		return !(rail != null && rail.getRailVehicle() != null);
+		return !(rail != null && rail.getVehicle() != null);
 	}
 
 	public boolean gotoRail(Rail r) {
