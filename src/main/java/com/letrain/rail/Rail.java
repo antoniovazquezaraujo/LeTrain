@@ -87,7 +87,7 @@ public abstract class Rail {
 	 * avance del mismo y lo hace entrar en el rail conectado en esa direcci�n
 	 */
 	public boolean exitVehicle() {
-		Rail dest = getLinkedRailAt(vehicle.getDir().inverse());
+		Rail dest = getLinkedRailAt(getPath(vehicle.getDir().inverse()));
 		if (dest != null && dest.enterVehicle(this.vehicle)) {
 			this.vehicle = null;
 			return true;

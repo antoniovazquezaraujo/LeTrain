@@ -43,8 +43,10 @@ public class GateRail extends Rail   {
 		//lo ponemos apuntando hacia la salida
 		vehicle.setDir(this.outputDir);
 		// dejamos la puerta libre
+		vehicle.setRail(this);
 		this.vehicle = null;
-		// pero ojo, el vehículo cree que sigue estando en el rail
+
+		// pero ojo, el vehï¿½culo cree que sigue estando en el rail
 		// todos los que entran se quedan en el mismo rail hasta que salen
 		// Para salir, hacemos un tratamiento especial de exitVehicle
 		return true;
@@ -69,35 +71,35 @@ public class GateRail extends Rail   {
 		return false;
 	}
 
-	// Desde qué rail se entra en esta puerta
+	// Desde quï¿½ rail se entra en esta puerta
 	public void setInputRail(Dir d, Rail rail){
 		this.inputRail= rail;
 		this.inputDir = d ;;
 	}
 
-	// A qué raíl se sale desde esta puerta. Puede ser el mismo
+	// A quï¿½ raï¿½l se sale desde esta puerta. Puede ser el mismo
 	public   void setOutputRail(Dir d ,Rail rail){
 		this.outputRail= rail;
 		this.outputDir = d;
 	}
  
-	// aviso de que ha entrado el primer vehículo del tren
+	// aviso de que ha entrado el primer vehï¿½culo del tren
 	public void onFirstVehicleEnter() {
 	}
 
-	// aviso de que ha entrado el último vehículo del tren
+	// aviso de que ha entrado el ï¿½ltimo vehï¿½culo del tren
 	public void onLastVehicleEnter() {
 	}
 
-	// aviso de que ha salido el primer vehículo del tren
+	// aviso de que ha salido el primer vehï¿½culo del tren
 	public void onFirstVehicleExit() {
 	}
 
-	// aviso de que salido el último vehículo del tren
+	// aviso de que salido el ï¿½ltimo vehï¿½culo del tren
 	public void onLastVehicleExit() {
 	}
 
-	// el tren que está "dentro", si es que hay alguno
+	// el tren que estï¿½ "dentro", si es que hay alguno
 	public Train getTrain() {
 		return train;
 	}
@@ -108,7 +110,7 @@ public class GateRail extends Rail   {
 	}
 
 	public void turn() {
-		// a la puerta le tocará actuar en cada turno para que pueda sacar el
+		// a la puerta le tocarï¿½ actuar en cada turno para que pueda sacar el
 		// tren
 		// si es lo que se le ha ordenado
 		if (ejecting) {

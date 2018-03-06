@@ -1,13 +1,12 @@
 package com.letrain.vehicle;
 
+import com.letrain.dir.Dir;
+import com.letrain.rail.Rail;
+
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
-
-import com.letrain.dir.Dir;
-import com.letrain.rail.Rail;
 
 public class Train extends Locomotive {
 	public enum TrainSide {
@@ -90,7 +89,12 @@ public class Train extends Locomotive {
 		reversed = !reversed;
 	}
 
-	public void forEachVehicle(Consumer<RailVehicle> c) {
+    @Override
+    public Train getTrain() {
+        return this;
+    }
+
+    public void forEachVehicle(Consumer<RailVehicle> c) {
 		forEachFrontVehicle(c);
 		c.accept(this);
 		forEachBackVehicle(c);
@@ -192,21 +196,23 @@ public class Train extends Locomotive {
 		RailVehicle v = this;
 		for (RailVehicle next : vehiclesAtFront) {
 			d = next.push(v);
+			next.setDir(d);
 			v = next;
 		}
 		for (RailVehicle next : vehiclesAtFront) {
 			next.exitRail();
 		}
 		v = this;
-		for (RailVehicle next : vehiclesAtBack) {
-			d = next.pull(v);
-			v = next;
-		}
-		this.exitRail();
-		for (RailVehicle next : vehiclesAtBack) {
-			next.exitRail();
-		}
-	}
+        this.exitRail();
+        for (RailVehicle next : vehiclesAtBack) {
+            d = next.pull(v);
+            next.setDir(d);
+            v = next;
+        }
+        for (RailVehicle next : vehiclesAtBack) {
+            next.exitRail();
+        }
+    }
 
 	public void incSpeed() {
 		// TODO Auto-generated method stub
@@ -216,5 +222,26 @@ public class Train extends Locomotive {
 	public void decSpeed() {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public boolean gotoRail(Rail r) {
+        super.gotoRail(r);
+        Dir dir = r.getAnyPath();
+        RailVehicle nextVehicle = this;
+        Rail nextRail = null;
+        for(RailVehicle v : vehiclesAtFront){
+            nextRail= nextVehicle.getRail().getLinkedRailAt(dir);
+            v.gotoRail(nextRail);
+            nextVehicle = v;
+        }
+		dir = r.getPath(dir);
+		nextVehicle = this;
+		for(RailVehicle v : vehiclesAtBack){
+			nextRail= nextVehicle.getRail().getLinkedRailAt(dir);
+			v.gotoRail(nextRail);
+			nextVehicle = v;
+		}
+		return true; //agregar excepciones aquí
 	}
 }
