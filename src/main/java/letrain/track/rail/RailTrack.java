@@ -3,8 +3,10 @@ package letrain.track.rail;
 
 import letrain.map.Dir;
 import letrain.track.Track;
+import letrain.vehicle.impl.Linker;
 
 public class RailTrack extends Track<RailTrack> {
+
     public enum TrackType {
         STRAIGHT,
         CURVE,

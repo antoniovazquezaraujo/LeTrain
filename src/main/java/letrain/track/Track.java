@@ -2,6 +2,7 @@ package letrain.track;
 
 import javafx.util.Pair;
 import letrain.map.*;
+import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Linker;
 
 import java.util.ArrayList;
