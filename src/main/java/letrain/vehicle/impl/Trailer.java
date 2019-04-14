@@ -2,5 +2,12 @@ package letrain.vehicle.impl;
 
 import letrain.track.Track;
 
-public abstract class Trailer<T extends Track> extends Tractor<T> {
+import java.util.Deque;
+import java.util.List;
+
+public interface Trailer<T extends Track> {
+    Deque<Linker<T>> getLinkers();
+    Tractor<T> getMainTractor();
+    public void setMainTractor(Tractor<T> tractor);
+
 }
