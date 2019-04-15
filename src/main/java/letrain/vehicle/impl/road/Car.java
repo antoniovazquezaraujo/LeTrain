@@ -10,4 +10,9 @@ public class Car extends Vehicle<RoadTrack> {
         return false;
     }
 
+    @Override
+    public float getFrictionCoefficient() {
+        return 0;
+    }
+
 }

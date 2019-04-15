@@ -21,7 +21,7 @@ public class Locomotive extends Linker<Track<RailTrack>> implements Tractor{
 
     @Override
     public float getForce() {
-        return 0;
+        return this.force;
     }
 
     @Override

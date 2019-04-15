@@ -24,9 +24,9 @@ public interface Trailer<T extends Track> {
 
     List<Tractor> getTractors();
 
-    void addTractor(Tractor tractor);
+    boolean isEmpty();
 
-    void removeTractor(Tractor tractor);
+    int size();
 
     void setMainTractor(Tractor tractor);
 
@@ -49,4 +49,10 @@ public interface Trailer<T extends Track> {
     float getDistanceTraveled();
 
     void resetDistanceTraveled();
+
+    Trailer divide(Linker<T> p);
+
+    void pushBack(Trailer t);
+
+    void pushFront(Trailer t);
 }

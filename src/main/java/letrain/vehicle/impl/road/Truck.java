@@ -3,5 +3,14 @@ package letrain.vehicle.impl.road;
 import letrain.track.road.RoadTrack;
 import letrain.vehicle.impl.Tractor;
 
-public class Truck extends Tractor<RoadTrack> {
+public class Truck implements Tractor {
+    @Override
+    public float getForce() {
+        return 0;
+    }
+
+    @Override
+    public void setForce(float force) {
+
+    }
 }

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Train implements Trailer<RailTrack> {
     private static final float DISTANCE_UNIT = 20;
@@ -63,6 +64,43 @@ public class Train implements Trailer<RailTrack> {
     }
 
     @Override
+    public boolean isEmpty() {
+        return linkers.isEmpty();
+    }
+
+    @Override
+    public int size() {
+        return linkers.size();
+    }
+
+    @Override
+    public Trailer divide(Linker<RailTrack> p) {
+        Trailer<RailTrack> ret = new Train();
+        Linker<RailTrack> first = getLinkers().getFirst();
+        while (first != p) {
+            ret.pushFront(getLinkers().removeFirst());
+            first = getLinkers().getFirst();
+        }
+        setMainTractor(getTractors() != null && !getTractors().isEmpty() ? getTractors().get(0) : null);
+        ret.setMainTractor(ret.getTractors() != null && !ret.getTractors().isEmpty() ? ret.getTractors().get(0) : null);
+        return ret;
+    }
+
+    @Override
+    public void pushBack(Trailer t) {
+        while (!t.isEmpty()) {
+            pushBack(t.popFront());
+        }
+    }
+
+    @Override
+    public void pushFront(Trailer t) {
+        while (!t.isEmpty()) {
+            pushFront(t.popBack());
+        }
+    }
+
+    @Override
     public void setMainTractor(Tractor tractor) {
         this.mainTractor = tractor;
     }
@@ -74,17 +112,10 @@ public class Train implements Trailer<RailTrack> {
 
     @Override
     public List<Tractor> getTractors() {
-        return tractors;
-    }
-
-    @Override
-    public void addTractor(Tractor tractor) {
-        tractors.add(tractor);
-    }
-
-    @Override
-    public void removeTractor(Tractor tractor) {
-        tractors.remove(tractor);
+        return linkers.stream()
+                .filter(t -> Tractor.class.isAssignableFrom(t.getClass()))
+                .map(t -> (Tractor) t)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -107,7 +138,9 @@ public class Train implements Trailer<RailTrack> {
     public float getFrictionForce() {
         return (float) getLinkers()
                 .stream()
-                .mapToDouble(l -> l.getFrictionCoefficient() * l.getMass() * getAcceleration())
+                .mapToDouble(l -> {
+                    return l.getFrictionCoefficient() * l.getMass() * getAcceleration();
+                })
                 .sum();
     }
 
@@ -137,6 +170,7 @@ public class Train implements Trailer<RailTrack> {
 
     @Override
     public void move() {
+
         System.out.println("Moving train!");
     }
 
@@ -147,7 +181,7 @@ public class Train implements Trailer<RailTrack> {
 
     @Override
     public float getSpeed() {
-        return getTotalForce() / getTotalMass();
+        return getAcceleration();
     }
 
     @Override
@@ -159,5 +193,6 @@ public class Train implements Trailer<RailTrack> {
     public void resetDistanceTraveled() {
         this.distanceTraveled = 0;
     }
+
 
 }

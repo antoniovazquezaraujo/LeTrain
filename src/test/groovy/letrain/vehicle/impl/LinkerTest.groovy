@@ -8,26 +8,12 @@ import spock.lang.Specification
 
 class LinkerTest extends Specification {
 
-    Linker linker1 = new Wagon();
-    Linker linker2 = new Wagon();
+    Linker linker1 = new Wagon()
+
 
     def setup() {
     }
 
-    def "test link"() {
-        when:
-        linker1.link(Linkable.LinkSide.FRONT, linker2)
-        then:
-        linker1.getLinked(Linkable.LinkSide.FRONT).equals(linker2)
-    }
-
-    def "test unlink"() {
-        when:
-        linker1.link(Linkable.LinkSide.FRONT, linker2)
-        Linkable result = linker1.unlink(Linkable.LinkSide.FRONT)
-        then:
-        result == linker2
-    }
 
     def "test advance in curves"() {
         given:
