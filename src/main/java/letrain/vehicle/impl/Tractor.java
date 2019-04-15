@@ -1,7 +1,6 @@
 package letrain.vehicle.impl;
 
-import letrain.track.Track;
-
-public abstract class Tractor<T extends Track> extends Linker<T> {
-
+public interface Tractor {
+    public float getForce();
+    public void setForce(float force);
 }

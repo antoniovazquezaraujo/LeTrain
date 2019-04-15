@@ -30,6 +30,11 @@ public abstract class Vehicle<T extends Track>
     @Override
     public abstract boolean advance();
 
+    @Override
+    public float getMass() {
+        return 10000;
+    }
+
     /***********************************************************
      * Mapeable implementation
      **********************************************************/

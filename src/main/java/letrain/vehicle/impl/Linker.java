@@ -3,29 +3,19 @@ package letrain.vehicle.impl;
 import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.vehicle.Linkable;
+import letrain.vehicle.impl.rail.Train;
 
-public class Linker<T extends Track> extends Tracker<T> implements Linkable {
-    private final Linkable[] linkables = new Linkable[LinkSide.values().length];
-
-    //Linkable interface
+public abstract class Linker<T extends Track> extends Tracker<T> implements Linkable {
+    private Train train;
     @Override
-    public void link(LinkSide side, Linkable other) {
-        this.linkables[side.getValue()] = other;
+    public Train getTrain() {
+        return this.train;
+    }
+    @Override
+    public void setTrain(Train train) {
+        this.train = train;
     }
 
-    @Override
-    public Linkable unlink(LinkSide side) {
-        Linkable ret = getLinked(side);
-        linkables[side.getValue()] = null;
-        return ret;
-    }
-
-    @Override
-    public Linkable getLinked(LinkSide side) {
-        return this.linkables[side.getValue()];
-    }
-
-    // Transportable implementation -----------------------------------------
     @Override
     public boolean advance() {
         if (this.track == null) {
