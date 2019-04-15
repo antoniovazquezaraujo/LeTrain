@@ -5,7 +5,7 @@ import letrain.track.Track;
 import letrain.vehicle.Linkable;
 import letrain.vehicle.impl.rail.Train;
 
-public abstract class Linker<T extends Track> extends Tracker<T> implements Linkable {
+public abstract class Linker extends Tracker implements Linkable {
     private Train train;
     @Override
     public Train getTrain() {
@@ -24,9 +24,9 @@ public abstract class Linker<T extends Track> extends Tracker<T> implements Link
         Dir dir = this.getDir();
         Dir inverseDir = dir.inverse();
         if (this.track.canExit(dir)) {
-            Track<T> target = (Track<T>) track.getConnected(dir);
+            Track  target = (Track ) track.getConnected(dir);
             if (target.canEnter(inverseDir, this)) {
-                Linker<Track<T>> t = this.track.exitLinker(dir);
+                Linker t = this.track.exitLinker(dir);
                 target.enterLinker(inverseDir, t);
                 return true;
             }

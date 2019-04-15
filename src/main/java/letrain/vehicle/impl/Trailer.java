@@ -6,19 +6,23 @@ import java.util.Deque;
 import java.util.List;
 
 public interface Trailer<T extends Track> {
-    Deque<Linker<T>> getLinkers();
+    Deque<Linker> getLinkers();
 
-    void pushFront(Linker<T> linker);
+    void pushFront(Linker linker);
 
-    Linker<T> popFront();
+    Linker popFront();
 
-    Linker<T> getFront();
+    Linker getFront();
 
-    void pushBack(Linker<T> linker);
+    void joinTrailerBack(Trailer t);
 
-    Linker<T> popBack();
+    void joinTrailerFront(Trailer t);
 
-    Linker<T> getBack();
+    void pushBack(Linker linker);
+
+    Linker popBack();
+
+    Linker getBack();
 
     Tractor getMainTractor();
 
@@ -50,9 +54,6 @@ public interface Trailer<T extends Track> {
 
     void resetDistanceTraveled();
 
-    Trailer divide(Linker<T> p);
+    Trailer divide(Linker p);
 
-    void pushBack(Trailer t);
-
-    void pushFront(Trailer t);
 }

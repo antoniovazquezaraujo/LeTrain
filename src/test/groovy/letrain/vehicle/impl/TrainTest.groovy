@@ -2,7 +2,6 @@ package letrain.vehicle.impl.rail
 
 import letrain.track.rail.RailTrack
 import letrain.vehicle.impl.Linker
-import letrain.vehicle.impl.Tractor
 import spock.lang.*
 
 class TrainTest extends Specification {
@@ -12,8 +11,8 @@ class TrainTest extends Specification {
     Train train1 = new Train()
     Wagon wagon1 = new Wagon()
     Wagon wagon2 = new Wagon()
-    Linker<RailTrack> locomotive1 = new Locomotive()
-    Linker<RailTrack> locomotive2 = new Locomotive()
+    Linker locomotive1 = new Locomotive()
+    Linker locomotive2 = new Locomotive()
 
     def setup() {
 
@@ -60,7 +59,7 @@ class TrainTest extends Specification {
         Train train2 = new Train()
         train2.pushFront(wagon2)
 
-        train1.pushBack(train2)
+        train1.joinTrailerBack(train2)
         then:
         train2.isEmpty()
         train1.size().equals(2)

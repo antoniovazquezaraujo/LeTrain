@@ -3,10 +3,10 @@ package letrain.track;
 import letrain.map.Dir;
 
 
-public interface Connectable<T extends Track> {
-    Connectable<T> getConnected(Dir dir);
+public interface Connectable {
+    Connectable getConnected(Dir dir);
 
-    boolean connect(Dir dir, Connectable<T> t);
+    boolean connect(Dir dir, Connectable t);
 
-    Connectable<T> disconnect(Dir dir);
+    Connectable disconnect(Dir dir);
 }

@@ -125,12 +125,12 @@ public class RoadTrailer implements Trailer{
     }
 
     @Override
-    public void  pushBack(Trailer t){
+    public void joinTrailerBack(Trailer t){
 
     }
 
     @Override
-    public void pushFront(Trailer t) {
+    public void joinTrailerFront(Trailer t) {
 
     }
 }

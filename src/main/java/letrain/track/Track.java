@@ -2,25 +2,24 @@ package letrain.track;
 
 import javafx.util.Pair;
 import letrain.map.*;
-import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Linker;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public abstract class Track<T extends Track> implements
+public abstract class Track implements
         Router,
-        Connectable<T>,
-        LinkerCompartment<T>,
+        Connectable,
+        LinkerCompartment,
         Mapeable,
-        LinkerCompartmentListener<T> {
+        LinkerCompartmentListener {
 
     protected final Router router = new SimpleRouter();
-    private TrackDirector<T> trackDirector;
-    protected Linker<Track<T>> linker = null;
+    private TrackDirector trackDirector;
+    protected Linker linker = null;
     protected Point pos = null;
-    protected Connectable<T>[] connections;
+    protected Connectable[] connections;
     final List<LinkerCompartmentListener> trackeableCompartmentListeners = new ArrayList<>();
 
     public Track() {
@@ -36,11 +35,11 @@ public abstract class Track<T extends Track> implements
         return router;
     }
 
-    public TrackDirector<T> getTrackDirector() {
+    public TrackDirector  getTrackDirector() {
         return trackDirector;
     }
 
-    public void setTrackDirector(TrackDirector<T> trackDirector) {
+    public void setTrackDirector(TrackDirector  trackDirector) {
         this.trackDirector = trackDirector;
     }
 
@@ -134,19 +133,19 @@ public abstract class Track<T extends Track> implements
      ***************************************************************/
 
     @Override
-    public Connectable<T> getConnected(Dir dir) {
+    public Connectable getConnected(Dir dir) {
         return connections[dir.getValue()];
     }
 
     @Override
-    public Connectable<T> disconnect(Dir dir) {
-        Connectable<T> ret = connections[dir.getValue()];
+    public Connectable disconnect(Dir dir) {
+        Connectable ret = connections[dir.getValue()];
         connections[dir.getValue()] = null;
         return ret;
     }
 
     @Override
-    public boolean connect(Dir dir, Connectable<T> r) {
+    public boolean connect(Dir dir, Connectable r) {
         connections[dir.getValue()] = r;
         return true;
     }
@@ -172,32 +171,32 @@ public abstract class Track<T extends Track> implements
      * @return*/
 
     @Override
-    public Linker<Track<T>> getLinker() {
+    public Linker getLinker() {
         return linker;
     }
 
     @Override
-    public void enterLinker(Dir d, Linker<Track<T>> vehicle) {
+    public void enterLinker(Dir d, Linker vehicle) {
         getTrackDirector().enterLinker(this, d, vehicle);
     }
 
     @Override
-    public Linker<Track<T>> exitLinker(Dir d) {
+    public Linker exitLinker(Dir d) {
         return getTrackDirector().exitLinker(this, d);
     }
 
     @Override
-    public void setLinker(Linker<Track<T>> linker) {
+    public void setLinker(Linker linker) {
         this.linker = linker;
     }
 
     @Override
-    public void addLinkerCompartmentListener(LinkerCompartmentListener<T> listener) {
+    public void addLinkerCompartmentListener(LinkerCompartmentListener listener) {
         trackeableCompartmentListeners.add(listener);
     }
 
     @Override
-    public void removeLinkerCompartmentListener(LinkerCompartmentListener<T> listener) {
+    public void removeLinkerCompartmentListener(LinkerCompartmentListener listener) {
         trackeableCompartmentListeners.remove(listener);
     }
 
@@ -205,7 +204,7 @@ public abstract class Track<T extends Track> implements
      * LinkerCompartmentListener implementation
      ***************************************************************/
     @Override
-    public boolean canEnter(Dir d, Linker<T> v) {
+    public boolean canEnter(Dir d, Linker v) {
         return getTrackDirector().canEnter(this, d, v);
     }
 

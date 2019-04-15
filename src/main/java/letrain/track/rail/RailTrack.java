@@ -5,7 +5,7 @@ import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
 
-public class RailTrack extends Track<RailTrack> {
+public class RailTrack extends Track  {
 
     public enum TrackType {
         STRAIGHT,

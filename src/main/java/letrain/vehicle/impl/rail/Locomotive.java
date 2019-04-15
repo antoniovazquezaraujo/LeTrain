@@ -1,11 +1,9 @@
 package letrain.vehicle.impl.rail;
 
-import letrain.track.Track;
-import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 
-public class Locomotive extends Linker<Track<RailTrack>> implements Tractor{
+public class Locomotive extends Linker implements Tractor{
 
     private float force;
 

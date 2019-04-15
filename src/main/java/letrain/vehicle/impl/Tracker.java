@@ -4,18 +4,18 @@ import letrain.track.Track;
 import letrain.track.Trackeable;
 import letrain.vehicle.Vehicle;
 
-public abstract class Tracker<T extends Track>
+public abstract class Tracker
         extends Vehicle
-        implements Trackeable<T> {
-    T track;
+        implements Trackeable {
+    Track track;
 
     @Override
-    public void setTrack(T track) {
+    public void setTrack(Track track) {
         this.track = track;
     }
 
     @Override
-    public T getTrack() {
+    public Track getTrack() {
         return this.track;
     }
 

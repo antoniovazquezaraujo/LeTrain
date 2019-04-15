@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 public class Train implements Trailer<RailTrack> {
     private static final float DISTANCE_UNIT = 20;
-    Deque<Linker<RailTrack>> linkers;
+    Deque<Linker> linkers;
     List<Tractor> tractors;
     Tractor mainTractor;
     private float acceleration;
@@ -29,37 +29,37 @@ public class Train implements Trailer<RailTrack> {
      **********************************************************/
 
     @Override
-    public Deque<Linker<RailTrack>> getLinkers() {
+    public Deque<Linker> getLinkers() {
         return linkers;
     }
 
     @Override
-    public void pushFront(Linker<RailTrack> linker) {
+    public void pushFront(Linker linker) {
         this.linkers.addFirst(linker);
     }
 
     @Override
-    public Linker<RailTrack> popFront() {
+    public Linker popFront() {
         return linkers.removeLast();
     }
 
     @Override
-    public Linker<RailTrack> getFront() {
+    public Linker getFront() {
         return linkers.getFirst();
     }
 
     @Override
-    public void pushBack(Linker<RailTrack> linker) {
+    public void pushBack(Linker linker) {
         this.linkers.addLast(linker);
     }
 
     @Override
-    public Linker<RailTrack> popBack() {
+    public Linker popBack() {
         return linkers.removeLast();
     }
 
     @Override
-    public Linker<RailTrack> getBack() {
+    public Linker getBack() {
         return linkers.getLast();
     }
 
@@ -74,9 +74,9 @@ public class Train implements Trailer<RailTrack> {
     }
 
     @Override
-    public Trailer divide(Linker<RailTrack> p) {
+    public Trailer divide(Linker p) {
         Trailer<RailTrack> ret = new Train();
-        Linker<RailTrack> first = getLinkers().getFirst();
+        Linker first = getLinkers().getFirst();
         while (first != p) {
             ret.pushFront(getLinkers().removeFirst());
             first = getLinkers().getFirst();
@@ -87,14 +87,14 @@ public class Train implements Trailer<RailTrack> {
     }
 
     @Override
-    public void pushBack(Trailer t) {
+    public void joinTrailerBack(Trailer t) {
         while (!t.isEmpty()) {
             pushBack(t.popFront());
         }
     }
 
     @Override
-    public void pushFront(Trailer t) {
+    public void joinTrailerFront(Trailer t) {
         while (!t.isEmpty()) {
             pushFront(t.popBack());
         }

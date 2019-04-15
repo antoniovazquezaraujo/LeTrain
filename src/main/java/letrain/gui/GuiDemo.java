@@ -6,79 +6,73 @@ import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import letrain.map.Dir;
 import letrain.map.Point;
-import letrain.map.RailMap;
 import letrain.map.RailTrackMaker;
-import letrain.track.Track;
+import letrain.sim.Game;
+import letrain.sim.Sim;
 import letrain.track.rail.RailTrack;
 import letrain.tui.GraphicConverter;
 import letrain.tui.RailTrackGraphicConverter;
 import letrain.vehicle.impl.Linker;
+import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class GuiDemo extends Application {
-
+    private Sim sim;
     private Gui gui;
-    private RailMap map;
-    private RailTrackMaker maker;
-    private List<Linker<Track<RailTrack>>> vehicles;
+    RailTrackMaker maker;
 
     public static void main(String[] args) {
         launch(args);
-
+    }
+    public GuiDemo(){
+        sim = new Game();
+        gui = new Gui();
+        this.maker = new RailTrackMaker();
+        this.maker.setMap(sim.getMap());
+        this.maker.setDirection(Dir.N);
+        this.maker.setPosition(10,10);
+        this.maker.setMode(RailTrackMaker.Mode.MAP_WALK);
     }
 
     @Override
     public void start(Stage stage) throws Exception {
-        gui = new Gui();
-        map = new RailMap();
-        vehicles = new ArrayList<>();
         GraphicConverter<RailTrack> converter = new RailTrackGraphicConverter();
-        maker = new RailTrackMaker();
-        maker.setMap(map);
-        maker.setDirection(Dir.N);
-        maker.setPosition(20,20);
-        maker.setMode(RailTrackMaker.Mode.MAP_WALK);
 
         gui.addListener(keyEvent -> {
             switch (keyEvent.getCode()) {
                 case ENTER:
                     break;
                 case UP:
-                    maker.advance();
+                    this.maker.advance();
                     break;
                 case DOWN:
-                    maker.reverse();
-                    maker.advance();
-                    maker.reverse();
+                    this.maker.reverse();
+                    this.maker.advance();
+                    this.maker.reverse();
                     break;
                 case LEFT:
-                    maker.rotateLeft();
+                    this.maker.rotateLeft();
                     break;
                 case RIGHT:
-                    maker.rotateRight();
+                    this.maker.rotateRight();
                     break;
                 case M:
-                    maker.setMode(RailTrackMaker.Mode.MAP_WALK);
+                    this.maker.setMode(RailTrackMaker.Mode.MAP_WALK);
                     break;
                 case T:
-                    maker.setMode(RailTrackMaker.Mode.TRACK_WALK);
+                    this.maker.setMode(RailTrackMaker.Mode.TRACK_WALK);
                     break;
                 case P:
-                    maker.setMode(RailTrackMaker.Mode.MAKE_TRACK);
+                    this.maker.setMode(RailTrackMaker.Mode.MAKE_TRACK);
                     break;
                 case R:
-                    maker.setMode(RailTrackMaker.Mode.REMOVE_TRACK);
+                    this.maker.setMode(RailTrackMaker.Mode.REMOVE_TRACK);
                     break;
                 case W:
-                    addNewWagon(maker.getPosition());
+                    addTrain(this.maker.getPosition());
                     break;
                 case F:
-                    for (Linker<Track<RailTrack>> vehicle : vehicles) {
-                        vehicle.advance();
-                    }
+                    this.sim.moveTrains();
                     break;
                 case Q:
                     System.exit(0);
@@ -87,19 +81,19 @@ public class GuiDemo extends Application {
                     break;
             }
             gui.clear();
-            map.forEach(t ->{
+            sim.getMap().forEach(t ->{
                 gui.set(
                         t.getPosition().getX(),
                         t.getPosition().getY(),
                         converter.getAspect(t));
             });
-            vehicles.forEach(t ->{
-                gui.set(
-                        t.getPosition().getX(),
-                        t.getPosition().getY(),
-                        '0');
-            });
-            gui.set(maker.getPosition().getX(), maker.getPosition().getY(), (char)'@');
+//            vehicles.forEach(t ->{
+//                gui.set(
+//                        t.getPosition().getX(),
+//                        t.getPosition().getY(),
+//                        '0');
+//            });
+            gui.set(this.maker.getPosition().getX(), this.maker.getPosition().getY(), (char)'@');
             gui.paint();
         });
         GridPane pane = new GridPane();
@@ -109,10 +103,13 @@ public class GuiDemo extends Application {
         stage.show();
     }
 
-    private void addNewWagon(Point position) {
-        RailTrack track = map.getTrackAt(position);
-        Linker<Track<RailTrack>> w = new Wagon();
-        track.enterLinker(maker.getDirection().inverse(), w);
-        vehicles.add(w);
+    private void addTrain(Point position) {
+        RailTrack track = sim.getMap().getTrackAt(position);
+        Linker wagon = new Wagon();
+//        track.enterLinker(this.maker.getDirection().inverse(), wagon);
+        Train train = new Train();
+        train.pushBack(wagon);
+        sim.addTrain(train);
+//        vehicles.add(wagon);
     }
 }
