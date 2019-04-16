@@ -1,18 +1,18 @@
 package letrain.vehicle.impl.rail;
 
+import letrain.map.Dir;
+import letrain.map.Reversible;
+import letrain.track.Track;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;
 
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
-public class Train implements Trailer<RailTrack> {
-    private static final float DISTANCE_UNIT = 20;
+public class Train implements Trailer<RailTrack>, Reversible {
+    private static final float DISTANCE_UNIT = 1;
     Deque<Linker> linkers;
     List<Tractor> tractors;
     Tractor mainTractor;
@@ -81,9 +81,13 @@ public class Train implements Trailer<RailTrack> {
             ret.pushFront(getLinkers().removeFirst());
             first = getLinkers().getFirst();
         }
-        setMainTractor(getTractors() != null && !getTractors().isEmpty() ? getTractors().get(0) : null);
+        assignDefaultMainTractor();
         ret.setMainTractor(ret.getTractors() != null && !ret.getTractors().isEmpty() ? ret.getTractors().get(0) : null);
         return ret;
+    }
+
+    public void assignDefaultMainTractor() {
+        setMainTractor(getTractors() != null && !getTractors().isEmpty() ? getTractors().get(0) : null);
     }
 
     @Override
@@ -159,19 +163,81 @@ public class Train implements Trailer<RailTrack> {
 
     @Override
     public void applyForces() {
-        float lastAcceleration = getAcceleration();
         this.acceleration = getTotalForce() / getTotalMass();
-        float speed = acceleration - lastAcceleration;
+        float speed = acceleration ;
         this.distanceTraveled += speed;
+        System.out.println(this.distanceTraveled);
         if (this.distanceTraveled >= DISTANCE_UNIT) {
             move();
+            this.distanceTraveled=0;
         }
     }
 
     @Override
     public void move() {
+        Linker tractor = (Linker) getMainTractor();
+        Dir tractionDir = tractor.getDir();
+        Iterator<Linker> pushIterator;
+        Iterator<Linker> pullIterator;
 
-        System.out.println("Moving train!");
+        if(isReversed()){
+            pushIterator= getLinkers().descendingIterator();
+            pullIterator= getLinkers().iterator();
+        }else{
+            pushIterator= getLinkers().iterator();
+            pullIterator= getLinkers().descendingIterator();
+        }
+
+        //Avanzamos hasta llegar al tractor desde el principio
+        while(pushIterator.hasNext()){
+            Linker next = pushIterator.next();
+            if(next == tractor){
+                break;
+            }
+        }
+        //Avanzamos hasta llegar al tractor desde el final
+        while(pullIterator.hasNext()){
+            Linker next = pullIterator.next();
+            if(next == tractor){
+                break;
+            }
+        }
+
+        Dir pushDir = tractionDir;
+        while(pushIterator.hasNext()){
+            Linker next = pushIterator.next();
+            Track nextTrack = next.getTrack();
+            //usamos la dirección inversa, estamos empujando
+            next.setDir(nextTrack.getDir(tractionDir).inverse());
+            tractionDir = next.getDir();
+        }
+
+        Dir pullDir = tractionDir;
+        while(pullIterator.hasNext()){
+            Linker next = pullIterator.next();
+            Track nextTrack = next.getTrack();
+            next.setDir(next.getTrack().getDir(tractionDir).inverse());
+            tractionDir = next.getDir();
+        }
+
+        Iterator<Linker> moveIterator = getLinkers().iterator();
+        if(isReversed()){
+            moveIterator = getLinkers().descendingIterator();
+        }
+        while(moveIterator.hasNext()){
+            Linker next = moveIterator.next();
+            Track track = next.getTrack();
+            Track nextTrack = track.getConnected(next.getDir());
+            if(nextTrack != null){
+                if(nextTrack.getLinker() == null) {
+                    next.getTrack().removeLinker();
+                    nextTrack.enterLinkerFromDir(next.getDir().inverse(), next);
+                }else{
+                    System.out.println("CRASHHH!!!");
+                }
+            }
+        }
+
     }
 
     @Override
@@ -195,4 +261,21 @@ public class Train implements Trailer<RailTrack> {
     }
 
 
+    @Override
+    public boolean reverse() {
+        if(this.mainTractor!=null) {
+            ((Locomotive) this.mainTractor).reverse();
+            return ((Locomotive) this.mainTractor).isReversed();
+        }else{
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isReversed() {
+        if(this.mainTractor!=null) {
+            return ((Locomotive) this.mainTractor).isReversed();
+        }
+        return false;
+    }
 }

@@ -67,11 +67,6 @@ public class RailTrackMaker implements TrackMaker<RailTrack> {
     }
 
     private RailTrack makeTrack() {
-//        Dir direction = getDirection();
-//        Dir inverseDirection = direction.inverse();
-//        Route newRoute = new Route(direction, inverseDirection);
-//        Route inverseRoute = new Route(inverseDirection,direction);
-
         // Si no hay un track aquí, creamos uno
         RailTrack actualTrack = map.getTrackAt(this.position.getX(), this.position.getY());
         if (actualTrack == null) {
@@ -112,7 +107,6 @@ public class RailTrackMaker implements TrackMaker<RailTrack> {
         //Al track actual le agregamos la ruta entre de dónde veníamos y el nuevo
         Dir dirToNewTrack = getPosition().locate(newPos);
         actualTrack.addRoute(oldDir, dirToNewTrack);
-        actualTrack.addRoute(dirToNewTrack, oldDir);
         actualTrack.connect(dirToNewTrack, newTrack);
 
         Dir dirToActual = newTrack.getPosition().locate(actualTrack.getPosition());

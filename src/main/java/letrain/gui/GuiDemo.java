@@ -12,9 +12,8 @@ import letrain.sim.Sim;
 import letrain.track.rail.RailTrack;
 import letrain.tui.GraphicConverter;
 import letrain.tui.RailTrackGraphicConverter;
-import letrain.vehicle.impl.Linker;
+import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
-import letrain.vehicle.impl.rail.Wagon;
 
 public class GuiDemo extends Application {
     private Sim sim;
@@ -71,6 +70,9 @@ public class GuiDemo extends Application {
                 case W:
                     addTrain(this.maker.getPosition());
                     break;
+                case S:
+                    accelerate();
+                    break;
                 case F:
                     this.sim.moveTrains();
                     break;
@@ -87,12 +89,14 @@ public class GuiDemo extends Application {
                         t.getPosition().getY(),
                         converter.getAspect(t));
             });
-//            vehicles.forEach(t ->{
-//                gui.set(
-//                        t.getPosition().getX(),
-//                        t.getPosition().getY(),
-//                        '0');
-//            });
+            sim.getTrains().forEach(train ->{
+                train.getLinkers().forEach(linker ->{
+                gui.set(
+                        linker.getPosition().getX(),
+                        linker.getPosition().getY(),
+                        (char)0x144E);
+                });
+            });
             gui.set(this.maker.getPosition().getX(), this.maker.getPosition().getY(), (char)'@');
             gui.paint();
         });
@@ -103,13 +107,18 @@ public class GuiDemo extends Application {
         stage.show();
     }
 
+    private void accelerate() {
+        sim.getTrains().forEach(t->t.getMainTractor().setForce(t.getMainTractor().getForce()+10));
+    }
+
     private void addTrain(Point position) {
         RailTrack track = sim.getMap().getTrackAt(position);
-        Linker wagon = new Wagon();
-//        track.enterLinker(this.maker.getDirection().inverse(), wagon);
+        Locomotive locomotive = new Locomotive();
+        locomotive.setForce(1000);
+        track.enterLinkerFromDir(this.maker.getDirection().inverse(), locomotive);
         Train train = new Train();
-        train.pushBack(wagon);
+        train.pushBack(locomotive);
+        train.assignDefaultMainTractor();
         sim.addTrain(train);
-//        vehicles.add(wagon);
     }
 }

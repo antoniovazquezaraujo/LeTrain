@@ -12,7 +12,7 @@ public class RoadTrack extends Track {
 
 
     @Override
-    public void enterLinker(Dir d, Linker vehicle) {
-        getTrackDirector().enterLinker(this, d, vehicle);
+    public void enterLinkerFromDir(Dir d, Linker vehicle) {
+        getTrackDirector().enterLinkerFromDir(this, d, vehicle);
     }
 }

@@ -1,6 +1,6 @@
 package letrain.map;
 
-public interface Rotable {
+public interface Rotable  {
     void rotateLeft();
 
     void rotateLeft(int angle);
@@ -15,7 +15,4 @@ public interface Rotable {
 
     void setDir(Dir dir);
 
-    boolean reverse();
-
-    boolean isReversed();
 }

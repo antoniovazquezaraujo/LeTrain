@@ -17,7 +17,7 @@ public class TrackDirector<T extends Track> {
         return instance;
     }
 
-    public void enterLinker(T track, Dir d, Linker vehicle) {
+    public void enterLinkerFromDir(T track, Dir d, Linker vehicle) {
         vehicle.setTrack(track);
         vehicle.setPosition(track.getPosition());
         vehicle.setDir(track.getRouter().getDir(d));
@@ -25,7 +25,7 @@ public class TrackDirector<T extends Track> {
 
     }
 
-    public Linker exitLinker(T track, Dir d) {
+    public Linker removeLinker(T track) {
         Linker ret = track.getLinker();
         track.setLinker(null);
         return ret;

@@ -1,14 +1,12 @@
 package letrain.vehicle;
 
-import letrain.map.Dir;
-import letrain.map.Mapeable;
-import letrain.map.Point;
-import letrain.map.Rotable;
+import letrain.map.*;
 import letrain.track.Track;
 
 public abstract class Vehicle<T extends Track>
         implements
         Rotable,
+        Reversible,
         Selectable,
         Mapeable,
         Transportable {
@@ -96,6 +94,10 @@ public abstract class Vehicle<T extends Track>
     public void setDir(Dir dir) {
         this.dir = dir;
     }
+
+    /***********************************************************
+     * Reversible implementation
+     **********************************************************/
 
     @Override
     public boolean reverse() {

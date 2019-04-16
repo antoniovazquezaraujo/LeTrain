@@ -2,7 +2,6 @@ package letrain.vehicle.impl
 
 import letrain.map.*
 import letrain.track.rail.RailTrack
-import letrain.vehicle.Linkable
 import letrain.vehicle.impl.rail.Wagon
 import spock.lang.Specification
 
@@ -31,7 +30,7 @@ class LinkerTest extends Specification {
 
         when:
         RailTrack track = map.getTrackAt(0, 0)
-        track.enterLinker(Dir.W, linker1)
+        track.enterLinkerFromDir(Dir.W, linker1)
 
         then:
         linker1.getPosition().equals(new Point(0, 0))
@@ -64,7 +63,7 @@ class LinkerTest extends Specification {
 
         when:
         RailTrack track = map.getTrackAt(10, 10)
-        track.enterLinker(Dir.W, linker1)
+        track.enterLinkerFromDir(Dir.W, linker1)
 
         then:
         linker1.getPosition().equals(new Point(10, 10))
@@ -80,7 +79,7 @@ class LinkerTest extends Specification {
         linker1.setTrack(null);
         linker1.setPosition(new Point(0, 0))
         linker1.setDir(Dir.S)
-        track2.enterLinker(Dir.N, linker1)
+        track2.enterLinkerFromDir(Dir.N, linker1)
 
 
         linker1.getPosition().equals(new Point(12, 9))
@@ -110,7 +109,7 @@ class LinkerTest extends Specification {
 
         when:
         RailTrack track = map.getTrackAt(10, 10)
-        track.enterLinker(Dir.W, linker1)
+        track.enterLinkerFromDir(Dir.W, linker1)
 
         then:
         map.getTrackAt(12, 10).isUsingAlternativeRoute()
@@ -131,7 +130,7 @@ class LinkerTest extends Specification {
         linker1.setTrack(null);
         linker1.setPosition(new Point(0, 0))
         linker1.setDir(Dir.S)
-        track2.enterLinker(Dir.W, linker1)
+        track2.enterLinkerFromDir(Dir.W, linker1)
 
 
         linker1.getPosition().equals(new Point(10, 10))

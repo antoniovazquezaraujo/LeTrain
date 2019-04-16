@@ -4,9 +4,9 @@ import letrain.map.Dir;
 
 
 public interface Connectable {
-    Connectable getConnected(Dir dir);
+    Track getConnected(Dir dir);
 
-    boolean connect(Dir dir, Connectable t);
+    boolean connect(Dir dir, Track t);
 
-    Connectable disconnect(Dir dir);
+    Track disconnect(Dir dir);
 }

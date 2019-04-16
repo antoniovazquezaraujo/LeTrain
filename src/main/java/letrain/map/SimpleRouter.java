@@ -20,6 +20,16 @@ public class SimpleRouter implements Router {
     }
 
     @Override
+    public String toString() {
+        return "SimpleRouter{" +
+                "dirMap=" + dirMap +
+                ", alternativeRoute=" + alternativeRoute +
+                ", originalRoute=" + originalRoute +
+                ", usingAlternativeRoute=" + usingAlternativeRoute +
+                '}';
+    }
+
+    @Override
     public Dir getAnyDir() {
         return getFirstOpenDir();
     }

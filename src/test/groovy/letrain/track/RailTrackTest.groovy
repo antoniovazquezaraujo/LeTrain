@@ -97,7 +97,7 @@ class RailTrackTest extends Specification {
         Vehicle<RailTrack> v = new Wagon()
         boolean added = false
         when:
-        added = track.enterLinker(Dir.S, v)
+        added = track.enterLinkerFromDir(Dir.S, v)
         then:
         if (added) {
             v == track.getLinker()
@@ -112,8 +112,8 @@ class RailTrackTest extends Specification {
         Vehicle<RailTrack> v2 = new Wagon()
         boolean added = false
         when:
-        added = track.enterLinker(Dir.S, v)
-        added = track.enterLinker(Dir.N, v2)
+        added = track.enterLinkerFromDir(Dir.S, v)
+        added = track.enterLinkerFromDir(Dir.N, v2)
         then:
         if (added) {
             false
@@ -126,8 +126,8 @@ class RailTrackTest extends Specification {
         given:
         Vehicle<RailTrack> v = new Wagon()
         when:
-        track.enterLinker(Dir.N, v)
-        track.exitLinker(Dir.S)
+        track.enterLinkerFromDir(Dir.N, v)
+        track.removeLinker()
         then:
         null == track.getLinker()
 
@@ -135,7 +135,7 @@ class RailTrackTest extends Specification {
 
     def "test removeVehicle when empty"() {
         when:
-        track.exitLinker(Dir.S)
+        track.removeLinker()
         then:
         null == track.getLinker()
     }

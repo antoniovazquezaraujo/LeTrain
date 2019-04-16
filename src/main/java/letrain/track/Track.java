@@ -5,6 +5,7 @@ import letrain.map.*;
 import letrain.vehicle.impl.Linker;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -19,12 +20,19 @@ public abstract class Track implements
     private TrackDirector trackDirector;
     protected Linker linker = null;
     protected Point pos = null;
-    protected Connectable[] connections;
+    protected Track[] connections;
     final List<LinkerCompartmentListener> trackeableCompartmentListeners = new ArrayList<>();
 
     public Track() {
         trackeableCompartmentListeners.add(this);
         trackDirector = TrackDirector.getInstance();
+    }
+
+    @Override
+    public String toString() {
+        return "Track{" +
+                ", pos=" + pos +
+                '}';
     }
 
     public List<LinkerCompartmentListener> getTrackeableCompartmentListeners() {
@@ -130,26 +138,26 @@ public abstract class Track implements
 
     /**************************************************************
      * Connectable implementation
-     ***************************************************************/
+     **************************************************************
+     * @return*/
 
     @Override
-    public Connectable getConnected(Dir dir) {
+    public Track getConnected(Dir dir) {
         return connections[dir.getValue()];
     }
 
     @Override
-    public Connectable disconnect(Dir dir) {
-        Connectable ret = connections[dir.getValue()];
+    public Track disconnect(Dir dir) {
+        Track ret = connections[dir.getValue()];
         connections[dir.getValue()] = null;
         return ret;
     }
 
     @Override
-    public boolean connect(Dir dir, Connectable r) {
+    public boolean connect(Dir dir, Track r) {
         connections[dir.getValue()] = r;
         return true;
     }
-
 
     /**************************************************************
      * Mapeable implementation
@@ -176,13 +184,13 @@ public abstract class Track implements
     }
 
     @Override
-    public void enterLinker(Dir d, Linker vehicle) {
-        getTrackDirector().enterLinker(this, d, vehicle);
+    public void enterLinkerFromDir(Dir d, Linker vehicle) {
+        getTrackDirector().enterLinkerFromDir(this, d, vehicle);
     }
 
     @Override
-    public Linker exitLinker(Dir d) {
-        return getTrackDirector().exitLinker(this, d);
+    public Linker removeLinker() {
+        return getTrackDirector().removeLinker(this);
     }
 
     @Override
