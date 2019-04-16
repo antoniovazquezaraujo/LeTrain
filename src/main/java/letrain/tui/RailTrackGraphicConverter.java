@@ -5,40 +5,40 @@ import letrain.track.rail.RailTrack;
 
 public class RailTrackGraphicConverter implements GraphicConverter<RailTrack> {
     @Override
-    public char getAspect(RailTrack track) {
+    public String getAspect(RailTrack track) {
         if (track.getRouter().isStraight()) {
             return dirGraphicAspect(track.getRouter().getFirstOpenDir());
         } else if (track.getRouter().isCurve()) {
-            return '.';
+            return ".";
         }else if (track.getRouter().isFork()){
-            return 'Y';
+            return "Y";
 //            if(track.getRouter().isUsingAlternativeRoute()){
 //                return dirGraphicAspect(track.getRouter().getAlternativeRoute().getTarget());
 //            }else{
 //                return dirGraphicAspect(track.getRouter().getOriginalRoute().getTarget());
 //            }
         } else {
-            return '+';
+            return "+";
         }
     }
-    public char dirGraphicAspect(Dir dir){
+    public String dirGraphicAspect(Dir dir){
         if(dir==null){
-            return '?';
+            return "?";
         }
         switch(dir) {
             case E:
             case W:
-                return '-';
+                return "-";
             case NE:
             case SW:
-                return '/';
+                return "/";
             case N:
             case S:
-                return '|';
+                return "|";
             case NW:
             case SE:
-                return '\\';
+                return "\\";
         }
-        return '?';
+        return "?";
     }
 }

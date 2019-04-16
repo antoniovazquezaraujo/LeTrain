@@ -94,10 +94,10 @@ public class GuiDemo extends Application {
                 gui.set(
                         linker.getPosition().getX(),
                         linker.getPosition().getY(),
-                        (char)0x144E);
+                        "∩");
                 });
             });
-            gui.set(this.maker.getPosition().getX(), this.maker.getPosition().getY(), (char)'@');
+            gui.set(this.maker.getPosition().getX(), this.maker.getPosition().getY(), "@");
             gui.paint();
         });
         GridPane pane = new GridPane();
