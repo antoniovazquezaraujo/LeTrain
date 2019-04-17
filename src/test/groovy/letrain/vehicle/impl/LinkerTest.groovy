@@ -3,6 +3,7 @@ package letrain.vehicle.impl
 import letrain.map.*
 import letrain.sim.GameModel
 import letrain.track.rail.RailTrack
+import letrain.trackmaker.RailTrackMaker
 import letrain.vehicle.impl.rail.Wagon
 import spock.lang.Specification
 

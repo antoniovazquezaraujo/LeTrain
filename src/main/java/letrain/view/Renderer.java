@@ -1,7 +1,7 @@
 package letrain.view;
 
 import letrain.map.RailMap;
-import letrain.map.RailTrackMaker;
+import letrain.trackmaker.RailTrackMaker;
 import letrain.sim.GameModel;
 import letrain.track.StopTrack;
 import letrain.track.Track;

@@ -3,7 +3,7 @@ package letrain.view;
 import letrain.gui.LeTrainView;
 import letrain.map.Dir;
 import letrain.map.RailMap;
-import letrain.map.RailTrackMaker;
+import letrain.trackmaker.RailTrackMaker;
 import letrain.sim.GameModel;
 import letrain.track.StopTrack;
 import letrain.track.Track;
@@ -82,7 +82,7 @@ public class UnicodeRenderer implements Renderer {
 
     @Override
     public void renderRailTrackMaker(RailTrackMaker railTrackMaker) {
-        view.set(railTrackMaker.getPosition().getX(), railTrackMaker.getPosition().getY(), "@");
+        view.set(railTrackMaker.getPosition().getX(), railTrackMaker.getPosition().getY(), "X");
     }
 
     ////////////////////////////////////////////////////////////////////////////////

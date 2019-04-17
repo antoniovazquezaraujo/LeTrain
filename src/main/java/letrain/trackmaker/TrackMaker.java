@@ -1,5 +1,8 @@
-package letrain.map;
+package letrain.trackmaker;
 
+import letrain.map.Dir;
+import letrain.map.Point;
+import letrain.map.TerrainMap;
 import letrain.sim.GameModel;
 import letrain.track.Track;
 

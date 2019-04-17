@@ -1,7 +1,7 @@
 package letrain.sim;
 
 import letrain.map.RailMap;
-import letrain.map.RailTrackMaker;
+import letrain.trackmaker.RailTrackMaker;
 import letrain.vehicle.impl.rail.Train;
 
 import java.util.List;

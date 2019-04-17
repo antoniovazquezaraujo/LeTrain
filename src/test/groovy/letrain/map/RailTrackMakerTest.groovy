@@ -2,6 +2,7 @@ package letrain.map
 
 import letrain.sim.GameModel
 import letrain.track.rail.RailTrack
+import letrain.trackmaker.RailTrackMaker
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations

@@ -34,6 +34,7 @@ public class LeTrainView extends BorderPane implements SimpleUI {
         setBottom(statusBar);
         textArea.setFocusTraversable(false);
         this.setFocusTraversable(true);
+        clear();
         addEventListener();
         this.requestFocus();
     }

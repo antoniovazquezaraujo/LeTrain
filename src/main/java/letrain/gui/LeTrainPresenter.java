@@ -13,15 +13,12 @@ import letrain.tui.BasicGraphicConverter;
 import letrain.tui.GraphicConverter;
 import letrain.view.UnicodeRenderer;
 
-public class LeTrainPresenter extends Application implements GamePresenter {
+public class LeTrainPresenter implements GamePresenter {
     Timeline loop;
     private GameModel model;
     private LeTrainView view;
     GraphicConverter converter = new BasicGraphicConverter();
     UnicodeRenderer renderer ;
-    public static void main(String[] args) {
-        launch(args);
-    }
 
     public LeTrainPresenter() {
         model = new LeTrainModel();
@@ -29,14 +26,7 @@ public class LeTrainPresenter extends Application implements GamePresenter {
         renderer = new UnicodeRenderer(view);
     }
 
-    @Override
-    public void start(Stage stage) throws Exception {
-        GridPane pane = new GridPane();
-        pane.getChildren().add(view);
-        final Scene scene = new Scene(pane);
-        stage.setScene(scene);
-        stage.show();
-
+    public void start() {
         loop = new Timeline();
         loop.setCycleCount(Timeline.INDEFINITE);
 
@@ -47,7 +37,13 @@ public class LeTrainPresenter extends Application implements GamePresenter {
         loop.play();
     }
 
+    public LeTrainView getView() {
+        return view;
+    }
+
+
     public void paintLoop() {
+        view.clear();
         renderer.renderSim(model);
         view.paint();
     }

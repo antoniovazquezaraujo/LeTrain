@@ -2,7 +2,7 @@ package letrain.vehicle.impl.rail
 
 import letrain.map.Dir
 import letrain.map.RailMap
-import letrain.map.RailTrackMaker
+import letrain.trackmaker.RailTrackMaker
 import letrain.sim.GameModel
 import letrain.track.rail.RailTrack
 import letrain.vehicle.impl.Linker
