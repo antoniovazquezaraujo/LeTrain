@@ -20,6 +20,7 @@ public class LeTrainViewGrid extends BorderPane implements SimpleUI {
     TextFlow flow = new TextFlow();
 
     public LeTrainViewGrid() {
+        setStyle("-fx-background-color: black;");
         setPrefHeight(400);
         for (int m = 0; m < COLS; m++) {
             for (int n = 0; n < ROWS; n++) {

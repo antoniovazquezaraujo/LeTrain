@@ -1,5 +1,6 @@
 package letrain.view;
 
+import javafx.scene.paint.Color;
 import letrain.gui.LeTrainView;
 import letrain.map.Dir;
 import letrain.map.RailMap;
@@ -17,25 +18,6 @@ public class UnicodeRenderer implements Renderer {
     public UnicodeRenderer(LeTrainView view) {
         this.view = view;
     }
-//    @Override
-//    public void paint(Renderer renderer) {
-//        renderer.renderSim(model);
-//        model.getMap().forEach(t -> {
-//            view.set(
-//                    t.getPosition().getX(),
-//                    t.getPosition().getY(),
-//                    converter.getTrackAspect(t));
-//        });
-//        model.getTrains().forEach(train -> {
-//            train.getLinkers().forEach(linker -> {
-//                view.set(
-//                        linker.getPosition().getX(),
-//                        linker.getPosition().getY(), converter.getLinkerAspect(linker));
-//            });
-//        });
-//        view.set(model.getMaker().getPosition().getX(), model.getMaker().getPosition().getY(), converter.getRailTrackMakerAspect(model.getMaker()));
-//
-//    }
 
     @Override
     public void renderSim(GameModel model) {
@@ -51,7 +33,19 @@ public class UnicodeRenderer implements Renderer {
 
     @Override
     public void renderTrack(Track track) {
-        view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
+        if (track.getRouter().isStraight()) {
+            view.setColor(track.getPosition().getX(), track.getPosition().getY(), Color.YELLOW);
+            view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
+        } else if (track.getRouter().isCurve()) {
+            view.setColor(track.getPosition().getX(), track.getPosition().getY(), Color.YELLOW);
+            view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
+        }else if (track.getRouter().isFork()){
+            view.setColor(track.getPosition().getX(), track.getPosition().getY(), Color.GREEN);
+            view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
+        } else {
+            view.setColor(track.getPosition().getX(), track.getPosition().getY(), Color.YELLOW);
+            view.set(track.getPosition().getX(), track.getPosition().getY(), "+");
+        }
 
     }
 
@@ -82,7 +76,8 @@ public class UnicodeRenderer implements Renderer {
 
     @Override
     public void renderRailTrackMaker(RailTrackMaker railTrackMaker) {
-        view.set(railTrackMaker.getPosition().getX(), railTrackMaker.getPosition().getY(), "X");
+        view.setColor(railTrackMaker.getPosition().getX(), railTrackMaker.getPosition().getY(), Color.RED);
+        view.set(railTrackMaker.getPosition().getX(), railTrackMaker.getPosition().getY(), dirGraphicAspect(railTrackMaker.getDirection()));
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -90,26 +85,21 @@ public class UnicodeRenderer implements Renderer {
         if (track.getRouter().isStraight()) {
             return dirGraphicAspect(track.getRouter().getFirstOpenDir());
         } else if (track.getRouter().isCurve()) {
-            return ".";
+            return "∙";
         }else if (track.getRouter().isFork()){
-            return "Y";
-//            if(track.getRouter().isUsingAlternativeRoute()){
-//                return dirGraphicAspect(track.getRouter().getAlternativeRoute().getTarget());
-//            }else{
-//                return dirGraphicAspect(track.getRouter().getOriginalRoute().getTarget());
-//            }
+                return dirGraphicAspect(track.getRouter().getFirstOpenDir());
         } else {
             return "+";
         }
     }
     private String dirGraphicAspect(Dir dir){
         if(dir==null){
-            return "?";
+            return "≠";
         }
         switch(dir) {
             case E:
             case W:
-                return "-";
+                return "−";
             case NE:
             case SW:
                 return "/";
