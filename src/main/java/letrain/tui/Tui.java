@@ -1,5 +1,7 @@
 package letrain.tui;
 
+import letrain.map.Point;
+
 public class Tui implements SimpleUI {
     public static final int ROWS = 25;
     public static final int COLS = 80;
@@ -8,6 +10,16 @@ public class Tui implements SimpleUI {
     public Tui() {
         clear();
         fill(0, 0, COLS , ROWS , " ");
+    }
+
+    @Override
+    public Point getPos() {
+        return null;
+    }
+
+    @Override
+    public void setPos(Point pos) {
+
     }
 
     @Override

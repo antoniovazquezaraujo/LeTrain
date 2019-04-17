@@ -31,14 +31,14 @@ public class LeTrainPresenter extends Application implements GamePresenter {
     public void start(Stage stage) throws Exception {
         GridPane pane = new GridPane();
         pane.getChildren().add(view);
-        final Scene scene = new Scene(pane, 800, 800);
+        final Scene scene = new Scene(pane);
         stage.setScene(scene);
         stage.show();
 
         loop = new Timeline();
         loop.setCycleCount(Timeline.INDEFINITE);
 
-        KeyFrame kf = new KeyFrame(Duration.seconds(0.1), actionEvent -> {
+        KeyFrame kf = new KeyFrame(Duration.seconds(.1), actionEvent -> {
             paintLoop();
         });
         loop.getKeyFrames().add(kf);

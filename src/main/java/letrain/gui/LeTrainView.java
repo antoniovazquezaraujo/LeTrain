@@ -6,6 +6,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.Font;
+import javafx.scene.text.Text;
+import letrain.map.Point;
 import letrain.sim.GameModel;
 import letrain.tui.BasicGraphicConverter;
 import letrain.tui.GraphicConverter;
@@ -14,46 +16,83 @@ import letrain.tui.SimpleUI;
 
 public class LeTrainView extends BorderPane implements SimpleUI {
     GamePresenter presenter;
-    public static final int ROWS = 100;
-    public static final int COLS = 100;
+    public static final int ROWS = 40;
+    public static final int COLS = 80;
     String[][] screen = new String [COLS][ROWS];
     TextArea textArea;
+    Text statusBar = new Text();
     GridPane grid = new GridPane();
-
+    private Point position = new Point(0,0); // scroll position of the viewer
 
     public LeTrainView(GamePresenter presenter) {
         this.presenter = presenter;
-        setPrefSize(800,800);
         Font font = Font.font("Monospace", 20);
         textArea = new TextArea();
+        textArea.setPrefRowCount(ROWS);
+        textArea.setPrefColumnCount(COLS);
         textArea.setFont(font);
         setCenter(textArea);
-        textArea.requestFocus();
+        setBottom(statusBar);
+        textArea.setFocusTraversable(false);
+        this.setFocusTraversable(true);
         addEventListener();
+        this.requestFocus();
     }
 
     public void addEventListener() {
         GraphicConverter converter = new BasicGraphicConverter();
 
-        textArea.addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
+        addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
             switch (keyEvent.getCode()) {
                 case Y:
                     presenter.paintLoop();
                 case ENTER:
                     break;
                 case UP:
-                    presenter.onMakerAdvance();
+                    if(keyEvent.isControlDown()){
+                        clear();
+                        Point p = getPos();
+                        p.setY(p.getY()-1);
+                        setPos(p);
+                        clear();
+                    }else {
+                        presenter.onMakerAdvance();
+                    }
                     break;
                 case DOWN:
-                    presenter.onMakerInverse();
-                    presenter.onMakerAdvance();
-                    presenter.onMakerInverse();
+                    if(keyEvent.isControlDown()){
+                        clear();
+                        Point p = getPos();
+                        p.setY(p.getY()+1);
+                        setPos(p);
+                        clear();
+                    }else {
+                        presenter.onMakerInverse();
+                        presenter.onMakerAdvance();
+                        presenter.onMakerInverse();
+                    }
                     break;
                 case LEFT:
-                    presenter.onMakerTurnLeft();
+                    if(keyEvent.isControlDown()){
+                        clear();
+                        Point p = getPos();
+                        p.setX(p.getX()-1);
+                        setPos(p);
+                        clear();
+                    }else {
+                        presenter.onMakerTurnLeft();
+                    }
                     break;
                 case RIGHT:
-                    presenter.onMakerTurnRight();
+                    if(keyEvent.isControlDown()){
+                        clear();
+                        Point p = getPos();
+                        p.setX(p.getX()+1);
+                        setPos(p);
+                        clear();
+                    }else {
+                        presenter.onMakerTurnRight();
+                    }
                     break;
                 case M:
                     presenter.onGameModeSelected(GameModel.Mode.MAP_WALK);
@@ -89,6 +128,17 @@ public class LeTrainView extends BorderPane implements SimpleUI {
     }
 
     @Override
+    public Point getPos() {
+        return this.position;
+    }
+
+    @Override
+    public void setPos(Point pos) {
+        statusBar.setText("Página: "+ position.getY()+ "," + position.getX());
+        this.position = pos;
+    }
+
+    @Override
     public void paint() {
         textArea.clear();
         StringBuffer sb = new StringBuffer();
@@ -103,21 +153,25 @@ public class LeTrainView extends BorderPane implements SimpleUI {
 
     @Override
     public void clear() {
-        for (double row = 0; row < ROWS; row++) {
-            for (double col = 0; col < COLS; col++) {
-                screen[(int)col][(int)row] = " ";
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) {
+                screen[col][row] = " ";
             }
         }
     }
 
     @Override
     public void set(int x, int y, String c) {
-        screen[x][y] = c;
+        x-=position.getX()*COLS;
+        y-=position.getY()*ROWS;
+        if(x>=0 && x<COLS && y>=0 && y<ROWS) {
+            screen[x][y] = c;
+        }
     }
 
     @Override
     public void clear(int x, int y) {
-        screen[x][y] = " ";
+        set(x,y, " ");
     }
 
     @Override

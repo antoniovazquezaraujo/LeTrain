@@ -1,6 +1,10 @@
 package letrain.tui;
 
+import letrain.map.Point;
+
 public interface SimpleUI {
+    Point getPos();
+    void setPos(Point pos);
     void paint();
     public void clear();
     public void set(int x, int y, String c);
