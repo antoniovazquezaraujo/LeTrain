@@ -1,19 +1,26 @@
 package letrain.sim;
 
+import letrain.map.Dir;
 import letrain.map.RailMap;
+import letrain.map.RailTrackMaker;
 import letrain.vehicle.impl.rail.Train;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class Game implements Sim {
+public class LeTrainModel implements GameModel {
     private RailMap map;
     private List<Train> trains;
+    RailTrackMaker maker;
 
-
-    public Game() {
+    public LeTrainModel() {
         this.trains = new ArrayList<>();
         this.map = new RailMap();
+        this.maker = new RailTrackMaker();
+        this.maker.setMap(map);
+        this.maker.setDirection(Dir.N);
+        this.maker.setPosition(10,10);
+        this.maker.setMode(GameModel.Mode.MAP_WALK);
     }
 
     @Override
@@ -44,5 +51,10 @@ public class Game implements Sim {
     @Override
     public void moveTrains() {
         trains.stream().forEach(t-> t.applyForces());
+    }
+
+    @Override
+    public RailTrackMaker getMaker() {
+        return maker;
     }
 }

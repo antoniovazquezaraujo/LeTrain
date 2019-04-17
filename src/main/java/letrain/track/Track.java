@@ -25,7 +25,6 @@ public abstract class Track implements
 
     public Track() {
         trackeableCompartmentListeners.add(this);
-        trackDirector = TrackDirector.getInstance();
     }
 
     @Override

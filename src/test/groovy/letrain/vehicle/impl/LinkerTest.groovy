@@ -1,6 +1,7 @@
 package letrain.vehicle.impl
 
 import letrain.map.*
+import letrain.sim.GameModel
 import letrain.track.rail.RailTrack
 import letrain.vehicle.impl.rail.Wagon
 import spock.lang.Specification
@@ -21,7 +22,7 @@ class LinkerTest extends Specification {
         maker.setMap(map)
         maker.setPosition(0, 0)
         maker.setDirection(Dir.E)
-        maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+        maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.advance(2)
         maker.rotateRight()
         maker.advance(2)
@@ -55,7 +56,7 @@ class LinkerTest extends Specification {
         maker.setMap(map)
         maker.setPosition(10, 10)
         maker.setDirection(Dir.E)
-        maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+        maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.advance(10)
         maker.setDirection(Dir.S)
         maker.setPosition(12, 8)
@@ -98,7 +99,7 @@ class LinkerTest extends Specification {
         maker.setMap(map)
         maker.setPosition(10, 10)
         maker.setDirection(Dir.E)
-        maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+        maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.advance(4)
 
         maker.setPosition(10, 10)

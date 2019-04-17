@@ -1,5 +1,6 @@
 package letrain.map;
 
+import letrain.sim.GameModel;
 import letrain.track.rail.RailTrack;
 
 public class RailTrackMaker implements TrackMaker<RailTrack> {
@@ -10,7 +11,7 @@ public class RailTrackMaker implements TrackMaker<RailTrack> {
     RailTrack oldTrack;
     Dir oldDir;
     boolean reversed;
-    Mode mode;
+    GameModel.Mode mode;
 
     @Override
     public void setMap(TerrainMap<RailTrack> map) {
@@ -156,12 +157,12 @@ public class RailTrackMaker implements TrackMaker<RailTrack> {
     }
 
     @Override
-    public TrackMaker.Mode getMode() {
+    public GameModel.Mode getMode() {
         return this.mode;
     }
 
     @Override
-    public void setMode(Mode mode) {
+    public void setMode(GameModel.Mode mode) {
         if (mode != this.mode) {
             this.oldTrack = null;
         }

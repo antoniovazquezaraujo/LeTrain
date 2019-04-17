@@ -6,7 +6,7 @@ import letrain.vehicle.impl.Linker;
 public class TrackDirector<T extends Track> {
     public static TrackDirector instance;
 
-    private TrackDirector() {
+    public TrackDirector() {
 
     }
 
@@ -37,7 +37,6 @@ public class TrackDirector<T extends Track> {
 
     public boolean canExit(T track, Dir d) {
         if (track.getLinker() != null) {
-//            Dir inverseDir = track.getLinker().getDir().inverse();
             Dir exitDir = track.getRouter().getDir(track.getLinker().getDir());
             T target = (T) track.getConnected(d);
             return target != null && target.canEnter(d, track.getLinker());

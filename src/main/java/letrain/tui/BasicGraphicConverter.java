@@ -1,11 +1,15 @@
 package letrain.tui;
 
 import letrain.map.Dir;
+import letrain.map.RailTrackMaker;
+import letrain.track.Track;
 import letrain.track.rail.RailTrack;
+import letrain.vehicle.impl.Linker;
 
-public class RailTrackGraphicConverter implements GraphicConverter<RailTrack> {
+public class BasicGraphicConverter implements GraphicConverter {
+
     @Override
-    public String getAspect(RailTrack track) {
+    public String getTrackAspect(Track track) {
         if (track.getRouter().isStraight()) {
             return dirGraphicAspect(track.getRouter().getFirstOpenDir());
         } else if (track.getRouter().isCurve()) {
@@ -40,5 +44,15 @@ public class RailTrackGraphicConverter implements GraphicConverter<RailTrack> {
                 return "\\";
         }
         return "?";
+    }
+
+    @Override
+    public String getLinkerAspect(Linker linker) {
+        return "O";
+    }
+
+    @Override
+    public String getRailTrackMakerAspect(RailTrackMaker maker) {
+        return "@";
     }
 }

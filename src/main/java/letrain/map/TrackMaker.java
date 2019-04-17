@@ -1,5 +1,6 @@
 package letrain.map;
 
+import letrain.sim.GameModel;
 import letrain.track.Track;
 
 public interface TrackMaker<T extends Track> {
@@ -23,14 +24,8 @@ public interface TrackMaker<T extends Track> {
 
     boolean isReversed();
 
-    void setMode(Mode mode);
+    void setMode(GameModel.Mode mode);
 
-    Mode getMode();
+    GameModel.Mode getMode();
 
-    enum Mode {
-        MAP_WALK,
-        TRACK_WALK,
-        MAKE_TRACK,
-        REMOVE_TRACK
-    }
 }

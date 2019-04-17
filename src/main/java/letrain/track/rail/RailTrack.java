@@ -3,6 +3,7 @@ package letrain.track.rail;
 
 import letrain.map.Dir;
 import letrain.track.Track;
+import letrain.track.TrackDirector;
 import letrain.vehicle.impl.Linker;
 
 public class RailTrack extends Track  {
@@ -16,6 +17,7 @@ public class RailTrack extends Track  {
 
     public RailTrack() {
         this.connections = new RailTrack[Dir.NUM_DIRS];
+        setTrackDirector(TrackDirector.getInstance());
     }
 
     public TrackType getType() {

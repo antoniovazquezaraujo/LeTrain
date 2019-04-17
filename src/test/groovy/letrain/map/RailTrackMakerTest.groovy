@@ -1,5 +1,6 @@
 package letrain.map
 
+import letrain.sim.GameModel
 import letrain.track.rail.RailTrack
 import org.mockito.InjectMocks
 import org.mockito.Mock
@@ -34,7 +35,7 @@ class RailTrackMakerTest extends Specification {
         map = new RailMap()
         maker.setMap(map)
         maker.setPosition(0, 0)
-        maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+        maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.setDirection(Dir.E)
         int n = 3
 
@@ -53,20 +54,20 @@ class RailTrackMakerTest extends Specification {
         RailTrack track
         map = new RailMap()
         maker.setMap(map)
-        maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+        maker.setMode(GameModel.Mode.MAKE_TRACK)
 
         maker.setPosition(8, 5)
         maker.setDirection(Dir.E)
         when:
         for (int n = 0; n < 8; n++) {
             maker.advance(3)
-            maker.setMode(TrackMaker.Mode.MAP_WALK)
+            maker.setMode(GameModel.Mode.MAP_WALK)
             maker.reverse()
             maker.advance(3)
             maker.reverse()
             maker.advance()
             maker.rotateRight()
-            maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+            maker.setMode(GameModel.Mode.MAKE_TRACK)
             maker.advance()
         }
 
@@ -109,41 +110,41 @@ class RailTrackMakerTest extends Specification {
         RailTrack track
         map = new RailMap()
         maker.setMap(map)
-        maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+        maker.setMode(GameModel.Mode.MAKE_TRACK)
 
         when:
         maker.setPosition(4, 0)
         maker.setDirection(Dir.S)
         maker.advance(10)
 
-        maker.setMode(TrackMaker.Mode.MAP_WALK);
+        maker.setMode(GameModel.Mode.MAP_WALK);
         maker.setPosition(1, 2)
         maker.setDirection(Dir.E)
-        maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+        maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.advance(12)
 
-        maker.setMode(TrackMaker.Mode.MAP_WALK);
+        maker.setMode(GameModel.Mode.MAP_WALK);
         maker.setPosition(2, 6)
         maker.setDirection(Dir.NE)
-        maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+        maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.advance(6)
 
-        maker.setMode(TrackMaker.Mode.MAP_WALK);
+        maker.setMode(GameModel.Mode.MAP_WALK);
         maker.setPosition(5, 9)
         maker.setDirection(Dir.NE)
-        maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+        maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.advance(7)
 
-        maker.setMode(TrackMaker.Mode.MAP_WALK);
+        maker.setMode(GameModel.Mode.MAP_WALK);
         maker.setPosition(2, 5)
         maker.setDirection(Dir.SE)
-        maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+        maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.advance(5)
 
-        maker.setMode(TrackMaker.Mode.MAP_WALK);
+        maker.setMode(GameModel.Mode.MAP_WALK);
         maker.setPosition(7, 0)
         maker.setDirection(Dir.SE)
-        maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+        maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.advance(5)
         then:
         true

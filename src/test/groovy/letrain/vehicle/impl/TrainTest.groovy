@@ -3,7 +3,7 @@ package letrain.vehicle.impl.rail
 import letrain.map.Dir
 import letrain.map.RailMap
 import letrain.map.RailTrackMaker
-import letrain.map.TrackMaker
+import letrain.sim.GameModel
 import letrain.track.rail.RailTrack
 import letrain.vehicle.impl.Linker
 import spock.lang.Specification
@@ -224,7 +224,7 @@ class TrainTest extends Specification {
         RailTrackMaker maker = new RailTrackMaker()
         maker.setMap(map)
         maker.setPosition(0, 0)
-        maker.setMode(TrackMaker.Mode.MAKE_TRACK)
+        maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.setDirection(Dir.E)
         for (int n = 0; n < 8; n++) {
             maker.advance(10)
