@@ -7,11 +7,13 @@ import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;
+import letrain.view.Renderable;
+import letrain.view.Renderer;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Train implements Trailer<RailTrack>, Reversible {
+public class Train implements Trailer<RailTrack>, Reversible, Renderable {
     private static final float DISTANCE_UNIT = 1;
     Deque<Linker> linkers;
     List<Tractor> tractors;
@@ -277,5 +279,13 @@ public class Train implements Trailer<RailTrack>, Reversible {
             return ((Locomotive) this.mainTractor).isReversed();
         }
         return false;
+    }
+    /***********************************************************
+     * Renderable implementation
+     **********************************************************/
+
+    @Override
+    public void accept(Renderer renderer) {
+        renderer.renderTrain(this);
     }
 }

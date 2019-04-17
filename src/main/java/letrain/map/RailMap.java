@@ -1,12 +1,14 @@
 package letrain.map;
 
 import letrain.track.rail.RailTrack;
+import letrain.view.Renderable;
+import letrain.view.Renderer;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class RailMap implements TerrainMap<RailTrack> {
+public class RailMap implements TerrainMap<RailTrack> , Renderable {
 
     final Map<Integer, Map<Integer, RailTrack>> rails;
 
@@ -17,8 +19,8 @@ public class RailMap implements TerrainMap<RailTrack> {
     @Override
     public void forEach(Consumer<RailTrack> c) {
         for (int row : rails.keySet()) {
-            for (RailTrack path : rails.get(row).values()) {
-                c.accept(path);
+            for (RailTrack track : rails.get(row).values()) {
+                c.accept(track);
             }
         }
     }
@@ -61,4 +63,12 @@ public class RailMap implements TerrainMap<RailTrack> {
         return ret;
     }
 
+    /***********************************************************
+     * Renderable implementation
+     **********************************************************/
+
+    @Override
+    public void accept(Renderer renderer) {
+        renderer.renderMap(this);
+    }
 }

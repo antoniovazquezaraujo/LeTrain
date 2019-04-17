@@ -5,9 +5,9 @@ import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.track.TrackDirector;
 import letrain.vehicle.impl.Linker;
+import letrain.view.Renderer;
 
 public class RailTrack extends Track  {
-
     public enum TrackType {
         STRAIGHT,
         CURVE,
@@ -34,5 +34,13 @@ public class RailTrack extends Track  {
             }
         }
         return TrackType.FORK;
+    }
+    /***********************************************************
+     * Renderable implementation
+     **********************************************************/
+
+    @Override
+    public void accept(Renderer renderer) {
+        renderer.renderTrack(this);
     }
 }

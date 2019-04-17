@@ -11,13 +11,14 @@ import letrain.sim.GameModel;
 import letrain.sim.LeTrainModel;
 import letrain.tui.BasicGraphicConverter;
 import letrain.tui.GraphicConverter;
+import letrain.view.UnicodeRenderer;
 
 public class LeTrainPresenter extends Application implements GamePresenter {
     Timeline loop;
     private GameModel model;
     private LeTrainView view;
     GraphicConverter converter = new BasicGraphicConverter();
-
+    UnicodeRenderer renderer ;
     public static void main(String[] args) {
         launch(args);
     }
@@ -25,6 +26,7 @@ public class LeTrainPresenter extends Application implements GamePresenter {
     public LeTrainPresenter() {
         model = new LeTrainModel();
         view = new LeTrainView(this);
+        renderer = new UnicodeRenderer(view);
     }
 
     @Override
@@ -46,23 +48,8 @@ public class LeTrainPresenter extends Application implements GamePresenter {
     }
 
     public void paintLoop() {
-        view.clear();
-        model.getMap().forEach(t -> {
-            view.set(
-                    t.getPosition().getX(),
-                    t.getPosition().getY(),
-                    converter.getTrackAspect(t));
-        });
-        model.getTrains().forEach(train -> {
-            train.getLinkers().forEach(linker -> {
-                view.set(
-                        linker.getPosition().getX(),
-                        linker.getPosition().getY(), converter.getLinkerAspect(linker));
-            });
-        });
-        view.set(model.getMaker().getPosition().getX(), model.getMaker().getPosition().getY(), converter.getRailTrackMakerAspect(model.getMaker()));
+        renderer.renderSim(model);
         view.paint();
-
     }
 
 

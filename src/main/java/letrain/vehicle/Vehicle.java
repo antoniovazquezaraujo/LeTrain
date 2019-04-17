@@ -2,6 +2,8 @@ package letrain.vehicle;
 
 import letrain.map.*;
 import letrain.track.Track;
+import letrain.view.Renderable;
+import letrain.view.Renderer;
 
 public abstract class Vehicle<T extends Track>
         implements
@@ -9,7 +11,8 @@ public abstract class Vehicle<T extends Track>
         Reversible,
         Selectable,
         Mapeable,
-        Transportable {
+        Transportable,
+        Renderable {
     protected Point pos = new Point(0, 0);
 
 
@@ -110,6 +113,5 @@ public abstract class Vehicle<T extends Track>
     public boolean isReversed() {
         return reversed;
     }
-
 
 }

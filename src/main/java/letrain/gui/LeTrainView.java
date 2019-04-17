@@ -1,6 +1,5 @@
 package letrain.gui;
 
-import javafx.scene.canvas.Canvas;
 import javafx.scene.control.TextArea;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
@@ -137,6 +136,7 @@ public class LeTrainView extends BorderPane implements SimpleUI {
         statusBar.setText("Página: "+ position.getY()+ "," + position.getX());
         this.position = pos;
     }
+
 
     @Override
     public void paint() {

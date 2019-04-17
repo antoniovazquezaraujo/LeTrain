@@ -3,6 +3,7 @@ package letrain.track.road;
 import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
+import letrain.view.Renderer;
 
 public class RoadTrack extends Track {
 
@@ -14,5 +15,10 @@ public class RoadTrack extends Track {
     @Override
     public void enterLinkerFromDir(Dir d, Linker vehicle) {
         getTrackDirector().enterLinkerFromDir(this, d, vehicle);
+    }
+
+    @Override
+    public void accept(Renderer renderer) {
+
     }
 }

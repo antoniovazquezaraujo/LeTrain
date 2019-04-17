@@ -2,6 +2,7 @@ package letrain.vehicle.impl.rail;
 
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
+import letrain.view.Renderer;
 
 public class Locomotive extends Linker implements Tractor{
 
@@ -26,4 +27,13 @@ public class Locomotive extends Linker implements Tractor{
     public void setForce(float force) {
         this.force = force;
     }
+    /***********************************************************
+     * Renderable implementation
+     **********************************************************/
+
+    @Override
+    public void accept(Renderer renderer) {
+        renderer.renderLocomotive(this);
+    }
+
 }

@@ -2,6 +2,7 @@ package letrain.track;
 
 import letrain.map.Dir;
 import letrain.vehicle.impl.Linker;
+import letrain.view.Renderer;
 
 public class StopTrack extends Track{
     public StopTrack() {
@@ -26,5 +27,10 @@ public class StopTrack extends Track{
                 return true;
             }
         });
+    }
+
+    @Override
+    public void accept(Renderer renderer) {
+
     }
 }

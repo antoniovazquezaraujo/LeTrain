@@ -3,6 +3,7 @@ package letrain.track;
 import javafx.util.Pair;
 import letrain.map.*;
 import letrain.vehicle.impl.Linker;
+import letrain.view.Renderable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,7 +15,8 @@ public abstract class Track implements
         Connectable,
         LinkerCompartment,
         Mapeable,
-        LinkerCompartmentListener {
+        LinkerCompartmentListener,
+        Renderable {
 
     protected final Router router = new SimpleRouter();
     private TrackDirector trackDirector;

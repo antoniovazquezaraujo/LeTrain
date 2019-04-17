@@ -2,8 +2,10 @@ package letrain.map;
 
 import letrain.sim.GameModel;
 import letrain.track.rail.RailTrack;
+import letrain.view.Renderable;
+import letrain.view.Renderer;
 
-public class RailTrackMaker implements TrackMaker<RailTrack> {
+public class RailTrackMaker implements TrackMaker<RailTrack>, Renderable {
 
     TerrainMap<RailTrack> map;
     final Point position = new Point(0, 0);
@@ -167,5 +169,13 @@ public class RailTrackMaker implements TrackMaker<RailTrack> {
             this.oldTrack = null;
         }
         this.mode = mode;
+    }
+    /***********************************************************
+     * Renderable implementation
+     **********************************************************/
+
+    @Override
+    public void accept(Renderer renderer) {
+        renderer.renderRailTrackMaker(this);
     }
 }

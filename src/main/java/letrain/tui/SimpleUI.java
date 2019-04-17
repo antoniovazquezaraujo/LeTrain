@@ -1,6 +1,7 @@
 package letrain.tui;
 
 import letrain.map.Point;
+import letrain.view.Renderer;
 
 public interface SimpleUI {
     Point getPos();

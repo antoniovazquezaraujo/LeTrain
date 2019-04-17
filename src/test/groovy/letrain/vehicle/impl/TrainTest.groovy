@@ -168,24 +168,6 @@ class TrainTest extends Specification {
         compare(train1.getSpeed(), train1.getAcceleration()) <= PRECISION
         compare(train1.getDistanceTraveled(), train1.getSpeed()) <= PRECISION
 
-        when:
-        train1.applyForces()
-        then:
-        compare(train1.getSpeed(), train1.getAcceleration()) <= PRECISION
-        compare(train1.getDistanceTraveled(), train1.getSpeed()) <= PRECISION
-
-        when:
-        train1.applyForces()
-        then:
-        then:
-        compare(train1.getSpeed(), train1.getAcceleration()) <= PRECISION
-        compare(train1.getDistanceTraveled(), train1.getSpeed()) <= PRECISION
-
-        when:
-        train1.applyForces()
-        then:
-        compare(train1.getSpeed(), train1.getAcceleration()) <= PRECISION
-        compare(train1.getDistanceTraveled(), train1.getSpeed()) <= PRECISION
 
         //train is moved
         when:
