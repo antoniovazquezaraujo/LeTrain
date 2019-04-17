@@ -1,5 +1,6 @@
 package letrain.tui;
 
+import javafx.scene.paint.Color;
 import letrain.map.Point;
 
 public class Tui implements SimpleUI {
@@ -45,6 +46,11 @@ public class Tui implements SimpleUI {
     @Override
     public void set(int x, int y, String c) {
         screen[x][y] = c;
+    }
+
+    @Override
+    public void setColor(int x, int y, Color color) {
+
     }
 
     @Override
