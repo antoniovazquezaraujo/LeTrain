@@ -17,6 +17,7 @@ public class RailTrackMaker implements TrackMaker<RailTrack>, Renderable {
     Dir oldDir;
     boolean reversed;
     GameModel.Mode mode;
+    int degreesOfRotation= 0;
 
     @Override
     public void setMap(TerrainMap<RailTrack> map) {
@@ -43,6 +44,7 @@ public class RailTrackMaker implements TrackMaker<RailTrack>, Renderable {
 
     @Override
     public void advance() {
+        degreesOfRotation=0;
         switch (mode) {
             case MAP_WALK:
                 Point newPos = new Point(getPosition());
@@ -147,12 +149,18 @@ public class RailTrackMaker implements TrackMaker<RailTrack>, Renderable {
 
     @Override
     public void rotateLeft() {
-        setDirection(this.dir.turnLeft());
+        if(degreesOfRotation <= 0 || getMode()== GameModel.Mode.MAP_WALK) {
+            setDirection(this.dir.turnLeft());
+            degreesOfRotation +=1;
+        }
     }
 
     @Override
     public void rotateRight() {
-        setDirection(this.dir.turnRight());
+        if(degreesOfRotation>=0|| getMode()== GameModel.Mode.MAP_WALK) {
+            setDirection(this.dir.turnRight());
+            degreesOfRotation-=1;
+        }
     }
 
     @Override
