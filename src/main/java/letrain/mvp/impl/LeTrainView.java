@@ -1,6 +1,7 @@
 package letrain.mvp.impl;
 
-import javafx.scene.control.*;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
@@ -8,24 +9,22 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import letrain.map.Point;
 import letrain.mvp.GameModel;
-import letrain.mvp.GamePresenter;
 import letrain.mvp.GameView;
-import letrain.tui.BasicGraphicConverter;
-import letrain.tui.GraphicConverter;
+import letrain.mvp.GameViewListener;
 
 import java.util.Optional;
 
 
 public class LeTrainView extends BorderPane implements GameView {
-    private final GamePresenter presenter;
+    private final GameViewListener gameViewListener;
     private final LeTrainViewGrid viewGrid;
     private Point position = new Point(0, 0); // scroll position of the viewer
     private Text statusBar = new Text();
     private Dialog<String> trainFactoryDialog;
 
-    public LeTrainView(GamePresenter presenter) {
+    public LeTrainView(GameViewListener gameViewListener) {
         viewGrid = new LeTrainViewGrid();
-        this.presenter = presenter;
+        this.gameViewListener = gameViewListener;
         setCenter(viewGrid );
         setBottom(statusBar);
         this.setFocusTraversable(true);
@@ -43,14 +42,11 @@ public class LeTrainView extends BorderPane implements GameView {
         trainFactoryDialog.setTitle("Train factory");
         trainFactoryDialog.setHeaderText("Enter the wagons of your train");
         trainFactoryDialog.setContentText("Wagons:");
-
-
 // The Java 8 way to get the response value (with lambda expression).
 //        result.ifPresent(name -> System.out.println("Your name: " + name));
     }
 
     private void addEventListener() {
-        GraphicConverter converter = new BasicGraphicConverter();
 
         addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
             switch (keyEvent.getCode()) {
@@ -64,7 +60,7 @@ public class LeTrainView extends BorderPane implements GameView {
                         setMapScrollPage(p);
                         clear();
                     } else {
-                        presenter.onMakerAdvance();
+                        gameViewListener.onMakerAdvance();
                     }
                     break;
                 case DOWN:
@@ -75,9 +71,9 @@ public class LeTrainView extends BorderPane implements GameView {
                         setMapScrollPage(p);
                         clear();
                     } else {
-                        presenter.onMakerInverse();
-                        presenter.onMakerAdvance();
-                        presenter.onMakerInverse();
+                        gameViewListener.onMakerInverse();
+                        gameViewListener.onMakerAdvance();
+                        gameViewListener.onMakerInverse();
                     }
                     break;
                 case LEFT:
@@ -88,7 +84,7 @@ public class LeTrainView extends BorderPane implements GameView {
                         setMapScrollPage(p);
                         clear();
                     } else {
-                        presenter.onMakerTurnLeft();
+                        gameViewListener.onMakerTurnLeft();
                     }
                     break;
                 case RIGHT:
@@ -99,41 +95,41 @@ public class LeTrainView extends BorderPane implements GameView {
                         setMapScrollPage(p);
                         clear();
                     } else {
-                        presenter.onMakerTurnRight();
+                        gameViewListener.onMakerTurnRight();
                     }
                     break;
                 case M:
-                    presenter.onGameModeSelected(GameModel.Mode.MAP_WALK);
+                    gameViewListener.onGameModeSelected(GameModel.Mode.MAP_WALK);
                     break;
                 case T:
-                    presenter.onGameModeSelected(GameModel.Mode.TRACK_WALK);
+                    gameViewListener.onGameModeSelected(GameModel.Mode.TRACK_WALK);
                     break;
                 case P:
-                    presenter.onGameModeSelected(GameModel.Mode.MAKE_TRACK);
+                    gameViewListener.onGameModeSelected(GameModel.Mode.MAKE_TRACK);
                     break;
                 case R:
-                    presenter.onGameModeSelected(GameModel.Mode.REMOVE_TRACK);
+                    gameViewListener.onGameModeSelected(GameModel.Mode.REMOVE_TRACK);
                     break;
                 case W:
                     Optional<String> result = trainFactoryDialog.showAndWait();
                     if (result.isPresent()){
-                        presenter.onFactoryCreateTrain(result.get());
+                        gameViewListener.onFactoryCreateTrain(result.get());
                     }
                     break;
                 case C:
-                    presenter.onMakerCreateFactoryGateTrack();
+                    gameViewListener.onMakerCreateFactoryGateTrack();
                     break;
                 case V:
-                    presenter.onMakerCreateTunnelTrack();
+                    gameViewListener.onMakerCreateTunnelTrack();
                     break;
                 case B:
-                    presenter.onMakerCreateStopTrack();
+                    gameViewListener.onMakerCreateStopTrack();
                     break;
                 case S:
-                    presenter.onIncTrainAcceleration();
+                    gameViewListener.onIncTrainAcceleration();
                     break;
                 case A:
-                    presenter.onDecTrainAcceleration();
+                    gameViewListener.onDecTrainAcceleration();
                     break;
 //                case F:
 //                    this.model.moveTrains();

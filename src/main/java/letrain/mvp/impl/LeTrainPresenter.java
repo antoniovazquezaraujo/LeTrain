@@ -5,8 +5,8 @@ import javafx.animation.Timeline;
 import javafx.util.Duration;
 import letrain.mvp.GameModel;
 import letrain.mvp.GamePresenter;
-import letrain.tui.BasicGraphicConverter;
-import letrain.tui.GraphicConverter;
+import letrain.mvp.GameView;
+import letrain.mvp.GameViewListener;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
@@ -14,11 +14,11 @@ import letrain.view.UnicodeRenderer;
 
 import static letrain.trackmaker.TrackMaker.NewTrackType.*;
 
-public class LeTrainPresenter implements GamePresenter {
-    private Timeline loop;
+public class LeTrainPresenter implements GameViewListener, GamePresenter {
+
     private final GameModel model;
-    private final LeTrainView view;
-    GraphicConverter converter = new BasicGraphicConverter();
+    private final GameView view;
+    private Timeline loop;
     private final UnicodeRenderer renderer;
 
     public LeTrainPresenter() {
@@ -36,20 +36,29 @@ public class LeTrainPresenter implements GamePresenter {
         loop.play();
     }
 
-    public LeTrainView getView() {
-        return view;
-    }
-
 
     public void paintLoop() {
         view.clear();
-        renderer.renderSim(model);
+        renderer.renderModel(model);
         view.paint();
     }
 
 
     /***********************************************************
      * GamePresenter implementation
+     **********************************************************/
+    @Override
+    public GameView getView() {
+        return view;
+    }
+    @Override
+    public GameModel getModel() {
+        return model;
+    }
+
+
+    /***********************************************************
+     * GameViewListener implementation
      **********************************************************/
     @Override
     public void onGameModeSelected(GameModel.Mode mode) {

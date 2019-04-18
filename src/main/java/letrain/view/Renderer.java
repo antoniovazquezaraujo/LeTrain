@@ -13,7 +13,7 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public interface Renderer {
-    void renderSim(GameModel model);
+    void renderModel(GameModel model);
 
     void renderTrain(Train train);
 

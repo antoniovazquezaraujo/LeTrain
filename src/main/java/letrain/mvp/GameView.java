@@ -5,9 +5,13 @@ import letrain.map.Point;
 
 public interface GameView {
     Point getMapScrollPage();
+
     void setMapScrollPage(Point pos);
+
     void paint();
+
     void clear();
+
     void set(int x, int y, String c);
 
     void setColor(Color color);

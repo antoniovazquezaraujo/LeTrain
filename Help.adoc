@@ -117,13 +117,17 @@ Renderable <|.. Track
 interface GamePresenter
 interface GameModel
 interface GameView
+interface TrackMaker
 
 class LeTrainView
 class LeTrainPresenter
 class LeTrainViewGrid
 class LeTrainModel
+class RailTrackMaker
 
 GameModel <|.. LeTrainModel
+GameModel o-- TrackMaker
+TrackMaker <|-- RailTrackMaker
 GamePresenter <|.. LeTrainPresenter
 GameView <|.. LeTrainView
 

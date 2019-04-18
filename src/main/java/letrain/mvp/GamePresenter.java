@@ -1,37 +1,9 @@
 package letrain.mvp;
 
-public interface GamePresenter {
-    void onGameModeSelected(GameModel.Mode mode);
+public interface GamePresenter extends GameViewListener {
 
-    void onMakerAdvance();
+    GameView getView();
 
-    void onMakerInverse();
+    GameModel getModel();
 
-    void onMakerTurnLeft();
-
-    void onMakerTurnRight();
-
-    void onMakerCreateTunnelTrack();
-
-    void onMakerCreateStopTrack();
-
-    void onMakerCreateFactoryGateTrack();
-
-    void onFactoryCreateTrain(String trainName);
-
-    void onFactoryCreateLocomotive();
-
-    void onFactoryCreateWagon();
-
-    void onSelectTrain(String trainName);
-
-    void onIncTrainAcceleration();
-
-    void onDecTrainAcceleration();
-
-    void onSelectFork(String forkName);
-
-    void onChangeForkDirection();
-
-    void paintLoop();
 }

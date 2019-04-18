@@ -1,8 +1,10 @@
 package letrain.map;
 
+import letrain.view.Renderable;
+
 import java.util.function.Consumer;
 
-public interface TerrainMap<T> {
+public interface TerrainMap<T> extends Renderable {
     void forEach(Consumer<T> c);
 
     T getTrackAt(int x, int y);

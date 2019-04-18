@@ -5,8 +5,9 @@ import letrain.map.Point;
 import letrain.map.TerrainMap;
 import letrain.mvp.GameModel;
 import letrain.track.Track;
+import letrain.view.Renderable;
 
-public interface TrackMaker<T extends Track> {
+public interface TrackMaker<T extends Track> extends Renderable {
     enum NewTrackType {
         NORMAL_TRACK,
         STOP_TRACK,

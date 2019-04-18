@@ -5,6 +5,7 @@ import letrain.map.RailMap;
 import letrain.mvp.GameModel;
 import letrain.track.rail.TrainFactoryRailTrack;
 import letrain.trackmaker.RailTrackMaker;
+import letrain.trackmaker.TrackMaker;
 import letrain.vehicle.impl.rail.Train;
 
 import java.util.ArrayList;
@@ -13,7 +14,7 @@ import java.util.List;
 public class LeTrainModel implements GameModel {
     private RailMap map;
     private final List<Train> trains;
-    private final RailTrackMaker maker;
+    private final TrackMaker maker;
     private final List<TrainFactoryRailTrack> factoryGateTracks;
     public LeTrainModel() {
         this.factoryGateTracks = new ArrayList<>();
@@ -27,13 +28,8 @@ public class LeTrainModel implements GameModel {
     }
 
     @Override
-    public RailMap getMap() {
+    public RailMap getRailMap() {
         return map;
-    }
-
-    @Override
-    public void setMap(RailMap map) {
-        this.map = map;
     }
 
     @Override
@@ -73,7 +69,7 @@ public class LeTrainModel implements GameModel {
     }
 
     @Override
-    public RailTrackMaker getMaker() {
+    public TrackMaker getMaker() {
         return maker;
     }
 }

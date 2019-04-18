@@ -1,7 +1,7 @@
 package letrain.view;
 
 import javafx.scene.paint.Color;
-import letrain.mvp.impl.LeTrainView;
+import letrain.mvp.GameView;
 import letrain.map.Dir;
 import letrain.map.RailMap;
 import letrain.mvp.GameModel;
@@ -17,14 +17,14 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public class UnicodeRenderer implements Renderer {
-    private final LeTrainView view;
-    public UnicodeRenderer(LeTrainView view) {
+    private final GameView view;
+    public UnicodeRenderer(GameView view) {
         this.view = view;
     }
 
     @Override
-    public void renderSim(GameModel model) {
-        model.getMap().accept(this);
+    public void renderModel(GameModel model) {
+        model.getRailMap().accept(this);
         model.getTrains().forEach(t->t.accept(this));
         model.getMaker().accept(this);
     }
