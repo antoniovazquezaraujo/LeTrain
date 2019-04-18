@@ -2,9 +2,13 @@ package letrain.gui;
 
 import com.sun.javafx.tk.FontMetrics;
 import com.sun.javafx.tk.Toolkit;
+import javafx.scene.Parent;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Accordion;
+import javafx.scene.control.TitledPane;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
@@ -12,8 +16,8 @@ import letrain.map.Point;
 import letrain.tui.SimpleUI;
 
 
-public class LeTrainViewGrid extends BorderPane implements SimpleUI {
-    private static final int ROWS = 100;
+public class LeTrainViewGrid extends Pane implements SimpleUI {
+    private static final int ROWS = 40;
     private static final int COLS = 100;
     private Point mapScrollPage = new Point(0, 0);
     private final Canvas canvas;
@@ -21,7 +25,6 @@ public class LeTrainViewGrid extends BorderPane implements SimpleUI {
     private static final int TEXT_SIZE = 20;
     private static final Font font = Font.font("Monospace", TEXT_SIZE);
 
-    private final Text statusBar = new Text();
     private final float charWidth;
     private final float charHeight;
 
@@ -31,9 +34,7 @@ public class LeTrainViewGrid extends BorderPane implements SimpleUI {
         charWidth = metrics.computeStringWidth("X");
         charHeight = metrics.getLineHeight();
         canvas = new Canvas(COLS * charWidth, ROWS * charHeight);
-        setCenter(canvas);
-        statusBar.setFill(Color.WHITE);
-        setBottom(statusBar);
+        getChildren().add(canvas);
         gc = canvas.getGraphicsContext2D();
     }
 
@@ -44,7 +45,6 @@ public class LeTrainViewGrid extends BorderPane implements SimpleUI {
 
     @Override
     public void setMapScrollPage(Point pos) {
-        statusBar.setText("Página: " + mapScrollPage.getY() + "," + mapScrollPage.getX());
         this.mapScrollPage = pos;
     }
 
@@ -65,13 +65,18 @@ public class LeTrainViewGrid extends BorderPane implements SimpleUI {
         x -= mapScrollPage.getX() * COLS;
         y -= mapScrollPage.getY() * ROWS;
         if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
-            gc.fillText(c, x * charWidth, y * charHeight);
+
+            //TODO probar diferentes grosores para diferentes elementos???
+            gc.setLineWidth(1);
+
+
+            gc.strokeText(c, x * charWidth, y * charHeight);
         }
     }
 
     @Override
     public void setColor(Color color) {
-        gc.setFill(color);
+        gc.setStroke(color);
     }
 
     @Override

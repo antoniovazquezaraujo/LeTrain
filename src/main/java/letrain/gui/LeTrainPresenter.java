@@ -2,6 +2,7 @@ package letrain.gui;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.scene.control.TextInputDialog;
 import javafx.util.Duration;
 import letrain.sim.GameModel;
 import letrain.sim.LeTrainModel;
@@ -14,7 +15,7 @@ public class LeTrainPresenter implements GamePresenter {
     private final GameModel model;
     private final LeTrainView view;
     GraphicConverter converter = new BasicGraphicConverter();
-    private final UnicodeRenderer renderer ;
+    private final UnicodeRenderer renderer;
 
     public LeTrainPresenter() {
         model = new LeTrainModel();
@@ -84,14 +85,7 @@ public class LeTrainPresenter implements GamePresenter {
 
     @Override
     public void onFactoryCreateTrain(String trainName) {
-//        RailTrack track = model.getMap().getTrackAt(position);
-//        Locomotive locomotive = new Locomotive();
-//        locomotive.setForce(1000);
-//        track.enterLinkerFromDir(model.getMaker().getDirection().inverse(), locomotive);
-//        Train train = new Train();
-//        train.pushBack(locomotive);
-//        train.assignDefaultMainTractor();
-//        model.addTrain(train);
+
     }
 
     @Override

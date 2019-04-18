@@ -1,8 +1,11 @@
 package letrain.gui;
 
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import letrain.map.Point;
 import letrain.sim.GameModel;
 import letrain.tui.BasicGraphicConverter;
@@ -10,19 +13,23 @@ import letrain.tui.GraphicConverter;
 import letrain.tui.SimpleUI;
 
 
-public class LeTrainView extends GridPane implements SimpleUI {
+public class LeTrainView extends BorderPane implements SimpleUI {
     private final GamePresenter presenter;
     private final LeTrainViewGrid viewGrid;
     private Point position = new Point(0, 0); // scroll position of the viewer
-
+    private Text statusBar = new Text();
     public LeTrainView(GamePresenter presenter) {
         viewGrid = new LeTrainViewGrid();
         this.presenter = presenter;
-        add(viewGrid, 0,0,1,1);
+        setCenter(viewGrid );
+        setBottom(statusBar);
         this.setFocusTraversable(true);
         clear();
         addEventListener();
         this.requestFocus();
+        statusBar.setFill(Color.GREEN);
+        statusBar.setStroke(Color.GREEN);
+        statusBar.setFont(new Font("Lucida Sans Unicode", 10));
     }
 
     private void addEventListener() {
@@ -121,6 +128,7 @@ public class LeTrainView extends GridPane implements SimpleUI {
     @Override
     public void setMapScrollPage(Point pos) {
         viewGrid.setMapScrollPage(pos);
+        statusBar.setText("Página: "+ viewGrid.getMapScrollPage().getX()+ ", "+ viewGrid.getMapScrollPage().getY());
     }
 
 
@@ -147,6 +155,7 @@ public class LeTrainView extends GridPane implements SimpleUI {
     @Override
     public void setPageOfPos(int x, int y) {
         viewGrid.setPageOfPos(x,y);
+        statusBar.setText("Página: "+ viewGrid.getMapScrollPage().getX()+ ", "+ viewGrid.getMapScrollPage().getY());
     }
 
     @Override
