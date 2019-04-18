@@ -3,8 +3,11 @@ package letrain.trackmaker;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.TerrainMap;
-import letrain.sim.GameModel;
+import letrain.model.GameModel;
 import letrain.track.rail.RailTrack;
+import letrain.track.rail.StopRailTrack;
+import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TunnelRailTrack;
 import letrain.view.Renderable;
 import letrain.view.Renderer;
 
@@ -18,6 +21,7 @@ public class RailTrackMaker implements TrackMaker<RailTrack>, Renderable {
     private boolean reversed;
     private GameModel.Mode mode;
     private int degreesOfRotation= 0;
+    private NewTrackType newTrackType = NewTrackType.NORMAL_TRACK;
 
     @Override
     public void setMap(TerrainMap<RailTrack> map) {
@@ -74,11 +78,27 @@ public class RailTrackMaker implements TrackMaker<RailTrack>, Renderable {
         }
     }
 
+    @Override
+    public void selectNewTrackType(NewTrackType type){
+        this.newTrackType = type;
+    }
+    public RailTrack createTrackOfSelectedType(){
+        switch(newTrackType){
+            case STOP_TRACK:
+                return new StopRailTrack();
+            case TRAIN_FACTORY_GATE:
+                return new TrainFactoryRailTrack();
+            case TUNNEL_GATE:
+                return new TunnelRailTrack();
+            default:
+                return new RailTrack();
+        }
+    }
     private RailTrack makeTrack() {
         // Si no hay un track aquí, creamos uno
         RailTrack actualTrack = map.getTrackAt(this.position.getX(), this.position.getY());
         if (actualTrack == null) {
-            actualTrack = new RailTrack();
+            actualTrack = createTrackOfSelectedType();
             actualTrack.setPosition(getPosition());
             map.addTrack(getPosition(), actualTrack);
         }

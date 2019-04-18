@@ -2,7 +2,7 @@ package letrain.track;
 
 import letrain.view.Renderer;
 
-public class FactoryTrack extends Track {
+public class TrainFactoryTrack extends Track {
     @Override
     public void accept(Renderer renderer) {
 

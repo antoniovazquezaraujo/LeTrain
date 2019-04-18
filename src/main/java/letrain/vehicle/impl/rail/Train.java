@@ -22,7 +22,7 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
     private float acceleration;
     private float distanceTraveled;
 
-    private Train() {
+    public Train() {
         this.linkers = new LinkedList<>();
         this.tractors = new ArrayList<>();
     }
@@ -167,7 +167,6 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
         this.acceleration = getTotalForce() / getTotalMass();
         float speed = acceleration ;
         this.distanceTraveled += speed;
-        System.out.println(this.distanceTraveled);
         if (this.distanceTraveled >= DISTANCE_UNIT) {
             move();
             this.distanceTraveled=0;

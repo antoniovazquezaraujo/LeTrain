@@ -1,6 +1,7 @@
-package letrain.sim;
+package letrain.model;
 
 import letrain.map.RailMap;
+import letrain.track.TrainFactoryTrack;
 import letrain.trackmaker.RailTrackMaker;
 import letrain.vehicle.impl.rail.Train;
 
@@ -12,6 +13,12 @@ public interface GameModel {
     void setMap(RailMap map);
 
     List<Train> getTrains();
+
+    List<TrainFactoryTrack> getFactoryGateTracks();
+
+    void addFactoryGateTrack(TrainFactoryTrack track);
+
+    void removeFactoryGateTrack(TrainFactoryTrack track);
 
     void addTrain(Train train);
 

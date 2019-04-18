@@ -1,6 +1,6 @@
 package letrain.gui;
 
-import letrain.sim.GameModel;
+import letrain.model.GameModel;
 
 interface GamePresenter {
     void onGameModeSelected(GameModel.Mode mode);
@@ -15,7 +15,7 @@ interface GamePresenter {
 
     void onMakerCreateTunnel();
 
-    void onMakerCreateFactory();
+    void onMakerCreateFactoryGateTrack();
 
     void onFactoryCreateTrain(String trainName);
 

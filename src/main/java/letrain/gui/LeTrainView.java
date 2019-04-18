@@ -1,16 +1,18 @@
 package letrain.gui;
 
+import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import letrain.map.Point;
-import letrain.sim.GameModel;
+import letrain.model.GameModel;
 import letrain.tui.BasicGraphicConverter;
 import letrain.tui.GraphicConverter;
 import letrain.tui.SimpleUI;
+
+import java.util.Optional;
 
 
 public class LeTrainView extends BorderPane implements SimpleUI {
@@ -18,6 +20,8 @@ public class LeTrainView extends BorderPane implements SimpleUI {
     private final LeTrainViewGrid viewGrid;
     private Point position = new Point(0, 0); // scroll position of the viewer
     private Text statusBar = new Text();
+    private Dialog<String> trainFactoryDialog;
+
     public LeTrainView(GamePresenter presenter) {
         viewGrid = new LeTrainViewGrid();
         this.presenter = presenter;
@@ -30,6 +34,18 @@ public class LeTrainView extends BorderPane implements SimpleUI {
         statusBar.setFill(Color.GREEN);
         statusBar.setStroke(Color.GREEN);
         statusBar.setFont(new Font("Lucida Sans Unicode", 10));
+        createTrainFactoryDialog();
+    }
+
+    private void createTrainFactoryDialog() {
+        trainFactoryDialog= new TextInputDialog("LeTrain, the letter train simulator");
+        trainFactoryDialog.setTitle("Train factory");
+        trainFactoryDialog.setHeaderText("Enter the wagons of your train");
+        trainFactoryDialog.setContentText("Wagons:");
+
+
+// The Java 8 way to get the response value (with lambda expression).
+//        result.ifPresent(name -> System.out.println("Your name: " + name));
     }
 
     private void addEventListener() {
@@ -37,8 +53,6 @@ public class LeTrainView extends BorderPane implements SimpleUI {
 
         addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
             switch (keyEvent.getCode()) {
-                case Y:
-                    presenter.paintLoop();
                 case ENTER:
                     break;
                 case UP:
@@ -100,7 +114,14 @@ public class LeTrainView extends BorderPane implements SimpleUI {
                     presenter.onGameModeSelected(GameModel.Mode.REMOVE_TRACK);
                     break;
                 case W:
-                    presenter.onFactoryCreateTrain("A new train");
+                    Optional<String> result = trainFactoryDialog.showAndWait();
+                    if (result.isPresent()){
+                        presenter.onFactoryCreateTrain(result.get());
+                    }
+                    break;
+                case C:
+                    presenter.onMakerCreateFactoryGateTrack();
+                    presenter.onGameModeSelected(GameModel.Mode.MAP_WALK);
                     break;
                 case S:
                     presenter.onIncTrainAcceleration();

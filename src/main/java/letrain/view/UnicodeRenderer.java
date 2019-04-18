@@ -4,8 +4,9 @@ import javafx.scene.paint.Color;
 import letrain.gui.LeTrainView;
 import letrain.map.Dir;
 import letrain.map.RailMap;
+import letrain.track.TrainFactoryTrack;
 import letrain.trackmaker.RailTrackMaker;
-import letrain.sim.GameModel;
+import letrain.model.GameModel;
 import letrain.track.StopTrack;
 import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
@@ -48,12 +49,19 @@ public class UnicodeRenderer implements Renderer {
         }
 
     }
+    @Override
+    public void renderFactoryGateTrack(TrainFactoryTrack track) {
+        view.setColor(Color.LIGHTBLUE);
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
+
+    }
 
     @Override
     public void renderStopTrack(StopTrack stopTrack) {
         view.setColor(Color.YELLOW);
         view.set(stopTrack.getPosition().getX(), stopTrack.getPosition().getY(), "☰");
     }
+
 
     @Override
     public void renderTrain(Train train) {
@@ -72,7 +80,7 @@ public class UnicodeRenderer implements Renderer {
 
     @Override
     public void renderWagon(Wagon wagon) {
-        view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), "W");
+        view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
     }
 
     @Override

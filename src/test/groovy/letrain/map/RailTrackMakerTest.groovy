@@ -1,6 +1,6 @@
 package letrain.map
 
-import letrain.sim.GameModel
+import letrain.model.GameModel
 import letrain.track.rail.RailTrack
 import letrain.trackmaker.RailTrackMaker
 import org.mockito.InjectMocks
@@ -38,7 +38,6 @@ class RailTrackMakerTest extends Specification {
         maker.setPosition(0, 0)
         maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.setDirection(Dir.E)
-        int n = 3
 
         for (int x = 0; x < 8; x++) {
             when:
@@ -52,7 +51,6 @@ class RailTrackMakerTest extends Specification {
 
     @Ignore
     def "test forks"() {
-        RailTrack track
         map = new RailMap()
         maker.setMap(map)
         maker.setMode(GameModel.Mode.MAKE_TRACK)
@@ -73,7 +71,7 @@ class RailTrackMakerTest extends Specification {
         }
 
         then:
-        map.getTrackAt(new Point(a, b)).getRouter().isFork() == true
+        map.getTrackAt(new Point(a, b)).getRouter().isFork()
         where:
         a|b
         7|5
@@ -108,7 +106,6 @@ class RailTrackMakerTest extends Specification {
 
 
     def "test crosses"() {
-        RailTrack track
         map = new RailMap()
         maker.setMap(map)
         maker.setMode(GameModel.Mode.MAKE_TRACK)
@@ -118,31 +115,31 @@ class RailTrackMakerTest extends Specification {
         maker.setDirection(Dir.S)
         maker.advance(10)
 
-        maker.setMode(GameModel.Mode.MAP_WALK);
+        maker.setMode(GameModel.Mode.MAP_WALK)
         maker.setPosition(1, 2)
         maker.setDirection(Dir.E)
         maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.advance(12)
 
-        maker.setMode(GameModel.Mode.MAP_WALK);
+        maker.setMode(GameModel.Mode.MAP_WALK)
         maker.setPosition(2, 6)
         maker.setDirection(Dir.NE)
         maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.advance(6)
 
-        maker.setMode(GameModel.Mode.MAP_WALK);
+        maker.setMode(GameModel.Mode.MAP_WALK)
         maker.setPosition(5, 9)
         maker.setDirection(Dir.NE)
         maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.advance(7)
 
-        maker.setMode(GameModel.Mode.MAP_WALK);
+        maker.setMode(GameModel.Mode.MAP_WALK)
         maker.setPosition(2, 5)
         maker.setDirection(Dir.SE)
         maker.setMode(GameModel.Mode.MAKE_TRACK)
         maker.advance(5)
 
-        maker.setMode(GameModel.Mode.MAP_WALK);
+        maker.setMode(GameModel.Mode.MAP_WALK)
         maker.setPosition(7, 0)
         maker.setDirection(Dir.SE)
         maker.setMode(GameModel.Mode.MAKE_TRACK)

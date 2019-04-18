@@ -1,8 +1,9 @@
 package letrain.view;
 
 import letrain.map.RailMap;
+import letrain.track.TrainFactoryTrack;
 import letrain.trackmaker.RailTrackMaker;
-import letrain.sim.GameModel;
+import letrain.model.GameModel;
 import letrain.track.StopTrack;
 import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
@@ -18,6 +19,7 @@ public interface Renderer {
      void renderTrack(Track track);
 
      void renderStopTrack(StopTrack track );
+     void renderFactoryGateTrack(TrainFactoryTrack track );
 
     //TODO
     //     void renderForkTrack(ForkTrack);

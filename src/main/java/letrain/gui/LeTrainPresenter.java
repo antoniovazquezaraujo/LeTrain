@@ -2,13 +2,17 @@ package letrain.gui;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.scene.control.TextInputDialog;
 import javafx.util.Duration;
-import letrain.sim.GameModel;
-import letrain.sim.LeTrainModel;
+import letrain.model.GameModel;
+import letrain.model.LeTrainModel;
 import letrain.tui.BasicGraphicConverter;
 import letrain.tui.GraphicConverter;
+import letrain.vehicle.impl.rail.Locomotive;
+import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.impl.rail.Wagon;
 import letrain.view.UnicodeRenderer;
+
+import static letrain.trackmaker.TrackMaker.NewTrackType.TRAIN_FACTORY_GATE;
 
 public class LeTrainPresenter implements GamePresenter {
     private Timeline loop;
@@ -79,13 +83,24 @@ public class LeTrainPresenter implements GamePresenter {
     }
 
     @Override
-    public void onMakerCreateFactory() {
-
+    public void onMakerCreateFactoryGateTrack() {
+        model.getMaker().selectNewTrackType(TRAIN_FACTORY_GATE);
+        onMakerAdvance();
+        onGameModeSelected(GameModel.Mode.MAP_WALK);
     }
 
     @Override
     public void onFactoryCreateTrain(String trainName) {
-
+        Train train = new Train();
+        trainName.codePoints()
+                .mapToObj(c -> {
+                    return String.valueOf((char) c);
+                }).forEach(t -> {
+            Wagon w = new Wagon(t);
+            train.pushBack(w);
+        });
+        train.pushFront(new Locomotive());
+        model.addTrain(train);
     }
 
     @Override
