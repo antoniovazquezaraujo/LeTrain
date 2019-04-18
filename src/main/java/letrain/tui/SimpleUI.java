@@ -2,7 +2,6 @@ package letrain.tui;
 
 import javafx.scene.paint.Color;
 import letrain.map.Point;
-import letrain.view.Renderer;
 
 public interface SimpleUI {
     Point getMapScrollPage();
@@ -11,7 +10,7 @@ public interface SimpleUI {
     public void clear();
     public void set(int x, int y, String c);
 
-    void setColor(int x, int y, Color color);
+    void setColor(Color color);
 
     void setPageOfPos(int x, int y);
 

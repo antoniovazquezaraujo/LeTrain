@@ -34,16 +34,16 @@ public class UnicodeRenderer implements Renderer {
     @Override
     public void renderTrack(Track track) {
         if (track.getRouter().isStraight()) {
-            view.setColor(track.getPosition().getX(), track.getPosition().getY(), Color.YELLOW);
+            view.setColor(Color.YELLOW);
             view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
         } else if (track.getRouter().isCurve()) {
-            view.setColor(track.getPosition().getX(), track.getPosition().getY(), Color.YELLOW);
+            view.setColor(Color.YELLOW);
             view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
         }else if (track.getRouter().isFork()){
-            view.setColor(track.getPosition().getX(), track.getPosition().getY(), Color.GREEN);
+            view.setColor(Color.GREEN);
             view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
         } else {
-            view.setColor(track.getPosition().getX(), track.getPosition().getY(), Color.YELLOW);
+            view.setColor(Color.YELLOW);
             view.set(track.getPosition().getX(), track.getPosition().getY(), "+");
         }
 
@@ -51,6 +51,7 @@ public class UnicodeRenderer implements Renderer {
 
     @Override
     public void renderStopTrack(StopTrack stopTrack) {
+        view.setColor(Color.YELLOW);
         view.set(stopTrack.getPosition().getX(), stopTrack.getPosition().getY(), "☰");
     }
 
@@ -76,7 +77,7 @@ public class UnicodeRenderer implements Renderer {
 
     @Override
     public void renderRailTrackMaker(RailTrackMaker railTrackMaker) {
-        view.setColor(railTrackMaker.getPosition().getX(), railTrackMaker.getPosition().getY(), Color.RED);
+        view.setColor(Color.RED);
         view.set(railTrackMaker.getPosition().getX(), railTrackMaker.getPosition().getY(), dirGraphicAspect(railTrackMaker.getDirection()));
     }
 
@@ -94,7 +95,7 @@ public class UnicodeRenderer implements Renderer {
     }
     private String dirGraphicAspect(Dir dir){
         if(dir==null){
-            return "≠";
+            return "";
         }
         switch(dir) {
             case E:

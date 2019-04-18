@@ -49,7 +49,7 @@ public class Tui implements SimpleUI {
     }
 
     @Override
-    public void setColor(int x, int y, Color color) {
+    public void setColor(Color color) {
 
     }
 

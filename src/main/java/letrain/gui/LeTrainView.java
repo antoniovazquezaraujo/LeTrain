@@ -2,6 +2,8 @@ package letrain.gui;
 
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import letrain.map.Point;
@@ -11,17 +13,15 @@ import letrain.tui.GraphicConverter;
 import letrain.tui.SimpleUI;
 
 
-public class LeTrainView extends BorderPane implements SimpleUI {
+public class LeTrainView extends GridPane implements SimpleUI {
     GamePresenter presenter;
     LeTrainViewGrid viewGrid;
-    Text statusBar = new Text();
     private Point position = new Point(0, 0); // scroll position of the viewer
 
     public LeTrainView(GamePresenter presenter) {
         viewGrid = new LeTrainViewGrid();
         this.presenter = presenter;
-        setCenter(viewGrid);
-        setBottom(statusBar);
+        add(viewGrid, 0,0,1,1);
         this.setFocusTraversable(true);
         clear();
         addEventListener();
@@ -143,8 +143,8 @@ public class LeTrainView extends BorderPane implements SimpleUI {
     }
 
     @Override
-    public void setColor(int x, int y, Color color) {
-        viewGrid.setColor(x, y, color);
+    public void setColor(Color color) {
+        viewGrid.setColor(color);
     }
 
     @Override

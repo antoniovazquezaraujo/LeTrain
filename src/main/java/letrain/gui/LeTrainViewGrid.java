@@ -1,40 +1,40 @@
 package letrain.gui;
 
+import com.sun.javafx.tk.FontMetrics;
+import com.sun.javafx.tk.Toolkit;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import javafx.scene.text.TextBoundsType;
-import javafx.scene.text.TextFlow;
 import letrain.map.Point;
 import letrain.tui.SimpleUI;
 
+
 public class LeTrainViewGrid extends BorderPane implements SimpleUI {
-    public static final int ROWS = 30;
-    public static final int COLS = 50;
+    public static final int ROWS = 100;
+    public static final int COLS = 100;
     private Point mapScrollPage = new Point(0, 0);
-    final int TEXT_SIZE = 20;
-    Font font = Font.font("Monospace", TEXT_SIZE);
-    Text[][] texts = new Text[COLS][ROWS];
-    TextFlow flow = new TextFlow();
+    Canvas canvas;
+    GraphicsContext gc;
+    static final int TEXT_SIZE = 20;
+    static Font font = Font.font("Monospace", TEXT_SIZE);
+
     Text statusBar = new Text();
+    private final float charWidth;
+    private final float charHeight;
+
     public LeTrainViewGrid() {
         setStyle("-fx-background-color: black;");
-        setPrefHeight(300);
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
-                texts[col][row] = new Text(" ");
-                texts[col][row].setLineSpacing(0);
-                texts[col][row].setBoundsType(TextBoundsType.VISUAL);
-                texts[col][row].setFont(font);
-                flow.getChildren().add(texts[col][row]);
-            }
-            flow.getChildren().add(new Text(System.lineSeparator()));
-        }
-        setCenter(flow);
+        FontMetrics metrics = Toolkit.getToolkit().getFontLoader().getFontMetrics(font);
+        charWidth = metrics.computeStringWidth("X");
+        charHeight = metrics.getLineHeight();
+        canvas = new Canvas(COLS * charWidth, ROWS * charHeight);
+        setCenter(canvas);
         statusBar.setFill(Color.WHITE);
         setBottom(statusBar);
+        gc = canvas.getGraphicsContext2D();
     }
 
     @Override
@@ -44,7 +44,7 @@ public class LeTrainViewGrid extends BorderPane implements SimpleUI {
 
     @Override
     public void setMapScrollPage(Point pos) {
-        statusBar.setText("Página: "+ mapScrollPage.getY()+ "," + mapScrollPage.getX());
+        statusBar.setText("Página: " + mapScrollPage.getY() + "," + mapScrollPage.getX());
         this.mapScrollPage = pos;
     }
 
@@ -56,11 +56,8 @@ public class LeTrainViewGrid extends BorderPane implements SimpleUI {
 
     @Override
     public void clear() {
-        for (int col = 0; col < COLS; col++) {
-            for (int row = 0; row < ROWS; row++) {
-                texts[col][row].setText(" ");
-            }
-        }
+        gc.setFill(Color.BLACK);
+        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
     }
 
     @Override
@@ -68,23 +65,19 @@ public class LeTrainViewGrid extends BorderPane implements SimpleUI {
         x -= mapScrollPage.getX() * COLS;
         y -= mapScrollPage.getY() * ROWS;
         if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
-            texts[x][y].setText(c);
+            gc.fillText(c, x * charWidth, y * charHeight);
         }
     }
 
     @Override
-    public void setColor(int x, int y, Color color) {
-        x -= mapScrollPage.getX() * COLS;
-        y -= mapScrollPage.getY() * ROWS;
-        if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
-            texts[x][y].setFill(color);
-        }
+    public void setColor(Color color) {
+        gc.setFill(color);
     }
 
     @Override
     public void setPageOfPos(int x, int y) {
-        if(x<0)x-=COLS;
-        if(y<0)y-=ROWS;
+        if (x < 0) x -= COLS;
+        if (y < 0) y -= ROWS;
         int pageX = x / COLS;
         int pageY = y / ROWS;
         setMapScrollPage(new Point(pageX, pageY));
