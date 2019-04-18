@@ -1,9 +1,9 @@
-package letrain.tui;
+package letrain.mvp;
 
 import javafx.scene.paint.Color;
 import letrain.map.Point;
 
-public interface SimpleUI {
+public interface GameView {
     Point getMapScrollPage();
     void setMapScrollPage(Point pos);
     void paint();

@@ -1,7 +1,8 @@
-package letrain.model;
+package letrain.mvp;
 
 import letrain.map.RailMap;
-import letrain.track.TrainFactoryTrack;
+import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TrainFactoryRailTrack;
 import letrain.trackmaker.RailTrackMaker;
 import letrain.vehicle.impl.rail.Train;
 
@@ -14,11 +15,11 @@ public interface GameModel {
 
     List<Train> getTrains();
 
-    List<TrainFactoryTrack> getFactoryGateTracks();
+    List<TrainFactoryRailTrack> getFactoryGateTracks();
 
-    void addFactoryGateTrack(TrainFactoryTrack track);
+    void addFactoryGateTrack(TrainFactoryRailTrack track);
 
-    void removeFactoryGateTrack(TrainFactoryTrack track);
+    void removeFactoryGateTrack(TrainFactoryRailTrack track);
 
     void addTrain(Train train);
 

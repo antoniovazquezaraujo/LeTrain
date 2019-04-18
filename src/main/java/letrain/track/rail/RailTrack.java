@@ -40,6 +40,6 @@ public class RailTrack extends Track  {
 
     @Override
     public void accept(Renderer renderer) {
-        renderer.renderTrack(this);
+        renderer.renderRailTrack(this);
     }
 }

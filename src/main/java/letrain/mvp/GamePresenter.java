@@ -1,8 +1,6 @@
-package letrain.gui;
+package letrain.mvp;
 
-import letrain.model.GameModel;
-
-interface GamePresenter {
+public interface GamePresenter {
     void onGameModeSelected(GameModel.Mode mode);
 
     void onMakerAdvance();
@@ -13,7 +11,9 @@ interface GamePresenter {
 
     void onMakerTurnRight();
 
-    void onMakerCreateTunnel();
+    void onMakerCreateTunnelTrack();
+
+    void onMakerCreateStopTrack();
 
     void onMakerCreateFactoryGateTrack();
 

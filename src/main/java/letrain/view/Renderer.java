@@ -1,36 +1,37 @@
 package letrain.view;
 
 import letrain.map.RailMap;
-import letrain.track.TrainFactoryTrack;
+import letrain.mvp.GameModel;
+import letrain.track.rail.RailTrack;
+import letrain.track.rail.StopRailTrack;
+import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TunnelRailTrack;
 import letrain.trackmaker.RailTrackMaker;
-import letrain.model.GameModel;
-import letrain.track.StopTrack;
-import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public interface Renderer {
-     void renderSim(GameModel model);
+    void renderSim(GameModel model);
 
-     void renderMap(RailMap map);
+    void renderTrain(Train train);
 
-     void renderTrack(Track track);
+    void renderMap(RailMap map);
 
-     void renderStopTrack(StopTrack track );
-     void renderFactoryGateTrack(TrainFactoryTrack track );
+    void renderRailTrack(RailTrack track);
 
-    //TODO
-    //     void renderForkTrack(ForkTrack);
+    void renderStopRailTrack(StopRailTrack track);
 
-     void renderTrain(Train train);
+    void renderTrainFactoryRailTrack(TrainFactoryRailTrack track);
 
-     void renderLinker(Linker linker);
+    void renderTunnelRailTrack(TunnelRailTrack track);
 
-     void renderLocomotive(Locomotive locomotive);
+    void renderLinker(Linker linker);
 
-     void renderWagon(Wagon wagon);
+    void renderLocomotive(Locomotive locomotive);
 
-     void renderRailTrackMaker(RailTrackMaker railTrackMaker);
+    void renderWagon(Wagon wagon);
+
+    void renderRailTrackMaker(RailTrackMaker railTrackMaker);
 }

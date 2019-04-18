@@ -3,7 +3,7 @@ package letrain.trackmaker;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.TerrainMap;
-import letrain.model.GameModel;
+import letrain.mvp.GameModel;
 import letrain.track.Track;
 
 public interface TrackMaker<T extends Track> {

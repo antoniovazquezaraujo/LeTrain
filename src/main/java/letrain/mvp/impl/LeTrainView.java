@@ -1,4 +1,4 @@
-package letrain.gui;
+package letrain.mvp.impl;
 
 import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
@@ -7,15 +7,16 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import letrain.map.Point;
-import letrain.model.GameModel;
+import letrain.mvp.GameModel;
+import letrain.mvp.GamePresenter;
+import letrain.mvp.GameView;
 import letrain.tui.BasicGraphicConverter;
 import letrain.tui.GraphicConverter;
-import letrain.tui.SimpleUI;
 
 import java.util.Optional;
 
 
-public class LeTrainView extends BorderPane implements SimpleUI {
+public class LeTrainView extends BorderPane implements GameView {
     private final GamePresenter presenter;
     private final LeTrainViewGrid viewGrid;
     private Point position = new Point(0, 0); // scroll position of the viewer
@@ -121,7 +122,12 @@ public class LeTrainView extends BorderPane implements SimpleUI {
                     break;
                 case C:
                     presenter.onMakerCreateFactoryGateTrack();
-                    presenter.onGameModeSelected(GameModel.Mode.MAP_WALK);
+                    break;
+                case V:
+                    presenter.onMakerCreateTunnelTrack();
+                    break;
+                case B:
+                    presenter.onMakerCreateStopTrack();
                     break;
                 case S:
                     presenter.onIncTrainAcceleration();

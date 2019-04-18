@@ -3,7 +3,7 @@ package letrain.trackmaker;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.TerrainMap;
-import letrain.model.GameModel;
+import letrain.mvp.GameModel;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.StopRailTrack;
 import letrain.track.rail.TrainFactoryRailTrack;
@@ -126,7 +126,7 @@ public class RailTrackMaker implements TrackMaker<RailTrack>, Renderable {
         //Creamos o localizamos el nuevo track
         RailTrack newTrack = map.getTrackAt(newPos);
         if (newTrack == null) {
-            newTrack = new RailTrack();
+            newTrack = createTrackOfSelectedType();
         }
 
         newTrack.setPosition(newPos);

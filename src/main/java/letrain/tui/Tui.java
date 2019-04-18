@@ -1,9 +1,10 @@
 package letrain.tui;
 
 import javafx.scene.paint.Color;
+import letrain.mvp.GameView;
 import letrain.map.Point;
 
-public class Tui implements SimpleUI {
+public class Tui implements GameView {
     private static final int ROWS = 25;
     private static final int COLS = 80;
     private final String [][] screen = new String [COLS][ROWS];

@@ -1,14 +1,16 @@
 package letrain.view;
 
 import javafx.scene.paint.Color;
-import letrain.gui.LeTrainView;
+import letrain.mvp.impl.LeTrainView;
 import letrain.map.Dir;
 import letrain.map.RailMap;
-import letrain.track.TrainFactoryTrack;
-import letrain.trackmaker.RailTrackMaker;
-import letrain.model.GameModel;
-import letrain.track.StopTrack;
+import letrain.mvp.GameModel;
 import letrain.track.Track;
+import letrain.track.rail.RailTrack;
+import letrain.track.rail.StopRailTrack;
+import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TunnelRailTrack;
+import letrain.trackmaker.RailTrackMaker;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
@@ -33,7 +35,7 @@ public class UnicodeRenderer implements Renderer {
     }
 
     @Override
-    public void renderTrack(Track track) {
+    public void renderRailTrack(RailTrack track) {
         if (track.getRouter().isStraight()) {
             view.setColor(Color.YELLOW);
             view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
@@ -49,18 +51,25 @@ public class UnicodeRenderer implements Renderer {
         }
 
     }
-    @Override
-    public void renderFactoryGateTrack(TrainFactoryTrack track) {
-        view.setColor(Color.LIGHTBLUE);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
-
-    }
 
     @Override
-    public void renderStopTrack(StopTrack stopTrack) {
+    public void renderStopRailTrack(StopRailTrack track) {
         view.setColor(Color.YELLOW);
-        view.set(stopTrack.getPosition().getX(), stopTrack.getPosition().getY(), "☰");
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "≕");
     }
+
+    @Override
+    public void renderTrainFactoryRailTrack(TrainFactoryRailTrack track) {
+        view.setColor(Color.RED);
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
+    }
+
+    @Override
+    public void renderTunnelRailTrack(TunnelRailTrack track) {
+        view.setColor(Color.YELLOW);
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
+    }
+
 
 
     @Override

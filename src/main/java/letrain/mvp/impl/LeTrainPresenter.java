@@ -1,10 +1,10 @@
-package letrain.gui;
+package letrain.mvp.impl;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.util.Duration;
-import letrain.model.GameModel;
-import letrain.model.LeTrainModel;
+import letrain.mvp.GameModel;
+import letrain.mvp.GamePresenter;
 import letrain.tui.BasicGraphicConverter;
 import letrain.tui.GraphicConverter;
 import letrain.vehicle.impl.rail.Locomotive;
@@ -12,7 +12,7 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 import letrain.view.UnicodeRenderer;
 
-import static letrain.trackmaker.TrackMaker.NewTrackType.TRAIN_FACTORY_GATE;
+import static letrain.trackmaker.TrackMaker.NewTrackType.*;
 
 public class LeTrainPresenter implements GamePresenter {
     private Timeline loop;
@@ -78,14 +78,26 @@ public class LeTrainPresenter implements GamePresenter {
     }
 
     @Override
-    public void onMakerCreateTunnel() {
+    public void onMakerCreateTunnelTrack() {
+        model.getMaker().selectNewTrackType(TUNNEL_GATE);
+        onMakerAdvance();
+        model.getMaker().selectNewTrackType(NORMAL_TRACK);
+        onGameModeSelected(GameModel.Mode.MAP_WALK);
+    }
 
+    @Override
+    public void onMakerCreateStopTrack() {
+        model.getMaker().selectNewTrackType(STOP_TRACK);
+        onMakerAdvance();
+        model.getMaker().selectNewTrackType(NORMAL_TRACK);
+        onGameModeSelected(GameModel.Mode.MAP_WALK);
     }
 
     @Override
     public void onMakerCreateFactoryGateTrack() {
         model.getMaker().selectNewTrackType(TRAIN_FACTORY_GATE);
         onMakerAdvance();
+        model.getMaker().selectNewTrackType(NORMAL_TRACK);
         onGameModeSelected(GameModel.Mode.MAP_WALK);
     }
 

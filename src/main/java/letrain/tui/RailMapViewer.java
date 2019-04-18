@@ -1,11 +1,12 @@
 package letrain.tui;
 
+import letrain.mvp.GameView;
 import letrain.map.RailMap;
 
 class RailMapViewer {
 
     public static void view(RailMap map) {
-        final SimpleUI tui = new Tui();
+        final GameView tui = new Tui();
         GraphicConverter converter = new BasicGraphicConverter();
         map.forEach(t -> tui.set(
                 t.getPosition().getX(),

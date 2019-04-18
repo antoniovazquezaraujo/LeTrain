@@ -1,6 +1,6 @@
 package letrain.map
 
-import letrain.model.GameModel
+import letrain.mvp.GameModel
 import letrain.track.rail.RailTrack
 import letrain.trackmaker.RailTrackMaker
 import org.mockito.InjectMocks

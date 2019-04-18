@@ -1,8 +1,9 @@
-package letrain.model;
+package letrain.mvp.impl;
 
 import letrain.map.Dir;
 import letrain.map.RailMap;
-import letrain.track.TrainFactoryTrack;
+import letrain.mvp.GameModel;
+import letrain.track.rail.TrainFactoryRailTrack;
 import letrain.trackmaker.RailTrackMaker;
 import letrain.vehicle.impl.rail.Train;
 
@@ -13,7 +14,7 @@ public class LeTrainModel implements GameModel {
     private RailMap map;
     private final List<Train> trains;
     private final RailTrackMaker maker;
-    private final List<TrainFactoryTrack> factoryGateTracks;
+    private final List<TrainFactoryRailTrack> factoryGateTracks;
     public LeTrainModel() {
         this.factoryGateTracks = new ArrayList<>();
         this.trains = new ArrayList<>();
@@ -41,17 +42,18 @@ public class LeTrainModel implements GameModel {
     }
 
     @Override
-    public List<TrainFactoryTrack> getFactoryGateTracks() {
+    public List<TrainFactoryRailTrack> getFactoryGateTracks() {
         return factoryGateTracks;
     }
 
+
     @Override
-    public void addFactoryGateTrack(TrainFactoryTrack track) {
+    public void addFactoryGateTrack(TrainFactoryRailTrack track) {
         factoryGateTracks.add(track);
     }
 
     @Override
-    public void removeFactoryGateTrack(TrainFactoryTrack track) {
+    public void removeFactoryGateTrack(TrainFactoryRailTrack track) {
         factoryGateTracks.remove(track);
     }
 

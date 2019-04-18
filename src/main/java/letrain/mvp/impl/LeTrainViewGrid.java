@@ -1,22 +1,18 @@
-package letrain.gui;
+package letrain.mvp.impl;
 
 import com.sun.javafx.tk.FontMetrics;
 import com.sun.javafx.tk.Toolkit;
-import javafx.scene.Parent;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Accordion;
-import javafx.scene.control.TitledPane;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
-import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
 import letrain.map.Point;
-import letrain.tui.SimpleUI;
+import letrain.mvp.GameView;
 
 
-public class LeTrainViewGrid extends Pane implements SimpleUI {
+public class LeTrainViewGrid extends Pane implements GameView {
     private static final int ROWS = 40;
     private static final int COLS = 100;
     private Point mapScrollPage = new Point(0, 0);
@@ -36,6 +32,8 @@ public class LeTrainViewGrid extends Pane implements SimpleUI {
         canvas = new Canvas(COLS * charWidth, ROWS * charHeight);
         getChildren().add(canvas);
         gc = canvas.getGraphicsContext2D();
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFont(font);
     }
 
     @Override
