@@ -5,13 +5,15 @@ import letrain.map.Point;
 import letrain.view.Renderer;
 
 public interface SimpleUI {
-    Point getPos();
-    void setPos(Point pos);
+    Point getMapScrollPage();
+    void setMapScrollPage(Point pos);
     void paint();
     public void clear();
     public void set(int x, int y, String c);
 
     void setColor(int x, int y, Color color);
+
+    void setPageOfPos(int x, int y);
 
     public void clear(int x, int y);
 

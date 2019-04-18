@@ -14,12 +14,12 @@ public class Tui implements SimpleUI {
     }
 
     @Override
-    public Point getPos() {
+    public Point getMapScrollPage() {
         return null;
     }
 
     @Override
-    public void setPos(Point pos) {
+    public void setMapScrollPage(Point pos) {
 
     }
 
@@ -50,6 +50,11 @@ public class Tui implements SimpleUI {
 
     @Override
     public void setColor(int x, int y, Color color) {
+
+    }
+
+    @Override
+    public void setPageOfPos(int x, int y) {
 
     }
 

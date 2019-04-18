@@ -60,6 +60,7 @@ public class LeTrainPresenter implements GamePresenter {
     @Override
     public void onMakerAdvance() {
         model.getMaker().advance();
+        view.setPageOfPos(model.getMaker().getPosition().getX(), model.getMaker().getPosition().getY());
     }
 
     @Override

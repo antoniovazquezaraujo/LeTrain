@@ -3,7 +3,6 @@ package letrain.gui;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import letrain.map.Point;
 import letrain.sim.GameModel;
@@ -41,9 +40,9 @@ public class LeTrainView extends BorderPane implements SimpleUI {
                 case UP:
                     if (keyEvent.isControlDown()) {
                         clear();
-                        Point p = getPos();
+                        Point p = getMapScrollPage();
                         p.setY(p.getY() - 1);
-                        setPos(p);
+                        setMapScrollPage(p);
                         clear();
                     } else {
                         presenter.onMakerAdvance();
@@ -52,9 +51,9 @@ public class LeTrainView extends BorderPane implements SimpleUI {
                 case DOWN:
                     if (keyEvent.isControlDown()) {
                         clear();
-                        Point p = getPos();
+                        Point p = getMapScrollPage();
                         p.setY(p.getY() + 1);
-                        setPos(p);
+                        setMapScrollPage(p);
                         clear();
                     } else {
                         presenter.onMakerInverse();
@@ -65,9 +64,9 @@ public class LeTrainView extends BorderPane implements SimpleUI {
                 case LEFT:
                     if (keyEvent.isControlDown()) {
                         clear();
-                        Point p = getPos();
+                        Point p = getMapScrollPage();
                         p.setX(p.getX() - 1);
-                        setPos(p);
+                        setMapScrollPage(p);
                         clear();
                     } else {
                         presenter.onMakerTurnLeft();
@@ -76,9 +75,9 @@ public class LeTrainView extends BorderPane implements SimpleUI {
                 case RIGHT:
                     if (keyEvent.isControlDown()) {
                         clear();
-                        Point p = getPos();
+                        Point p = getMapScrollPage();
                         p.setX(p.getX() + 1);
-                        setPos(p);
+                        setMapScrollPage(p);
                         clear();
                     } else {
                         presenter.onMakerTurnRight();
@@ -118,13 +117,13 @@ public class LeTrainView extends BorderPane implements SimpleUI {
     }
 
     @Override
-    public Point getPos() {
-        return viewGrid.getPos();
+    public Point getMapScrollPage() {
+        return viewGrid.getMapScrollPage();
     }
 
     @Override
-    public void setPos(Point pos) {
-        viewGrid.setPos(pos);
+    public void setMapScrollPage(Point pos) {
+        viewGrid.setMapScrollPage(pos);
     }
 
 
@@ -146,6 +145,11 @@ public class LeTrainView extends BorderPane implements SimpleUI {
     @Override
     public void setColor(int x, int y, Color color) {
         viewGrid.setColor(x, y, color);
+    }
+
+    @Override
+    public void setPageOfPos(int x, int y) {
+        viewGrid.setPageOfPos(x,y);
     }
 
     @Override
