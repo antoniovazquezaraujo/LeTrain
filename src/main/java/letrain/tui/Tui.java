@@ -4,9 +4,9 @@ import javafx.scene.paint.Color;
 import letrain.map.Point;
 
 public class Tui implements SimpleUI {
-    public static final int ROWS = 25;
-    public static final int COLS = 80;
-    String [][] screen = new String [COLS][ROWS];
+    private static final int ROWS = 25;
+    private static final int COLS = 80;
+    private final String [][] screen = new String [COLS][ROWS];
 
     public Tui() {
         clear();

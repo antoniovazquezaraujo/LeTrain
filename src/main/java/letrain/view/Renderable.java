@@ -1,5 +1,5 @@
 package letrain.view;
 
 public interface Renderable {
-    public void accept(Renderer renderer);
+    void accept(Renderer renderer);
 }

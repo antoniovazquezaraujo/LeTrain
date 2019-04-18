@@ -13,15 +13,15 @@ import letrain.tui.SimpleUI;
 
 
 public class LeTrainViewGrid extends BorderPane implements SimpleUI {
-    public static final int ROWS = 100;
-    public static final int COLS = 100;
+    private static final int ROWS = 100;
+    private static final int COLS = 100;
     private Point mapScrollPage = new Point(0, 0);
-    Canvas canvas;
-    GraphicsContext gc;
-    static final int TEXT_SIZE = 20;
-    static Font font = Font.font("Monospace", TEXT_SIZE);
+    private final Canvas canvas;
+    private final GraphicsContext gc;
+    private static final int TEXT_SIZE = 20;
+    private static final Font font = Font.font("Monospace", TEXT_SIZE);
 
-    Text statusBar = new Text();
+    private final Text statusBar = new Text();
     private final float charWidth;
     private final float charHeight;
 

@@ -3,7 +3,6 @@ package letrain.vehicle;
 import letrain.map.*;
 import letrain.track.Track;
 import letrain.view.Renderable;
-import letrain.view.Renderer;
 
 public abstract class Vehicle<T extends Track>
         implements
@@ -17,12 +16,12 @@ public abstract class Vehicle<T extends Track>
 
 
     protected Dir dir = Dir.N;
-    protected boolean selected = false;
-    protected boolean reversed = false;
+    private boolean selected = false;
+    private boolean reversed = false;
     private int acceleration = 0;
 
 
-    public Vehicle() {
+    protected Vehicle() {
     }
 
     /***********************************************************

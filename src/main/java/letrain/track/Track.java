@@ -6,7 +6,6 @@ import letrain.vehicle.impl.Linker;
 import letrain.view.Renderable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -18,14 +17,14 @@ public abstract class Track implements
         LinkerCompartmentListener,
         Renderable {
 
-    protected final Router router = new SimpleRouter();
+    private final Router router = new SimpleRouter();
     private TrackDirector trackDirector;
-    protected Linker linker = null;
-    protected Point pos = null;
+    private Linker linker = null;
+    private Point pos = null;
     protected Track[] connections;
-    final List<LinkerCompartmentListener> trackeableCompartmentListeners = new ArrayList<>();
+    private final List<LinkerCompartmentListener> trackeableCompartmentListeners = new ArrayList<>();
 
-    public Track() {
+    protected Track() {
         trackeableCompartmentListeners.add(this);
     }
 
@@ -44,11 +43,11 @@ public abstract class Track implements
         return router;
     }
 
-    public TrackDirector  getTrackDirector() {
+    protected TrackDirector  getTrackDirector() {
         return trackDirector;
     }
 
-    public void setTrackDirector(TrackDirector  trackDirector) {
+    protected void setTrackDirector(TrackDirector trackDirector) {
         this.trackDirector = trackDirector;
     }
 

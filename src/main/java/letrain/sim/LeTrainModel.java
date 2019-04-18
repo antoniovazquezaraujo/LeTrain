@@ -10,8 +10,8 @@ import java.util.List;
 
 public class LeTrainModel implements GameModel {
     private RailMap map;
-    private List<Train> trains;
-    RailTrackMaker maker;
+    private final List<Train> trains;
+    private final RailTrackMaker maker;
 
     public LeTrainModel() {
         this.trains = new ArrayList<>();
@@ -50,7 +50,7 @@ public class LeTrainModel implements GameModel {
 
     @Override
     public void moveTrains() {
-        trains.stream().forEach(t-> t.applyForces());
+        trains.forEach(Train::applyForces);
     }
 
     @Override

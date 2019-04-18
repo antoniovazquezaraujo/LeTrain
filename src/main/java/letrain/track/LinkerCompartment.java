@@ -3,7 +3,7 @@ package letrain.track;
 import letrain.map.Dir;
 import letrain.vehicle.impl.Linker;
 
-public interface LinkerCompartment<T extends Track> {
+interface LinkerCompartment<T extends Track> {
     void enterLinkerFromDir(Dir d, Linker t);
 
     Linker removeLinker();

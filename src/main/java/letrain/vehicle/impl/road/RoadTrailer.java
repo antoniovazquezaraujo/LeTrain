@@ -1,6 +1,5 @@
 package letrain.vehicle.impl.road;
 
-import letrain.track.road.RoadTrack;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;

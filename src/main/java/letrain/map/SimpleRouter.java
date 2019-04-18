@@ -10,9 +10,9 @@ import java.util.function.Consumer;
 public class SimpleRouter implements Router {
 
 
-    Map<Dir, Dir> dirMap = new HashMap<>();
-    Pair<Dir, Dir> alternativeRoute= null;
-    Pair<Dir, Dir> originalRoute = null;
+    private final Map<Dir, Dir> dirMap = new HashMap<>();
+    private Pair<Dir, Dir> alternativeRoute= null;
+    private Pair<Dir, Dir> originalRoute = null;
     private boolean usingAlternativeRoute = false;
 
     public SimpleRouter() {
@@ -65,9 +65,7 @@ public class SimpleRouter implements Router {
     }
 
     private boolean allRoutesAreStright(){
-        return dirMap.entrySet().stream()
-                .filter(t -> !t.getKey().isStraight(t.getValue()))
-                .count() == 0;
+        return dirMap.entrySet().stream().noneMatch(t -> !t.getKey().isStraight(t.getValue()));
     }
 
     @Override

@@ -33,9 +33,9 @@ public enum Dir {
     SE(7);
 
     public static final int NUM_DIRS = 8;
-    public static final int MIDDLE_ANGLE = NUM_DIRS / 2;
-    public static final int MIN_CURVE_ANGLE = MIDDLE_ANGLE - 1;
-    public static final int MAX_CURVE_ANGLE = MIDDLE_ANGLE + 1;
+    private static final int MIDDLE_ANGLE = NUM_DIRS / 2;
+    private static final int MIN_CURVE_ANGLE = MIDDLE_ANGLE - 1;
+    private static final int MAX_CURVE_ANGLE = MIDDLE_ANGLE + 1;
 
     private final int value;
 
@@ -88,7 +88,7 @@ public enum Dir {
         return Dir.fromInt(dir.getValue() + MIDDLE_ANGLE);
     }
 
-    public static int invert(int value) {
+    private static int invert(int value) {
         if (isValidValue(value)) {
             return value + MIDDLE_ANGLE;
         } else {

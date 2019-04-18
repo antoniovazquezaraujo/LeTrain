@@ -4,6 +4,7 @@ import letrain.map.Dir;
 import letrain.map.Reversible;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
+import letrain.vehicle.Vehicle;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;
@@ -15,13 +16,13 @@ import java.util.stream.Collectors;
 
 public class Train implements Trailer<RailTrack>, Reversible, Renderable {
     private static final float DISTANCE_UNIT = 1;
-    Deque<Linker> linkers;
-    List<Tractor> tractors;
-    Tractor mainTractor;
+    private final Deque<Linker> linkers;
+    private final List<Tractor> tractors;
+    private Tractor mainTractor;
     private float acceleration;
     private float distanceTraveled;
 
-    public Train() {
+    private Train() {
         this.linkers = new LinkedList<>();
         this.tractors = new ArrayList<>();
     }
@@ -128,7 +129,7 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
     public float getTractorsForce() {
         return (float) getTractors()
                 .stream()
-                .mapToDouble(t -> t.getForce())
+                .mapToDouble(Tractor::getForce)
                 .sum();
     }
 
@@ -144,9 +145,7 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
     public float getFrictionForce() {
         return (float) getLinkers()
                 .stream()
-                .mapToDouble(l -> {
-                    return l.getFrictionCoefficient() * l.getMass() * getAcceleration();
-                })
+                .mapToDouble(l -> l.getFrictionCoefficient() * l.getMass() * getAcceleration())
                 .sum();
     }
 
@@ -159,7 +158,7 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
     public float getTotalMass() {
         return (float) getLinkers()
                 .stream()
-                .mapToDouble(l -> l.getMass())
+                .mapToDouble(Vehicle::getMass)
                 .sum();
     }
 

@@ -24,7 +24,7 @@ public class BasicGraphicConverter implements GraphicConverter {
             return "+";
         }
     }
-    public String dirGraphicAspect(Dir dir){
+    private String dirGraphicAspect(Dir dir){
         if(dir==null){
             return "?";
         }

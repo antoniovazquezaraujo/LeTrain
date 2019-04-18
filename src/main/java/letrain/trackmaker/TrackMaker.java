@@ -6,7 +6,7 @@ import letrain.map.TerrainMap;
 import letrain.sim.GameModel;
 import letrain.track.Track;
 
-public interface TrackMaker<T extends Track> {
+interface TrackMaker<T extends Track> {
     void setMap(TerrainMap<T> map);
 
     void setPosition(int x, int y);

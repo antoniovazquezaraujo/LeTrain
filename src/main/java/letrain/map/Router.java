@@ -35,6 +35,6 @@ public interface Router {
 
     boolean isUsingAlternativeRoute();
 
-    public void forEach(Consumer<Pair<Dir, Dir>> routeConsumer);
+    void forEach(Consumer<Pair<Dir, Dir>> routeConsumer);
 
 }

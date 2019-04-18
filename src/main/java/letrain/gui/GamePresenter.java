@@ -2,36 +2,36 @@ package letrain.gui;
 
 import letrain.sim.GameModel;
 
-public interface GamePresenter {
-    public void onGameModeSelected(GameModel.Mode mode);
+interface GamePresenter {
+    void onGameModeSelected(GameModel.Mode mode);
 
-    public void onMakerAdvance();
+    void onMakerAdvance();
 
-    public void onMakerInverse();
+    void onMakerInverse();
 
-    public void onMakerTurnLeft();
+    void onMakerTurnLeft();
 
-    public void onMakerTurnRight();
+    void onMakerTurnRight();
 
-    public void onMakerCreateTunnel();
+    void onMakerCreateTunnel();
 
-    public void onMakerCreateFactory();
+    void onMakerCreateFactory();
 
-    public void onFactoryCreateTrain(String trainName);
+    void onFactoryCreateTrain(String trainName);
 
-    public void onFactoryCreateLocomotive();
+    void onFactoryCreateLocomotive();
 
-    public void onFactoryCreateWagon();
+    void onFactoryCreateWagon();
 
-    public void onSelectTrain(String trainName);
+    void onSelectTrain(String trainName);
 
-    public void onIncTrainAcceleration();
+    void onIncTrainAcceleration();
 
-    public void onDecTrainAcceleration();
+    void onDecTrainAcceleration();
 
-    public void onSelectFork(String forkName);
+    void onSelectFork(String forkName);
 
-    public void onChangeForkDirection();
+    void onChangeForkDirection();
 
     void paintLoop();
 }

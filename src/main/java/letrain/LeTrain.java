@@ -12,7 +12,7 @@ public class LeTrain extends Application {
     }
 
     @Override
-    public void start(Stage stage) throws Exception {
+    public void start(Stage stage) {
         LeTrainPresenter presenter = new LeTrainPresenter();
         GridPane pane = new GridPane();
         pane.getChildren().add(presenter.getView());

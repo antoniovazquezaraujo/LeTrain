@@ -33,7 +33,7 @@ public abstract class Linker extends Tracker implements Linkable {
         Dir dir = this.getDir();
         Dir inverseDir = dir.inverse();
         if (this.track.canExit(dir)) {
-            Track  target = (Track ) track.getConnected(dir);
+            Track  target = track.getConnected(dir);
             if (target.canEnter(inverseDir, this)) {
                 Linker t = this.track.removeLinker();
                 target.enterLinkerFromDir(inverseDir, t);

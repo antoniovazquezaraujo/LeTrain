@@ -2,10 +2,6 @@ package letrain.gui;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.layout.GridPane;
-import javafx.stage.Stage;
 import javafx.util.Duration;
 import letrain.sim.GameModel;
 import letrain.sim.LeTrainModel;
@@ -14,11 +10,11 @@ import letrain.tui.GraphicConverter;
 import letrain.view.UnicodeRenderer;
 
 public class LeTrainPresenter implements GamePresenter {
-    Timeline loop;
-    private GameModel model;
-    private LeTrainView view;
+    private Timeline loop;
+    private final GameModel model;
+    private final LeTrainView view;
     GraphicConverter converter = new BasicGraphicConverter();
-    UnicodeRenderer renderer ;
+    private final UnicodeRenderer renderer ;
 
     public LeTrainPresenter() {
         model = new LeTrainModel();
@@ -30,9 +26,7 @@ public class LeTrainPresenter implements GamePresenter {
         loop = new Timeline();
         loop.setCycleCount(Timeline.INDEFINITE);
 
-        KeyFrame kf = new KeyFrame(Duration.seconds(.1), actionEvent -> {
-            paintLoop();
-        });
+        KeyFrame kf = new KeyFrame(Duration.seconds(.1), actionEvent -> paintLoop());
         loop.getKeyFrames().add(kf);
         loop.play();
     }

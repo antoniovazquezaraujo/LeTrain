@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 
 public class RailMap implements TerrainMap<RailTrack> , Renderable {
 
-    final Map<Integer, Map<Integer, RailTrack>> rails;
+    private final Map<Integer, Map<Integer, RailTrack>> rails;
 
     public RailMap() {
         rails = new HashMap<>();

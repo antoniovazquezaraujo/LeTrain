@@ -1,11 +1,8 @@
 package letrain.gui;
 
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Text;
 import letrain.map.Point;
 import letrain.sim.GameModel;
 import letrain.tui.BasicGraphicConverter;
@@ -14,8 +11,8 @@ import letrain.tui.SimpleUI;
 
 
 public class LeTrainView extends GridPane implements SimpleUI {
-    GamePresenter presenter;
-    LeTrainViewGrid viewGrid;
+    private final GamePresenter presenter;
+    private final LeTrainViewGrid viewGrid;
     private Point position = new Point(0, 0); // scroll position of the viewer
 
     public LeTrainView(GamePresenter presenter) {
@@ -28,7 +25,7 @@ public class LeTrainView extends GridPane implements SimpleUI {
         this.requestFocus();
     }
 
-    public void addEventListener() {
+    private void addEventListener() {
         GraphicConverter converter = new BasicGraphicConverter();
 
         addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {

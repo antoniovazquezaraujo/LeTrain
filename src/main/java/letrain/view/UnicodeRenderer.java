@@ -14,7 +14,7 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public class UnicodeRenderer implements Renderer {
-    LeTrainView view;
+    private final LeTrainView view;
     public UnicodeRenderer(LeTrainView view) {
         this.view = view;
     }

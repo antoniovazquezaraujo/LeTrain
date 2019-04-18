@@ -4,7 +4,7 @@ import letrain.map.Dir;
 import letrain.vehicle.impl.Linker;
 
 public class TrackDirector<T extends Track> {
-    public static TrackDirector instance;
+    private static TrackDirector instance;
 
     public TrackDirector() {
 

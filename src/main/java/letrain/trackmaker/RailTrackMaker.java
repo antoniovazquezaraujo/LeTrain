@@ -10,14 +10,14 @@ import letrain.view.Renderer;
 
 public class RailTrackMaker implements TrackMaker<RailTrack>, Renderable {
 
-    TerrainMap<RailTrack> map;
-    final Point position = new Point(0, 0);
-    Dir dir;
-    RailTrack oldTrack;
-    Dir oldDir;
-    boolean reversed;
-    GameModel.Mode mode;
-    int degreesOfRotation= 0;
+    private TerrainMap<RailTrack> map;
+    private final Point position = new Point(0, 0);
+    private Dir dir;
+    private RailTrack oldTrack;
+    private Dir oldDir;
+    private boolean reversed;
+    private GameModel.Mode mode;
+    private int degreesOfRotation= 0;
 
     @Override
     public void setMap(TerrainMap<RailTrack> map) {
