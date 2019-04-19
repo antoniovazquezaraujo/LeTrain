@@ -1,10 +1,10 @@
 package letrain.render;
 
 import javafx.scene.paint.Color;
-import letrain.mvp.GameView;
 import letrain.map.Dir;
 import letrain.map.RailMap;
 import letrain.mvp.GameModel;
+import letrain.mvp.GameView;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.StopRailTrack;
@@ -17,7 +17,10 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public class UnicodeRenderer implements Renderer {
+    private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
+    public static final Color FORK_COLOR = Color.grayRgb(180);;
     private final GameView view;
+
     public UnicodeRenderer(GameView view) {
         this.view = view;
     }
@@ -25,28 +28,28 @@ public class UnicodeRenderer implements Renderer {
     @Override
     public void renderModel(GameModel model) {
         model.getRailMap().accept(this);
-        model.getTrains().forEach(t->t.accept(this));
+        model.getTrains().forEach(t -> t.accept(this));
         model.getMaker().accept(this);
     }
 
     @Override
     public void renderMap(RailMap map) {
-        map.forEach(t-> t.accept(this));
+        map.forEach(t -> t.accept(this));
     }
 
     @Override
     public void renderRailTrack(RailTrack track) {
         if (track.getRouter().isStraight()) {
-            view.setColor(Color.YELLOW);
+            view.setColor(RAIL_TRACK_COLOR);
             view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
         } else if (track.getRouter().isCurve()) {
-            view.setColor(Color.YELLOW);
+            view.setColor(RAIL_TRACK_COLOR);
             view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
-        }else if (track.getRouter().isFork()){
-            view.setColor(Color.GREEN);
+        } else if (track.getRouter().isFork()) {
+            view.setColor(FORK_COLOR);
             view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
         } else {
-            view.setColor(Color.YELLOW);
+            view.setColor(RAIL_TRACK_COLOR);
             view.set(track.getPosition().getX(), track.getPosition().getY(), "+");
         }
 
@@ -54,7 +57,7 @@ public class UnicodeRenderer implements Renderer {
 
     @Override
     public void renderStopRailTrack(StopRailTrack track) {
-        view.setColor(Color.YELLOW);
+        view.setColor(RAIL_TRACK_COLOR);
         view.set(track.getPosition().getX(), track.getPosition().getY(), "⊝");
     }
 
@@ -66,15 +69,14 @@ public class UnicodeRenderer implements Renderer {
 
     @Override
     public void renderTunnelRailTrack(TunnelRailTrack track) {
-        view.setColor(Color.YELLOW);
+        view.setColor(RAIL_TRACK_COLOR);
         view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
     }
 
 
-
     @Override
     public void renderTrain(Train train) {
-        train.getLinkers().forEach(t->t.accept(this));
+        train.getLinkers().forEach(t -> t.accept(this));
     }
 
     @Override
@@ -95,7 +97,7 @@ public class UnicodeRenderer implements Renderer {
     @Override
     public void renderRailTrackMaker(RailTrackMaker railTrackMaker) {
         view.setColor(Color.RED);
-        view.set(railTrackMaker.getPosition().getX(), railTrackMaker.getPosition().getY(), dirGraphicAspect(railTrackMaker.getDirection()));
+        view.set(railTrackMaker.getPosition().getX(), railTrackMaker.getPosition().getY(), railMakerGraphicAspect(railTrackMaker.getDirection()));
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -104,17 +106,18 @@ public class UnicodeRenderer implements Renderer {
             return dirGraphicAspect(track.getRouter().getFirstOpenDir());
         } else if (track.getRouter().isCurve()) {
             return "∙";
-        }else if (track.getRouter().isFork()){
-                return dirGraphicAspect(track.getRouter().getFirstOpenDir());
+        } else if (track.getRouter().isFork()) {
+            return dirGraphicAspect(track.getRouter().getFirstOpenDir());
         } else {
             return "+";
         }
     }
-    private String dirGraphicAspect(Dir dir){
-        if(dir==null){
+
+    private String dirGraphicAspect(Dir dir) {
+        if (dir == null) {
             return "";
         }
-        switch(dir) {
+        switch (dir) {
             case E:
             case W:
                 return "−";
@@ -127,6 +130,31 @@ public class UnicodeRenderer implements Renderer {
             case NW:
             case SE:
                 return "\\";
+        }
+        return "?";
+    }
+
+    private String railMakerGraphicAspect(Dir dir) {
+        if (dir == null) {
+            return "";
+        }
+        switch (dir) {
+            case E:
+                return ">";
+            case W:
+                return "<";
+            case NE:
+                return "⌝";
+            case SW:
+                return "⌞";
+            case N:
+                return "⌃";
+            case S:
+                return "⌄";
+            case NW:
+                return "⌜";
+            case SE:
+                return "⌟";
         }
         return "?";
     }

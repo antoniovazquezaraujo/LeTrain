@@ -21,17 +21,13 @@ public interface TrackMaker<T extends Track> extends Renderable {
 
     Point getPosition();
 
-    void advance(int times);
+    void setDirection(Dir d);
+
+    Dir getDirection();
 
     void advance();
 
-    void setDirection(Dir d);
-
-    void selectNewTrackType(RailTrackMaker.NewTrackType type);
-
-    RailTrackMaker.NewTrackType getNewTrackType();
-
-    Dir getDirection();
+    void advance(int times);
 
     void reverse();
 
@@ -43,6 +39,9 @@ public interface TrackMaker<T extends Track> extends Renderable {
 
     void setMode(GameModel.Mode mode);
 
-    GameModel.Mode getMode();
+    void selectNewTrackType(RailTrackMaker.NewTrackType type);
 
+    RailTrackMaker.NewTrackType getNewTrackType();
+
+    GameModel.Mode getMode();
 }
