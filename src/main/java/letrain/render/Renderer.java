@@ -6,7 +6,7 @@ import letrain.track.rail.RailTrack;
 import letrain.track.rail.StopRailTrack;
 import letrain.track.rail.TrainFactoryRailTrack;
 import letrain.track.rail.TunnelRailTrack;
-import letrain.trackmaker.RailTrackMaker;
+import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
@@ -33,5 +33,5 @@ public interface Renderer {
 
     void renderWagon(Wagon wagon);
 
-    void renderRailTrackMaker(RailTrackMaker railTrackMaker);
+    void renderCursor(Cursor cursor);
 }

@@ -1,11 +1,11 @@
 package letrain.mvp.impl;
 
 import letrain.map.Dir;
+import letrain.map.Point;
 import letrain.map.RailMap;
 import letrain.mvp.GameModel;
 import letrain.track.rail.TrainFactoryRailTrack;
-import letrain.trackmaker.RailTrackMaker;
-import letrain.trackmaker.TrackMaker;
+import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Train;
 
 import java.util.ArrayList;
@@ -14,17 +14,15 @@ import java.util.List;
 public class LeTrainModel implements GameModel {
     private RailMap map;
     private final List<Train> trains;
-    private final TrackMaker maker;
     private final List<TrainFactoryRailTrack> factoryRailTracks;
+    private Cursor cursor;
     public LeTrainModel() {
+        this.cursor = new Cursor();
+        this.cursor.setDir(Dir.N);
+        this.cursor.setPosition(new Point(10,10));
         this.factoryRailTracks = new ArrayList<>();
         this.trains = new ArrayList<>();
         this.map = new RailMap();
-        this.maker = new RailTrackMaker();
-        this.maker.setMap(map);
-        this.maker.setDirection(Dir.N);
-        this.maker.setPosition(10,10);
-        this.maker.setMode(GameModel.Mode.MAP_WALK);
     }
 
     @Override
@@ -35,6 +33,11 @@ public class LeTrainModel implements GameModel {
     @Override
     public List<Train> getTrains() {
         return trains;
+    }
+
+    @Override
+    public Cursor getCursor() {
+        return cursor;
     }
 
     @Override
@@ -67,8 +70,4 @@ public class LeTrainModel implements GameModel {
         trains.forEach(Train::applyForces);
     }
 
-    @Override
-    public TrackMaker getMaker() {
-        return maker;
-    }
 }

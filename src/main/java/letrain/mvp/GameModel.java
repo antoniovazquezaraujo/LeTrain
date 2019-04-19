@@ -1,8 +1,10 @@
 package letrain.mvp;
 
+import letrain.map.Dir;
+import letrain.map.Point;
 import letrain.map.RailMap;
 import letrain.track.rail.TrainFactoryRailTrack;
-import letrain.trackmaker.TrackMaker;
+import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Train;
 
 import java.util.List;
@@ -12,7 +14,7 @@ public interface GameModel {
 
     List<Train> getTrains();
 
-    TrackMaker getMaker();
+    Cursor getCursor();
 
     List<TrainFactoryRailTrack> getTrainFactoryRailTracks();
 
@@ -26,10 +28,11 @@ public interface GameModel {
 
     void moveTrains();
 
+
     enum Mode {
         MAP_WALK,
         TRACK_WALK,
-        MAKE_TRACK,
-        REMOVE_TRACK
+        MAKE_TRACKS,
+        REMOVE_TRACKS
     }
 }

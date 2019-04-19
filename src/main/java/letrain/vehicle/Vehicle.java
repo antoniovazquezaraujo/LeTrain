@@ -28,11 +28,18 @@ public abstract class Vehicle<T extends Track>
      * Transportable implementation
      **********************************************************/
     @Override
-    public abstract boolean advance();
+    public boolean advance(){
+        return true;
+    };
 
     @Override
     public float getMass() {
         return 10000;
+    }
+
+    @Override
+    public float getFrictionCoefficient() {
+        return 0;
     }
 
     /***********************************************************

@@ -10,7 +10,7 @@ import letrain.track.rail.RailTrack;
 import letrain.track.rail.StopRailTrack;
 import letrain.track.rail.TrainFactoryRailTrack;
 import letrain.track.rail.TunnelRailTrack;
-import letrain.trackmaker.RailTrackMaker;
+import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
@@ -29,7 +29,7 @@ public class UnicodeRenderer implements Renderer {
     public void renderModel(GameModel model) {
         model.getRailMap().accept(this);
         model.getTrains().forEach(t -> t.accept(this));
-        model.getMaker().accept(this);
+        renderCursor(model.getCursor());
     }
 
     @Override
@@ -95,9 +95,9 @@ public class UnicodeRenderer implements Renderer {
     }
 
     @Override
-    public void renderRailTrackMaker(RailTrackMaker railTrackMaker) {
+    public void renderCursor(Cursor cursor) {
         view.setColor(Color.RED);
-        view.set(railTrackMaker.getPosition().getX(), railTrackMaker.getPosition().getY(), railMakerGraphicAspect(railTrackMaker.getDirection()));
+        view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -134,7 +134,7 @@ public class UnicodeRenderer implements Renderer {
         return "?";
     }
 
-    private String railMakerGraphicAspect(Dir dir) {
+    private String cursorGraphicAspect(Dir dir) {
         if (dir == null) {
             return "";
         }
