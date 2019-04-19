@@ -2,7 +2,7 @@ package letrain.vehicle.impl.road;
 
 import letrain.track.road.RoadTrack;
 import letrain.vehicle.Vehicle;
-import letrain.view.Renderer;
+import letrain.render.Renderer;
 
 public class Car extends Vehicle<RoadTrack> {
 

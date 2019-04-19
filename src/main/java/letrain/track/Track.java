@@ -3,7 +3,7 @@ package letrain.track;
 import javafx.util.Pair;
 import letrain.map.*;
 import letrain.vehicle.impl.Linker;
-import letrain.view.Renderable;
+import letrain.render.Renderable;
 
 import java.util.ArrayList;
 import java.util.List;

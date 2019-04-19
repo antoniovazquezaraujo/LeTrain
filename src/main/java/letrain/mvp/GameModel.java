@@ -14,11 +14,11 @@ public interface GameModel {
 
     TrackMaker getMaker();
 
-    List<TrainFactoryRailTrack> getFactoryGateTracks();
+    List<TrainFactoryRailTrack> getTrainFactoryRailTracks();
 
-    void addFactoryGateTrack(TrainFactoryRailTrack track);
+    void addTrainFactoryRailTrack(TrainFactoryRailTrack track);
 
-    void removeFactoryGateTrack(TrainFactoryRailTrack track);
+    void removeTrainFactoryRailTrack(TrainFactoryRailTrack track);
 
     void addTrain(Train train);
 

@@ -2,7 +2,7 @@ package letrain.vehicle;
 
 import letrain.map.*;
 import letrain.track.Track;
-import letrain.view.Renderable;
+import letrain.render.Renderable;
 
 public abstract class Vehicle<T extends Track>
         implements

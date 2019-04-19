@@ -2,7 +2,7 @@ package letrain.vehicle.impl.rail;
 
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
-import letrain.view.Renderer;
+import letrain.render.Renderer;
 
 public class Locomotive extends Linker implements Tractor{
 

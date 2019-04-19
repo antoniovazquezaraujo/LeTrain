@@ -4,7 +4,7 @@ package letrain.track.rail;
 import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.track.TrackDirector;
-import letrain.view.Renderer;
+import letrain.render.Renderer;
 
 public class RailTrack extends Track  {
     public enum TrackType {

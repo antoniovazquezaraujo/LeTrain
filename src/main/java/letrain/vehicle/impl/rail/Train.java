@@ -8,8 +8,8 @@ import letrain.vehicle.Vehicle;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;
-import letrain.view.Renderable;
-import letrain.view.Renderer;
+import letrain.render.Renderable;
+import letrain.render.Renderer;
 
 import java.util.*;
 import java.util.stream.Collectors;

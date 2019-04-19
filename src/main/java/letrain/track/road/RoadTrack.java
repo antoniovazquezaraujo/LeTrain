@@ -3,7 +3,7 @@ package letrain.track.road;
 import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
-import letrain.view.Renderer;
+import letrain.render.Renderer;
 
 public class RoadTrack extends Track {
 

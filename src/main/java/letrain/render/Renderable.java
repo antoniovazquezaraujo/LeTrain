@@ -1,4 +1,4 @@
-package letrain.view;
+package letrain.render;
 
 public interface Renderable {
     void accept(Renderer renderer);

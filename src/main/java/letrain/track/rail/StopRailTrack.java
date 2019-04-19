@@ -1,6 +1,6 @@
 package letrain.track.rail;
 
-import letrain.view.Renderer;
+import letrain.render.Renderer;
 
 public class StopRailTrack extends RailTrack {
     /***********************************************************

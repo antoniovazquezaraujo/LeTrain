@@ -1,4 +1,4 @@
-package letrain.view;
+package letrain.render;
 
 import javafx.scene.paint.Color;
 import letrain.mvp.GameView;
@@ -55,7 +55,7 @@ public class UnicodeRenderer implements Renderer {
     @Override
     public void renderStopRailTrack(StopRailTrack track) {
         view.setColor(Color.YELLOW);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "≕");
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "⊝");
     }
 
     @Override

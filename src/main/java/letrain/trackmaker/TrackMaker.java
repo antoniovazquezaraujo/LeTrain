@@ -5,7 +5,7 @@ import letrain.map.Point;
 import letrain.map.TerrainMap;
 import letrain.mvp.GameModel;
 import letrain.track.Track;
-import letrain.view.Renderable;
+import letrain.render.Renderable;
 
 public interface TrackMaker<T extends Track> extends Renderable {
     enum NewTrackType {
@@ -28,6 +28,8 @@ public interface TrackMaker<T extends Track> extends Renderable {
     void setDirection(Dir d);
 
     void selectNewTrackType(RailTrackMaker.NewTrackType type);
+
+    RailTrackMaker.NewTrackType getNewTrackType();
 
     Dir getDirection();
 

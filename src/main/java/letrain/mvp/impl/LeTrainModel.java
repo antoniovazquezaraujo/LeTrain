@@ -15,9 +15,9 @@ public class LeTrainModel implements GameModel {
     private RailMap map;
     private final List<Train> trains;
     private final TrackMaker maker;
-    private final List<TrainFactoryRailTrack> factoryGateTracks;
+    private final List<TrainFactoryRailTrack> factoryRailTracks;
     public LeTrainModel() {
-        this.factoryGateTracks = new ArrayList<>();
+        this.factoryRailTracks = new ArrayList<>();
         this.trains = new ArrayList<>();
         this.map = new RailMap();
         this.maker = new RailTrackMaker();
@@ -38,19 +38,18 @@ public class LeTrainModel implements GameModel {
     }
 
     @Override
-    public List<TrainFactoryRailTrack> getFactoryGateTracks() {
-        return factoryGateTracks;
-    }
-
-
-    @Override
-    public void addFactoryGateTrack(TrainFactoryRailTrack track) {
-        factoryGateTracks.add(track);
+    public List<TrainFactoryRailTrack> getTrainFactoryRailTracks() {
+        return factoryRailTracks;
     }
 
     @Override
-    public void removeFactoryGateTrack(TrainFactoryRailTrack track) {
-        factoryGateTracks.remove(track);
+    public void addTrainFactoryRailTrack(TrainFactoryRailTrack track) {
+        factoryRailTracks.add(track);
+    }
+
+    @Override
+    public void removeTrainFactoryRailTrack(TrainFactoryRailTrack track) {
+        factoryRailTracks.remove(track);
     }
 
     @Override

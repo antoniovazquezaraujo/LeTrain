@@ -1,4 +1,4 @@
-package letrain.view;
+package letrain.render;
 
 import letrain.map.RailMap;
 import letrain.mvp.GameModel;

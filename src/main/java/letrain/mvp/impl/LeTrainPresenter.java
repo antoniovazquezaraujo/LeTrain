@@ -3,6 +3,7 @@ package letrain.mvp.impl;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.util.Duration;
+import letrain.map.Point;
 import letrain.mvp.GameModel;
 import letrain.mvp.GamePresenter;
 import letrain.mvp.GameView;
@@ -10,7 +11,7 @@ import letrain.mvp.GameViewListener;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
-import letrain.view.UnicodeRenderer;
+import letrain.render.UnicodeRenderer;
 
 import static letrain.trackmaker.TrackMaker.NewTrackType.*;
 
@@ -31,16 +32,13 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
         loop = new Timeline();
         loop.setCycleCount(Timeline.INDEFINITE);
 
-        KeyFrame kf = new KeyFrame(Duration.seconds(.1), actionEvent -> paintLoop());
+        KeyFrame kf = new KeyFrame(Duration.seconds(.1), actionEvent -> {
+            view.clear();
+            renderer.renderModel(model);
+            view.paint();
+        });
         loop.getKeyFrames().add(kf);
         loop.play();
-    }
-
-
-    public void paintLoop() {
-        view.clear();
-        renderer.renderModel(model);
-        view.paint();
     }
 
 
@@ -51,6 +49,7 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
     public GameView getView() {
         return view;
     }
+
     @Override
     public GameModel getModel() {
         return model;
@@ -68,7 +67,8 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
     @Override
     public void onMakerAdvance() {
         model.getMaker().advance();
-        view.setPageOfPos(model.getMaker().getPosition().getX(), model.getMaker().getPosition().getY());
+        Point position = model.getMaker().getPosition();
+        view.setPageOfPos(position.getX(), position.getY());
     }
 
     @Override
@@ -88,10 +88,12 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
 
     @Override
     public void onMakerCreateTunnelTrack() {
-        model.getMaker().selectNewTrackType(TUNNEL_GATE);
-        onMakerAdvance();
-        model.getMaker().selectNewTrackType(NORMAL_TRACK);
-        onGameModeSelected(GameModel.Mode.MAP_WALK);
+        if (model.getMaker().getMode().equals(GameModel.Mode.MAKE_TRACK)) {
+            model.getMaker().selectNewTrackType(TUNNEL_GATE);
+            model.getMaker().advance();
+            model.getMaker().setMode(GameModel.Mode.MAP_WALK);
+            model.getMaker().selectNewTrackType(NORMAL_TRACK);
+        }
     }
 
     @Override

@@ -1,6 +1,6 @@
 package letrain.track;
 
-import letrain.view.Renderer;
+import letrain.render.Renderer;
 
 public class Gate extends Track {
     @Override

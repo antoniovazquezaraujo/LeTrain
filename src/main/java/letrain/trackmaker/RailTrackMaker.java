@@ -8,8 +8,8 @@ import letrain.track.rail.RailTrack;
 import letrain.track.rail.StopRailTrack;
 import letrain.track.rail.TrainFactoryRailTrack;
 import letrain.track.rail.TunnelRailTrack;
-import letrain.view.Renderable;
-import letrain.view.Renderer;
+import letrain.render.Renderable;
+import letrain.render.Renderer;
 
 public class RailTrackMaker implements TrackMaker<RailTrack>, Renderable {
 
@@ -82,6 +82,12 @@ public class RailTrackMaker implements TrackMaker<RailTrack>, Renderable {
     public void selectNewTrackType(NewTrackType type){
         this.newTrackType = type;
     }
+
+    @Override
+    public NewTrackType getNewTrackType() {
+        return this.newTrackType;
+    }
+
     public RailTrack createTrackOfSelectedType(){
         switch(newTrackType){
             case STOP_TRACK:
