@@ -4,7 +4,7 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.RailMap;
 import letrain.mvp.GameModel;
-import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.mvp.impl.delegates.TrainFactory;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Train;
 
@@ -14,13 +14,13 @@ import java.util.List;
 public class LeTrainModel implements GameModel {
     private RailMap map;
     private final List<Train> trains;
-    private final List<TrainFactoryRailTrack> factoryRailTracks;
+    private final List<TrainFactory> trainFactories;
     private Cursor cursor;
     public LeTrainModel() {
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.N);
         this.cursor.setPosition(new Point(10,10));
-        this.factoryRailTracks = new ArrayList<>();
+        this.trainFactories = new ArrayList<>();
         this.trains = new ArrayList<>();
         this.map = new RailMap();
     }
@@ -41,21 +41,6 @@ public class LeTrainModel implements GameModel {
     }
 
     @Override
-    public List<TrainFactoryRailTrack> getTrainFactoryRailTracks() {
-        return factoryRailTracks;
-    }
-
-    @Override
-    public void addTrainFactoryRailTrack(TrainFactoryRailTrack track) {
-        factoryRailTracks.add(track);
-    }
-
-    @Override
-    public void removeTrainFactoryRailTrack(TrainFactoryRailTrack track) {
-        factoryRailTracks.remove(track);
-    }
-
-    @Override
     public void addTrain(Train train) {
         this.trains.add(train);
     }
@@ -67,7 +52,22 @@ public class LeTrainModel implements GameModel {
 
     @Override
     public void moveTrains() {
-        trains.forEach(Train::applyForces);
+        trains.forEach(Train::applyForce);
+    }
+
+    @Override
+    public List<TrainFactory> getTrainFactories() {
+        return this.trainFactories;
+    }
+
+    @Override
+    public void addTrainFactory(TrainFactory factory) {
+        this.trainFactories.add(factory);
+    }
+
+    @Override
+    public void removeTrainFactory(TrainFactory factory) {
+        this.trainFactories.remove(factory);
     }
 
 }

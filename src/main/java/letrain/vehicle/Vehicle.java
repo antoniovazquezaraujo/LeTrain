@@ -18,7 +18,6 @@ public abstract class Vehicle<T extends Track>
     protected Dir dir = Dir.N;
     private boolean selected = false;
     private boolean reversed = false;
-    private int acceleration = 0;
 
 
     protected Vehicle() {
@@ -34,12 +33,12 @@ public abstract class Vehicle<T extends Track>
 
     @Override
     public float getMass() {
-        return 10000;
+        return 10000.0F;
     }
 
     @Override
     public float getFrictionCoefficient() {
-        return 0;
+        return 0.0F;
     }
 
     /***********************************************************

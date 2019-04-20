@@ -1,19 +1,17 @@
 package letrain.mvp.impl;
 
 import javafx.scene.Node;
-import javafx.scene.control.*;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import lab.BorderPaneExample;
 import letrain.map.Point;
-import letrain.mvp.GameModel;
 import letrain.mvp.GameView;
 import letrain.mvp.GameViewListener;
-
-import java.util.Optional;
 
 
 public class LeTrainView extends BorderPane implements GameView {
@@ -106,6 +104,9 @@ public class LeTrainView extends BorderPane implements GameView {
                 default:
                     break;
             }
+        });
+        addEventHandler(KeyEvent.KEY_TYPED, keyEvent -> {
+            gameViewListener.onChar(keyEvent.getCharacter());
         });
     }
 

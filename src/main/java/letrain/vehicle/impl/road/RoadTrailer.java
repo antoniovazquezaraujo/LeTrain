@@ -29,6 +29,16 @@ public class RoadTrailer implements Trailer{
     }
 
     @Override
+    public void joinTrailerBack(Trailer t) {
+
+    }
+
+    @Override
+    public void joinTrailerFront(Trailer t) {
+
+    }
+
+    @Override
     public void pushBack(Linker linker) {
 
     }
@@ -44,7 +54,7 @@ public class RoadTrailer implements Trailer{
     }
 
     @Override
-    public Tractor getMainTractor() {
+    public Linker getDirectorLinker() {
         return null;
     }
 
@@ -64,13 +74,8 @@ public class RoadTrailer implements Trailer{
     }
 
     @Override
-    public void setMainTractor(Tractor tractor) {
+    public void setDirectorLinker(Linker linker) {
 
-    }
-
-    @Override
-    public float getTractorsForce() {
-        return 0;
     }
 
     @Override
@@ -79,57 +84,8 @@ public class RoadTrailer implements Trailer{
     }
 
     @Override
-    public float getTotalForce() {
-        return 0;
-    }
-
-    @Override
-    public float getTotalMass() {
-        return 0;
-    }
-
-    @Override
-    public void applyForces() {
-
-    }
-
-    @Override
-    public void move() {
-
-    }
-
-    @Override
-    public float getAcceleration() {
-        return 0;
-    }
-
-    @Override
-    public float getSpeed() {
-        return 0;
-    }
-
-    @Override
-    public float getDistanceTraveled() {
-        return 0;
-    }
-
-    @Override
-    public void resetDistanceTraveled() {
-
-    }
-
-    @Override
     public Trailer divide(Linker p) {
         return null;
     }
 
-    @Override
-    public void joinTrailerBack(Trailer t){
-
-    }
-
-    @Override
-    public void joinTrailerFront(Trailer t) {
-
-    }
 }

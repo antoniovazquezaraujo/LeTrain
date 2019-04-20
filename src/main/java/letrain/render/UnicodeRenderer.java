@@ -63,8 +63,8 @@ public class UnicodeRenderer implements Renderer {
 
     @Override
     public void renderTrainFactoryRailTrack(TrainFactoryRailTrack track) {
-        view.setColor(Color.RED);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
+        view.setColor(Color.LIGHTBLUE);
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "⎵");
     }
 
     @Override
@@ -86,11 +86,13 @@ public class UnicodeRenderer implements Renderer {
 
     @Override
     public void renderLocomotive(Locomotive locomotive) {
-        view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), "L");
+        view.setColor(Color.LIGHTBLUE);
+        view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(),locomotive.getAspect());
     }
 
     @Override
     public void renderWagon(Wagon wagon) {
+        view.setColor(Color.GREEN);
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
     }
 

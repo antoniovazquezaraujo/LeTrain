@@ -8,4 +8,24 @@ public class Cursor extends Vehicle {
     public void accept(Renderer renderer) {
         renderer.renderCursor(this);
     }
+
+    @Override
+    public float getAcceleration() {
+        return 0;
+    }
+
+    @Override
+    public float getSpeed() {
+        return 0;
+    }
+
+    @Override
+    public float getDistanceTraveled() {
+        return 0;
+    }
+
+    @Override
+    public void resetDistanceTraveled() {
+
+    }
 }

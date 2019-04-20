@@ -1,26 +1,25 @@
 package letrain.vehicle.impl.rail;
 
 import letrain.map.Dir;
-import letrain.map.Reversible;
+import letrain.render.Renderable;
+import letrain.render.Renderer;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.Vehicle;
+import letrain.vehicle.Transportable;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;
-import letrain.render.Renderable;
-import letrain.render.Renderer;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Train implements Trailer<RailTrack>, Reversible, Renderable {
+public class Train implements Trailer<RailTrack>, Renderable, Tractor, Transportable {
     private static final float DISTANCE_UNIT = 1;
     private final Deque<Linker> linkers;
     private final List<Tractor> tractors;
-    private Tractor mainTractor;
-    private float acceleration;
-    private float distanceTraveled;
+    private Linker directorLinker;
+    private float acceleration = 0.0F;
+    private float distanceTraveled = 0.0F;
 
     public Train() {
         this.linkers = new LinkedList<>();
@@ -76,6 +75,7 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
         return linkers.size();
     }
 
+
     @Override
     public Trailer divide(Linker p) {
         Trailer<RailTrack> ret = new Train();
@@ -84,13 +84,12 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
             ret.pushFront(getLinkers().removeFirst());
             first = getLinkers().getFirst();
         }
-        assignDefaultMainTractor();
-        ret.setMainTractor(ret.getTractors() != null && !ret.getTractors().isEmpty() ? ret.getTractors().get(0) : null);
+        assignDefaultDirectorLinker();
         return ret;
     }
 
-    public void assignDefaultMainTractor() {
-        setMainTractor(getTractors() != null && !getTractors().isEmpty() ? getTractors().get(0) : null);
+    public void assignDefaultDirectorLinker() {
+        setDirectorLinker(getTractors() != null && !getTractors().isEmpty() ? getLinkers().getFirst() : null);
     }
 
     @Override
@@ -108,13 +107,13 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
     }
 
     @Override
-    public void setMainTractor(Tractor tractor) {
-        this.mainTractor = tractor;
+    public void setDirectorLinker(Linker linker) {
+        this.directorLinker = linker;
     }
 
     @Override
-    public Tractor getMainTractor() {
-        return mainTractor;
+    public Linker getDirectorLinker() {
+        return directorLinker;
     }
 
     @Override
@@ -125,7 +124,6 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
                 .collect(Collectors.toList());
     }
 
-    @Override
     public float getTractorsForce() {
         return (float) getTractors()
                 .stream()
@@ -149,62 +147,52 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
                 .sum();
     }
 
-    @Override
-    public float getTotalForce() {
-        return getTractorsForce() - getFrictionForce();
-    }
 
     @Override
-    public float getTotalMass() {
-        return (float) getLinkers()
-                .stream()
-                .mapToDouble(Vehicle::getMass)
-                .sum();
-    }
-
-    @Override
-    public void applyForces() {
-        this.acceleration = getTotalForce() / getTotalMass();
-        float speed = acceleration ;
-        this.distanceTraveled += speed;
+    public void applyForce() {
+        float f = getForce();
+        if (f <= 0) return;
+        float m = getMass();
+        this.acceleration = f / m;
+        this.distanceTraveled = this.distanceTraveled + this.acceleration;
         if (this.distanceTraveled >= DISTANCE_UNIT) {
-            move();
-            this.distanceTraveled=0;
+            advance();
+            this.distanceTraveled = 0.0F;
         }
     }
 
     @Override
-    public void move() {
-        Linker tractor = (Linker) getMainTractor();
+    public boolean advance() {
+        Linker tractor = (Linker) getDirectorLinker();
         Dir tractionDir = tractor.getDir();
         Iterator<Linker> pushIterator;
         Iterator<Linker> pullIterator;
 
-        if(isReversed()){
-            pushIterator= getLinkers().descendingIterator();
-            pullIterator= getLinkers().iterator();
-        }else{
-            pushIterator= getLinkers().iterator();
-            pullIterator= getLinkers().descendingIterator();
+        if (isReversed()) {
+            pushIterator = getLinkers().descendingIterator();
+            pullIterator = getLinkers().iterator();
+        } else {
+            pushIterator = getLinkers().iterator();
+            pullIterator = getLinkers().descendingIterator();
         }
 
         //Avanzamos hasta llegar al tractor desde el principio
-        while(pushIterator.hasNext()){
+        while (pushIterator.hasNext()) {
             Linker next = pushIterator.next();
-            if(next == tractor){
+            if (next == tractor) {
                 break;
             }
         }
         //Avanzamos hasta llegar al tractor desde el final
-        while(pullIterator.hasNext()){
+        while (pullIterator.hasNext()) {
             Linker next = pullIterator.next();
-            if(next == tractor){
+            if (next == tractor) {
                 break;
             }
         }
 
         Dir pushDir = tractionDir;
-        while(pushIterator.hasNext()){
+        while (pushIterator.hasNext()) {
             Linker next = pushIterator.next();
             Track nextTrack = next.getTrack();
             //usamos la dirección inversa, estamos empujando
@@ -213,7 +201,7 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
         }
 
         Dir pullDir = tractionDir;
-        while(pullIterator.hasNext()){
+        while (pullIterator.hasNext()) {
             Linker next = pullIterator.next();
             Track nextTrack = next.getTrack();
             next.setDir(next.getTrack().getDir(tractionDir).inverse());
@@ -221,22 +209,24 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
         }
 
         Iterator<Linker> moveIterator = getLinkers().iterator();
-        if(isReversed()){
+        if (isReversed()) {
             moveIterator = getLinkers().descendingIterator();
         }
-        while(moveIterator.hasNext()){
+        while (moveIterator.hasNext()) {
             Linker next = moveIterator.next();
             Track track = next.getTrack();
             Track nextTrack = track.getConnected(next.getDir());
-            if(nextTrack != null){
-                if(nextTrack.getLinker() == null) {
+            if (nextTrack != null) {
+                if (nextTrack.getLinker() == null) {
                     next.getTrack().removeLinker();
                     nextTrack.enterLinkerFromDir(next.getDir().inverse(), next);
-                }else{
+                } else {
                     System.out.println("CRASHHH!!!");
+                    return false;
                 }
             }
         }
+        return true;
 
     }
 
@@ -257,27 +247,26 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
 
     @Override
     public void resetDistanceTraveled() {
-        this.distanceTraveled = 0;
+        this.distanceTraveled = 0.0F;
     }
 
 
     @Override
     public boolean reverse() {
-        if(this.mainTractor!=null) {
-            ((Locomotive) this.mainTractor).reverse();
-            return ((Locomotive) this.mainTractor).isReversed();
-        }else{
-            return false;
-        }
+        getTractors()
+                .stream()
+                .forEach(t -> t.reverse());
+        return true; // TODO: ELIMINAR ESTE RETORNO
     }
 
     @Override
     public boolean isReversed() {
-        if(this.mainTractor!=null) {
-            return ((Locomotive) this.mainTractor).isReversed();
+        if (this.directorLinker != null) {
+            return (this.directorLinker).isReversed();
         }
         return false;
     }
+
     /***********************************************************
      * Renderable implementation
      **********************************************************/
@@ -285,5 +274,43 @@ public class Train implements Trailer<RailTrack>, Reversible, Renderable {
     @Override
     public void accept(Renderer renderer) {
         renderer.renderTrain(this);
+    }
+
+    @Override
+    public float getForce() {
+        return getTractorsForce();//- getFrictionForce();
+    }
+
+    @Override
+    public void setForce(float force) {
+        getTractors()
+                .forEach(t -> t.setForce(force));
+    }
+
+    @Override
+    public void incForce(float force) {
+        getTractors()
+                .forEach(t -> t.incForce(force));
+    }
+
+    @Override
+    public void decForce(float force) {
+        getTractors()
+                .forEach(t -> t.decForce(force));
+    }
+
+    @Override
+    public float getMass() {
+        return (float) getLinkers()
+                .stream()
+                .mapToDouble(t -> {
+                    return t.getMass();
+                })
+                .sum();
+    }
+
+    @Override
+    public float getFrictionCoefficient() {
+        return 0;
     }
 }

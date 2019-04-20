@@ -7,6 +7,14 @@ import letrain.render.Renderer;
 public class Locomotive extends Linker implements Tractor{
 
     private float force;
+    private String aspect;
+    public Locomotive(String aspect){
+        this.aspect = aspect;
+        force = 0;
+    }
+    public Locomotive(char c) {
+        this(""+c);
+    }
 
     @Override
     public float getMass() {
@@ -19,6 +27,26 @@ public class Locomotive extends Linker implements Tractor{
     }
 
     @Override
+    public float getAcceleration() {
+        return 0;
+    }
+
+    @Override
+    public float getSpeed() {
+        return 0;
+    }
+
+    @Override
+    public float getDistanceTraveled() {
+        return 0;
+    }
+
+    @Override
+    public void resetDistanceTraveled() {
+
+    }
+
+    @Override
     public float getForce() {
         return this.force;
     }
@@ -27,6 +55,25 @@ public class Locomotive extends Linker implements Tractor{
     public void setForce(float force) {
         this.force = force;
     }
+
+    @Override
+    public void incForce(float force) {
+        this.force+=force;
+    }
+
+    @Override
+    public void decForce(float force) {
+        this.force-=force;
+        if(this.force<0.0F){
+            this.force =0.0F;
+        }
+    }
+
+    @Override
+    public void applyForce() {
+
+    }
+
     /***********************************************************
      * Renderable implementation
      **********************************************************/
@@ -36,4 +83,7 @@ public class Locomotive extends Linker implements Tractor{
         renderer.renderLocomotive(this);
     }
 
+    public String getAspect() {
+        return aspect;
+    }
 }

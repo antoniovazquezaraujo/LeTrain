@@ -4,14 +4,13 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.GameModel;
 import letrain.mvp.GameView;
-import letrain.mvp.impl.delegates.GamePresenterDelegate;
 
-public class NavigationDelegate extends GamePresenterDelegate {
+public class NavigationController extends GamePresenterDelegate {
 
     boolean reversed;
     private Dir dir;
     private int degreesOfRotation= 0;
-    public NavigationDelegate(GameModel model, GameView view) {
+    public NavigationController(GameModel model, GameView view) {
         super(model,view);
         this.dir = Dir.N;
     }
@@ -24,13 +23,13 @@ public class NavigationDelegate extends GamePresenterDelegate {
     @Override
     public void onUp() {
         degreesOfRotation=0;
-        Point newPos = new Point(getModel().getCursor().getPosition());
+        Point newPos = new Point(model.getCursor().getPosition());
         if(!reversed) {
-            newPos.move(getModel().getCursor().getDir(), 1);
+            newPos.move(model.getCursor().getDir(), 1);
         }else{
-            newPos.move(getModel().getCursor().getDir().inverse());
+            newPos.move(model.getCursor().getDir().inverse());
         }
-        getModel().getCursor().setPosition(newPos);
+        model.getCursor().setPosition(newPos);
         Point position = model.getCursor().getPosition();
         view.setPageOfPos(position.getX(), position.getY());
     }
@@ -39,7 +38,7 @@ public class NavigationDelegate extends GamePresenterDelegate {
     public void onLeft() {
         if(degreesOfRotation <= 0 ) {
             this.dir = this.dir.turnLeft();
-            getModel().getCursor().setDir(this.dir);
+            model.getCursor().setDir(this.dir);
             degreesOfRotation +=1;
         }
     }
@@ -48,7 +47,7 @@ public class NavigationDelegate extends GamePresenterDelegate {
     public void onRight() {
         if(degreesOfRotation>=0) {
             this.dir = this.dir.turnRight();
-            getModel().getCursor().setDir(this.dir);
+            model.getCursor().setDir(this.dir);
             degreesOfRotation-=1;
         }
     }
@@ -56,7 +55,7 @@ public class NavigationDelegate extends GamePresenterDelegate {
 
 
     @Override
-    public void onChar(char c) {
+    public void onChar(String c) {
 
     }
 }

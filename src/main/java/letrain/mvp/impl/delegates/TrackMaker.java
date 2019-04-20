@@ -10,7 +10,7 @@ import letrain.track.rail.StopRailTrack;
 import letrain.track.rail.TrainFactoryRailTrack;
 import letrain.track.rail.TunnelRailTrack;
 
-public class TrackCreationDelegate extends GamePresenterDelegate {
+public class TrackMaker extends GamePresenterDelegate {
     enum NewTrackType {
         NORMAL_TRACK,
         STOP_TRACK,
@@ -24,7 +24,7 @@ public class TrackCreationDelegate extends GamePresenterDelegate {
     private int degreesOfRotation= 0;
     private Dir dir;
 
-    public TrackCreationDelegate(GameModel model, GameView view) {
+    public TrackMaker(GameModel model, GameView view) {
         super(model, view);
         this.newTrackType = NewTrackType.NORMAL_TRACK;
         this.dir = Dir.N;
@@ -35,7 +35,7 @@ public class TrackCreationDelegate extends GamePresenterDelegate {
         degreesOfRotation=0;
         RailTrack newTrack = makeTrack();
         if (newTrack != null) {
-            getModel().getCursor().setPosition(newTrack.getPosition());
+            model.getCursor().setPosition(newTrack.getPosition());
         }
         Point position = model.getCursor().getPosition();
         view.setPageOfPos(position.getX(), position.getY());
@@ -50,7 +50,7 @@ public class TrackCreationDelegate extends GamePresenterDelegate {
     public void onLeft() {
         if(degreesOfRotation <= 0 ) {
             this.dir = this.dir.turnLeft();
-            getModel().getCursor().setDir(this.dir);
+            model.getCursor().setDir(this.dir);
             degreesOfRotation +=1;
         }
     }
@@ -59,13 +59,13 @@ public class TrackCreationDelegate extends GamePresenterDelegate {
     public void onRight() {
         if(degreesOfRotation>=0) {
             this.dir = this.dir.turnRight();
-            getModel().getCursor().setDir(this.dir);
+            model.getCursor().setDir(this.dir);
             degreesOfRotation-=1;
         }
     }
 
     @Override
-    public void onChar(char c) {
+    public void onChar(String c) {
         super.onChar(c);
     }
 
@@ -91,21 +91,21 @@ public class TrackCreationDelegate extends GamePresenterDelegate {
     }
     private RailTrack makeTrack() {
         // Si no hay un track aquí, creamos uno
-        Point cursorPosition = getModel().getCursor().getPosition();
-        RailTrack actualTrack = getModel().getRailMap().getTrackAt(cursorPosition.getX(), cursorPosition.getY());
+        Point cursorPosition = model.getCursor().getPosition();
+        RailTrack actualTrack = model.getRailMap().getTrackAt(cursorPosition.getX(), cursorPosition.getY());
         if (actualTrack == null) {
             actualTrack = createTrackOfSelectedType();
             actualTrack.setPosition(cursorPosition);
-            getModel().getRailMap().addTrack(cursorPosition, actualTrack);
+            model.getRailMap().addTrack(cursorPosition, actualTrack);
         }
         //De dónde veníamos
         if (oldTrack != null) {
             oldDir = cursorPosition.locate(oldTrack.getPosition());
         } else {
             if(!reversed) {
-                oldDir = getModel().getCursor().getDir().inverse();
+                oldDir = model.getCursor().getDir().inverse();
             }else{
-                oldDir = getModel().getCursor().getDir();
+                oldDir = model.getCursor().getDir();
             }
         }
 
@@ -114,19 +114,19 @@ public class TrackCreationDelegate extends GamePresenterDelegate {
         //Calculamos la posición del nuevo track
         Point newPos = new Point(cursorPosition);
         if(!reversed) {
-            newPos.move(getModel().getCursor().getDir(), 1);
+            newPos.move(model.getCursor().getDir(), 1);
         }else{
-            newPos.move(getModel().getCursor().getDir().inverse());
+            newPos.move(model.getCursor().getDir().inverse());
         }
 
         //Creamos o localizamos el nuevo track
-        RailTrack newTrack = getModel().getRailMap().getTrackAt(newPos);
+        RailTrack newTrack = model.getRailMap().getTrackAt(newPos);
         if (newTrack == null) {
             newTrack = createTrackOfSelectedType();
         }
 
         newTrack.setPosition(newPos);
-        getModel().getRailMap().addTrack(newPos, newTrack);
+        model.getRailMap().addTrack(newPos, newTrack);
 
         //Al track actual le agregamos la ruta entre de dónde veníamos y el nuevo
         Dir dirToNewTrack = cursorPosition.locate(newPos);

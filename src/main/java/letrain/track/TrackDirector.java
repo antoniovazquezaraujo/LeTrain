@@ -22,7 +22,6 @@ public class TrackDirector<T extends Track> {
         vehicle.setPosition(track.getPosition());
         vehicle.setDir(track.getRouter().getDir(d));
         track.setLinker(vehicle);
-
     }
 
     public Linker removeLinker(T track) {

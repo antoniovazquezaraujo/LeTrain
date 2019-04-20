@@ -3,6 +3,7 @@ package letrain.mvp;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.RailMap;
+import letrain.mvp.impl.delegates.TrainFactory;
 import letrain.track.rail.TrainFactoryRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Train;
@@ -16,17 +17,16 @@ public interface GameModel {
 
     Cursor getCursor();
 
-    List<TrainFactoryRailTrack> getTrainFactoryRailTracks();
-
-    void addTrainFactoryRailTrack(TrainFactoryRailTrack track);
-
-    void removeTrainFactoryRailTrack(TrainFactoryRailTrack track);
-
     void addTrain(Train train);
 
     void removeTrain(Train train);
 
     void moveTrains();
+
+    List<TrainFactory> getTrainFactories();
+
+    void addTrainFactory(TrainFactory factory);
+    void removeTrainFactory(TrainFactory factory);
 
 
     enum Mode {

@@ -27,6 +27,7 @@ Mapeable <|.. Vehicle
 Rotable <|.. Vehicle
 Renderable <|.. Vehicle
 Reversible <|.. Vehicle
+Reversible <|.. Tractor
 Renderable <|.. Trailer
 Reversible <|.. Trailer
 Transportable <|.. Vehicle
@@ -37,7 +38,7 @@ Linkable <|.. Linker
 Tracker <|-- Linker
 Linker <|-- Locomotive
 Linker <|-- Wagon
-Trailer o-- Linker :linkers
+Trailer o-left- Linker :linkers
 Trailer <|-- Train
 ....
 
@@ -117,23 +118,28 @@ Renderable <|.. Track
 interface GamePresenter
 interface GameModel
 interface GameView
-interface TrackMaker
 
 class LeTrainView
 class LeTrainPresenter
 class LeTrainViewGrid
 class LeTrainModel
-class RailTrackMaker
 
 GameModel <|.. LeTrainModel
-GameModel o-- TrackMaker
-TrackMaker <|-- RailTrackMaker
 GamePresenter <|.. LeTrainPresenter
 GameView <|.. LeTrainView
-
+LeTrainView *-- GameViewListener
 LeTrainView *-- LeTrainViewGrid
-GameView o-- GamePresenter
-GamePresenter o-- LeTrainView
+GamePresenter o-- GameView
 GamePresenter o-- GameModel
+LeTrainPresenter *-- GamePresenterDelegate
+GameViewListener <|..  LeTrainPresenter
+GamePresenterDelegate <|-- FactoryController
+GamePresenterDelegate <|-- FactoryMaker
+GamePresenterDelegate <|-- ForkController
+GamePresenterDelegate <|-- FreightDockController
+GamePresenterDelegate <|-- FreightDockMaker
+GamePresenterDelegate <|-- NavigationController
+GamePresenterDelegate <|-- TrackDestructor
+GamePresenterDelegate <|-- TrainController
 
 ....

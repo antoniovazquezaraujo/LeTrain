@@ -24,7 +24,9 @@ public interface Trailer<T extends Track> {
 
     Linker getBack();
 
-    Tractor getMainTractor();
+    void setDirectorLinker(Linker linker);
+
+    Linker getDirectorLinker();
 
     List<Tractor> getTractors();
 
@@ -32,28 +34,23 @@ public interface Trailer<T extends Track> {
 
     int size();
 
-    void setMainTractor(Tractor tractor);
-
-    float getTractorsForce();
+//    float getTractorsForce();
 
     float getFrictionForce();
 
-    float getTotalForce();
+//    float getTotalMass();
 
-    float getTotalMass();
+//    void applyForces();
 
-    void applyForces();
+//    void move();
 
-    void move();
+//    float getAcceleration();
 
-    float getAcceleration();
+//    float getSpeed();
 
-    float getSpeed();
+//    float getDistanceTraveled();
 
-    float getDistanceTraveled();
-
-    void resetDistanceTraveled();
+//    void resetDistanceTraveled();
 
     Trailer divide(Linker p);
-
 }

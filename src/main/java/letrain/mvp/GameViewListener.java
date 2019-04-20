@@ -11,6 +11,6 @@ public interface GameViewListener {
 
     void onRight();
 
-    void onChar(char c);
+    void onChar(String c);
 
 }

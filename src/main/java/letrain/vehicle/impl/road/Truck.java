@@ -12,4 +12,29 @@ public class Truck implements Tractor {
     public void setForce(float force) {
 
     }
+
+    @Override
+    public void incForce(float force) {
+
+    }
+
+    @Override
+    public void decForce(float force) {
+
+    }
+
+    @Override
+    public void applyForce() {
+
+    }
+
+    @Override
+    public boolean reverse() {
+        return false;
+    }
+
+    @Override
+    public boolean isReversed() {
+        return false;
+    }
 }

@@ -48,7 +48,7 @@ public  class GamePresenterDelegate implements letrain.mvp.GamePresenter, GameVi
     }
 
     @Override
-    public  void onChar(char c){
+    public  void onChar(String c){
 
     }
 }

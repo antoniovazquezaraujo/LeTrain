@@ -26,15 +26,15 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
         view = new LeTrainView(this);
         renderer = new UnicodeRenderer(view);
         delegates = new HashMap<>();
-        delegates.put(GameView.GameMode.NAVIGATE_MAP_COMMAND, new NavigationDelegate(model, view));
-        delegates.put(GameView.GameMode.CREATE_FACTORY_PLATFORM_COMMAND, new FactoryPlatformCreationDelegate(model, view));
-        delegates.put(GameView.GameMode.CREATE_LOAD_PLATFORM_COMMAND, new LoadPlatformCreationDelegate(model, view));
-        delegates.put(GameView.GameMode.CREATE_NORMAL_TRACKS_COMMAND, new TrackCreationDelegate(model, view));
-        delegates.put(GameView.GameMode.REMOVE_TRACKS_COMMAND, new TrackDeletionDelegate(model, view));
-        delegates.put(GameView.GameMode.USE_FACTORY_PLATFORMS_COMMAND, new FactoryPlatformControlDelegate(model, view));
-        delegates.put(GameView.GameMode.USE_FORKS_COMMAND, new ForkControlDelegate(model, view));
-        delegates.put(GameView.GameMode.USE_TRAINS_COMMAND, new TrainControlDelegate(model, view));
-        delegates.put(GameView.GameMode.USE_LOAD_PLATFORMS_COMMAND, new LoadPlatformControlDelegate(model, view));
+        delegates.put(GameView.GameMode.NAVIGATE_MAP_COMMAND, new NavigationController(model, view));
+        delegates.put(GameView.GameMode.CREATE_FACTORY_PLATFORM_COMMAND, new FactoryMaker(model, view));
+        delegates.put(GameView.GameMode.CREATE_LOAD_PLATFORM_COMMAND, new FreightDockMaker(model, view));
+        delegates.put(GameView.GameMode.CREATE_NORMAL_TRACKS_COMMAND, new TrackMaker(model, view));
+        delegates.put(GameView.GameMode.REMOVE_TRACKS_COMMAND, new TrackDestructor(model, view));
+        delegates.put(GameView.GameMode.USE_FACTORY_PLATFORMS_COMMAND, new FactoryController(model, view));
+        delegates.put(GameView.GameMode.USE_FORKS_COMMAND, new ForkController(model, view));
+        delegates.put(GameView.GameMode.USE_TRAINS_COMMAND, new TrainController(model, view));
+        delegates.put(GameView.GameMode.USE_LOAD_PLATFORMS_COMMAND, new FreightDockController(model, view));
         this.delegate= delegates.get(GameView.GameMode.NAVIGATE_MAP_COMMAND);
     }
 
@@ -46,6 +46,7 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
             view.clear();
             renderer.renderModel(model);
             view.paint();
+            model.moveTrains();
         });
         loop.getKeyFrames().add(kf);
         loop.play();
@@ -72,6 +73,8 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
      * @param mode*/
     @Override
     public void onGameModeSelected(GameView.GameMode mode) {
+        //Avisamos al anterior y al nuevo
+        delegate.onGameModeSelected(mode);
         delegate = delegates.get(mode);
         delegate.onGameModeSelected(mode);
     }
@@ -97,7 +100,7 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
     }
 
     @Override
-    public void onChar(char c) {
+    public void onChar(String c) {
         delegate.onChar(c);
     }
 
@@ -159,7 +162,7 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
 //
 //    @Override
 //    public void onIncTrainAcceleration() {
-//        model.getTrains().forEach(t -> t.getMainTractor().setForce(t.getMainTractor().getForce() + 10));
+//        model.getTrains().forEach(t -> t.getDirectorLinker().setForce(t.getDirectorLinker().getForce() + 10));
 //    }
 //
 //    @Override

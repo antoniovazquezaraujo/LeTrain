@@ -1,9 +1,6 @@
 package letrain.vehicle.impl.rail
 
-import letrain.map.Dir
-import letrain.map.RailMap
-import letrain.mvp.GameModel
-import letrain.track.rail.RailTrack
+
 import letrain.vehicle.impl.Linker
 import spock.lang.Specification
 
@@ -79,12 +76,12 @@ class TrainTest extends Specification {
         train1.pushFront(wagon2)
         train1.pushFront(locomotive1)
         then:
-        train1.getMainTractor().equals(null)
+        train1.getDirectorLinker().equals(null)
 
         when:
-        train1.setMainTractor(locomotive1)
+        train1.setDirectorLinker(locomotive1)
         then:
-        train1.getMainTractor().equals(locomotive1)
+        train1.getDirectorLinker().equals(locomotive1)
     }
 
     def "Obtener la masa de todo un tren"() {
@@ -214,7 +211,7 @@ class TrainTest extends Specification {
 //        train1.pushBack(wagon1)
 //        train1.pushBack(wagon2)
 //        train1.pushFront(locomotive1)
-//        train1.assignDefaultMainTractor()
+//        train1.assignDefaultDirectorLinker()
 //        when:
 //        map.getTrackAt(4,0).enterLinkerFromDir(Dir.W, locomotive1)
 //        map.getTrackAt(3,0).enterLinkerFromDir(Dir.W, wagon1)
