@@ -20,7 +20,7 @@ public abstract class Track implements
     private final Router router = new SimpleRouter();
     private TrackDirector trackDirector;
     private Linker linker = null;
-    private Point pos = null;
+    private Point pos = new Point(0,0);
     protected Track[] connections;
     private final List<LinkerCompartmentListener> trackeableCompartmentListeners = new ArrayList<>();
 
@@ -169,7 +169,8 @@ public abstract class Track implements
 
     @Override
     public void setPosition(Point pos) {
-        this.pos = pos;
+        this.pos.setX(pos.getX());
+        this.pos.setY(pos.getY());
     }
 
 

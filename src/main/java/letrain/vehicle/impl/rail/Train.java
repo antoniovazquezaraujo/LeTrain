@@ -168,7 +168,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Tractor, Transport
         Iterator<Linker> pushIterator;
         Iterator<Linker> pullIterator;
 
-        if (isReversed()) {
+        // Si el tren no está invertido, pushIterator empieza desde el final y se queda al pasar el tractor master
+        // y pullIterator empieza al principio para quedarse detras de el.
+        // Ambos listos para empujar a los de delante y tirar de los de atrás
+        if (!isReversed()) {
             pushIterator = getLinkers().descendingIterator();
             pullIterator = getLinkers().iterator();
         } else {
@@ -191,21 +194,23 @@ public class Train implements Trailer<RailTrack>, Renderable, Tractor, Transport
             }
         }
 
+        //Se empuja a los vehículos que haya delante:
         Dir pushDir = tractionDir;
         while (pushIterator.hasNext()) {
             Linker next = pushIterator.next();
             Track nextTrack = next.getTrack();
             //usamos la dirección inversa, estamos empujando
-            next.setDir(nextTrack.getDir(tractionDir).inverse());
+            next.setDir(nextTrack.getDir(tractionDir.inverse()));
             tractionDir = next.getDir();
         }
 
         Dir pullDir = tractionDir;
+        Track oldTrack = tractor.getTrack();
         while (pullIterator.hasNext()) {
             Linker next = pullIterator.next();
-            Track nextTrack = next.getTrack();
-            next.setDir(next.getTrack().getDir(tractionDir).inverse());
+            next.setDir(oldTrack.getDir(tractionDir).inverse());
             tractionDir = next.getDir();
+            oldTrack = next.getTrack();
         }
 
         Iterator<Linker> moveIterator = getLinkers().iterator();

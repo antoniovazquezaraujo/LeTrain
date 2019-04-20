@@ -49,7 +49,8 @@ public abstract class Vehicle<T extends Track>
     }
 
     public void setPosition(Point pos) {
-        this.pos = pos;
+        this.pos.setX(pos.getX());
+        this.pos.setY(pos.getY());
     }
 
     /***********************************************************

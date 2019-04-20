@@ -3,13 +3,14 @@ package letrain.mvp.impl.delegates;
 import letrain.map.Point;
 
 public class TrainFactory {
+    Point position = new Point(0,0);
+
     public Point getPosition() {
         return position;
     }
 
     public void setPosition(Point position) {
-        this.position = position;
+        this.position.setX(position.getX());
+        this.position.setY(position.getY());
     }
-
-    Point position;
 }
