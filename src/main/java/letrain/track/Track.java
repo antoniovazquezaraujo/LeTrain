@@ -110,30 +110,12 @@ public abstract class Track implements
         router.clear();
     }
 
-    @Override
-    public void setAlternativeRoute() {
-        router.setAlternativeRoute();
-    }
-
-    @Override
-    public void setNormalRoute() {
-        router.setNormalRoute();
-    }
-
-    @Override
-    public boolean flipRoute() {
-        return router.flipRoute();
-    }
 
     @Override
     public void forEach(Consumer<Pair<Dir, Dir>> routeConsumer) {
         router.forEach(routeConsumer);
     }
 
-    @Override
-    public boolean isUsingAlternativeRoute() {
-        return router.isUsingAlternativeRoute();
-    }
 
 
     /**************************************************************

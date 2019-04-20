@@ -27,14 +27,5 @@ public interface Router {
 
     void clear();
 
-    void setAlternativeRoute();
-
-    void setNormalRoute();
-
-    boolean flipRoute();
-
-    boolean isUsingAlternativeRoute();
-
     void forEach(Consumer<Pair<Dir, Dir>> routeConsumer);
-
 }

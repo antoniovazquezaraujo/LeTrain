@@ -9,9 +9,9 @@ public class NavigationController extends GamePresenterDelegate {
 
     boolean reversed;
     private Dir dir;
-    private int degreesOfRotation= 0;
+
     public NavigationController(GameModel model, GameView view) {
-        super(model,view);
+        super(model, view);
         this.dir = Dir.N;
     }
 
@@ -22,11 +22,10 @@ public class NavigationController extends GamePresenterDelegate {
 
     @Override
     public void onUp() {
-        degreesOfRotation=0;
         Point newPos = new Point(model.getCursor().getPosition());
-        if(!reversed) {
+        if (!reversed) {
             newPos.move(model.getCursor().getDir(), 1);
-        }else{
+        } else {
             newPos.move(model.getCursor().getDir().inverse());
         }
         model.getCursor().setPosition(newPos);
@@ -36,23 +35,15 @@ public class NavigationController extends GamePresenterDelegate {
 
     @Override
     public void onLeft() {
-        if(degreesOfRotation <= 0 ) {
-            this.dir = this.dir.turnLeft();
-            model.getCursor().setDir(this.dir);
-            degreesOfRotation +=1;
-        }
+        this.dir = this.dir.turnLeft();
+        model.getCursor().setDir(this.dir);
     }
 
     @Override
     public void onRight() {
-        if(degreesOfRotation>=0) {
-            this.dir = this.dir.turnRight();
-            model.getCursor().setDir(this.dir);
-            degreesOfRotation-=1;
-        }
+        this.dir = this.dir.turnRight();
+        model.getCursor().setDir(this.dir);
     }
-
-
 
     @Override
     public void onChar(String c) {
