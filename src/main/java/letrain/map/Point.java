@@ -1,8 +1,10 @@
 package letrain.map;
 
+import java.io.Serializable;
+
 import static letrain.map.Dir.*;
 
-public class Point {
+public class Point implements Serializable {
     private int x;
     private int y;
 

@@ -5,11 +5,13 @@ import letrain.map.*;
 import letrain.vehicle.impl.Linker;
 import letrain.render.Renderable;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 public abstract class Track implements
+        Serializable,
         Router,
         Connectable,
         LinkerCompartment,

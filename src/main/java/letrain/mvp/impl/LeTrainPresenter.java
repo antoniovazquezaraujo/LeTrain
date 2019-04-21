@@ -21,20 +21,29 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
     private final UnicodeRenderer renderer;
     GamePresenterDelegate delegate;
     Map<GameView.GameMode, GamePresenterDelegate> delegates;
+
     public LeTrainPresenter() {
-        model = new LeTrainModel();
+        this(null);
+    }
+
+    public LeTrainPresenter(LeTrainModel model) {
+        if(model != null){
+            this.model = model;
+        }else{
+            this.model = new LeTrainModel();
+        }
         view = new LeTrainView(this);
         renderer = new UnicodeRenderer(view);
         delegates = new HashMap<>();
-        delegates.put(GameView.GameMode.NAVIGATE_MAP_COMMAND, new NavigationController(model, view));
-        delegates.put(GameView.GameMode.CREATE_FACTORY_PLATFORM_COMMAND, new FactoryMaker(model, view));
-        delegates.put(GameView.GameMode.CREATE_LOAD_PLATFORM_COMMAND, new FreightDockMaker(model, view));
-        delegates.put(GameView.GameMode.CREATE_NORMAL_TRACKS_COMMAND, new TrackMaker(model, view));
-        delegates.put(GameView.GameMode.REMOVE_TRACKS_COMMAND, new TrackDestructor(model, view));
-        delegates.put(GameView.GameMode.USE_FACTORY_PLATFORMS_COMMAND, new FactoryController(model, view));
-        delegates.put(GameView.GameMode.USE_FORKS_COMMAND, new ForkController(model, view));
-        delegates.put(GameView.GameMode.USE_TRAINS_COMMAND, new TrainController(model, view));
-        delegates.put(GameView.GameMode.USE_LOAD_PLATFORMS_COMMAND, new FreightDockController(model, view));
+        delegates.put(GameView.GameMode.NAVIGATE_MAP_COMMAND, new NavigationController(this.model, view));
+        delegates.put(GameView.GameMode.CREATE_FACTORY_PLATFORM_COMMAND, new FactoryMaker(this.model, view));
+        delegates.put(GameView.GameMode.CREATE_LOAD_PLATFORM_COMMAND, new FreightDockMaker(this.model, view));
+        delegates.put(GameView.GameMode.CREATE_NORMAL_TRACKS_COMMAND, new TrackMaker(this.model, view));
+        delegates.put(GameView.GameMode.REMOVE_TRACKS_COMMAND, new TrackDestructor(this.model, view));
+        delegates.put(GameView.GameMode.USE_FACTORY_PLATFORMS_COMMAND, new FactoryController(this.model, view));
+        delegates.put(GameView.GameMode.USE_FORKS_COMMAND, new ForkController(this.model, view));
+        delegates.put(GameView.GameMode.USE_TRAINS_COMMAND, new TrainController(this.model, view));
+        delegates.put(GameView.GameMode.USE_LOAD_PLATFORMS_COMMAND, new FreightDockController(this.model, view));
         this.delegate= delegates.get(GameView.GameMode.NAVIGATE_MAP_COMMAND);
     }
 

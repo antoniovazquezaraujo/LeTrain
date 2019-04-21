@@ -9,10 +9,11 @@ import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Train;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LeTrainModel implements GameModel {
+public class LeTrainModel implements Serializable , GameModel {
     private RailMap map;
     private final List<Train> trains;
     private final List<TrainFactory> trainFactories;

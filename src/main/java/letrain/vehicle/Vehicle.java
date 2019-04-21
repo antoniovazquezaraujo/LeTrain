@@ -4,8 +4,11 @@ import letrain.map.*;
 import letrain.track.Track;
 import letrain.render.Renderable;
 
+import java.io.Serializable;
+
 public abstract class Vehicle<T extends Track>
         implements
+        Serializable,
         Rotable,
         Reversible,
         Selectable,

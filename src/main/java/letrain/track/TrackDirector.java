@@ -3,7 +3,9 @@ package letrain.track;
 import letrain.map.Dir;
 import letrain.vehicle.impl.Linker;
 
-public class TrackDirector<T extends Track> {
+import java.io.Serializable;
+
+public class TrackDirector<T extends Track> implements Serializable {
     private static TrackDirector instance;
 
     public TrackDirector() {

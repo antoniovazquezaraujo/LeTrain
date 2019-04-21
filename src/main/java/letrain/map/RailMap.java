@@ -4,11 +4,12 @@ import letrain.track.rail.RailTrack;
 import letrain.render.Renderable;
 import letrain.render.Renderer;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class RailMap implements TerrainMap<RailTrack> , Renderable {
+public class RailMap implements Serializable, TerrainMap<RailTrack> , Renderable {
 
     private final Map<Integer, Map<Integer, RailTrack>> rails;
 

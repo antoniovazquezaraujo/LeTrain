@@ -2,12 +2,13 @@ package letrain.map;
 
 import javafx.util.Pair;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
 
-public class SimpleRouter implements Router {
+public class SimpleRouter implements Serializable, Router {
 
     protected final Map<Dir, Dir> dirMap = new HashMap<>();
 

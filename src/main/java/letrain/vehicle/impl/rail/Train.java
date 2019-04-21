@@ -10,10 +10,11 @@ import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Train implements Trailer<RailTrack>, Renderable, Tractor, Transportable {
+public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tractor, Transportable {
     private static final float DISTANCE_UNIT = 1;
     private final Deque<Linker> linkers;
     private final List<Tractor> tractors;
