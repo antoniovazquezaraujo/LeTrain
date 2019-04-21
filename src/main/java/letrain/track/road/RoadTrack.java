@@ -1,6 +1,7 @@
 package letrain.track.road;
 
 import letrain.map.Dir;
+import letrain.map.Router;
 import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
 import letrain.render.Renderer;
@@ -9,6 +10,11 @@ public class RoadTrack extends Track {
 
     public RoadTrack() {
         this.connections = new RoadTrack[Dir.NUM_DIRS];
+    }
+
+    @Override
+    public Router getRouter() {
+        return null;
     }
 
 

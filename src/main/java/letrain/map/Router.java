@@ -23,8 +23,6 @@ public interface Router {
 
     boolean isCross();
 
-    boolean isFork();
-
     void clear();
 
     void forEach(Consumer<Pair<Dir, Dir>> routeConsumer);

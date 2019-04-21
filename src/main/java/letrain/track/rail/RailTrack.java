@@ -2,11 +2,14 @@ package letrain.track.rail;
 
 
 import letrain.map.Dir;
+import letrain.map.Router;
+import letrain.map.SimpleRouter;
 import letrain.track.Track;
 import letrain.track.TrackDirector;
 import letrain.render.Renderer;
 
 public class RailTrack extends Track  {
+    Router router = new SimpleRouter();
     public enum TrackType {
         STRAIGHT,
         CURVE,
@@ -17,6 +20,11 @@ public class RailTrack extends Track  {
     public RailTrack() {
         this.connections = new RailTrack[Dir.NUM_DIRS];
         setTrackDirector(TrackDirector.getInstance());
+    }
+
+    @Override
+    public Router getRouter() {
+        return this.router;
     }
 
     public TrackType getType() {

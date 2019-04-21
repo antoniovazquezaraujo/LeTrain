@@ -6,7 +6,7 @@ import letrain.map.Router;
 import letrain.map.SimpleRouter;
 import letrain.mvp.GameModel;
 import letrain.mvp.GameView;
-import letrain.track.ForkTrack;
+import letrain.track.rail.ForkRailTrack;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.StopRailTrack;
@@ -33,14 +33,20 @@ public class TrackMaker extends GamePresenterDelegate {
         this.newTrackType = NewTrackType.NORMAL_TRACK;
         this.dir = Dir.N;
     }
+    @Override
+    public void onGameModeSelected(GameView.GameMode mode) {
+        if(mode.equals(GameView.GameMode.CREATE_FACTORY_PLATFORM_COMMAND)){
+            Dir cursorInverseDir = model.getCursor().getDir().inverse();
+            Point lastPosition = new Point(model.getCursor().getPosition());
+            lastPosition.move(cursorInverseDir);
+            oldTrack = model.getRailMap().getTrackAt(lastPosition);
+        }
+    }
 
     @Override
     public void onUp() {
         degreesOfRotation = 0;
-        RailTrack newTrack = makeTrack();
-//        if (newTrack != null) {
-//            model.getCursor().setPosition(newTrack.getPosition());
-//        }
+        makeTrack();
         Point position = model.getCursor().getPosition();
         view.setPageOfPos(position.getX(), position.getY());
     }
@@ -94,7 +100,7 @@ public class TrackMaker extends GamePresenterDelegate {
         }
     }
 
-    private RailTrack makeTrack() {
+    private boolean makeTrack() {
         Point cursorPosition = model.getCursor().getPosition();
         Dir dir = model.getCursor().getDir();
         if (oldTrack != null) {
@@ -118,9 +124,10 @@ public class TrackMaker extends GamePresenterDelegate {
         track.setPosition(cursorPosition);
         getModel().getRailMap().addTrack(cursorPosition, track);
         if (canBeAFork(track, oldDir, dir)) {
-            final RailTrack myNewTrack = new ForkTrack();
+            final ForkRailTrack myNewTrack = new ForkRailTrack();
+            model.addFork(myNewTrack);
             final Router router = track.getRouter();
-            track.getRouter().forEach(t -> router.addRoute(t.getKey(), t.getValue()));
+            router.forEach(t -> myNewTrack.getRouter().addRoute(t.getKey(), t.getValue()));
             getModel().getRailMap().removeTrack(track.getPosition().getX(), track.getPosition().getY());
             getModel().getRailMap().addTrack(model.getCursor().getPosition(), myNewTrack);
         }
@@ -133,65 +140,7 @@ public class TrackMaker extends GamePresenterDelegate {
         }
         model.getCursor().setPosition(newPos);
         oldTrack = track;
-        return track;
-    }
-
-    private RailTrack makeTrack2() {
-        // Si no hay un track aquí, creamos uno
-        Point cursorPosition = model.getCursor().getPosition();
-        RailTrack actualTrack = model.getRailMap().getTrackAt(cursorPosition.getX(), cursorPosition.getY());
-        if (actualTrack == null) {
-//            actualTrack = createTrackOfSelectedType();
-//            actualTrack.setPosition(cursorPosition);
-//            model.getRailMap().addTrack(cursorPosition, actualTrack);
-        }
-        //De dónde veníamos
-        if (oldTrack != null) {
-            oldDir = cursorPosition.locate(oldTrack.getPosition());
-        } else {
-            if (!reversed) {
-                oldDir = model.getCursor().getDir().inverse();
-            } else {
-                oldDir = model.getCursor().getDir();
-            }
-        }
-
-//        actualTrack.addRoute(inverseRoute);
-
-
-        //Creamos o localizamos el nuevo track
-        RailTrack newTrack = model.getRailMap().getTrackAt(model.getCursor().getPosition());
-        if (newTrack == null) {
-            newTrack = createTrackOfSelectedType();
-        } else {
-            //Había un track. Veamos si se necesita un fork:
-            if (canBeAFork(newTrack, oldDir, model.getCursor().getDir())) {
-                final RailTrack myNewTrack = new ForkTrack();
-                final Router router = newTrack.getRouter();
-                newTrack.getRouter().forEach(t -> router.addRoute(t.getKey(), t.getValue()));
-                getModel().getRailMap().removeTrack(newTrack.getPosition().getX(), newTrack.getPosition().getY());
-                getModel().getRailMap().addTrack(model.getCursor().getPosition(), myNewTrack);
-                myNewTrack.setPosition(model.getCursor().getPosition());
-            }
-        }
-        //Calculamos la posición del nuevo track
-        Point newPos = new Point(cursorPosition);
-        if (!reversed) {
-            newPos.move(model.getCursor().getDir(), 1);
-        } else {
-            newPos.move(model.getCursor().getDir().inverse());
-        }
-
-        //Al track actual le agregamos la ruta entre de dónde veníamos y el nuevo
-        Dir dirToNewTrack = cursorPosition.locate(newPos);
-//        actualTrack.addRoute(oldDir, dirToNewTrack);
-//        actualTrack.connect(dirToNewTrack, newTrack);
-
-        Dir dirToActual = newTrack.getPosition().locate(actualTrack.getPosition());
-        newTrack.connect(dirToActual, actualTrack);
-
-        oldTrack = actualTrack;
-        return newTrack;
+        return true;
     }
 
     public boolean canBeAFork(Track track, Dir from, Dir to) {

@@ -3,13 +3,11 @@ package letrain.render;
 import javafx.scene.paint.Color;
 import letrain.map.Dir;
 import letrain.map.RailMap;
+import letrain.map.SimpleRouter;
 import letrain.mvp.GameModel;
 import letrain.mvp.GameView;
 import letrain.track.Track;
-import letrain.track.rail.RailTrack;
-import letrain.track.rail.StopRailTrack;
-import letrain.track.rail.TrainFactoryRailTrack;
-import letrain.track.rail.TunnelRailTrack;
+import letrain.track.rail.*;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
@@ -18,7 +16,8 @@ import letrain.vehicle.impl.rail.Wagon;
 
 public class UnicodeRenderer implements Renderer {
     private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
-    public static final Color FORK_COLOR = Color.grayRgb(180);;
+    public static final Color FORK_COLOR = Color.grayRgb(180);
+    ;
     private final GameView view;
 
     public UnicodeRenderer(GameView view) {
@@ -29,6 +28,7 @@ public class UnicodeRenderer implements Renderer {
     public void renderModel(GameModel model) {
         model.getRailMap().accept(this);
         model.getTrains().forEach(t -> t.accept(this));
+//        model.getForks().forEach(t-> t.accept(this));
         renderCursor(model.getCursor());
     }
 
@@ -39,26 +39,20 @@ public class UnicodeRenderer implements Renderer {
 
     @Override
     public void renderRailTrack(RailTrack track) {
-        if (track.getRouter().isStraight()) {
-            view.setColor(RAIL_TRACK_COLOR);
-            view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
-        } else if (track.getRouter().isCurve()) {
-            view.setColor(RAIL_TRACK_COLOR);
-            view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
-        } else if (track.getRouter().isFork()) {
-            view.setColor(FORK_COLOR);
-            view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
-        } else {
-            view.setColor(RAIL_TRACK_COLOR);
-            view.set(track.getPosition().getX(), track.getPosition().getY(), "+");
-        }
-
+        view.setColor(RAIL_TRACK_COLOR);
+        view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
     }
 
     @Override
     public void renderStopRailTrack(StopRailTrack track) {
         view.setColor(RAIL_TRACK_COLOR);
         view.set(track.getPosition().getX(), track.getPosition().getY(), "⊝");
+    }
+
+    @Override
+    public void renderForkRailTrack(ForkRailTrack track) {
+        view.setColor(FORK_COLOR);
+        view.set(track.getPosition().getX(), track.getPosition().getY(), dirGraphicAspect(track.getFirstOpenDir()));
     }
 
     @Override
@@ -87,7 +81,7 @@ public class UnicodeRenderer implements Renderer {
     @Override
     public void renderLocomotive(Locomotive locomotive) {
         view.setColor(Color.LIGHTBLUE);
-        view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(),locomotive.getAspect());
+        view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), locomotive.getAspect());
     }
 
     @Override
@@ -108,10 +102,8 @@ public class UnicodeRenderer implements Renderer {
             return dirGraphicAspect(track.getRouter().getFirstOpenDir());
         } else if (track.getRouter().isCurve()) {
             return "∙";
-        } else if (track.getRouter().isFork()) {
-            return dirGraphicAspect(track.getRouter().getFirstOpenDir());
         } else {
-            return "+";
+            return getCrossAspect(track);
         }
     }
 
@@ -161,4 +153,12 @@ public class UnicodeRenderer implements Renderer {
         return "?";
     }
 
+    public String getCrossAspect(Track track) {
+        SimpleRouter r = (SimpleRouter) (track.getRouter());
+        if (r.isHorizontalOrVertical()) {
+            return "+";
+        } else {
+            return "x";
+        }
+    }
 }

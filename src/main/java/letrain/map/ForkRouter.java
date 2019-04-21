@@ -6,6 +6,16 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
     private Pair<Dir, Dir> alternativeRoute= null;
     private Pair<Dir, Dir> originalRoute = null;
     private boolean usingAlternativeRoute = false;
+
+    @Override
+    public Dir getFirstOpenDir() {
+        if(isUsingAlternativeRoute()){
+            return alternativeRoute.getValue();
+        }else{
+            return originalRoute.getValue();
+        }
+    }
+
     @Override
     public void setAlternativeRoute() {
         if (alternativeRoute != null) {

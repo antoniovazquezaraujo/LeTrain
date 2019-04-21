@@ -2,9 +2,11 @@ package letrain.mvp.impl.delegates;
 
 import letrain.map.Dir;
 import letrain.map.Point;
+import letrain.map.Router;
 import letrain.mvp.GameModel;
 import letrain.mvp.GameView;
 import letrain.track.Track;
+import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.TrainFactoryRailTrack;
 
@@ -27,29 +29,23 @@ public class FactoryMaker extends GamePresenterDelegate {
             factory = new TrainFactory();
             factory.setPosition(model.getCursor().getPosition());
             model.addTrainFactory(factory);
+            Dir cursorInverseDir = model.getCursor().getDir().inverse();
+            Point lastPosition = new Point(model.getCursor().getPosition());
+            lastPosition.move(cursorInverseDir);
+            oldTrack = model.getRailMap().getTrackAt(lastPosition);
         }
     }
 
     @Override
     public void onUp() {
-        RailTrack newTrack = makeTrack();
-        if (newTrack != null) {
-            model.getCursor().setPosition(newTrack.getPosition());
-        }
+        makeTrack();
         Point position = model.getCursor().getPosition();
         view.setPageOfPos(position.getX(), position.getY());
     }
 
-    private RailTrack makeTrack() {
-        // Si no hay un track aquí, creamos uno
+    private boolean makeTrack() {
         Point cursorPosition = model.getCursor().getPosition();
-        RailTrack actualTrack = model.getRailMap().getTrackAt(cursorPosition.getX(), cursorPosition.getY());
-        if (actualTrack == null) {
-            actualTrack = createTrackOfSelectedType();
-            actualTrack.setPosition(cursorPosition);
-            model.getRailMap().addTrack(cursorPosition, actualTrack);
-        }
-        //De dónde veníamos
+        Dir dir = model.getCursor().getDir();
         if (oldTrack != null) {
             oldDir = cursorPosition.locate(oldTrack.getPosition());
         } else {
@@ -60,36 +56,30 @@ public class FactoryMaker extends GamePresenterDelegate {
             }
         }
 
-        //Calculamos la posición del nuevo track
+        RailTrack track = model.getRailMap().getTrackAt(cursorPosition.getX(), cursorPosition.getY());
+        if (track == null) {
+            track = createTrackOfSelectedType();
+        }else{
+            System.out.println("No se deben hacer factorías sobre otras vías!!!");
+            //no podemos avanzar, hay pistas aquí
+        }
+        track.addRoute(oldDir, dir);
+        if (oldTrack != null) {
+            track.connect(oldDir, oldTrack);
+        }
+        track.setPosition(cursorPosition);
+        getModel().getRailMap().addTrack(cursorPosition, track);
+
         Point newPos = new Point(cursorPosition);
         if (!reversed) {
             newPos.move(model.getCursor().getDir(), 1);
         } else {
             newPos.move(model.getCursor().getDir().inverse());
         }
+        model.getCursor().setPosition(newPos);
+        oldTrack = track;
+        return true;
 
-        //Creamos o localizamos el nuevo track
-        RailTrack newTrack = model.getRailMap().getTrackAt(newPos);
-        if (newTrack == null) {
-            newTrack = createTrackOfSelectedType();
-        }else{
-            //TODO
-            // aquí tenemos que detenernos!!!!
-        }
-
-        newTrack.setPosition(newPos);
-        model.getRailMap().addTrack(newPos, newTrack);
-
-        //Al track actual le agregamos la ruta entre de dónde veníamos y el nuevo
-        Dir dirToNewTrack = cursorPosition.locate(newPos);
-        actualTrack.addRoute(oldDir, dirToNewTrack);
-        actualTrack.connect(dirToNewTrack, newTrack);
-
-        Dir dirToActual = newTrack.getPosition().locate(actualTrack.getPosition());
-        newTrack.connect(dirToActual, actualTrack);
-
-        oldTrack = actualTrack;
-        return newTrack;
     }
     public RailTrack createTrackOfSelectedType() {
         return new TrainFactoryRailTrack();

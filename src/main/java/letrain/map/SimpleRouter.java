@@ -15,6 +15,12 @@ public class SimpleRouter implements Router {
 
     }
 
+    public boolean isHorizontalOrVertical(){
+        return dirMap.keySet().stream()
+        .filter(t-> {
+            return (t == Dir.N) || t== Dir.S | t == Dir.E | t== Dir.W;
+        }).count()> 0;
+    }
     @Override
     public String toString() {
         return "SimpleRouter{" +
@@ -43,14 +49,7 @@ public class SimpleRouter implements Router {
 
     @Override
     public boolean isCross() {
-        return getNumRoutes() > 2
-                &&
-                !isFork();
-    }
-
-    @Override
-    public boolean isFork() {
-        return false;
+        return getNumRoutes() > 3;
     }
 
     @Override

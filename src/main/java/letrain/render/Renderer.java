@@ -2,10 +2,7 @@ package letrain.render;
 
 import letrain.map.RailMap;
 import letrain.mvp.GameModel;
-import letrain.track.rail.RailTrack;
-import letrain.track.rail.StopRailTrack;
-import letrain.track.rail.TrainFactoryRailTrack;
-import letrain.track.rail.TunnelRailTrack;
+import letrain.track.rail.*;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
@@ -22,6 +19,8 @@ public interface Renderer {
     void renderRailTrack(RailTrack track);
 
     void renderStopRailTrack(StopRailTrack track);
+
+    void renderForkRailTrack(ForkRailTrack track);
 
     void renderTrainFactoryRailTrack(TrainFactoryRailTrack track);
 

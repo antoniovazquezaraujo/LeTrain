@@ -17,7 +17,6 @@ public abstract class Track implements
         LinkerCompartmentListener,
         Renderable {
 
-    private final Router router = new SimpleRouter();
     private TrackDirector trackDirector;
     private Linker linker = null;
     private Point pos = new Point(0,0);
@@ -39,9 +38,7 @@ public abstract class Track implements
         return trackeableCompartmentListeners;
     }
 
-    public Router getRouter() {
-        return router;
-    }
+    public abstract Router getRouter();
 
     protected TrackDirector  getTrackDirector() {
         return trackDirector;
@@ -57,63 +54,58 @@ public abstract class Track implements
      **********************************************************/
     @Override
     public Dir getAnyDir() {
-        return router.getAnyDir();
+        return getRouter().getAnyDir();
     }
 
     @Override
     public boolean isStraight() {
-        return router.isStraight();
+        return getRouter().isStraight();
     }
 
     @Override
     public boolean isCurve() {
-        return router.isCurve();
+        return getRouter().isCurve();
     }
 
     @Override
     public boolean isCross() {
-        return router.isCross();
+        return getRouter().isCross();
     }
 
-    @Override
-    public boolean isFork() {
-        return router.isFork();
-    }
-
-    @Override
+     @Override
     public Dir getDir(Dir dir) {
-        return router.getDir(dir);
+        return getRouter().getDir(dir);
     }
 
     @Override
     public Dir getFirstOpenDir() {
-        return router.getFirstOpenDir();
+        return getRouter().getFirstOpenDir();
     }
 
     @Override
     public int getNumRoutes() {
-        return router.getNumRoutes();
+        return getRouter().getNumRoutes();
     }
 
     @Override
     public void addRoute(Dir from, Dir to) {
-        router.addRoute(from, to);
+        getRouter().addRoute(from, to);
     }
 
     @Override
     public void removeRoute(Dir from, Dir to) {
-        router.removeRoute(from, to);
+        getRouter().removeRoute(from, to);
     }
 
     @Override
     public void clear() {
-        router.clear();
+        getRouter().clear();
     }
 
 
     @Override
     public void forEach(Consumer<Pair<Dir, Dir>> routeConsumer) {
-        router.forEach(routeConsumer);
+        getRouter().forEach(routeConsumer);
     }
 
 
