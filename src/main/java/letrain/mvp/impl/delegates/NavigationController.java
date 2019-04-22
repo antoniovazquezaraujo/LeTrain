@@ -12,12 +12,15 @@ public class NavigationController extends GamePresenterDelegate {
 
     public NavigationController(GameModel model, GameView view) {
         super(model, view);
-        this.dir = Dir.N;
+        this.dir = model.getCursor().getDir();
     }
 
     @Override
     public void onGameModeSelected(GameView.GameMode mode) {
-
+        if (mode.equals(GameView.GameMode.NAVIGATE_MAP_COMMAND)) {
+            this.dir = model.getCursor().getDir();
+            reversed = false;
+        }
     }
 
     @Override

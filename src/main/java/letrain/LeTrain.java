@@ -37,11 +37,11 @@ public class LeTrain extends Application {
         FileInputStream fis = null;
         ObjectInputStream in = null;
         try {
-            File file = new File("LeTrain.sav");
+            File file = new File("TestCircuit1.sav");
             if(!file.exists()){
                 return;
             }
-            fis = new FileInputStream("LeTrain.sav");
+            fis = new FileInputStream("TestCircuit1.sav");
             in = new ObjectInputStream(fis);
             this.model = (GameModel) in.readObject();
             in.close();

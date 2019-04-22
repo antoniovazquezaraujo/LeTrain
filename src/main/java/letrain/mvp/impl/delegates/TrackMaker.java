@@ -30,16 +30,18 @@ public class TrackMaker extends GamePresenterDelegate {
 
     public TrackMaker(GameModel model, GameView view) {
         super(model, view);
-        this.newTrackType = NewTrackType.NORMAL_TRACK;
-        this.dir = Dir.N;
     }
     @Override
     public void onGameModeSelected(GameView.GameMode mode) {
-        if(mode.equals(GameView.GameMode.CREATE_FACTORY_PLATFORM_COMMAND)){
+        if(mode.equals(GameView.GameMode.CREATE_NORMAL_TRACKS_COMMAND)){
             Dir cursorInverseDir = model.getCursor().getDir().inverse();
             Point lastPosition = new Point(model.getCursor().getPosition());
             lastPosition.move(cursorInverseDir);
             oldTrack = model.getRailMap().getTrackAt(lastPosition);
+            this.newTrackType = NewTrackType.NORMAL_TRACK;
+            this.dir = model.getCursor().getDir();
+            this.oldDir = dir;
+            reversed=false;
         }
     }
 
