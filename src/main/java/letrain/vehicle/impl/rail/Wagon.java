@@ -1,7 +1,7 @@
 package letrain.vehicle.impl.rail;
 
+import letrain.render.Visitor;
 import letrain.vehicle.impl.Linker;
-import letrain.render.Renderer;
 
 public class Wagon extends Linker {
     String aspect;
@@ -50,8 +50,8 @@ public class Wagon extends Linker {
      **********************************************************/
 
     @Override
-    public void accept(Renderer renderer) {
-        renderer.renderWagon(this);
+    public void accept(Visitor visitor) {
+        visitor.visitWagon(this);
     }
     public String getAspect() {
         return aspect;

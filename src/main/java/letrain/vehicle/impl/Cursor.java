@@ -1,12 +1,12 @@
 package letrain.vehicle.impl;
 
-import letrain.render.Renderer;
+import letrain.render.Visitor;
 import letrain.vehicle.Vehicle;
 
 public class Cursor extends Vehicle {
     @Override
-    public void accept(Renderer renderer) {
-        renderer.renderCursor(this);
+    public void accept(Visitor visitor) {
+        visitor.visitCursor(this);
     }
 
     @Override

@@ -8,7 +8,7 @@ import letrain.mvp.GamePresenter;
 import letrain.mvp.GameView;
 import letrain.mvp.GameViewListener;
 import letrain.mvp.impl.delegates.*;
-import letrain.render.UnicodeRenderer;
+import letrain.render.RenderingVisitor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
     private final GameModel model;
     private final GameView view;
     private Timeline loop;
-    private final UnicodeRenderer renderer;
+    private final RenderingVisitor renderer;
     GamePresenterDelegate delegate;
     Map<GameView.GameMode, GamePresenterDelegate> delegates;
 
@@ -33,7 +33,7 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
             this.model = new LeTrainModel();
         }
         view = new LeTrainView(this);
-        renderer = new UnicodeRenderer(view);
+        renderer = new RenderingVisitor(view);
         delegates = new HashMap<>();
         delegates.put(GameView.GameMode.NAVIGATE_MAP_COMMAND, new NavigationController(this.model, view));
         delegates.put(GameView.GameMode.CREATE_FACTORY_PLATFORM_COMMAND, new FactoryMaker(this.model, view));
@@ -53,7 +53,7 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
 
         KeyFrame kf = new KeyFrame(Duration.seconds(.1), actionEvent -> {
             view.clear();
-            renderer.renderModel(model);
+            renderer.visitModel(model);
             view.paint();
             model.moveTrains();
         });

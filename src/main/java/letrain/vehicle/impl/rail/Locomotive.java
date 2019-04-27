@@ -1,8 +1,8 @@
 package letrain.vehicle.impl.rail;
 
+import letrain.render.Visitor;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
-import letrain.render.Renderer;
 
 public class Locomotive extends Linker implements Tractor{
 
@@ -79,8 +79,8 @@ public class Locomotive extends Linker implements Tractor{
      **********************************************************/
 
     @Override
-    public void accept(Renderer renderer) {
-        renderer.renderLocomotive(this);
+    public void accept(Visitor visitor) {
+        visitor.visitLocomotive(this);
     }
 
     public String getAspect() {

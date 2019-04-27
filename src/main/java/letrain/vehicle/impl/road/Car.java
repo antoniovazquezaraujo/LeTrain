@@ -2,7 +2,7 @@ package letrain.vehicle.impl.road;
 
 import letrain.track.road.RoadTrack;
 import letrain.vehicle.Vehicle;
-import letrain.render.Renderer;
+import letrain.render.Visitor;
 
 public class Car extends Vehicle<RoadTrack> {
 
@@ -37,7 +37,7 @@ public class Car extends Vehicle<RoadTrack> {
     }
 
     @Override
-    public void accept(Renderer renderer) {
+    public void accept(Visitor visitor) {
 
     }
 }

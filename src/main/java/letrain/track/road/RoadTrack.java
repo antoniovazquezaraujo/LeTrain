@@ -4,7 +4,7 @@ import letrain.map.Dir;
 import letrain.map.Router;
 import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
-import letrain.render.Renderer;
+import letrain.render.Visitor;
 
 public class RoadTrack extends Track {
 
@@ -24,7 +24,7 @@ public class RoadTrack extends Track {
     }
 
     @Override
-    public void accept(Renderer renderer) {
+    public void accept(Visitor visitor) {
 
     }
 }

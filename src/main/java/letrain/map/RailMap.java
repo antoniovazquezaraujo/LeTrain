@@ -1,8 +1,8 @@
 package letrain.map;
 
+import letrain.render.Visitor;
 import letrain.track.rail.RailTrack;
 import letrain.render.Renderable;
-import letrain.render.Renderer;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -69,7 +69,7 @@ public class RailMap implements Serializable, TerrainMap<RailTrack> , Renderable
      **********************************************************/
 
     @Override
-    public void accept(Renderer renderer) {
-        renderer.renderMap(this);
+    public void accept(Visitor visitor) {
+        visitor.visitMap(this);
     }
 }

@@ -1,11 +1,11 @@
 package letrain.track;
 
 import letrain.map.Router;
-import letrain.render.Renderer;
+import letrain.render.Visitor;
 
 public class Gate extends Track {
     @Override
-    public void accept(Renderer renderer) {
+    public void accept(Visitor visitor) {
 
     }
 

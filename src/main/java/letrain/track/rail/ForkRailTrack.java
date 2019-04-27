@@ -5,8 +5,7 @@ import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.map.ForkRouter;
 import letrain.map.Router;
-import letrain.render.Renderer;
-import letrain.track.rail.RailTrack;
+import letrain.render.Visitor;
 
 import java.util.function.Consumer;
 
@@ -28,8 +27,8 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     }
 
     @Override
-    public void accept(Renderer renderer) {
-        renderer.renderForkRailTrack(this);
+    public void accept(Visitor visitor) {
+        visitor.visitForkRailTrack(this);
     }
     @Override
     public void setAlternativeRoute() {

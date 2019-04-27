@@ -1,6 +1,6 @@
 package letrain.track.rail;
 
-import letrain.render.Renderer;
+import letrain.render.Visitor;
 
 public class TunnelRailTrack extends RailTrack {
     /***********************************************************
@@ -8,7 +8,7 @@ public class TunnelRailTrack extends RailTrack {
      **********************************************************/
 
     @Override
-    public void accept(Renderer renderer) {
-        renderer.renderTunnelRailTrack(this);
+    public void accept(Visitor visitor) {
+        visitor.visitTunnelRailTrack(this);
     }
 }

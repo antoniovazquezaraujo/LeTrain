@@ -14,84 +14,84 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
-public class UnicodeRenderer implements Renderer {
+public class InfoVisitor implements Visitor {
     private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
     public static final Color FORK_COLOR = Color.grayRgb(180);
     ;
     private final GameView view;
 
-    public UnicodeRenderer(GameView view) {
+    public InfoVisitor(GameView view) {
         this.view = view;
     }
 
     @Override
-    public void renderModel(GameModel model) {
+    public void visitModel(GameModel model) {
         model.getRailMap().accept(this);
         model.getTrains().forEach(t -> t.accept(this));
 //        model.getForks().forEach(t-> t.accept(this));
-        renderCursor(model.getCursor());
+        visitCursor(model.getCursor());
     }
 
     @Override
-    public void renderMap(RailMap map) {
+    public void visitMap(RailMap map) {
         map.forEach(t -> t.accept(this));
     }
 
     @Override
-    public void renderRailTrack(RailTrack track) {
+    public void visitRailTrack(RailTrack track) {
         view.setColor(RAIL_TRACK_COLOR);
         view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
     }
 
     @Override
-    public void renderStopRailTrack(StopRailTrack track) {
+    public void visitStopRailTrack(StopRailTrack track) {
         view.setColor(RAIL_TRACK_COLOR);
         view.set(track.getPosition().getX(), track.getPosition().getY(), "⊝");
     }
 
     @Override
-    public void renderForkRailTrack(ForkRailTrack track) {
+    public void visitForkRailTrack(ForkRailTrack track) {
         view.setColor(FORK_COLOR);
         view.set(track.getPosition().getX(), track.getPosition().getY(), dirGraphicAspect(track.getFirstOpenDir()));
     }
 
     @Override
-    public void renderTrainFactoryRailTrack(TrainFactoryRailTrack track) {
+    public void visitTrainFactoryRailTrack(TrainFactoryRailTrack track) {
         view.setColor(Color.LIGHTBLUE);
         view.set(track.getPosition().getX(), track.getPosition().getY(), "⎵");
     }
 
     @Override
-    public void renderTunnelRailTrack(TunnelRailTrack track) {
+    public void visitTunnelRailTrack(TunnelRailTrack track) {
         view.setColor(RAIL_TRACK_COLOR);
         view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
     }
 
 
     @Override
-    public void renderTrain(Train train) {
+    public void visitTrain(Train train) {
         train.getLinkers().forEach(t -> t.accept(this));
     }
 
     @Override
-    public void renderLinker(Linker linker) {
+    public void visitLinker(Linker linker) {
         view.set(linker.getPosition().getX(), linker.getPosition().getY(), "?");
     }
 
     @Override
-    public void renderLocomotive(Locomotive locomotive) {
+    public void visitLocomotive(Locomotive locomotive) {
         view.setColor(Color.LIGHTBLUE);
         view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), locomotive.getAspect());
     }
 
     @Override
-    public void renderWagon(Wagon wagon) {
+    public void visitWagon(Wagon wagon) {
         view.setColor(Color.GREEN);
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
     }
 
     @Override
-    public void renderCursor(Cursor cursor) {
+    public void visitCursor(Cursor cursor) {
         view.setColor(Color.RED);
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
     }

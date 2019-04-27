@@ -2,7 +2,7 @@ package letrain.vehicle.impl.rail;
 
 import letrain.map.Dir;
 import letrain.render.Renderable;
-import letrain.render.Renderer;
+import letrain.render.Visitor;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Transportable;
@@ -278,8 +278,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
      **********************************************************/
 
     @Override
-    public void accept(Renderer renderer) {
-        renderer.renderTrain(this);
+    public void accept(Visitor visitor) {
+        visitor.visitTrain(this);
     }
 
     @Override

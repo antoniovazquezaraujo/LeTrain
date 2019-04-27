@@ -6,7 +6,7 @@ import letrain.map.Router;
 import letrain.map.SimpleRouter;
 import letrain.track.Track;
 import letrain.track.TrackDirector;
-import letrain.render.Renderer;
+import letrain.render.Visitor;
 
 public class RailTrack extends Track  {
     Router router = new SimpleRouter();
@@ -47,7 +47,7 @@ public class RailTrack extends Track  {
      **********************************************************/
 
     @Override
-    public void accept(Renderer renderer) {
-        renderer.renderRailTrack(this);
+    public void accept(Visitor visitor) {
+        visitor.visitRailTrack(this);
     }
 }
