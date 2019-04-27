@@ -131,7 +131,9 @@ LeTrainView *-- GameViewListener
 LeTrainView *-- LeTrainViewGrid
 GamePresenter o-- GameView
 GamePresenter o-- GameModel
-LeTrainPresenter *-- GamePresenterDelegate
+GamePresenter <|.. GamePresenterDelegate
+GameViewListener <|.. GamePresenterDelegate
+LeTrainPresenter *-ri- GamePresenterDelegate
 GameViewListener <|..  LeTrainPresenter
 GamePresenterDelegate <|-- FactoryController
 GamePresenterDelegate <|-- FactoryMaker

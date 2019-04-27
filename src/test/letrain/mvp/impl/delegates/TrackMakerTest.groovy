@@ -5,6 +5,7 @@ import letrain.map.Point
 import letrain.map.RailMap
 import letrain.map.SimpleRouter
 import letrain.mvp.GameModel
+import letrain.mvp.GamePresenter
 import letrain.mvp.GameView
 import letrain.track.Track
 import letrain.track.TrackDirector
@@ -40,7 +41,7 @@ class TrackMakerTest extends Specification {
         when(model.getCursor()).thenReturn(new Cursor(dir: Dir.E))
 
         when:
-        trackMaker.onGameModeSelected(GameView.GameMode.NAVIGATE_MAP_COMMAND)
+        trackMaker.onGameModeSelected(GamePresenter.GameMode.NAVIGATE_MAP_COMMAND)
 
         then:
         false//todo - validate something

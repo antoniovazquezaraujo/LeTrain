@@ -10,6 +10,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import letrain.map.Point;
+import letrain.mvp.GamePresenter;
 import letrain.mvp.GameView;
 import letrain.mvp.GameViewListener;
 
@@ -24,7 +25,7 @@ public class LeTrainView extends BorderPane implements GameView {
         viewGrid = new LeTrainViewGrid();
         this.gameViewListener = gameViewListener;
         setTop(createMenuBar());
-        setCenter(viewGrid );
+        setCenter(viewGrid);
         setBottom(statusBar);
         this.setFocusTraversable(true);
         clear();
@@ -34,79 +35,28 @@ public class LeTrainView extends BorderPane implements GameView {
         statusBar.setStroke(Color.GREEN);
         statusBar.setFont(new Font("Lucida Sans Unicode", 10));
     }
-    public Node createMenuBar(){
+
+    public Node createMenuBar() {
         MenuBar menuBar = new MenuBar();
         Menu menu = new Menu("Actions");
         menuBar.getMenus().add(menu);
-        for(GameView.GameMode option: GameView.GameMode.values()){
+        for (GamePresenter.GameMode option : GamePresenter.GameMode.values()) {
             MenuItem item = new MenuItem(option.getName());
             menu.getItems().add(item);
-            item.setOnAction(t->{doCommand(option);});
+            item.setOnAction(t -> {
+                doCommand(option);
+            });
         }
         return menuBar;
     }
-    public void doCommand(GameView.GameMode mode){
+
+    public void doCommand(GamePresenter.GameMode mode) {
         gameViewListener.onGameModeSelected(mode);
     }
 
     private void addEventListener() {
         addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
-            switch (keyEvent.getCode()) {
-                case UP:
-                    if (keyEvent.isControlDown()) {
-                        clear();
-                        Point p = getMapScrollPage();
-                        p.setY(p.getY() - 1);
-                        setMapScrollPage(p);
-                        clear();
-                    } else {
-                        gameViewListener.onUp();
-                    }
-                    break;
-                case DOWN:
-                    if (keyEvent.isControlDown()) {
-                        clear();
-                        Point p = getMapScrollPage();
-                        p.setY(p.getY() + 1);
-                        setMapScrollPage(p);
-                        clear();
-                    } else {
-                        gameViewListener.onDown();
-                        gameViewListener.onUp();
-                        gameViewListener.onDown();
-                    }
-                    break;
-                case LEFT:
-                    if (keyEvent.isControlDown()) {
-                        clear();
-                        Point p = getMapScrollPage();
-                        p.setX(p.getX() - 1);
-                        setMapScrollPage(p);
-                        clear();
-                    } else {
-                        gameViewListener.onLeft();
-                    }
-                    break;
-                case RIGHT:
-                    if (keyEvent.isControlDown()) {
-                        clear();
-                        Point p = getMapScrollPage();
-                        p.setX(p.getX() + 1);
-                        setMapScrollPage(p);
-                        clear();
-                    } else {
-                        gameViewListener.onRight();
-                    }
-                    break;
-                case Q:
-                    System.exit(0);
-                    break;
-                default:
-                    break;
-            }
-        });
-        addEventHandler(KeyEvent.KEY_TYPED, keyEvent -> {
-            gameViewListener.onChar(keyEvent.getCharacter());
+            gameViewListener.onChar(keyEvent);
         });
     }
 
@@ -118,7 +68,7 @@ public class LeTrainView extends BorderPane implements GameView {
     @Override
     public void setMapScrollPage(Point pos) {
         viewGrid.setMapScrollPage(pos);
-        statusBar.setText("Página: "+ viewGrid.getMapScrollPage().getX()+ ", "+ viewGrid.getMapScrollPage().getY());
+        statusBar.setText("Página: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
     }
 
 
@@ -144,8 +94,8 @@ public class LeTrainView extends BorderPane implements GameView {
 
     @Override
     public void setPageOfPos(int x, int y) {
-        viewGrid.setPageOfPos(x,y);
-        statusBar.setText("Página: "+ viewGrid.getMapScrollPage().getX()+ ", "+ viewGrid.getMapScrollPage().getY());
+        viewGrid.setPageOfPos(x, y);
+        statusBar.setText("Página: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
     }
 
     @Override

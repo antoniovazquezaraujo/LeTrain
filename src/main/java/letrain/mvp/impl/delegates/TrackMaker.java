@@ -1,11 +1,14 @@
 package letrain.mvp.impl.delegates;
 
+import javafx.scene.input.KeyEvent;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.SimpleRouter;
 import letrain.mvp.GameModel;
+import letrain.mvp.GamePresenter;
 import letrain.mvp.GameView;
+import letrain.mvp.impl.LeTrainPresenter;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
@@ -28,12 +31,12 @@ public class TrackMaker extends GamePresenterDelegate {
     private int degreesOfRotation = 0;
     private Dir dir;
 
-    public TrackMaker(GameModel model, GameView view) {
-        super(model, view);
+    public TrackMaker(LeTrainPresenter leTrainPresenter, GameModel model, GameView view) {
+        super(leTrainPresenter, model, view);
     }
     @Override
-    public void onGameModeSelected(GameView.GameMode mode) {
-        if(mode.equals(GameView.GameMode.CREATE_NORMAL_TRACKS_COMMAND)){
+    public void onGameModeSelected(GameMode mode) {
+        if(mode.equals(GamePresenter.GameMode.CREATE_NORMAL_TRACKS_COMMAND)){
             Dir cursorInverseDir = model.getCursor().getDir().inverse();
             Point lastPosition = new Point(model.getCursor().getPosition());
             lastPosition.move(cursorInverseDir);
@@ -77,7 +80,7 @@ public class TrackMaker extends GamePresenterDelegate {
     }
 
     @Override
-    public void onChar(String c) {
+    public void onChar(KeyEvent c) {
         super.onChar(c);
     }
 

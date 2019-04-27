@@ -1,20 +1,23 @@
 package letrain.mvp.impl.delegates;
 
+import javafx.scene.input.KeyEvent;
 import letrain.mvp.GameModel;
+import letrain.mvp.GamePresenter;
 import letrain.mvp.GameView;
+import letrain.mvp.impl.LeTrainPresenter;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.rail.Train;
 
 public class TrainController extends GamePresenterDelegate {
     Train train;
     int trainIndex = -1;
-    public TrainController(GameModel model, GameView view) {
-        super(model, view);
+    public TrainController(LeTrainPresenter leTrainPresenter, GameModel model, GameView view) {
+        super(leTrainPresenter, model, view);
     }
 
     @Override
-    public void onGameModeSelected(GameView.GameMode mode) {
-        if(mode.equals(GameView.GameMode.USE_TRAINS_COMMAND)){
+    public void onGameModeSelected(GameMode mode) {
+        if(mode.equals(GamePresenter.GameMode.USE_TRAINS_COMMAND)){
             trainIndex=0;
             train = model.getTrains().get(trainIndex);
         }
@@ -49,7 +52,7 @@ public class TrainController extends GamePresenterDelegate {
     }
 
     @Override
-    public void onChar(String c) {
+    public void onChar(KeyEvent c) {
         super.onChar(c);
     }
 }

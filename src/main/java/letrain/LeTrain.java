@@ -34,35 +34,35 @@ public class LeTrain extends Application {
 
     @Override
     public void init() throws Exception {
-        FileInputStream fis = null;
-        ObjectInputStream in = null;
-        try {
-            File file = new File("TestCircuit1.sav");
-            if(!file.exists()){
-                return;
-            }
-            fis = new FileInputStream("TestCircuit1.sav");
-            in = new ObjectInputStream(fis);
-            this.model = (GameModel) in.readObject();
-            in.close();
-        } catch (Exception ex) {
-            this.model = null;
-            ex.printStackTrace();
-        }
+//        FileInputStream fis = null;
+//        ObjectInputStream in = null;
+//        try {
+//            File file = new File("TestCircuit1.sav");
+//            if(!file.exists()){
+//                return;
+//            }
+//            fis = new FileInputStream("TestCircuit1.sav");
+//            in = new ObjectInputStream(fis);
+//            this.model = (GameModel) in.readObject();
+//            in.close();
+//        } catch (Exception ex) {
+//            this.model = null;
+//            ex.printStackTrace();
+//        }
     }
 
     @Override
     public void stop() throws Exception {
-        String fileName = "LeTrain.sav";
-        FileOutputStream fos = null;
-        ObjectOutputStream out = null;
-        try {
-            fos = new FileOutputStream(fileName);
-            out = new ObjectOutputStream(fos);
-            out.writeObject(presenter.getModel());
-            out.close();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+//        String fileName = "LeTrain.sav";
+//        FileOutputStream fos = null;
+//        ObjectOutputStream out = null;
+//        try {
+//            fos = new FileOutputStream(fileName);
+//            out = new ObjectOutputStream(fos);
+//            out.writeObject(presenter.getModel());
+//            out.close();
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
     }
 }

@@ -1,23 +1,26 @@
 package letrain.mvp.impl.delegates;
 
+import javafx.scene.input.KeyEvent;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.GameModel;
+import letrain.mvp.GamePresenter;
 import letrain.mvp.GameView;
+import letrain.mvp.impl.LeTrainPresenter;
 
 public class NavigationController extends GamePresenterDelegate {
 
     boolean reversed;
     private Dir dir;
 
-    public NavigationController(GameModel model, GameView view) {
-        super(model, view);
+    public NavigationController(LeTrainPresenter leTrainPresenter, GameModel model, GameView view) {
+        super(leTrainPresenter, model, view);
         this.dir = model.getCursor().getDir();
     }
 
     @Override
-    public void onGameModeSelected(GameView.GameMode mode) {
-        if (mode.equals(GameView.GameMode.NAVIGATE_MAP_COMMAND)) {
+    public void onGameModeSelected(GameMode mode) {
+        if (mode.equals(GamePresenter.GameMode.NAVIGATE_MAP_COMMAND)) {
             this.dir = model.getCursor().getDir();
             reversed = false;
         }
@@ -35,6 +38,12 @@ public class NavigationController extends GamePresenterDelegate {
         Point position = model.getCursor().getPosition();
         view.setPageOfPos(position.getX(), position.getY());
     }
+    @Override
+    public void onDown() {
+        reversed= true;
+        onUp();
+        reversed = false;
+    }
 
     @Override
     public void onLeft() {
@@ -49,7 +58,7 @@ public class NavigationController extends GamePresenterDelegate {
     }
 
     @Override
-    public void onChar(String c) {
+    public void onChar(KeyEvent c) {
 
     }
 }

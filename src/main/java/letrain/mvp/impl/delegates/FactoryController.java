@@ -1,8 +1,11 @@
 package letrain.mvp.impl.delegates;
 
+import javafx.scene.input.KeyEvent;
 import letrain.map.Dir;
 import letrain.mvp.GameModel;
+import letrain.mvp.GamePresenter;
 import letrain.mvp.GameView;
+import letrain.mvp.impl.LeTrainPresenter;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
@@ -11,13 +14,13 @@ import letrain.vehicle.impl.rail.Wagon;
 public class FactoryController extends GamePresenterDelegate {
     TrainFactory factory;
     Train train;
-    public FactoryController(GameModel model, GameView view) {
-        super(model, view);
+    public FactoryController(LeTrainPresenter leTrainPresenter, GameModel model, GameView view) {
+        super(leTrainPresenter, model, view);
     }
 
     @Override
-    public void onGameModeSelected(GameView.GameMode mode) {
-        if(mode.equals(GameView.GameMode.USE_FACTORY_PLATFORMS_COMMAND)){
+    public void onGameModeSelected(GameMode mode) {
+        if(mode.equals(GamePresenter.GameMode.USE_FACTORY_PLATFORMS_COMMAND)){
             factory = model.getTrainFactories().get(0);
             model.getCursor().setPosition(factory.getPosition());
             model.getCursor().setDir(Dir.N);
@@ -47,7 +50,8 @@ public class FactoryController extends GamePresenterDelegate {
     }
 
     @Override
-    public void onChar(String c) {
+    public void onChar(KeyEvent keyEvent) {
+        String c = keyEvent.getCharacter();
         if(!c.matches("([A-Za-z])*")){
             return;
         }

@@ -1,17 +1,31 @@
 package letrain.mvp.impl.delegates;
 
+import javafx.scene.input.KeyEvent;
 import letrain.mvp.GameModel;
+import letrain.mvp.GamePresenter;
 import letrain.mvp.GameView;
 import letrain.mvp.GameViewListener;
 
 public  class GamePresenterDelegate implements letrain.mvp.GamePresenter, GameViewListener {
     GameModel model;
     GameView view;
-
-    public GamePresenterDelegate(GameModel model, GameView view) {
+    GamePresenter parent;
+    public GamePresenterDelegate(GamePresenter presenter, GameModel model, GameView view) {
+        this.parent = parent;
         this.model = model;
         this.view = view;
     }
+
+    @Override
+    public GameMode getMode() {
+        return parent.getMode();
+    }
+
+    @Override
+    public void setMode(GameMode mode) {
+        parent.setMode(mode);
+    }
+
     @Override
     public GameView getView() {
         return view;
@@ -23,7 +37,7 @@ public  class GamePresenterDelegate implements letrain.mvp.GamePresenter, GameVi
     }
 
     @Override
-    public  void onGameModeSelected(GameView.GameMode mode){
+    public  void onGameModeSelected(GameMode mode){
 
     }
 
@@ -48,7 +62,8 @@ public  class GamePresenterDelegate implements letrain.mvp.GamePresenter, GameVi
     }
 
     @Override
-    public  void onChar(String c){
+    public  void onChar(KeyEvent c){
 
     }
+
 }

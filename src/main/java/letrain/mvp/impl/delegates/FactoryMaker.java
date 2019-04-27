@@ -2,11 +2,11 @@ package letrain.mvp.impl.delegates;
 
 import letrain.map.Dir;
 import letrain.map.Point;
-import letrain.map.Router;
 import letrain.mvp.GameModel;
+import letrain.mvp.GamePresenter;
 import letrain.mvp.GameView;
+import letrain.mvp.impl.LeTrainPresenter;
 import letrain.track.Track;
-import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.TrainFactoryRailTrack;
 
@@ -19,13 +19,13 @@ public class FactoryMaker extends GamePresenterDelegate {
     private Dir dir;
     TrainFactory factory;
 
-    public FactoryMaker(GameModel model, GameView view) {
-        super(model, view);
+    public FactoryMaker(LeTrainPresenter leTrainPresenter, GameModel model, GameView view) {
+        super(leTrainPresenter, model, view);
     }
 
     @Override
-    public void onGameModeSelected(GameView.GameMode mode) {
-        if(mode.equals(GameView.GameMode.CREATE_FACTORY_PLATFORM_COMMAND)){
+    public void onGameModeSelected(GameMode mode) {
+        if(mode.equals(GamePresenter.GameMode.CREATE_FACTORY_PLATFORM_COMMAND)){
             factory = new TrainFactory();
             factory.setPosition(model.getCursor().getPosition());
             model.addTrainFactory(factory);

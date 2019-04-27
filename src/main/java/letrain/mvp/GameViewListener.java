@@ -1,7 +1,9 @@
 package letrain.mvp;
 
+import javafx.scene.input.KeyEvent;
+
 public interface GameViewListener {
-    void onGameModeSelected(GameView.GameMode mode);
+    void onGameModeSelected(GamePresenter.GameMode mode);
 
     void onUp();
 
@@ -11,6 +13,6 @@ public interface GameViewListener {
 
     void onRight();
 
-    void onChar(String c);
+    void onChar(KeyEvent c);
 
 }
