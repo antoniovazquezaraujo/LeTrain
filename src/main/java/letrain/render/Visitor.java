@@ -1,7 +1,7 @@
 package letrain.render;
 
 import letrain.map.RailMap;
-import letrain.mvp.GameModel;
+import letrain.mvp.Model;
 import letrain.track.rail.*;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
@@ -10,7 +10,7 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public interface Visitor {
-    void visitModel(GameModel model);
+    void visitModel(Model model);
 
     void visitTrain(Train train);
 

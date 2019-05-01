@@ -2,16 +2,16 @@ package letrain.mvp.impl.delegates;
 
 import letrain.map.Dir;
 import letrain.map.Point;
-import letrain.mvp.GameModel;
-import letrain.mvp.GameView;
-import letrain.mvp.impl.LeTrainPresenter;
+import letrain.mvp.Model;
+import letrain.mvp.View;
+import letrain.mvp.impl.Presenter;
 import letrain.track.rail.RailTrack;
 
-public class TrackDestructor extends GamePresenterDelegate {
+public class TrackDestructor extends PresenterDelegate {
     boolean reversed;
     private Dir dir;
     @Override
-    public void onGameModeSelected(GameMode mode) {
+    public void onGameModeSelected(Model.GameMode mode) {
         super.onGameModeSelected(mode);
         this.dir = model.getCursor().getDir();
         this.reversed = false;
@@ -52,7 +52,7 @@ public class TrackDestructor extends GamePresenterDelegate {
         model.getCursor().setDir(this.dir);
     }
 
-    public TrackDestructor(LeTrainPresenter leTrainPresenter, GameModel model, GameView view) {
-        super(leTrainPresenter, model, view);
+    public TrackDestructor(Presenter presenter, Model model, View view) {
+        super(presenter, model, view);
     }
 }

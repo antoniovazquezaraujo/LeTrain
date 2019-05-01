@@ -5,19 +5,14 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.SimpleRouter;
-import letrain.mvp.GameModel;
-import letrain.mvp.GamePresenter;
-import letrain.mvp.GameView;
-import letrain.mvp.impl.LeTrainPresenter;
-import letrain.track.rail.ForkRailTrack;
+import letrain.mvp.Model;
+import letrain.mvp.View;
+import letrain.mvp.impl.Presenter;
 import letrain.track.Track;
-import letrain.track.rail.RailTrack;
-import letrain.track.rail.StopRailTrack;
-import letrain.track.rail.TrainFactoryRailTrack;
-import letrain.track.rail.TunnelRailTrack;
+import letrain.track.rail.*;
 
-public class TrackMaker extends GamePresenterDelegate {
-    enum NewTrackType {
+public class TrackMaker extends PresenterDelegate {
+    public enum NewTrackType {
         NORMAL_TRACK,
         STOP_TRACK,
         TRAIN_FACTORY_GATE,
@@ -31,12 +26,13 @@ public class TrackMaker extends GamePresenterDelegate {
     private int degreesOfRotation = 0;
     private Dir dir;
 
-    public TrackMaker(LeTrainPresenter leTrainPresenter, GameModel model, GameView view) {
-        super(leTrainPresenter, model, view);
+    public TrackMaker(Presenter presenter, Model model, View view) {
+        super(presenter, model, view);
     }
+
     @Override
-    public void onGameModeSelected(GameMode mode) {
-        if(mode.equals(GamePresenter.GameMode.CREATE_NORMAL_TRACKS_COMMAND)){
+    public void onGameModeSelected(Model.GameMode mode) {
+        if (mode.equals(Model.GameMode.CREATE_TRACKS)) {
             Dir cursorInverseDir = model.getCursor().getDir().inverse();
             Point lastPosition = new Point(model.getCursor().getPosition());
             lastPosition.move(cursorInverseDir);
@@ -44,7 +40,7 @@ public class TrackMaker extends GamePresenterDelegate {
             this.newTrackType = NewTrackType.NORMAL_TRACK;
             this.dir = model.getCursor().getDir();
             this.oldDir = dir;
-            reversed=false;
+            reversed = false;
         }
     }
 

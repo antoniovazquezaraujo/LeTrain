@@ -4,17 +4,14 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
-import letrain.mvp.GameModel;
-import letrain.mvp.impl.LeTrainModel;
-import letrain.mvp.impl.LeTrainPresenter;
-import letrain.mvp.impl.LeTrainView;
-
-import java.io.*;
+import letrain.mvp.impl.CompactPresenter;
+import letrain.mvp.impl.Model;
+import letrain.mvp.impl.View;
 
 public class LeTrain extends Application {
 
-    private GameModel model= null;
-    private LeTrainPresenter presenter;
+    private letrain.mvp.Model model= null;
+    private CompactPresenter presenter;
 
     public static void main(String[] args) {
         launch(args);
@@ -22,14 +19,15 @@ public class LeTrain extends Application {
 
     @Override
     public void start(Stage stage) {
-        presenter = new LeTrainPresenter((LeTrainModel) model);
+        model = new Model();
+        presenter = new CompactPresenter((Model) model);
         GridPane pane = new GridPane();
-        pane.getChildren().add((LeTrainView) presenter.getView());
+        pane.getChildren().add((View) presenter.getView());
         final Scene scene = new Scene(pane);
         stage.setTitle("LeTrain, the letter train simulator");
         stage.setScene(scene);
         stage.show();
-        presenter.start();
+         presenter.start();
     }
 
     @Override
@@ -43,7 +41,7 @@ public class LeTrain extends Application {
 //            }
 //            fis = new FileInputStream("TestCircuit1.sav");
 //            in = new ObjectInputStream(fis);
-//            this.model = (GameModel) in.readObject();
+//            this.model = (Model) in.readObject();
 //            in.close();
 //        } catch (Exception ex) {
 //            this.model = null;

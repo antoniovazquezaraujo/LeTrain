@@ -4,9 +4,8 @@ import letrain.map.Dir
 import letrain.map.Point
 import letrain.map.RailMap
 import letrain.map.SimpleRouter
-import letrain.mvp.GameModel
-import letrain.mvp.GamePresenter
-import letrain.mvp.GameView
+import letrain.mvp.View
+import letrain.mvp.Model
 import letrain.track.Track
 import letrain.track.TrackDirector
 import letrain.track.rail.RailTrack
@@ -19,15 +18,15 @@ import org.mockito.MockitoAnnotations
 import static org.mockito.Mockito.*
 
 class TrackMakerTest extends Specification {
-    //Field newTrackType of type NewTrackType - was not mocked since Mockito doesn't mock enums
+    //Field newTrackType of type TrackType - was not mocked since Mockito doesn't mock enums
     @Mock
     Track oldTrack
     //Field oldDir of type Dir - was not mocked since Mockito doesn't mock enums
     //Field dir of type Dir - was not mocked since Mockito doesn't mock enums
     @Mock
-    GameModel model
+    Model model
     @Mock
-    GameView view
+    View view
     @InjectMocks
     TrackMaker trackMaker
 
@@ -41,7 +40,7 @@ class TrackMakerTest extends Specification {
         when(model.getCursor()).thenReturn(new Cursor(dir: Dir.E))
 
         when:
-        trackMaker.onGameModeSelected(GamePresenter.GameMode.NAVIGATE_MAP_COMMAND)
+        trackMaker.onGameModeSelected(Model.GameMode.NAVIGATE_MAP)
 
         then:
         false//todo - validate something

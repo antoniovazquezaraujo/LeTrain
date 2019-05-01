@@ -1,8 +1,6 @@
 package letrain.vehicle.impl
 
-import letrain.map.*
-import letrain.mvp.GameModel
-import letrain.track.rail.RailTrack
+
 import letrain.vehicle.impl.rail.Wagon
 import spock.lang.Specification
 

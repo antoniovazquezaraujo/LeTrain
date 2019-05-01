@@ -10,19 +10,18 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import letrain.map.Point;
-import letrain.mvp.GamePresenter;
-import letrain.mvp.GameView;
+import letrain.mvp.Model;
 import letrain.mvp.GameViewListener;
 
 
-public class LeTrainView extends BorderPane implements GameView {
+public class View extends BorderPane implements letrain.mvp.View {
     private final GameViewListener gameViewListener;
-    private final LeTrainViewGrid viewGrid;
+    private final ViewGrid viewGrid;
     private Point position = new Point(0, 0); // scroll position of the viewer
     private Text statusBar = new Text();
 
-    public LeTrainView(GameViewListener gameViewListener) {
-        viewGrid = new LeTrainViewGrid();
+    public View(GameViewListener gameViewListener) {
+        viewGrid = new ViewGrid();
         this.gameViewListener = gameViewListener;
         setTop(createMenuBar());
         setCenter(viewGrid);
@@ -40,7 +39,7 @@ public class LeTrainView extends BorderPane implements GameView {
         MenuBar menuBar = new MenuBar();
         Menu menu = new Menu("Actions");
         menuBar.getMenus().add(menu);
-        for (GamePresenter.GameMode option : GamePresenter.GameMode.values()) {
+        for (Model.GameMode option : Model.GameMode.values()) {
             MenuItem item = new MenuItem(option.getName());
             menu.getItems().add(item);
             item.setOnAction(t -> {
@@ -50,7 +49,7 @@ public class LeTrainView extends BorderPane implements GameView {
         return menuBar;
     }
 
-    public void doCommand(GamePresenter.GameMode mode) {
+    public void doCommand(Model.GameMode mode) {
         gameViewListener.onGameModeSelected(mode);
     }
 

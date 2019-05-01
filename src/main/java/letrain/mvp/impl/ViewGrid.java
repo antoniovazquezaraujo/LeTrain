@@ -9,10 +9,10 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import letrain.map.Point;
-import letrain.mvp.GameView;
+import letrain.mvp.View;
 
 
-public class LeTrainViewGrid extends Pane implements GameView {
+public class ViewGrid extends Pane implements View {
     private static final int ROWS = 40;
     private static final int COLS = 100;
     private Point mapScrollPage = new Point(0, 0);
@@ -24,7 +24,7 @@ public class LeTrainViewGrid extends Pane implements GameView {
     private final float charWidth;
     private final float charHeight;
 
-    public LeTrainViewGrid() {
+    public ViewGrid() {
         setStyle("-fx-background-color: black;");
         FontMetrics metrics = Toolkit.getToolkit().getFontLoader().getFontMetrics(font);
         charWidth = metrics.computeStringWidth("X");

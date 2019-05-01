@@ -202,7 +202,7 @@ class TrainTest extends Specification {
 //        RailTrackMaker maker = new RailTrackMaker()
 //        maker.setMap(map)
 //        maker.setCursorPosition(0, 0)
-//        maker.setMode(GameModel.Mode.MAKE_TRACKS)
+//        maker.setMode(Model.Mode.MAKE_TRACKS)
 //        maker.setCursorDirection(Dir.E)
 //        for (int n = 0; n < 8; n++) {
 //            maker.advanceCursor(10)

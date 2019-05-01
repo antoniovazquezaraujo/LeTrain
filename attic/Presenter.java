@@ -5,49 +5,44 @@ import javafx.animation.Timeline;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
 import letrain.map.Point;
-import letrain.mvp.GameModel;
-import letrain.mvp.GamePresenter;
-import letrain.mvp.GameView;
 import letrain.mvp.GameViewListener;
-import letrain.mvp.impl.delegates.*;
 import letrain.render.RenderingVisitor;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class LeTrainPresenter implements GameViewListener, GamePresenter {
+public class Presenter implements GameViewListener, letrain.mvp.Presenter {
 
-    private GameMode mode = GamePresenter.GameMode.NAVIGATE_MAP_COMMAND;
-    private final GameModel model;
-    private final GameView view;
+    private final letrain.mvp.Model model;
+    private final letrain.mvp.View view;
     private Timeline loop;
     private final RenderingVisitor renderer;
-    GamePresenterDelegate delegate;
-    Map<GameMode, GamePresenterDelegate> delegates;
+    PresenterDelegate delegate;
+    Map<letrain.mvp.Model.GameMode, PresenterDelegate> delegates;
 
-    public LeTrainPresenter() {
+    public Presenter() {
         this(null);
     }
 
-    public LeTrainPresenter(LeTrainModel model) {
+    public Presenter(Model model) {
         if (model != null) {
             this.model = model;
         } else {
-            this.model = new LeTrainModel();
+            this.model = new Model();
         }
-        view = new LeTrainView(this);
+        view = new View(this);
         renderer = new RenderingVisitor(view);
         delegates = new HashMap<>();
-        delegates.put(GamePresenter.GameMode.NAVIGATE_MAP_COMMAND,             new NavigationController(  this, this.model, view));
-        delegates.put(GamePresenter.GameMode.CREATE_FACTORY_PLATFORM_COMMAND,  new FactoryMaker(          this, this.model, view));
-        delegates.put(GamePresenter.GameMode.CREATE_LOAD_PLATFORM_COMMAND,     new FreightDockMaker(      this, this.model, view));
-        delegates.put(GamePresenter.GameMode.CREATE_NORMAL_TRACKS_COMMAND,     new TrackMaker(            this, this.model, view));
-        delegates.put(GamePresenter.GameMode.REMOVE_TRACKS_COMMAND,            new TrackDestructor(       this, this.model, view));
-        delegates.put(GamePresenter.GameMode.USE_FACTORY_PLATFORMS_COMMAND,    new FactoryController(     this, this.model, view));
-        delegates.put(GamePresenter.GameMode.USE_FORKS_COMMAND,                new ForkController(        this, this.model, view));
-        delegates.put(GamePresenter.GameMode.USE_TRAINS_COMMAND,               new TrainController(       this, this.model, view));
-        delegates.put(GamePresenter.GameMode.USE_LOAD_PLATFORMS_COMMAND,       new FreightDockController( this, this.model, view));
-        this.delegate = delegates.get(mode);
+        delegates.put(letrain.mvp.Model.GameMode.NAVIGATE_MAP,             new NavigationController(  this, this.model, view));
+        delegates.put(letrain.mvp.Model.GameMode.CREATE_FACTORY_PLATFORM,  new FactoryMaker(          this, this.model, view));
+        delegates.put(letrain.mvp.Model.GameMode.CREATE_LOAD_PLATFORM,     new FreightDockMaker(      this, this.model, view));
+        delegates.put(letrain.mvp.Model.GameMode.CREATE_TRACKS,     new TrackMaker(            this, this.model, view));
+        delegates.put(letrain.mvp.Model.GameMode.REMOVE_TRACKS,            new TrackDestructor(       this, this.model, view));
+        delegates.put(letrain.mvp.Model.GameMode.USE_FACTORY_PLATFORMS,    new FactoryController(     this, this.model, view));
+        delegates.put(letrain.mvp.Model.GameMode.USE_FORKS,                new ForkController(        this, this.model, view));
+        delegates.put(letrain.mvp.Model.GameMode.USE_TRAINS,               new TrainController(       this, this.model, view));
+        delegates.put(letrain.mvp.Model.GameMode.USE_LOAD_PLATFORMS,       new FreightDockController( this, this.model, view));
+        this.delegate = delegates.get(this.model.getMode());
     }
 
     public void start() {
@@ -65,26 +60,17 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
     }
 
 
-    @Override
-    public GameMode getMode() {
-        return mode;
-    }
-
-    @Override
-    public void setMode(GameMode mode) {
-        this.mode = mode;
-    }
 
     /***********************************************************
-     * GamePresenter implementation
+     * Presenter implementation
      **********************************************************/
     @Override
-    public GameView getView() {
+    public letrain.mvp.View getView() {
         return view;
     }
 
     @Override
-    public GameModel getModel() {
+    public letrain.mvp.Model getModel() {
         return model;
     }
 
@@ -94,7 +80,7 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
      *********************************************************
      * @param mode*/
     @Override
-    public void onGameModeSelected(GameMode mode) {
+    public void onGameModeSelected(letrain.mvp.Model.GameMode mode) {
         //Avisamos al anterior y al nuevo
         delegate.onGameModeSelected(mode);
         delegate = delegates.get(mode);
@@ -155,20 +141,20 @@ public class LeTrainPresenter implements GameViewListener, GamePresenter {
                 }
                 break;
             case UP:
-                GamePresenter.GameMode mode = getMode();
+                letrain.mvp.Model.GameMode mode = model.getMode();
                 if (keyEvent.isControlDown()) {
-                    if(!mode.equals(GameMode.REMOVE_TRACKS_COMMAND)) {
-                        setMode(GameMode.REMOVE_TRACKS_COMMAND);
-                        onGameModeSelected(GameMode.REMOVE_TRACKS_COMMAND);
+                    if(!mode.equals(letrain.mvp.Model.GameMode.REMOVE_TRACKS)) {
+                        model.setMode(letrain.mvp.Model.GameMode.REMOVE_TRACKS);
+                        onGameModeSelected(letrain.mvp.Model.GameMode.REMOVE_TRACKS);
                     }
                 }else if(keyEvent.isShiftDown()){
-                    if(!mode.equals(GameMode.CREATE_NORMAL_TRACKS_COMMAND)) {
-                        setMode(GameMode.CREATE_NORMAL_TRACKS_COMMAND);
-                        onGameModeSelected(GameMode.CREATE_NORMAL_TRACKS_COMMAND);
+                    if(!mode.equals(letrain.mvp.Model.GameMode.CREATE_TRACKS)) {
+                        model.setMode(letrain.mvp.Model.GameMode.CREATE_TRACKS);
+                        onGameModeSelected(letrain.mvp.Model.GameMode.CREATE_TRACKS);
                     }
                 }else{
-                    setMode(GameMode.NAVIGATE_MAP_COMMAND);
-                    onGameModeSelected(GameMode.NAVIGATE_MAP_COMMAND);
+                    model.setMode(letrain.mvp.Model.GameMode.NAVIGATE_MAP);
+                    onGameModeSelected(letrain.mvp.Model.GameMode.NAVIGATE_MAP);
                 }
                 delegate.onUp();
                 break;

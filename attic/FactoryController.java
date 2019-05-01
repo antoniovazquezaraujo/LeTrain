@@ -2,25 +2,24 @@ package letrain.mvp.impl.delegates;
 
 import javafx.scene.input.KeyEvent;
 import letrain.map.Dir;
-import letrain.mvp.GameModel;
-import letrain.mvp.GamePresenter;
-import letrain.mvp.GameView;
-import letrain.mvp.impl.LeTrainPresenter;
+import letrain.mvp.Model;
+import letrain.mvp.View;
+import letrain.mvp.impl.Presenter;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
-public class FactoryController extends GamePresenterDelegate {
+public class FactoryController extends PresenterDelegate {
     TrainFactory factory;
     Train train;
-    public FactoryController(LeTrainPresenter leTrainPresenter, GameModel model, GameView view) {
-        super(leTrainPresenter, model, view);
+    public FactoryController(Presenter presenter, Model model, View view) {
+        super(presenter, model, view);
     }
 
     @Override
-    public void onGameModeSelected(GameMode mode) {
-        if(mode.equals(GamePresenter.GameMode.USE_FACTORY_PLATFORMS_COMMAND)){
+    public void onGameModeSelected(Model.GameMode mode) {
+        if(mode.equals(Model.GameMode.USE_FACTORY_PLATFORMS)){
             factory = model.getTrainFactories().get(0);
             model.getCursor().setPosition(factory.getPosition());
             model.getCursor().setDir(Dir.N);

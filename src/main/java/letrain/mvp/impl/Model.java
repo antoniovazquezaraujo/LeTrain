@@ -3,7 +3,6 @@ package letrain.mvp.impl;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.RailMap;
-import letrain.mvp.GameModel;
 import letrain.mvp.impl.delegates.TrainFactory;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
@@ -13,14 +12,15 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LeTrainModel implements Serializable , GameModel {
+public class Model implements Serializable , letrain.mvp.Model {
+    private GameMode mode = letrain.mvp.Model.GameMode.TRACKS;
     private RailMap map;
     private final List<Train> trains;
     private final List<TrainFactory> trainFactories;
     private Cursor cursor;
     private List<ForkRailTrack> forks;
 
-    public LeTrainModel() {
+    public Model() {
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.N);
         this.cursor.setPosition(new Point(10,10));
@@ -88,6 +88,16 @@ public class LeTrainModel implements Serializable , GameModel {
     @Override
     public void removeTrainFactory(TrainFactory factory) {
         this.trainFactories.remove(factory);
+    }
+
+    @Override
+    public GameMode getMode() {
+        return mode;
+    }
+
+    @Override
+    public void setMode(GameMode mode) {
+        this.mode = mode;
     }
 
 }

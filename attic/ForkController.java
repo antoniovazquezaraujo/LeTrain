@@ -1,15 +1,15 @@
 package letrain.mvp.impl.delegates;
 
-import letrain.mvp.GameModel;
-import letrain.mvp.GameView;
-import letrain.mvp.impl.LeTrainPresenter;
+import letrain.mvp.Model;
+import letrain.mvp.View;
+import letrain.mvp.impl.Presenter;
 import letrain.track.rail.ForkRailTrack;
 
-public class ForkController extends GamePresenterDelegate {
+public class ForkController extends PresenterDelegate {
     ForkRailTrack selectedFork = null;
     int selectedForkIndex = -1;
-    public ForkController(LeTrainPresenter leTrainPresenter, GameModel model, GameView view) {
-        super(leTrainPresenter, model, view);
+    public ForkController(Presenter presenter, Model model, View view) {
+        super(presenter, model, view);
         selectedForkIndex=0;
         if(!model.getForks().isEmpty()) {
             selectedFork = model.getForks().get(selectedForkIndex);

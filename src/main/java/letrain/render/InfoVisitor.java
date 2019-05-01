@@ -4,8 +4,8 @@ import javafx.scene.paint.Color;
 import letrain.map.Dir;
 import letrain.map.RailMap;
 import letrain.map.SimpleRouter;
-import letrain.mvp.GameModel;
-import letrain.mvp.GameView;
+import letrain.mvp.Model;
+import letrain.mvp.View;
 import letrain.track.Track;
 import letrain.track.rail.*;
 import letrain.vehicle.impl.Cursor;
@@ -18,14 +18,14 @@ public class InfoVisitor implements Visitor {
     private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
     public static final Color FORK_COLOR = Color.grayRgb(180);
     ;
-    private final GameView view;
+    private final View view;
 
-    public InfoVisitor(GameView view) {
+    public InfoVisitor(View view) {
         this.view = view;
     }
 
     @Override
-    public void visitModel(GameModel model) {
+    public void visitModel(Model model) {
         model.getRailMap().accept(this);
         model.getTrains().forEach(t -> t.accept(this));
 //        model.getForks().forEach(t-> t.accept(this));

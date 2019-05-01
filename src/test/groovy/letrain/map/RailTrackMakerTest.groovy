@@ -31,7 +31,7 @@ class RailTrackMakerTest extends Specification {
 //        map = new RailMap()
 //        maker.setMap(map)
 //        maker.setCursorPosition(0, 0)
-//        maker.setMode(GameModel.Mode.MAKE_TRACKS)
+//        maker.setMode(Model.Mode.MAKE_TRACKS)
 //        maker.setCursorDirection(Dir.E)
 //
 //        for (int x = 0; x < 8; x++) {
@@ -48,20 +48,20 @@ class RailTrackMakerTest extends Specification {
 //    def "test forks"() {
 //        map = new RailMap()
 //        maker.setMap(map)
-//        maker.setMode(GameModel.Mode.MAKE_TRACKS)
+//        maker.setMode(Model.Mode.MAKE_TRACKS)
 //
 //        maker.setCursorPosition(8, 5)
 //        maker.setCursorDirection(Dir.E)
 //        when:
 //        for (int n = 0; n < 8; n++) {
 //            maker.advanceCursor(3)
-//            maker.setMode(GameModel.Mode.MAP_WALK)
+//            maker.setMode(Model.Mode.MAP_WALK)
 //            maker.reverseCursor()
 //            maker.advanceCursor(3)
 //            maker.reverseCursor()
 //            maker.advanceCursor()
 //            maker.rotateCursorRight()
-//            maker.setMode(GameModel.Mode.MAKE_TRACKS)
+//            maker.setMode(Model.Mode.MAKE_TRACKS)
 //            maker.advanceCursor()
 //        }
 //
@@ -103,41 +103,41 @@ class RailTrackMakerTest extends Specification {
 //    def "test crosses"() {
 //        map = new RailMap()
 //        maker.setMap(map)
-//        maker.setMode(GameModel.Mode.MAKE_TRACKS)
+//        maker.setMode(Model.Mode.MAKE_TRACKS)
 //
 //        when:
 //        maker.setCursorPosition(4, 0)
 //        maker.setCursorDirection(Dir.S)
 //        maker.advanceCursor(10)
 //
-//        maker.setMode(GameModel.Mode.MAP_WALK)
+//        maker.setMode(Model.Mode.MAP_WALK)
 //        maker.setCursorPosition(1, 2)
 //        maker.setCursorDirection(Dir.E)
-//        maker.setMode(GameModel.Mode.MAKE_TRACKS)
+//        maker.setMode(Model.Mode.MAKE_TRACKS)
 //        maker.advanceCursor(12)
 //
-//        maker.setMode(GameModel.Mode.MAP_WALK)
+//        maker.setMode(Model.Mode.MAP_WALK)
 //        maker.setCursorPosition(2, 6)
 //        maker.setCursorDirection(Dir.NE)
-//        maker.setMode(GameModel.Mode.MAKE_TRACKS)
+//        maker.setMode(Model.Mode.MAKE_TRACKS)
 //        maker.advanceCursor(6)
 //
-//        maker.setMode(GameModel.Mode.MAP_WALK)
+//        maker.setMode(Model.Mode.MAP_WALK)
 //        maker.setCursorPosition(5, 9)
 //        maker.setCursorDirection(Dir.NE)
-//        maker.setMode(GameModel.Mode.MAKE_TRACKS)
+//        maker.setMode(Model.Mode.MAKE_TRACKS)
 //        maker.advanceCursor(7)
 //
-//        maker.setMode(GameModel.Mode.MAP_WALK)
+//        maker.setMode(Model.Mode.MAP_WALK)
 //        maker.setCursorPosition(2, 5)
 //        maker.setCursorDirection(Dir.SE)
-//        maker.setMode(GameModel.Mode.MAKE_TRACKS)
+//        maker.setMode(Model.Mode.MAKE_TRACKS)
 //        maker.advanceCursor(5)
 //
-//        maker.setMode(GameModel.Mode.MAP_WALK)
+//        maker.setMode(Model.Mode.MAP_WALK)
 //        maker.setCursorPosition(7, 0)
 //        maker.setCursorDirection(Dir.SE)
-//        maker.setMode(GameModel.Mode.MAKE_TRACKS)
+//        maker.setMode(Model.Mode.MAKE_TRACKS)
 //        maker.advanceCursor(5)
 //        then:
 //        true
