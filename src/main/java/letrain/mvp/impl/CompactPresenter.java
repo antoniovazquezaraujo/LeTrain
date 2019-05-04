@@ -15,7 +15,9 @@ import letrain.track.Track;
 import letrain.track.rail.*;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Tractor;
+import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.impl.rail.Wagon;
 
 public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter {
     public enum TrackType {
@@ -48,11 +50,11 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         view = new View(this);
         renderer = new RenderingVisitor(view);
         selectedTrainIndex = 0;
-        if(!this.model.getTrains().isEmpty()) {
+        if (!this.model.getTrains().isEmpty()) {
             selectedTrain = model.getTrains().get(selectedTrainIndex);
         }
         selectedForkIndex = 0;
-        if(!this.model.getForks().isEmpty()) {
+        if (!this.model.getForks().isEmpty()) {
             selectedFork = model.getForks().get(selectedForkIndex);
         }
     }
@@ -98,8 +100,41 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     @Override
     public void onChar(KeyEvent keyEvent) {
+        if (keyEvent.getCode().equals(KeyCode.F1)) {
+            getModel().setMode(letrain.mvp.Model.GameMode.TRACKS);
+        } else if (keyEvent.getCode().equals(KeyCode.F2)) {
+            getModel().setMode(letrain.mvp.Model.GameMode.TRAINS);
+        } else if (keyEvent.getCode().equals(KeyCode.F3)) {
+            getModel().setMode(letrain.mvp.Model.GameMode.FORKS);
+        } else if (keyEvent.getCode().equals(KeyCode.F4)) {
+            getModel().setMode(letrain.mvp.Model.GameMode.USE_LOAD_PLATFORMS);
+        } else if (keyEvent.getCode().equals(KeyCode.F5)) {
+            getModel().setMode(letrain.mvp.Model.GameMode.USE_FACTORY_PLATFORMS);
+        }
+
         switch (model.getMode()) {
             case TRACKS:
+                if (keyEvent.getCode().equals(KeyCode.T)) {
+                    selectNewTrackType(TrackType.TUNNEL_GATE);
+                    createTrack();
+                    selectNewTrackType(TrackType.NORMAL_TRACK);
+                    makingTraks = false;
+                    break;
+                }
+                if (keyEvent.getCode().equals(KeyCode.A)) {
+                    selectNewTrackType(TrackType.TRAIN_FACTORY_GATE);
+                    createTrack();
+                    selectNewTrackType(TrackType.NORMAL_TRACK);
+                    makingTraks = false;
+                    break;
+                }
+                if (keyEvent.getCode().equals(KeyCode.S)) {
+                    selectNewTrackType(TrackType.STOP_TRACK);
+                    createTrack();
+                    selectNewTrackType(TrackType.NORMAL_TRACK);
+                    makingTraks = false;
+                    break;
+                }
                 if (keyEvent.getCode().equals(KeyCode.UP)) {
                     if (keyEvent.isShiftDown()) {
                         model.getCursor().setMode(Cursor.CursorMode.DRAWING);
@@ -142,6 +177,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 }
                 break;
             case TRAINS:
+                this.newTrain = null;
                 switch (keyEvent.getCode()) {
                     case UP:
                         accelerateTrain();
@@ -205,15 +241,17 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 }
                 break;
             case USE_FACTORY_PLATFORMS:
-                String c = keyEvent.getCharacter();
-                if (!c.matches("([A-Za-z])*")) {
-                    if (c.toUpperCase().equals(c)) {
-                        createLocomotive(c);
-                    } else {
-                        createWagon(c);
-                    }
+                String c = keyEvent.getText();
+                if (!c.matches("([A-Za-z])?")) {
+                    return;
                 }
-
+                RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition());
+                if (c.toUpperCase().equals(c)) {
+                    createLocomotive(c, track);
+                } else {
+                    createWagon(c, track);
+                }
+                model.getCursor().getPosition().move(Dir.E);
                 break;
         }
 
@@ -255,11 +293,28 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     }
 
-    private void createWagon(String c) {
-
+    Train newTrain;
+    private Train getNewTrain(){
+        if(newTrain == null){
+            newTrain = new Train();
+            model.addTrain(newTrain);
+        }
+        return newTrain;
     }
 
-    private void createLocomotive(String c) {
+    private void createWagon(String c, RailTrack track) {
+        Wagon wagon = new Wagon(c);
+        getNewTrain().pushBack(wagon);
+        track.enterLinkerFromDir(Dir.E, wagon);
+    }
+
+    private void createLocomotive(String c, RailTrack track) {
+        Locomotive locomotive = new Locomotive(c);
+        getNewTrain().pushBack(locomotive);
+        track.enterLinkerFromDir(Dir.E, locomotive);
+        if (getNewTrain().getDirectorLinker() == null) {
+            getNewTrain().assignDefaultDirectorLinker();
+        }
 
     }
 
@@ -348,11 +403,13 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         Point position = model.getCursor().getPosition();
         view.setPageOfPos(position.getX(), position.getY());
     }
+
     private void cursorBackward() {
-        reversed= true;
+        reversed = true;
         cursorForward();
         reversed = false;
     }
+
     private void removeTrack() {
         Point position = model.getCursor().getPosition();
         RailTrack track = model.getRailMap().getTrackAt(position.getX(), position.getY());
@@ -405,11 +462,10 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     }
 
 
-
     private int degreesOfRotation = 0;
-    private Dir dir =Dir.N;
+    private Dir dir = Dir.N;
     Track oldTrack;
-    Dir oldDir ;
+    Dir oldDir;
     boolean reversed = false;
     boolean makingTraks = false;
 
@@ -457,7 +513,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         return true;
     }
 
-    public void selectNewTrackType( TrackType type) {
+    public void selectNewTrackType(TrackType type) {
         this.newTrackType = type;
     }
 

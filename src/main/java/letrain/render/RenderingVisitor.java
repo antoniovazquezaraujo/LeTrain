@@ -46,7 +46,7 @@ public class RenderingVisitor implements Visitor {
     @Override
     public void visitStopRailTrack(StopRailTrack track) {
         view.setColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⊝");
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "⍚");
     }
 
     @Override
