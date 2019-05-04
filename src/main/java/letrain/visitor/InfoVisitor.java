@@ -1,7 +1,8 @@
-package letrain.render;
+package letrain.visitor;
 
 import javafx.scene.paint.Color;
 import letrain.map.Dir;
+import letrain.map.Point;
 import letrain.map.RailMap;
 import letrain.map.SimpleRouter;
 import letrain.mvp.Model;
@@ -14,18 +15,39 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
-public class RenderingVisitor implements Visitor {
+public class InfoVisitor implements Visitor {
     private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
     public static final Color FORK_COLOR = Color.grayRgb(180);
     ;
     private final View view;
 
-    public RenderingVisitor(View view) {
+    public InfoVisitor(View view) {
         this.view = view;
     }
 
     @Override
     public void visitModel(Model model) {
+        switch(model.getMode()){
+            case TRACKS:
+                Point pos = model.getCursor().getPosition();
+                RailTrack track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
+                if(track != null) {
+                    visitRailTrack(track);
+                }
+                break;
+            case TRAINS:
+                break;
+            case FORKS:
+                break;
+            case CREATE_LOAD_PLATFORM:
+                break;
+            case CREATE_FACTORY_PLATFORM:
+                break;
+            case LOAD_TRAINS:
+                break;
+            case MAKE_TRAINS:
+                break;
+        }
         model.getRailMap().accept(this);
         model.getTrains().forEach(t -> t.accept(this));
 //        model.getForks().forEach(t-> t.accept(this));
@@ -46,7 +68,7 @@ public class RenderingVisitor implements Visitor {
     @Override
     public void visitStopRailTrack(StopRailTrack track) {
         view.setColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⍚");
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "⊝");
     }
 
     @Override
@@ -92,20 +114,9 @@ public class RenderingVisitor implements Visitor {
 
     @Override
     public void visitCursor(Cursor cursor) {
-        switch(cursor.getMode()){
-            case DRAWING:
-                view.setColor(Color.LIGHTGREEN);
-                break;
-            case ERASING:
-                view.setColor(Color.ORANGERED);
-                break;
-            case MOVING:
-                view.setColor(Color.YELLOW);
-                break;
-        }
+        view.setColor(Color.RED);
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
     }
-
 
     ////////////////////////////////////////////////////////////////////////////////
     private String getTrackAspect(Track track) {

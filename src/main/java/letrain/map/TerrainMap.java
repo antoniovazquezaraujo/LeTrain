@@ -1,6 +1,6 @@
 package letrain.map;
 
-import letrain.render.Renderable;
+import letrain.visitor.Renderable;
 
 import java.util.function.Consumer;
 

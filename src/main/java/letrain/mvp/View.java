@@ -23,4 +23,5 @@ public interface View {
     void fill(int x, int y, int width, int height, String c);
 
     void box(int x, int y, int width, int height);
+    void showInfo(String info);
 }

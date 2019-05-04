@@ -36,14 +36,30 @@ public interface Model {
 
     void setMode(GameMode mode);
 
+    Train getSelectedTrain();
+
+    void setSelectedTrain(Train selectedTrain);
+
+    ForkRailTrack getSelectedFork();
+
+    void setSelectedFork(ForkRailTrack selectedFork);
+
+    void selectNextFork();
+
+    void selectPrevFork();
+
+    void selectNextTrain();
+
+    void selectPrevTrain();
+
     enum GameMode {
         TRACKS("Navigate map, create and delete tracks"),
         TRAINS("Use trains"),
         FORKS("Use forks"),
         CREATE_LOAD_PLATFORM("Create load platform"),
         CREATE_FACTORY_PLATFORM("Create factory platform"),
-        USE_LOAD_PLATFORMS("Use load platforms"),
-        USE_FACTORY_PLATFORMS("Use factory platforms");
+        LOAD_TRAINS("Use load platforms"),
+        MAKE_TRAINS("Use factory platforms");
 
         private String name;
 

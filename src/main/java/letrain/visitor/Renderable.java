@@ -1,4 +1,4 @@
-package letrain.render;
+package letrain.visitor;
 
 public interface Renderable {
     void accept(Visitor visitor);

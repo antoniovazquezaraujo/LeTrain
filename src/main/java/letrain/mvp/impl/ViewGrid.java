@@ -112,4 +112,9 @@ public class ViewGrid extends Pane implements View {
         set(x + width, y + height, "+");
     }
 
+    @Override
+    public void showInfo(String info) {
+
+    }
+
 }

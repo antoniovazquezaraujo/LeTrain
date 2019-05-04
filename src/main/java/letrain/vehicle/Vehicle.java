@@ -2,7 +2,7 @@ package letrain.vehicle;
 
 import letrain.map.*;
 import letrain.track.Track;
-import letrain.render.Renderable;
+import letrain.visitor.Renderable;
 
 import java.io.Serializable;
 

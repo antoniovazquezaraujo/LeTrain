@@ -1,4 +1,4 @@
-package letrain.render;
+package letrain.visitor;
 
 import javafx.scene.paint.Color;
 import letrain.map.Dir;
@@ -14,13 +14,13 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
-public class InfoVisitor implements Visitor {
+public class RenderingVisitor implements Visitor {
     private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
     public static final Color FORK_COLOR = Color.grayRgb(180);
     ;
     private final View view;
 
-    public InfoVisitor(View view) {
+    public RenderingVisitor(View view) {
         this.view = view;
     }
 
@@ -28,7 +28,7 @@ public class InfoVisitor implements Visitor {
     public void visitModel(Model model) {
         model.getRailMap().accept(this);
         model.getTrains().forEach(t -> t.accept(this));
-//        model.getForks().forEach(t-> t.accept(this));
+        model.getForks().forEach(t-> t.accept(this));
         visitCursor(model.getCursor());
     }
 
@@ -46,7 +46,7 @@ public class InfoVisitor implements Visitor {
     @Override
     public void visitStopRailTrack(StopRailTrack track) {
         view.setColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⊝");
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "⍚");
     }
 
     @Override
@@ -92,9 +92,20 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitCursor(Cursor cursor) {
-        view.setColor(Color.RED);
+        switch(cursor.getMode()){
+            case DRAWING:
+                view.setColor(Color.LIGHTGREEN);
+                break;
+            case ERASING:
+                view.setColor(Color.ORANGERED);
+                break;
+            case MOVING:
+                view.setColor(Color.YELLOW);
+                break;
+        }
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
     }
+
 
     ////////////////////////////////////////////////////////////////////////////////
     private String getTrackAspect(Track track) {

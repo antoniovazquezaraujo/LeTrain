@@ -1,4 +1,4 @@
-package letrain.render;
+package letrain.visitor;
 
 import letrain.map.RailMap;
 import letrain.mvp.Model;

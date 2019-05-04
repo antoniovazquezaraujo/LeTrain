@@ -6,7 +6,7 @@ import letrain.map.Router;
 import letrain.map.SimpleRouter;
 import letrain.track.Track;
 import letrain.track.TrackDirector;
-import letrain.render.Visitor;
+import letrain.visitor.Visitor;
 
 public class RailTrack extends Track  {
     Router router = new SimpleRouter();

@@ -1,7 +1,7 @@
 package letrain.track;
 
 import letrain.map.Router;
-import letrain.render.Visitor;
+import letrain.visitor.Visitor;
 
 public class Gate extends Track {
     @Override

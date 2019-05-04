@@ -1,8 +1,8 @@
 package letrain.vehicle.impl.rail;
 
 import letrain.map.Dir;
-import letrain.render.Renderable;
-import letrain.render.Visitor;
+import letrain.visitor.Renderable;
+import letrain.visitor.Visitor;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Transportable;

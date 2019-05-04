@@ -1,8 +1,8 @@
 package letrain.map;
 
-import letrain.render.Visitor;
+import letrain.visitor.Visitor;
 import letrain.track.rail.RailTrack;
-import letrain.render.Renderable;
+import letrain.visitor.Renderable;
 
 import java.io.Serializable;
 import java.util.HashMap;

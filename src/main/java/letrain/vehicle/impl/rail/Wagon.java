@@ -1,6 +1,6 @@
 package letrain.vehicle.impl.rail;
 
-import letrain.render.Visitor;
+import letrain.visitor.Visitor;
 import letrain.vehicle.impl.Linker;
 
 public class Wagon extends Linker {

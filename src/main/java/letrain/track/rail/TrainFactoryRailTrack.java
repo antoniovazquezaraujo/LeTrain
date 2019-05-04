@@ -1,6 +1,6 @@
 package letrain.track.rail;
 
-import letrain.render.Visitor;
+import letrain.visitor.Visitor;
 
 public class TrainFactoryRailTrack extends RailTrack {
     /***********************************************************
