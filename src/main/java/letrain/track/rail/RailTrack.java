@@ -9,7 +9,7 @@ import letrain.track.TrackDirector;
 import letrain.visitor.Visitor;
 
 public class RailTrack extends Track  {
-    Router router = new SimpleRouter();
+    protected Router router ;
     public enum TrackType {
         STRAIGHT,
         CURVE,
@@ -24,6 +24,9 @@ public class RailTrack extends Track  {
 
     @Override
     public Router getRouter() {
+        if(router == null){
+            router = new SimpleRouter();
+        }
         return this.router;
     }
 

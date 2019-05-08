@@ -29,7 +29,7 @@ public class Model implements Serializable , letrain.mvp.Model {
 
     public Model() {
         this.cursor = new Cursor();
-        this.cursor.setDir(Dir.N);
+        this.cursor.setDir(Dir.E);
         this.cursor.setPosition(new Point(10,10));
         this.trainFactories = new ArrayList<>();
         this.trains = new ArrayList<>();
@@ -138,7 +138,7 @@ public class Model implements Serializable , letrain.mvp.Model {
     @Override
     public void selectNextFork() {
         selectedForkIndex++;
-        if (selectedForkIndex >= getTrains().size()) {
+        if (selectedForkIndex >= getForks().size()) {
             selectedForkIndex = 0;
         }
         selectedFork = getForks().get(selectedForkIndex);

@@ -113,7 +113,12 @@ public class ViewGrid extends Pane implements View {
     }
 
     @Override
-    public void showInfo(String info) {
+    public void setStatusBarText(String info) {
+
+    }
+
+    @Override
+    public void setInfoBarText(String info) {
 
     }
 

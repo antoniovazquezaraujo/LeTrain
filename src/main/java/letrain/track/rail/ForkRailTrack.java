@@ -10,11 +10,20 @@ import letrain.visitor.Visitor;
 import java.util.function.Consumer;
 
 public class ForkRailTrack extends RailTrack implements DynamicRouter {
-    private final DynamicRouter router = new ForkRouter();
 
     @Override
-    public Router getRouter() {
-        return router;
+    public DynamicRouter getRouter() {
+        if(router == null){
+            router = new ForkRouter();
+        }
+        return (DynamicRouter) router;
+    }
+
+    @Override
+    public String toString() {
+        String ret = "";
+        ret = getRouter().toString();
+        return ret;
     }
 
     /***********************************************************
@@ -32,70 +41,82 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     }
     @Override
     public void setAlternativeRoute() {
-        router.setAlternativeRoute();
+        getRouter().setAlternativeRoute();
     }
 
     @Override
     public void setNormalRoute() {
-        router.setNormalRoute();
+        getRouter().setNormalRoute();
     }
 
     @Override
     public boolean flipRoute() {
-        return router.flipRoute();
+        return getRouter().flipRoute();
     }
     @Override
     public boolean isUsingAlternativeRoute() {
-        return router.isUsingAlternativeRoute();
+        return getRouter().isUsingAlternativeRoute();
     }
+
+    @Override
+    public Pair<Dir, Dir> getAlternativeRoute() {
+        return getRouter().getAlternativeRoute();
+    }
+
+    @Override
+    public Pair<Dir, Dir> getOriginalRoute() {
+        return getRouter().getOriginalRoute();
+    }
+
+
     @Override
     public Dir getAnyDir() {
-        return router.getAnyDir();
+        return getRouter().getAnyDir();
     }
 
     @Override
     public boolean isStraight() {
-        return router.isStraight();
+        return getRouter().isStraight();
     }
 
     @Override
     public boolean isCurve() {
-        return router.isCurve();
+        return getRouter().isCurve();
     }
 
     @Override
     public boolean isCross() {
-        return router.isCross();
+        return getRouter().isCross();
     }
 
     @Override
     public Dir getDir(Dir dir) {
-        return router.getDir(dir);
+        return getRouter().getDir(dir);
     }
 
     @Override
     public Dir getFirstOpenDir() {
-        return router.getFirstOpenDir();
+        return getRouter().getFirstOpenDir();
     }
 
 
     @Override
     public void addRoute(Dir from, Dir to) {
-        router.addRoute(from, to);
+        getRouter().addRoute(from, to);
     }
 
     @Override
     public void removeRoute(Dir from, Dir to) {
-        router.removeRoute(from, to);
+        getRouter().removeRoute(from, to);
     }
 
     @Override
     public void clear() {
-        router.clear();
+        getRouter().clear();
     }
 
     @Override
     public void forEach(Consumer<Pair<Dir, Dir>> routeConsumer) {
-        router.forEach(routeConsumer);
+        getRouter().forEach(routeConsumer);
     }
 }

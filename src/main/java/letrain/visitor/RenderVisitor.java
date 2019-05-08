@@ -14,18 +14,22 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
-public class RenderingVisitor implements Visitor {
+public class RenderVisitor implements Visitor {
     private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
     public static final Color FORK_COLOR = Color.grayRgb(180);
-    ;
+    public static final Color SELECTED_FORK_COLOR = Color.RED;
+    Train selectedTrain;
+    ForkRailTrack selectedFork;
     private final View view;
 
-    public RenderingVisitor(View view) {
+    public RenderVisitor(View view) {
         this.view = view;
     }
 
     @Override
     public void visitModel(Model model) {
+        selectedTrain = model.getSelectedTrain();
+        selectedFork = model.getSelectedFork();
         model.getRailMap().accept(this);
         model.getTrains().forEach(t -> t.accept(this));
         model.getForks().forEach(t-> t.accept(this));
@@ -51,7 +55,11 @@ public class RenderingVisitor implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        view.setColor(FORK_COLOR);
+        if(track == selectedFork){
+            view.setColor(SELECTED_FORK_COLOR);
+        }else{
+            view.setColor(FORK_COLOR);
+        }
         view.set(track.getPosition().getX(), track.getPosition().getY(), dirGraphicAspect(track.getFirstOpenDir()));
     }
 
@@ -70,6 +78,11 @@ public class RenderingVisitor implements Visitor {
 
     @Override
     public void visitTrain(Train train) {
+        if(train == selectedTrain){
+            view.setColor(Color.RED);
+        }else{
+            view.setColor(Color.LIGHTYELLOW);
+        }
         train.getLinkers().forEach(t -> t.accept(this));
     }
 
@@ -80,13 +93,11 @@ public class RenderingVisitor implements Visitor {
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        view.setColor(Color.LIGHTBLUE);
         view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), locomotive.getAspect());
     }
 
     @Override
     public void visitWagon(Wagon wagon) {
-        view.setColor(Color.GREEN);
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
     }
 

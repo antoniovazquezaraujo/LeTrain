@@ -9,12 +9,20 @@ import letrain.track.Track;
 import letrain.track.rail.*;
 import letrain.vehicle.impl.Cursor;
 
-import static letrain.mvp.impl.CompactPresenter.TrackType.*;
+import static letrain.mvp.impl.CompactPresenter.TrackType.STOP_TRACK;
+import static letrain.mvp.impl.CompactPresenter.TrackType.TUNNEL_GATE;
 
 public class RailTrackMaker {
     private final Model model;
     private final letrain.mvp.View view;
     private CompactPresenter.TrackType newTrackType = CompactPresenter.TrackType.NORMAL_TRACK;
+    private int degreesOfRotation = 0;
+    private Dir dir = Dir.N;
+    Track oldTrack;
+    Dir oldDir;
+    boolean reversed = false;
+    boolean makingTraks = false;
+
 
     public RailTrackMaker(Model model, letrain.mvp.View view) {
         this.model = model;
@@ -22,15 +30,9 @@ public class RailTrackMaker {
     }
 
     public void onChar(KeyEvent keyEvent) {
-        switch(keyEvent.getCode()){
+        switch (keyEvent.getCode()) {
             case T:
                 selectNewTrackType(TUNNEL_GATE);
-                createTrack();
-                selectNewTrackType(CompactPresenter.TrackType.NORMAL_TRACK);
-                makingTraks = false;
-                break;
-            case A:
-                selectNewTrackType(TRAIN_FACTORY_GATE);
                 createTrack();
                 selectNewTrackType(CompactPresenter.TrackType.NORMAL_TRACK);
                 makingTraks = false;
@@ -43,6 +45,9 @@ public class RailTrackMaker {
                 break;
             case UP:
                 if (keyEvent.isShiftDown()) {
+                    if (!makingTraks) {
+                        reset();
+                    }
                     model.getCursor().setMode(Cursor.CursorMode.DRAWING);
                     createTrack();
                     makingTraks = true;
@@ -71,7 +76,9 @@ public class RailTrackMaker {
                 }
                 break;
             case DOWN:
+                model.getCursor().setMode(Cursor.CursorMode.MOVING);
                 cursorBackward();
+                makingTraks = false;
                 break;
             case LEFT:
                 cursorTurnLeft();
@@ -82,11 +89,23 @@ public class RailTrackMaker {
         }
 
     }
+
+    private void reset() {
+        degreesOfRotation = 0;
+        dir = model.getCursor().getDir();
+        oldTrack = null;
+        oldDir = dir;
+        reversed = false;
+    }
+
     private void removeTrack() {
         Point position = model.getCursor().getPosition();
         RailTrack track = model.getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
             model.getRailMap().removeTrack(position.getX(), position.getY());
+        }
+        if (model.getForks().contains(track)) {
+            model.getForks().remove(track);
         }
         Point newPos = new Point(model.getCursor().getPosition());
         if (!reversed) {
@@ -107,13 +126,6 @@ public class RailTrackMaker {
         view.setPageOfPos(position.getX(), position.getY());
     }
 
-    private int degreesOfRotation = 0;
-    private Dir dir = Dir.N;
-    Track oldTrack;
-    Dir oldDir;
-    boolean reversed = false;
-    boolean makingTraks = false;
-
     private boolean makeTrack() {
         makingTraks = true;
         Point cursorPosition = model.getCursor().getPosition();
@@ -128,23 +140,49 @@ public class RailTrackMaker {
             }
         }
 
+        //Obtenemos el track bajo el cursor
         RailTrack track = model.getRailMap().getTrackAt(cursorPosition.getX(), cursorPosition.getY());
         if (track == null) {
+            //si no había nada creamos un track normal
             track = createTrackOfSelectedType();
+        } else {
+            // si había un fork no seguimos
+            if (ForkRailTrack.class.isAssignableFrom(track.getClass())) {
+                return false;
+            }
         }
+        // al track que había (o al que hemos creado normal) le agregamos la ruta entre la vieja dir y la nueva
         track.addRoute(oldDir, dir);
-        if (oldTrack != null) {
-            track.connect(oldDir, oldTrack);
-        }
         track.setPosition(cursorPosition);
         model.getRailMap().addTrack(cursorPosition, track);
         if (canBeAFork(track, oldDir, dir)) {
             final ForkRailTrack myNewTrack = new ForkRailTrack();
+            myNewTrack.setPosition(cursorPosition);
             model.addFork(myNewTrack);
             final Router router = track.getRouter();
-            router.forEach(t -> myNewTrack.getRouter().addRoute(t.getKey(), t.getValue()));
+            router.forEach(t -> {
+                myNewTrack.addRoute(t.getKey(), t.getValue());
+            });
+            myNewTrack.setNormalRoute();
+            System.out.println("Fork agregado:"+ myNewTrack.toString());
             model.getRailMap().removeTrack(track.getPosition().getX(), track.getPosition().getY());
             model.getRailMap().addTrack(model.getCursor().getPosition(), myNewTrack);
+            for (Dir d : Dir.values()) {
+                if (track.getConnected(d) != null) {
+                    Track connected = track.getConnected(d);
+                    connected.disconnect(d.inverse());
+                    connected.connect(d.inverse(), myNewTrack);
+                    myNewTrack.connect(d, connected);
+                }
+            }
+            track = myNewTrack;
+//            myNewTrack.setAlternativeRoute();
+        }
+        if (oldTrack != null) {
+            //conectamos el track con oldTrack en oldDir, bien.
+            track.connect(oldDir, oldTrack);
+            //conectamos a oldTrack con track, en la inversa
+            oldTrack.connect(track.getDir(dir).inverse(), track);
         }
 
         Point newPos = new Point(cursorPosition);
@@ -185,6 +223,7 @@ public class RailTrackMaker {
         r.addRoute(from, to);
         return r.getNumRoutes() == 3;
     }
+
     private void cursorTurnRight() {
         if (makingTraks) {
             if (degreesOfRotation >= 0) {
@@ -210,6 +249,7 @@ public class RailTrackMaker {
             model.getCursor().setDir(this.dir);
         }
     }
+
     private void cursorForward() {
         Point newPos = new Point(model.getCursor().getPosition());
         if (!reversed) {

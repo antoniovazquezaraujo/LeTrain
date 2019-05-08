@@ -39,11 +39,14 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     @Override
     public void pushFront(Linker linker) {
         this.linkers.addFirst(linker);
+        assignDefaultDirectorLinker();
     }
 
     @Override
     public Linker popFront() {
-        return linkers.removeLast();
+        Linker linker = linkers.removeLast();
+        assignDefaultDirectorLinker();
+        return linker;
     }
 
     @Override
@@ -54,11 +57,14 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     @Override
     public void pushBack(Linker linker) {
         this.linkers.addLast(linker);
+        assignDefaultDirectorLinker();
     }
 
     @Override
     public Linker popBack() {
-        return linkers.removeLast();
+        Linker linker = linkers.removeLast();
+        assignDefaultDirectorLinker();
+        return linker;
     }
 
     @Override
@@ -90,7 +96,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     }
 
     public void assignDefaultDirectorLinker() {
-        setDirectorLinker(getTractors() != null && !getTractors().isEmpty() ? getLinkers().getFirst() : null);
+        setDirectorLinker(getTractors() != null && !getTractors().isEmpty() ? (Linker) getTractors().get(0) : null);
     }
 
     @Override
@@ -151,7 +157,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
 
     @Override
     public void applyForce() {
-        float f = getForce();
+        float f = getForce() - getFrictionForce();
         if (f <= 0) return;
         float m = getMass();
         this.acceleration = f / m;
@@ -162,6 +168,92 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
         }
     }
 
+    @Override
+    public boolean advance() {
+        Linker tractor = getDirectorLinker();
+        Dir tractionDir = tractor.getDir();
+        Iterator<Linker> pushIterator;
+        Iterator<Linker> pullIterator;
+
+        // Si el tren no está invertido, pushIterator empieza desde el final y se queda al pasar el tractor master
+        // y pullIterator empieza al principio para quedarse detras de el.
+        // Ambos listos para empujar a los de delante y tirar de los de atrás
+        if (!isReversed()) {
+            pushIterator = getLinkers().descendingIterator();
+            pullIterator = getLinkers().iterator();
+        } else {
+            pushIterator = getLinkers().iterator();
+            pullIterator = getLinkers().descendingIterator();
+        }
+
+        //Avanzamos hasta llegar al tractor desde el principio
+        while (pushIterator.hasNext()) {
+            Linker next = pushIterator.next();
+            if (next == tractor) {
+                break;
+            }
+        }
+        //Avanzamos hasta llegar al tractor desde el final
+        while (pullIterator.hasNext()) {
+            Linker next = pullIterator.next();
+            if (next == tractor) {
+                break;
+            }
+        }
+
+        //Se empuja a los vehículos que haya delante:
+        //Se le pasa la inversa de su dirección actual
+        Dir pushDir = tractor.getDir();
+        while (pushIterator.hasNext()) {
+            Linker next = pushIterator.next();
+            Track nextTrack = next.getTrack();
+            next.setDir(nextTrack.getDir(pushDir.inverse()));
+            pushDir = next.getDir();
+        }
+
+        //Si remolcas, el vehículo debe tomar la dirección inversa a la que tú traías
+        Dir pullDir = tractor.getDir();
+        Track oldTrack = tractor.getTrack();
+        while (pullIterator.hasNext()) {
+            Linker next = pullIterator.next();
+//            next.setDir(oldTrack.getDir(pullDir).inverse());
+            next.setDir(next.getPosition().locate(oldTrack.getPosition()));
+            pullDir = next.getDir();
+
+            oldTrack = next.getTrack();
+        }
+
+        Iterator<Linker> moveIterator = getLinkers().iterator();
+        if (isReversed()) {
+            moveIterator = getLinkers().descendingIterator();
+        }
+        while (moveIterator.hasNext()) {
+            Linker next = moveIterator.next();
+            Track track = next.getTrack();
+
+            System.out.println("next.getTrack():"+ track+ " Router:"+ track.getRouter());
+            Dir nextDir = next.getDir();
+            Track nextTrack = track.getConnected(nextDir);
+            if (nextTrack != null) {
+                if (nextTrack.getLinker() == null) {
+                    next.getTrack().removeLinker();
+                    if(nextTrack.canEnter(next.getDir().inverse(), next)) {
+                        nextTrack.enterLinkerFromDir(next.getDir().inverse(), next);
+                    }else{
+                        System.out.println("NO PUEDO ENTRAR AQUÍ !!!");
+                    }
+                } else {
+                    System.out.println("CRASHHH!!!");
+                    return false;
+                }
+            }else{
+                System.out.println("Ojo, no hay track en "+ track.getPosition()+ " -> "+ next.getDir());
+            }
+        }
+        return true;
+
+    }
+/*
     @Override
     public boolean advance() {
         Linker tractor = (Linker) getDirectorLinker();
@@ -225,7 +317,11 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
             if (nextTrack != null) {
                 if (nextTrack.getLinker() == null) {
                     next.getTrack().removeLinker();
-                    nextTrack.enterLinkerFromDir(next.getDir().inverse(), next);
+                    if(nextTrack.canEnter(next.getDir().inverse(), next)) {
+                        nextTrack.enterLinkerFromDir(next.getDir().inverse(), next);
+                    }else{
+                        // System.out.println("NO PUEDO ENTRAR AQUÍ !!!");
+                    }
                 } else {
                     System.out.println("CRASHHH!!!");
                     return false;
@@ -235,6 +331,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
         return true;
 
     }
+*/
 
     @Override
     public float getAcceleration() {

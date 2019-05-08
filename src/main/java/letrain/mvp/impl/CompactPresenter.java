@@ -7,13 +7,13 @@ import javafx.util.Duration;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
-import letrain.visitor.RenderingVisitor;
-import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
+import letrain.visitor.InfoVisitor;
+import letrain.visitor.RenderVisitor;
 
 import static letrain.mvp.Model.GameMode.*;
 
@@ -28,7 +28,8 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     private final letrain.mvp.Model model;
     private final letrain.mvp.View view;
     private Timeline loop;
-    private final RenderingVisitor renderer;
+    private final RenderVisitor renderer;
+    private final InfoVisitor informer;
 
     RailTrackMaker maker;
 
@@ -43,7 +44,8 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             this.model = new Model();
         }
         view = new View(this);
-        renderer = new RenderingVisitor(view);
+        renderer = new RenderVisitor(view);
+        informer = new InfoVisitor(view);
         maker = new RailTrackMaker(model, view);
     }
 
@@ -54,6 +56,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         KeyFrame kf = new KeyFrame(Duration.seconds(.1), actionEvent -> {
             view.clear();
             renderer.visitModel(model);
+            informer.visitModel(model);
             view.paint();
             model.moveTrains();
         });
@@ -113,6 +116,13 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             case TRAINS:
                 this.newTrain = null;
                 switch (keyEvent.getCode()) {
+                    case SPACE:
+                        if (model.getSelectedTrain() != null) {
+                            if (model.getSelectedTrain().getForce() == 0) {
+                                model.getSelectedTrain().reverse();
+                            }
+                        }
+                        break;
                     case UP:
                         accelerateTrain();
                         break;
@@ -188,9 +198,15 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 }
                 break;
             case MAKE_TRAINS:
+                if (model.getRailMap().getTrackAt(model.getCursor().getPosition()) == null) {
+                    break;
+                }
                 String c = keyEvent.getText();
+                if (c.isEmpty()) {
+                    break;
+                }
                 if (!c.matches("([A-Za-z])?")) {
-                    return;
+                    break;
                 }
                 RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition());
                 if (c.toUpperCase().equals(c)) {
@@ -247,7 +263,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     }
 
     private void toggleFork() {
-        if (model.getSelectedFork()!= null) {
+        if (model.getSelectedFork() != null) {
             model.getSelectedFork().flipRoute();
         }
     }
@@ -266,12 +282,18 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void decelerateTrain() {
         if (model.getSelectedTrain() == null) return;
-        ((Tractor) model.getSelectedTrain().getDirectorLinker()).decForce(1000);
+        Tractor directorLinker = (Tractor) model.getSelectedTrain().getDirectorLinker();
+        if(directorLinker!=null) {
+            directorLinker.decForce(1000);
+        }
     }
 
     private void accelerateTrain() {
         if (model.getSelectedTrain() == null) return;
-        ((Tractor) model.getSelectedTrain().getDirectorLinker()).incForce(1000);
+        Tractor directorLinker = (Tractor) model.getSelectedTrain().getDirectorLinker();
+        if (directorLinker != null) {
+            directorLinker.incForce(1000);
+        }
     }
 
     private void mapPageDown() {

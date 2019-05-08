@@ -70,34 +70,6 @@ class RouterTest extends Specification {
         router.getDir(Dir.E) == null
     }
 
-    def "adding routes that makes a fork"() {
-        when:
-        router.addRoute(Dir.E, Dir.W)
-        then:
-        router.getDir(Dir.E) == Dir.W
-        router.getDir(Dir.W) == Dir.E
-        router.isStraight() == true
-
-        when:
-        router.addRoute(Dir.W, Dir.NE)
-        then:
-        router.getDir(Dir.E) == Dir.W
-        router.getDir(Dir.W) == Dir.NE
-        router.isStraight() == false
-        router.isCurve() == false
-        router.isFork() == true
-
-        when:
-        router.setAlternativeRoute()
-        then:
-        router.getDir(Dir.W).equals(Dir.NE)
-
-        when:
-        router.setNormalRoute()
-        then:
-        router.getDir(Dir.W).equals(Dir.E)
-
-    }
 
     def "adding new routes that makes a cross"() {
         when:
@@ -110,7 +82,6 @@ class RouterTest extends Specification {
         router.getDir(Dir.SW) == Dir.NE
         router.isStraight() == false
         router.isCurve() == false
-        router.isFork() == false
         router.isCross() == true
     }
 
@@ -136,7 +107,6 @@ class RouterTest extends Specification {
         router.addRoute(Dir.E, Dir.SW)
         then:
         router.isCross() == true
-        router.isFork() == false
 
     }
 
@@ -149,15 +119,12 @@ class RouterTest extends Specification {
         router.addRoute(Dir.N, Dir.SW)
         then:
         router.isCross() == false
-        router.isFork() == true
         router.getNumRoutes() == 3
         when:
         router.removeRoute(Dir.N, Dir.SW)
         router.addRoute(Dir.SW, Dir.N)
         then:
         router.isCross() == false
-        router.isFork() == true
-
     }
 
     def "add dir and router contains the conter route"() {
@@ -169,17 +136,15 @@ class RouterTest extends Specification {
         router.addRoute(Dir.S, Dir.NW)
         then:
         router.isCross() == false
-        router.isFork() == true
         router.getNumRoutes() == 3
         when:
         router.addRoute(Dir.NW, Dir.S)
         then:
         router.isCross() == false
-        router.isFork() == true
-
     }
 
     def "changing directions"() {
+        ForkRouter router = new ForkRouter();
         when:
         router.addRoute(Dir.E, Dir.W)
         then:
@@ -194,7 +159,6 @@ class RouterTest extends Specification {
         router.getDir(Dir.W) == Dir.NE
         router.isStraight() == false
         router.isCurve() == false
-        router.isFork() == true
 
         when:
 

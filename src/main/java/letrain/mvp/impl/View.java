@@ -25,11 +25,11 @@ public class View extends BorderPane implements letrain.mvp.View {
     public View(GameViewListener gameViewListener) {
         viewGrid = new ViewGrid();
         this.gameViewListener = gameViewListener;
-        setTop(createMenuBar());
+//        setTop(createMenuBar());
         setCenter(viewGrid);
         HBox bottomBox = new HBox();
         statusBar.setWrappingWidth(100);
-        infoBar.setWrappingWidth(500);
+//        infoBar.setWrappingWidth(1200);
         bottomBox.getChildren().add(statusBar);
         bottomBox.getChildren().add(infoBar);
         setBottom(bottomBox);
@@ -40,25 +40,28 @@ public class View extends BorderPane implements letrain.mvp.View {
         statusBar.setFill(Color.GREEN);
         statusBar.setStroke(Color.GREEN);
         statusBar.setFont(new Font("Lucida Sans Unicode", 10));
+        infoBar.setFill(Color.YELLOW);
+        infoBar.setStroke(Color.YELLOW);
+        infoBar.setFont(new Font("Lucida Sans Unicode", 10));
     }
 
-    public Node createMenuBar() {
-        MenuBar menuBar = new MenuBar();
-        Menu menu = new Menu("Actions");
-        menuBar.getMenus().add(menu);
-        for (Model.GameMode option : Model.GameMode.values()) {
-            MenuItem item = new MenuItem(option.getName());
-            menu.getItems().add(item);
-            item.setOnAction(t -> {
-                doCommand(option);
-            });
-        }
-        return menuBar;
-    }
+//    public Node createMenuBar() {
+//        MenuBar menuBar = new MenuBar();
+//        Menu menu = new Menu("Actions");
+//        menuBar.getMenus().add(menu);
+//        for (Model.GameMode option : Model.GameMode.values()) {
+//            MenuItem item = new MenuItem(option.getName());
+//            menu.getItems().add(item);
+//            item.setOnAction(t -> {
+//                doCommand(option);
+//            });
+//        }
+//        return menuBar;
+//    }
 
-    public void doCommand(Model.GameMode mode) {
-        gameViewListener.onGameModeSelected(mode);
-    }
+//    public void doCommand(Model.GameMode mode) {
+//        gameViewListener.onGameModeSelected(mode);
+//    }
 
     private void addEventListener() {
         addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
@@ -74,9 +77,15 @@ public class View extends BorderPane implements letrain.mvp.View {
     @Override
     public void setMapScrollPage(Point pos) {
         viewGrid.setMapScrollPage(pos);
-        statusBar.setText("Página: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
+        setStatusBarText("Página: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
     }
 
+    public void setStatusBarText(String text){
+        statusBar.setText(text);
+    }
+    public void setInfoBarText(String text){
+        infoBar.setText(text);
+    }
 
     @Override
     public void paint() {
@@ -101,7 +110,7 @@ public class View extends BorderPane implements letrain.mvp.View {
     @Override
     public void setPageOfPos(int x, int y) {
         viewGrid.setPageOfPos(x, y);
-        statusBar.setText("Página: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
+        setStatusBarText("Página: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
     }
 
     @Override
@@ -119,8 +128,4 @@ public class View extends BorderPane implements letrain.mvp.View {
         viewGrid.box(x, y, width, height);
     }
 
-    @Override
-    public void showInfo(String info) {
-
-    }
 }

@@ -1,7 +1,12 @@
 package letrain.vehicle.impl.rail
 
-
-import letrain.vehicle.impl.Linker
+import javafx.scene.input.KeyEvent
+import letrain.map.RailMap
+import letrain.mvp.View
+import letrain.mvp.impl.Model
+import letrain.mvp.impl.RailTrackMaker
+import letrain.track.rail.RailTrack
+import letrain.vehicle.impl.Tractor
 import spock.lang.Specification
 
 class TrainTest extends Specification {
@@ -11,8 +16,8 @@ class TrainTest extends Specification {
     Train train1 = new Train()
     Wagon wagon1 = new Wagon()
     Wagon wagon2 = new Wagon()
-    Linker locomotive1 = new Locomotive()
-    Linker locomotive2 = new Locomotive()
+    Tractor locomotive1 = new Locomotive('A')
+    Tractor locomotive2 = new Locomotive('B')
 
     def setup() {
 
@@ -76,37 +81,39 @@ class TrainTest extends Specification {
         train1.pushFront(wagon2)
         train1.pushFront(locomotive1)
         then:
-        train1.getDirectorLinker().equals(null)
+        train1.getDirectorLinker().equals(locomotive1)
 
         when:
-        train1.setDirectorLinker(locomotive1)
+        train1.pushFront(locomotive2)
+        train1.setDirectorLinker(locomotive2)
+
         then:
-        train1.getDirectorLinker().equals(locomotive1)
+        train1.getDirectorLinker().equals(locomotive2)
     }
 
     def "Obtener la masa de todo un tren"() {
         expect:
-        compare(train1.getTotalMass(), 0.0F) <= PRECISION
+        compare(train1.getMass(), 0.0F) <= PRECISION
 
         when:
         train1.pushFront(wagon1)
         then:
-        compare(train1.getTotalMass(), wagon1.getMass()) <= PRECISION
+        compare(train1.getMass(), wagon1.getMass()) <= PRECISION
 
         when:
         train1.pushFront(wagon2)
         then:
-        compare(train1.getTotalMass(), (float) (wagon1.getMass() + wagon2.getMass())) <= PRECISION
+        compare(train1.getMass(), (float) (wagon1.getMass() + wagon2.getMass())) <= PRECISION
 
         when:
         train1.popFront()
         then:
-        compare(train1.getTotalMass(), wagon1.getMass()) <= PRECISION
+        compare(train1.getMass(), wagon1.getMass()) <= PRECISION
 
         when:
         train1.popFront()
         then:
-        compare(train1.getTotalMass(), 0.0F) <= PRECISION
+        compare(train1.getMass(), 0.0F) <= PRECISION
     }
 
     def "suma de fuerzas en un tren"() {
@@ -119,12 +126,12 @@ class TrainTest extends Specification {
         then:
         train1.getTractors().contains(locomotive1)
         train1.getTractors().contains(locomotive2)
-        compare(train1.getTotalForce(), (float) (locomotive1.getForce() + locomotive2.getForce())) <= PRECISION
+        compare(train1.getForce(), (float) (locomotive1.getForce() + locomotive2.getForce())) <= PRECISION
 
         when:
-        train1.applyForces()
+        train1.applyForce()
         then:
-        compare(train1.getTotalForce(), (float) ((locomotive1.getForce() + locomotive2.getForce()) - train1.getFrictionForce())) <= PRECISION
+        compare(train1.getForce(), (float) ((locomotive1.getForce() + locomotive2.getForce()))) <= PRECISION
     }
 
     def "aceleración es fuerza dividida por masa"() {
@@ -138,9 +145,9 @@ class TrainTest extends Specification {
         compare(train1.getAcceleration(), 0.0F) <= PRECISION
 
         when:
-        train1.applyForces()
+        train1.applyForce()
         then:
-        compare(train1.getAcceleration(), (float) (train1.getTotalForce() / train1.getTotalMass())) <= PRECISION
+        compare(train1.getAcceleration(), (float) (train1.getForce() / train1.getMass())) <= PRECISION
     }
 
     def "aceleración es lo que varió la velocidad en cada turno"() {
@@ -154,12 +161,12 @@ class TrainTest extends Specification {
         locomotive2.setForce(20)
         train1.pushFront(locomotive2)
         then:
-        compare(train1.getTotalMass(), (float) (locomotive1.getMass() + locomotive2.getMass())) < PRECISION
+        compare(train1.getMass(), (float) (locomotive1.getMass() + locomotive2.getMass())) < PRECISION
         compare(train1.getSpeed(), 0.0f) <= PRECISION
         compare(train1.getDistanceTraveled(), 0.0f) <= PRECISION
 
         when:
-        train1.applyForces()
+        train1.applyForce()
         then:
         compare(train1.getSpeed(), train1.getAcceleration()) <= PRECISION
         compare(train1.getDistanceTraveled(), train1.getSpeed()) <= PRECISION
@@ -172,7 +179,7 @@ class TrainTest extends Specification {
         compare(train1.getDistanceTraveled(), 0.0) <= PRECISION
 
         when:
-        train1.applyForces()
+        train1.applyForce()
         then:
         compare(train1.getSpeed(), train1.getAcceleration()) <= PRECISION
         compare(train1.getDistanceTraveled(), train1.getSpeed()) <= PRECISION
@@ -180,10 +187,10 @@ class TrainTest extends Specification {
         when:
         locomotive1.setForce(0)
         locomotive2.setForce(0)
-        train1.applyForces()
+        train1.applyForce()
 
         then:
-        compare(train1.getTotalForce(), (float) (-1 * train1.getFrictionForce())) <= PRECISION
+        compare(train1.getForce(), (float) (train1.getFrictionForce())) <= PRECISION
 
     }
 
@@ -195,47 +202,47 @@ class TrainTest extends Specification {
 
     }
 
-//    def "mover el tren por la vía"() {
-//        given:
-//        RailTrack track
-//        RailMap map = new RailMap()
-//        RailTrackMaker maker = new RailTrackMaker()
-//        maker.setMap(map)
-//        maker.setCursorPosition(0, 0)
-//        maker.setMode(Model.Mode.MAKE_TRACKS)
-//        maker.setCursorDirection(Dir.E)
-//        for (int n = 0; n < 8; n++) {
-//            maker.advanceCursor(10)
-//            maker.rotateCursorRight()
-//        }
-//        train1.pushBack(wagon1)
-//        train1.pushBack(wagon2)
-//        train1.pushFront(locomotive1)
-//        train1.assignDefaultDirectorLinker()
-//        when:
-//        map.getTrackAt(4,0).enterLinkerFromDir(Dir.W, locomotive1)
-//        map.getTrackAt(3,0).enterLinkerFromDir(Dir.W, wagon1)
-//        map.getTrackAt(2,0).enterLinkerFromDir(Dir.W, wagon2)
-//        then:
-//        locomotive1.getPosition().getX().equals(4)
-//        wagon1.getPosition().getX().equals(3)
-//        wagon2.getPosition().getX().equals(2)
-//
-//        when:
-//        train1.move()
-//        then:
-//        locomotive1.getPosition().getX().equals(5)
-//        wagon1.getPosition().getX().equals(4)
-//        wagon2.getPosition().getX().equals(3)
-//
-//        when:
-//        train1.reverse()
-//        train1.move()
-//        then:
-//        locomotive1.getPosition().getX().equals(4)
-//        wagon1.getPosition().getX().equals(3)
-//        wagon2.getPosition().getX().equals(2)
-//    }
+    def "mover el tren por la vía"() {
+        given:
+        Model model = new Model();
+        View view = new letrain.mvp.impl.View();
+        RailTrack track
+        RailMap map = model.getRailMap()
+        RailTrackMaker maker = new RailTrackMaker(model, view)
+        model.setMode(letrain.mvp.Model.GameMode.TRACKS)
+        model.getCursor().setDir(Dir.E)
+        for (int n = 0; n < 8; n++) {
+            maker.onChar()
+            maker.rotateCursorRight()
+        }
+        train1.pushBack(wagon1)
+        train1.pushBack(wagon2)
+        train1.pushFront(locomotive1)
+        train1.assignDefaultDirectorLinker()
+        when:
+        map.getTrackAt(4, 0).enterLinkerFromDir(Dir.W, locomotive1)
+        map.getTrackAt(3, 0).enterLinkerFromDir(Dir.W, wagon1)
+        map.getTrackAt(2, 0).enterLinkerFromDir(Dir.W, wagon2)
+        then:
+        locomotive1.getPosition().getX().equals(4)
+        wagon1.getPosition().getX().equals(3)
+        wagon2.getPosition().getX().equals(2)
+
+        when:
+        train1.move()
+        then:
+        locomotive1.getPosition().getX().equals(5)
+        wagon1.getPosition().getX().equals(4)
+        wagon2.getPosition().getX().equals(3)
+
+        when:
+        train1.reverse()
+        train1.move()
+        then:
+        locomotive1.getPosition().getX().equals(4)
+        wagon1.getPosition().getX().equals(3)
+        wagon2.getPosition().getX().equals(2)
+    }
 
 }
 

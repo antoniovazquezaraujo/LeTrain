@@ -1,10 +1,7 @@
 package letrain.visitor;
 
 import javafx.scene.paint.Color;
-import letrain.map.Dir;
-import letrain.map.Point;
-import letrain.map.RailMap;
-import letrain.map.SimpleRouter;
+import letrain.map.*;
 import letrain.mvp.Model;
 import letrain.mvp.View;
 import letrain.track.Track;
@@ -18,7 +15,7 @@ import letrain.vehicle.impl.rail.Wagon;
 public class InfoVisitor implements Visitor {
     private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
     public static final Color FORK_COLOR = Color.grayRgb(180);
-    ;
+    String infoBarText = "";
     private final View view;
 
     public InfoVisitor(View view) {
@@ -27,6 +24,7 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitModel(Model model) {
+        infoBarText = "";
         switch(model.getMode()){
             case TRACKS:
                 Point pos = model.getCursor().getPosition();
@@ -36,8 +34,16 @@ public class InfoVisitor implements Visitor {
                 }
                 break;
             case TRAINS:
+                Train train = model.getSelectedTrain();
+                if(train!= null){
+                    visitTrain(train);
+                }
                 break;
             case FORKS:
+                ForkRailTrack fork = model.getSelectedFork();
+                if(fork !=null){
+                    visitForkRailTrack(fork);
+                }
                 break;
             case CREATE_LOAD_PLATFORM:
                 break;
@@ -48,10 +54,8 @@ public class InfoVisitor implements Visitor {
             case MAKE_TRAINS:
                 break;
         }
-        model.getRailMap().accept(this);
-        model.getTrains().forEach(t -> t.accept(this));
-//        model.getForks().forEach(t-> t.accept(this));
         visitCursor(model.getCursor());
+        view.setInfoBarText(infoBarText);
     }
 
     @Override
@@ -61,126 +65,85 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        view.setColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
+        infoBarText+="Track:["+track.getPosition().getX()+"," + track.getPosition().getY()+"]"+ getRouterAspect(track.getRouter())+ " "+
+                getTrackConnectionsAspect(track)+ "\n";
+    }
+
+    private String getRouterAspect(Router router) {
+        StringBuffer ret = new StringBuffer();
+        router.forEach(t->{
+            ret.append("("+t.getKey()+ "<->"+ t.getValue()+") ");
+        });
+        return ret.toString();
+    }
+    private String getTrackConnectionsAspect(RailTrack track){
+        StringBuffer ret = new StringBuffer();
+        for(Dir d: Dir.values()){
+            Track connected = track.getConnected(d);
+            if(connected != null) {
+                ret.append("(" + d + "->" + connected + ")");
+            }
+        }
+        return ret.toString();
     }
 
     @Override
     public void visitStopRailTrack(StopRailTrack track) {
-        view.setColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⊝");
     }
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        view.setColor(FORK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), dirGraphicAspect(track.getFirstOpenDir()));
+        infoBarText+="Track:["+track.getPosition().getX()+"," + track.getPosition().getY()+"]"+"\n"+ getDynamicRouterAspect((DynamicRouter) track.getRouter())+ "\n"+getTrackConnectionsAspect(track)+"\n";
+    }
+
+
+    private String getDynamicRouterAspect(DynamicRouter router) {
+            StringBuffer ret = new StringBuffer();
+            router.forEach(t->{
+                if(t.getValue()!=null) {
+                    ret.append("(" + t.getKey() + "<->" + t.getValue() + ") ");
+                }
+            });
+            ret.append("\nNorm:"+ router.getOriginalRoute()+ " Alt:"+ router.getAlternativeRoute()+" Using Alt:"+ (router.isUsingAlternativeRoute()?"TRUE":"FALSE"));
+            return ret.toString();
     }
 
     @Override
     public void visitTrainFactoryRailTrack(TrainFactoryRailTrack track) {
-        view.setColor(Color.LIGHTBLUE);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⎵");
     }
 
     @Override
     public void visitTunnelRailTrack(TunnelRailTrack track) {
-        view.setColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
+        infoBarText+="Track:["+track.getPosition().getX()+"," + track.getPosition().getY()+"]"+ getRouterAspect(track.getRouter())+ "\n";
+        infoBarText+="Connect:...";
     }
 
 
     @Override
     public void visitTrain(Train train) {
-        train.getLinkers().forEach(t -> t.accept(this));
+        infoBarText+= "Accel:"+ train.getAcceleration()+ " Force:"+train.getForce()+ " Mass:"+ train.getMass()+ "\n";
+        train.getLinkers().forEach(t->t.accept(this));
     }
 
     @Override
     public void visitLinker(Linker linker) {
-        view.set(linker.getPosition().getX(), linker.getPosition().getY(), "?");
+
     }
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        view.setColor(Color.LIGHTBLUE);
-        view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), locomotive.getAspect());
+        infoBarText+= "Locomotive Accel:"+ locomotive.getAcceleration()+ " Force:"+locomotive.getForce()+ " Mass:"+ locomotive.getMass()+ " Dir"+ locomotive.getDir()+"\n";
+
     }
 
     @Override
     public void visitWagon(Wagon wagon) {
-        view.setColor(Color.GREEN);
-        view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
+        infoBarText+= "Locomotive Accel:"+ wagon.getAcceleration()+ " Mass:"+ wagon.getMass()+ " Dir"+ wagon.getDir()+"\n";
     }
 
     @Override
     public void visitCursor(Cursor cursor) {
-        view.setColor(Color.RED);
-        view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
+        infoBarText+="Cursor:["+cursor.getPosition().getX()+"," + cursor.getPosition().getY()+"]"+ "\n";
     }
 
-    ////////////////////////////////////////////////////////////////////////////////
-    private String getTrackAspect(Track track) {
-        if (track.getRouter().isStraight()) {
-            return dirGraphicAspect(track.getRouter().getFirstOpenDir());
-        } else if (track.getRouter().isCurve()) {
-            return "∙";
-        } else {
-            return getCrossAspect(track);
-        }
-    }
-
-    private String dirGraphicAspect(Dir dir) {
-        if (dir == null) {
-            return "";
-        }
-        switch (dir) {
-            case E:
-            case W:
-                return "−";
-            case NE:
-            case SW:
-                return "/";
-            case N:
-            case S:
-                return "|";
-            case NW:
-            case SE:
-                return "\\";
-        }
-        return "?";
-    }
-
-    private String cursorGraphicAspect(Dir dir) {
-        if (dir == null) {
-            return "";
-        }
-        switch (dir) {
-            case E:
-                return ">";
-            case W:
-                return "<";
-            case NE:
-                return "⌝";
-            case SW:
-                return "⌞";
-            case N:
-                return "⌃";
-            case S:
-                return "⌄";
-            case NW:
-                return "⌜";
-            case SE:
-                return "⌟";
-        }
-        return "?";
-    }
-
-    public String getCrossAspect(Track track) {
-        SimpleRouter r = (SimpleRouter) (track.getRouter());
-        if (r.isHorizontalOrVertical()) {
-            return "+";
-        } else {
-            return "x";
-        }
-    }
 }
