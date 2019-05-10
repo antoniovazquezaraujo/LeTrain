@@ -118,16 +118,26 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 switch (keyEvent.getCode()) {
                     case SPACE:
                         if (model.getSelectedTrain() != null) {
-                            if (model.getSelectedTrain().getForce() == 0) {
+                            if (model.getSelectedTrain().getAcceleration() <= 0.001) {
                                 model.getSelectedTrain().reverse();
+                            }else{
+                                model.getSelectedTrain().setForce(0);
                             }
                         }
                         break;
                     case UP:
-                        accelerateTrain();
+                        if (keyEvent.isShiftDown()) {
+                            decTrainBrakes();
+                        }else {
+                            accelerateTrain();
+                        }
                         break;
                     case DOWN:
-                        decelerateTrain();
+                        if (keyEvent.isShiftDown()) {
+                            incTrainBrakes();
+                        }else {
+                            decelerateTrain();
+                        }
                         break;
                     case LEFT:
                         selectPrevTrain();
@@ -155,13 +165,6 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 switch (keyEvent.getCode()) {
                     case UP:
                         createLoadPlatformTrack();
-                        break;
-                }
-                break;
-            case CREATE_FACTORY_PLATFORM:
-                switch (keyEvent.getCode()) {
-                    case UP:
-                        createFactoryPlatformTrack();
                         break;
                 }
                 break;
@@ -219,6 +222,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         }
 
     }
+
 
     /***********************************************************
      * FACTORIES
@@ -282,18 +286,22 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void decelerateTrain() {
         if (model.getSelectedTrain() == null) return;
-        Tractor directorLinker = (Tractor) model.getSelectedTrain().getDirectorLinker();
-        if(directorLinker!=null) {
-            directorLinker.decForce(1000);
-        }
+        model.getSelectedTrain().decForce(1);
     }
 
     private void accelerateTrain() {
         if (model.getSelectedTrain() == null) return;
-        Tractor directorLinker = (Tractor) model.getSelectedTrain().getDirectorLinker();
-        if (directorLinker != null) {
-            directorLinker.incForce(1000);
-        }
+        model.getSelectedTrain().incForce(1);
+    }
+
+    private void incTrainBrakes() {
+        if (model.getSelectedTrain() == null) return;
+        model.getSelectedTrain().incBrakes(1);
+    }
+
+    private void decTrainBrakes() {
+        if (model.getSelectedTrain() == null) return;
+        model.getSelectedTrain().decBrakes(1);
     }
 
     private void mapPageDown() {
@@ -334,10 +342,6 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     /***********************************************************
      * LOAD_PLATFORM
      **********************************************************/
-
-    private void createFactoryPlatformTrack() {
-
-    }
 
     private void createLoadPlatformTrack() {
 

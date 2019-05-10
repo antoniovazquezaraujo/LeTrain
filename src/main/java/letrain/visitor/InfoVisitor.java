@@ -47,8 +47,6 @@ public class InfoVisitor implements Visitor {
                 break;
             case CREATE_LOAD_PLATFORM:
                 break;
-            case CREATE_FACTORY_PLATFORM:
-                break;
             case LOAD_TRAINS:
                 break;
             case MAKE_TRAINS:
@@ -122,7 +120,8 @@ public class InfoVisitor implements Visitor {
     @Override
     public void visitTrain(Train train) {
         infoBarText+= "Accel:"+ train.getAcceleration()+ " Force:"+train.getForce()+ " Mass:"+ train.getMass()+ "\n";
-        train.getLinkers().forEach(t->t.accept(this));
+        infoBarText+= "Brakes:"+ train.getBrakes();
+//        train.getLinkers().forEach(t->t.accept(this));
     }
 
     @Override
@@ -132,13 +131,13 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        infoBarText+= "Locomotive Accel:"+ locomotive.getAcceleration()+ " Force:"+locomotive.getForce()+ " Mass:"+ locomotive.getMass()+ " Dir"+ locomotive.getDir()+"\n";
+        infoBarText+= "Locomotive. Accel:"+ locomotive.getAcceleration()+ " Force:"+locomotive.getForce()+ " Mass:"+ locomotive.getMass()+ " Dir"+ locomotive.getDir()+"\n";
 
     }
 
     @Override
     public void visitWagon(Wagon wagon) {
-        infoBarText+= "Locomotive Accel:"+ wagon.getAcceleration()+ " Mass:"+ wagon.getMass()+ " Dir"+ wagon.getDir()+"\n";
+        infoBarText+= "Wagon. Accel:"+ wagon.getAcceleration()+ " Mass:"+ wagon.getMass()+ " Dir"+ wagon.getDir()+"\n";
     }
 
     @Override

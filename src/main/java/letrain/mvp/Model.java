@@ -27,11 +27,6 @@ public interface Model {
 
     void moveTrains();
 
-    List<TrainFactory> getTrainFactories();
-
-    void addTrainFactory(TrainFactory factory);
-    void removeTrainFactory(TrainFactory factory);
-
     GameMode getMode();
 
     void setMode(GameMode mode);
@@ -57,7 +52,6 @@ public interface Model {
         TRAINS("Use trains"),
         FORKS("Use forks"),
         CREATE_LOAD_PLATFORM("Create load platform"),
-        CREATE_FACTORY_PLATFORM("Create factory platform"),
         LOAD_TRAINS("Use load platforms"),
         MAKE_TRAINS("Use factory platforms");
 

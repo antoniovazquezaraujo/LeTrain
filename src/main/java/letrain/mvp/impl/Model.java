@@ -23,7 +23,6 @@ public class Model implements Serializable , letrain.mvp.Model {
     private GameMode mode = letrain.mvp.Model.GameMode.TRACKS;
     private RailMap map;
     private final List<Train> trains;
-    private final List<TrainFactory> trainFactories;
     private Cursor cursor;
     private List<ForkRailTrack> forks;
 
@@ -31,7 +30,6 @@ public class Model implements Serializable , letrain.mvp.Model {
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
         this.cursor.setPosition(new Point(10,10));
-        this.trainFactories = new ArrayList<>();
         this.trains = new ArrayList<>();
         this.forks = new ArrayList<>();
         this.map = new RailMap();
@@ -92,21 +90,6 @@ public class Model implements Serializable , letrain.mvp.Model {
     }
 
     @Override
-    public List<TrainFactory> getTrainFactories() {
-        return this.trainFactories;
-    }
-
-    @Override
-    public void addTrainFactory(TrainFactory factory) {
-        this.trainFactories.add(factory);
-    }
-
-    @Override
-    public void removeTrainFactory(TrainFactory factory) {
-        this.trainFactories.remove(factory);
-    }
-
-    @Override
     public GameMode getMode() {
         return mode;
     }
@@ -137,6 +120,10 @@ public class Model implements Serializable , letrain.mvp.Model {
 
     @Override
     public void selectNextFork() {
+        if (getForks().isEmpty()) {
+            return;
+        }
+
         selectedForkIndex++;
         if (selectedForkIndex >= getForks().size()) {
             selectedForkIndex = 0;
@@ -148,6 +135,9 @@ public class Model implements Serializable , letrain.mvp.Model {
 
     @Override
     public void selectPrevFork() {
+        if (getForks().isEmpty()) {
+            return;
+        }
         selectedForkIndex--;
         if (selectedForkIndex < 0) {
             selectedForkIndex = getForks().size() - 1;
@@ -157,6 +147,9 @@ public class Model implements Serializable , letrain.mvp.Model {
 
     @Override
     public void selectNextTrain() {
+        if (getTrains().isEmpty()) {
+            return;
+        }
         selectedTrainIndex++;
         if (selectedTrainIndex >= getTrains().size()) {
             selectedTrainIndex = 0;
@@ -166,6 +159,9 @@ public class Model implements Serializable , letrain.mvp.Model {
 
     @Override
     public void selectPrevTrain() {
+        if (getTrains().isEmpty()) {
+            return;
+        }
         selectedTrainIndex--;
         if (selectedTrainIndex < 0) {
             selectedTrainIndex = getTrains().size() - 1;

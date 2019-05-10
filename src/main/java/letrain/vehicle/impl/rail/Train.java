@@ -157,14 +157,11 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
 
     @Override
     public void applyForce() {
-        float f = getForce() - getFrictionForce();
-        if (f <= 0) return;
-        float m = getMass();
-        this.acceleration = f / m;
+        this.acceleration+= (getForce()-getFrictionForce())/ getMass();
         this.distanceTraveled = this.distanceTraveled + this.acceleration;
         if (this.distanceTraveled >= DISTANCE_UNIT) {
             advance();
-            this.distanceTraveled = 0.0F;
+            this.distanceTraveled -= DISTANCE_UNIT;
         }
     }
 
@@ -231,7 +228,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
             Linker next = moveIterator.next();
             Track track = next.getTrack();
 
-            System.out.println("next.getTrack():"+ track+ " Router:"+ track.getRouter());
             Dir nextDir = next.getDir();
             Track nextTrack = track.getConnected(nextDir);
             if (nextTrack != null) {
@@ -253,86 +249,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
         return true;
 
     }
-/*
-    @Override
-    public boolean advance() {
-        Linker tractor = (Linker) getDirectorLinker();
-        Dir tractionDir = tractor.getDir();
-        Iterator<Linker> pushIterator;
-        Iterator<Linker> pullIterator;
-
-        // Si el tren no está invertido, pushIterator empieza desde el final y se queda al pasar el tractor master
-        // y pullIterator empieza al principio para quedarse detras de el.
-        // Ambos listos para empujar a los de delante y tirar de los de atrás
-        if (!isReversed()) {
-            pushIterator = getLinkers().descendingIterator();
-            pullIterator = getLinkers().iterator();
-        } else {
-            pushIterator = getLinkers().iterator();
-            pullIterator = getLinkers().descendingIterator();
-        }
-
-        //Avanzamos hasta llegar al tractor desde el principio
-        while (pushIterator.hasNext()) {
-            Linker next = pushIterator.next();
-            if (next == tractor) {
-                break;
-            }
-        }
-        //Avanzamos hasta llegar al tractor desde el final
-        while (pullIterator.hasNext()) {
-            Linker next = pullIterator.next();
-            if (next == tractor) {
-                break;
-            }
-        }
-
-        //Se empuja a los vehículos que haya delante:
-        Dir pushDir = tractionDir;
-        while (pushIterator.hasNext()) {
-            Linker next = pushIterator.next();
-            Track nextTrack = next.getTrack();
-            //usamos la dirección inversa, estamos empujando
-            next.setDir(nextTrack.getDir(tractionDir.inverse()));
-            tractionDir = next.getDir();
-        }
-
-        Dir pullDir = tractionDir;
-        Track oldTrack = tractor.getTrack();
-        while (pullIterator.hasNext()) {
-            Linker next = pullIterator.next();
-            next.setDir(oldTrack.getDir(tractionDir).inverse());
-            tractionDir = next.getDir();
-            oldTrack = next.getTrack();
-        }
-
-        Iterator<Linker> moveIterator = getLinkers().iterator();
-        if (isReversed()) {
-            moveIterator = getLinkers().descendingIterator();
-        }
-        while (moveIterator.hasNext()) {
-            Linker next = moveIterator.next();
-            Track track = next.getTrack();
-            Track nextTrack = track.getConnected(next.getDir());
-            if (nextTrack != null) {
-                if (nextTrack.getLinker() == null) {
-                    next.getTrack().removeLinker();
-                    if(nextTrack.canEnter(next.getDir().inverse(), next)) {
-                        nextTrack.enterLinkerFromDir(next.getDir().inverse(), next);
-                    }else{
-                        // System.out.println("NO PUEDO ENTRAR AQUÍ !!!");
-                    }
-                } else {
-                    System.out.println("CRASHHH!!!");
-                    return false;
-                }
-            }
-        }
-        return true;
-
-    }
-*/
-
     @Override
     public float getAcceleration() {
         return this.acceleration;
@@ -351,6 +267,26 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     @Override
     public void resetDistanceTraveled() {
         this.distanceTraveled = 0.0F;
+    }
+
+    @Override
+    public void incBrakes(int i) {
+        getLinkers().forEach(t->t.incBrakes(i));
+    }
+
+    @Override
+    public void decBrakes(int i) {
+        getLinkers().forEach(t->t.decBrakes(i));
+    }
+
+    @Override
+    public int getBrakes() {
+        return getLinkers().stream().map(t->t.getBrakes()).reduce((a,b)->a+b).get();
+    }
+
+    @Override
+    public void setBrakes(int i) {
+        getLinkers().forEach(t->t.setBrakes(i));
     }
 
 
@@ -391,9 +327,19 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     }
 
     @Override
+    public void incForce() {
+        incForce(1);
+    }
+
+    @Override
     public void incForce(float force) {
         getTractors()
                 .forEach(t -> t.incForce(force));
+    }
+
+    @Override
+    public void decForce() {
+        decForce(1);
     }
 
     @Override

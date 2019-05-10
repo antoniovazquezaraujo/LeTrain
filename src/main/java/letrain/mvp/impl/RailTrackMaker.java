@@ -164,7 +164,6 @@ public class RailTrackMaker {
                 myNewTrack.addRoute(t.getKey(), t.getValue());
             });
             myNewTrack.setNormalRoute();
-            System.out.println("Fork agregado:"+ myNewTrack.toString());
             model.getRailMap().removeTrack(track.getPosition().getX(), track.getPosition().getY());
             model.getRailMap().addTrack(model.getCursor().getPosition(), myNewTrack);
             for (Dir d : Dir.values()) {

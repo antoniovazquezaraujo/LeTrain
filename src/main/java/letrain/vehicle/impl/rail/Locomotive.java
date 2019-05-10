@@ -8,6 +8,7 @@ public class Locomotive extends Linker implements Tractor{
 
     private float force;
     private String aspect;
+    int brakes;
     public Locomotive(String aspect){
         this.aspect = aspect;
         force = 0;
@@ -23,7 +24,7 @@ public class Locomotive extends Linker implements Tractor{
 
     @Override
     public float getFrictionCoefficient() {
-        return 0.2F;
+        return 0.001F * (1+brakes);
     }
 
     @Override
@@ -44,6 +45,28 @@ public class Locomotive extends Linker implements Tractor{
     @Override
     public void resetDistanceTraveled() {
 
+    }
+
+    @Override
+    public void incBrakes(int i) {
+        brakes+=i;
+//        if(brakes>10)brakes=10;
+    }
+
+    @Override
+    public void decBrakes(int i) {
+        brakes-=i;
+        if(brakes<0)brakes=0;
+    }
+
+    @Override
+    public int getBrakes() {
+        return brakes;
+    }
+
+    @Override
+    public void setBrakes(int i) {
+        this.brakes=i;
     }
 
     @Override

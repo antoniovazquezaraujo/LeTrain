@@ -75,7 +75,6 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
 
     @Override
     public void addRoute(Dir from, Dir to) {
-        System.out.println("Agregando ruta: " + from + " -> " + to);
         //ruta repetida
         if (dirMap.containsKey(from) && dirMap.get(from).equals(to)) {
             return;
@@ -87,7 +86,6 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
             return;
         }
 
-        System.out.println("Antes de from: " + this.toString());
         //ruta adicional para la ruta from
         if (dirMap.containsKey(from)) {//&& !dirMap.containsKey(to)) {
             originalRoute = new Pair<>(from, dirMap.get(from));
@@ -96,7 +94,6 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
         }
 
 
-        System.out.println("Antes de to: " + this.toString());
         //ruta adicional para la ruta to
         if (dirMap.containsKey(to)) {//&& !dirMap.containsKey(from)) {
             originalRoute = new Pair<>(to, dirMap.get(to));
@@ -106,7 +103,6 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
         // agregamos la nueva ruta en ambos sentidos
         dirMap.put(from, to);
         dirMap.put(to, from);
-        System.out.println("Al final: " + this.toString());
     }
 
     @Override
