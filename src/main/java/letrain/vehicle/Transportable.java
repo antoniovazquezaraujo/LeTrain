@@ -9,7 +9,7 @@ public interface Transportable {
 
     float getAcceleration();
 
-    float getSpeed();
+    void setAcceleration(float speed);
 
     float getDistanceTraveled();
 
@@ -19,6 +19,7 @@ public interface Transportable {
 
     void decBrakes(int i);
 
-    int getBrakes();
-    void setBrakes(int i);
+    float getBrakes();
+
+    void setBrakes(float i);
 }

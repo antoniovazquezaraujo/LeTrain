@@ -24,9 +24,9 @@ public interface Trailer<T extends Track> {
 
     Linker getBack();
 
-    void setDirectorLinker(Linker linker);
+    void setDirectorLinker(Tractor linker);
 
-    Linker getDirectorLinker();
+    Tractor getDirectorLinker();
 
     List<Tractor> getTractors();
 
@@ -46,7 +46,7 @@ public interface Trailer<T extends Track> {
 
 //    float getAcceleration();
 
-//    float getSpeed();
+//    float getAcceleration();
 
 //    float getDistanceTraveled();
 

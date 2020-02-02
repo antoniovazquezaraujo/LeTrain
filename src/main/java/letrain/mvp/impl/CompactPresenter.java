@@ -8,7 +8,6 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
@@ -106,6 +105,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 break;
             case F5:
                 model.setMode(MAKE_TRAINS);
+                newTrain=null;
                 break;
         }
 
@@ -116,25 +116,41 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             case TRAINS:
                 this.newTrain = null;
                 switch (keyEvent.getCode()) {
-                    case SPACE:
+                    case HOME:
                         if (model.getSelectedTrain() != null) {
-                            if (model.getSelectedTrain().getAcceleration() <= 0.001) {
-                                model.getSelectedTrain().reverse();
-                            }else{
-                                model.getSelectedTrain().setForce(0);
+                            if(model.getSelectedTrain().getAcceleration()<0.1f) {
+                                model.getSelectedTrain().setMotorInverted(false);
                             }
                         }
                         break;
+                    case END:
+                        if (model.getSelectedTrain() != null) {
+                            if(model.getSelectedTrain().getAcceleration()<0.1f) {
+                                model.getSelectedTrain().setMotorInverted(true);
+                            }
+                        }
+                        break;
+                    case SPACE:
+                        if (model.getSelectedTrain() != null) {
+                            if(Math.abs(model.getSelectedTrain().getForce())!=0) {
+                                model.getSelectedTrain().setBrakesActivated(true);
+                            }else{
+                                model.getSelectedTrain().setBrakesActivated(false);
+                            }
+                            model.getSelectedTrain().setForce(0);
+                            model.getSelectedTrain().setBrakes(0);
+                        }
+                        break;
                     case UP:
-                        if (keyEvent.isShiftDown()) {
-                            decTrainBrakes();
+                        if (model.getSelectedTrain()!=null && model.getSelectedTrain().isBrakesActivated()) {
+                            incTrainBrakes();
                         }else {
                             accelerateTrain();
                         }
                         break;
                     case DOWN:
-                        if (keyEvent.isShiftDown()) {
-                            incTrainBrakes();
+                        if (model.getSelectedTrain()!=null && model.getSelectedTrain().isBrakesActivated()) {
+                            decTrainBrakes();
                         }else {
                             decelerateTrain();
                         }
@@ -286,22 +302,22 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void decelerateTrain() {
         if (model.getSelectedTrain() == null) return;
-        model.getSelectedTrain().decForce(1);
+        model.getSelectedTrain().decForce(10);
     }
 
     private void accelerateTrain() {
         if (model.getSelectedTrain() == null) return;
-        model.getSelectedTrain().incForce(1);
+        model.getSelectedTrain().incForce(10);
     }
 
     private void incTrainBrakes() {
         if (model.getSelectedTrain() == null) return;
-        model.getSelectedTrain().incBrakes(1);
+        model.getSelectedTrain().incBrakes(10);
     }
 
     private void decTrainBrakes() {
         if (model.getSelectedTrain() == null) return;
-        model.getSelectedTrain().decBrakes(1);
+        model.getSelectedTrain().decBrakes(10);
     }
 
     private void mapPageDown() {

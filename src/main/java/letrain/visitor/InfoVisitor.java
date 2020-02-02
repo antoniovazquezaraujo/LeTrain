@@ -12,6 +12,8 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
+import java.text.DecimalFormat;
+
 public class InfoVisitor implements Visitor {
     private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
     public static final Color FORK_COLOR = Color.grayRgb(180);
@@ -119,8 +121,16 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitTrain(Train train) {
-        infoBarText+= "Accel:"+ train.getAcceleration()+ " Force:"+train.getForce()+ " Mass:"+ train.getMass()+ "\n";
-        infoBarText+= "Brakes:"+ train.getBrakes();
+//        infoBarText+= "Accel:"+ train.getAcceleration()+ " Force:"+train.getForce()+ " Mass:"+ train.getMass()+ "\n";
+//        infoBarText+= "Brakes:"+ train.getBrakes();
+        DecimalFormat df = new DecimalFormat("0000.0000");
+        infoBarText+=
+                " F:" + df.format(train.getForce())+
+                " AC:"+ df.format(train.getAcceleration())+
+                " DT:"+ df.format(train.getDistanceTraveled())+
+                " BR:"+ df.format(train.getBrakes())+
+                " RE:"+ train.isReversed();
+
 //        train.getLinkers().forEach(t->t.accept(this));
     }
 

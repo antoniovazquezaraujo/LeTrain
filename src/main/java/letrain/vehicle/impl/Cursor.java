@@ -31,13 +31,14 @@ public class Cursor extends Vehicle {
         visitor.visitCursor(this);
     }
 
+
     @Override
-    public float getAcceleration() {
-        return 0;
+    public void setAcceleration(float speed) {
+
     }
 
     @Override
-    public float getSpeed() {
+    public float getAcceleration() {
         return 0;
     }
 
@@ -62,12 +63,12 @@ public class Cursor extends Vehicle {
     }
 
     @Override
-    public int getBrakes() {
+    public float getBrakes() {
         return 0;
     }
 
     @Override
-    public void setBrakes(int i) {
+    public void setBrakes(float i) {
 
     }
 }

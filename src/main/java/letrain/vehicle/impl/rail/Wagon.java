@@ -5,7 +5,7 @@ import letrain.vehicle.impl.Linker;
 
 public class Wagon extends Linker {
     String aspect;
-    int brakes;
+    float brakes;
     public Wagon(String aspect) {
         this.aspect = aspect;
     }
@@ -22,16 +22,16 @@ public class Wagon extends Linker {
     }
     @Override
     public float getFrictionCoefficient() {
-        return 0.001F * (1+ brakes);
+        return 0.0001F;
+    }
+
+    @Override
+    public void setAcceleration(float speed) {
+
     }
 
     @Override
     public float getAcceleration() {
-        return 0;
-    }
-
-    @Override
-    public float getSpeed() {
         return 0;
     }
 
@@ -47,7 +47,7 @@ public class Wagon extends Linker {
     @Override
     public void incBrakes(int i) {
         brakes+=i;
-//        if(brakes>10)brakes=10;
+        if(brakes>10)brakes=10;
     }
 
     @Override
@@ -57,13 +57,15 @@ public class Wagon extends Linker {
     }
 
     @Override
-    public int getBrakes() {
+    public float getBrakes() {
         return brakes;
     }
 
     @Override
-    public void setBrakes(int i) {
+    public void setBrakes(float i) {
         this.brakes=i;
+        if(brakes>10)brakes=10;
+        if(brakes<0)brakes=0;
     }
 
     /***********************************************************

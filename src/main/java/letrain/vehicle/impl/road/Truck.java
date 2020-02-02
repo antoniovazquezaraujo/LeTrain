@@ -29,8 +29,19 @@ public class Truck implements Tractor {
     }
 
     @Override
-    public boolean reverse() {
+    public void setMotorInverted(boolean inverted) {
+
+    }
+
+    @Override
+    public boolean isMotorInverted() {
         return false;
+    }
+
+
+    @Override
+    public void setReversed(boolean reversed) {
+
     }
 
     @Override

@@ -1,5 +1,6 @@
 package letrain.vehicle.impl;
 
+import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.track.Trackeable;
 import letrain.vehicle.Vehicle;
@@ -19,13 +20,4 @@ public abstract class Tracker
         return this.track;
     }
 
-    @Override
-    public boolean reverse() {
-        if(track!=null) {
-            setDir(getTrack().getDir(dir));
-        }else{
-            setDir(dir.inverse());
-        }
-        return super.reverse();
-    }
-}
+ }

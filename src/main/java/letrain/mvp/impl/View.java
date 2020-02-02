@@ -25,7 +25,6 @@ public class View extends BorderPane implements letrain.mvp.View {
     public View(GameViewListener gameViewListener) {
         viewGrid = new ViewGrid();
         this.gameViewListener = gameViewListener;
-//        setTop(createMenuBar());
         setCenter(viewGrid);
         HBox bottomBox = new HBox();
         statusBar.setWrappingWidth(100);
@@ -39,29 +38,11 @@ public class View extends BorderPane implements letrain.mvp.View {
         this.requestFocus();
         statusBar.setFill(Color.GREEN);
         statusBar.setStroke(Color.GREEN);
-        statusBar.setFont(new Font("Lucida Sans Unicode", 10));
+        statusBar.setFont(new Font("Lucida Sans Unicode", 15));
         infoBar.setFill(Color.YELLOW);
         infoBar.setStroke(Color.YELLOW);
-        infoBar.setFont(new Font("Lucida Sans Unicode", 10));
+        infoBar.setFont(new Font("Lucida Sans Unicode", 15));
     }
-
-//    public Node createMenuBar() {
-//        MenuBar menuBar = new MenuBar();
-//        Menu menu = new Menu("Actions");
-//        menuBar.getMenus().add(menu);
-//        for (Model.GameMode option : Model.GameMode.values()) {
-//            MenuItem item = new MenuItem(option.getName());
-//            menu.getItems().add(item);
-//            item.setOnAction(t -> {
-//                doCommand(option);
-//            });
-//        }
-//        return menuBar;
-//    }
-
-//    public void doCommand(Model.GameMode mode) {
-//        gameViewListener.onGameModeSelected(mode);
-//    }
 
     private void addEventListener() {
         addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {

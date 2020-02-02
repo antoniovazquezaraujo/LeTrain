@@ -63,14 +63,14 @@ public class RailTrackMaker {
                 break;
             case PAGE_UP:
                 if (keyEvent.isControlDown()) {
-                    mapPageRight();
+                    mapPageLeft();
                 } else {
                     mapPageUp();
                 }
                 break;
             case PAGE_DOWN:
                 if (keyEvent.isControlDown()) {
-                    mapPageLeft();
+                    mapPageRight();
                 } else {
                     mapPageDown();
                 }

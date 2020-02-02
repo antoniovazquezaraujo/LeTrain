@@ -36,7 +36,7 @@ public abstract class Vehicle<T extends Track>
 
     @Override
     public float getMass() {
-        return 10000.0F;
+        return 1000.0F;
     }
 
     @Override
@@ -111,11 +111,10 @@ public abstract class Vehicle<T extends Track>
      * Reversible implementation
      **********************************************************/
 
+
     @Override
-    public boolean reverse() {
-        boolean ret = reversed;
-        reversed = !reversed;
-        return ret;
+    public void setReversed(boolean reversed){
+        this.reversed = reversed;
     }
 
     @Override

@@ -54,7 +54,12 @@ public class RoadTrailer implements Trailer{
     }
 
     @Override
-    public Linker getDirectorLinker() {
+    public void setDirectorLinker(Tractor linker) {
+
+    }
+
+    @Override
+    public Tractor getDirectorLinker() {
         return null;
     }
 
@@ -73,10 +78,7 @@ public class RoadTrailer implements Trailer{
         return 0;
     }
 
-    @Override
-    public void setDirectorLinker(Linker linker) {
 
-    }
 
     @Override
     public float getFrictionForce() {
