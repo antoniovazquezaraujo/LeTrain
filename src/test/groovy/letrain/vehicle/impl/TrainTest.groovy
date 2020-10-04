@@ -99,7 +99,7 @@ class TrainTest extends Specification {
         when:
         train1.popFront()
         then:
-        train1.isEmpty()
+        !train1.getFront().equals(wagon1_1)
 
         when:
         trains.remove(0)
@@ -111,24 +111,21 @@ class TrainTest extends Specification {
     def "Crear otro tren a partir de dividir uno"() {
         when:
         trains.add(train1)
-        train1.pushFront(wagon1_1)
-        train1.pushFront(wagon1_2)
-        Train train2 = train1.divide(wagon1_1)
+        Train train3 = train1.divide(wagon1_1)
         then:
-        train1.size().equals(1)
-        train2.size().equals(1)
+        train1.size().equals(2)
+        train3.size().equals(1)
     }
 
     def "Unir dos trenes"() {
         when:
-        train1.pushFront(wagon1_1)
-        Train train2 = new Train()
-        train2.pushFront(wagon1_2)
+        Train train3 = new Train()
+        train3.pushFront(wagon1_2)
 
-        train1.joinTrailerBack(train2)
+        train1.joinTrailerBack(train3)
         then:
-        train2.isEmpty()
-        train1.size().equals(2)
+        train3.isEmpty()
+        train1.size().equals(4)
 
     }
 
@@ -149,7 +146,11 @@ class TrainTest extends Specification {
     }
 
     def "Obtener la masa de todo un tren"() {
-        expect:
+        when:
+        train1.popBack()
+        train1.popBack()
+        train1.popBack()
+        then:
         compare(train1.getMass(), 0.0F) <= PRECISION
 
         when:
@@ -175,20 +176,23 @@ class TrainTest extends Specification {
 
     def "suma de fuerzas en un tren"() {
         when:
-        locomotive1.setForce(20)
-        train1.pushFront(locomotive1)
-        locomotive2.setForce(20)
-        train1.pushFront(locomotive2)
+        Train train = new Train();
+        Locomotive l1 = new Locomotive('X')
+        Locomotive l2 = new Locomotive('Y')
+        train.pushFront(l1)
+        train.pushFront(l2)
+        l1.setForce(20)
+        l2.setForce(20)
 
         then:
-        train1.getTractors().contains(locomotive1)
-        train1.getTractors().contains(locomotive2)
-        compare(train1.getForce(), (float) (locomotive1.getForce() + locomotive2.getForce())) <= PRECISION
+        train.getTractors().contains(l1)
+        train.getTractors().contains(l2)
+        compare(train.getForce(), (float) (l1.getForce() + l2.getForce())) <= PRECISION
 
         when:
-        train1.applyForce()
+        train.applyForce()
         then:
-        compare(train1.getForce(), (float) ((locomotive1.getForce() + locomotive2.getForce()))) <= PRECISION
+        compare(train.getForce(), (float) ((l1.getForce() + l2.getForce()))) <= PRECISION
     }
 
     def "aceleración es fuerza dividida por masa"() {
@@ -213,41 +217,44 @@ class TrainTest extends Specification {
 
     def "velocidad varía en cada turno según aceleración"() {
         when:
-        locomotive1.setForce(20)
-        train1.pushFront(locomotive1)
-        locomotive2.setForce(20)
-        train1.pushFront(locomotive2)
+        Train train = new Train()
+        Locomotive l1 = new Locomotive('X')
+        Locomotive l2 = new Locomotive('Y')
+        l1.setForce(20)
+        train.pushFront(l1)
+        l2.setForce(20)
+        train.pushFront(l2)
         then:
-        compare(train1.getMass(), (float) (locomotive1.getMass() + locomotive2.getMass())) < PRECISION
-        compare(train1.getAcceleration(), 0.0f) <= PRECISION
-        compare(train1.getDistanceTraveled(), 0.0f) <= PRECISION
+        compare(train.getMass(), (float) (l1.getMass() + l2.getMass())) < PRECISION
+        compare(train.getAcceleration(), 0.0f) <= PRECISION
+        compare(train.getDistanceTraveled(), 0.0f) <= PRECISION
 
         when:
-        train1.applyForce()
+        train.applyForce()
         then:
-        compare(train1.getAcceleration(), train1.getAcceleration()) <= PRECISION
-        compare(train1.getDistanceTraveled(), train1.getAcceleration()) <= PRECISION
+        compare(train.getAcceleration(), train.getAcceleration()) <= PRECISION
+        compare(train.getDistanceTraveled(), train.getAcceleration()) <= PRECISION
 
 
         //train is moved
         when:
-        train1.resetDistanceTraveled()
+        train.resetDistanceTraveled()
         then:
-        compare(train1.getDistanceTraveled(), 0.0) <= PRECISION
+        compare(train.getDistanceTraveled(), 0.0) <= PRECISION
 
         when:
-        train1.applyForce()
+        train.applyForce()
         then:
-        compare(train1.getAcceleration(), train1.getAcceleration()) <= PRECISION
-        compare(train1.getDistanceTraveled(), train1.getAcceleration()) <= PRECISION
+        compare(train.getAcceleration(), train.getAcceleration()) <= PRECISION
+        compare(train.getDistanceTraveled(), train.getAcceleration()) <= PRECISION
 
         when:
-        locomotive1.setForce(0)
-        locomotive2.setForce(0)
-        train1.applyForce()
+        l1.setForce(0)
+        l2.setForce(0)
+        train.applyForce()
 
         then:
-        compare(train1.getForce(), (float) (train1.getFrictionForce())) <= PRECISION
+        compare(train.getForce(), (float) (train.getFrictionForce())) <= PRECISION
 
     }
 
@@ -261,40 +268,43 @@ class TrainTest extends Specification {
 
     def "mover el tren por la vía"() {
         given:
-        Model model = new Model();
-        View view = new letrain.mvp.impl.View();
+        Model model = new Model()
+        View view = GroovyMock(View)
         RailTrack track
         RailMap map = model.getRailMap()
         RailTrackMaker maker = new RailTrackMaker(model, view)
         model.setMode(letrain.mvp.Model.GameMode.TRACKS)
         model.getCursor().setDir(Dir.E)
+        model.getCursor().setPosition(new Point(0,0))
         for (int n = 0; n < 8; n++) {
-            maker.onChar()
-            maker.rotateCursorRight()
+            maker.createTrack()
+//            maker.cursorTurnRight()
         }
-        train1.pushBack(wagon1_1)
-        train1.pushBack(wagon1_2)
-        train1.pushFront(locomotive1)
-        train1.assignDefaultDirectorLinker()
+        Train train = new Train()
+        train.pushBack(wagon1_1)
+        train.pushBack(wagon1_2)
+        train.pushFront(locomotive1)
+        train.assignDefaultDirectorLinker()
         when:
         map.getTrackAt(4, 0).enterLinkerFromDir(Dir.W, locomotive1)
         map.getTrackAt(3, 0).enterLinkerFromDir(Dir.W, wagon1_1)
         map.getTrackAt(2, 0).enterLinkerFromDir(Dir.W, wagon1_2)
+        locomotive1.setDir(Dir.E)
         then:
         locomotive1.getPosition().getX().equals(4)
         wagon1_1.getPosition().getX().equals(3)
         wagon1_2.getPosition().getX().equals(2)
 
         when:
-        train1.move()
+        train.advance()
         then:
         locomotive1.getPosition().getX().equals(5)
         wagon1_1.getPosition().getX().equals(4)
         wagon1_2.getPosition().getX().equals(3)
 
         when:
-        train1.reverse()
-        train1.move()
+        train.setReversed(true)
+        train.advance()
         then:
         locomotive1.getPosition().getX().equals(4)
         wagon1_1.getPosition().getX().equals(3)

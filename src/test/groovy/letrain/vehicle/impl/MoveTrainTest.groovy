@@ -39,8 +39,8 @@ class MoveTrainTest extends Specification implements TestCircuit1Trait {
         when:
         train1.advance()
         then:
+        wagon1.getPosition().getY().equals(0)
         wagon1.getPosition().getX().equals(9)
-        wagon1.getPosition().getY().equals(-1)
         locomotive1.getPosition().getX().equals(10)
         wagon2.getPosition().getX().equals(11)
     }

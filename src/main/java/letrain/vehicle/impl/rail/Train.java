@@ -5,6 +5,7 @@ import letrain.map.UVector;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Transportable;
+import letrain.vehicle.Vehicle;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;
@@ -60,7 +61,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
 
     @Override
     public Linker popFront() {
-        Linker linker = linkers.removeLast();
+        Linker linker = linkers.removeFirst();
         assignDefaultDirectorLinker();
         return linker;
     }
@@ -183,7 +184,37 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
         }
         setDirPushedLinkers(normalSense);
         setDirTowedLinkers(normalSense);
+        if (getDirectorLinker().isReversed()) {
+            Dir directorDir = ((Vehicle)getDirectorLinker()).getDir();
+            ((Vehicle)getDirectorLinker()).setDir(directorDir.inverse());
+        }
+
         return moveLinkers(normalSense);
+    }
+
+    private void setDirTractors(boolean isNormalSense) {
+        Iterator<Linker> iterator;
+        if (!isNormalSense) {
+            iterator = getLinkers().iterator();
+        } else {
+            iterator = getLinkers().descendingIterator();
+        }
+
+        Tractor tractor = getDirectorLinker();
+        while (iterator.hasNext()) {
+            Linker next = iterator.next();
+            if (next == tractor) {
+                break;
+            }
+        }
+        Dir pushDir = ((Locomotive) tractor).getDir();
+
+        while (iterator.hasNext()) {
+            Linker nextLinker = iterator.next();
+            Track nextTrack = nextLinker.getTrack();
+            nextLinker.setDir(nextTrack.getDir(pushDir));
+            pushDir = nextLinker.getDir().inverse();
+        }
     }
 
     private void setDirPushedLinkers(boolean isNormalSense) {
@@ -202,11 +233,12 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
             }
         }
         Dir pushDir = ((Locomotive) tractor).getDir();
+
         while (iterator.hasNext()) {
-            Linker next = iterator.next();
-            Track nextTrack = next.getTrack();
-            next.setDir(nextTrack.getDir(pushDir.inverse()));
-            pushDir = next.getDir();
+            Linker nextLinker = iterator.next();
+            Track nextTrack = nextLinker.getTrack();
+            nextLinker.setDir(nextTrack.getDir(pushDir));
+            pushDir = nextLinker.getDir().inverse();
         }
     }
 
@@ -226,9 +258,9 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
         }
         Track oldTrack = ((Locomotive) tractor).getTrack();
         while (iterator.hasNext()) {
-            Linker next = iterator.next();
-            next.setDir(next.getPosition().locate(oldTrack.getPosition()));
-            oldTrack = next.getTrack();
+            Linker nextLinker = iterator.next();
+            nextLinker.setDir(nextLinker.getPosition().locate(oldTrack.getPosition()));
+            oldTrack = nextLinker.getTrack();
         }
     }
 
@@ -383,8 +415,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     @Override
     public void setReversed(boolean reversed) {
         getTractors()
-                .stream()
-                .forEach(t -> t.setReversed(reversed));
+            .stream()
+            .forEach(t-> t.setReversed(reversed));
 
     }
 
