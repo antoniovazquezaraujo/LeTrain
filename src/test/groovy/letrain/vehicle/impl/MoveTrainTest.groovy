@@ -1,6 +1,6 @@
-package groovy.letrain.vehicle.impl
+package letrain.vehicle.impl
 
-import groovy.letrain.map.TestCircuit1Trait
+import letrain.map.TestCircuit1Trait
 import letrain.map.Dir
 import letrain.vehicle.impl.Tractor
 import letrain.vehicle.impl.rail.Locomotive

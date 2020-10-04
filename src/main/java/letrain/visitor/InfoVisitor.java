@@ -3,6 +3,7 @@ package letrain.visitor;
 import javafx.scene.paint.Color;
 import letrain.map.*;
 import letrain.mvp.Model;
+import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
 import letrain.track.Track;
 import letrain.track.rail.*;
@@ -18,6 +19,7 @@ public class InfoVisitor implements Visitor {
     private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
     public static final Color FORK_COLOR = Color.grayRgb(180);
     String infoBarText = "";
+    String helpBarText = "";
     private final View view;
 
     public InfoVisitor(View view) {
@@ -56,6 +58,32 @@ public class InfoVisitor implements Visitor {
         }
         visitCursor(model.getCursor());
         view.setInfoBarText(infoBarText);
+        view.setHelpBarText(getModeHelp(model.getMode()));
+    }
+
+    private String getModeHelp(GameMode mode) {
+        String ret="F1:tracks. F2:trains. F3:forks. F4:load train. F5:make train.\n";
+        switch(mode){
+            case TRACKS:
+                ret+= "LEFT/RIGHT:rotate cursor. UP/DOWN:forward/backward. SHIFT+UP create rail. CTRL+UP: delete rail";
+                break;
+            case TRAINS:
+                ret+= "HOME/END:invert motor. SPACE:toggle brakes. UP:inc brakes/speed. DOWN:dec brakes/speed. LEFT:prev train. RIGHT:next train. PAGE-U/D:map up/down. CTRL+PAGE-U/D:map left/right." ;
+                break;
+            case FORKS:
+                ret+= "UP/DOWN:toggle fork. LEFT:previous fork. RIGHT:next fork.";
+                break;
+            case CREATE_LOAD_PLATFORM:
+                ret+= "UP:create platform";
+                break;
+            case LOAD_TRAINS:
+                ret+= "UP:load. DOWN:unload. LEFT:prev platform. RIGHT:next platform.";
+                break;
+            case MAKE_TRAINS:
+                ret+= "[A-Z]:create locomotive. [a-z]:create wagon.";
+                break;
+        }
+        return ret;
     }
 
     @Override
@@ -66,7 +94,7 @@ public class InfoVisitor implements Visitor {
     @Override
     public void visitRailTrack(RailTrack track) {
         infoBarText+="Track:["+track.getPosition().getX()+"," + track.getPosition().getY()+"]"+ getRouterAspect(track.getRouter())+ " "+
-                getTrackConnectionsAspect(track)+ "\n";
+                getTrackConnectionsAspect(track)+ " ";
     }
 
     private String getRouterAspect(Router router) {
@@ -93,7 +121,7 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        infoBarText+="Track:["+track.getPosition().getX()+"," + track.getPosition().getY()+"]"+"\n"+ getDynamicRouterAspect((DynamicRouter) track.getRouter())+ "\n"+getTrackConnectionsAspect(track)+"\n";
+        infoBarText+="Track:["+track.getPosition().getX()+"," + track.getPosition().getY()+"] "+ getDynamicRouterAspect((DynamicRouter) track.getRouter())+ " "+getTrackConnectionsAspect(track)+" ";
     }
 
 

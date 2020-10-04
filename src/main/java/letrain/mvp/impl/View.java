@@ -1,5 +1,6 @@
 package letrain.mvp.impl;
 
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -7,6 +8,8 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
@@ -15,33 +18,60 @@ import letrain.mvp.Model;
 import letrain.mvp.GameViewListener;
 
 
-public class View extends BorderPane implements letrain.mvp.View {
+public class View extends StackPane implements letrain.mvp.View {
     private final GameViewListener gameViewListener;
     private final ViewGrid viewGrid;
     private Point position = new Point(0, 0); // scroll position of the viewer
-    private Text statusBar = new Text();
-    private Text infoBar = new Text();
+    private Text statusBar;
+    private Text infoBar;
+    private Text helpBar;
 
     public View(GameViewListener gameViewListener) {
         viewGrid = new ViewGrid();
         this.gameViewListener = gameViewListener;
-        setCenter(viewGrid);
-        HBox bottomBox = new HBox();
-        statusBar.setWrappingWidth(100);
-//        infoBar.setWrappingWidth(1200);
-        bottomBox.getChildren().add(statusBar);
-        bottomBox.getChildren().add(infoBar);
-        setBottom(bottomBox);
+//        setCenter(viewGrid);
+
+        getChildren().add(viewGrid);
+        StackPane.setAlignment(viewGrid, Pos.CENTER);
+
+        statusBar = new Text();
+        statusBar.setFill(Color.WHITE);
+        statusBar.setFont(new Font("Lucida Sans Unicode", 12));
+        statusBar.setWrappingWidth(200);
+
+        infoBar = new Text();
+        infoBar.setFill(Color.WHITE);
+        infoBar.setFont(new Font("Lucida Sans Unicode", 12));
+        infoBar.setWrappingWidth(1000);
+
+        helpBar = new Text();
+        helpBar.setFill(Color.WHITE);
+        helpBar.setFont(new Font("Lucida Sans Unicode", 12));
+        helpBar.setWrappingWidth(1200);
+
+        HBox infoAndStatusBox = new HBox();
+        infoAndStatusBox.setPrefHeight(50);
+        infoAndStatusBox.getChildren().add(statusBar);
+        infoAndStatusBox.getChildren().add(infoBar);
+        HBox helpBox = new HBox();
+        helpBox.setPrefHeight(50);
+        helpBox.getChildren().add(helpBar);
+
+        VBox bottomBox = new VBox();
+        bottomBox.setPrefHeight(100);
+        bottomBox.getChildren().add(infoAndStatusBox);
+        bottomBox.getChildren().add(helpBox);
+        getChildren().add(bottomBox);
+        bottomBox.setMaxHeight(100);
+        StackPane.setAlignment(bottomBox, Pos.BOTTOM_CENTER);
+
+
+
+//        setBottom(bottomBox);
         this.setFocusTraversable(true);
         clear();
         addEventListener();
         this.requestFocus();
-        statusBar.setFill(Color.GREEN);
-        statusBar.setStroke(Color.GREEN);
-        statusBar.setFont(new Font("Lucida Sans Unicode", 15));
-        infoBar.setFill(Color.YELLOW);
-        infoBar.setStroke(Color.YELLOW);
-        infoBar.setFont(new Font("Lucida Sans Unicode", 15));
     }
 
     private void addEventListener() {
@@ -58,7 +88,7 @@ public class View extends BorderPane implements letrain.mvp.View {
     @Override
     public void setMapScrollPage(Point pos) {
         viewGrid.setMapScrollPage(pos);
-        setStatusBarText("Página: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
+        setStatusBarText("Page: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
     }
 
     public void setStatusBarText(String text){
@@ -67,6 +97,7 @@ public class View extends BorderPane implements letrain.mvp.View {
     public void setInfoBarText(String text){
         infoBar.setText(text);
     }
+    public void setHelpBarText(String text){helpBar.setText(text);}
 
     @Override
     public void paint() {
@@ -91,7 +122,7 @@ public class View extends BorderPane implements letrain.mvp.View {
     @Override
     public void setPageOfPos(int x, int y) {
         viewGrid.setPageOfPos(x, y);
-        setStatusBarText("Página: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
+        setStatusBarText("Page: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
     }
 
     @Override

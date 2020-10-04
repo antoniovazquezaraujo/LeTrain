@@ -1,4 +1,4 @@
-package groovy.letrain.map
+package letrain.map
 
 import letrain.map.*
 import letrain.mvp.impl.CompactPresenter

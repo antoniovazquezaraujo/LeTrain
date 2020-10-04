@@ -27,4 +27,6 @@ public interface View {
     void setStatusBarText(String info);
 
     void setInfoBarText(String info);
+
+    void setHelpBarText(String info);
 }

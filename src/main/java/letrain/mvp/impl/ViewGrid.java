@@ -122,4 +122,8 @@ public class ViewGrid extends Pane implements View {
 
     }
 
+    @Override
+    public void setHelpBarText(String info) {
+
+    }
 }
