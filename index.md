@@ -5,7 +5,7 @@ The idea is to play in a plain text mode screen (sort of) with trains, rails, fo
 This is a work in progress, so there's not much to see yet.
 Here is an short example video:
 
-![Letrain example screen]https://youtu.be/2WVScFIG4_E
+https://youtu.be/2WVScFIG4_E
 
 ![LeTrain example screen](LeTrainExample.png)
 
