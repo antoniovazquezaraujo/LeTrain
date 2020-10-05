@@ -7,7 +7,7 @@ Here is an short example video:
 
 ![Letrain example screen](https://youtu.be/2WVScFIG4_E)
 
-![LeTrain example screen](/LeTrainExample.png)
+![LeTrain example screen](LeTrainExample.png)
 Format: ![Alt Text](https://youtu.be/2WVScFIG4_E)
 
 ### Evolution
