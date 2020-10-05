@@ -10,7 +10,7 @@ Here is an short [example video](https://youtu.be/2WVScFIG4_E)
 
 ### Evolution
 
-The C++ version worked in a pure ascii terminal. The Java version is using a simple terminal emulator made with JavaFX. But the idea is to return to the terminal, may be using the jna library https://github.com/java-native-access/jna.
+The C++ version worked in a pure ascii terminal. The Java version is using a simple terminal emulator made with JavaFX. But the idea is to return to the terminal, may be using the ![jna library](https://github.com/java-native-access/jna).
 
  
 
