@@ -5,7 +5,7 @@ import javafx.util.Pair;
 import java.util.function.Consumer;
 
 public interface Router {
-    Dir getDir(Dir dir);
+    Dir getDirWhenEnteringFrom(Dir dir);
 
     Dir getFirstOpenDir();
 

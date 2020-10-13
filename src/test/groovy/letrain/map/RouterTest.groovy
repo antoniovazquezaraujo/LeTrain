@@ -11,8 +11,8 @@ class RouterTest extends Specification {
         expect:
         router.addRoute(a, b)
         router.addRoute(b, a)
-        router.getDir(a).equals(b)
-        router.getDir(b).equals(a)
+        router.getDirWhenEnteringFrom(a).equals(b)
+        router.getDirWhenEnteringFrom(b).equals(a)
         where:
         a      | b
         Dir.N  | Dir.S
@@ -57,8 +57,8 @@ class RouterTest extends Specification {
         router.addRoute(Dir.E, Dir.W)
 
         then:
-        router.getDir(Dir.E) == Dir.W
-        router.getDir(Dir.N) == null
+        router.getDirWhenEnteringFrom(Dir.E) == Dir.W
+        router.getDirWhenEnteringFrom(Dir.N) == null
     }
 
     def "test remove Route"() {
@@ -67,7 +67,7 @@ class RouterTest extends Specification {
         router.removeRoute(Dir.E, Dir.W)
 
         then:
-        router.getDir(Dir.E) == null
+        router.getDirWhenEnteringFrom(Dir.E) == null
     }
 
 
@@ -76,10 +76,10 @@ class RouterTest extends Specification {
         router.addRoute(Dir.NE, Dir.SW)
         router.addRoute(Dir.N, Dir.S)
         then:
-        router.getDir(Dir.N) == Dir.S
-        router.getDir(Dir.S) == Dir.N
-        router.getDir(Dir.NE) == Dir.SW
-        router.getDir(Dir.SW) == Dir.NE
+        router.getDirWhenEnteringFrom(Dir.N) == Dir.S
+        router.getDirWhenEnteringFrom(Dir.S) == Dir.N
+        router.getDirWhenEnteringFrom(Dir.NE) == Dir.SW
+        router.getDirWhenEnteringFrom(Dir.SW) == Dir.NE
         router.isStraight() == false
         router.isCurve() == false
         router.isCross() == true
@@ -148,15 +148,15 @@ class RouterTest extends Specification {
         when:
         router.addRoute(Dir.E, Dir.W)
         then:
-        router.getDir(Dir.E) == Dir.W
-        router.getDir(Dir.W) == Dir.E
+        router.getDirWhenEnteringFrom(Dir.E) == Dir.W
+        router.getDirWhenEnteringFrom(Dir.W) == Dir.E
         router.isStraight() == true
 
         when:
         router.addRoute(Dir.W, Dir.NE)
         then:
-        router.getDir(Dir.E) == Dir.W
-        router.getDir(Dir.W) == Dir.NE
+        router.getDirWhenEnteringFrom(Dir.E) == Dir.W
+        router.getDirWhenEnteringFrom(Dir.W) == Dir.NE
         router.isStraight() == false
         router.isCurve() == false
 
@@ -164,19 +164,19 @@ class RouterTest extends Specification {
 
         then:
         router.isUsingAlternativeRoute()
-        router.getDir(Dir.W).equals(Dir.NE)
+        router.getDirWhenEnteringFrom(Dir.W).equals(Dir.NE)
 
         when:
         router.setNormalRoute()
         then:
         !router.isUsingAlternativeRoute()
-        router.getDir(Dir.W).equals(Dir.E)
+        router.getDirWhenEnteringFrom(Dir.W).equals(Dir.E)
 
         when:
         router.setAlternativeRoute()
         then:
         router.isUsingAlternativeRoute()
-        router.getDir(Dir.W).equals(Dir.NE)
+        router.getDirWhenEnteringFrom(Dir.W).equals(Dir.NE)
 
     }
 

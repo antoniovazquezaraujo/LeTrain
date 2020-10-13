@@ -22,7 +22,7 @@ public class TrackDirector<T extends Track> implements Serializable {
     public void enterLinkerFromDir(T track, Dir d, Linker vehicle) {
         vehicle.setTrack(track);
         vehicle.setPosition(track.getPosition());
-        vehicle.setDir(track.getRouter().getDir(d));
+        vehicle.setDir(track.getRouter().getDirWhenEnteringFrom(d));
         track.setLinker(vehicle);
     }
 
@@ -38,7 +38,7 @@ public class TrackDirector<T extends Track> implements Serializable {
 
     public boolean canExit(T track, Dir d) {
         if (track.getLinker() != null) {
-            Dir exitDir = track.getRouter().getDir(track.getLinker().getDir());
+            Dir exitDir = track.getRouter().getDirWhenEnteringFrom(track.getLinker().getDir());
             T target = (T) track.getConnected(d);
             return target != null && target.canEnter(d, track.getLinker());
         }

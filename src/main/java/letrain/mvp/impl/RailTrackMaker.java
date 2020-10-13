@@ -181,7 +181,7 @@ public class RailTrackMaker {
             //conectamos el track con oldTrack en oldDir, bien.
             track.connect(oldDir, oldTrack);
             //conectamos a oldTrack con track, en la inversa
-            oldTrack.connect(track.getDir(dir).inverse(), track);
+            oldTrack.connect(track.getDirWhenEnteringFrom(dir).inverse(), track);
         }
 
         Point newPos = new Point(cursorPosition);

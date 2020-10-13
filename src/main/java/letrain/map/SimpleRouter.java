@@ -63,7 +63,7 @@ public class SimpleRouter implements Serializable, Router {
     }
 
     @Override
-    public Dir getDir(Dir dir) {
+    public Dir getDirWhenEnteringFrom(Dir dir) {
         return dirMap.get(dir);
     }
 
