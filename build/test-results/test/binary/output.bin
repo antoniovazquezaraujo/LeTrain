@@ -1,0 +1,3211 @@
+)(Acelerando
+)(Antes: 0.0
+)(Después:               0.0
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               0.0
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               0.0
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               0.0
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               0.0
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               0.0
+)(FTransmitiendo fuerza :9900.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               2.8285713
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               2.8285713
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               2.8285713
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               2.8285713
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               2.8285713
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               2.8285713
+)(GTransmitiendo fuerza :19800.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               5.6571426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               5.6571426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               5.6571426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               5.6571426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               5.6571426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               5.6571426
+)(ITransmitiendo fuerza :29700.002 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               8.485715
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               8.485715
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               8.485715
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               8.485715
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               8.485715
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               8.485715
+)(GTransmitiendo fuerza :39600.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               11.314285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               11.314285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               11.314285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               11.314285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               11.314285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               11.314285
+)(GTransmitiendo fuerza :49500.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               14.142858
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               14.142858
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               14.142858
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               14.142858
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               14.142858
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               14.142858
+)(ITransmitiendo fuerza :59399.996 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               16.971428
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               16.971428
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               16.971428
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               16.971428
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               16.971428
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               16.971428
+)(GTransmitiendo fuerza :69300.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               19.8
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               19.8
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               19.8
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               19.8
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               19.8
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               19.8
+)(GTransmitiendo fuerza :79200.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               22.62857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               22.62857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               22.62857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               22.62857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               22.62857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               22.62857
+)(GTransmitiendo fuerza :89100.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               25.457144
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               25.457144
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               25.457144
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               25.457144
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               25.457144
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               25.457144
+)(GTransmitiendo fuerza :99000.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               28.285715
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               28.285715
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               28.285715
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               28.285715
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               28.285715
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               28.285715
+)(HTransmitiendo fuerza :108900.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               31.114286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               31.114286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               31.114286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               31.114286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               31.114286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               31.114286
+)(ITransmitiendo fuerza :118799.99 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               33.942856
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               33.942856
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               33.942856
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               33.942856
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               33.942856
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               33.942856
+)(ITransmitiendo fuerza :128699.99 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               36.771427
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               36.771427
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               36.771427
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               36.771427
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               36.771427
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               36.771427
+)(HTransmitiendo fuerza :138600.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               39.6
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               39.6
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               39.6
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               39.6
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               39.6
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               39.6
+)(HTransmitiendo fuerza :148500.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               42.42857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               42.42857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               42.42857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               42.42857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               42.42857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               42.42857
+)(HTransmitiendo fuerza :158400.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               45.25714
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               45.25714
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               45.25714
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               45.25714
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               45.25714
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               45.25714
+)(HTransmitiendo fuerza :168300.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               48.085712
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               48.085712
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               48.085712
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               48.085712
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               48.085712
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               48.085712
+)(HTransmitiendo fuerza :178200.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               50.914288
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               50.914288
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               50.914288
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               50.914288
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               50.914288
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               50.914288
+)(HTransmitiendo fuerza :188100.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               53.74286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               53.74286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               53.74286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               53.74286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               53.74286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               53.74286
+)(HTransmitiendo fuerza :198000.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               56.57143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               56.57143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               56.57143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               56.57143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               56.57143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               56.57143
+)(HTransmitiendo fuerza :207900.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               59.4
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               59.4
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               59.4
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               59.4
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               59.4
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(Después:               59.4
+)(HTransmitiendo fuerza :217800.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               62.228573
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               62.228573
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               62.228573
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               62.228573
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               62.228573
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               62.228573
+)(HTransmitiendo fuerza :227700.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               65.057144
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               65.057144
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               65.057144
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               65.057144
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               65.057144
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               65.057144
+)(ITransmitiendo fuerza :237599.98 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               67.88571
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               67.88571
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               67.88571
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               67.88571
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               67.88571
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               67.88571
+)(ITransmitiendo fuerza :247499.98 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               70.71428
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               70.71428
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               70.71428
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               70.71428
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               70.71428
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               70.71428
+)(ITransmitiendo fuerza :257399.97 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               73.54285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               73.54285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               73.54285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               73.54285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               73.54285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               73.54285
+)(ITransmitiendo fuerza :267299.94 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               76.371414
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               76.371414
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               76.371414
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               76.371414
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               76.371414
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               76.371414
+)(ITransmitiendo fuerza :277199.94 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               79.19998
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               79.19998
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               79.19998
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               79.19998
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               79.19998
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               79.19998
+)(ITransmitiendo fuerza :287099.94 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               82.02856
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               82.02856
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               82.02856
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               82.02856
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               82.02856
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               82.02856
+)(ITransmitiendo fuerza :296999.94 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               84.857124
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               84.857124
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               84.857124
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               84.857124
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               84.857124
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               84.857124
+)(HTransmitiendo fuerza :306899.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               87.685684
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               87.685684
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               87.685684
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               87.685684
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               87.685684
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               87.685684
+)(ITransmitiendo fuerza :316799.88 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               90.51425
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               90.51425
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               90.51425
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               90.51425
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               90.51425
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               90.51425
+)(ITransmitiendo fuerza :326699.88 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               93.34282
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               93.34282
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               93.34282
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               93.34282
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               93.34282
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               93.34282
+)(ITransmitiendo fuerza :336599.84 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               96.17139
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               96.17139
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               96.17139
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               96.17139
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               96.17139
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               96.17139
+)(ITransmitiendo fuerza :346499.84 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               98.999954
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               98.999954
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               98.999954
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               98.999954
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               98.999954
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               98.999954
+)(HTransmitiendo fuerza :356399.8 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               101.828514
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               101.828514
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               101.828514
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               101.828514
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               101.828514
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               101.828514
+)(ITransmitiendo fuerza :366299.78 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               104.65708
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               104.65708
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               104.65708
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               104.65708
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               104.65708
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               104.65708
+)(ITransmitiendo fuerza :376199.78 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               107.48565
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               107.48565
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               107.48565
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               107.48565
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               107.48565
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               107.48565
+)(ITransmitiendo fuerza :386099.75 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               110.31422
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               110.31422
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               110.31422
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               110.31422
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               110.31422
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               110.31422
+)(ITransmitiendo fuerza :395999.75 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               113.142784
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               113.142784
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               113.142784
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               113.142784
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               113.142784
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               113.142784
+)(ITransmitiendo fuerza :405899.72 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               115.97135
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               115.97135
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               115.97135
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               115.97135
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               115.97135
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               115.97135
+)(ITransmitiendo fuerza :415799.72 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               118.79992
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               118.79992
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               118.79992
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               118.79992
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               118.79992
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               118.79992
+)(ITransmitiendo fuerza :425699.72 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               121.628494
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               121.628494
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               121.628494
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               121.628494
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               121.628494
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)($Después:               121.628494
+)(ITransmitiendo fuerza :435599.72 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               124.45706
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               124.45706
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               124.45706
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               124.45706
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               124.45706
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               124.45706
+)(HTransmitiendo fuerza :445499.7 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               127.28562
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               127.28562
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               127.28562
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               127.28562
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               127.28562
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               127.28562
+)(HTransmitiendo fuerza :455399.7 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               130.1142
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               130.1142
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               130.1142
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               130.1142
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               130.1142
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               130.1142
+)(ITransmitiendo fuerza :465299.72 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               132.94278
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               132.94278
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               132.94278
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               132.94278
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               132.94278
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               132.94278
+)(ITransmitiendo fuerza :475199.78 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               135.77136
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               135.77136
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               135.77136
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               135.77136
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               135.77136
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               135.77136
+)(HTransmitiendo fuerza :485099.8 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               138.59995
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               138.59995
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               138.59995
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               138.59995
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               138.59995
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               138.59995
+)(ITransmitiendo fuerza :494999.84 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               141.42853
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               141.42853
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               141.42853
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               141.42853
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               141.42853
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               141.42853
+)(ITransmitiendo fuerza :504899.88 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               144.25711
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               144.25711
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               144.25711
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               144.25711
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               144.25711
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               144.25711
+)(ITransmitiendo fuerza :514799.94 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               147.0857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               147.0857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               147.0857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               147.0857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               147.0857
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               147.0857
+)(ITransmitiendo fuerza :524699.94 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               149.91426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               149.91426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               149.91426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               149.91426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               149.91426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               149.91426
+)(ITransmitiendo fuerza :534599.94 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               152.74284
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               152.74284
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               152.74284
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               152.74284
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               152.74284
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               152.74284
+)(HTransmitiendo fuerza :544500.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               155.57143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               155.57143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               155.57143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               155.57143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               155.57143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               155.57143
+)(ITransmitiendo fuerza :554400.06 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               158.40002
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               158.40002
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               158.40002
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               158.40002
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               158.40002
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               158.40002
+)(HTransmitiendo fuerza :564300.1 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               161.2286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               161.2286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               161.2286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               161.2286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               161.2286
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               161.2286
+)(HTransmitiendo fuerza :574200.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               164.05719
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               164.05719
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               164.05719
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               164.05719
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               164.05719
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               164.05719
+)(HTransmitiendo fuerza :584100.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               166.88577
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               166.88577
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               166.88577
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               166.88577
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               166.88577
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               166.88577
+)(ITransmitiendo fuerza :594000.25 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               169.71436
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               169.71436
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               169.71436
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               169.71436
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               169.71436
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               169.71436
+)(HTransmitiendo fuerza :603900.3 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               172.54295
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               172.54295
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               172.54295
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               172.54295
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               172.54295
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               172.54295
+)(HTransmitiendo fuerza :613800.4 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               175.37154
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               175.37154
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               175.37154
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               175.37154
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               175.37154
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               175.37154
+)(ITransmitiendo fuerza :623700.44 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               178.20012
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               178.20012
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               178.20012
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               178.20012
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               178.20012
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               178.20012
+)(ITransmitiendo fuerza :633600.44 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               181.0287
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               181.0287
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               181.0287
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               181.0287
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               181.0287
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               181.0287
+)(HTransmitiendo fuerza :643500.5 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               183.85728
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               183.85728
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               183.85728
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               183.85728
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               183.85728
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               183.85728
+)(ITransmitiendo fuerza :653400.56 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               186.68588
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               186.68588
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               186.68588
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               186.68588
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               186.68588
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               186.68588
+)(HTransmitiendo fuerza :663300.6 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               189.51447
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               189.51447
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               189.51447
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               189.51447
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               189.51447
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               189.51447
+)(HTransmitiendo fuerza :673200.7 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               192.34305
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               192.34305
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               192.34305
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               192.34305
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               192.34305
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               192.34305
+)(HTransmitiendo fuerza :683100.7 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               195.17163
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               195.17163
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               195.17163
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               195.17163
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               195.17163
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               195.17163
+)(ITransmitiendo fuerza :693000.75 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               198.00021
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               198.00021
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               198.00021
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               198.00021
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               198.00021
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               198.00021
+)(HTransmitiendo fuerza :702900.8 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               200.8288
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               200.8288
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               200.8288
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               200.8288
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               200.8288
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               200.8288
+)(HTransmitiendo fuerza :712800.8 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               203.65738
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               203.65738
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               203.65738
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               203.65738
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               203.65738
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               203.65738
+)(HTransmitiendo fuerza :722700.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               206.48596
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               206.48596
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               206.48596
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               206.48596
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               206.48596
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               206.48596
+)(ITransmitiendo fuerza :732600.94 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               209.31456
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               209.31456
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               209.31456
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               209.31456
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               209.31456
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               209.31456
+)(HTransmitiendo fuerza :742501.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               212.14314
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               212.14314
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               212.14314
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               212.14314
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               212.14314
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               212.14314
+)(ITransmitiendo fuerza :752401.06 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               214.97173
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               214.97173
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               214.97173
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               214.97173
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               214.97173
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               214.97173
+)(ITransmitiendo fuerza :762301.06 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               217.80031
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               217.80031
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               217.80031
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               217.80031
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               217.80031
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               217.80031
+)(HTransmitiendo fuerza :772201.1 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               220.62889
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               220.62889
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               220.62889
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               220.62889
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               220.62889
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               220.62889
+)(HTransmitiendo fuerza :782101.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               223.45749
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               223.45749
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               223.45749
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               223.45749
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               223.45749
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               223.45749
+)(ITransmitiendo fuerza :792001.25 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               226.28607
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               226.28607
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               226.28607
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               226.28607
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               226.28607
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               226.28607
+)(HTransmitiendo fuerza :801901.3 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               229.11465
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               229.11465
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               229.11465
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               229.11465
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               229.11465
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               229.11465
+)(HTransmitiendo fuerza :811801.3 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               231.94324
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               231.94324
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               231.94324
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               231.94324
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               231.94324
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               231.94324
+)(HTransmitiendo fuerza :821701.4 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               234.77182
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               234.77182
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               234.77182
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               234.77182
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               234.77182
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               234.77182
+)(ITransmitiendo fuerza :831601.44 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               237.60042
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               237.60042
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               237.60042
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               237.60042
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               237.60042
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               237.60042
+)(HTransmitiendo fuerza :841501.5 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(!Después:               240.429
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(!Después:               240.429
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(!Después:               240.429
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(!Después:               240.429
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(!Después:               240.429
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(!Después:               240.429
+)(ITransmitiendo fuerza :851401.56 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               243.25758
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               243.25758
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               243.25758
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               243.25758
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               243.25758
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               243.25758
+)(ITransmitiendo fuerza :861301.56 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               246.08617
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               246.08617
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               246.08617
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               246.08617
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               246.08617
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               246.08617
+)(HTransmitiendo fuerza :871201.6 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               248.91475
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               248.91475
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               248.91475
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               248.91475
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               248.91475
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               248.91475
+)(HTransmitiendo fuerza :881101.7 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               251.74333
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               251.74333
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               251.74333
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               251.74333
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               251.74333
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               251.74333
+)(HTransmitiendo fuerza :891001.7 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               254.57191
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               254.57191
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               254.57191
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               254.57191
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               254.57191
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               254.57191
+)(HTransmitiendo fuerza :900901.7 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               257.40048
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               257.40048
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               257.40048
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               257.40048
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               257.40048
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               257.40048
+)(ITransmitiendo fuerza :910801.75 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               260.22906
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               260.22906
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               260.22906
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               260.22906
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               260.22906
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               260.22906
+)(ITransmitiendo fuerza :920701.75 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               263.05765
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               263.05765
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               263.05765
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               263.05765
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               263.05765
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               263.05765
+)(HTransmitiendo fuerza :930601.8 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               265.88623
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               265.88623
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               265.88623
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               265.88623
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               265.88623
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               265.88623
+)(HTransmitiendo fuerza :940501.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               268.7148
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               268.7148
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               268.7148
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               268.7148
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               268.7148
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               268.7148
+)(HTransmitiendo fuerza :950401.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               271.5434
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               271.5434
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               271.5434
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               271.5434
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               271.5434
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               271.5434
+)(ITransmitiendo fuerza :960301.94 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               274.37198
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               274.37198
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               274.37198
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               274.37198
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               274.37198
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               274.37198
+)(ITransmitiendo fuerza :970201.94 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               277.20056
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               277.20056
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               277.20056
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               277.20056
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               277.20056
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               277.20056
+)(HTransmitiendo fuerza :980102.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               280.02914
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               280.02914
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               280.02914
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               280.02914
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               280.02914
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               280.02914
+)(ITransmitiendo fuerza :990002.06 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               282.85773
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               282.85773
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               282.85773
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               282.85773
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               282.85773
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               282.85773
+)(ITransmitiendo fuerza :999902.06 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               285.6863
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               285.6863
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               285.6863
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               285.6863
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               285.6863
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               285.6863
+)(ITransmitiendo fuerza :1009802.1 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               288.5149
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               288.5149
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               288.5149
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               288.5149
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               288.5149
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               288.5149
+)(ITransmitiendo fuerza :1019702.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               291.34348
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               291.34348
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               291.34348
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               291.34348
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               291.34348
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               291.34348
+)(ITransmitiendo fuerza :1029602.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               294.17206
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               294.17206
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               294.17206
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               294.17206
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               294.17206
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               294.17206
+)(JTransmitiendo fuerza :1039502.25 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               297.00064
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               297.00064
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               297.00064
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               297.00064
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               297.00064
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               297.00064
+)(ITransmitiendo fuerza :1049402.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               299.82922
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               299.82922
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               299.82922
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               299.82922
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               299.82922
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               299.82922
+)(ITransmitiendo fuerza :1059302.4 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               302.6578
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               302.6578
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               302.6578
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               302.6578
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               302.6578
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               302.6578
+)(ITransmitiendo fuerza :1069202.4 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               305.4864
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               305.4864
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               305.4864
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               305.4864
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               305.4864
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               305.4864
+)(ITransmitiendo fuerza :1079102.4 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               308.31497
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               308.31497
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               308.31497
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               308.31497
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               308.31497
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               308.31497
+)(ITransmitiendo fuerza :1089002.5 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               311.1436
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               311.1436
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               311.1436
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               311.1436
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               311.1436
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               311.1436
+)(ITransmitiendo fuerza :1098902.6 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               313.97217
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               313.97217
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               313.97217
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               313.97217
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               313.97217
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               313.97217
+)(ITransmitiendo fuerza :1108802.6 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               316.80075
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               316.80075
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               316.80075
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               316.80075
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               316.80075
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               316.80075
+)(ITransmitiendo fuerza :1118702.6 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               319.62933
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               319.62933
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               319.62933
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               319.62933
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               319.62933
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               319.62933
+)(ITransmitiendo fuerza :1128602.8 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               322.45792
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               322.45792
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               322.45792
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               322.45792
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               322.45792
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               322.45792
+)(ITransmitiendo fuerza :1138502.8 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               325.2865
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               325.2865
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               325.2865
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               325.2865
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               325.2865
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               325.2865
+)(ITransmitiendo fuerza :1148402.8 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               328.11508
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               328.11508
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               328.11508
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               328.11508
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               328.11508
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               328.11508
+)(ITransmitiendo fuerza :1158302.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               330.94366
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               330.94366
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               330.94366
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               330.94366
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               330.94366
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               330.94366
+)(ITransmitiendo fuerza :1168202.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               333.77225
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               333.77225
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               333.77225
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               333.77225
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               333.77225
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               333.77225
+)(ITransmitiendo fuerza :1178102.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               336.60083
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               336.60083
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               336.60083
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               336.60083
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               336.60083
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               336.60083
+)(ITransmitiendo fuerza :1188003.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               339.42944
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               339.42944
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               339.42944
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               339.42944
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               339.42944
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               339.42944
+)(ITransmitiendo fuerza :1197903.1 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               342.25803
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               342.25803
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               342.25803
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               342.25803
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               342.25803
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               342.25803
+)(ITransmitiendo fuerza :1207803.1 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               345.0866
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               345.0866
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               345.0866
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               345.0866
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               345.0866
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               345.0866
+)(ITransmitiendo fuerza :1217703.1 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               347.9152
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               347.9152
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               347.9152
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               347.9152
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               347.9152
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               347.9152
+)(ITransmitiendo fuerza :1227603.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               350.74377
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               350.74377
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               350.74377
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               350.74377
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               350.74377
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               350.74377
+)(ITransmitiendo fuerza :1237503.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               353.57236
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               353.57236
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               353.57236
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               353.57236
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               353.57236
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               353.57236
+)(ITransmitiendo fuerza :1247403.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               356.40094
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               356.40094
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               356.40094
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               356.40094
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               356.40094
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               356.40094
+)(ITransmitiendo fuerza :1257303.4 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               359.22952
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               359.22952
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               359.22952
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               359.22952
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               359.22952
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               359.22952
+)(ITransmitiendo fuerza :1267203.4 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               362.0581
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               362.0581
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               362.0581
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               362.0581
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               362.0581
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               362.0581
+)(ITransmitiendo fuerza :1277103.4 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               364.8867
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               364.8867
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               364.8867
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               364.8867
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               364.8867
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               364.8867
+)(ITransmitiendo fuerza :1287003.5 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               367.71527
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               367.71527
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               367.71527
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               367.71527
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               367.71527
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               367.71527
+)(ITransmitiendo fuerza :1296903.5 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               370.54385
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               370.54385
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               370.54385
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               370.54385
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               370.54385
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               370.54385
+)(ITransmitiendo fuerza :1306803.5 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               373.37244
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               373.37244
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               373.37244
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               373.37244
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               373.37244
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               373.37244
+)(ITransmitiendo fuerza :1316703.6 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               376.20105
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               376.20105
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               376.20105
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               376.20105
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               376.20105
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               376.20105
+)(ITransmitiendo fuerza :1326603.8 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               379.02963
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               379.02963
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               379.02963
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               379.02963
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               379.02963
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               379.02963
+)(ITransmitiendo fuerza :1336503.8 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               381.85822
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               381.85822
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               381.85822
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               381.85822
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               381.85822
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               381.85822
+)(ITransmitiendo fuerza :1346403.8 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               384.6868
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               384.6868
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               384.6868
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               384.6868
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               384.6868
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               384.6868
+)(ITransmitiendo fuerza :1356303.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               387.51538
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               387.51538
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               387.51538
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               387.51538
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               387.51538
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               387.51538
+)(ITransmitiendo fuerza :1366203.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               390.34396
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               390.34396
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               390.34396
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               390.34396
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               390.34396
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               390.34396
+)(ITransmitiendo fuerza :1376103.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               393.17255
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               393.17255
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               393.17255
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               393.17255
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               393.17255
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               393.17255
+)(ITransmitiendo fuerza :1386004.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               396.00113
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               396.00113
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               396.00113
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               396.00113
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               396.00113
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               396.00113
+)(ITransmitiendo fuerza :1395904.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               398.8297
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               398.8297
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               398.8297
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               398.8297
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               398.8297
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               398.8297
+)(ITransmitiendo fuerza :1405804.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               401.6583
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               401.6583
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               401.6583
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               401.6583
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               401.6583
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               401.6583
+)(ITransmitiendo fuerza :1415704.1 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               404.4869
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               404.4869
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               404.4869
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               404.4869
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               404.4869
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               404.4869
+)(ITransmitiendo fuerza :1425604.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               407.3155
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               407.3155
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               407.3155
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               407.3155
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               407.3155
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               407.3155
+)(ITransmitiendo fuerza :1435504.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               410.14407
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               410.14407
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               410.14407
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               410.14407
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               410.14407
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               410.14407
+)(ITransmitiendo fuerza :1445404.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               412.97266
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               412.97266
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               412.97266
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               412.97266
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               412.97266
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               412.97266
+)(ITransmitiendo fuerza :1455304.4 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               415.80124
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               415.80124
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               415.80124
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               415.80124
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               415.80124
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               415.80124
+)(ITransmitiendo fuerza :1465204.4 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               418.62982
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               418.62982
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               418.62982
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               418.62982
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               418.62982
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               418.62982
+)(ITransmitiendo fuerza :1475104.4 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               421.4584
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               421.4584
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               421.4584
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               421.4584
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               421.4584
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               421.4584
+)(ITransmitiendo fuerza :1485004.5 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(!Después:               424.287
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(!Después:               424.287
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(!Después:               424.287
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(!Después:               424.287
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(!Después:               424.287
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(!Después:               424.287
+)(ITransmitiendo fuerza :1494904.5 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               427.11557
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               427.11557
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               427.11557
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               427.11557
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               427.11557
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               427.11557
+)(ITransmitiendo fuerza :1504804.5 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               429.94415
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               429.94415
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               429.94415
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               429.94415
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               429.94415
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               429.94415
+)(ITransmitiendo fuerza :1514704.6 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               432.77274
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               432.77274
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               432.77274
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               432.77274
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               432.77274
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               432.77274
+)(ITransmitiendo fuerza :1524604.6 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               435.60132
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               435.60132
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               435.60132
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               435.60132
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               435.60132
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               435.60132
+)(ITransmitiendo fuerza :1534504.6 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               438.4299
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               438.4299
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               438.4299
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               438.4299
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               438.4299
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               438.4299
+)(ITransmitiendo fuerza :1544404.8 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               441.2585
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               441.2585
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               441.2585
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               441.2585
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               441.2585
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               441.2585
+)(ITransmitiendo fuerza :1554304.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               444.0871
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               444.0871
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               444.0871
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               444.0871
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               444.0871
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               444.0871
+)(ITransmitiendo fuerza :1564204.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               446.91568
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               446.91568
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               446.91568
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               446.91568
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               446.91568
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               446.91568
+)(ITransmitiendo fuerza :1574104.9 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               449.74426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               449.74426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               449.74426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               449.74426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               449.74426
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               449.74426
+)(ITransmitiendo fuerza :1584005.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               452.57285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               452.57285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               452.57285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               452.57285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               452.57285
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               452.57285
+)(ITransmitiendo fuerza :1593905.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               455.40143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               455.40143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               455.40143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               455.40143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               455.40143
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               455.40143
+)(ITransmitiendo fuerza :1603805.0 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)( Después:               458.23
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)( Después:               458.23
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)( Después:               458.23
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)( Después:               458.23
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)( Después:               458.23
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)( Después:               458.23
+)(ITransmitiendo fuerza :1613705.1 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               461.0586
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               461.0586
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               461.0586
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               461.0586
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               461.0586
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)("Después:               461.0586
+)(ITransmitiendo fuerza :1623605.1 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               463.88718
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               463.88718
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               463.88718
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               463.88718
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               463.88718
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               463.88718
+)(ITransmitiendo fuerza :1633505.1 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               466.71576
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               466.71576
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               466.71576
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               466.71576
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               466.71576
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               466.71576
+)(ITransmitiendo fuerza :1643405.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               469.54434
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               469.54434
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               469.54434
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(Antes: 0.0
+)(#Después:               469.54434
+)(AFriction:0.34999996 Speed:0.0 Pos:Point{x=0, y=10} Distance:0.0
+)(
+Frenando
+)(Antes: 0.0
+)(#Después:               469.54434
+)(0.0: Point{x=0, y=10}
+)(Antes: 0.0
+)(#Después:               469.54434
+)(ITransmitiendo fuerza :1643185.2 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(0.0: Point{x=0, y=10}
+)(Antes: 0.0
+)("Después:               469.4815
+)(0.0: Point{x=0, y=10}
+)(Antes: 0.0
+)("Después:               469.4815
+)(0.0: Point{x=0, y=10}
+)(Antes: 0.0
+)("Después:               469.4815
+)(0.0: Point{x=0, y=10}
+)(Antes: 0.0
+)("Después:               469.4815
+)(0.0: Point{x=0, y=10}
+)(Antes: 0.0
+)("Después:               469.4815
+)(0.0: Point{x=0, y=10}
+)(Antes: 0.0
+)("Después:               469.4815
+)(ITransmitiendo fuerza :1642965.4 a Linker{, pos=Point{x=0, y=11}, dir=N}
+)(0.0: Point{x=0, y=10}
+)(Antes: 0.0
+)(#Después:               469.41867
+)(0.0: Point{x=0, y=10}
+)(Antes: 0.0
+)(#Después:               469.41867
+)(0.0: Point{x=0, y=10}
+)/Antes: 0.0
+)/Después:               0.0
+)0Antes: 0.0
+)0Después:               0.0
+)1Antes: 0.0
+)1Después:               0.0
+)1Antes: 0.0
+)1Después:               0.0
+)1Antes: 0.0
+)1Después:               0.0

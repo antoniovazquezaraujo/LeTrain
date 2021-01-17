@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="letrain.map.RouterTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2021-01-17T20:07:00" hostname="IMATIA17013" time="0.056">
+  <properties/>
+  <testcase name="test get Dir" classname="letrain.map.RouterTest" time="0.01"/>
+  <testcase name="test get First Open Dir" classname="letrain.map.RouterTest" time="0.001"/>
+  <testcase name="test get Num Open Dirs" classname="letrain.map.RouterTest" time="0.009"/>
+  <testcase name="test add Route" classname="letrain.map.RouterTest" time="0.002"/>
+  <testcase name="test remove Route" classname="letrain.map.RouterTest" time="0.001"/>
+  <testcase name="adding new routes that makes a cross" classname="letrain.map.RouterTest" time="0.001"/>
+  <testcase name="removing routes transform a cross in a straight" classname="letrain.map.RouterTest" time="0.008"/>
+  <testcase name="add dir and router dont contains any of both" classname="letrain.map.RouterTest" time="0.001"/>
+  <testcase name="add dir and router contains one of both" classname="letrain.map.RouterTest" time="0.003"/>
+  <testcase name="add dir and router contains the conter route" classname="letrain.map.RouterTest" time="0.002"/>
+  <testcase name="changing directions" classname="letrain.map.RouterTest" time="0.013"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
