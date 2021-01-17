@@ -1,3 +1,7 @@
 .idea\
 Ideas.adoc
 /target/
+.settings/
+bin/
+.project
+.classpath
