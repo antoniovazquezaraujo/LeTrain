@@ -34,7 +34,7 @@ public class RailTrack extends Track  {
         if (getNumRoutes() == 2) {
             Dir d1 = getFirstOpenDir();
             Dir d2 = d1.inverse();
-            Dir inverted = getDir(d2);
+            Dir inverted = getDirWhenEnteringFrom(d2);
             if (inverted != null && inverted.equals(d1)) {
                 if (d1.isStraight(d2)) {
                     return TrackType.STRAIGHT;

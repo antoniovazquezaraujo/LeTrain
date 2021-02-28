@@ -119,7 +119,7 @@ public class RailTrackMaker {
 
     }
 
-    private void createTrack() {
+    public void createTrack() {
         degreesOfRotation = 0;
         makeTrack();
         Point position = model.getCursor().getPosition();
@@ -181,7 +181,7 @@ public class RailTrackMaker {
             //conectamos el track con oldTrack en oldDir, bien.
             track.connect(oldDir, oldTrack);
             //conectamos a oldTrack con track, en la inversa
-            oldTrack.connect(track.getDir(dir).inverse(), track);
+            oldTrack.connect(track.getDirWhenEnteringFrom(dir).inverse(), track);
         }
 
         Point newPos = new Point(cursorPosition);
@@ -211,6 +211,7 @@ public class RailTrackMaker {
                 return new TrainFactoryRailTrack();
             case TUNNEL_GATE:
                 return new TunnelRailTrack();
+            case NORMAL_TRACK:
             default:
                 return new RailTrack();
         }
@@ -223,7 +224,7 @@ public class RailTrackMaker {
         return r.getNumRoutes() == 3;
     }
 
-    private void cursorTurnRight() {
+    public void cursorTurnRight() {
         if (makingTraks) {
             if (degreesOfRotation >= 0) {
                 this.dir = this.dir.turnRight();
@@ -236,7 +237,7 @@ public class RailTrackMaker {
         }
     }
 
-    private void cursorTurnLeft() {
+    public void cursorTurnLeft() {
         if (makingTraks) {
             if (degreesOfRotation <= 0) {
                 this.dir = this.dir.turnLeft();

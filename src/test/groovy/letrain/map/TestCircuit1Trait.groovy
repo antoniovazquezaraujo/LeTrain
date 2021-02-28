@@ -1,6 +1,6 @@
 package letrain.map
 
-import letrain.map.*
+
 import letrain.mvp.impl.CompactPresenter
 import letrain.track.Track
 import letrain.track.rail.*
@@ -78,7 +78,7 @@ trait TestCircuit1Trait {
         track.setPosition(cursorPosition)
         if (oldTrack != null) {
             track.connect(oldDir, oldTrack)
-            oldTrack.connect(track.getDir(dir).inverse(), track)
+            oldTrack.connect(track.getDirWhenEnteringFrom(dir).inverse(), track)
         }
         railMap.addTrack(cursorPosition, track)
         if (canBeAFork(track, oldDir, dir)) {

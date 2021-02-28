@@ -36,9 +36,9 @@ class RailTrackTest extends Specification {
         track.addRoute(Dir.N, Dir.SE)
         track.addRoute(Dir.SE, Dir.N)
         then:
-        Dir.SE == track.getDir(Dir.N)
-        Dir.N == track.getDir(Dir.SE)
-        null == track.getDir(Dir.E)
+        Dir.SE == track.getDirWhenEnteringFrom(Dir.N)
+        Dir.N == track.getDirWhenEnteringFrom(Dir.SE)
+        null == track.getDirWhenEnteringFrom(Dir.E)
     }
 
 
@@ -56,8 +56,8 @@ class RailTrackTest extends Specification {
         track.addRoute(Dir.E, Dir.W)
 
         then:
-        Dir.W == track.getDir(Dir.E)
-        Dir.E == track.getDir(Dir.W)
+        Dir.W == track.getDirWhenEnteringFrom(Dir.E)
+        Dir.E == track.getDirWhenEnteringFrom(Dir.W)
 
     }
 
@@ -67,8 +67,8 @@ class RailTrackTest extends Specification {
         track.removeRoute(Dir.W, Dir.E)
 
         then:
-        null == track.getDir(Dir.E)
-        null == track.getDir(Dir.W)
+        null == track.getDirWhenEnteringFrom(Dir.E)
+        null == track.getDirWhenEnteringFrom(Dir.W)
     }
 
     def "test link"() {

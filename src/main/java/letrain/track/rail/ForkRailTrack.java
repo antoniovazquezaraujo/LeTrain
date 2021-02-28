@@ -4,7 +4,6 @@ import javafx.util.Pair;
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.map.ForkRouter;
-import letrain.map.Router;
 import letrain.visitor.Visitor;
 
 import java.util.function.Consumer;
@@ -90,8 +89,8 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     }
 
     @Override
-    public Dir getDir(Dir dir) {
-        return getRouter().getDir(dir);
+    public Dir getDirWhenEnteringFrom(Dir dir) {
+        return getRouter().getDirWhenEnteringFrom(dir);
     }
 
     @Override

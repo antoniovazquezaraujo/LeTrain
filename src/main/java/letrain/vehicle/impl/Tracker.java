@@ -5,9 +5,7 @@ import letrain.track.Track;
 import letrain.track.Trackeable;
 import letrain.vehicle.Vehicle;
 
-public abstract class Tracker
-        extends Vehicle
-        implements Trackeable {
+public abstract class Tracker extends Vehicle implements Trackeable {
     Track track;
 
     @Override

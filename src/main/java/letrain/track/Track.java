@@ -75,8 +75,8 @@ public abstract class Track implements
     }
 
      @Override
-    public Dir getDir(Dir dir) {
-        return getRouter().getDir(dir);
+    public Dir getDirWhenEnteringFrom(Dir dir) {
+        return getRouter().getDirWhenEnteringFrom(dir);
     }
 
     @Override
