@@ -5,5 +5,5 @@ Ideas.adoc
 bin/
 .project
 .classpath
-build/**.*
-
+build/**/*
+build/classes/groovy/test/letrain/map/DirTest.class
