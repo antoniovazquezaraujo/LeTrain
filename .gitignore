@@ -7,6 +7,7 @@ bin/
 .classpath
 
 .gradle
+.gradle/**/*
 **/build/
 !src/**/build/
 
@@ -18,5 +19,6 @@ gradle-app.setting
 
 # Cache of project
 .gradletasknamecache
+
 
 
