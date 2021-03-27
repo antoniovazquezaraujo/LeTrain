@@ -5,3 +5,5 @@ Ideas.adoc
 bin/
 .project
 .classpath
+build/**.*
+
