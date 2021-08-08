@@ -1,8 +1,6 @@
 package letrain.mvp.impl;
 
-import letrain.map.Dir;
-import letrain.map.Point;
-import letrain.map.RailMap;
+import letrain.map.*;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Train;
@@ -12,13 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Model implements Serializable , letrain.mvp.Model {
-
-
     Train selectedTrain;
     ForkRailTrack selectedFork;
     private int selectedTrainIndex;
     private int selectedForkIndex;
-
     private GameMode mode = letrain.mvp.Model.GameMode.TRACKS;
     private RailMap map;
     private final List<Train> trains;
@@ -26,12 +21,12 @@ public class Model implements Serializable , letrain.mvp.Model {
     private List<ForkRailTrack> forks;
 
     public Model() {
+        this.map = new RailMap();
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
         this.cursor.setPosition(new Point(10,10));
         this.trains = new ArrayList<>();
         this.forks = new ArrayList<>();
-        this.map = new RailMap();
         selectedTrainIndex = 0;
         if (!getTrains().isEmpty()) {
             selectedTrain = getTrains().get(selectedTrainIndex);
@@ -40,12 +35,15 @@ public class Model implements Serializable , letrain.mvp.Model {
         if (!getForks().isEmpty()) {
             selectedFork = getForks().get(selectedForkIndex);
         }
-
     }
 
     @Override
     public RailMap getRailMap() {
         return map;
+    }
+
+    public void setMap(RailMap map) {
+        this.map = map;
     }
 
     @Override

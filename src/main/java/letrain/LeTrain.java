@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
+import letrain.map.RailMapFactory;
 import letrain.mvp.impl.CompactPresenter;
 import letrain.mvp.impl.Model;
 import letrain.mvp.impl.View;
@@ -20,6 +21,8 @@ public class LeTrain extends Application {
     @Override
     public void start(Stage stage) {
         model = new Model();
+        RailMapFactory railMapFactory = new RailMapFactory(model);
+        railMapFactory.read("10,10 e30 r1 r1 r1 r30 r1 r1 r1 r5 l5 r5 r5 l1");
         presenter = new CompactPresenter((Model) model);
         GridPane pane = new GridPane();
         pane.getChildren().add((View) presenter.getView());

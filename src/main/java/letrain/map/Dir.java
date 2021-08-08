@@ -48,6 +48,20 @@ public enum Dir {
         return fromInt((int) (Math.random() * NUM_DIRS));
     }
 
+    public static Dir fromString(String s){
+        switch(s) {
+            case "E" : return E;
+            case "NE" : return NE;
+            case "N" : return N;
+            case "NW" : return NW;
+            case "W" : return W;
+            case "SW" : return SW;
+            case "S" : return S;
+            case "SE" : return SE;
+            default:
+                return E;
+        }
+    }
     public static Dir fromInt(int n) {
         if (n < 0) {
             n = NUM_DIRS + n;
