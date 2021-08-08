@@ -38,7 +38,6 @@ public class RailMapFactory {
             newPos.move(model.getCursor().getDir().inverse());
         }
         model.getCursor().setPosition(newPos);
-        Point position = model.getCursor().getPosition();
     }
     public void cursorBackward() {
         reversed = true;

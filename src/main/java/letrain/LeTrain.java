@@ -8,6 +8,7 @@ import letrain.map.RailMapFactory;
 import letrain.mvp.impl.CompactPresenter;
 import letrain.mvp.impl.Model;
 import letrain.mvp.impl.View;
+import letrain.vehicle.impl.rail.TrainFactory;
 
 public class LeTrain extends Application {
 
@@ -22,7 +23,9 @@ public class LeTrain extends Application {
     public void start(Stage stage) {
         model = new Model();
         RailMapFactory railMapFactory = new RailMapFactory(model);
-        railMapFactory.read("10,10 e30 r1 r1 r1 r30 r1 r1 r1 r5 l5 r5 r5 l1");
+        railMapFactory.read("40,20 e30 r1 r1 r1 r35 r1 r1 r1 r5 l5 r5 r5 l3");
+        TrainFactory trainFactory = new TrainFactory(model);
+        trainFactory.read("50,20 e #Letrain");
         presenter = new CompactPresenter((Model) model);
         GridPane pane = new GridPane();
         pane.getChildren().add((View) presenter.getView());
