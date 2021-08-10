@@ -24,23 +24,23 @@ public class Truck implements Tractor {
     }
 
     @Override
-    public void applyForce() {
+    public void move() {
 
     }
 
     @Override
-    public void setMotorInverted(boolean inverted) {
+    public void reverseMotor(boolean inverted) {
 
     }
 
     @Override
-    public boolean isMotorInverted() {
+    public boolean isMotorReversed() {
         return false;
     }
 
 
     @Override
-    public void setReversed(boolean reversed) {
+    public void reverse(boolean reversed) {
 
     }
 

@@ -1,7 +1,7 @@
 package letrain.map;
 
 public interface Reversible {
-    void setReversed(boolean reversed);
+    void reverse(boolean reversed);
 
     boolean isReversed();
 }

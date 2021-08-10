@@ -49,7 +49,7 @@ public enum Dir {
     }
 
     public static Dir fromString(String s){
-        switch(s) {
+        switch(s.toUpperCase()) {
             case "E" : return E;
             case "NE" : return NE;
             case "N" : return N;

@@ -13,21 +13,15 @@ application{
     mainClass = 'letrain.LeTrain'
 }
 repositories {
-    mavenLocal()
-    maven {
-        url = uri('https://inditex.jfrog.io/inditex/maven-public')
-    }
-
-    maven {
-        url = uri('https://axinic.central.inditex.grp/artifactory/inditex-public')
-    }
-
+    mavenCentral()
+    jcenter()
     maven {
         url = uri('http://repo.maven.apache.org/maven2')
     }
 }
 
 dependencies {
+    implementation 'org.slf4j:slf4j-log4j12:1.7.29'
     implementation 'org.mockito:mockito-all:1.10.19'
     testImplementation 'org.spockframework:spock-core:1.0-groovy-2.4'
     testImplementation 'org.codehaus.groovy:groovy-all:2.4.5'

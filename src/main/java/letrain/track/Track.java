@@ -8,6 +8,7 @@ import letrain.visitor.Renderable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public abstract class Track implements
@@ -22,7 +23,7 @@ public abstract class Track implements
     private TrackDirector trackDirector;
     private Linker linker = null;
     private Point pos = new Point(0,0);
-    protected Track[] connections;
+    protected Map<Dir, Track> connections;
     private final List<LinkerCompartmentListener> trackeableCompartmentListeners = new ArrayList<>();
 
     protected Track() {
@@ -119,19 +120,21 @@ public abstract class Track implements
 
     @Override
     public Track getConnected(Dir dir) {
-        return connections[dir.getValue()];
+//        Dir routerDir = getRouter().getDirWhenEnteringFrom(dir);
+//        if(routerDir!=null) {
+            return connections.get(dir);
+//        }
+//        return null;
     }
 
     @Override
     public Track disconnect(Dir dir) {
-        Track ret = connections[dir.getValue()];
-        connections[dir.getValue()] = null;
-        return ret;
+         return connections.remove(dir);
     }
 
     @Override
-    public boolean connect(Dir dir, Track r) {
-        connections[dir.getValue()] = r;
+    public boolean connect(Dir dir, Track track) {
+         connections.put(dir, track);
         return true;
     }
 

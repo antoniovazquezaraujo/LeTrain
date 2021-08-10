@@ -154,7 +154,7 @@ public class InfoVisitor implements Visitor {
         DecimalFormat df = new DecimalFormat("0000.0000");
         infoBarText+=
                 " F:" + df.format(train.getForce())+
-                " AC:"+ df.format(train.getAcceleration())+
+                " VE:"+ df.format(train.getVelocity())+
                 " DT:"+ df.format(train.getDistanceTraveled())+
                 " BR:"+ df.format(train.getBrakes())+
                 " RE:"+ train.isReversed();

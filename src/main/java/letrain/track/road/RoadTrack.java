@@ -9,7 +9,7 @@ import letrain.visitor.Visitor;
 public class RoadTrack extends Track {
 
     public RoadTrack() {
-        this.connections = new RoadTrack[Dir.NUM_DIRS];
+        this.connections = null;// new RoadTrack[Dir.NUM_DIRS];
     }
 
     @Override

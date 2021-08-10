@@ -8,6 +8,8 @@ import letrain.track.Track;
 import letrain.track.TrackDirector;
 import letrain.visitor.Visitor;
 
+import java.util.HashMap;
+
 public class RailTrack extends Track  {
     protected Router router ;
     public enum TrackType {
@@ -18,7 +20,7 @@ public class RailTrack extends Track  {
     }
 
     public RailTrack() {
-        this.connections = new RailTrack[Dir.NUM_DIRS];
+        this.connections = new HashMap<>();
         setTrackDirector(TrackDirector.getInstance());
     }
 

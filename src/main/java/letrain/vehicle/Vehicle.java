@@ -113,7 +113,7 @@ public abstract class Vehicle<T extends Track>
 
 
     @Override
-    public void setReversed(boolean reversed){
+    public void reverse(boolean reversed){
         this.reversed = reversed;
     }
 

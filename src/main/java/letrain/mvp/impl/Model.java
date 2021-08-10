@@ -83,7 +83,7 @@ public class Model implements Serializable , letrain.mvp.Model {
 
     @Override
     public void moveTrains() {
-        trains.forEach(Train::applyForce);
+        trains.forEach(Train::move);
     }
 
     @Override

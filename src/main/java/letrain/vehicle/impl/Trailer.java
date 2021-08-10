@@ -34,23 +34,7 @@ public interface Trailer<T extends Track> {
 
     int size();
 
-//    float getTractorsForce();
-
     float getFrictionForce();
-
-//    float getTotalMass();
-
-//    void applyForces();
-
-//    void move();
-
-//    float getAcceleration();
-
-//    float getAcceleration();
-
-//    float getDistanceTraveled();
-
-//    void resetDistanceTraveled();
 
     Trailer divide(Linker p);
 }

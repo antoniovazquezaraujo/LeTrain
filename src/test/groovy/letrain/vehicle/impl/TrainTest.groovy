@@ -61,7 +61,7 @@ class TrainTest extends Specification {
         println "Acelerando"
         train1.setForce(10000)
         for (int i = 0; i < 1000; i++) {
-            train1.applyForce()
+            train1.move()
             println "Friction:"+ train1.getFrictionForce()+
                     " Speed:"+ train1.getAcceleration()+
                     " Pos:"+ locomotive1.getPosition()+
@@ -72,7 +72,7 @@ class TrainTest extends Specification {
         train1.setForce(0)
         train1.setBrakes(100)
         for (int i = 0; i < 10; i++) {
-            train1.applyForce()
+            train1.move()
             println train1.getAcceleration() + ": "+ locomotive1.getPosition()
 
         }
@@ -190,7 +190,7 @@ class TrainTest extends Specification {
         compare(train.getForce(), (float) (l1.getForce() + l2.getForce())) <= PRECISION
 
         when:
-        train.applyForce()
+        train.move()
         then:
         compare(train.getForce(), (float) ((l1.getForce() + l2.getForce()))) <= PRECISION
     }
@@ -206,7 +206,7 @@ class TrainTest extends Specification {
         compare(train1.getAcceleration(), 0.0F) <= PRECISION
 
         when:
-        train1.applyForce()
+        train1.move()
         then:
         compare(train1.getAcceleration(), (float) (train1.getForce() / train1.getMass())) <= PRECISION
     }
@@ -230,7 +230,7 @@ class TrainTest extends Specification {
         compare(train.getDistanceTraveled(), 0.0f) <= PRECISION
 
         when:
-        train.applyForce()
+        train.move()
         then:
         compare(train.getAcceleration(), train.getAcceleration()) <= PRECISION
         compare(train.getDistanceTraveled(), train.getAcceleration()) <= PRECISION
@@ -243,7 +243,7 @@ class TrainTest extends Specification {
         compare(train.getDistanceTraveled(), 0.0) <= PRECISION
 
         when:
-        train.applyForce()
+        train.move()
         then:
         compare(train.getAcceleration(), train.getAcceleration()) <= PRECISION
         compare(train.getDistanceTraveled(), train.getAcceleration()) <= PRECISION
@@ -251,7 +251,7 @@ class TrainTest extends Specification {
         when:
         l1.setForce(0)
         l2.setForce(0)
-        train.applyForce()
+        train.move()
 
         then:
         compare(train.getForce(), (float) (train.getFrictionForce())) <= PRECISION
@@ -302,13 +302,13 @@ class TrainTest extends Specification {
         wagon1_1.getPosition().getX().equals(4)
         wagon1_2.getPosition().getX().equals(3)
 
-        when:
-        train.setReversed(true)
-        train.advance()
-        then:
-        locomotive1.getPosition().getX().equals(4)
-        wagon1_1.getPosition().getX().equals(3)
-        wagon1_2.getPosition().getX().equals(2)
+//        when:
+//        train.reverse(true)
+//        train.advance()
+//        then:
+//        locomotive1.getPosition().getX().equals(4)
+//        wagon1_1.getPosition().getX().equals(3)
+//        wagon1_2.getPosition().getX().equals(2)
     }
 
 }

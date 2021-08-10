@@ -5,30 +5,30 @@ import letrain.map.UVector;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Transportable;
-import letrain.vehicle.Vehicle;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tractor, Transportable {
     protected static final float DISTANCE_UNIT = 50;
-    private static final float MAX_VELOCITY = 2f;
+    private static final float MAX_VELOCITY = 8f;
     protected final Deque<Linker> linkers;
     protected final List<Tractor> tractors;
     protected Tractor directorLinker;
-
+    private static final Logger log = LoggerFactory.getLogger(Train.class);
     UVector location;
+
     UVector velocity;
     UVector acceleration;
     UVector motorForce;
     UVector externalForce;
-
 
     protected boolean brakesActivated = false;
     private Linker externalPushedLinker;
@@ -150,18 +150,11 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
                 .collect(Collectors.toList());
     }
 
-    public float getTractorsForce() {
-        return (float) getTractors()
-                .stream()
-                .mapToDouble(Tractor::getForce)
-                .sum();
-    }
-
     /**
-     * La fuerza de fricción de un tren es la suma de las fuerzas de fricción de todos los linkers.
-     * Cada uno tiene su masa y su coeficiente de fricción. Al multiplicarlos por la aceleración del tren obtenemos
+     * La fuerza de fricción de un trailer es la suma de las fuerzas de fricción de todos los linkers.
+     * Cada uno tiene su masa y su coeficiente de fricción. Al multiplicarlos por la aceleración del trailer obtenemos
      * la fuerza de fricción total, que se restará a la fuerza de tracción total
-     * En los linkers estan incluidas las locomotoras también, que, en este caso, son un vagón más que arrastrar
+     * En los linkers estan incluidas los tractors también, que, en este caso, son un linker más que arrastrar
      *
      * @return
      */
@@ -173,221 +166,56 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
                 .sum();
     }
 
+    /***********************************************************
+     * Transportable implementation
+     **********************************************************/
 
+    @Override
+    public float getDistanceTraveled() {
+        return 0;
+    }
+
+    @Override
+    public void resetDistanceTraveled() {
+
+    }
+    @Override
+    public float getFrictionCoefficient() {
+        return 0;
+    }
+
+    @Override
+    public float getAcceleration() {
+        return this.acceleration.x;
+    }
+
+    @Override
+    public void setAcceleration(float speed) {
+        this.acceleration.x = speed;
+    }
+
+    @Override
+    public float getMass() {
+        return (float) getLinkers()
+                .stream()
+                .mapToDouble(t -> {
+                    return t.getMass();
+                })
+                .sum();
+    }
     @Override
     public boolean advance() {
-        Iterator<Linker> normalIterator = getLinkers().iterator();
-        Iterator<Linker> reverseIterator = getLinkers().descendingIterator();
-        boolean normalSense = true;
-        if (getDirectorLinker().isReversed()) {
-            normalSense = false;
-        }
-        setDirPushedLinkers(normalSense);
-        setDirTowedLinkers(normalSense);
-        if (getDirectorLinker().isReversed()) {
-            Dir directorDir = ((Vehicle)getDirectorLinker()).getDir();
-            ((Vehicle)getDirectorLinker()).setDir(directorDir.inverse());
-        }
-
-        return moveLinkers(normalSense);
-    }
-
-    private void setDirTractors(boolean isNormalSense) {
-        Iterator<Linker> iterator;
-        if (!isNormalSense) {
-            iterator = getLinkers().iterator();
-        } else {
-            iterator = getLinkers().descendingIterator();
-        }
-
-        Tractor tractor = getDirectorLinker();
-        while (iterator.hasNext()) {
-            Linker next = iterator.next();
-            if (next == tractor) {
-                break;
-            }
-        }
-        Dir pushDir = ((Locomotive) tractor).getDir();
-
-        while (iterator.hasNext()) {
-            Linker nextLinker = iterator.next();
-            Track nextTrack = nextLinker.getTrack();
-            nextLinker.setDir(nextTrack.getDirWhenEnteringFrom(pushDir));
-            pushDir = nextLinker.getDir().inverse();
-        }
-    }
-
-    private void setDirPushedLinkers(boolean isNormalSense) {
-        Iterator<Linker> iterator;
-        if (!isNormalSense) {
-            iterator = getLinkers().iterator();
-        } else {
-            iterator = getLinkers().descendingIterator();
-        }
-
-        Tractor tractor = getDirectorLinker();
-        while (iterator.hasNext()) {
-            Linker next = iterator.next();
-            if (next == tractor) {
-                break;
-            }
-        }
-        Dir pushDir = ((Locomotive) tractor).getDir();
-
-        while (iterator.hasNext()) {
-            Linker nextLinker = iterator.next();
-            Track nextTrack = nextLinker.getTrack();
-            nextLinker.setDir(nextTrack.getDirWhenEnteringFrom(pushDir));
-            pushDir = nextLinker.getDir().inverse();
-        }
-    }
-
-    private void setDirTowedLinkers(boolean isNormalSense) {
-        Iterator<Linker> iterator;
-        if (isNormalSense) {
-            iterator = getLinkers().iterator();
-        } else {
-            iterator = getLinkers().descendingIterator();
-        }
-        Tractor tractor = getDirectorLinker();
-        while (iterator.hasNext()) {
-            Linker next = iterator.next();
-            if (next == tractor) {
-                break;
-            }
-        }
-        Track oldTrack = ((Locomotive) tractor).getTrack();
-        while (iterator.hasNext()) {
-            Linker nextLinker = iterator.next();
-            nextLinker.setDir(nextLinker.getPosition().locate(oldTrack.getPosition()));
-            oldTrack = nextLinker.getTrack();
-        }
-    }
-
-
-    private boolean moveLinkers(boolean isNormalSense) {
-        Iterator<Linker> iterator;
-        if (isNormalSense) {
-            iterator = getLinkers().iterator();
-        } else {
-            iterator = getLinkers().descendingIterator();
-        }
-        while (iterator.hasNext()) {
-            Linker next = iterator.next();
-            Track track = next.getTrack();
-            Dir nextDir = next.getDir();
-            Track nextTrack = track.getConnected(nextDir);
-            if (nextTrack != null) {
-                if (nextTrack.getLinker() == null) {
-                    next.getTrack().removeLinker();
-                    if (nextTrack.canEnter(next.getDir().inverse(), next)) {
-                        nextTrack.enterLinkerFromDir(next.getDir().inverse(), next);
-                    } else {
-                        System.out.println("NO PUEDO ENTRAR AQUÍ !!!");
-                        return false;
-                    }
-                } else {
-                    crash(nextTrack.getLinker());
-                    return false;
-                }
-            } else {
-                System.out.println("Ojo, no hay track en " + track.getPosition() + " -> " + next.getDir());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private void crash(Linker linker) {
-        Train crashedTrain = linker.getTrain();
-        float transmittedForce = Math.abs(getMass() * getAcceleration());
-        crashedTrain.applyExternalForce(transmittedForce, linker);
-        System.out.println("Transmitiendo fuerza :" + transmittedForce + " a " + linker);
-    }
-
-
-    public void applyExternalForce(float amount, Linker linker) {
-        externalForce.set(amount);
-        UVector f = UVector.div(externalForce, getMass());
-        acceleration.add(f);
-    }
-
-    private void setExternalPushedLinker(Linker linker) {
-        this.externalPushedLinker = linker;
-    }
-
-    private Linker getExternalPushedLinker() {
-        return this.externalPushedLinker;
-    }
-
-    public Linker getFirstLinker() {
-        return linkers.getFirst();
-    }
-
-    public Linker getLastLinker() {
-        return linkers.getLast();
-    }
-
-    float turns = 0.0f;
-
-    @Override
-    public void applyForce() {
-        update();
-    }
-
-    public void applyForce(UVector force) {
-        UVector f = UVector.div(force, getMass());
-        acceleration.add(f);
-    }
-
-    public void applyFriction() {
-        float c = 100f;
-        UVector friction = new UVector(velocity.x);
-        friction.mult(-1);
-        friction.normalize();
-        friction.mult(c);
-        applyForce(friction);
-    }
-
-    public void applyBrakes(){
-        UVector brakes = new UVector(getBrakes());
-        brakes.mult(-1);
-        applyForce(brakes);
-    }
-    public void update() {
-        System.out.println("Antes: "+ getAcceleration());
-        applyForce(externalForce);
-        System.out.println("Después:               "+ getAcceleration());
-        motorForce.set(getTractorsForce());
-        applyForce(motorForce);
-        if(Math.abs(velocity.x) > 0) {
-            applyFriction();
-            applyBrakes();
-        }
-        velocity.add(acceleration);
-        velocity.limit(MAX_VELOCITY);
-        location.add(velocity);
-//        System.out.println("Acceleration: "+ acceleration.x+ " Location:"+ location.x+ " Velocity:"+ velocity.x+ " motorForce: "+ motorForce.x);
-        if (Math.abs(location.x) > 10.0) {
-            if(velocity.x < 0){
-                setReversed(true);
-            }else{
-                setReversed(false);
-            }
-            advance();
-            location.set(0);
-        }
-        acceleration.set(0);
+        return moveLinkers(getDirectorLinker().isReversed());
     }
 
     @Override
-    public void setMotorInverted(boolean inverted) {
-        getDirectorLinker().setMotorInverted(inverted);
+    public void reverseMotor(boolean reversed) {
+        getDirectorLinker().reverseMotor(reversed);
     }
 
     @Override
-    public boolean isMotorInverted() {
-        return getDirectorLinker().isMotorInverted();
+    public boolean isMotorReversed() {
+        return getDirectorLinker().isMotorReversed();
     }
 
 
@@ -411,37 +239,72 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
         getLinkers().forEach(t -> t.setBrakes(i));
     }
 
-
+    /***********************************************************
+     * Reversible implementation
+     **********************************************************/
     @Override
-    public void setReversed(boolean reversed) {
+    public void reverse(boolean reversed) {
         getTractors()
             .stream()
-            .forEach(t-> t.setReversed(reversed));
-
+            .forEach(t-> t.reverse(reversed));
     }
 
     @Override
     public boolean isReversed() {
-        if (this.directorLinker != null) {
-            return (this.directorLinker).isReversed();
+        if (getDirectorLinker() != null) {
+            return getDirectorLinker().isReversed();
         }
         return false;
     }
 
     /***********************************************************
-     * Renderable implementation
+     * Tractor implementation
      **********************************************************/
 
     @Override
-    public void accept(Visitor visitor) {
-        visitor.visitTrain(this);
+    public void move() {
+        log.debug("Force:"+ getForce());
+        applyForce(externalForce);
+        log.debug("Force después de aplicar external force:"+ getForce());
+        motorForce.set(getTractorsForce());
+        log.debug("Motorforce: "+ motorForce);
+        applyForce(motorForce);
+        log.debug("Force después de aplicar motor force:"+ getForce());
+        if(Math.abs(velocity.x) > 0) {
+            log.debug("Velocity > 0 :"+ getVelocity());
+            applyFriction();
+            log.debug("Acceleration después de aplicar friction:"+ getAcceleration());
+            applyBrakes();
+            log.debug("Acceleration después de aplicar brakes: "+ getAcceleration());
+        }
+        log.debug("Antes de updateLocation. Acceleration:"+ getAcceleration()+ " Location:"+ getLocation()+ " Velocity:"+ getVelocity());
+        velocity.add(acceleration);
+        velocity.limit(MAX_VELOCITY);
+        location.add(velocity);
+        log.debug("Después de updateLocation. Acceleration:"+ getAcceleration()+ " Location:"+ getLocation()+ " Velocity:"+ getVelocity());
+        if((Math.signum(velocity.x) < 0.0 ) && !isReversed()){
+            log.debug("Velocidad negativa :"+ getVelocity() + " Reversed: "+ isReversed());
+            reverse(true);
+            log.debug("Después de revertir, Reversed: "+ isReversed());
+        }
+        if (Math.abs(location.x) > 10.0) {
+            log.debug("location > 10: "+getLocation()+ " DirectorLinker is reversed:"+ getDirectorLinker().isReversed());
+            updateLinkersSense();
+            log.debug("Después de updateLinkersSense DirectorLinker is reversed:"+ getDirectorLinker().isReversed());
+            advance();
+            log.debug("Después de avance is reversed:"+ getDirectorLinker().isReversed());
+            location.set(0);
+        }
+        acceleration.set(0);
     }
-
     @Override
     public float getForce() {
         return getTractorsForce();
     }
 
+    public float getLocation(){
+        return location.x;
+    }
     @Override
     public void setForce(float force) {
         getTractors()
@@ -470,40 +333,70 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
                 .forEach(t -> t.decForce(force));
     }
 
-
+    /***********************************************************
+     * Renderable implementation
+     **********************************************************/
     @Override
-    public float getMass() {
-        return (float) getLinkers()
+    public void accept(Visitor visitor) {
+        visitor.visitTrain(this);
+    }
+
+    /***********************************************************
+     * Train
+     **********************************************************/
+    public float getVelocity() {
+        return velocity.x;
+    }
+    public void applyForce(UVector force) {
+        UVector f = UVector.div(force, getMass());
+        acceleration.add(f);
+    }
+
+    public void applyFriction() {
+        float c = 100f;
+        UVector friction = new UVector(velocity.x);
+        friction.mult(-1);
+        friction.normalize();
+        friction.mult(c);
+        boolean prevAccelerationSign = acceleration.x >=0.0;
+        if(getVelocity()>0.0) {
+            applyForce(friction);
+        }
+        boolean postAccelerationSign = acceleration.x >=0.0;
+        if (prevAccelerationSign != postAccelerationSign){
+            acceleration.set(0);
+        }
+    }
+
+    public void applyBrakes(){
+        UVector brakes = new UVector(getBrakes());
+        brakes.mult(-1);
+        boolean prevVelocitySign = velocity.x >0.0;
+        if(getVelocity() >0.0) {
+            applyForce(brakes);
+        }
+        boolean postVelocitySign = velocity.x >0.0;
+        if (prevVelocitySign != postVelocitySign){
+            velocity.set(0);
+        }
+    }
+    public float getTractorsForce() {
+        return (float) getTractors()
                 .stream()
-                .mapToDouble(t -> {
-                    return t.getMass();
-                })
+                .mapToDouble(Tractor::getForce)
                 .sum();
     }
 
-    @Override
-    public float getFrictionCoefficient() {
-        return 0;
+    private void updateLinkersSense(){
+        boolean reversed = (velocity.x<0);
+        setDirDirectorLinker(reversed);
+        setDirPushedLinkers(reversed);
+        setDirTowedLinkers(reversed);
     }
 
-    @Override
-    public float getAcceleration() {
-        return this.acceleration.x;
-    }
-
-    @Override
-    public void setAcceleration(float speed) {
-        this.acceleration.x = speed;
-    }
-
-    @Override
-    public float getDistanceTraveled() {
-        return 0;
-    }
-
-    @Override
-    public void resetDistanceTraveled() {
-
+    private void setDirDirectorLinker(boolean reversed) {
+        Locomotive locomotive = (Locomotive) getDirectorLinker();
+        if(reversed)locomotive.setDir(locomotive.getDir().inverse());
     }
 
     public boolean isBrakesActivated() {
@@ -513,5 +406,102 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     public void setBrakesActivated(boolean brakesActivated) {
         this.brakesActivated = brakesActivated;
     }
+
+    //////////////////PRIVATE/////////////////////////////////////////////
+
+    private void setDirPushedLinkers(boolean reversed) {
+        Iterator<Linker> iterator;
+        if (reversed) {
+            iterator = getLinkers().iterator();
+        } else {
+            iterator = getLinkers().descendingIterator();
+        }
+
+        Tractor tractor = getDirectorLinker();
+        while (iterator.hasNext()) {
+            Linker next = iterator.next();
+            if (next == tractor) {
+                break;
+            }
+        }
+        Dir pushDir = ((Locomotive) tractor).getDir();
+
+        while (iterator.hasNext()) {
+            Linker nextLinker = iterator.next();
+            Track nextTrack = nextLinker.getTrack();
+            nextLinker.setDir(nextTrack.getDirWhenEnteringFrom(pushDir.inverse()));
+            pushDir = nextLinker.getDir();
+        }
+    }
+
+    private void setDirTowedLinkers(boolean reversed) {
+        Iterator<Linker> iterator;
+        if (!reversed) {
+            iterator = getLinkers().iterator();
+        } else {
+            iterator = getLinkers().descendingIterator();
+        }
+        Tractor tractor = getDirectorLinker();
+        while (iterator.hasNext()) {
+            Linker next = iterator.next();
+            if (next == tractor) {
+                break;
+            }
+        }
+        Track oldTrack = ((Locomotive) tractor).getTrack();
+        while (iterator.hasNext()) {
+            Linker nextLinker = iterator.next();
+            nextLinker.setDir(nextLinker.getPosition().locate(oldTrack.getPosition()));
+            oldTrack = nextLinker.getTrack();
+        }
+    }
+
+    private boolean moveLinkers(boolean reversed) {
+        Iterator<Linker> iterator;
+        if (!reversed) {
+            iterator = getLinkers().iterator();
+        } else {
+            iterator = getLinkers().descendingIterator();
+        }
+        while (iterator.hasNext()) {
+            Linker next = iterator.next();
+            Track track = next.getTrack();
+            Dir nextDir = next.getDir();
+            Track nextTrack = null;
+            nextTrack = track.getConnected(nextDir);
+            if (nextTrack != null) {
+                if (nextTrack.getLinker() == null) {
+                    next.getTrack().removeLinker();
+                    if (nextTrack.canEnter(next.getDir().inverse(), next)) {
+                        nextTrack.enterLinkerFromDir(next.getDir().inverse(), next);
+                    } else {
+                        System.out.println("NO PUEDO ENTRAR AQUÍ !!!");
+                        return false;
+                    }
+                } else {
+                    crash(nextTrack.getLinker());
+                    return false;
+                }
+            } else {
+                System.out.println("Ojo, no hay track en " + track.getPosition() + " -> " + next.getDir());
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void crash(Linker linker) {
+        Train crashedTrain = linker.getTrain();
+        float transmittedForce = Math.abs(getMass() * getAcceleration());
+        crashedTrain.applyExternalForce(transmittedForce, linker);
+        System.out.println("Transmitiendo fuerza :" + transmittedForce + " a " + linker);
+    }
+
+    private  void applyExternalForce(float amount, Linker linker) {
+        externalForce.set(amount);
+        UVector f = UVector.div(externalForce, getMass());
+        acceleration.add(f);
+    }
+
 
 }

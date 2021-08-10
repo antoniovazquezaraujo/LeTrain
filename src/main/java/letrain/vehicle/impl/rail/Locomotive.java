@@ -9,7 +9,7 @@ public class Locomotive extends Linker implements Tractor{
     private float force;
     private String aspect;
     float brakes;
-    boolean motorInverted = false;
+    boolean motorReversed = false;
     public Locomotive(String aspect){
         this.aspect = aspect;
         force = 0;
@@ -75,7 +75,12 @@ public class Locomotive extends Linker implements Tractor{
 
     @Override
     public float getForce() {
-        return this.force;
+        if(isMotorReversed()) {
+            return this.force * -1;
+        }
+        else {
+            return this.force;
+        }
     }
 
     @Override
@@ -96,20 +101,30 @@ public class Locomotive extends Linker implements Tractor{
     }
 
     @Override
-    public void applyForce() {
+    public void move() {
 
     }
 
     @Override
-    public void setMotorInverted(boolean motorInverted) {
-        this.motorInverted=motorInverted;
+    public void reverseMotor(boolean motorReversed) {
+        reverse(motorReversed);
     }
 
     @Override
-    public boolean isMotorInverted() {
-        return motorInverted;
+    public boolean isMotorReversed() {
+        return motorReversed;
     }
 
+    @Override
+    public void reverse(boolean reversed){
+        this.motorReversed =reversed;
+       super.reverse(reversed);
+    }
+
+    @Override
+    public boolean isReversed() {
+        return super.isReversed();
+    }
     /***********************************************************
      * Renderable implementation
      **********************************************************/

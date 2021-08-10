@@ -118,15 +118,15 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 switch (keyEvent.getCode()) {
                     case HOME:
                         if (model.getSelectedTrain() != null) {
-                            if(model.getSelectedTrain().getAcceleration()<0.1f) {
-                                model.getSelectedTrain().setMotorInverted(false);
+                            if(model.getSelectedTrain().getVelocity()<0.1f) {
+                                model.getSelectedTrain().reverse(false);
                             }
                         }
                         break;
                     case END:
                         if (model.getSelectedTrain() != null) {
-                            if(model.getSelectedTrain().getAcceleration()<0.1f) {
-                                model.getSelectedTrain().setMotorInverted(true);
+                            if(model.getSelectedTrain().getVelocity()<0.1f) {
+                                model.getSelectedTrain().reverse(true);
                             }
                         }
                         break;
