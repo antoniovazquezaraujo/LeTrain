@@ -13,7 +13,7 @@ class RailTrackTest extends Specification {
         track = new RailTrack();
         track.addRoute(Dir.N, Dir.S)
         RailTrack connected = new RailTrack()
-        track.connect(Dir.S, connected)
+        track.connectTrack(Dir.S, connected)
     }
 
     def cleanup() {
@@ -76,9 +76,9 @@ class RailTrackTest extends Specification {
         RailTrack other = new RailTrack()
 
         when:
-        track.connect(Dir.S, other)
+        track.connectTrack(Dir.S, other)
         then:
-        other.equals(track.getConnected(Dir.S))
+        other.equals(track.getConnectedTrack(Dir.S))
     }
 
     def "test unLink"() {
@@ -86,10 +86,10 @@ class RailTrackTest extends Specification {
         RailTrack other = new RailTrack()
 
         when:
-        track.connect(Dir.S, other)
-        track.disconnect(Dir.S)
+        track.connectTrack(Dir.S, other)
+        track.disconnectTrack(Dir.S)
         then:
-        null == track.getConnected(Dir.S)
+        null == track.getConnectedTrack(Dir.S)
     }
 
     def "test addVehicle"() {
@@ -97,7 +97,8 @@ class RailTrackTest extends Specification {
         Vehicle<RailTrack> v = new Wagon()
         boolean added = false
         when:
-        added = track.enterLinkerFromDir(Dir.S, v)
+        v.setDir(Dir.S);
+        added = track.enter( v)
         then:
         if (added) {
             v == track.getLinker()
@@ -109,11 +110,13 @@ class RailTrackTest extends Specification {
     def "test add two Vehicles"() {
         given:
         Vehicle<RailTrack> v = new Wagon()
+        v.setDir(Dir.S);
         Vehicle<RailTrack> v2 = new Wagon()
+        v2.setDir(Dir.N);
         boolean added = false
         when:
-        added = track.enterLinkerFromDir(Dir.S, v)
-        added = track.enterLinkerFromDir(Dir.N, v2)
+        added = track.enter( v)
+        added = track.enter( v2)
         then:
         if (added) {
             false
@@ -125,8 +128,9 @@ class RailTrackTest extends Specification {
     def "test removeVehicle"() {
         given:
         Vehicle<RailTrack> v = new Wagon()
+        v.setDir(Dir.N)
         when:
-        track.enterLinkerFromDir(Dir.N, v)
+        track.enter( v)
         track.removeLinker()
         then:
         null == track.getLinker()

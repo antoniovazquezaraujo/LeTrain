@@ -23,10 +23,7 @@ public class Truck implements Tractor {
 
     }
 
-    @Override
-    public void move() {
 
-    }
 
     @Override
     public void reverseMotor(boolean inverted) {

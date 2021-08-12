@@ -256,14 +256,16 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void createWagon(String c, RailTrack track) {
         Wagon wagon = new Wagon(c);
+        wagon.setDir(Dir.E);
         getNewTrain().pushBack(wagon);
-        track.enterLinkerFromDir(Dir.E, wagon);
+        track.enter(wagon);
     }
 
     private void createLocomotive(String c, RailTrack track) {
         Locomotive locomotive = new Locomotive(c);
+        locomotive.setDir(Dir.E);
         getNewTrain().pushBack(locomotive);
-        track.enterLinkerFromDir(Dir.E, locomotive);
+        track.enter(locomotive);
         if (getNewTrain().getDirectorLinker() == null) {
             getNewTrain().assignDefaultDirectorLinker();
         }

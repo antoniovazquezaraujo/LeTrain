@@ -24,8 +24,12 @@ public class SimpleRouter implements Serializable, Router {
     }
     @Override
     public String toString() {
+        String ret = "";
+        for (Dir dir : dirMap.keySet()) {
+            ret += " (" + dir + "-> " + dirMap.get(dir) + ") ";
+        }
         return "SimpleRouter{" +
-                "dirMap=" + dirMap +
+                "dirMap=" +ret +
                 '}';
     }
 

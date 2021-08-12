@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 public abstract class Track implements
         Serializable,
         Router,
-        Connectable,
+        ConnectableTrack,
         LinkerCompartment,
         Mapeable,
         LinkerCompartmentListener,
@@ -119,21 +119,17 @@ public abstract class Track implements
      * @return*/
 
     @Override
-    public Track getConnected(Dir dir) {
-//        Dir routerDir = getRouter().getDirWhenEnteringFrom(dir);
-//        if(routerDir!=null) {
-            return connections.get(dir);
-//        }
-//        return null;
+    public Track getConnectedTrack(Dir dir) {
+       return connections.get(dir);
     }
 
     @Override
-    public Track disconnect(Dir dir) {
+    public Track disconnectTrack(Dir dir) {
          return connections.remove(dir);
     }
 
     @Override
-    public boolean connect(Dir dir, Track track) {
+    public boolean connectTrack(Dir dir, Track track) {
          connections.put(dir, track);
         return true;
     }
@@ -164,8 +160,8 @@ public abstract class Track implements
     }
 
     @Override
-    public void enterLinkerFromDir(Dir d, Linker vehicle) {
-        getTrackDirector().enterLinkerFromDir(this, d, vehicle);
+    public void enter(Linker vehicle) {
+        getTrackDirector().enterLinkerFromDir(this, vehicle.getDir(), vehicle);
     }
 
     @Override
@@ -192,14 +188,51 @@ public abstract class Track implements
      * LinkerCompartmentListener implementation
      ***************************************************************/
     @Override
-    public boolean canEnter(Dir d, Linker v) {
-        return getTrackDirector().canEnter(this, d, v);
+    public boolean canEnter(Linker v) {
+        return getTrackDirector().canEnter( this, v.getDir(),  v);
     }
 
     @Override
     public boolean canExit(Dir d) {
-        return getTrackDirector().canExit(this, d);
+        return getTrackDirector().canExit(this,  this.linker.getDir());
     }
 
-
+//    public Track out(){
+//        boolean reversed = linker.isReversed();
+//        Dir outDir =null;
+//        if(!reversed) {
+//            outDir = linker.getDir();
+//        }else{
+//            outDir = linker.getDir().inverse();
+//        }
+//        Track targetTrack =getConnected(outDir);
+//        if(targetTrack.canEnter(outDir, linker)){
+//            targetTrack.in(outDir, linker);
+//            removeLinker();
+//            return targetTrack;
+//        }
+//        return null;
+//    }
+//
+//    public Track OLDout(){
+//        boolean reversed = linker.isReversed();
+//        Dir outDir = linker.getDir();
+//        Track targetTrack = getConnected(outDir);
+//        if(reversed) {
+//          outDir = getDirWhenEnteringFrom(outDir.inverse());
+//          targetTrack = getConnected(outDir);
+//        }
+//        if(targetTrack.canEnter(outDir, linker)){
+//            if(reversed){
+//                linker.setDir(targetTrack.getDirWhenEnteringFrom(linker.getDir()));
+//            }
+//            targetTrack.in(outDir.inverse(), linker);
+//            removeLinker();
+//            return targetTrack;
+//        }
+//        return null;
+//    }
+//    public void in(Dir dir, Linker linker){
+//        enterLinkerFromDir(dir, linker);
+//    }
 }

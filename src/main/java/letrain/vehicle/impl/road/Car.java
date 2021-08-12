@@ -7,7 +7,7 @@ import letrain.visitor.Visitor;
 public class Car extends Vehicle<RoadTrack> {
 
     @Override
-    public boolean advance() {
+    public boolean move() {
         return false;
     }
 

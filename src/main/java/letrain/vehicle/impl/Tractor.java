@@ -19,8 +19,6 @@ public interface Tractor extends Reversible {
 
     void decForce(float force);
 
-    void move();
-
     void reverseMotor(boolean inverted);
 
     boolean isMotorReversed();

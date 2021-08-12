@@ -34,8 +34,8 @@ class TrainTest extends Specification {
             track.addRoute(Dir.W, Dir.E)
             RailTrack old = map.getTrackAt(0, n-1);
             if(old!=null) {
-                track.connect(Dir.W, old)
-                old.connect(Dir.E, track)
+                track.connectTrack(Dir.W, old)
+                old.connectTrack(Dir.E, track)
             }
             map.addTrack(point, track)
         }
@@ -43,43 +43,26 @@ class TrainTest extends Specification {
         train1.pushFront(locomotive1)
         train1.pushBack(wagon1_1)
         train1.pushBack(wagon1_2)
-        map.getTrackAt(0,10).enterLinkerFromDir(Dir.W,locomotive1)
-        map.getTrackAt(0,11).enterLinkerFromDir(Dir.W,wagon1_1)
-        map.getTrackAt(0,12).enterLinkerFromDir(Dir.W,wagon1_2)
+        locomotive1.setDir(Dir.W)
+        map.getTrackAt(0,10).enter(locomotive1)
+        wagon1_2.setDir(Dir.W)
+        map.getTrackAt(0,11).enter(wagon1_1)
+        wagon1_2.setDir(Dir.W)
+        map.getTrackAt(0,12).enter(wagon1_2)
 
         train2.pushFront(locomotive2)
         train2.pushBack(wagon2_1)
         train2.pushBack(wagon2_2)
-        map.getTrackAt(0,14).enterLinkerFromDir(Dir.W,locomotive2)
-        map.getTrackAt(0,15).enterLinkerFromDir(Dir.W,wagon2_1)
-        map.getTrackAt(0,16).enterLinkerFromDir(Dir.W,wagon2_2)
+        locomotive2.setDir(Dir.W)
+        map.getTrackAt(0,10).enter(locomotive2)
+        wagon2_2.setDir(Dir.W)
+        map.getTrackAt(0,11).enter(wagon2_1)
+        wagon2_2.setDir(Dir.W)
+        map.getTrackAt(0,12).enter(wagon2_2)
 
     }
 
-    def borrame(){
-        when:
-        println "Acelerando"
-        train1.setForce(10000)
-        for (int i = 0; i < 1000; i++) {
-            train1.move()
-            println "Friction:"+ train1.getFrictionForce()+
-                    " Speed:"+ train1.getAcceleration()+
-                    " Pos:"+ locomotive1.getPosition()+
-                    " Distance:"+ train1.getDistanceTraveled()
 
-        }
-        println "Frenando"
-        train1.setForce(0)
-        train1.setBrakes(100)
-        for (int i = 0; i < 10; i++) {
-            train1.move()
-            println train1.getAcceleration() + ": "+ locomotive1.getPosition()
-
-        }
-        then:
-        true
-
-    }
     def compare(float f1, float f2) {
         return (float) (f1 - f2)
     }
@@ -286,21 +269,23 @@ class TrainTest extends Specification {
         train.pushFront(locomotive1)
         train.assignDefaultDirectorLinker()
         when:
-        map.getTrackAt(4, 0).enterLinkerFromDir(Dir.W, locomotive1)
-        map.getTrackAt(3, 0).enterLinkerFromDir(Dir.W, wagon1_1)
-        map.getTrackAt(2, 0).enterLinkerFromDir(Dir.W, wagon1_2)
-        locomotive1.setDir(Dir.E)
+        locomotive1.setDir(Dir.W)
+        map.getTrackAt(4, 0).enter(locomotive1)
+        wagon1_1.setDir(Dir.W)
+        map.getTrackAt(3, 0).enter(wagon1_1)
+        wagon1_2.setDir(Dir.W)
+        map.getTrackAt(2, 0).enter(wagon1_2)
         then:
         locomotive1.getPosition().getX().equals(4)
         wagon1_1.getPosition().getX().equals(3)
         wagon1_2.getPosition().getX().equals(2)
 
-        when:
-        train.advance()
-        then:
-        locomotive1.getPosition().getX().equals(5)
-        wagon1_1.getPosition().getX().equals(4)
-        wagon1_2.getPosition().getX().equals(3)
+//        when:
+//        train.move()
+//        then:
+//        locomotive1.getPosition().getX().equals(4)
+//        wagon1_1.getPosition().getX().equals(4)
+//        wagon1_2.getPosition().getX().equals(3)
 
 //        when:
 //        train.reverse(true)

@@ -20,9 +20,16 @@ public class TrackDirector<T extends Track> implements Serializable {
     }
 
     public void enterLinkerFromDir(T track, Dir d, Linker vehicle) {
+        if(vehicle.getTrack() != null){
+            vehicle.getTrack().removeLinker();
+        }
         vehicle.setTrack(track);
         vehicle.setPosition(track.getPosition());
-        vehicle.setDir(track.getRouter().getDirWhenEnteringFrom(d));
+        if(vehicle.isReversed()) {
+            vehicle.setDir(track.getRouter().getDirWhenEnteringFrom(d).inverse());
+        }else{
+            vehicle.setDir(track.getRouter().getDirWhenEnteringFrom(d.inverse()));
+        }
         track.setLinker(vehicle);
     }
 
@@ -38,9 +45,8 @@ public class TrackDirector<T extends Track> implements Serializable {
 
     public boolean canExit(T track, Dir d) {
         if (track.getLinker() != null) {
-            Dir exitDir = track.getRouter().getDirWhenEnteringFrom(track.getLinker().getDir());
-            T target = (T) track.getConnected(d);
-            return target != null && target.canEnter(d, track.getLinker());
+             T target = (T) track.getConnectedTrack(d);
+            return target != null && target.canEnter( track.getLinker());
         }
         return true; // Qué contestar si estaba vacío??
     }

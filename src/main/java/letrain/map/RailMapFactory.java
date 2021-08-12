@@ -135,11 +135,11 @@ public class RailMapFactory {
             model.getRailMap().removeTrack(track.getPosition().getX(), track.getPosition().getY());
             model.getRailMap().addTrack(model.getCursor().getPosition(), myNewTrack);
             for (Dir d : Dir.values()) {
-                if (track.getConnected(d) != null) {
-                    Track connected = track.getConnected(d);
-                    connected.disconnect(d.inverse());
-                    connected.connect(d.inverse(), myNewTrack);
-                    myNewTrack.connect(d, connected);
+                if (track.getConnectedTrack(d) != null) {
+                    Track connected = track.getConnectedTrack(d);
+                    connected.disconnectTrack(d.inverse());
+                    connected.connectTrack(d.inverse(), myNewTrack);
+                    myNewTrack.connectTrack(d, connected);
                 }
             }
             track = myNewTrack;
@@ -147,9 +147,9 @@ public class RailMapFactory {
         }
         if (oldTrack != null) {
             //conectamos el track con oldTrack en oldDir, bien.
-            track.connect(oldDir, oldTrack);
+            track.connectTrack(oldDir, oldTrack);
             //conectamos a oldTrack con track, en la inversa
-            oldTrack.connect(track.getDirWhenEnteringFrom(dir).inverse(), track);
+            oldTrack.connectTrack(track.getDirWhenEnteringFrom(dir).inverse(), track);
         }
 
         Point newPos = new Point(cursorPosition);

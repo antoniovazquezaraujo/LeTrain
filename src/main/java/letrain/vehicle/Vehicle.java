@@ -30,7 +30,7 @@ public abstract class Vehicle<T extends Track>
      * Transportable implementation
      **********************************************************/
     @Override
-    public boolean advance(){
+    public boolean move(){
         return true;
     };
 

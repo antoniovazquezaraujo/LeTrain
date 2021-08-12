@@ -101,11 +101,6 @@ public class Locomotive extends Linker implements Tractor{
     }
 
     @Override
-    public void move() {
-
-    }
-
-    @Override
     public void reverseMotor(boolean motorReversed) {
         reverse(motorReversed);
     }

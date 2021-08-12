@@ -107,7 +107,7 @@ public class InfoVisitor implements Visitor {
     private String getTrackConnectionsAspect(RailTrack track){
         StringBuffer ret = new StringBuffer();
         for(Dir d: Dir.values()){
-            Track connected = track.getConnected(d);
+            Track connected = track.getConnectedTrack(d);
             if(connected != null) {
                 ret.append("(" + d + "->" + connected + ")");
             }
@@ -132,7 +132,7 @@ public class InfoVisitor implements Visitor {
                     ret.append("(" + t.getKey() + "<->" + t.getValue() + ") ");
                 }
             });
-            ret.append("\nNorm:"+ router.getOriginalRoute()+ " Alt:"+ router.getAlternativeRoute()+" Using Alt:"+ (router.isUsingAlternativeRoute()?"TRUE":"FALSE"));
+            ret.append(" Norm:"+ router.getOriginalRoute()+ " Alt:"+ router.getAlternativeRoute()+" Using Alt:"+ (router.isUsingAlternativeRoute()?"TRUE":"FALSE"));
             return ret.toString();
     }
 

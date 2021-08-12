@@ -1,7 +1,7 @@
 package letrain.vehicle;
 
 public interface Transportable {
-    boolean advance();
+    boolean move();
 
     float getMass();
 

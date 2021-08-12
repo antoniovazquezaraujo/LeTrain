@@ -19,7 +19,8 @@ class MoveTrainTest extends Specification implements TestCircuit1Trait {
     }
 
     def "mover el tren por la via"() {
-
+        expect:
+        assert true;
     }
 
 }

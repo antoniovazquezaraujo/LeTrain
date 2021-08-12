@@ -77,8 +77,8 @@ trait TestCircuit1Trait {
         track.addRoute(oldDir, dir)
         track.setPosition(cursorPosition)
         if (oldTrack != null) {
-            track.connect(oldDir, oldTrack)
-            oldTrack.connect(track.getDirWhenEnteringFrom(dir).inverse(), track)
+            track.connectTrack(oldDir, oldTrack)
+            oldTrack.connectTrack(track.getDirWhenEnteringFrom(dir).inverse(), track)
         }
         railMap.addTrack(cursorPosition, track)
         if (canBeAFork(track, oldDir, dir)) {
@@ -92,8 +92,8 @@ trait TestCircuit1Trait {
             railMap.removeTrack(track.getPosition().getX(), track.getPosition().getY())
             railMap.addTrack(cursor.getPosition(), myNewTrack)
             for (Dir d : Dir.values()) {
-                if (track.getConnected(d) != null) {
-                    myNewTrack.connect(d, track.getConnected(d))
+                if (track.getConnectedTrack(d) != null) {
+                    myNewTrack.connectTrack(d, track.getConnectedTrack(d))
                 }
             }
             myNewTrack.setAlternativeRoute()

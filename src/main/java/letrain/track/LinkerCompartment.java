@@ -4,7 +4,7 @@ import letrain.map.Dir;
 import letrain.vehicle.impl.Linker;
 
 interface LinkerCompartment<T extends Track> {
-    void enterLinkerFromDir(Dir d, Linker t);
+    void enter(  Linker t);
 
     Linker removeLinker();
 

@@ -53,14 +53,14 @@ public class TrainFactory {
                     if (matcher.find()) {
                         final String vehicles = matcher.group(2);
                         char[] array = vehicles.toCharArray();
-                        RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition());
                         for (char c : array) {
+                            RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition());
                             if (Character.isUpperCase(c)) {
                                 createLocomotive(String.valueOf(c), track,model.getCursor().getDir());
                             } else {
                                 createWagon(String.valueOf(c), track,model.getCursor().getDir());
                             }
-                            model.getCursor().getPosition().move(model.getCursor().getDir());
+                            model.getCursor().getPosition().move(model.getCursor().getDir().inverse());
                         }
                     }
                 }
@@ -100,14 +100,16 @@ public class TrainFactory {
 
     private void createWagon(String c, RailTrack track, Dir dir) {
         Wagon wagon = new Wagon(c);
+        wagon.setDir(dir);
         getNewTrain().pushBack(wagon);
-        track.enterLinkerFromDir(dir, wagon);
+        track.enter( wagon);
     }
 
     private void createLocomotive(String c, RailTrack track, Dir dir) {
         Locomotive locomotive = new Locomotive(c);
+        locomotive.setDir(dir);
         getNewTrain().pushBack(locomotive);
-        track.enterLinkerFromDir(dir, locomotive);
+        track.enter(locomotive);
         if (getNewTrain().getDirectorLinker() == null) {
             getNewTrain().assignDefaultDirectorLinker();
         }

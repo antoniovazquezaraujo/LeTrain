@@ -11,13 +11,13 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
     public String toString() {
         String ret = "";
         if (originalRoute != null) {
-            ret += "Orig: " + originalRoute.getKey() + "->" + originalRoute.getValue() + "\n";
+            ret += "Orig: " + originalRoute.getKey() + "->" + originalRoute.getValue() + " ";
         }
         if (alternativeRoute != null) {
-            ret += "Alt: " + alternativeRoute.getKey() + "->" + alternativeRoute.getValue() + "\n";
+            ret += "Alt: " + alternativeRoute.getKey() + "->" + alternativeRoute.getValue() + " ";
         }
         for (Dir dir : dirMap.keySet()) {
-            ret += " (" + dir + "-> " + dirMap.get(dir) + ") ";
+            ret += " (" + dir + "-> " + dirMap.get(dir) + ")  ";
         }
         return ret;
     }
