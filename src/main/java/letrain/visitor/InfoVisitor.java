@@ -149,17 +149,14 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitTrain(Train train) {
-//        infoBarText+= "Accel:"+ train.getAcceleration()+ " Force:"+train.getForce()+ " Mass:"+ train.getMass()+ "\n";
-//        infoBarText+= "Brakes:"+ train.getBrakes();
         DecimalFormat df = new DecimalFormat("0000.0000");
         infoBarText+=
                 " F:" + df.format(train.getForce())+
+                " EF:"+ df.format(train.getExternalForce())+
                 " VE:"+ df.format(train.getVelocity())+
                 " DT:"+ df.format(train.getDistanceTraveled())+
                 " BR:"+ df.format(train.getBrakes())+
                 " RE:"+ train.isReversed();
-
-//        train.getLinkers().forEach(t->t.accept(this));
     }
 
     @Override
