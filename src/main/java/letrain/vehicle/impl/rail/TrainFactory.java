@@ -33,6 +33,7 @@ public class TrainFactory {
                     int x = Integer.valueOf(t.nextToken());
                     int y = Integer.valueOf(t.nextToken());
                     model.getCursor().setPosition(new Point(x, y));
+                    createNewTrain();
                     break;
                 case TRAIN_DIRECTION: {
                     String regexp = "(\\D{1,2})";
@@ -90,11 +91,11 @@ public class TrainFactory {
 
     Train newTrain;
 
+    private void createNewTrain(){
+        newTrain = new Train();
+        model.addTrain(newTrain);
+    }
     private Train getNewTrain() {
-        if (newTrain == null) {
-            newTrain = new Train();
-            model.addTrain(newTrain);
-        }
         return newTrain;
     }
 
