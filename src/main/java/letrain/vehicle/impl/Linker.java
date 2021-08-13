@@ -26,20 +26,21 @@ public abstract class Linker extends Tracker implements Linkable {
     }
 
     @Override
-    public boolean move(){
+    public Track move(){
         boolean reversed = isReversed();
         Dir outDir =null;
-        if(!reversed) {
-            outDir = getDir();
+        if(!isReversed()) {
+            outDir=getDir();
         }else{
-            outDir = getDir().inverse();
+            outDir=getDir().inverse();
         }
+
         Track targetTrack =getTrack().getConnectedTrack(outDir);
         if(targetTrack.canEnter(this)){
             targetTrack.enter(this);
-            return true;
+            return null;
         }
-        return false;
+        return targetTrack;
     }
 
     public Track getForwardTrack(){

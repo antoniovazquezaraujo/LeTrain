@@ -241,13 +241,13 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     }
 
     @Override
-    public boolean move() {
+    public Track move() {
         if (applyForces()) {
             moveLinkers();
             location.set(0);
         }
         acceleration.set(0);
-        return true;
+        return null;
     }
 
     public boolean applyForces() {
@@ -275,16 +275,21 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
         }
     }
 
-    private boolean moveLinkers() {
+    private Track moveLinkers() {
         Iterator<Linker> iterator = iterator();
         while (iterator.hasNext()) {
             Linker next = iterator.next();
-            if (!next.move()) {
-                crash(next);
-                return false;
+            Track crashedTrack = next.move();
+            if ( crashedTrack != null) {
+                if(crashedTrack.getLinker()!=null) {
+                    crash(next, crashedTrack);
+                }else{
+                    System.out.println("No hay salida por esta vía!!!!!");
+                }
+                return crashedTrack;
             }
         }
-        return true;
+        return null;
     }
 
     public Iterator<Linker> iterator() {
@@ -314,6 +319,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     /***********************************************************
      * Tractor implementation
      **********************************************************/
+
+    public float getExternalForce() {
+        return externalForce.x;
+    }
 
     @Override
     public float getForce() {

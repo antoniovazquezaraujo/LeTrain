@@ -1,5 +1,6 @@
 package letrain.vehicle.impl.road;
 
+import letrain.track.Track;
 import letrain.track.road.RoadTrack;
 import letrain.vehicle.Vehicle;
 import letrain.visitor.Visitor;
@@ -7,8 +8,8 @@ import letrain.visitor.Visitor;
 public class Car extends Vehicle<RoadTrack> {
 
     @Override
-    public boolean move() {
-        return false;
+    public Track move() {
+        return null;
     }
 
     @Override

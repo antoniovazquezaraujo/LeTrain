@@ -1,7 +1,9 @@
 package letrain.vehicle;
 
+import letrain.track.Track;
+
 public interface Transportable {
-    boolean move();
+    Track move();
 
     float getMass();
 
