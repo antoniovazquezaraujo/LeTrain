@@ -243,8 +243,13 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     @Override
     public Track move() {
         if (applyForces()) {
-            moveLinkers();
-            location.set(0);
+            Track t = moveLinkers();
+            if(t==null) {
+                location.set(0);
+            }else{
+                velocity.set(0);
+            }
+            return t;
         }
         acceleration.set(0);
         return null;
@@ -404,85 +409,32 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
         this.brakesActivated = brakesActivated;
     }
 
-    //////////////////PRIVATE/////////////////////////////////////////////
 
-    private void updateLinkersSense() {
-        setDirDirectorLinker();
-        setDirPushedLinkers(isReversed());
-        setDirTowedLinkers(isReversed());
-    }
-
-    private void setDirDirectorLinker() {
-        Locomotive locomotive = (Locomotive) getDirectorLinker();
-        Dir newDir = locomotive.getDir();
-        if (!isReversed()) {
-            newDir = locomotive.getDir().inverse();
-        }
-        Track locomotiveTrack = locomotive.getTrack();
-        Dir resultDir = locomotiveTrack.getDirWhenEnteringFrom(newDir);
-        locomotive.setDir(resultDir);
-    }
-
-    private void setDirPushedLinkers(boolean reversed) {
-        Iterator<Linker> iterator;
-        if (reversed) {
-            iterator = getLinkers().iterator();
-        } else {
-            iterator = getLinkers().descendingIterator();
-        }
-
-        Tractor tractor = getDirectorLinker();
-        while (iterator.hasNext()) {
-            Linker next = iterator.next();
-            if (next == tractor) {
-                break;
-            }
-        }
-        Dir pushDir = ((Locomotive) tractor).getDir();
-
-        while (iterator.hasNext()) {
-            Linker nextLinker = iterator.next();
-            Track nextTrack = nextLinker.getTrack();
-            nextLinker.setDir(nextTrack.getDirWhenEnteringFrom(pushDir));
-            pushDir = nextLinker.getDir();
-        }
-    }
-
-    private void setDirTowedLinkers(boolean reversed) {
-        Iterator<Linker> iterator;
-        if (!reversed) {
-            iterator = getLinkers().iterator();
-        } else {
-            iterator = getLinkers().descendingIterator();
-        }
-        Tractor tractor = getDirectorLinker();
-        while (iterator.hasNext()) {
-            Linker next = iterator.next();
-            if (next == tractor) {
-                break;
-            }
-        }
-        Track oldTrack = ((Locomotive) tractor).getTrack();
-        while (iterator.hasNext()) {
-            Linker nextLinker = iterator.next();
-            nextLinker.setDir(nextLinker.getPosition().locate(oldTrack.getPosition()));
-            oldTrack = nextLinker.getTrack();
-        }
-    }
-
-
-    private void crash(Linker linker) {
-        Train crashedTrain = linker.getTrain();
+    private void crash(Linker crasherLinker, Track track) {
+        Train crashedTrain = track.getLinker().getTrain();
         float transmittedForce = Math.abs(getMass() * getAcceleration());
-        crashedTrain.applyExternalForce(transmittedForce, linker);
-        System.out.println("Transmitiendo fuerza :" + transmittedForce + " a " + linker);
+        if(!isAPush(crasherLinker, track.getLinker())) {
+            transmittedForce*=-1;
+        }
+        crashedTrain.applyExternalForce(transmittedForce);
+
+        System.out.println("Transmitiendo fuerza :" + transmittedForce + " a " + crasherLinker);
     }
 
-    private void applyExternalForce(float amount, Linker linker) {
+    private void applyExternalForce(float amount) {
         externalForce.set(amount);
         UVector f = UVector.div(externalForce, getMass());
         acceleration.add(f);
     }
 
+    public boolean isAPush(Linker me, Linker you){
+        Dir myDir = me.isReversed()?me.getDir().inverse():me.getDir();
+        Dir yourDir = you.isReversed()?you.getDir().inverse():you.getDir();
+        int angularDistance = Math.abs(myDir.angularDistance(yourDir));
+        if(angularDistance <= 2 ||  angularDistance>= 6) {
+            return true;
+        }
+        return false;
+    }
 
 }

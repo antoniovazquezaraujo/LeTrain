@@ -26,7 +26,7 @@ public class TrackDirector<T extends Track> implements Serializable {
         vehicle.setTrack(track);
         vehicle.setPosition(track.getPosition());
         if(vehicle.isReversed()) {
-            vehicle.setDir(track.getRouter().getDirWhenEnteringFrom(d).inverse());
+            vehicle.setDir(track.getRouter().getDirWhenEnteringFrom(d));
         }else{
             vehicle.setDir(track.getRouter().getDirWhenEnteringFrom(d.inverse()));
         }
