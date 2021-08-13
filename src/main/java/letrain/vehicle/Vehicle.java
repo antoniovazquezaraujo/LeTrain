@@ -30,8 +30,8 @@ public abstract class Vehicle<T extends Track>
      * Transportable implementation
      **********************************************************/
     @Override
-    public boolean move(){
-        return true;
+    public Track move(){
+        return null;
     };
 
     @Override
