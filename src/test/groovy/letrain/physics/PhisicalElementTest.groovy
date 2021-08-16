@@ -7,7 +7,7 @@ class PhisicalElementTest extends Specification {
     PhysicEntity a;
 
     void setup() {
-        a = new PhysicEntity(Dir.E, 1);
+        a = new PhysicEntity(Math.PI/2, 1);
     }
 
     void cleanup() {
@@ -16,42 +16,74 @@ class PhisicalElementTest extends Specification {
 
     def "apply forces move to correct direction"() {
         given:
-        a.startTurn()
+        a.beginStep()
 
         when:
-        a.applyForce(VectorXY.fromDir(Dir.S, 100));
-        a.endTurn()
+        a.addForce(VectorXY.fromDir(Dir.S, 100));
+        a.applyForces()
+        a.endStep()
         then:
         a.velocity.toDir().equals(Dir.S);
 
         when:
-        a.applyForce(VectorXY.fromDir(Dir.NE, 2000));
-        a.endTurn()
+        a.addForce(VectorXY.fromDir(Dir.NE, 2000));
+        a.applyForces()
+        a.endStep()
         then:
         a.velocity.toDir().equals(Dir.NE);
     }
 
-    def "MotorizedEntity change motor force"() {
+    def "brakes deccelerate"(){
         given:
         MotorizedEntity m = new MotorizedEntity();
-        m.applyForce(VectorXY.fromDir(Dir.S, 1));
-        m.endTurn()
-        m.startTurn()
+        m.addForce(VectorXY.fromDir(Dir.NW, 10));
+        m.applyForces()
+        m.endStep()
+        m.beginStep()
+
+        when:
+        m.setBrakesForce(5)
+        then:
+        def preDistance = 0;
+        10.times{ it ->
+            VectorXY prePosition = m.position
+            m.applyForces()
+            m.endStep()
+            VectorXY postPosition = m.position
+            double postDistance = prePosition.distance(postPosition)
+            print postDistance +","+ preDistance
+        }
+
+    }
+    def "MotorizedEntity motor force accelerate while friction deccelerate"() {
+        given:
+        MotorizedEntity m = new MotorizedEntity();
+        m.addForce(VectorXY.fromDir(Dir.S, 1));
+        m.applyForces()
+        m.endStep()
+        m.beginStep()
 
         when:
         m.setMotorForce(10)
-
+        then:
+        def preDistance = 0;
         10.times{ it ->
-            m.applyMotorForce()
-            m.endTurn()
+            VectorXY prePosition = m.position
+            m.applyForces()
+            m.endStep()
+            VectorXY postPosition = m.position
+            double postDistance = prePosition.distance(postPosition)
+            assert postDistance >= preDistance
         }
         m.invert(true)
-        100.times{ it ->
-           //m.applyMotorForce()
-            m.endTurn()
+        10.times{ it ->
+            VectorXY prePosition = m.position
+            m.applyForces()
+            m.endStep()
+            VectorXY postPosition = m.position
+            double postDistance = prePosition.distance(postPosition)
+            assert postDistance <= preDistance
         }
-        then:
-        assert true
     }
 
 }

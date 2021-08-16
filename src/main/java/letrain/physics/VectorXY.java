@@ -3,8 +3,8 @@ package letrain.physics;
 import letrain.map.Dir;
 
 public class VectorXY {
-    public float x;
-    public float y;
+    public double x;
+    public double y;
 
     public VectorXY(VectorXY vectorXY){
         this(vectorXY.x, vectorXY.y);
@@ -13,7 +13,7 @@ public class VectorXY {
         this(0,0);
     }
 
-    public VectorXY(float x, float y) {
+    public VectorXY(double x, double y) {
         this.x = x;
         this.y = y;
     }
@@ -27,24 +27,24 @@ public class VectorXY {
         y = 0;
     }
 
-    public void setX(float source) {
+    public void setX(double source) {
         x = source;
     }
 
-    public void setY(float source) {
+    public void setY(double source) {
         y = source;
     }
 
-    public float getX() {
+    public double getX() {
         return x;
     }
 
-    public float getY() {
+    public double getY() {
         return y;
     }
 
-    public float magnitude() {
-        return (float) Math.sqrt(x * x);
+    public double magnitude() {
+        return (double) Math.sqrt(x * x+ y *y);
     }
 
     public void add(VectorXY v) {
@@ -52,11 +52,11 @@ public class VectorXY {
         y += v.y;
     }
 
-    public void addX(float x) {
+    public void addX(double x) {
         this.x += x;
     }
 
-    public void addY(float y) {
+    public void addY(double y) {
         this.y += y;
     }
 
@@ -65,20 +65,20 @@ public class VectorXY {
         y -= v.y;
     }
 
-    public void multX(float n) {
+    public void multX(double n) {
         x *= n;
     }
 
-    public void multY(float n) {
+    public void multY(double n) {
         y *= n;
     }
 
-    public void mult(float n) {
+    public void mult(double n) {
         x *= n;
         y *= n;
     }
 
-    public void scale(float value){
+    public void scale(double value){
         mult(value);
     }
 
@@ -86,7 +86,7 @@ public class VectorXY {
         x *= v.x;
         y *= v.y;
     }
-    public void div(float n) {
+    public void div(double n) {
         x /= n;
         y /= n;
     }
@@ -95,17 +95,17 @@ public class VectorXY {
         y /= v.y;
     }
 
-    public float distance(VectorXY v) {
-        float dx = x - v.x;
-        float dy = y - v.y;
-        return (float) Math.sqrt(dx * dy);
+    public double distance(VectorXY v) {
+        double dx = x - v.x;
+        double dy = y - v.y;
+        return (double) Math.sqrt(dx * dy);
     }
 
-    public float dot(VectorXY v) {
+    public double dot(VectorXY v) {
         return x * v.x + y * v.y;
     }
 
-    public float dot(float value) {
+    public double dot(double value) {
         return this.x * value + y * value;
     }
 
@@ -114,7 +114,7 @@ public class VectorXY {
     }
 
     public void normalize() {
-        float m = magnitude();
+        double m = magnitude();
         if (m != 0 && m != 1) {
             div(m);
         }
@@ -124,7 +124,7 @@ public class VectorXY {
         if (target == null) {
             target = new VectorXY();
         }
-        float m = magnitude();
+        double m = magnitude();
         if (m > 0) {
             target.setX(x / m);
             target.setY(y / m);
@@ -135,36 +135,36 @@ public class VectorXY {
         return target;
     }
 
-    public void limit(float max) {
+    public void limit(double max) {
         if (magnitude() > max) {
             normalize();
             mult(max);
         }
     }
 
-    public float angle() {
+    public double angle() {
         double angle = Math.atan2(y, x);
-        return (float) angle;
+        return (double) angle;
     }
 
-    public float clampRadians(float radians) {
-        return (float) (radians % (Math.PI * 2));
+    public double clampRadians(double radians) {
+        return (double) (radians % (Math.PI * 2));
     }
 
     public void rotate(double radians){
         double cr = Math.cos(radians);
         double sr = Math.sin(radians);
-        setX((float) (cr*x - sr*y));
-        setY((float) (sr*x + cr*y));
+        setX((double) (cr*x - sr*y));
+        setY((double) (sr*x + cr*y));
     }
-    public static VectorXY fromPolar(float radians, float module){
+    public static VectorXY fromPolar(double radians, double module){
         double x = Math.cos(radians) * module;
         double y = Math.sin(radians) * module;
-        return new VectorXY((float)x,(float)y);
+        return new VectorXY((double)x,(double)y);
     }
-    public static VectorXY fromDir(Dir dir, float module){
-        float degrees = dir.getValue() * 45;
-        float radians = toRadians(degrees);
+    public static VectorXY fromDir(Dir dir, double module){
+        double degrees = dir.getValue() * 45;
+        double radians = toRadians(degrees);
         return fromPolar(radians, module);
     }
     public Dir toDir(){
@@ -175,13 +175,13 @@ public class VectorXY {
     }
 
     // STATIC /////////////////////////////////////
-    public static float dot(VectorXY v1, VectorXY v2) {
+    public static double dot(VectorXY v1, VectorXY v2) {
         return v1.x * v2.x + v1.y * v2.y;
     }
     public static VectorXY div(VectorXY v1, VectorXY v2) {
         return div(v1, v2, null);
     }
-    public static VectorXY mult(VectorXY v, float n) {
+    public static VectorXY mult(VectorXY v, double n) {
         return mult(v, n, null);
     }
     public static VectorXY add(VectorXY v1, VectorXY v2) {
@@ -208,7 +208,7 @@ public class VectorXY {
         }
         return target;
     }
-    public static VectorXY mult(VectorXY v, float n, VectorXY target) {
+    public static VectorXY mult(VectorXY v, double n, VectorXY target) {
         if (target == null) {
             target = new VectorXY(v.x * n, v.y * n);
         } else {
@@ -229,10 +229,10 @@ public class VectorXY {
         }
         return target;
     }
-    public static VectorXY div(VectorXY v, float n) {
+    public static VectorXY div(VectorXY v, double n) {
         return div(v, n, null);
     }
-    public static VectorXY div(VectorXY v, float n, VectorXY target) {
+    public static VectorXY div(VectorXY v, double n, VectorXY target) {
         if (target == null) {
             target = new VectorXY(v.x / n, v.y / n);
         } else {
@@ -250,23 +250,23 @@ public class VectorXY {
         }
         return target;
     }
-    public static float distance(VectorXY v1, VectorXY v2) {
-        float dx = v1.x - v2.x;
-        float dy = v1.y - v2.y;
+    public static double distance(VectorXY v1, VectorXY v2) {
+        double dx = v1.x - v2.x;
+        double dy = v1.y - v2.y;
 
-        return (float) Math.sqrt(dx *dx + dy * dy);
+        return (double) Math.sqrt(dx *dx + dy * dy);
     }
-    public static float toRadians(float degrees) {
-        return (float) Math.toRadians(degrees);
+    public static double toRadians(double degrees) {
+        return (double) Math.toRadians(degrees);
     }
-    public static float toDegrees(float radians) {
-        return (float) Math.toDegrees(radians);
+    public static double toDegrees(double radians) {
+        return (double) Math.toDegrees(radians);
     }
-    public static float angleBetween(VectorXY v1, VectorXY v2) {
-        float arc = (v1.x * v1.x + v1.y * v1.y) * (v2.x * v2.x + v2.y * v2.y);
-        arc = (float) Math.sqrt(arc);
+    public static double angleBetween(VectorXY v1, VectorXY v2) {
+        double arc = (v1.x * v1.x + v1.y * v1.y) * (v2.x * v2.x + v2.y * v2.y);
+        arc = (double) Math.sqrt(arc);
         if (arc > 0) {
-            arc = (float) Math.acos((v1.x * v2.x + v1.y * v2.y) / arc);
+            arc = (double) Math.acos((v1.x * v2.x + v1.y * v2.y) / arc);
             if (v1.x * v2.y - v1.y * v2.x < 0) {
                 arc = -arc;
             }
@@ -274,12 +274,12 @@ public class VectorXY {
         return arc;
     }
 
-    public static float simpleAngleBetween(VectorXY v1, VectorXY v2) {
+    public static double simpleAngleBetween(VectorXY v1, VectorXY v2) {
         double a = Math.atan2(v2.y, v2.x) - Math.atan2(v1.y, v1.x);
-        return (float) ((a + Math.PI) % (Math.PI * 2) - Math.PI);
+        return (double) ((a + Math.PI) % (Math.PI * 2) - Math.PI);
     }
 
-    public static double cardinal(float angle, int steps){
+    public static double cardinal(double angle, int steps){
         return Math.floor(steps*angle/(2*Math.PI)+steps +0.5)%steps;
     }
 }

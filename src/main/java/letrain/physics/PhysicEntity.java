@@ -3,71 +3,73 @@ package letrain.physics;
 import letrain.map.Dir;
 
 public class PhysicEntity {
-    VectorXY turnPosition;
-    VectorXY position;
-    VectorXY velocity;
-    VectorXY acceleration;
-    VectorXY friction;
-    float mass;
-    final static float FRICTION_COEFICIENT = 0.9f;
-    public PhysicEntity(float radians, float magnitude) {
+    protected VectorXY turnPosition;
+    protected VectorXY position;
+    protected VectorXY velocity;
+    protected double mass;
+    final static double FRICTION_COEFICIENT = 0.9f;
+    public PhysicEntity(double radians, double magnitude) {
         this(
                 VectorXY.fromPolar(radians, magnitude),
-                VectorXY.fromPolar(0, 0),
-                VectorXY.fromPolar(0, 0),
-                1);
-    }
-
-    public PhysicEntity(Dir dir, float magnitude) {
-        this(VectorXY.fromDir(dir, magnitude), VectorXY.fromPolar(0, 0), VectorXY.fromPolar(0, 0), 1);
+                VectorXY.fromPolar(0, 0)
+        );
     }
 
     public PhysicEntity() {
-        this(new VectorXY(), new VectorXY(), new VectorXY(), 1);
+        this(new VectorXY(), new VectorXY());
     }
 
-    public PhysicEntity(VectorXY position, VectorXY velocity, VectorXY acceleration, float mass) {
+    public PhysicEntity(VectorXY position, VectorXY velocity) {
         this.position = position;
         this.velocity = velocity;
-        this.acceleration = acceleration;
-        this.mass = mass;
+        this.mass = 1;
         this.turnPosition = VectorXY.fromPolar(0, 0);
-        this.friction = new VectorXY(0,0);
     }
 
-    public void startTurn() {
-        acceleration.reset();
+    public void beginStep() {
         turnPosition.set(position);
     }
 
-    public void applyForce(VectorXY force) {
-        acceleration.add(force);
+    public void addForce(VectorXY force) {
+        velocity.add(force);
+    }
+    public void applyForces(){
+        applyFrictionForce();
     }
 
-    public void endTurn() {
-        System.out.println(this);
-        applyFrictionForce();
-        velocity.add(acceleration);
+    public void endStep() {
         turnPosition.add(velocity);
-        float distance = VectorXY.distance(position, turnPosition);
-        System.out.println(this);
+        double distance = VectorXY.distance(position, turnPosition);
         if (distance > 0) {
             position.set(turnPosition);
             move(distance);
         }
-        acceleration.reset();
+        System.out.println(this);
+    }
+    public double getMass() {
+        return mass;
+    }
+
+    public void setMass(double mass) {
+        this.mass = mass;
     }
 
     private void applyFrictionForce() {
         velocity.mult(FRICTION_COEFICIENT);
     }
 
-    public void move(float distance) {
-        System.out.println("Moving distance: "+ distance);
-//        position.normalize();
+    public void move(double distance) {
+        System.out.println("Moving distance: " + distance);
+    }
+    public Dir getDir () {
+        double angle = VectorXY.cardinal(velocity.angle(), 8);
+        return Dir.fromInt((int) angle);
     }
 
+    public double getSpeed(){
+        return velocity.magnitude();
+    }
     public String toString() {
-        return "Position: " + position + " TurnPosition:" + turnPosition + " Acceleration: " + acceleration + " Velocity: " + velocity;
+        return "Position: " + position + " TurnPosition:" + turnPosition + " Velocity: " + velocity + ":"+ getDir()+ " Speed:"+ String.format("%.2f",getSpeed());
     }
 }
