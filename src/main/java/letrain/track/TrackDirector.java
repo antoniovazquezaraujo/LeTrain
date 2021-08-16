@@ -32,7 +32,21 @@ public class TrackDirector<T extends Track> implements Serializable {
         }
         track.setLinker(vehicle);
     }
-
+    public void enter (T track, Linker vehicle) {
+        if(vehicle.getTrack() != null){
+            vehicle.getTrack().removeLinker();
+        }
+        vehicle.setTrack(track);
+        vehicle.setPosition(track.getPosition());
+        track.setLinker(vehicle);
+        Dir inDir = vehicle.getDir();
+        if(!vehicle.isReversed()) {
+            inDir = inDir.inverse();
+            vehicle.setDir(track.getRouter().getDirWhenEnteringFrom(inDir));
+        }else{
+            vehicle.setDir(track.getRouter().getDirWhenEnteringFrom(inDir).inverse());
+        }
+    }
     public Linker removeLinker(T track) {
         Linker ret = track.getLinker();
         track.setLinker(null);

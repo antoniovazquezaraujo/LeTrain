@@ -115,8 +115,16 @@ public abstract class Track implements
 
     /**************************************************************
      * Connectable implementation
-     **************************************************************
-     * @return*/
+     **************************************************************/
+
+    @Override
+    public Track getConnectedTrack() {
+        Dir outDir = getLinker().getDir();
+        if(getLinker().isReversed()){
+            outDir = outDir.inverse();
+        }
+        return getConnectedTrack(outDir);
+    }
 
     @Override
     public Track getConnectedTrack(Dir dir) {
@@ -160,10 +168,13 @@ public abstract class Track implements
     }
 
     @Override
-    public void enter(Linker vehicle) {
-        getTrackDirector().enterLinkerFromDir(this, vehicle.getDir(), vehicle);
+    public void enter(Dir d, Linker vehicle) {
+        getTrackDirector().enterLinkerFromDir(this,vehicle.getDir(), vehicle);
     }
-
+    @Override
+    public void enter(Linker vehicle) {
+        getTrackDirector().enter(this, vehicle);
+    }
     @Override
     public Linker removeLinker() {
         return getTrackDirector().removeLinker(this);
@@ -197,42 +208,5 @@ public abstract class Track implements
         return getTrackDirector().canExit(this,  this.linker.getDir());
     }
 
-//    public Track out(){
-//        boolean reversed = linker.isReversed();
-//        Dir outDir =null;
-//        if(!reversed) {
-//            outDir = linker.getDir();
-//        }else{
-//            outDir = linker.getDir().inverse();
-//        }
-//        Track targetTrack =getConnected(outDir);
-//        if(targetTrack.canEnter(outDir, linker)){
-//            targetTrack.in(outDir, linker);
-//            removeLinker();
-//            return targetTrack;
-//        }
-//        return null;
-//    }
-//
-//    public Track OLDout(){
-//        boolean reversed = linker.isReversed();
-//        Dir outDir = linker.getDir();
-//        Track targetTrack = getConnected(outDir);
-//        if(reversed) {
-//          outDir = getDirWhenEnteringFrom(outDir.inverse());
-//          targetTrack = getConnected(outDir);
-//        }
-//        if(targetTrack.canEnter(outDir, linker)){
-//            if(reversed){
-//                linker.setDir(targetTrack.getDirWhenEnteringFrom(linker.getDir()));
-//            }
-//            targetTrack.in(outDir.inverse(), linker);
-//            removeLinker();
-//            return targetTrack;
-//        }
-//        return null;
-//    }
-//    public void in(Dir dir, Linker linker){
-//        enterLinkerFromDir(dir, linker);
-//    }
+
 }

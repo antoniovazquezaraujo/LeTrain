@@ -243,11 +243,12 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     @Override
     public Track move() {
         if (applyForces()) {
+            reverseIfChangedSense();
             Track t = moveLinkers();
             if(t==null) {
                 location.set(0);
             }else{
-                velocity.set(0);
+//                velocity.set(0);
             }
             return t;
         }
@@ -258,17 +259,29 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     public boolean applyForces() {
         float prevVelocitySign = Math.signum(velocity.x);
         addForce(externalForce);
+        externalForce.set(0);
         motorForce.set(getTractorsForce());
         addForce(motorForce);
         applyFriction();
         applyBrakes();
         velocity.add(acceleration);
-        if(limitVelocity()){
+//        if(limitVelocity()){
             location.add(velocity);
-        }
+//        }
         return Math.abs(location.x) > 10.0;
     }
 
+    private void reverseIfChangedSense(){
+        if((getVelocity() < 0 && !isReversed() )){
+            reverse(true);
+            velocity.mult(-1);
+//            acceleration.set(0);
+        }else if (getVelocity() > 0 && isReversed()){
+            reverse(false);
+            velocity.mult(-1);
+//            acceleration.set(0);
+        }
+    }
     private boolean limitVelocity() {
         if (getVelocity() < 0 && !isReversed() || getVelocity() > 0 && isReversed()) {
             velocity.set(0);
@@ -413,11 +426,11 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     private void crash(Linker crasherLinker, Track track) {
         Train crashedTrain = track.getLinker().getTrain();
         float transmittedForce = Math.abs(getMass() * getAcceleration());
+        this.applyExternalForce(transmittedForce/2 *-1);
         if(!isAPush(crasherLinker, track.getLinker())) {
             transmittedForce*=-1;
         }
-        crashedTrain.applyExternalForce(transmittedForce);
-
+        crashedTrain.applyExternalForce(transmittedForce/2);
         System.out.println("Transmitiendo fuerza :" + transmittedForce + " a " + crasherLinker);
     }
 
