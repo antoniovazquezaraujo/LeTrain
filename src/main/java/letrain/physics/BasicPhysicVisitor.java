@@ -21,6 +21,7 @@ public class BasicPhysicVisitor implements PhysicVisitor {
     @Override
     public void visitModel(PhysicModel model) {
         if(model.getSelectedBody() != null){
+            this.selectedBody= model.getSelectedBody();
             visitBody(model.getSelectedBody());
         }
         model.getBodies().forEach(t -> t.accept(this));

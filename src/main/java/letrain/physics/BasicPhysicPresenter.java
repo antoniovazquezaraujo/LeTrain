@@ -88,125 +88,80 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
     public void onChar(KeyEvent keyEvent) {
         {
             switch (keyEvent.getCode()) {
-                case F1:
-                    model.setMode(PhysicModel.Mode.BODIES);
+                case SPACE:
+                    createBody();
                     break;
-                case F2:
-                    model.setMode(PhysicModel.Mode.MAKE_BODIES);
-                    newBody = null;
-                    break;
-            }
+                case A:
+                    if (model.getSelectedBody() != null) {
+                        if (keyEvent.isShiftDown()) {
+                            model.getSelectedBody().setMotorForce(model.getSelectedBody().getMotorForce() - 1.0f);
+                        } else {
+                            model.getSelectedBody().setMotorForce(model.getSelectedBody().getMotorForce() + 1.0f);
+                        }
+                        model.getSelectedBody().setBrakesActivated(false);
+                        model.getSelectedBody().setBrakesForce(0);
 
-            switch (model.getMode()) {
-                case BODIES:
-                    this.newBody = null;
-                    switch (keyEvent.getCode()) {
-                        case SPACE:
-                            if (model.getSelectedBody() != null) {
-                                model.getSelectedBody().setBrakesActivated(!model.getSelectedBody().isBrakesActivated());
-                                model.getSelectedBody().setMotorForce(0);
-                                model.getSelectedBody().setBrakesForce(0);
-                            }
-                            break;
-                        case UP:
-                            if (model.getSelectedBody() != null) {
-                                if (keyEvent.isControlDown()) {
-                                        model.getSelectedBody().setBrakesForce(model.getSelectedBody().getBrakesForce() + 1.0f);
-                                    } else {
-                                        model.getSelectedBody().setMotorForce(model.getSelectedBody().getMotorForce() + 1.0f);
-                                    }
-                            }
-                            break;
-                        case DOWN:
-                            if (model.getSelectedBody() != null) {
-                                if (keyEvent.isControlDown()) {
-                                    model.getSelectedBody().setBrakesForce(model.getSelectedBody().getBrakesForce() - 1.0f);
-                                } else {
-                                    model.getSelectedBody().setMotorForce(model.getSelectedBody().getMotorForce() - 1.0f);
-                                }
-                            }
-                            break;
-                        case P:
-                            selectPrevBody();
-                            break;
-                        case N:
-                            selectNextBody();
-                            break;
-                        case DELETE:
-                            Vector2D newVelocity = Vector2D.fromDir(model.getCursor().getDir(), getModel().getSelectedBody().getVelocity().magnitude());
-                            getModel().getSelectedBody().setVelocity(newVelocity);
-                            break;
-                        case PAGE_UP:
-                            if (keyEvent.isControlDown()) {
-                                mapPageRight();
-                            } else {
-                                mapPageUp();
-                            }
-                            break;
-                        case PAGE_DOWN:
-                            if (keyEvent.isControlDown()) {
-                                mapPageLeft();
-                            } else {
-                                mapPageDown();
-                            }
                     }
                     break;
-
-                case MAKE_BODIES:
-                    String c = keyEvent.getText();
-                    if (!c.isEmpty()) {
-                        if (!c.matches("([A-Za-z])?")) {
-                            break;
+                case B:
+                    if (model.getSelectedBody() != null) {
+                        if (keyEvent.isShiftDown()) {
+                            model.getSelectedBody().setBrakesForce(model.getSelectedBody().getBrakesForce() - 1.0f);
+                        } else {
+                            model.getSelectedBody().setBrakesForce(model.getSelectedBody().getBrakesForce() + 1.0f);
                         }
-                        createBody(c);
-                        model.getCursor().getPosition().move(Dir.E);
+                    }
+                    model.getSelectedBody().setBrakesActivated(true);
+                    model.getSelectedBody().setMotorForce(0);
+                    break;
+                case P:
+                    selectPrevBody();
+                    break;
+                case N:
+                    selectNextBody();
+                    break;
+                case DELETE:
+                    Vector2D newVelocity = Vector2D.fromDir(model.getCursor().getDir(), getModel().getSelectedBody().getVelocity().magnitude());
+                    getModel().getSelectedBody().setVelocity(newVelocity);
+                    break;
+                case PAGE_UP:
+                    if (keyEvent.isControlDown()) {
+                        mapPageRight();
                     } else {
-                        switch (keyEvent.getCode()) {
-                            case UP:
-                                if (keyEvent.isShiftDown()) {
-                                } else if (keyEvent.isControlDown()) {
-                                } else {
-                                    getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
-                                    cursorForward();
-                                }
-                                break;
-                            case PAGE_UP:
-                                if (keyEvent.isControlDown()) {
-                                    mapPageLeft();
-                                } else {
-                                    mapPageUp();
-                                }
-                                break;
-                            case PAGE_DOWN:
-                                if (keyEvent.isControlDown()) {
-                                    mapPageRight();
-                                } else {
-                                    mapPageDown();
-                                }
-                                break;
-                            case DOWN:
-                                getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
-                                cursorBackward();
-                                break;
-                            case LEFT:
-                                cursorTurnLeft();
-                                break;
-                            case RIGHT:
-                                cursorTurnRight();
-                                break;
-                        }
+                        mapPageUp();
                     }
-
+                    break;
+                case PAGE_DOWN:
+                    if (keyEvent.isControlDown()) {
+                        mapPageLeft();
+                    } else {
+                        mapPageDown();
+                    }
+                    break;
+                case UP:
+                    getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
+                    cursorForward();
+                    break;
+                case DOWN:
+                    getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
+                    cursorBackward();
+                    break;
+                case LEFT:
+                    cursorTurnLeft();
+                    break;
+                case RIGHT:
+                    cursorTurnRight();
+                    break;
             }
 
         }
 
     }
 
-    private void createBody(String c) {
+    private void createBody() {
         Body2D body = new Body2D();
         body.setPosition(new Vector2D(model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY()));
-        body.setVelocity(Vector2D.fromDir(model.getCursor().getDir(), 0));
+        body.setVelocity(Vector2D.fromDir(model.getCursor().getDir(), 1));
         model.addBody(body);
         model.setSelectedBody(body);
     }
@@ -255,6 +210,7 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
             selectedBodyIndex = 0;
         }
         selectedBody = model.getBodies().get(selectedBodyIndex);
+        model.setSelectedBody(selectedBody);
     }
 
     public void selectPrevBody() {
@@ -266,6 +222,7 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
             selectedBodyIndex = model.getBodies().size() - 1;
         }
         selectedBody = model.getBodies().get(selectedBodyIndex);
+        model.setSelectedBody(selectedBody);
     }
 
 
