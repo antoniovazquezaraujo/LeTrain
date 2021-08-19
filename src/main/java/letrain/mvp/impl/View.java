@@ -27,7 +27,7 @@ public class View extends StackPane implements letrain.mvp.View {
     private Text helpBar;
 
     public View(GameViewListener gameViewListener) {
-        viewGrid = new ViewGrid();
+        viewGrid = new ViewGrid(gameViewListener);
         this.gameViewListener = gameViewListener;
 //        setCenter(viewGrid);
 

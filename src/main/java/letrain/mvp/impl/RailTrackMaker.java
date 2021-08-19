@@ -1,9 +1,8 @@
 package letrain.mvp.impl;
 
 import javafx.scene.input.KeyEvent;
-import letrain.map.*;
-import letrain.track.Track;
-import letrain.track.rail.*;
+import letrain.map.Point;
+import letrain.map.RailMapFactory;
 import letrain.vehicle.impl.Cursor;
 
 import static letrain.mvp.impl.CompactPresenter.TrackType.STOP_TRACK;

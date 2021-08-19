@@ -1,7 +1,10 @@
 package letrain.track;
 
 import javafx.util.Pair;
-import letrain.map.*;
+import letrain.map.Dir;
+import letrain.map.Mapeable;
+import letrain.map.Point;
+import letrain.map.Router;
 import letrain.vehicle.impl.Linker;
 import letrain.visitor.Renderable;
 

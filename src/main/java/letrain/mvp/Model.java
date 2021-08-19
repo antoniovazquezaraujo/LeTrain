@@ -1,7 +1,6 @@
 package letrain.mvp;
 
 import letrain.map.RailMap;
-import letrain.mvp.impl.delegates.TrainFactory;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Train;

@@ -2,6 +2,8 @@ package letrain.physics;
 
 import letrain.map.Dir;
 
+import java.util.Objects;
+
 public class Vector2D {
     public final double x;
     public final double y;
@@ -178,5 +180,22 @@ public class Vector2D {
     }
     public static double cardinal(double angle, int steps){
         return Math.floor(steps*angle/(2*Math.PI)+steps +0.5)%steps;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Vector2D vector2D = (Vector2D) o;
+        return Double.compare(vector2D.x, x) == 0 && Double.compare(vector2D.y, y) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(x, y);
+    }
+
+    public boolean almostEquals(Vector2D vector2D) {
+        return Double.compare(vector2D.x, x) == 0 && Double.compare(vector2D.y, y) == 0;
     }
 }

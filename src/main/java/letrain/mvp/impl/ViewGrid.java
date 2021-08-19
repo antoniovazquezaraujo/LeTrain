@@ -4,17 +4,20 @@ import com.sun.javafx.tk.FontMetrics;
 import com.sun.javafx.tk.Toolkit;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import letrain.map.Point;
+import letrain.mvp.GameViewListener;
 import letrain.mvp.View;
 
 
 public class ViewGrid extends Pane implements View {
     private static final int ROWS = 40;
     private static final int COLS = 100;
+    private final GameViewListener gameViewListener;
     private Point mapScrollPage = new Point(0, 0);
     private final Canvas canvas;
     private final GraphicsContext gc;
@@ -24,7 +27,8 @@ public class ViewGrid extends Pane implements View {
     private final float charWidth;
     private final float charHeight;
 
-    public ViewGrid() {
+    public ViewGrid(GameViewListener gameViewListener) {
+        this.gameViewListener = gameViewListener;
         setStyle("-fx-background-color: black;");
         FontMetrics metrics = Toolkit.getToolkit().getFontLoader().getFontMetrics(font);
         charWidth = metrics.computeStringWidth("X");
@@ -35,7 +39,11 @@ public class ViewGrid extends Pane implements View {
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFont(font);
     }
-
+    private void addEventListener() {
+        addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
+            gameViewListener.onChar(keyEvent);
+        });
+    }
     @Override
     public Point getMapScrollPage() {
         return this.mapScrollPage;

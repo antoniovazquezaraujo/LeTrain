@@ -1,7 +1,7 @@
 package letrain.map;
 
-import letrain.mvp.impl.CompactPresenter;
 import letrain.mvp.Model;
+import letrain.mvp.impl.CompactPresenter;
 import letrain.track.Track;
 import letrain.track.rail.*;
 

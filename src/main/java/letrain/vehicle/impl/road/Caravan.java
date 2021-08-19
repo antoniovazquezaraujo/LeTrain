@@ -1,7 +1,7 @@
 package letrain.vehicle.impl.road;
 
-import letrain.visitor.Visitor;
 import letrain.vehicle.impl.Linker;
+import letrain.visitor.Visitor;
 
 public class Caravan extends Linker {
     @Override

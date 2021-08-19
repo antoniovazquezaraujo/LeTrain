@@ -1,6 +1,5 @@
 package letrain.track.road;
 
-import letrain.map.Dir;
 import letrain.map.Router;
 import letrain.track.Track;
 import letrain.vehicle.impl.Linker;

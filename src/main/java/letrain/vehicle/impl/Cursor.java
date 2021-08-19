@@ -1,8 +1,8 @@
 package letrain.vehicle.impl;
 
 import letrain.map.Point;
-import letrain.visitor.Visitor;
 import letrain.vehicle.Vehicle;
+import letrain.visitor.Visitor;
 
 public class Cursor extends Vehicle {
     public enum CursorMode{
