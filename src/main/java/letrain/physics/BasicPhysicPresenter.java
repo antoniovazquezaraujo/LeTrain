@@ -32,7 +32,7 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
     private View view;
     private Timeline loop;
     private PhysicVisitor renderer;
-//    private final InfoVisitor informer;
+    private final PhysicInfoVisitor informer;
 
     RailTrackMaker maker;
     private boolean reversed = false;
@@ -43,7 +43,7 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
         view = new View(this);
         this.model = new BasicPhysicModel();
         renderer = new BasicPhysicVisitor(view);
-
+        informer = new PhysicInfoVisitor(view);
     }
 
     public void start() {
@@ -53,6 +53,7 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
         KeyFrame kf = new KeyFrame(Duration.seconds(.1), actionEvent -> {
             view.clear();
             renderer.visitModel(model);
+            informer.visitModel(model);
             view.paint();
             model.moveBodies();
         });
@@ -114,15 +115,20 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
                     model.getSelectedBody().setBrakesActivated(true);
                     model.getSelectedBody().setMotorForce(0);
                     break;
+                case M:
+                    if (model.getSelectedBody() != null) {
+                        if (keyEvent.isShiftDown()) {
+                            model.getSelectedBody().setMass(model.getSelectedBody().getMass() - 1);
+                        } else {
+                            model.getSelectedBody().setMass(model.getSelectedBody().getMass() + 1);
+                        }
+                    }
+                    break;
                 case P:
                     selectPrevBody();
                     break;
                 case N:
                     selectNextBody();
-                    break;
-                case DELETE:
-                    Vector2D newVelocity = Vector2D.fromDir(model.getCursor().getDir(), getModel().getSelectedBody().getVelocity().magnitude());
-                    getModel().getSelectedBody().setVelocity(newVelocity);
                     break;
                 case PAGE_UP:
                     if (keyEvent.isControlDown()) {
@@ -147,10 +153,25 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
                     cursorBackward();
                     break;
                 case LEFT:
-                    cursorTurnLeft();
+                    if (keyEvent.isControlDown()) {
+                        if (model.getSelectedBody() != null) {
+                            Vector2D newVelocity = Vector2D.fromDir(model.getSelectedBody().getDir().turnLeft(), getModel().getSelectedBody().getVelocity().magnitude());
+                            getModel().getSelectedBody().setVelocity(newVelocity);
+                        }
+
+                    } else {
+                        cursorTurnLeft();
+                    }
                     break;
                 case RIGHT:
-                    cursorTurnRight();
+                    if (keyEvent.isControlDown()) {
+                        if (model.getSelectedBody() != null) {
+                            Vector2D newVelocity = Vector2D.fromDir(model.getSelectedBody().getDir().turnRight(), getModel().getSelectedBody().getVelocity().magnitude());
+                            getModel().getSelectedBody().setVelocity(newVelocity);
+                        }
+                    } else {
+                        cursorTurnRight();
+                    }
                     break;
             }
 

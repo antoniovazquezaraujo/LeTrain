@@ -92,7 +92,7 @@ public class BasicPhysicModel implements PhysicModel {
         for (Body2D body : bodies) {
             body.beginStep();
             body.applyForces();
-            if (body.distanceTraveledInStep > 10) {
+            if (body.distanceTraveledInStep > 100) {
                 Dir dir = body.velocity.toDir();
                 Vector2D gridVelocity = Vector2D.fromDir(dir, 1);
                 Vector2D futurePosition = body.position.add(gridVelocity);

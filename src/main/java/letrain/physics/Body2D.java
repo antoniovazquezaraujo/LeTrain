@@ -70,7 +70,7 @@ public class Body2D implements PhysicRenderable {
         velocity = computeFrictionForce();
         Vector2D positionReachedInStep = new Vector2D(position.x, position.y);
         positionReachedInStep = positionReachedInStep.add(velocity);
-        distanceTraveledInStep = Vector2D.distance(position, positionReachedInStep);
+        distanceTraveledInStep += Vector2D.distance(position, positionReachedInStep);
     }
 
     public Vector2D computeExternalForce() {
@@ -99,6 +99,7 @@ public class Body2D implements PhysicRenderable {
 
     public void endStep() {
         if (distanceTraveledInStep > 0) {
+            distanceTraveledInStep=0;
             move();
         }
     }
