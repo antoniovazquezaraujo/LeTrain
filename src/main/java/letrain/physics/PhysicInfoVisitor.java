@@ -31,7 +31,6 @@ public class PhysicInfoVisitor implements PhysicVisitor {
             DecimalFormat df = new DecimalFormat("0000.0000");
             infoBarText +=
                     " MF:" + df.format(body.getMotorForce()) +
-                            " EF:" + df.format(body.getExternalForce().magnitude()) +
                             " VE:" + df.format(body.getVelocity().magnitude()) +
                             " DT:" + df.format(body.distanceTraveledInStep) +
                             " BR:" + df.format(body.getBrakesForce()) +

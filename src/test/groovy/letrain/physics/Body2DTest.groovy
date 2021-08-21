@@ -13,7 +13,7 @@ class Body2DTest extends Specification {
 
     def "apply forces move to correct direction"() {
         given:
-        Body2D m = new Body2D(Math.PI/2, 1);
+        Body2D m = new Body2D(Dir.W);
         m.beginStep()
 
         when:

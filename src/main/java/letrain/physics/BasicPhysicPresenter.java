@@ -165,8 +165,11 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
                     break;
                 case RIGHT:
                     if (keyEvent.isControlDown()) {
-                        if (model.getSelectedBody() != null) {
-                            Vector2D newVelocity = Vector2D.fromDir(model.getSelectedBody().getDir().turnRight(), getModel().getSelectedBody().getVelocity().magnitude());
+                        if (model. getSelectedBody() != null) {
+                            double magnitude = getModel().getSelectedBody().getVelocity().magnitude();
+                            Dir dir = model.getSelectedBody().getDir();
+                            Dir turnRight = dir.turnRight();
+                            Vector2D newVelocity = Vector2D.fromDir(turnRight, magnitude);
                             getModel().getSelectedBody().setVelocity(newVelocity);
                         }
                     } else {
@@ -180,9 +183,8 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
     }
 
     private void createBody() {
-        Body2D body = new Body2D();
+        Body2D body = new Body2D(model.getCursor().getDir());
         body.setPosition(new Vector2D(model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY()));
-        body.setVelocity(Vector2D.fromDir(model.getCursor().getDir(), 1));
         model.addBody(body);
         model.setSelectedBody(body);
     }

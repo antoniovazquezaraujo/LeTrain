@@ -5,34 +5,30 @@ import letrain.map.Dir;
 public class Body2D implements PhysicRenderable {
     protected Vector2D position;
     protected Vector2D velocity;
-    protected Vector2D externalForce;
+    protected Vector2D heading;
+
     protected double distanceTraveledInStep = 0.0;
     protected double mass;
     double motorForce = 0.0;
     double brakesForce = 0.0;
-
     boolean brakesActivated = false;
     boolean inverted = false;
     public static final int MAX_BRAKES_FORCE = 10;
-    final static double FRICTION_COEFICIENT = 0.9f;
-    private String name;
-
-    public Body2D(double radians, double magnitude) {
-        this(
-                Vector2D.fromPolar(radians, magnitude),
-                Vector2D.fromPolar(0, 0)
-        );
-    }
+    final static double FRICTION_COEFICIENT = 0.99f;
 
     public Body2D() {
-        this(new Vector2D(), new Vector2D());
+        this(Dir.W);
     }
 
-    public Body2D(Vector2D position, Vector2D velocity) {
-        this.position = position;
-        this.velocity = velocity;
+    public Body2D(Dir dir) {
+        this(Vector2D.fromDir(dir, 1));
+    }
+
+    public Body2D(Vector2D heading) {
+        this.position = new Vector2D();
+        this.velocity = new Vector2D();
+        this.heading = heading;
         this.mass = 1;
-        this.externalForce = Vector2D.fromPolar(0, 0);
     }
 
     public void invert(boolean invert) {
@@ -59,38 +55,32 @@ public class Body2D implements PhysicRenderable {
         return this.brakesForce;
     }
 
-    public void addExternalForce(Vector2D force) {
-        externalForce = externalForce.add(force);
-    }
-
     public void applyForces() {
-        velocity = velocity.add(computeExternalForce());
-        velocity = velocity.add(computeMotorForce());
-        velocity = computeBrakesForce();
-        velocity = computeFrictionForce();
+        velocity.add(computeMotorForce());
+        velocity.mult(computeBrakesForce());
+        velocity.div(computeFrictionForce());
+
+        if (velocity.magnitude() > 0) {
+            heading = new Vector2D(velocity);
+            heading.normalize();
+        }
         Vector2D positionReachedInStep = new Vector2D(position.x, position.y);
-        positionReachedInStep = positionReachedInStep.add(velocity);
+        positionReachedInStep.add(velocity);
         distanceTraveledInStep += Vector2D.distance(position, positionReachedInStep);
     }
 
-    public Vector2D computeExternalForce() {
-        return new Vector2D(externalForce.div(this.mass));
-    }
-
     public Vector2D computeMotorForce() {
-        Vector2D motorForceAsVector2D = new Vector2D(velocity).normalize();
-        Vector2D forceVector = Vector2D.fromDir(getDir(), inverted ? motorForce * -1 : motorForce);
-        motorForceAsVector2D = motorForceAsVector2D.add(forceVector);
-        return motorForceAsVector2D;
+        Vector2D ret = new Vector2D(this.heading);
+        ret.mult((inverted ? motorForce * -1 : motorForce));
+        return ret;
     }
 
-    public Vector2D computeBrakesForce() {
-        double n = (MAX_BRAKES_FORCE - brakesForce) / MAX_BRAKES_FORCE;
-        return velocity.mult(n);
+    public double computeBrakesForce() {
+        return (MAX_BRAKES_FORCE - brakesForce) / MAX_BRAKES_FORCE;
     }
 
-    private Vector2D computeFrictionForce() {
-        return velocity.mult(FRICTION_COEFICIENT);
+    private double computeFrictionForce() {
+        return FRICTION_COEFICIENT;
     }
 
     public void beginStep() {
@@ -99,7 +89,7 @@ public class Body2D implements PhysicRenderable {
 
     public void endStep() {
         if (distanceTraveledInStep > 0) {
-            distanceTraveledInStep=0;
+            distanceTraveledInStep = 0;
             move();
         }
     }
@@ -149,8 +139,7 @@ public class Body2D implements PhysicRenderable {
     }
 
     public double getInverseMass() {
-        //Bodies with 0 mass are not real. We make them have INFINITE mass: their inverse will be ZERO.
-        return mass > 0 ? 1 / mass : 0;
+        return mass > 0 ? 1 / mass : Double.MAX_VALUE;
     }
 
     public void setMass(double mass) {
@@ -159,8 +148,8 @@ public class Body2D implements PhysicRenderable {
     }
 
     public Dir getDir() {
-        double angle = Vector2D.cardinal(velocity.angle(), 8);
-        return Dir.fromInt((int) angle);
+        double dirNumber = Vector2D.radiansToCardinal(heading.angleInRadians());
+        return Dir.fromInt((int) dirNumber);
     }
 
     public double getSpeed() {
@@ -184,24 +173,14 @@ public class Body2D implements PhysicRenderable {
         return velocity;
     }
 
-    public Vector2D getExternalForce() {
-        return externalForce;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public void setPosition(Vector2D position) {
         this.position = position;
     }
 
     public void setVelocity(Vector2D velocity) {
         this.velocity = velocity;
-    }
-
-    public void setExternalForce(Vector2D externalForce) {
-        this.externalForce = externalForce;
+        heading = new Vector2D(velocity);
+        heading.normalize();
     }
 
     public boolean isBrakesActivated() {
@@ -212,5 +191,11 @@ public class Body2D implements PhysicRenderable {
         this.brakesActivated = brakesActivated;
     }
 
+    public Vector2D getHeading() {
+        return heading;
+    }
 
+    public void setHeading(Vector2D heading) {
+        this.heading = heading;
+    }
 }

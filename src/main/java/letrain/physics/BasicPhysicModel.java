@@ -95,13 +95,14 @@ public class BasicPhysicModel implements PhysicModel {
             if (body.distanceTraveledInStep > 100) {
                 Dir dir = body.velocity.toDir();
                 Vector2D gridVelocity = Vector2D.fromDir(dir, 1);
-                Vector2D futurePosition = body.position.add(gridVelocity);
-                futurePosition = new Vector2D(Math.round(futurePosition.x), Math.round(futurePosition.y));
+                Vector2D futurePosition = new Vector2D(body.position);
+                futurePosition.add(gridVelocity);
+                futurePosition.round();
                 Optional<Body2D> candidate = detectCandidate(body, futurePosition);
                 if (candidate.isPresent()) {
                     //crashes.put(futurePosition, new Pair(body, candidate.get()));
                     applyCrashImpulses(new Pair(body, candidate.get()));
-                } else {
+                }else{
                     body.endStep();
                 }
             }
@@ -142,14 +143,11 @@ public class BasicPhysicModel implements PhysicModel {
         Vector2D v2 = new Vector2D(b2.velocity);
         double m1 = b1.mass;
         double m2 = b2.mass;
-        v1.mult(m1 - m2);
-        v2.mult(2 * m2);
-        v1.add(v2);
-        v1.div(m1 + m2);
-
-        Vector2D u1 = v1.mult(m1 - m2).add(v2.mult(m2).mult(2)).div(m1 + m2);
-        Vector2D u2 = v2.mult(m2 - m1).add(v1.mult(m1).mult(2)).div(m1 + m2);
-        b1.addExternalForce(u1);
-        b2.addExternalForce(u2);
+        Vector2D u1 = Vector2D.div(Vector2D.add(Vector2D.mult(v1,(m1 - m2)),(Vector2D.mult(Vector2D.mult(v2, m2),2))),(m1 + m2));
+        Vector2D u2 = Vector2D.div(Vector2D.add(Vector2D.mult(v2,(m2 - m1)),(Vector2D.mult(Vector2D.mult(v1, m1),2))),(m1 + m2));
+        b1.setVelocity(u1);
+        b1.distanceTraveledInStep=0;
+        b2.setVelocity(u2);
+        b2.distanceTraveledInStep=0;
     }
 }
