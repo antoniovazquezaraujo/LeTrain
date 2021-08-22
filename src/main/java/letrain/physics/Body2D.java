@@ -58,20 +58,25 @@ public class Body2D implements PhysicRenderable {
     public void applyForces() {
         velocity.add(computeMotorForce());
         velocity.mult(computeBrakesForce());
-        velocity.div(computeFrictionForce());
+        velocity.mult(computeFrictionForce());
 
-        if (velocity.magnitude() > 0) {
-            heading = new Vector2D(velocity);
-            heading.normalize();
-        }
+        updateHeading();
         Vector2D positionReachedInStep = new Vector2D(position.x, position.y);
         positionReachedInStep.add(velocity);
         distanceTraveledInStep += Vector2D.distance(position, positionReachedInStep);
     }
 
+    public void updateHeading(){
+        if (velocity.magnitude() > 0) {
+            heading = new Vector2D(velocity);
+            heading.normalize();
+        }
+    }
+
     public Vector2D computeMotorForce() {
         Vector2D ret = new Vector2D(this.heading);
         ret.mult((inverted ? motorForce * -1 : motorForce));
+        ret.div(getMass());
         return ret;
     }
 
@@ -94,8 +99,8 @@ public class Body2D implements PhysicRenderable {
         }
     }
 
-    public void move() {
-        Dir dir = velocity.toDir();
+    public static void move(Vector2D from, Vector2D movement){
+        Dir dir = movement.toDir();
         int hor = 0;
         int ver = 0;
         switch (dir) {
@@ -127,7 +132,12 @@ public class Body2D implements PhysicRenderable {
                 ver++;
                 hor++;
         }
-        position = new Vector2D(position.x + hor, position.y + ver);
+        from.setX(from.x+hor);
+        from.setY(from.y+ver);
+        from.round();
+    }
+    public void move() {
+        move(position, velocity);
     }
 
     public double getDistanceTraveledInStep() {
@@ -179,8 +189,7 @@ public class Body2D implements PhysicRenderable {
 
     public void setVelocity(Vector2D velocity) {
         this.velocity = velocity;
-        heading = new Vector2D(velocity);
-        heading.normalize();
+        updateHeading();
     }
 
     public boolean isBrakesActivated() {

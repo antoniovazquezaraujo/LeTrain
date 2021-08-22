@@ -93,30 +93,16 @@ public class BasicPhysicModel implements PhysicModel {
             body.beginStep();
             body.applyForces();
             if (body.distanceTraveledInStep > 100) {
-                Dir dir = body.velocity.toDir();
-                Vector2D gridVelocity = Vector2D.fromDir(dir, 1);
                 Vector2D futurePosition = new Vector2D(body.position);
-                futurePosition.add(gridVelocity);
-                futurePosition.round();
+                Body2D.move(futurePosition, body.heading);
                 Optional<Body2D> candidate = detectCandidate(body, futurePosition);
                 if (candidate.isPresent()) {
-                    //crashes.put(futurePosition, new Pair(body, candidate.get()));
                     applyCrashImpulses(new Pair(body, candidate.get()));
                 }else{
                     body.endStep();
                 }
             }
         }
-//        if (!crashes.isEmpty()) {
-//            for (Vector2D pos : crashes.keySet()) {
-//                Pair<Body2D, Body2D> candidates = crashes.get(pos);
-//                applyCrashImpulses(candidates);
-//                List param = new ArrayList<Body2D>();
-//                param.add(candidates.getKey());
-//                param.add(candidates.getValue());
-//                calc(param);
-//            }
-//        }
     }
 
     /*

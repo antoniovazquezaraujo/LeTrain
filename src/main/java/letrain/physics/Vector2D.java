@@ -28,7 +28,7 @@ public class Vector2D {
     }
 
     public double magnitude() {
-        return (double) Math.sqrt(x * x+ y *y);
+        return Math.sqrt(x * x+ y *y);
     }
 
     public void  add(Vector2D v) {
@@ -74,7 +74,7 @@ public class Vector2D {
 
     public void  normalize() {
         double m = magnitude();
-        if (m > 0) {
+        if (m != 0) {
             this.x/=m;
             this.y/=m;
         } else {
@@ -211,5 +211,12 @@ public class Vector2D {
     public void round() {
         this.x = Math.round(this.x);
         this.y = Math.round(this.y);
+    }
+
+    public void setX(double x) {
+        this.x = x;
+    }
+    public void setY(double y){
+        this.y=y;
     }
 }
