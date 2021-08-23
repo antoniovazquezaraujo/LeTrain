@@ -13,7 +13,7 @@ public class Body2D implements PhysicRenderable {
     double brakesForce = 0.0;
     boolean brakesActivated = false;
     boolean inverted = false;
-    public static final int MAX_BRAKES_FORCE = 10;
+    public static final int MAX_BRAKES_FORCE = 1000;
     final static double FRICTION_COEFICIENT = 0.99f;
 
     public Body2D() {
@@ -66,7 +66,7 @@ public class Body2D implements PhysicRenderable {
         distanceTraveledInStep += Vector2D.distance(position, positionReachedInStep);
     }
 
-    public void updateHeading(){
+    public void updateHeading() {
         if (velocity.magnitude() > 0) {
             heading = new Vector2D(velocity);
             heading.normalize();
@@ -99,7 +99,7 @@ public class Body2D implements PhysicRenderable {
         }
     }
 
-    public static void move(Vector2D from, Vector2D movement){
+    public static void move(Vector2D from, Vector2D movement) {
         Dir dir = movement.toDir();
         int hor = 0;
         int ver = 0;
@@ -132,10 +132,11 @@ public class Body2D implements PhysicRenderable {
                 ver++;
                 hor++;
         }
-        from.setX(from.x+hor);
-        from.setY(from.y+ver);
+        from.setX(from.x + hor);
+        from.setY(from.y + ver);
         from.round();
     }
+
     public void move() {
         move(position, velocity);
     }
@@ -160,6 +161,9 @@ public class Body2D implements PhysicRenderable {
     public Dir getDir() {
         double dirNumber = Vector2D.radiansToCardinal(heading.angleInRadians());
         return Dir.fromInt((int) dirNumber);
+    }
+    public void setDir(Dir dir){
+        this.heading =   Vector2D.fromDir(dir,1);
     }
 
     public double getSpeed() {

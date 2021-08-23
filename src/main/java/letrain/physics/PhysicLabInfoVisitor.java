@@ -6,19 +6,19 @@ import letrain.vehicle.impl.Cursor;
 
 import java.text.DecimalFormat;
 
-public class PhysicInfoVisitor implements PhysicVisitor {
+public class PhysicLabInfoVisitor implements PhysicVisitor {
     private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
     public static final Color FORK_COLOR = Color.grayRgb(180);
     String infoBarText = "";
     String helpBarText = "";
     private final View view;
 
-    public PhysicInfoVisitor(View view) {
+    public PhysicLabInfoVisitor(View view) {
         this.view = view;
     }
 
     @Override
-    public void visitModel(PhysicModel model) {
+    public void visitModel(PhysicLabSpace model) {
         infoBarText = "";
         visitBody(model.getSelectedBody());
         visitCursor(model.getCursor());

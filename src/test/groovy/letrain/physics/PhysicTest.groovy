@@ -4,11 +4,11 @@ package letrain.physics
 import spock.lang.Specification
 
 class PhysicTest extends Specification {
-    BasicPhysicModel physic ;
+    PhysicLabSpace physic ;
     char[][] screen = new char[25][80];
     Map<Body2D, Character> aspects = new HashMap<>();
     def setup(){
-        physic = new BasicPhysicModel();
+        physic = new PhysicLabSpace();
         clearScreen();
 
     }
@@ -16,14 +16,14 @@ class PhysicTest extends Specification {
         given:
         Body2D a = new Body2D()
         a.position = new Vector2D(10,10)
-        a.addExternalForce(new Vector2D(1,0))
+        a.setMotorForce(1)
         Body2D b = new Body2D()
         b.mass = 1000000;
         b.position = new Vector2D(12,10)
         Body2D c = new Body2D()
         c.mass = 1;
         c.position = new Vector2D(20,10)
-        c.addExternalForce(new Vector2D(-1,0))
+        c.setMotorForce(1)
 
         physic.addBody(a)
         physic.addBody(b)
@@ -45,7 +45,7 @@ class PhysicTest extends Specification {
             aspects.put(body, name++);
         }
     }
-    void paint(BasicPhysicModel physic){
+    void paint(PhysicLabSpace physic){
         clearScreen();
         for(Body2D body: physic.bodies){
             screen[((int)body.position.y)%25][((int)body.position.x)%80] = aspects.get(body);

@@ -6,7 +6,7 @@ import letrain.mvp.View;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 
-public class BasicPhysicVisitor implements PhysicVisitor {
+public class PhysicLabRenderVisitor implements PhysicVisitor {
     private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
     public static final Color FORK_COLOR = Color.grayRgb(180);
     public static final Color SELECTED_FORK_COLOR = Color.RED;
@@ -14,14 +14,14 @@ public class BasicPhysicVisitor implements PhysicVisitor {
     ForkRailTrack selectedFork;
     private final View view;
 
-    public BasicPhysicVisitor(View view) {
+    public PhysicLabRenderVisitor(View view) {
         this.view = view;
     }
 
     @Override
-    public void visitModel(PhysicModel model) {
-        if(model.getSelectedBody() != null){
-            this.selectedBody= model.getSelectedBody();
+    public void visitModel(PhysicLabSpace model) {
+        if (model.getSelectedBody() != null) {
+            this.selectedBody = model.getSelectedBody();
             visitBody(model.getSelectedBody());
         }
         model.getBodies().forEach(t -> t.accept(this));
@@ -31,17 +31,17 @@ public class BasicPhysicVisitor implements PhysicVisitor {
 
     @Override
     public void visitBody(Body2D body) {
-        if(body == selectedBody){
+        if (body == selectedBody) {
             view.setColor(Color.RED);
-        }else{
+        } else {
             view.setColor(Color.LIGHTYELLOW);
         }
-        view.set((int)body.getPosition().getX(), (int)body.getPosition().getY(), cursorGraphicAspect(body.getDir()));
+        view.set((int) body.getPosition().getX(), (int) body.getPosition().getY(), cursorGraphicAspect(body.getDir()));
     }
 
     @Override
     public void visitCursor(Cursor cursor) {
-        switch(cursor.getMode()){
+        switch (cursor.getMode()) {
             case DRAWING:
                 view.setColor(Color.LIGHTGREEN);
                 break;

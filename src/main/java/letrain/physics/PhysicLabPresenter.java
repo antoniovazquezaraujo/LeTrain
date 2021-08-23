@@ -2,48 +2,35 @@ package letrain.physics;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.application.Application;
-import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.GridPane;
-import javafx.stage.Stage;
 import javafx.util.Duration;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
 import letrain.mvp.impl.RailTrackMaker;
 import letrain.mvp.impl.View;
-import letrain.mvp.impl.ViewGrid;
-import letrain.physics.PhysicModel;
-import letrain.physics.BasicPhysicModel;
-import letrain.physics.Body2D;
-import letrain.physics.Vector2D;
-import letrain.physics.BasicPhysicVisitor;
-import letrain.physics.PhysicVisitor;
 import letrain.vehicle.impl.Cursor;
 
-import java.util.Vector;
-
-public class BasicPhysicPresenter implements GameViewListener, letrain.physics.PhysicPresenter {
+public class PhysicLabPresenter implements GameViewListener, letrain.physics.PhysicPresenter {
     private Body2D newBody;
     private int selectedBodyIndex;
     private Body2D selectedBody;
-    private PhysicModel model;
-    private View view;
+    private PhysicLabSpace model;
+    private final View view;
     private Timeline loop;
-    private PhysicVisitor renderer;
-    private final PhysicInfoVisitor informer;
+    private final PhysicVisitor renderer;
+    private final PhysicLabInfoVisitor informer;
 
     RailTrackMaker maker;
     private boolean reversed = false;
     private Dir dir = Dir.E;
 
-    public BasicPhysicPresenter(PhysicModel model) {
+    public PhysicLabPresenter(PhysicLabSpace model) {
         this.model = model;
         view = new View(this);
-        this.model = new BasicPhysicModel();
-        renderer = new BasicPhysicVisitor(view);
-        informer = new PhysicInfoVisitor(view);
+        this.model = new PhysicLabSpace();
+        renderer = new PhysicLabRenderVisitor(view);
+        informer = new PhysicLabInfoVisitor(view);
     }
 
     public void start() {
@@ -71,7 +58,7 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
     }
 
     @Override
-    public PhysicModel getModel() {
+    public PhysicLabSpace getModel() {
         return model;
     }
 
@@ -89,7 +76,7 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
     public void onChar(KeyEvent keyEvent) {
         {
             switch (keyEvent.getCode()) {
-                case SPACE:
+                case INSERT:
                     createBody();
                     break;
                 case A:
@@ -122,6 +109,12 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
                         } else {
                             model.getSelectedBody().setMass(model.getSelectedBody().getMass() + 1);
                         }
+                    }
+                    break;
+                case SPACE:
+                    if (model.getSelectedBody() != null) {
+                        model.getSelectedBody().setMotorForce(0);
+                        model.getSelectedBody().setBrakesForce(0);
                     }
                     break;
                 case P:
@@ -165,7 +158,7 @@ public class BasicPhysicPresenter implements GameViewListener, letrain.physics.P
                     break;
                 case RIGHT:
                     if (keyEvent.isControlDown()) {
-                        if (model. getSelectedBody() != null) {
+                        if (model.getSelectedBody() != null) {
                             double magnitude = getModel().getSelectedBody().getVelocity().magnitude();
                             Dir dir = model.getSelectedBody().getDir();
                             Dir turnRight = dir.turnRight();
