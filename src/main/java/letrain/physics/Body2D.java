@@ -3,6 +3,10 @@ package letrain.physics;
 import letrain.map.Dir;
 
 public class Body2D implements PhysicRenderable {
+    public enum ContactResult {
+        BUMP, BOUNCE, CRASH
+    }
+
     protected Vector2D position;
     protected Vector2D velocity;
     protected Vector2D heading;
@@ -13,6 +17,7 @@ public class Body2D implements PhysicRenderable {
     double brakesForce = 0.0;
     boolean brakesActivated = false;
     boolean inverted = false;
+
     public static final int MAX_BRAKES_FORCE = 1000;
     final static double FRICTION_COEFICIENT = 0.99f;
 
@@ -210,5 +215,9 @@ public class Body2D implements PhysicRenderable {
 
     public void setHeading(Vector2D heading) {
         this.heading = heading;
+    }
+
+    public void onContact(ContactResult contactResult, Body2D body2) {
+        System.out.println("Body "+ this.toString()+ " crashed with " + body2.toString() + " with "+ contactResult.toString());
     }
 }
