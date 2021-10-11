@@ -178,6 +178,7 @@ public class Train extends AbstractVehicle implements  Trailer<RailTrack>, Motor
 
     @Override
     public void activateBrakes(boolean active) {
+        getLinkers().forEach(t -> t.activateBrakes(active));
         this.brakesActivated=active;
     }
 
@@ -214,7 +215,8 @@ public class Train extends AbstractVehicle implements  Trailer<RailTrack>, Motor
 
 
     public void move() {
-        move(getPosition2D(), getVelocity2D());
+        Locomotive master = (Locomotive)getDirectorLinker();
+        master.move(master.getPosition2D(), master.getVelocity2D());
     }
     public static void move(Vector2D from, Vector2D movement) {
         Dir dir = movement.toDir();

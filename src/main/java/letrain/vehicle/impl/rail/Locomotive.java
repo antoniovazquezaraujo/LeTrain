@@ -110,12 +110,12 @@ public class Locomotive extends Linker implements Motorized {
 
     @Override
     public void incMotorForce(double value) {
-
+        this.motorForce+=value;
     }
 
     @Override
     public void decMotorForce(double value) {
-
+        this.motorForce-=value;
     }
 
     @Override
@@ -134,14 +134,4 @@ public class Locomotive extends Linker implements Motorized {
         }
     }
 
-
-    @Override
-    public void activateBrakes(boolean active) {
-
-    }
-
-    @Override
-    public boolean isBrakesActivated() {
-        return false;
-    }
 }
