@@ -1,22 +1,22 @@
 package letrain.mvp;
 
 import javafx.scene.paint.Color;
-import letrain.map.Point;
+import letrain.physics.Vector2D;
 
 public interface View {
-    Point getMapScrollPage();
+    Vector2D getMapScrollPage();
 
-    void setMapScrollPage(Point pos);
+    void setMapScrollPage(Vector2D pos);
 
     void paint();
 
     void clear();
 
-    void set(int x, int y, String c);
+    void set(double x, double y, String c);
 
     void setColor(Color color);
 
-    void setPageOfPos(int x, int y);
+    void setPageOfPos(double x, double y);
 
     void clear(int x, int y);
 

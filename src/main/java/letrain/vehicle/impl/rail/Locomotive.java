@@ -1,104 +1,79 @@
 package letrain.vehicle.impl.rail;
 
+import letrain.vehicle.Braker;
+import letrain.vehicle.Motorized;
 import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.Tractor;
+import letrain.physics.Vector2D;
 import letrain.visitor.Visitor;
 
-public class Locomotive extends Linker implements Tractor{
 
-    private float force;
+public class Locomotive extends Linker implements Motorized {
+
+    private double motorForce;
     private String aspect;
-    float brakes;
+
     boolean motorReversed = false;
     public Locomotive(String aspect){
         this.aspect = aspect;
-        force = 0;
+        motorForce = 0.0;
     }
     public Locomotive(char c) {
         this(""+c);
     }
 
     @Override
-    public float getMass() {
+    public double getMass() {
         return super.getMass()+500;
     }
 
-    @Override
-    public float getFrictionCoefficient() {
-        return 0.0001F ;
-    }
+//    @Override
+//    public double getFrictionCoefficient() {
+//        return 0.0001F ;
+//    }
+
+//
+//    @Override
+//    public void setAcceleration(double speed) {
+//
+//    }
+//
+//    @Override
+//    public double getAcceleration() {
+//        return 0;
+//    }
+//
+//    @Override
+//    public double getDistanceTraveled() {
+//        return 0;
+//    }
+//
+//    @Override
+//    public void resetDistanceTraveled() {
+//
+//    }
 
 
-    @Override
-    public void setAcceleration(float speed) {
-
-    }
-
-    @Override
-    public float getAcceleration() {
-        return 0;
-    }
-
-    @Override
-    public float getDistanceTraveled() {
-        return 0;
-    }
-
-    @Override
-    public void resetDistanceTraveled() {
-
-    }
-
-    @Override
-    public void incBrakes(int i) {
-        brakes+=i;
-//        if(brakes>10)brakes=10;
-    }
-
-    @Override
-    public void decBrakes(int i) {
-        brakes-=i;
-        if(brakes<0)brakes=0;
-    }
-
-    @Override
-    public float getBrakes() {
-        return brakes;
-    }
-
-    @Override
-    public void setBrakes(float i) {
-        this.brakes=i;
-//        if(brakes>10)brakes=10;
-        if(brakes<0)brakes=0;
-    }
-
-    @Override
-    public float getForce() {
-        if(isMotorReversed()) {
-            return this.force * -1;
-        }
-        else {
-            return this.force;
-        }
-    }
-
-    @Override
-    public void setForce(float force) {
-        this.force = force;
-    }
-
-    @Override
-    public void incForce(float force) {
-        this.force+=force;
-//        if(this.force>1000)this.force=1000;
-    }
-
-    @Override
-    public void decForce(float force) {
-        this.force-=force;
-        if(this.force<0)this.force=0;
-    }
+//    @Override
+//    public double getForce() {
+//
+//    }
+//
+//    @Override
+//    public void setForce(double force) {
+//
+//    }
+//
+//    @Override
+//    public void incForce(double force) {
+//        this.motorForce+=force;
+////        if(this.motorForce>1000)this.motorForce=1000;
+//    }
+//
+//    @Override
+//    public void decForce(double force) {
+//        this.motorForce-=force;
+//        if(this.motorForce<0)this.motorForce=0;
+//    }
 
     @Override
     public void reverseMotor(boolean motorReversed) {
@@ -131,5 +106,42 @@ public class Locomotive extends Linker implements Tractor{
 
     public String getAspect() {
         return aspect;
+    }
+
+    @Override
+    public void incMotorForce(double value) {
+
+    }
+
+    @Override
+    public void decMotorForce(double value) {
+
+    }
+
+    @Override
+    public void setMotorForce(double value) {
+        this.motorForce= value;
+    }
+
+    @Override
+    public double getMotorForce() {
+        // TODO: review this logic!
+        if(isMotorReversed()) {
+            return this.motorForce * -1;
+        }
+        else {
+            return this.motorForce;
+        }
+    }
+
+
+    @Override
+    public void activateBrakes(boolean active) {
+
+    }
+
+    @Override
+    public boolean isBrakesActivated() {
+        return false;
     }
 }

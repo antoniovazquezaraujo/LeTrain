@@ -1,5 +1,6 @@
 package letrain.map
 
+import letrain.physics.Vector2D
 import letrain.track.Track
 import letrain.track.rail.RailTrack
 import org.mockito.MockitoAnnotations
@@ -17,18 +18,18 @@ class RailMapTest extends Specification {
     def "test for Each"() {
         given:
         List<Track> tracks = new ArrayList<>();
-        Point pos = new Point(33, 33)
-        Point pos2 = new Point(323, 323)
+        Vector2D pos = new Vector2D(33, 33)
+        Vector2D pos2 = new Vector2D(323, 323)
         boolean todoCorrecto = true
 
         when:
         for (int n = 0; n < 10; n++) {
             def track = new RailTrack()
             tracks.add(track)
-            railMap.addTrack(new Point(n, n), track)
+            railMap.addTrack(new Vector2D(n, n), track)
         }
         a.each {
-            if (tracks.get(it).getPosition().getX() != tracks.get(it).getPosition().getY()) {
+            if (tracks.get(it).getPosition2D().getX() != tracks.get(it).getPosition2D().getY()) {
                 todoCorrecto = false
             }
         }
@@ -40,12 +41,12 @@ class RailMapTest extends Specification {
         railMap.forEach new Consumer<RailTrack>() {
             @Override
             void accept(RailTrack track) {
-                track.setPosition(pos)
+                track.setPosition2D(pos)
             }
         }
         todoCorrecto = true
         a.each {
-            if (pos != tracks.get(it).getPosition()) {
+            if (pos != tracks.get(it).getPosition2D()) {
                 todoCorrecto = false
             }
         }
@@ -62,7 +63,7 @@ class RailMapTest extends Specification {
     def "test add remove and get "() {
         def track = new RailTrack()
         when:
-        railMap.addTrack(new Point(100, 100), track)
+        railMap.addTrack(new Vector2D(100, 100), track)
         RailTrack result = railMap.getTrackAt(100, 100)
 
         then:

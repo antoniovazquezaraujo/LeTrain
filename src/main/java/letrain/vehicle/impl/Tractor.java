@@ -3,21 +3,21 @@ package letrain.vehicle.impl;
 import letrain.map.Reversible;
 
 public interface Tractor extends Reversible {
-    float getForce();
+    double getForce();
 
-    void setForce(float force);
+    void setForce(double force);
 
     default void incForce() {
         incForce(1.0F);
     }
 
-    void incForce(float force);
+    void incForce(double force);
 
     default void decForce() {
         decForce(1.0F);
     }
 
-    void decForce(float force);
+    void decForce(double force);
 
     void reverseMotor(boolean inverted);
 

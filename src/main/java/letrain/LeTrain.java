@@ -23,7 +23,8 @@ public class LeTrain extends Application {
     public void start(Stage stage) {
         model = new Model();
         RailMapFactory railMapFactory = new RailMapFactory(model);
-        railMapFactory.read("30,20 e30 r1 r1 r1 r35 r1 r1 r1 r5 l5 r5 r5 l3");
+                      railMapFactory.read("30,20 e30 r1 r1 r1 r35 r1 r1 r1 r5 l5 r5 r5 l3");
+        //   railMapFactory.read("30,20 e1 r1 r50 r1 r35 r1 r1 r1 r5 l5 r5 r5 l3");
         TrainFactory trainFactory = new TrainFactory(model);
         trainFactory.read("50,20 w #LetrainX");
         trainFactory.read("35,20 w #Other");

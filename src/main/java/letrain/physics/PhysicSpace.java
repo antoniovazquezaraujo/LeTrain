@@ -10,7 +10,7 @@ import java.util.Optional;
 import static letrain.physics.Body2D.ContactResult.BUMP;
 import static letrain.physics.Body2D.ContactResult.CRASH;
 
-public abstract class PhysicSpace implements PhysicModel {
+public class PhysicSpace implements PhysicModel {
     List<Body2D> bodies;
 
     public PhysicSpace() {
@@ -26,7 +26,7 @@ public abstract class PhysicSpace implements PhysicModel {
         bodies.remove(body);
     }
 
-    public List<Body2D> getBodies() {
+    public List<Body2D> getLinkers() {
         return bodies;
     }
 

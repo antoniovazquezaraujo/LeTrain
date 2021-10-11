@@ -2,6 +2,7 @@ package letrain.map;
 
 import letrain.mvp.Model;
 import letrain.mvp.impl.CompactPresenter;
+import letrain.physics.Vector2D;
 import letrain.track.Track;
 import letrain.track.rail.*;
 
@@ -31,13 +32,13 @@ public class RailMapFactory {
     }
 
     public void cursorForward() {
-        Point newPos = new Point(model.getCursor().getPosition());
+        Vector2D newPos = new Vector2D(model.getCursor().getPosition2D());
         if (!reversed) {
             newPos.move(model.getCursor().getDir(), 1);
         } else {
-            newPos.move(model.getCursor().getDir().inverse());
+            newPos.move(model.getCursor().getDir().inverse(), 1);
         }
-        model.getCursor().setPosition(newPos);
+        model.getCursor().setPosition2D(newPos);
     }
     public void cursorBackward() {
         reversed = true;
@@ -96,10 +97,10 @@ public class RailMapFactory {
 
     public boolean makeTrack() {
         makingTraks = true;
-        Point cursorPosition = model.getCursor().getPosition();
+        Vector2D cursorPosition = model.getCursor().getPosition2D();
         Dir dir = model.getCursor().getDir();
         if (oldTrack != null) {
-            oldDir = cursorPosition.locate(oldTrack.getPosition());
+            oldDir = cursorPosition.locate(oldTrack.getPosition2D());
         } else {
             if (!reversed) {
                 oldDir = model.getCursor().getDir().inverse();
@@ -121,19 +122,19 @@ public class RailMapFactory {
         }
         // al track que había (o al que hemos creado normal) le agregamos la ruta entre la vieja dir y la nueva
         track.addRoute(oldDir, dir);
-        track.setPosition(cursorPosition);
+        track.setPosition2D(cursorPosition);
         model.getRailMap().addTrack(cursorPosition, track);
         if (canBeAFork(track, oldDir, dir)) {
             final ForkRailTrack myNewTrack = new ForkRailTrack();
-            myNewTrack.setPosition(cursorPosition);
+            myNewTrack.setPosition2D(cursorPosition);
             model.addFork(myNewTrack);
             final Router router = track.getRouter();
             router.forEach(t -> {
                 myNewTrack.addRoute(t.getKey(), t.getValue());
             });
             myNewTrack.setNormalRoute();
-            model.getRailMap().removeTrack(track.getPosition().getX(), track.getPosition().getY());
-            model.getRailMap().addTrack(model.getCursor().getPosition(), myNewTrack);
+            model.getRailMap().removeTrack(track.getPosition2D().getX(), track.getPosition2D().getY());
+            model.getRailMap().addTrack(model.getCursor().getPosition2D(), myNewTrack);
             for (Dir d : Dir.values()) {
                 if (track.getConnectedTrack(d) != null) {
                     Track connected = track.getConnectedTrack(d);
@@ -152,18 +153,18 @@ public class RailMapFactory {
             oldTrack.connectTrack(track.getDirWhenEnteringFrom(dir).inverse(), track);
         }
 
-        Point newPos = new Point(cursorPosition);
+        Vector2D newPos = new Vector2D(cursorPosition);
         if (!reversed) {
             newPos.move(model.getCursor().getDir(), 1);
         } else {
-            newPos.move(model.getCursor().getDir().inverse());
+            newPos.move(model.getCursor().getDir().inverse(),1);
         }
-        model.getCursor().setPosition(newPos);
+        model.getCursor().setPosition2D(newPos);
         oldTrack = track;
         return true;
     }
     public void removeTrack() {
-        Point position = model.getCursor().getPosition();
+        Vector2D position = model.getCursor().getPosition2D();
         RailTrack track = model.getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
             model.getRailMap().removeTrack(position.getX(), position.getY());
@@ -171,14 +172,14 @@ public class RailMapFactory {
         if (model.getForks().contains(track)) {
             model.getForks().remove(track);
         }
-        Point newPos = new Point(model.getCursor().getPosition());
+        Vector2D newPos = new Vector2D(model.getCursor().getPosition2D());
         if (!reversed) {
             newPos.move(model.getCursor().getDir(), 1);
         } else {
-            newPos.move(model.getCursor().getDir().inverse());
+            newPos.move(model.getCursor().getDir().inverse(), 1);
         }
-        model.getCursor().setPosition(newPos);
-        Point p = model.getCursor().getPosition();
+        model.getCursor().setPosition2D(newPos);
+        Vector2D p = model.getCursor().getPosition2D();
     }
     public void reset() {
         degreesOfRotation = 0;
@@ -200,7 +201,7 @@ public class RailMapFactory {
                     StringTokenizer t = new StringTokenizer(token, ",");
                     int x = Integer.valueOf(t.nextToken());
                     int y = Integer.valueOf(t.nextToken());
-                    model.getCursor().setPosition(new Point(x, y));
+                    model.getCursor().setPosition2D(new Vector2D(x, y));
                 }
                 break;
                 case MAP_DIR_MOVEMENT: {

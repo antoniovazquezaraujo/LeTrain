@@ -5,6 +5,7 @@ import letrain.map.*;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
+import letrain.physics.Vector2D;
 import letrain.track.Track;
 import letrain.track.rail.*;
 import letrain.vehicle.impl.Cursor;
@@ -31,7 +32,7 @@ public class InfoVisitor implements Visitor {
         infoBarText = "";
         switch(model.getMode()){
             case TRACKS:
-                Point pos = model.getCursor().getPosition();
+                Vector2D pos = model.getCursor().getPosition2D();
                 RailTrack track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
                 if(track != null) {
                     visitRailTrack(track);
@@ -93,7 +94,7 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        infoBarText+="Track:["+track.getPosition().getX()+"," + track.getPosition().getY()+"]"+ getRouterAspect(track.getRouter())+ " "+
+        infoBarText+="Track:["+track.getPosition2D().getX()+"," + track.getPosition2D().getY()+"]"+ getRouterAspect(track.getRouter())+ " "+
                 getTrackConnectionsAspect(track)+ " ";
     }
 
@@ -121,7 +122,7 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        infoBarText+="Track:["+track.getPosition().getX()+"," + track.getPosition().getY()+"] "+ getDynamicRouterAspect((DynamicRouter) track.getRouter())+ " "+getTrackConnectionsAspect(track)+" ";
+        infoBarText+="Track:["+track.getPosition2D().getX()+"," + track.getPosition2D().getY()+"] "+ getDynamicRouterAspect((DynamicRouter) track.getRouter())+ " "+getTrackConnectionsAspect(track)+" ";
     }
 
 
@@ -142,7 +143,7 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitTunnelRailTrack(TunnelRailTrack track) {
-        infoBarText+="Track:["+track.getPosition().getX()+"," + track.getPosition().getY()+"]"+ getRouterAspect(track.getRouter())+ "\n";
+        infoBarText+="Track:["+track.getPosition2D().getX()+"," + track.getPosition2D().getY()+"]"+ getRouterAspect(track.getRouter())+ "\n";
         infoBarText+="Connect:...";
     }
 
@@ -151,10 +152,10 @@ public class InfoVisitor implements Visitor {
     public void visitTrain(Train train) {
         DecimalFormat df = new DecimalFormat("0000.0000");
         infoBarText+=
-                " F:" + df.format(train.getForce())+
-                " EF:"+ df.format(train.getExternalForce())+
+                " F:" + df.format(train.getMotorForce())+
+//                " EF:"+ df.format(train.getExternalForce())+
                 " VE:"+ df.format(train.getVelocity())+
-                " DT:"+ df.format(train.getDistanceTraveled())+
+//                " DT:"+ df.format(train.getDistanceTraveled())+
                 " BR:"+ df.format(train.getBrakes())+
                 " RE:"+ train.isReversed();
     }
@@ -166,18 +167,18 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        infoBarText+= "Locomotive. Accel:"+ locomotive.getAcceleration()+ " Force:"+locomotive.getForce()+ " Mass:"+ locomotive.getMass()+ " Dir"+ locomotive.getDir()+"\n";
+        infoBarText+= "Locomotive : Force:"+locomotive.getMotorForce()+ " Mass:"+ locomotive.getMass()+ " Dir"+ locomotive.getDir()+"\n";
 
     }
 
     @Override
     public void visitWagon(Wagon wagon) {
-        infoBarText+= "Wagon. Accel:"+ wagon.getAcceleration()+ " Mass:"+ wagon.getMass()+ " Dir"+ wagon.getDir()+"\n";
+        infoBarText+= "Wagon.  Mass:"+ wagon.getMass()+ " Dir"+ wagon.getDir()+"\n";
     }
 
     @Override
     public void visitCursor(Cursor cursor) {
-        infoBarText+="Cursor:["+cursor.getPosition().getX()+"," + cursor.getPosition().getY()+"]"+ "\n";
+        infoBarText+="Cursor:["+cursor.getPosition2D().getX()+"," + cursor.getPosition2D().getY()+"]"+ "\n";
     }
 
 }

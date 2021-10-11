@@ -62,15 +62,16 @@ public class Vector2D {
         this.y /= v.y;
     }
 
-    public double distance(Vector2D v) {
-        double dx = x - v.x;
-        double dy = y - v.y;
-        int sign = 1;
-        if (Math.signum(dx * dy) == -1) {
-            sign = -1;
-        }
-        return Math.sqrt(Math.abs(dx * dy)) * sign;
-    }
+//    public double distance(Vector2D v) {
+//        double dx = x - v.x;
+//        double dy = y - v.y;
+//        int sign = 1;
+//        if (dx <0 ^ dy <0){
+////        if (Math.signum(dx * dy) == -1) {
+//            sign = -1;
+//        }
+//        return Math.sqrt(Math.abs(dx * dy)) * sign;
+//    }
 
     public double dot(Vector2D v) {
         return x * v.x + y * v.y;
@@ -126,6 +127,46 @@ public class Vector2D {
         return fromPolar(radians, module);
     }
 
+    public void move(Dir dir, int distance) {
+
+        switch (dir) {
+            case N:
+                y += distance;
+                break;
+            case NE:
+                y += distance;
+                x += distance;
+                break;
+            case E:
+                x += distance;
+                break;
+            case SE:
+                y -= distance;
+                x += distance;
+                break;
+            case S:
+                y -= distance;
+                break;
+            case SW:
+                y -= distance;
+                x -= distance;
+                break;
+            case W:
+                x -= distance;
+                break;
+            case NW:
+                y += distance;
+                x -= distance;
+                break;
+            default:
+                assert (false);
+        }
+    }
+    public Dir locate( Vector2D newPos){
+        Vector2D copy = new Vector2D(newPos);
+        copy.sub(this);
+        return copy.toDir();
+    }
     public Dir toDir() {
         return Dir.fromInt(radiansToCardinal(angleInRadians()));
     }

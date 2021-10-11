@@ -168,8 +168,8 @@ class TrainTest extends Specification {
         l2.setForce(20)
 
         then:
-        train.getTractors().contains(l1)
-        train.getTractors().contains(l2)
+        train.getMotorizedVehicles().contains(l1)
+        train.getMotorizedVehicles().contains(l2)
         compare(train.getForce(), (float) (l1.getForce() + l2.getForce())) <= PRECISION
 
         when:
@@ -276,9 +276,9 @@ class TrainTest extends Specification {
         wagon1_2.setDir(Dir.W)
         map.getTrackAt(2, 0).enter(wagon1_2)
         then:
-        locomotive1.getPosition().getX().equals(4)
-        wagon1_1.getPosition().getX().equals(3)
-        wagon1_2.getPosition().getX().equals(2)
+        locomotive1.getPosition2D().getX().equals(4)
+        wagon1_1.getPosition2D().getX().equals(3)
+        wagon1_2.getPosition2D().getX().equals(2)
 
 //        when:
 //        train.move()

@@ -1,40 +1,76 @@
 package letrain.vehicle.impl;
 
 import letrain.track.Track;
+import letrain.track.rail.RailTrack;
+import letrain.vehicle.Motorized;
+import letrain.vehicle.impl.rail.Train;
 
 import java.util.Deque;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface Trailer<T extends Track> {
-    Deque<Linker> getLinkers();
+    /***********************************************************
+     * Trailer implementation
+     **********************************************************/
 
-    void pushFront(Linker linker);
+    public Deque<Linker> getLinkers();
 
-    Linker popFront();
+    default void pushFront(Linker linker) {
+        this.getLinkers().addFirst(linker);
+    }
 
-    Linker getFront();
+    default Linker popFront() {
+        Linker linker = getLinkers().removeFirst();
+        return linker;
+    }
 
+    default Linker getFront() {
+        return getLinkers().getFirst();
+    }
+    default Linker getBack() {
+        return getLinkers().getLast();
+    }
+    void joinTrailerFront(Trailer t);
     void joinTrailerBack(Trailer t);
 
-    void joinTrailerFront(Trailer t);
 
-    void pushBack(Linker linker);
 
-    Linker popBack();
+    default void pushBack(Linker linker) {
+        this.getLinkers().addLast(linker);
+    }
 
-    Linker getBack();
+    default Linker popBack() {
+        Linker linker = getLinkers().removeLast();
+        return linker;
+    }
 
-    void setDirectorLinker(Tractor linker);
+   void setDirectorLinker(Motorized linker);
 
-    Tractor getDirectorLinker();
+    Motorized getDirectorLinker();
 
-    List<Tractor> getTractors();
+    default List<Motorized> getMotorizedVehicles(){
+        return getLinkers().stream()
+                .filter(t -> Motorized.class.isAssignableFrom(t.getClass()))
+                .map(t -> (Motorized) t)
+                .collect(Collectors.toList());
+    }
 
-    boolean isEmpty();
+    default boolean isEmpty() {
+        return getLinkers().isEmpty();
+    }
 
-    int size();
+    default int size() {
+        return getLinkers().size();
+    }
 
-    float getFrictionForce();
-
-    Trailer divide(Linker p);
+    default Trailer divide(Linker p) {
+        Trailer<RailTrack> ret = new Train();
+        Linker first = getFront();
+        while (first != p) {
+            ret.pushFront(getLinkers().removeFirst());
+            first = getFront();
+        }
+        return ret;
+    }
 }

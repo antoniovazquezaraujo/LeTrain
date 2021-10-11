@@ -1,12 +1,7 @@
 package letrain.mvp.impl;
 
 import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -14,8 +9,8 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import letrain.map.Point;
-import letrain.mvp.Model;
 import letrain.mvp.GameViewListener;
+import letrain.physics.Vector2D;
 
 
 public class View extends StackPane implements letrain.mvp.View {
@@ -81,12 +76,12 @@ public class View extends StackPane implements letrain.mvp.View {
     }
 
     @Override
-    public Point getMapScrollPage() {
+    public Vector2D getMapScrollPage() {
         return viewGrid.getMapScrollPage();
     }
 
     @Override
-    public void setMapScrollPage(Point pos) {
+    public void setMapScrollPage(Vector2D pos) {
         viewGrid.setMapScrollPage(pos);
         setStatusBarText("Page: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
     }
@@ -110,7 +105,7 @@ public class View extends StackPane implements letrain.mvp.View {
     }
 
     @Override
-    public void set(int x, int y, String c) {
+    public void set(double x, double y, String c) {
         viewGrid.set(x, y, c);
     }
 
@@ -120,7 +115,7 @@ public class View extends StackPane implements letrain.mvp.View {
     }
 
     @Override
-    public void setPageOfPos(int x, int y) {
+    public void setPageOfPos(double x, double y) {
         viewGrid.setPageOfPos(x, y);
         setStatusBarText("Page: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
     }

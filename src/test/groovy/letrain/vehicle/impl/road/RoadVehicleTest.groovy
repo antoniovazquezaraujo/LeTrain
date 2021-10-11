@@ -1,14 +1,15 @@
 package letrain.vehicle.impl.road
 
 import letrain.map.Dir
-import letrain.map.Point
+import letrain.physics.Vector2D
+import letrain.vehicle.impl.rail.Wagon
 import org.mockito.InjectMocks
 import org.mockito.MockitoAnnotations
 import spock.lang.Specification
 
 class RoadVehicleTest extends Specification {
     @InjectMocks
-    Car roadVehicle
+    Wagon roadVehicle
 
     def setup() {
         MockitoAnnotations.initMocks(this)
@@ -16,27 +17,27 @@ class RoadVehicleTest extends Specification {
 
     def "test set Pos"() {
         when:
-        roadVehicle.setPosition(new Point(300, 3))
+        roadVehicle.setPosition2D(new Vector2D(300, 3))
 
         then:
-        roadVehicle.getPosition().getX()==300
-        roadVehicle.getPosition().getY()==3
+        roadVehicle.getPosition2D().getX()==300
+        roadVehicle.getPosition2D().getY()==3
     }
 
     def "test set Y"() {
         when:
-        roadVehicle.getPosition().setY(200)
+        roadVehicle.getPosition2D().setY(200)
 
         then:
-        roadVehicle.getPosition().getY() == 200
+        roadVehicle.getPosition2D().getY() == 200
     }
 
     def "test set X"() {
         when:
-        roadVehicle.getPosition().setX(4)
+        roadVehicle.getPosition2D().setX(4)
 
         then:
-        roadVehicle.getPosition().getX() == 4
+        roadVehicle.getPosition2D().getX() == 4
     }
 
     def "test rotate Left"() {

@@ -41,14 +41,14 @@ class Body2DTest extends Specification {
 
         when:
         m.setBrakesForce(10)
-        def prePosition =  m.position
+        def prePosition =  m.position2D
         then:
         10.times{ it ->
             m.beginStep()
             m.applyForces()
             m.endStep()
         }
-        assert  m.position.equals(prePosition)
+        assert  m.position2D.equals(prePosition)
 
         when:
         m.setBrakesForce(1)

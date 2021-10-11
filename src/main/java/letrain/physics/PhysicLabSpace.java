@@ -12,7 +12,7 @@ public class PhysicLabSpace extends PhysicSpace implements PhysicLabModel {
         super();
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
-        this.cursor.setPosition(new Point(5, 5));
+        this.cursor.setPosition2D(new Vector2D(5, 5));
     }
 
     @Override

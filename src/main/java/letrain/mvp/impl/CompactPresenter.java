@@ -5,8 +5,8 @@ import javafx.animation.Timeline;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
 import letrain.map.Dir;
-import letrain.map.Point;
 import letrain.mvp.GameViewListener;
+import letrain.physics.Vector2D;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
@@ -132,12 +132,12 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                         break;
                     case SPACE:
                         if (model.getSelectedTrain() != null) {
-                            if(Math.abs(model.getSelectedTrain().getForce())!=0) {
-                                model.getSelectedTrain().setBrakesActivated(true);
+                            if(Math.abs(model.getSelectedTrain().getMotorForce())!=0) {
+                                model.getSelectedTrain().activateBrakes(true);
                             }else{
-                                model.getSelectedTrain().setBrakesActivated(false);
+                                model.getSelectedTrain().activateBrakes(false);
                             }
-                            model.getSelectedTrain().setForce(0);
+                            model.getSelectedTrain().setMotorForce(0);
                             model.getSelectedTrain().setBrakes(0);
                         }
                         break;
@@ -217,7 +217,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 }
                 break;
             case MAKE_TRAINS:
-                if (model.getRailMap().getTrackAt(model.getCursor().getPosition()) == null) {
+                if (model.getRailMap().getTrackAt(model.getCursor().getPosition2D()) == null) {
                     break;
                 }
                 String c = keyEvent.getText();
@@ -227,13 +227,14 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 if (!c.matches("([A-Za-z])?")) {
                     break;
                 }
-                RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition());
+                RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition2D());
                 if (c.toUpperCase().equals(c)) {
                     createLocomotive(c, track);
                 } else {
                     createWagon(c, track);
                 }
-                model.getCursor().getPosition().move(Dir.E);
+                model.getCursor().setDir(Dir.E);
+                model.getCursor().move();
                 break;
         }
 
@@ -304,12 +305,12 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void decelerateTrain() {
         if (model.getSelectedTrain() == null) return;
-        model.getSelectedTrain().decForce(10);
+        model.getSelectedTrain().decMotorForce(10);
     }
 
     private void accelerateTrain() {
         if (model.getSelectedTrain() == null) return;
-        model.getSelectedTrain().incForce(10);
+        model.getSelectedTrain().incMotorForce(10);
     }
 
     private void incTrainBrakes() {
@@ -324,7 +325,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void mapPageDown() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Vector2D p = view.getMapScrollPage();
         p.setY(p.getY() + 1);
         view.setMapScrollPage(p);
         view.clear();
@@ -332,7 +333,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void mapPageLeft() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Vector2D p = view.getMapScrollPage();
         p.setX(p.getX() - 1);
         view.setMapScrollPage(p);
         view.clear();
@@ -341,7 +342,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void mapPageUp() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Vector2D p = view.getMapScrollPage();
         p.setY(p.getY() - 1);
         view.setMapScrollPage(p);
         view.clear();
@@ -350,7 +351,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void mapPageRight() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Vector2D p = view.getMapScrollPage();
         p.setX(p.getX() + 1);
         view.setMapScrollPage(p);
         view.clear();

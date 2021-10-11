@@ -1,5 +1,6 @@
 package letrain.map;
 
+import letrain.physics.Vector2D;
 import letrain.visitor.Renderable;
 
 import java.util.function.Consumer;
@@ -7,11 +8,11 @@ import java.util.function.Consumer;
 public interface TerrainMap<T> extends Renderable {
     void forEach(Consumer<T> c);
 
-    T getTrackAt(int x, int y);
+    T getTrackAt(double x, double y);
 
-    T getTrackAt(Point pos);
+    T getTrackAt(Vector2D pos);
 
-    void addTrack(Point p, T t);
+    void addTrack(Vector2D p, T t);
 
-    T removeTrack(int x, int y);
+    T removeTrack(double x, double y);
 }

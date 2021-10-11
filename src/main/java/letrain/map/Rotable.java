@@ -11,8 +11,5 @@ public interface Rotable  {
 
     void rotate(int angle);
 
-    Dir getDir();
-
-    void setDir(Dir dir);
 
 }

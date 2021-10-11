@@ -5,7 +5,6 @@ import javafx.animation.Timeline;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
 import letrain.map.Dir;
-import letrain.map.Point;
 import letrain.mvp.GameViewListener;
 import letrain.mvp.impl.RailTrackMaker;
 import letrain.mvp.impl.View;
@@ -177,14 +176,14 @@ public class PhysicLabPresenter implements GameViewListener, letrain.physics.Phy
 
     private void createBody() {
         Body2D body = new Body2D(model.getCursor().getDir());
-        body.setPosition(new Vector2D(model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY()));
+        body.setPosition2D(new Vector2D(model.getCursor().getPosition2D().getX(), model.getCursor().getPosition2D().getY()));
         model.addBody(body);
         model.setSelectedBody(body);
     }
 
     private void mapPageDown() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Vector2D p = view.getMapScrollPage();
         p.setY(p.getY() + 1);
         view.setMapScrollPage(p);
         view.clear();
@@ -192,7 +191,7 @@ public class PhysicLabPresenter implements GameViewListener, letrain.physics.Phy
 
     private void mapPageLeft() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Vector2D p = view.getMapScrollPage();
         p.setX(p.getX() - 1);
         view.setMapScrollPage(p);
         view.clear();
@@ -201,7 +200,7 @@ public class PhysicLabPresenter implements GameViewListener, letrain.physics.Phy
 
     private void mapPageUp() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Vector2D p = view.getMapScrollPage();
         p.setY(p.getY() - 1);
         view.setMapScrollPage(p);
         view.clear();
@@ -210,7 +209,7 @@ public class PhysicLabPresenter implements GameViewListener, letrain.physics.Phy
 
     private void mapPageRight() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Vector2D p = view.getMapScrollPage();
         p.setX(p.getX() + 1);
         view.setMapScrollPage(p);
         view.clear();
@@ -218,38 +217,38 @@ public class PhysicLabPresenter implements GameViewListener, letrain.physics.Phy
     }
 
     public void selectNextBody() {
-        if (model.getBodies().isEmpty()) {
+        if (model.getLinkers().isEmpty()) {
             return;
         }
         selectedBodyIndex++;
-        if (selectedBodyIndex >= model.getBodies().size()) {
+        if (selectedBodyIndex >= model.getLinkers().size()) {
             selectedBodyIndex = 0;
         }
-        selectedBody = model.getBodies().get(selectedBodyIndex);
+        selectedBody = model.getLinkers().get(selectedBodyIndex);
         model.setSelectedBody(selectedBody);
     }
 
     public void selectPrevBody() {
-        if (model.getBodies().isEmpty()) {
+        if (model.getLinkers().isEmpty()) {
             return;
         }
         selectedBodyIndex--;
         if (selectedBodyIndex < 0) {
-            selectedBodyIndex = model.getBodies().size() - 1;
+            selectedBodyIndex = model.getLinkers().size() - 1;
         }
-        selectedBody = model.getBodies().get(selectedBodyIndex);
+        selectedBody = model.getLinkers().get(selectedBodyIndex);
         model.setSelectedBody(selectedBody);
     }
 
 
     public void cursorForward() {
-        Point newPos = new Point(model.getCursor().getPosition());
+        Vector2D newPos = new Vector2D(model.getCursor().getPosition2D());
         if (!reversed) {
             newPos.move(model.getCursor().getDir(), 1);
         } else {
-            newPos.move(model.getCursor().getDir().inverse());
+            newPos.move(model.getCursor().getDir().inverse(), 1);
         }
-        model.getCursor().setPosition(newPos);
+        model.getCursor().setPosition2D(newPos);
         view.setPageOfPos(newPos.getX(), newPos.getY());
     }
 

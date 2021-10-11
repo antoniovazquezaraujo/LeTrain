@@ -2,11 +2,8 @@ package letrain.physics;
 
 import letrain.map.Dir;
 
-public class Body2D implements PhysicRenderable {
-    public enum ContactResult {
-        BUMP, BOUNCE, CRASH
-    }
-
+public class Body2D implements PhysicRenderable  {
+    int MAX_BRAKES_FORCE = 1000;
     protected Vector2D position;
     protected Vector2D velocity;
     protected Vector2D heading;
@@ -18,7 +15,6 @@ public class Body2D implements PhysicRenderable {
     boolean brakesActivated = false;
     boolean inverted = false;
 
-    public static final int MAX_BRAKES_FORCE = 1000;
     final static double FRICTION_COEFICIENT = 0.99f;
 
     public Body2D() {
@@ -36,30 +32,37 @@ public class Body2D implements PhysicRenderable {
         this.mass = 1;
     }
 
+ 
     public void invert(boolean invert) {
         this.inverted = invert;
     }
 
+ 
     public boolean isInverted() {
         return inverted;
     }
 
+ 
     public void setMotorForce(double value) {
         this.motorForce = Math.abs(value);
     }
 
+    
     public double getMotorForce() {
         return this.motorForce;
     }
 
+   
     public void setBrakesForce(double value) {
         this.brakesForce = Math.min(Math.abs(value), MAX_BRAKES_FORCE);
     }
 
+     
     public double getBrakesForce() {
         return this.brakesForce;
     }
 
+    
     public void applyForces() {
         velocity.add(computeMotorForce());
         velocity.mult(computeBrakesForce());
@@ -71,6 +74,7 @@ public class Body2D implements PhysicRenderable {
         distanceTraveledInStep += Vector2D.distance(position, positionReachedInStep);
     }
 
+     
     public void updateHeading() {
         if (velocity.magnitude() > 0) {
             heading = new Vector2D(velocity);
@@ -78,6 +82,7 @@ public class Body2D implements PhysicRenderable {
         }
     }
 
+     
     public Vector2D computeMotorForce() {
         Vector2D ret = new Vector2D(this.heading);
         ret.mult((inverted ? motorForce * -1 : motorForce));
@@ -85,6 +90,7 @@ public class Body2D implements PhysicRenderable {
         return ret;
     }
 
+    
     public double computeBrakesForce() {
         return (MAX_BRAKES_FORCE - brakesForce) / MAX_BRAKES_FORCE;
     }
@@ -93,10 +99,12 @@ public class Body2D implements PhysicRenderable {
         return FRICTION_COEFICIENT;
     }
 
+    
     public void beginStep() {
 
     }
 
+    
     public void endStep() {
         if (distanceTraveledInStep > 0) {
             distanceTraveledInStep = 0;
@@ -104,7 +112,12 @@ public class Body2D implements PhysicRenderable {
         }
     }
 
-    public static void move(Vector2D from, Vector2D movement) {
+    
+    public void move() {
+        move(position, velocity);
+    }
+
+    static void move(Vector2D from, Vector2D movement) {
         Dir dir = movement.toDir();
         int hor = 0;
         int ver = 0;
@@ -142,82 +155,97 @@ public class Body2D implements PhysicRenderable {
         from.round();
     }
 
-    public void move() {
-        move(position, velocity);
-    }
-
+    
     public double getDistanceTraveledInStep() {
         return distanceTraveledInStep;
     }
 
+    
     public double getMass() {
         return mass;
     }
 
+    
     public double getInverseMass() {
         return mass > 0 ? 1 / mass : Double.MAX_VALUE;
     }
 
+    
     public void setMass(double mass) {
         mass = Math.max(1, mass);
         this.mass = mass;
     }
 
+    
     public Dir getDir() {
         double dirNumber = Vector2D.radiansToCardinal(heading.angleInRadians());
         return Dir.fromInt((int) dirNumber);
     }
+    
     public void setDir(Dir dir){
         this.heading =   Vector2D.fromDir(dir,1);
     }
 
+    
     public double getSpeed() {
         return velocity.magnitude();
     }
 
+    
     public String toString() {
         return "Position: " + position + " Velocity: " + velocity + ":" + getDir();
     }
 
-    @Override
+    
     public void accept(PhysicVisitor visitor) {
         visitor.visitBody(this);
     }
 
-    public Vector2D getPosition() {
+    
+    public Vector2D getPosition2D() {
         return position;
     }
 
+    
     public Vector2D getVelocity() {
         return velocity;
     }
 
-    public void setPosition(Vector2D position) {
+    
+    public void setPosition2D(Vector2D position) {
         this.position = position;
     }
 
+    
     public void setVelocity(Vector2D velocity) {
         this.velocity = velocity;
         updateHeading();
     }
 
+    
     public boolean isBrakesActivated() {
         return brakesActivated;
     }
 
+    
     public void setBrakesActivated(boolean brakesActivated) {
         this.brakesActivated = brakesActivated;
     }
 
+    
     public Vector2D getHeading() {
         return heading;
     }
 
+    
     public void setHeading(Vector2D heading) {
         this.heading = heading;
     }
-
-    public void onContact(ContactResult contactResult, Body2D body2) {
+    public enum ContactResult {
+        BUMP, BOUNCE, CRASH
+    }
+    
+    public void onContact( ContactResult contactResult, Body2D body2) {
         System.out.println("Body "+ this.toString()+ " crashed with " + body2.toString() + " with "+ contactResult.toString());
     }
 }

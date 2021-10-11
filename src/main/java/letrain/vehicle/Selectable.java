@@ -1,6 +1,6 @@
 package letrain.vehicle;
 
-interface Selectable {
+public interface Selectable {
     boolean isSelected();
 
     void setSelected(boolean selected);

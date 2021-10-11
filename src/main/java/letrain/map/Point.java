@@ -90,31 +90,31 @@ public class Point implements Serializable {
 
         switch (dir) {
             case N:
-                y -= distance;
+                y += distance;
                 break;
             case NE:
-                y -= distance;
+                y += distance;
                 x += distance;
                 break;
             case E:
                 x += distance;
                 break;
             case SE:
-                y += distance;
+                y -= distance;
                 x += distance;
                 break;
             case S:
-                y += distance;
+                y -= distance;
                 break;
             case SW:
-                y += distance;
+                y -= distance;
                 x -= distance;
                 break;
             case W:
                 x -= distance;
                 break;
             case NW:
-                y -= distance;
+                y += distance;
                 x -= distance;
                 break;
             default:

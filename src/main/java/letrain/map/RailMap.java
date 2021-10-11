@@ -1,5 +1,6 @@
 package letrain.map;
 
+import letrain.physics.Vector2D;
 import letrain.track.rail.RailTrack;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
@@ -11,7 +12,7 @@ import java.util.function.Consumer;
 
 public class RailMap implements Serializable, TerrainMap<RailTrack> , Renderable {
 
-    private final Map<Integer, Map<Integer, RailTrack>> rails;
+    private final Map<Double, Map<Double, RailTrack>> rails;
 
     public RailMap() {
         rails = new HashMap<>();
@@ -19,7 +20,7 @@ public class RailMap implements Serializable, TerrainMap<RailTrack> , Renderable
 
     @Override
     public void forEach(Consumer<RailTrack> c) {
-        for (int row : rails.keySet()) {
+        for (double row : rails.keySet()) {
             for (RailTrack track : rails.get(row).values()) {
                 c.accept(track);
             }
@@ -27,13 +28,13 @@ public class RailMap implements Serializable, TerrainMap<RailTrack> , Renderable
     }
 
     @Override
-    public RailTrack getTrackAt(Point pos) {
+    public RailTrack getTrackAt(Vector2D pos) {
         return getTrackAt(pos.getX(), pos.getY());
     }
 
     @Override
-    public RailTrack getTrackAt(int x, int y) {
-        Map<Integer, RailTrack> m = rails.get(y);
+    public RailTrack getTrackAt(double x, double y) {
+        Map<Double, RailTrack> m = rails.get(y);
         if (m != null) {
             return m.get(x);
         }
@@ -41,15 +42,15 @@ public class RailMap implements Serializable, TerrainMap<RailTrack> , Renderable
     }
 
     @Override
-    public void addTrack(Point p, RailTrack rail) {
-        int x = p.getX();
-        int y = p.getY();
+    public void addTrack(Vector2D p, RailTrack rail) {
+        double x = p.getX();
+        double y = p.getY();
         if (!rails.containsKey(y)) {
             rails.put(y, new HashMap<>());
         }
-        Map<Integer, RailTrack> cols = rails.get(y);
+        Map<Double, RailTrack> cols = rails.get(y);
         if (rail != null) {
-            rail.setPosition(new Point(x, y));
+            rail.setPosition2D(new Vector2D(x, y));
             cols.put(x, rail);
         } else {
             cols.remove(x);
@@ -58,7 +59,7 @@ public class RailMap implements Serializable, TerrainMap<RailTrack> , Renderable
     }
 
     @Override
-    public RailTrack removeTrack(int x, int y) {
+    public RailTrack removeTrack(double x, double y) {
         RailTrack ret = getTrackAt(x, y);
         rails.get(y).remove(x);
         return ret;

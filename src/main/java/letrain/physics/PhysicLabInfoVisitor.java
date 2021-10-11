@@ -41,7 +41,7 @@ public class PhysicLabInfoVisitor implements PhysicVisitor {
 
     @Override
     public void visitCursor(Cursor cursor) {
-        infoBarText += "Cursor:[" + cursor.getPosition().getX() + "," + cursor.getPosition().getY() + "]" + "\n";
+        infoBarText += "Cursor:[" + cursor.getPosition2D().getX() + "," + cursor.getPosition2D().getY() + "]" + "\n";
     }
 
 }

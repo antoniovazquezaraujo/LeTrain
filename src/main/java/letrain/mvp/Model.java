@@ -1,6 +1,7 @@
 package letrain.mvp;
 
 import letrain.map.RailMap;
+import letrain.mvp.impl.delegates.LinkersPhysicSpace;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Train;
@@ -8,6 +9,8 @@ import letrain.vehicle.impl.rail.Train;
 import java.util.List;
 
 public interface Model {
+    LinkersPhysicSpace getPhysicSpace();
+
     RailMap getRailMap();
 
     List<Train> getTrains();

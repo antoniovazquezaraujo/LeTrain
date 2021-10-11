@@ -2,6 +2,7 @@ package letrain.map
 
 
 import letrain.mvp.impl.CompactPresenter
+import letrain.physics.Vector2D
 import letrain.track.Track
 import letrain.track.rail.*
 import letrain.vehicle.impl.Cursor
@@ -22,12 +23,12 @@ trait TestCircuit1Trait {
         cursor = new Cursor()
 
         cursor.setDir(Dir.E)
-        cursor.setPosition(new Point(0, 0))
+        cursor.setPosition2D(new Vector2D(0, 0))
         for (int n = 0; n < 20; n++) {
             makeTrack()
         }
         oldTrack = railMap.getTrackAt(3, 0)
-        cursor.setPosition(new Point(4, 0))
+        cursor.setPosition2D(new Vector2D(4, 0))
         cursor.setDir(Dir.E)
         cursor.rotateLeft()
         makeTrack()
@@ -54,10 +55,10 @@ trait TestCircuit1Trait {
     }
 
     private boolean makeTrack() {
-        Point cursorPosition = cursor.getPosition()
+        Vector2D cursorPosition = cursor.getPosition2D()
         Dir dir = cursor.getDir()
         if (oldTrack != null) {
-            oldDir = cursorPosition.locate(oldTrack.getPosition())
+            oldDir = cursorPosition.locate(oldTrack.getPosition2D())
         } else {
             if (!reversed) {
                 oldDir = cursor.getDir().inverse()
@@ -75,7 +76,7 @@ trait TestCircuit1Trait {
             }
         }
         track.addRoute(oldDir, dir)
-        track.setPosition(cursorPosition)
+        track.setPosition2D(cursorPosition)
         if (oldTrack != null) {
             track.connectTrack(oldDir, oldTrack)
             oldTrack.connectTrack(track.getDirWhenEnteringFrom(dir).inverse(), track)
@@ -89,8 +90,8 @@ trait TestCircuit1Trait {
                 myNewTrack.getRouter().addRoute(t.getKey(), t.getValue())
             })
             myNewTrack.setNormalRoute()
-            railMap.removeTrack(track.getPosition().getX(), track.getPosition().getY())
-            railMap.addTrack(cursor.getPosition(), myNewTrack)
+            railMap.removeTrack(track.getPosition2D().getX(), track.getPosition2D().getY())
+            railMap.addTrack(cursor.getPosition2D(), myNewTrack)
             for (Dir d : Dir.values()) {
                 if (track.getConnectedTrack(d) != null) {
                     myNewTrack.connectTrack(d, track.getConnectedTrack(d))
@@ -99,13 +100,13 @@ trait TestCircuit1Trait {
             myNewTrack.setAlternativeRoute()
         }
 
-        Point newPos = new Point(cursorPosition)
+        Vector2D newPos = new Vector2D(cursorPosition)
         if (!reversed) {
             newPos.move(cursor.getDir(), 1)
         } else {
             newPos.move(cursor.getDir().inverse())
         }
-        cursor.setPosition(newPos)
+        cursor.setPosition2D(newPos)
         oldTrack = track
         return true
     }

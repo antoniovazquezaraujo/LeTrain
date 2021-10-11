@@ -1,10 +1,8 @@
 package letrain.track;
 
 import javafx.util.Pair;
-import letrain.map.Dir;
-import letrain.map.Mapeable;
-import letrain.map.Point;
-import letrain.map.Router;
+import letrain.map.*;
+import letrain.physics.Vector2D;
 import letrain.vehicle.impl.Linker;
 import letrain.visitor.Renderable;
 
@@ -19,13 +17,13 @@ public abstract class Track implements
         Router,
         ConnectableTrack,
         LinkerCompartment,
-        Mapeable,
+        Positionable2D,
         LinkerCompartmentListener,
         Renderable {
 
     private TrackDirector trackDirector;
     private Linker linker = null;
-    private Point pos = new Point(0,0);
+    private Vector2D pos = new Vector2D(0,0);
     protected Map<Dir, Track> connections;
     private final List<LinkerCompartmentListener> trackeableCompartmentListeners = new ArrayList<>();
 
@@ -149,12 +147,12 @@ public abstract class Track implements
      * Mapeable implementation
      ***************************************************************/
     @Override
-    public Point getPosition() {
+    public Vector2D getPosition2D() {
         return pos;
     }
 
     @Override
-    public void setPosition(Point pos) {
+    public void setPosition2D(Vector2D pos) {
         this.pos.setX(pos.getX());
         this.pos.setY(pos.getY());
     }

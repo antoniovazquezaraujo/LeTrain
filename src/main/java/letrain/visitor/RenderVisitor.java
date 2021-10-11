@@ -44,13 +44,13 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitRailTrack(RailTrack track) {
         view.setColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
+        view.set(track.getPosition2D().getX(), track.getPosition2D().getY(), getTrackAspect(track));
     }
 
     @Override
     public void visitStopRailTrack(StopRailTrack track) {
         view.setColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⍚");
+        view.set(track.getPosition2D().getX(), track.getPosition2D().getY(), "⍚");
     }
 
     @Override
@@ -60,19 +60,19 @@ public class RenderVisitor implements Visitor {
         }else{
             view.setColor(FORK_COLOR);
         }
-        view.set(track.getPosition().getX(), track.getPosition().getY(), dirGraphicAspect(track.getFirstOpenDir()));
+        view.set(track.getPosition2D().getX(), track.getPosition2D().getY(), dirGraphicAspect(track.getFirstOpenDir()));
     }
 
     @Override
     public void visitTrainFactoryRailTrack(TrainFactoryRailTrack track) {
         view.setColor(Color.LIGHTBLUE);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⎵");
+        view.set(track.getPosition2D().getX(), track.getPosition2D().getY(), "⎵");
     }
 
     @Override
     public void visitTunnelRailTrack(TunnelRailTrack track) {
         view.setColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
+        view.set(track.getPosition2D().getX(), track.getPosition2D().getY(), "⋂");
     }
 
 
@@ -88,17 +88,17 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitLinker(Linker linker) {
-        view.set(linker.getPosition().getX(), linker.getPosition().getY(), "?");
+        view.set(linker.getPosition2D().getX(), linker.getPosition2D().getY(), "?");
     }
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), locomotive.getAspect());
+        view.set(locomotive.getPosition2D().getX(), locomotive.getPosition2D().getY(), locomotive.getAspect());
     }
 
     @Override
     public void visitWagon(Wagon wagon) {
-        view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
+        view.set(wagon.getPosition2D().getX(), wagon.getPosition2D().getY(), wagon.getAspect());
     }
 
     @Override
@@ -114,7 +114,7 @@ public class RenderVisitor implements Visitor {
                 view.setColor(Color.YELLOW);
                 break;
         }
-        view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
+        view.set(cursor.getPosition2D().getX(), cursor.getPosition2D().getY(), cursorGraphicAspect(cursor.getDir()));
     }
 
 

@@ -9,16 +9,16 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
-import letrain.map.Point;
 import letrain.mvp.GameViewListener;
 import letrain.mvp.View;
+import letrain.physics.Vector2D;
 
 
 public class ViewGrid extends Pane implements View {
     private static final int ROWS = 40;
     private static final int COLS = 100;
     private final GameViewListener gameViewListener;
-    private Point mapScrollPage = new Point(0, 0);
+    private Vector2D mapScrollPage = new Vector2D(0, 0);
     private final Canvas canvas;
     private final GraphicsContext gc;
     private static final int TEXT_SIZE = 20;
@@ -45,12 +45,12 @@ public class ViewGrid extends Pane implements View {
         });
     }
     @Override
-    public Point getMapScrollPage() {
+    public Vector2D getMapScrollPage() {
         return this.mapScrollPage;
     }
 
     @Override
-    public void setMapScrollPage(Point pos) {
+    public void setMapScrollPage(Vector2D pos) {
         this.mapScrollPage = pos;
     }
 
@@ -67,7 +67,7 @@ public class ViewGrid extends Pane implements View {
     }
 
     @Override
-    public void set(int x, int y, String c) {
+    public void set(double x, double y, String c) {
         x -= mapScrollPage.getX() * COLS;
         y -= mapScrollPage.getY() * ROWS;
         if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
@@ -76,7 +76,9 @@ public class ViewGrid extends Pane implements View {
             gc.setLineWidth(1);
 
 
-            gc.strokeText(c, x * charWidth, y * charHeight);
+            // Aquí usamos (ROWS-y) en lugar de y porque en pantalla, las coordenadas verticales
+            // comienzan desde arriba, pero internamente, se calcula siempre desde abajo.
+            gc.strokeText(c, x * charWidth,  (ROWS-y) * charHeight );
         }
     }
 
@@ -86,12 +88,12 @@ public class ViewGrid extends Pane implements View {
     }
 
     @Override
-    public void setPageOfPos(int x, int y) {
+    public void setPageOfPos(double x, double y) {
         if (x < 0) x -= COLS;
         if (y < 0) y -= ROWS;
-        int pageX = x / COLS;
-        int pageY = y / ROWS;
-        setMapScrollPage(new Point(pageX, pageY));
+        int pageX = (int)x / COLS;
+        int pageY = (int)y / ROWS;
+        setMapScrollPage(new Vector2D(pageX, pageY));
     }
 
     @Override

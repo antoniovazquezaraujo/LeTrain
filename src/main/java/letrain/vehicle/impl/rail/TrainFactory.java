@@ -3,6 +3,7 @@ package letrain.vehicle.impl.rail;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Model;
+import letrain.physics.Vector2D;
 import letrain.track.rail.RailTrack;
 
 import java.util.StringTokenizer;
@@ -30,9 +31,9 @@ public class TrainFactory {
             switch (tokenType(token)) {
                 case TRAIN_POSITION_COORDS:
                     StringTokenizer t = new StringTokenizer(token, ",");
-                    int x = Integer.valueOf(t.nextToken());
-                    int y = Integer.valueOf(t.nextToken());
-                    model.getCursor().setPosition(new Point(x, y));
+                    double x = Integer.valueOf(t.nextToken());
+                    double y = Integer.valueOf(t.nextToken());
+                    model.getCursor().setPosition2D(new Vector2D(x, y));
                     createNewTrain();
                     break;
                 case TRAIN_DIRECTION: {
@@ -55,13 +56,13 @@ public class TrainFactory {
                         final String vehicles = matcher.group(2);
                         char[] array = vehicles.toCharArray();
                         for (char c : array) {
-                            RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition());
+                            RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition2D());
                             if (Character.isUpperCase(c)) {
                                 createLocomotive(String.valueOf(c), track,model.getCursor().getDir());
                             } else {
                                 createWagon(String.valueOf(c), track,model.getCursor().getDir());
                             }
-                            model.getCursor().getPosition().move(model.getCursor().getDir().inverse());
+                            model.getCursor().getPosition2D().move(model.getCursor().getDir().inverse(), 1);
                         }
                     }
                 }

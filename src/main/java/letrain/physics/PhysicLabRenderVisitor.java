@@ -24,7 +24,7 @@ public class PhysicLabRenderVisitor implements PhysicVisitor {
             this.selectedBody = model.getSelectedBody();
             visitBody(model.getSelectedBody());
         }
-        model.getBodies().forEach(t -> t.accept(this));
+        model.getLinkers().forEach(t -> t.accept(this));
         visitCursor(model.getCursor());
     }
 
@@ -36,7 +36,7 @@ public class PhysicLabRenderVisitor implements PhysicVisitor {
         } else {
             view.setColor(Color.LIGHTYELLOW);
         }
-        view.set((int) body.getPosition().getX(), (int) body.getPosition().getY(), cursorGraphicAspect(body.getDir()));
+        view.set((int) body.getPosition2D().getX(), (int) body.getPosition2D().getY(), cursorGraphicAspect(body.getDir()));
     }
 
     @Override
@@ -52,7 +52,7 @@ public class PhysicLabRenderVisitor implements PhysicVisitor {
                 view.setColor(Color.YELLOW);
                 break;
         }
-        view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
+        view.set(cursor.getPosition2D().getX(), cursor.getPosition2D().getY(), cursorGraphicAspect(cursor.getDir()));
     }
 
     private String dirGraphicAspect(Dir dir) {

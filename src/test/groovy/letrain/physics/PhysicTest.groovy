@@ -15,14 +15,14 @@ class PhysicTest extends Specification {
     def "xxx"(){
         given:
         Body2D a = new Body2D()
-        a.position = new Vector2D(10,10)
+        a.position2D = new Vector2D(10,10)
         a.setMotorForce(1)
         Body2D b = new Body2D()
         b.mass = 1000000;
-        b.position = new Vector2D(12,10)
+        b.position2D = new Vector2D(12,10)
         Body2D c = new Body2D()
         c.mass = 1;
-        c.position = new Vector2D(20,10)
+        c.position2D = new Vector2D(20,10)
         c.setMotorForce(1)
 
         physic.addBody(a)
@@ -41,14 +41,14 @@ class PhysicTest extends Specification {
     }
     public void loadAspects(){
         char name = 'a';
-        for(Body2D body: physic.bodies){
+        for(Body2D body: physic.linkers){
             aspects.put(body, name++);
         }
     }
     void paint(PhysicLabSpace physic){
         clearScreen();
-        for(Body2D body: physic.bodies){
-            screen[((int)body.position.y)%25][((int)body.position.x)%80] = aspects.get(body);
+        for(Body2D body: physic.linkers){
+            screen[((int)body.position2D.y)%25][((int)body.position2D.x)%80] = aspects.get(body);
         }
         println()
         println("               1         2         3         4         5         6         7         ")

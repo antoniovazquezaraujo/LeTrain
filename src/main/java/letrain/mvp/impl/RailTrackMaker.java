@@ -1,8 +1,8 @@
 package letrain.mvp.impl;
 
 import javafx.scene.input.KeyEvent;
-import letrain.map.Point;
 import letrain.map.RailMapFactory;
+import letrain.physics.Vector2D;
 import letrain.vehicle.impl.Cursor;
 
 import static letrain.mvp.impl.CompactPresenter.TrackType.STOP_TRACK;
@@ -78,13 +78,13 @@ public class RailTrackMaker {
 
     private void removeTrack() {
         railMapFactory.removeTrack();
-        Point p = railMapFactory.getModel().getCursor().getPosition();
+        Vector2D p = railMapFactory.getModel().getCursor().getPosition2D();
         view.setPageOfPos(p.getX(), p.getY());
     }
 
     public void createTrack() {
         railMapFactory.createTrack();
-        Point position = railMapFactory.getModel().getCursor().getPosition();
+        Vector2D position = railMapFactory.getModel().getCursor().getPosition2D();
         view.setPageOfPos(position.getX(), position.getY());
     }
 
@@ -99,13 +99,13 @@ public class RailTrackMaker {
 
     private void cursorForward() {
         railMapFactory.cursorForward();
-        Point position = railMapFactory.getModel().getCursor().getPosition();
+        Vector2D position = railMapFactory.getModel().getCursor().getPosition2D();
         view.setPageOfPos(position.getX(), position.getY());
     }
 
     private void mapPageDown() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Vector2D p = view.getMapScrollPage();
         p.setY(p.getY() + 1);
         view.setMapScrollPage(p);
         view.clear();
@@ -113,7 +113,7 @@ public class RailTrackMaker {
 
     private void mapPageLeft() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Vector2D p = view.getMapScrollPage();
         p.setX(p.getX() - 1);
         view.setMapScrollPage(p);
         view.clear();
@@ -121,7 +121,7 @@ public class RailTrackMaker {
 
     private void mapPageUp() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Vector2D p = view.getMapScrollPage();
         p.setY(p.getY() - 1);
         view.setMapScrollPage(p);
         view.clear();
@@ -129,7 +129,7 @@ public class RailTrackMaker {
 
     private void mapPageRight() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Vector2D p = view.getMapScrollPage();
         p.setX(p.getX() + 1);
         view.setMapScrollPage(p);
         view.clear();
