@@ -118,14 +118,14 @@ class TrainTest extends Specification {
         train1.pushFront(wagon1_2)
         train1.pushFront(locomotive1)
         then:
-        train1.getDirectorLinker().equals(locomotive1)
+        train1.getMainTractor().equals(locomotive1)
 
         when:
         train1.pushFront(locomotive2)
-        train1.setDirectorLinker(locomotive2)
+        train1.setMainTractor(locomotive2)
 
         then:
-        train1.getDirectorLinker().equals(locomotive2)
+        train1.getMainTractor().equals(locomotive2)
     }
 
     def "Obtener la masa de todo un tren"() {
@@ -168,8 +168,8 @@ class TrainTest extends Specification {
         l2.setForce(20)
 
         then:
-        train.getMotorizedVehicles().contains(l1)
-        train.getMotorizedVehicles().contains(l2)
+        train.getTractors().contains(l1)
+        train.getTractors().contains(l2)
         compare(train.getForce(), (float) (l1.getForce() + l2.getForce())) <= PRECISION
 
         when:
@@ -267,7 +267,7 @@ class TrainTest extends Specification {
         train.pushBack(wagon1_1)
         train.pushBack(wagon1_2)
         train.pushFront(locomotive1)
-        train.assignDefaultDirectorLinker()
+        train.assignDefaultMainTractor()
         when:
         locomotive1.setDir(Dir.W)
         map.getTrackAt(4, 0).enter(locomotive1)

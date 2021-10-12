@@ -9,7 +9,6 @@ import letrain.vehicle.impl.rail.Train;
 import java.util.List;
 
 public interface Model {
-    LinkersPhysicSpace getPhysicSpace();
 
     RailMap getRailMap();
 

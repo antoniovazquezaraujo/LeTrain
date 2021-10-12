@@ -59,14 +59,14 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     @Override
     public void pushFront(Linker linker) {
         this.linkers.addFirst(linker);
-        assignDefaultDirectorLinker();
+        assignDefaultMainTractor();
         linker.setTrain(this);
     }
 
     @Override
     public Linker popFront() {
         Linker linker = linkers.removeFirst();
-        assignDefaultDirectorLinker();
+        assignDefaultMainTractor();
         return linker;
     }
 
@@ -79,13 +79,13 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
     public void pushBack(Linker linker) {
         this.linkers.addLast(linker);
         linker.setTrain(this);
-        assignDefaultDirectorLinker();
+        assignDefaultMainTractor();
     }
 
     @Override
     public Linker popBack() {
         Linker linker = linkers.removeLast();
-        assignDefaultDirectorLinker();
+        assignDefaultMainTractor();
         linker.setTrain(null);
         return linker;
     }
@@ -114,7 +114,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
             ret.pushFront(getLinkers().removeFirst());
             first = getLinkers().getFirst();
         }
-        assignDefaultDirectorLinker();
+        assignDefaultMainTractor();
         return ret;
     }
 
@@ -211,12 +211,12 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Trac
 
     @Override
     public void reverseMotor(boolean reversed) {
-        getDirectorLinker().reverseMotor(reversed);
+        getMainTractor().reverseMotor(reversed);
     }
 
     @Override
     public boolean isMotorReversed() {
-        return getDirectorLinker().isMotorReversed();
+        return getMainTractor().isMotorReversed();
     }
 
 

@@ -267,8 +267,8 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         locomotive.setDir(Dir.W);
         getNewTrain().pushBack(locomotive);
         track.enter(locomotive);
-        if (getNewTrain().getDirectorLinker() == null) {
-            getNewTrain().assignDefaultDirectorLinker();
+        if (getNewTrain().getMainTractor() == null) {
+            getNewTrain().assignDefaultMainTractor();
         }
 
     }

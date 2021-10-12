@@ -1,13 +1,11 @@
 package letrain.vehicle.impl.rail;
 
-import letrain.vehicle.Braker;
-import letrain.vehicle.Motorized;
+import letrain.vehicle.Tractor;
 import letrain.vehicle.impl.Linker;
-import letrain.physics.Vector2D;
 import letrain.visitor.Visitor;
 
 
-public class Locomotive extends Linker implements Motorized {
+public class Locomotive extends Linker implements Tractor {
 
     private double motorForce;
     private String aspect;

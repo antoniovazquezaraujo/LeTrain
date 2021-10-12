@@ -2,7 +2,7 @@ package letrain.vehicle.impl;
 
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.Motorized;
+import letrain.vehicle.Tractor;
 import letrain.vehicle.impl.rail.Train;
 
 import java.util.Deque;
@@ -45,14 +45,14 @@ public interface Trailer<T extends Track> {
         return linker;
     }
 
-   void setDirectorLinker(Motorized linker);
+   void setMainTractor(Tractor linker);
 
-    Motorized getDirectorLinker();
+    Tractor getMainTractor();
 
-    default List<Motorized> getMotorizedVehicles(){
+    default List<Tractor> getTractors(){
         return getLinkers().stream()
-                .filter(t -> Motorized.class.isAssignableFrom(t.getClass()))
-                .map(t -> (Motorized) t)
+                .filter(t -> Tractor.class.isAssignableFrom(t.getClass()))
+                .map(t -> (Tractor) t)
                 .collect(Collectors.toList());
     }
 

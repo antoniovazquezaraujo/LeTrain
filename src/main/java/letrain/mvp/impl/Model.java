@@ -2,7 +2,6 @@ package letrain.mvp.impl;
 
 import letrain.map.Dir;
 import letrain.map.RailMap;
-import letrain.mvp.impl.delegates.LinkersPhysicSpace;
 import letrain.physics.Vector2D;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
@@ -22,10 +21,8 @@ public class Model implements Serializable , letrain.mvp.Model {
     private final List<Train> trains;
     private Cursor cursor;
     private List<ForkRailTrack> forks;
-    private LinkersPhysicSpace physicSpace;
 
     public Model() {
-        this.physicSpace = new LinkersPhysicSpace();
         this.map = new RailMap();
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
@@ -40,11 +37,6 @@ public class Model implements Serializable , letrain.mvp.Model {
         if (!getForks().isEmpty()) {
             selectedFork = getForks().get(selectedForkIndex);
         }
-    }
-
-    @Override
-    public LinkersPhysicSpace getPhysicSpace() {
-        return this.physicSpace;
     }
 
     @Override
@@ -89,13 +81,11 @@ public class Model implements Serializable , letrain.mvp.Model {
     @Override
     public void removeTrain(Train train) {
         this.trains.remove(train);
-        train.getLinkers().forEach(linker-> physicSpace.removeLinker(linker));
     }
 
     @Override
     public void moveTrains() {
         trains.forEach(Train::move);
-        physicSpace.moveLinkers();
     }
 
     @Override
@@ -138,8 +128,6 @@ public class Model implements Serializable , letrain.mvp.Model {
             selectedForkIndex = 0;
         }
         selectedFork = getForks().get(selectedForkIndex);
-
-
     }
 
     @Override

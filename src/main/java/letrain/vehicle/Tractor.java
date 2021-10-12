@@ -2,7 +2,7 @@ package letrain.vehicle;
 
 import letrain.physics.Vector2D;
 
-public interface Motorized {
+public interface Tractor {
     void incMotorForce(double value);
     void decMotorForce(double value);
     void setMotorForce(double value);

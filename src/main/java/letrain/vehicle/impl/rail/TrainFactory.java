@@ -1,7 +1,6 @@
 package letrain.vehicle.impl.rail;
 
 import letrain.map.Dir;
-import letrain.map.Point;
 import letrain.mvp.Model;
 import letrain.physics.Vector2D;
 import letrain.track.rail.RailTrack;
@@ -112,8 +111,8 @@ public class TrainFactory {
         locomotive.setDir(dir);
         getNewTrain().pushBack(locomotive);
         track.enter(locomotive);
-        if (getNewTrain().getDirectorLinker() == null) {
-            getNewTrain().assignDefaultDirectorLinker();
+        if (getNewTrain().getMainTractor() == null) {
+            getNewTrain().assignDefaultMainTractor();
         }
     }
 }
