@@ -1,6 +1,7 @@
 package letrain.mvp;
 
-import javafx.scene.input.KeyEvent;
+import com.googlecode.lanterna.input.KeyStroke;
+
 
 public interface GameViewListener {
     void onGameModeSelected(Model.GameMode mode);
@@ -13,6 +14,6 @@ public interface GameViewListener {
 //
 //    void onRight();
 
-    void onChar(KeyEvent c);
+    void onChar(KeyStroke c);
 
 }

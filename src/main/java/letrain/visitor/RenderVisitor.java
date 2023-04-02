@@ -1,6 +1,8 @@
 package letrain.visitor;
 
-import javafx.scene.paint.Color;
+
+import com.googlecode.lanterna.TextColor;
+
 import letrain.map.Dir;
 import letrain.map.RailMap;
 import letrain.map.SimpleRouter;
@@ -15,9 +17,9 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public class RenderVisitor implements Visitor {
-    private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
-    public static final Color FORK_COLOR = Color.grayRgb(180);
-    public static final Color SELECTED_FORK_COLOR = Color.RED;
+    private static final TextColor RAIL_TRACK_COLOR = new TextColor.RGB(80,80,80);
+    public static final TextColor FORK_COLOR = new TextColor.RGB(80,80,80);
+    public static final TextColor SELECTED_FORK_COLOR = new TextColor.RGB(255,0,0);
     Train selectedTrain;
     ForkRailTrack selectedFork;
     private final View view;
@@ -65,7 +67,7 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitTrainFactoryRailTrack(TrainFactoryRailTrack track) {
-        view.setColor(Color.LIGHTBLUE);
+        view.setColor(TextColor.ANSI.BLUE_BRIGHT);
         view.set(track.getPosition().getX(), track.getPosition().getY(), "⎵");
     }
 
@@ -79,9 +81,9 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitTrain(Train train) {
         if(train == selectedTrain){
-            view.setColor(Color.RED);
+            view.setColor(TextColor.ANSI.RED);
         }else{
-            view.setColor(Color.LIGHTYELLOW);
+            view.setColor(TextColor.ANSI.YELLOW_BRIGHT);
         }
         train.getLinkers().forEach(t -> t.accept(this));
     }
@@ -105,13 +107,13 @@ public class RenderVisitor implements Visitor {
     public void visitCursor(Cursor cursor) {
         switch(cursor.getMode()){
             case DRAWING:
-                view.setColor(Color.LIGHTGREEN);
+                view.setColor(TextColor.ANSI.GREEN_BRIGHT);
                 break;
             case ERASING:
-                view.setColor(Color.ORANGERED);
+                view.setColor(TextColor.ANSI.RED_BRIGHT);
                 break;
             case MOVING:
-                view.setColor(Color.YELLOW);
+                view.setColor(TextColor.ANSI.YELLOW);
                 break;
         }
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));

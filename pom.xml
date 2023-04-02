@@ -35,7 +35,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.18.1</version>
             </plugin>
-            <plugin>
+            <!-- <plugin>
                 <groupId>org.codehaus.gmavenplus</groupId>
                 <artifactId>gmavenplus-plugin</artifactId>
                 <version>1.5</version>
@@ -47,7 +47,7 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin> -->
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.3.0</version>
@@ -86,6 +86,11 @@
     </build>
 
     <dependencies>
+        <dependency>
+            <groupId>com.googlecode.lanterna</groupId>
+            <artifactId>lanterna</artifactId>
+            <version>3.1.1</version>
+        </dependency>        
         <dependency>
             <groupId>org.spockframework</groupId>
             <artifactId>spock-core</artifactId>

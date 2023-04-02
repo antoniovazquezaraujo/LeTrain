@@ -1,6 +1,5 @@
 package letrain.mvp.impl;
 
-import javafx.scene.input.KeyEvent;
 import letrain.map.*;
 import letrain.track.Track;
 import letrain.track.rail.*;
@@ -8,6 +7,8 @@ import letrain.vehicle.impl.Cursor;
 
 import static letrain.mvp.impl.CompactPresenter.TrackType.STOP_TRACK;
 import static letrain.mvp.impl.CompactPresenter.TrackType.TUNNEL_GATE;
+
+import com.googlecode.lanterna.input.KeyStroke;
 
 public class RailTrackMaker {
     private final letrain.mvp.View view;
@@ -17,21 +18,21 @@ public class RailTrackMaker {
         this.railMapFactory = new RailMapFactory(model);
     }
 
-    public void onChar(KeyEvent keyEvent) {
-        switch (keyEvent.getCode()) {
-            case T:
-                railMapFactory.selectNewTrackType(TUNNEL_GATE);
-                createTrack();
-                railMapFactory.selectNewTrackType(CompactPresenter.TrackType.NORMAL_TRACK);
-                railMapFactory.setMakingTraks(false);
-                break;
-            case S:
-                railMapFactory.selectNewTrackType(STOP_TRACK);
-                createTrack();
-                railMapFactory.selectNewTrackType(CompactPresenter.TrackType.NORMAL_TRACK);
-                railMapFactory.setMakingTraks(false);
-                break;
-            case UP:
+    public void onChar(KeyStroke keyEvent) {
+        switch (keyEvent.getKeyType()) {
+            // case 'T':
+            //     railMapFactory.selectNewTrackType(TUNNEL_GATE);
+            //     createTrack();
+            //     railMapFactory.selectNewTrackType(CompactPresenter.TrackType.NORMAL_TRACK);
+            //     railMapFactory.setMakingTraks(false);
+            //     break;
+            // case 'S':
+            //     railMapFactory.selectNewTrackType(STOP_TRACK);
+            //     createTrack();
+            //     railMapFactory.selectNewTrackType(CompactPresenter.TrackType.NORMAL_TRACK);
+            //     railMapFactory.setMakingTraks(false);
+            //     break;
+            case ArrowUp:
                 if (keyEvent.isShiftDown()) {
                     if (!railMapFactory.isMakingTraks()) {
                         railMapFactory.reset();
@@ -39,7 +40,7 @@ public class RailTrackMaker {
                     railMapFactory.getModel().getCursor().setMode(Cursor.CursorMode.DRAWING);
                     createTrack();
                     railMapFactory.setMakingTraks(true);
-                } else if (keyEvent.isControlDown()) {
+                } else if (keyEvent.isCtrlDown()) {
                     railMapFactory.getModel().getCursor().setMode(Cursor.CursorMode.ERASING);
                     removeTrack();
                     railMapFactory.setMakingTraks(false);
@@ -49,29 +50,29 @@ public class RailTrackMaker {
                     railMapFactory.setMakingTraks(false);
                 }
                 break;
-            case PAGE_UP:
-                if (keyEvent.isControlDown()) {
+            case PageUp:
+                if (keyEvent.isCtrlDown()) {
                     mapPageLeft();
                 } else {
                     mapPageUp();
                 }
                 break;
-            case PAGE_DOWN:
-                if (keyEvent.isControlDown()) {
+            case PageDown:
+                if (keyEvent.isCtrlDown()) {
                     mapPageRight();
                 } else {
                     mapPageDown();
                 }
                 break;
-            case DOWN:
+            case ArrowDown:
                 railMapFactory.getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
                 railMapFactory.cursorBackward();
                 railMapFactory.setMakingTraks(false);
                 break;
-            case LEFT:
+            case ArrowLeft:
                 cursorTurnLeft();
                 break;
-            case RIGHT:
+            case ArrowRight:
                 cursorTurnRight();
                 break;
         }

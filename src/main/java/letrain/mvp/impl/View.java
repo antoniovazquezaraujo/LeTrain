@@ -1,143 +1,171 @@
 package letrain.mvp.impl;
 
-import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.Text;
+import java.io.IOException;
+
+import com.googlecode.lanterna.TerminalPosition;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
+import com.googlecode.lanterna.screen.Screen;
+import com.googlecode.lanterna.screen.TerminalScreen;
+import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
+import com.googlecode.lanterna.terminal.Terminal;
+
 import letrain.map.Point;
 import letrain.mvp.Model;
 import letrain.mvp.GameViewListener;
 
 
-public class View extends StackPane implements letrain.mvp.View {
+public class View implements letrain.mvp.View {
     private final GameViewListener gameViewListener;
-    private final ViewGrid viewGrid;
     private Point position = new Point(0, 0); // scroll position of the viewer
-    private Text statusBar;
-    private Text infoBar;
-    private Text helpBar;
+    private Point mapScrollPage = new Point(0, 0);
+    private TextGraphics statusBar;
+    private TextGraphics infoBar;
+    private TextGraphics helpBar;
+    private TextGraphics mainGraphics;
+    private Screen screen;
+    static TerminalSize terminalSize;
+    private static final int ROWS = 25;
+    private static final int COLS = 80;
+    private TextColor color;
 
     public View(GameViewListener gameViewListener) {
-        viewGrid = new ViewGrid();
         this.gameViewListener = gameViewListener;
-//        setCenter(viewGrid);
+     
+        // statusBar = new Text();
+        // infoBar = new Text();
+        // helpBar = new Text();
 
-        getChildren().add(viewGrid);
-        StackPane.setAlignment(viewGrid, Pos.CENTER);
-
-        statusBar = new Text();
-        statusBar.setFill(Color.WHITE);
-        statusBar.setFont(new Font("Lucida Sans Unicode", 12));
-        statusBar.setWrappingWidth(200);
-
-        infoBar = new Text();
-        infoBar.setFill(Color.WHITE);
-        infoBar.setFont(new Font("Lucida Sans Unicode", 12));
-        infoBar.setWrappingWidth(1000);
-
-        helpBar = new Text();
-        helpBar.setFill(Color.WHITE);
-        helpBar.setFont(new Font("Lucida Sans Unicode", 12));
-        helpBar.setWrappingWidth(1200);
-
-        HBox infoAndStatusBox = new HBox();
-        infoAndStatusBox.setPrefHeight(50);
-        infoAndStatusBox.getChildren().add(statusBar);
-        infoAndStatusBox.getChildren().add(infoBar);
-        HBox helpBox = new HBox();
-        helpBox.setPrefHeight(50);
-        helpBox.getChildren().add(helpBar);
-
-        VBox bottomBox = new VBox();
-        bottomBox.setPrefHeight(100);
-        bottomBox.getChildren().add(infoAndStatusBox);
-        bottomBox.getChildren().add(helpBox);
-        getChildren().add(bottomBox);
-        bottomBox.setMaxHeight(100);
-        StackPane.setAlignment(bottomBox, Pos.BOTTOM_CENTER);
-
-
-
-//        setBottom(bottomBox);
-        this.setFocusTraversable(true);
-        clear();
-        addEventListener();
-        this.requestFocus();
+        // setBottom(bottomBox);
+        // this.setFocusTraversable(true);
+        // clear();
+        // addEventListener();
+        // this.requestFocus();
     }
 
-    private void addEventListener() {
-        addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
-            gameViewListener.onChar(keyEvent);
-        });
+    public void setScreen(Screen screen){
+        this.screen = screen;
+    }
+    public KeyStroke readKey() {
+        try {
+            return screen.pollInput();
+        } catch (IOException e) {
+
+        }
+        return null;
+    }
+
+    public boolean isEndOfGame(KeyStroke keyStroke) {
+        if (keyStroke != null &&
+                (keyStroke.getKeyType() == KeyType.Escape
+                        || keyStroke.getKeyType() == KeyType.EOF)) {
+            return true;
+        }
+        return false;
     }
 
     @Override
     public Point getMapScrollPage() {
-        return viewGrid.getMapScrollPage();
+        return this.mapScrollPage;
     }
 
     @Override
     public void setMapScrollPage(Point pos) {
-        viewGrid.setMapScrollPage(pos);
-        setStatusBarText("Page: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
+        this.mapScrollPage = pos;
+        setStatusBarText("Page: " + mapScrollPage.getX() + ", " + mapScrollPage.getY());
     }
 
-    public void setStatusBarText(String text){
-        statusBar.setText(text);
+    public void setStatusBarText(String text) {
+        // statusBar.setText(text);
     }
-    public void setInfoBarText(String text){
-        infoBar.setText(text);
+
+    public void setInfoBarText(String text) {
+        // infoBar.setText(text);
     }
-    public void setHelpBarText(String text){helpBar.setText(text);}
+
+    public void setHelpBarText(String text) {
+        // helpBar.setText(text);
+    }
 
     @Override
     public void paint() {
-        viewGrid.paint();
+        try {
+            this.screen.refresh();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    @Override
-    public void clear() {
-        viewGrid.clear();
+    public void resizePartsIfNecessary() {
+        TerminalSize newSize = this.screen.doResizeIfNecessary();
+        if (newSize != null) {
+            terminalSize = newSize;
+            // labelTextGraphics = screen.newTextGraphics();
+            // lineTextGraphics = screen.newTextGraphics();
+            // TerminalPosition upLeft = new TerminalPosition(1, 1);
+            // baseTextGraphics = baseTextGraphics.newTextGraphics(upLeft,
+            // terminalSize.withRelativeRows(terminalSize.getRows()));
+        }
     }
 
-    @Override
+    //////////////////////////////////////////
     public void set(int x, int y, String c) {
-        viewGrid.set(x, y, c);
+        x -= mapScrollPage.getX() * COLS;
+        y -= mapScrollPage.getY() * ROWS;
+        if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
+            screen.newTextGraphics()
+                    .setForegroundColor(this.color)
+                    .putString(x, y, c);
+        }
     }
 
     @Override
-    public void setColor(Color color) {
-        viewGrid.setColor(color);
+    public void setColor(TextColor color) {
+        this.color = color;
     }
 
     @Override
     public void setPageOfPos(int x, int y) {
-        viewGrid.setPageOfPos(x, y);
-        setStatusBarText("Page: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
+        if (x < 0)
+            x -= COLS;
+        if (y < 0)
+            y -= ROWS;
+        int pageX = x / COLS;
+        int pageY = y / ROWS;
+        setMapScrollPage(new Point(pageX, pageY));
     }
 
     @Override
     public void clear(int x, int y) {
-        viewGrid.clear(x, y);
+        set(x, y, " ");
     }
 
     @Override
     public void fill(int x, int y, int width, int height, String c) {
-        viewGrid.fill(x, y, width, height, c);
+        for (int col = x; col < x + width; col++) {
+            for (int row = y; row < y + height; row++) {
+                set(col, row, c);
+            }
+        }
     }
 
     @Override
     public void box(int x, int y, int width, int height) {
-        viewGrid.box(x, y, width, height);
+        fill(x, y, width, 1, "-");
+        fill(x, y + height, width, 1, "-");
+        fill(x, y, 1, height, "|");
+        fill(x + width, y, 1, height, "|");
+        set(x, y, "+");
+        set(x, y + height, "+");
+        set(x + width, y, "+");
+        set(x + width, y + height, "+");
     }
 
+    @Override
+    public void clear() {
+        this.screen.clear();
+    }
 }
