@@ -49,7 +49,7 @@ public class View implements letrain.mvp.View {
         resizePartsIfNecessary();
     }
     public int getRows(){
-        return this.screen.getTerminalSize().getRows();
+        return this.screen.getTerminalSize().getRows()-3;
     }
     public int getCols(){
         return this.screen.getTerminalSize().getColumns();
@@ -88,15 +88,15 @@ public class View implements letrain.mvp.View {
     }
 
     public void setStatusBarText(String text) {
-        // statusBar.setText(text);
+        this.screen.newTextGraphics().putString(1,getRows()-1,  text);
     }
 
     public void setInfoBarText(String text) {
-        // infoBar.setText(text);
+        this.screen.newTextGraphics().putString(1,getRows()-2,  text);
     }
 
     public void setHelpBarText(String text) {
-        // helpBar.setText(text);
+        this.screen.newTextGraphics().putString(1,getRows()-3,  text);
     }
 
     @Override
