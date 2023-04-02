@@ -1,6 +1,6 @@
 package letrain.track;
 
-import javafx.util.Pair;
+
 import letrain.map.*;
 import letrain.vehicle.impl.Linker;
 import letrain.visitor.Renderable;

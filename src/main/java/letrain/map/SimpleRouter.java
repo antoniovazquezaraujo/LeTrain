@@ -1,6 +1,5 @@
 package letrain.map;
 
-import javafx.util.Pair;
 
 import java.io.Serializable;
 import java.util.HashMap;
