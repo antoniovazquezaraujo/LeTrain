@@ -72,7 +72,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 informer.visitModel(model);
                 view.paint();
                 model.moveTrains();
-                Thread.sleep(10);
+                Thread.sleep(5);
                 view.clear();
             }
         } catch (Exception e) {
