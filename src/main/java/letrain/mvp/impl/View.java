@@ -28,8 +28,6 @@ public class View implements letrain.mvp.View {
     private TextGraphics mainGraphics;
     private Screen screen;
     static TerminalSize terminalSize;
-    private static final int ROWS = 25;
-    private static final int COLS = 80;
     private TextColor color;
 
     public View(GameViewListener gameViewListener) {
@@ -48,10 +46,21 @@ public class View implements letrain.mvp.View {
 
     public void setScreen(Screen screen){
         this.screen = screen;
+        resizePartsIfNecessary();
+    }
+    public int getRows(){
+        return this.screen.getTerminalSize().getRows();
+    }
+    public int getCols(){
+        return this.screen.getTerminalSize().getColumns();
     }
     public KeyStroke readKey() {
         try {
-            return screen.pollInput();
+            KeyStroke input = screen.pollInput();
+            if(input != null){
+                resizePartsIfNecessary();
+                return input;
+            }
         } catch (IOException e) {
 
         }
@@ -113,9 +122,9 @@ public class View implements letrain.mvp.View {
 
     //////////////////////////////////////////
     public void set(int x, int y, String c) {
-        x -= mapScrollPage.getX() * COLS;
-        y -= mapScrollPage.getY() * ROWS;
-        if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
+        x -= mapScrollPage.getX() * getCols();
+        y -= mapScrollPage.getY() * getRows();
+        if (x >= 0 && x < getCols() && y >= 0 && y < getRows()) {
             screen.newTextGraphics()
                     .setForegroundColor(this.color)
                     .putString(x, y, c);
@@ -130,11 +139,11 @@ public class View implements letrain.mvp.View {
     @Override
     public void setPageOfPos(int x, int y) {
         if (x < 0)
-            x -= COLS;
+            x -= getCols();
         if (y < 0)
-            y -= ROWS;
-        int pageX = x / COLS;
-        int pageY = y / ROWS;
+            y -= getRows();
+        int pageX = x / getCols();
+        int pageY = y / getRows();
         setMapScrollPage(new Point(pageX, pageY));
     }
 
