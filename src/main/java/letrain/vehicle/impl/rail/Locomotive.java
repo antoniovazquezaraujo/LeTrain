@@ -1,108 +1,39 @@
 package letrain.vehicle.impl.rail;
 
 import letrain.visitor.Visitor;
+import letrain.map.Dir;
+import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 
-public class Locomotive extends Linker implements Tractor{
-
-    private float force;
+public class Locomotive extends Linker implements Tractor {
+    final static int MAX_SPEED = 5;
+    int speed;
+    int turns;
     private String aspect;
     float brakes;
     boolean motorInverted = false;
-    public Locomotive(String aspect){
+
+    public Locomotive(String aspect) {
         this.aspect = aspect;
-        force = 0;
     }
+
     public Locomotive(char c) {
-        this(""+c);
-    }
-
-    @Override
-    public float getMass() {
-        return super.getMass()+500;
-    }
-
-    @Override
-    public float getFrictionCoefficient() {
-        return 0.0001F ;
-    }
-
-
-    @Override
-    public void setAcceleration(float speed) {
-
-    }
-
-    @Override
-    public float getAcceleration() {
-        return 0;
-    }
-
-    @Override
-    public float getDistanceTraveled() {
-        return 0;
-    }
-
-    @Override
-    public void resetDistanceTraveled() {
-
-    }
-
-    @Override
-    public void incBrakes(int i) {
-        brakes+=i;
-//        if(brakes>10)brakes=10;
-    }
-
-    @Override
-    public void decBrakes(int i) {
-        brakes-=i;
-        if(brakes<0)brakes=0;
-    }
-
-    @Override
-    public float getBrakes() {
-        return brakes;
-    }
-
-    @Override
-    public void setBrakes(float i) {
-        this.brakes=i;
-//        if(brakes>10)brakes=10;
-        if(brakes<0)brakes=0;
-    }
-
-    @Override
-    public float getForce() {
-        return this.force;
-    }
-
-    @Override
-    public void setForce(float force) {
-        this.force = force;
-    }
-
-    @Override
-    public void incForce(float force) {
-        this.force+=force;
-//        if(this.force>1000)this.force=1000;
-    }
-
-    @Override
-    public void decForce(float force) {
-        this.force-=force;
-        if(this.force<0)this.force=0;
-    }
-
-    @Override
-    public void applyForce() {
-
+        this("" + c);
     }
 
     @Override
     public void setMotorInverted(boolean motorInverted) {
-        this.motorInverted=motorInverted;
+        this.motorInverted = motorInverted;
+        setDirectorLinkerDir(!motorInverted);
+    }
+
+    void setDirectorLinkerDir(boolean isNormalSense) {
+        if (!isNormalSense) {
+            Dir pushDir = getDir();
+            Track nextTrack = getTrack();
+            setDir(nextTrack.getDir(pushDir));
+        }
     }
 
     @Override
@@ -116,10 +47,85 @@ public class Locomotive extends Linker implements Tractor{
 
     @Override
     public void accept(Visitor visitor) {
-        visitor.visitLocomotive(this);
+        for (Linker linker : this.getTrain().getLinkers()) {
+            if (linker instanceof Locomotive) {
+                visitor.visitLocomotive((Locomotive) linker);
+            } else {
+                visitor.visitWagon((Wagon) linker);
+            }
+        }
     }
 
     public String getAspect() {
         return aspect;
+    }
+
+    public void update() {
+        if (isTimeToMove()) {
+            if (isMotorInverted()) {
+                setReversed(true);
+            } else {
+                setReversed(false);
+            }
+            getTrain().advance();
+            resetTurns();
+        } else {
+            consumeTurn();
+        }
+    }
+
+    public void incSpeed() {
+        this.speed++;
+        limitSpeed();
+        resetTurnsIfNeeded();
+    }
+
+    public void decSpeed() {
+        this.speed--;
+        limitSpeed();
+        resetTurnsIfNeeded();
+    }
+
+    public void setSpeed(int speed) {
+        this.speed = speed;
+        limitSpeed();
+        resetTurnsIfNeeded();
+    }
+
+    private void limitSpeed() {
+        if (this.speed > MAX_SPEED) {
+            this.speed = MAX_SPEED;
+        }
+        if (this.speed < 0) {
+            this.speed = 0;
+        }
+    }
+
+    public int getSpeed() {
+        return this.speed;
+    }
+
+    public boolean isTimeToMove() {
+        if (this.turns == 0) {
+            resetTurns();
+            return true;
+        }
+        return false;
+    }
+
+    public void resetTurnsIfNeeded() {
+        if (turns == -1) {
+            resetTurns();
+        }
+    }
+
+    public void resetTurns() {
+        this.turns = speed == 0 ? -1 : 10 / speed;
+    }
+
+    public void consumeTurn() {
+        if (turns > 0) {
+            turns--;
+        }
     }
 }

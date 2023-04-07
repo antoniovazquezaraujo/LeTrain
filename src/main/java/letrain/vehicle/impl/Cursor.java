@@ -32,43 +32,4 @@ public class Cursor extends Vehicle {
     }
 
 
-    @Override
-    public void setAcceleration(float speed) {
-
-    }
-
-    @Override
-    public float getAcceleration() {
-        return 0;
-    }
-
-    @Override
-    public float getDistanceTraveled() {
-        return 0;
-    }
-
-    @Override
-    public void resetDistanceTraveled() {
-
-    }
-
-    @Override
-    public void incBrakes(int i) {
-
-    }
-
-    @Override
-    public void decBrakes(int i) {
-
-    }
-
-    @Override
-    public float getBrakes() {
-        return 0;
-    }
-
-    @Override
-    public void setBrakes(float i) {
-
-    }
 }

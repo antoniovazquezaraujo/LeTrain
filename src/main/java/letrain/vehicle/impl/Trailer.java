@@ -8,6 +8,8 @@ import java.util.List;
 public interface Trailer<T extends Track> {
     Deque<Linker> getLinkers();
 
+    Deque<Linker> getLinkersToJoin();
+
     void pushFront(Linker linker);
 
     Linker popFront();
@@ -33,24 +35,6 @@ public interface Trailer<T extends Track> {
     boolean isEmpty();
 
     int size();
-
-//    float getTractorsForce();
-
-    float getFrictionForce();
-
-//    float getTotalMass();
-
-//    void applyForces();
-
-//    void move();
-
-//    float getAcceleration();
-
-//    float getAcceleration();
-
-//    float getDistanceTraveled();
-
-//    void resetDistanceTraveled();
 
     Trailer divide(Linker p);
 }

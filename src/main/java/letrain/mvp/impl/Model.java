@@ -5,42 +5,43 @@ import letrain.map.Point;
 import letrain.map.RailMap;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
-import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.impl.rail.Locomotive;
+import letrain.vehicle.impl.rail.Wagon;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Model implements Serializable , letrain.mvp.Model {
+public class Model implements Serializable, letrain.mvp.Model {
 
-
-    Train selectedTrain;
+    Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
-    private int selectedTrainIndex;
+    private int selectedLocomotiveIndex;
     private int selectedForkIndex;
 
     private GameMode mode = letrain.mvp.Model.GameMode.TRACKS;
     private RailMap map;
-    private final List<Train> trains;
+    private final List<Locomotive> locomotives;
+    List<Wagon> wagons;
     private Cursor cursor;
     private List<ForkRailTrack> forks;
 
     public Model() {
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
-        this.cursor.setPosition(new Point(10,10));
-        this.trains = new ArrayList<>();
+        this.cursor.setPosition(new Point(10, 10));
+        this.locomotives = new ArrayList<>();
+        this.wagons = new ArrayList<>();
         this.forks = new ArrayList<>();
         this.map = new RailMap();
-        selectedTrainIndex = 0;
-        if (!getTrains().isEmpty()) {
-            selectedTrain = getTrains().get(selectedTrainIndex);
+        selectedLocomotiveIndex = 0;
+        if (!getLocomotives().isEmpty()) {
+            selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
         }
         selectedForkIndex = 0;
         if (!getForks().isEmpty()) {
             selectedFork = getForks().get(selectedForkIndex);
         }
-
     }
 
     @Override
@@ -48,9 +49,20 @@ public class Model implements Serializable , letrain.mvp.Model {
         return map;
     }
 
-    @Override
-    public List<Train> getTrains() {
-        return trains;
+    public List<Locomotive> getLocomotives() {
+        return locomotives;
+    }
+
+    public List<Wagon> getWagons() {
+        return wagons;
+    }
+
+    public void removeWagon(Wagon wagon) {
+        this.wagons.remove(wagon);
+    }
+
+    public void addWagon(Wagon wagon) {
+        this.wagons.add(wagon);
     }
 
     @Override
@@ -73,19 +85,16 @@ public class Model implements Serializable , letrain.mvp.Model {
         this.forks.remove(fork);
     }
 
-    @Override
-    public void addTrain(Train train) {
-        this.trains.add(train);
+    public void addLocomotive(Locomotive locomotive) {
+        this.locomotives.add(locomotive);
     }
 
-    @Override
-    public void removeTrain(Train train) {
-        this.trains.remove(train);
+    public void removeLocomotive(Locomotive locomotive) {
+        this.locomotives.remove(locomotive);
     }
 
-    @Override
-    public void moveTrains() {
-        trains.forEach(Train::applyForce);
+    public void moveLocomotives() {
+        locomotives.forEach(Locomotive::update);
     }
 
     @Override
@@ -96,15 +105,6 @@ public class Model implements Serializable , letrain.mvp.Model {
     @Override
     public void setMode(GameMode mode) {
         this.mode = mode;
-    }
-    @Override
-    public Train getSelectedTrain() {
-        return selectedTrain;
-    }
-
-    @Override
-    public void setSelectedTrain(Train selectedTrain) {
-        this.selectedTrain = selectedTrain;
     }
 
     @Override
@@ -129,7 +129,6 @@ public class Model implements Serializable , letrain.mvp.Model {
         }
         selectedFork = getForks().get(selectedForkIndex);
 
-
     }
 
     @Override
@@ -145,26 +144,36 @@ public class Model implements Serializable , letrain.mvp.Model {
     }
 
     @Override
-    public void selectNextTrain() {
-        if (getTrains().isEmpty()) {
+    public void selectNextLocomotive() {
+        if (getLocomotives().isEmpty()) {
             return;
         }
-        selectedTrainIndex++;
-        if (selectedTrainIndex >= getTrains().size()) {
-            selectedTrainIndex = 0;
+        selectedLocomotiveIndex++;
+        if (selectedLocomotiveIndex >= getLocomotives().size()) {
+            selectedLocomotiveIndex = 0;
         }
-        selectedTrain = getTrains().get(selectedTrainIndex);
+        selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
     }
 
     @Override
-    public void selectPrevTrain() {
-        if (getTrains().isEmpty()) {
+    public void selectPrevLocomotive() {
+        if (getLocomotives().isEmpty()) {
             return;
         }
-        selectedTrainIndex--;
-        if (selectedTrainIndex < 0) {
-            selectedTrainIndex = getTrains().size() - 1;
+        selectedLocomotiveIndex--;
+        if (selectedLocomotiveIndex < 0) {
+            selectedLocomotiveIndex = getLocomotives().size() - 1;
         }
-        selectedTrain = getTrains().get(selectedTrainIndex);
+        selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
+    }
+
+    @Override
+    public Locomotive getSelectedLocomotive() {
+        return selectedLocomotive;
+    }
+
+    @Override
+    public void setSelectedLocomotive(Locomotive selectedLocomotive) {
+        this.selectedLocomotive = selectedLocomotive;
     }
 }

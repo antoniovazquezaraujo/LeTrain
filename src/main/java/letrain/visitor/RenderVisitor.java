@@ -18,7 +18,7 @@ public class RenderVisitor implements Visitor {
     private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
     public static final Color FORK_COLOR = Color.grayRgb(180);
     public static final Color SELECTED_FORK_COLOR = Color.RED;
-    Train selectedTrain;
+    Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     private final View view;
 
@@ -28,11 +28,12 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitModel(Model model) {
-        selectedTrain = model.getSelectedTrain();
+        selectedLocomotive = model.getSelectedLocomotive();
         selectedFork = model.getSelectedFork();
         model.getRailMap().accept(this);
-        model.getTrains().forEach(t -> t.accept(this));
-        model.getForks().forEach(t-> t.accept(this));
+        model.getLocomotives().forEach(t -> t.accept(this));
+        model.getWagons().forEach(t -> t.accept(this));
+        model.getForks().forEach(t -> t.accept(this));
         visitCursor(model.getCursor());
     }
 
@@ -55,9 +56,9 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        if(track == selectedFork){
+        if (track == selectedFork) {
             view.setColor(SELECTED_FORK_COLOR);
-        }else{
+        } else {
             view.setColor(FORK_COLOR);
         }
         view.set(track.getPosition().getX(), track.getPosition().getY(), dirGraphicAspect(track.getFirstOpenDir()));
@@ -75,25 +76,23 @@ public class RenderVisitor implements Visitor {
         view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
     }
 
-
     @Override
-    public void visitTrain(Train train) {
-        if(train == selectedTrain){
+    public void visitLocomotive(Locomotive locomotive) {
+        if (locomotive == selectedLocomotive) {
             view.setColor(Color.RED);
-        }else{
+        } else {
             view.setColor(Color.LIGHTYELLOW);
         }
-        train.getLinkers().forEach(t -> t.accept(this));
+        view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), locomotive.getAspect());
+        view.setColor(Color.BLUEVIOLET);
+        for (Linker linkerToJoin : locomotive.getTrain().getLinkersToJoin()) {
+            view.set(linkerToJoin.getPosition().getX(), linkerToJoin.getPosition().getY(), "░");
+        }
     }
 
     @Override
     public void visitLinker(Linker linker) {
         view.set(linker.getPosition().getX(), linker.getPosition().getY(), "?");
-    }
-
-    @Override
-    public void visitLocomotive(Locomotive locomotive) {
-        view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), locomotive.getAspect());
     }
 
     @Override
@@ -103,7 +102,7 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitCursor(Cursor cursor) {
-        switch(cursor.getMode()){
+        switch (cursor.getMode()) {
             case DRAWING:
                 view.setColor(Color.LIGHTGREEN);
                 break;
@@ -116,7 +115,6 @@ public class RenderVisitor implements Visitor {
         }
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
     }
-
 
     ////////////////////////////////////////////////////////////////////////////////
     private String getTrackAspect(Track track) {

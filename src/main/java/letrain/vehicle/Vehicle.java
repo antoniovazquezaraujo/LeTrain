@@ -34,16 +34,7 @@ public abstract class Vehicle<T extends Track>
         return true;
     };
 
-    @Override
-    public float getMass() {
-        return 1000.0F;
-    }
-
-    @Override
-    public float getFrictionCoefficient() {
-        return 0.0F;
-    }
-
+    
     /***********************************************************
      * Mapeable implementation
      **********************************************************/

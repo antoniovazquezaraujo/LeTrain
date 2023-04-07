@@ -11,9 +11,7 @@ import letrain.vehicle.impl.rail.Wagon;
 
 public interface Visitor {
     void visitModel(Model model);
-
-    void visitTrain(Train train);
-
+ 
     void visitMap(RailMap map);
 
     void visitRailTrack(RailTrack track);

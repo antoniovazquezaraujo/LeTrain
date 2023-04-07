@@ -57,12 +57,11 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             renderer.visitModel(model);
             informer.visitModel(model);
             view.paint();
-            model.moveTrains();
+            model.moveLocomotives();
         });
         loop.getKeyFrames().add(kf);
         loop.play();
     }
-
 
     /***********************************************************
      * Presenter implementation
@@ -77,16 +76,15 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         return model;
     }
 
-
     /***********************************************************
      * GameViewListener implementation
      *********************************************************
-     * @param mode*/
+     * @param mode
+     */
     @Override
     public void onGameModeSelected(letrain.mvp.Model.GameMode mode) {
-        //Avisamos al anterior y al nuevo
+        // Avisamos al anterior y al nuevo
     }
-
 
     @Override
     public void onChar(KeyEvent keyEvent) {
@@ -95,7 +93,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 model.setMode(TRACKS);
                 break;
             case F2:
-                model.setMode(TRAINS);
+                model.setMode(LOCOMOTIVES);
                 break;
             case F3:
                 model.setMode(FORKS);
@@ -105,7 +103,10 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 break;
             case F5:
                 model.setMode(MAKE_TRAINS);
-                newTrain=null;
+                newTrain = null;
+                break;
+            case F6:
+                model.setMode(LINK_TRAINS);
                 break;
         }
 
@@ -113,53 +114,36 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             case TRACKS:
                 maker.onChar(keyEvent);
                 break;
-            case TRAINS:
+            case LOCOMOTIVES:
                 this.newTrain = null;
                 switch (keyEvent.getCode()) {
                     case HOME:
-                        if (model.getSelectedTrain() != null) {
-                            if(model.getSelectedTrain().getAcceleration()<0.1f) {
-                                model.getSelectedTrain().setMotorInverted(false);
+                        if (model.getSelectedLocomotive() != null) {
+                            if (model.getSelectedLocomotive().getSpeed() == 0) {
+                                model.getSelectedLocomotive().setMotorInverted(false);
                             }
                         }
                         break;
                     case END:
-                        if (model.getSelectedTrain() != null) {
-                            if(model.getSelectedTrain().getAcceleration()<0.1f) {
-                                model.getSelectedTrain().setMotorInverted(true);
+                        if (model.getSelectedLocomotive() != null) {
+                            if (model.getSelectedLocomotive().getSpeed() == 0) {
+                                model.getSelectedLocomotive().setMotorInverted(true);
                             }
                         }
                         break;
                     case SPACE:
-                        if (model.getSelectedTrain() != null) {
-                            if(Math.abs(model.getSelectedTrain().getForce())!=0) {
-                                model.getSelectedTrain().setBrakesActivated(true);
-                            }else{
-                                model.getSelectedTrain().setBrakesActivated(false);
-                            }
-                            model.getSelectedTrain().setForce(0);
-                            model.getSelectedTrain().setBrakes(0);
-                        }
                         break;
                     case UP:
-                        if (model.getSelectedTrain()!=null && model.getSelectedTrain().isBrakesActivated()) {
-                            incTrainBrakes();
-                        }else {
-                            accelerateTrain();
-                        }
+                        accelerateLocomotive();
                         break;
                     case DOWN:
-                        if (model.getSelectedTrain()!=null && model.getSelectedTrain().isBrakesActivated()) {
-                            decTrainBrakes();
-                        }else {
-                            decelerateTrain();
-                        }
+                        decelerateLocomotive();
                         break;
                     case LEFT:
-                        selectPrevTrain();
+                        selectPrevLocomotive();
                         break;
                     case RIGHT:
-                        selectNextTrain();
+                        selectNextLocomotive();
                         break;
                     case PAGE_UP:
                         if (keyEvent.isControlDown()) {
@@ -206,7 +190,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                         loadTrain();
                         break;
                     case DOWN:
-                        unloadTrain();
+                        // unloadTrain();
                         break;
                     case LEFT:
                         selectPrevLoadPlatform();
@@ -235,10 +219,33 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 }
                 model.getCursor().getPosition().move(Dir.E);
                 break;
+            case LINK_TRAINS:
+                switch (keyEvent.getCode()) {
+                    case UP:
+                        selectVehiclesInFront();
+                        break;
+                    case DOWN:
+                        selectVehiclesAtBack();
+                        break;
+                    case SPACE:
+                        linkOkUnlinkSelectedVehicles();
+                        break;
+                }
+                break;
         }
-
     }
 
+    private void linkOkUnlinkSelectedVehicles() {
+        model.getSelectedLocomotive().getTrain().toggleLinkersToJoin();
+    }
+
+    private void selectVehiclesAtBack() {
+        model.getSelectedLocomotive().getTrain().setLinkersToJoin(false);
+    }
+
+    private void selectVehiclesInFront() {
+        model.getSelectedLocomotive().getTrain().setLinkersToJoin(true);
+    }
 
     /***********************************************************
      * FACTORIES
@@ -246,27 +253,32 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     Train newTrain;
 
-    private Train getNewTrain() {
-        if (newTrain == null) {
-            newTrain = new Train();
-            model.addTrain(newTrain);
-        }
-        return newTrain;
-    }
+    // private Train getNewTrain() {
+    // if (newTrain == null) {
+    // newTrain = new Train();
+    // model.addTrain(newTrain);
+    // }
+    // return newTrain;
+    // }
 
     private void createWagon(String c, RailTrack track) {
         Wagon wagon = new Wagon(c);
-        getNewTrain().pushBack(wagon);
+        // getNewTrain().pushBack(wagon);
+        model.addWagon(wagon);
         track.enterLinkerFromDir(Dir.E, wagon);
     }
 
     private void createLocomotive(String c, RailTrack track) {
         Locomotive locomotive = new Locomotive(c);
-        getNewTrain().pushBack(locomotive);
+        Train train = new Train();
+        train.pushBack(locomotive);
+        train.setDirectorLinker(locomotive);
+        // getNewTrain().pushBack(locomotive);
+        model.addLocomotive(locomotive);
         track.enterLinkerFromDir(Dir.E, locomotive);
-        if (getNewTrain().getDirectorLinker() == null) {
-            getNewTrain().assignDefaultDirectorLinker();
-        }
+        // if (getNewTrain().getDirectorLinker() == null) {
+        // getNewTrain().assignDefaultDirectorLinker();
+        // }
 
     }
 
@@ -292,32 +304,24 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
      * TRAINS
      **********************************************************/
 
-    private void selectNextTrain() {
-        model.selectNextTrain();
+    private void selectNextLocomotive() {
+        model.selectNextLocomotive();
     }
 
-    private void selectPrevTrain() {
-        model.selectPrevTrain();
+    private void selectPrevLocomotive() {
+        model.selectPrevLocomotive();
     }
 
-    private void decelerateTrain() {
-        if (model.getSelectedTrain() == null) return;
-        model.getSelectedTrain().decForce(10);
+    private void decelerateLocomotive() {
+        if (model.getSelectedLocomotive() == null)
+            return;
+        model.getSelectedLocomotive().decSpeed();
     }
 
-    private void accelerateTrain() {
-        if (model.getSelectedTrain() == null) return;
-        model.getSelectedTrain().incForce(10);
-    }
-
-    private void incTrainBrakes() {
-        if (model.getSelectedTrain() == null) return;
-        model.getSelectedTrain().incBrakes(10);
-    }
-
-    private void decTrainBrakes() {
-        if (model.getSelectedTrain() == null) return;
-        model.getSelectedTrain().decBrakes(10);
+    private void accelerateLocomotive() {
+        if (model.getSelectedLocomotive() == null)
+            return;
+        model.getSelectedLocomotive().incSpeed();
     }
 
     private void mapPageDown() {
@@ -343,7 +347,6 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         p.setY(p.getY() - 1);
         view.setMapScrollPage(p);
         view.clear();
-
     }
 
     private void mapPageRight() {
@@ -371,7 +374,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     }
 
-    private void unloadTrain() {
+    private void unloadLocomotive() {
 
     }
 

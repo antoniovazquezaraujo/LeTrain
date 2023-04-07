@@ -9,7 +9,6 @@ import letrain.track.rail.*;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 import java.text.DecimalFormat;
@@ -35,10 +34,10 @@ public class InfoVisitor implements Visitor {
                     visitRailTrack(track);
                 }
                 break;
-            case TRAINS:
-                Train train = model.getSelectedTrain();
-                if(train!= null){
-                    visitTrain(train);
+            case LOCOMOTIVES:
+                Locomotive locomotive = model.getSelectedLocomotive();
+                if(locomotive!= null){
+                    visitLocomotive(locomotive);
                 }
                 break;
             case FORKS:
@@ -120,18 +119,11 @@ public class InfoVisitor implements Visitor {
 
 
     @Override
-    public void visitTrain(Train train) {
-//        infoBarText+= "Accel:"+ train.getAcceleration()+ " Force:"+train.getForce()+ " Mass:"+ train.getMass()+ "\n";
-//        infoBarText+= "Brakes:"+ train.getBrakes();
+    public void visitLocomotive(Locomotive locomotive) {
         DecimalFormat df = new DecimalFormat("0000.0000");
         infoBarText+=
-                " F:" + df.format(train.getForce())+
-                " AC:"+ df.format(train.getAcceleration())+
-                " DT:"+ df.format(train.getDistanceTraveled())+
-                " BR:"+ df.format(train.getBrakes())+
-                " RE:"+ train.isReversed();
-
-//        train.getLinkers().forEach(t->t.accept(this));
+                " S:" + df.format(locomotive.getSpeed())+
+                " RE:"+ locomotive.isReversed();
     }
 
     @Override
@@ -139,15 +131,10 @@ public class InfoVisitor implements Visitor {
 
     }
 
-    @Override
-    public void visitLocomotive(Locomotive locomotive) {
-        infoBarText+= "Locomotive. Accel:"+ locomotive.getAcceleration()+ " Force:"+locomotive.getForce()+ " Mass:"+ locomotive.getMass()+ " Dir"+ locomotive.getDir()+"\n";
-
-    }
-
+ 
     @Override
     public void visitWagon(Wagon wagon) {
-        infoBarText+= "Wagon. Accel:"+ wagon.getAcceleration()+ " Mass:"+ wagon.getMass()+ " Dir"+ wagon.getDir()+"\n";
+        infoBarText+= "Wagon:"+ wagon.getAspect()+ " Dir"+ wagon.getDir()+"\n";
     }
 
     @Override
