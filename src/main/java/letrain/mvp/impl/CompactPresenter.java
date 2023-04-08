@@ -121,21 +121,8 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             case LOCOMOTIVES:
                 this.newTrain = null;
                 switch (keyEvent.getCode()) {
-                    case HOME:
-                        if (model.getSelectedLocomotive() != null) {
-                            if (model.getSelectedLocomotive().getSpeed() == 0) {
-                                model.getSelectedLocomotive().setMotorInverted(false);
-                            }
-                        }
-                        break;
-                    case END:
-                        if (model.getSelectedLocomotive() != null) {
-                            if (model.getSelectedLocomotive().getSpeed() == 0) {
-                                model.getSelectedLocomotive().setMotorInverted(true);
-                            }
-                        }
-                        break;
                     case SPACE:
+                        toggleMotorInversion();
                         break;
                     case UP:
                         accelerateLocomotive();
@@ -255,6 +242,12 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                         break;
                 }
                 break;
+        }
+    }
+
+    private void toggleMotorInversion() {
+        if (model.getSelectedLocomotive().getSpeed() == 0) {
+            model.getSelectedLocomotive().toggleMotorInversion();
         }
     }
 

@@ -23,9 +23,10 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     @Override
-    public void setMotorInverted(boolean motorInverted) {
-        this.motorInverted = motorInverted;
-        setDirectorLinkerDir(!motorInverted);
+    public void toggleMotorInversion() {
+        Dir pushDir = getDir();
+        Track nextTrack = getTrack();
+        setDir(nextTrack.getDir(pushDir));
     }
 
     void setDirectorLinkerDir(boolean isNormalSense) {
