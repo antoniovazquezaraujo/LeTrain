@@ -7,11 +7,14 @@ import letrain.map.SimpleRouter;
 import letrain.mvp.Model;
 import letrain.mvp.View;
 import letrain.track.Track;
-import letrain.track.rail.*;
+import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.RailTrack;
+import letrain.track.rail.StopRailTrack;
+import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public class RenderVisitor implements Visitor {
@@ -88,6 +91,11 @@ public class RenderVisitor implements Visitor {
         for (Linker linkerToJoin : locomotive.getTrain().getLinkersToJoin()) {
             view.set(linkerToJoin.getPosition().getX(), linkerToJoin.getPosition().getY(), "░");
         }
+        view.setColor(Color.CRIMSON);
+        for (Linker linkerToPreserve : locomotive.getTrain().getLinkersToRemove()) {
+            view.set(linkerToPreserve.getPosition().getX(), linkerToPreserve.getPosition().getY(), "░");
+        }
+
     }
 
     @Override

@@ -24,12 +24,15 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     protected final Deque<Linker> linkers;
     protected final List<Tractor> tractors;
     protected final Deque<Linker> linkersToJoin;
+    int numLinkersToRemove = 0;
+    protected final Deque<Linker> linkersToRemove;
 
-    enum LinkersJoinSense {
+    enum LinkersSense {
         FRONT, BACK
     };
 
-    LinkersJoinSense linkerJoinSense;
+    LinkersSense linkerJoinSense;
+    LinkersSense linkerDivisionSense;
     boolean joined = false;
     protected Tractor directorLinker;
 
@@ -37,6 +40,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         this.linkers = new LinkedList<>();
         this.tractors = new ArrayList<>();
         this.linkersToJoin = new LinkedList<>();
+        this.linkersToRemove = new LinkedList<>();
     }
 
     /***********************************************************
@@ -273,11 +277,11 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         if (forwardDirection) {
             lastLinker = getLinkers().getFirst();
             dir = lastLinker.getDir();
-            linkerJoinSense = LinkersJoinSense.FRONT;
+            linkerJoinSense = LinkersSense.FRONT;
         } else {
             lastLinker = getLinkers().getLast();
             dir = lastLinker.getDir().inverse();
-            linkerJoinSense = LinkersJoinSense.BACK;
+            linkerJoinSense = LinkersSense.BACK;
         }
 
         Track track = lastLinker.getTrack();
@@ -297,7 +301,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     public void toggleLinkersToJoin() {
         if (!joined) {
-            if (linkerJoinSense == LinkersJoinSense.FRONT) {
+            if (linkerJoinSense == LinkersSense.FRONT) {
                 for (Linker linker : linkersToJoin) {
                     pushFront(linker);
                 }
@@ -308,7 +312,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             }
             linkersToJoin.clear();
         } else {
-            if (linkerJoinSense == LinkersJoinSense.FRONT) {
+            if (linkerJoinSense == LinkersSense.FRONT) {
                 for (Linker linker : linkers) {
                     linkersToJoin.addLast(popFront());
                 }
@@ -318,5 +322,80 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 }
             }
         }
+    }
+
+    public void setFrontDivisionSense() {
+        linkerDivisionSense = LinkersSense.FRONT;
+    }
+
+    public void setBackDivisionSense() {
+        linkerDivisionSense = LinkersSense.BACK;
+    }
+
+    public void selectNextDivisionLink() {
+        if (numLinkersToRemove < getLinkers().size() - 1) {
+            numLinkersToRemove++;
+        }
+        linkersToRemove.clear();
+        Iterator<Linker> linkerIterator = getLinkers().iterator();
+        if (linkerDivisionSense == LinkersSense.FRONT) {
+            linkerIterator = getLinkers().descendingIterator();
+        } else {
+            linkerIterator = getLinkers().iterator();
+        }
+        for (int n = 0; n < numLinkersToRemove; n++) {
+            Linker next = linkerIterator.next();
+            if (next != getDirectorLinker()) {
+                linkersToRemove.addLast(next);
+            } else {
+                numLinkersToRemove--;
+                return;
+            }
+        }
+    }
+
+    public void selectPrevDivisionLink() {
+        if (numLinkersToRemove > 0) {
+            numLinkersToRemove--;
+        }
+        linkersToRemove.clear();
+        Iterator<Linker> linkerIterator = getLinkers().iterator();
+        if (linkerDivisionSense == LinkersSense.FRONT) {
+            linkerIterator = getLinkers().descendingIterator();
+        } else {
+            linkerIterator = getLinkers().iterator();
+        }
+        for (int n = 0; n < numLinkersToRemove; n++) {
+            Linker next = linkerIterator.next();
+            if (next != getDirectorLinker()) {
+                linkersToRemove.addLast(next);
+            } else {
+                numLinkersToRemove--;
+                return;
+            }
+        }
+    }
+
+    public void divideTrain() {
+        Iterator<Linker> linkerIterator = getLinkers().iterator();
+        if (linkerDivisionSense == LinkersSense.FRONT) {
+            linkerIterator = getLinkers().descendingIterator();
+        } else {
+            linkerIterator = getLinkers().iterator();
+        }
+        for (int n = 0; n < numLinkersToRemove; n++) {
+            Linker next = linkerIterator.next();
+            if (next != getDirectorLinker()) {
+                next.setTrain(null);
+                linkerIterator.remove();
+            } else {
+                return;
+            }
+        }
+
+    }
+
+    public Deque<Linker> getLinkersToRemove() {
+        return this.linkersToRemove;
     }
 }
