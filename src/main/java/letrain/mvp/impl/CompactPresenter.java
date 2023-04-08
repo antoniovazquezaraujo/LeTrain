@@ -108,6 +108,10 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             case F6:
                 model.setMode(LINK_TRAINS);
                 break;
+            case F7:
+                model.setMode(DIVIDE_TRAINS);
+                break;
+
         }
 
         switch (model.getMode()) {
@@ -117,21 +121,8 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             case LOCOMOTIVES:
                 this.newTrain = null;
                 switch (keyEvent.getCode()) {
-                    case HOME:
-                        if (model.getSelectedLocomotive() != null) {
-                            if (model.getSelectedLocomotive().getSpeed() == 0) {
-                                model.getSelectedLocomotive().setMotorInverted(false);
-                            }
-                        }
-                        break;
-                    case END:
-                        if (model.getSelectedLocomotive() != null) {
-                            if (model.getSelectedLocomotive().getSpeed() == 0) {
-                                model.getSelectedLocomotive().setMotorInverted(true);
-                            }
-                        }
-                        break;
                     case SPACE:
+                        toggleMotorInversion();
                         break;
                     case UP:
                         accelerateLocomotive();
@@ -232,6 +223,31 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                         break;
                 }
                 break;
+            case DIVIDE_TRAINS:
+                switch (keyEvent.getCode()) {
+                    case LEFT:
+                        selectFrontDivisionSense();
+                        break;
+                    case RIGHT:
+                        selectBackDivisionSense();
+                        break;
+                    case UP:
+                        selectNextLink();
+                        break;
+                    case DOWN:
+                        selectPrevLink();
+                        break;
+                    case SPACE:
+                        divideTrain();
+                        break;
+                }
+                break;
+        }
+    }
+
+    private void toggleMotorInversion() {
+        if (model.getSelectedLocomotive().getSpeed() == 0) {
+            model.getSelectedLocomotive().toggleMotorInversion();
         }
     }
 
@@ -245,6 +261,26 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void selectVehiclesInFront() {
         model.getSelectedLocomotive().getTrain().setLinkersToJoin(true);
+    }
+
+    private void selectFrontDivisionSense() {
+        model.getSelectedLocomotive().getTrain().setFrontDivisionSense();
+    }
+
+    private void selectBackDivisionSense() {
+        model.getSelectedLocomotive().getTrain().setBackDivisionSense();
+    }
+
+    private void selectNextLink() {
+        model.getSelectedLocomotive().getTrain().selectNextDivisionLink();
+    }
+
+    private void selectPrevLink() {
+        model.getSelectedLocomotive().getTrain().selectPrevDivisionLink();
+    }
+
+    private void divideTrain() {
+        model.getSelectedLocomotive().getTrain().divideTrain();
     }
 
     /***********************************************************

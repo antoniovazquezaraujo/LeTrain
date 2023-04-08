@@ -61,6 +61,7 @@ public interface Model {
         CREATE_LOAD_PLATFORM("Create load platform"),
         LOAD_TRAINS("Use load platforms"),
         LINK_TRAINS("Link trains"),
+        DIVIDE_TRAINS("Divide trains"),
         MAKE_TRAINS("Use factory platforms");
 
         private String name;
