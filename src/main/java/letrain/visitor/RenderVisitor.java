@@ -91,7 +91,7 @@ public class RenderVisitor implements Visitor {
         for (Linker linkerToJoin : locomotive.getTrain().getLinkersToJoin()) {
             view.set(linkerToJoin.getPosition().getX(), linkerToJoin.getPosition().getY(), "░");
         }
-        view.setColor(Color.CRIMSON);
+        view.setColor(Color.WHITE);
         for (Linker linkerToPreserve : locomotive.getTrain().getLinkersToRemove()) {
             view.set(linkerToPreserve.getPosition().getX(), linkerToPreserve.getPosition().getY(), "░");
         }
@@ -100,11 +100,13 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitLinker(Linker linker) {
+        view.setColor(Color.AZURE);
         view.set(linker.getPosition().getX(), linker.getPosition().getY(), "?");
     }
 
     @Override
     public void visitWagon(Wagon wagon) {
+        view.setColor(Color.BROWN);
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
     }
 

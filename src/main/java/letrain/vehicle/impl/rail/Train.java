@@ -272,6 +272,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     public void setLinkersToJoin(boolean forwardDirection) {
         linkersToJoin.clear();
+        joined = false;
         Linker lastLinker = null;
         Dir dir;
         if (forwardDirection) {
@@ -304,23 +305,31 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             if (linkerJoinSense == LinkersSense.FRONT) {
                 for (Linker linker : linkersToJoin) {
                     pushFront(linker);
+                    linker.setTrain(this);
                 }
             } else {
                 for (Linker linker : linkersToJoin) {
                     pushBack(linker);
+                    linker.setTrain(this);
                 }
             }
             linkersToJoin.clear();
+            joined = true;
         } else {
             if (linkerJoinSense == LinkersSense.FRONT) {
                 for (Linker linker : linkers) {
-                    linkersToJoin.addLast(popFront());
+                    Linker popFront = popFront();
+                    popFront.setTrain(null);
+                    linkersToJoin.addLast(popFront);
                 }
             } else {
                 for (Linker linker : linkers) {
-                    linkersToJoin.addFirst(popBack());
+                    Linker popBack = popBack();
+                    popBack.setTrain(null);
+                    linkersToJoin.addFirst(popBack);
                 }
             }
+            joined = false;
         }
     }
 
@@ -383,6 +392,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         } else {
             linkerIterator = getLinkers().iterator();
         }
+        linkersToRemove.clear();
         for (int n = 0; n < numLinkersToRemove; n++) {
             Linker next = linkerIterator.next();
             if (next != getDirectorLinker()) {

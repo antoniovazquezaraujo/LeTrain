@@ -6,21 +6,18 @@ import letrain.vehicle.impl.Linker;
 public class Wagon extends Linker {
     String aspect;
     float brakes;
+
     public Wagon(String aspect) {
         this.aspect = aspect;
     }
+
     public Wagon() {
         this("?");
     }
 
     public Wagon(char c) {
-        this(""+c);
+        this("" + c);
     }
- 
- 
-
-    
-  
 
     /***********************************************************
      * Renderable implementation
@@ -30,6 +27,7 @@ public class Wagon extends Linker {
     public void accept(Visitor visitor) {
         visitor.visitWagon(this);
     }
+
     public String getAspect() {
         return aspect;
     }

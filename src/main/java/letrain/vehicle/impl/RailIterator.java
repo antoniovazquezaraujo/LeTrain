@@ -3,12 +3,14 @@ package letrain.vehicle.impl;
 import java.util.Iterator;
 
 import letrain.map.Dir;
+import letrain.map.Mapeable;
 import letrain.map.Point;
+import letrain.map.Rotable;
 import letrain.track.Track;
 import letrain.track.Trackeable;
 import letrain.vehicle.Transportable;
 
-public class RailIterator implements Transportable, Trackeable {
+public class RailIterator implements Transportable, Trackeable, Rotable, Mapeable {
 
     Point position;
     Dir dir;

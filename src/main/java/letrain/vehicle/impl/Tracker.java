@@ -1,6 +1,5 @@
 package letrain.vehicle.impl;
 
-import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.track.Trackeable;
 import letrain.vehicle.Vehicle;

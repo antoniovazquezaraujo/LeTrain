@@ -122,7 +122,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 this.newTrain = null;
                 switch (keyEvent.getCode()) {
                     case SPACE:
-                        toggleMotorInversion();
+                        toggleReversed();
                         break;
                     case UP:
                         accelerateLocomotive();
@@ -245,9 +245,9 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         }
     }
 
-    private void toggleMotorInversion() {
+    private void toggleReversed() {
         if (model.getSelectedLocomotive().getSpeed() == 0) {
-            model.getSelectedLocomotive().toggleMotorInversion();
+            model.getSelectedLocomotive().toggleReversed();
         }
     }
 
@@ -289,17 +289,8 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     Train newTrain;
 
-    // private Train getNewTrain() {
-    // if (newTrain == null) {
-    // newTrain = new Train();
-    // model.addTrain(newTrain);
-    // }
-    // return newTrain;
-    // }
-
     private void createWagon(String c, RailTrack track) {
         Wagon wagon = new Wagon(c);
-        // getNewTrain().pushBack(wagon);
         model.addWagon(wagon);
         track.enterLinkerFromDir(Dir.E, wagon);
     }
@@ -309,13 +300,8 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         Train train = new Train();
         train.pushBack(locomotive);
         train.setDirectorLinker(locomotive);
-        // getNewTrain().pushBack(locomotive);
         model.addLocomotive(locomotive);
         track.enterLinkerFromDir(Dir.E, locomotive);
-        // if (getNewTrain().getDirectorLinker() == null) {
-        // getNewTrain().assignDefaultDirectorLinker();
-        // }
-
     }
 
     /***********************************************************
