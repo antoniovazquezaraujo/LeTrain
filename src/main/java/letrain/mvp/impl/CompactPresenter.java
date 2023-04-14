@@ -122,7 +122,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 this.newTrain = null;
                 switch (keyEvent.getCode()) {
                     case SPACE:
-                        toggleMotorInversion();
+                        toggleReversed();
                         break;
                     case UP:
                         accelerateLocomotive();
@@ -204,9 +204,9 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 }
                 RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition());
                 if (c.toUpperCase().equals(c)) {
-                    createLocomotive(c, track);
+                    createLocomotive(model.getCursor().getDir(), c, track);
                 } else {
-                    createWagon(c, track);
+                    createWagon(model.getCursor().getDir(), c, track);
                 }
                 model.getCursor().getPosition().move(Dir.E);
                 break;
@@ -245,14 +245,14 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         }
     }
 
-    private void toggleMotorInversion() {
+    private void toggleReversed() {
         if (model.getSelectedLocomotive().getSpeed() == 0) {
-            model.getSelectedLocomotive().toggleMotorInversion();
+            model.getSelectedLocomotive().toggleReversed();
         }
     }
 
     private void linkOkUnlinkSelectedVehicles() {
-        model.getSelectedLocomotive().getTrain().toggleLinkersToJoin();
+        model.getSelectedLocomotive().getTrain().joinLinkers();
     }
 
     private void selectVehiclesAtBack() {
@@ -289,33 +289,19 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     Train newTrain;
 
-    // private Train getNewTrain() {
-    // if (newTrain == null) {
-    // newTrain = new Train();
-    // model.addTrain(newTrain);
-    // }
-    // return newTrain;
-    // }
-
-    private void createWagon(String c, RailTrack track) {
+    private void createWagon(Dir d, String c, RailTrack track) {
         Wagon wagon = new Wagon(c);
-        // getNewTrain().pushBack(wagon);
         model.addWagon(wagon);
-        track.enterLinkerFromDir(Dir.E, wagon);
+        track.enterLinkerFromDir(d, wagon);
     }
 
-    private void createLocomotive(String c, RailTrack track) {
+    private void createLocomotive(Dir d, String c, RailTrack track) {
         Locomotive locomotive = new Locomotive(c);
         Train train = new Train();
         train.pushBack(locomotive);
         train.setDirectorLinker(locomotive);
-        // getNewTrain().pushBack(locomotive);
         model.addLocomotive(locomotive);
-        track.enterLinkerFromDir(Dir.E, locomotive);
-        // if (getNewTrain().getDirectorLinker() == null) {
-        // getNewTrain().assignDefaultDirectorLinker();
-        // }
-
+        track.enterLinkerFromDir(d, locomotive);
     }
 
     /***********************************************************

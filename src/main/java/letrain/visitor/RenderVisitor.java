@@ -88,23 +88,27 @@ public class RenderVisitor implements Visitor {
         }
         view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), locomotive.getAspect());
         view.setColor(Color.BLUEVIOLET);
-        for (Linker linkerToJoin : locomotive.getTrain().getLinkersToJoin()) {
-            view.set(linkerToJoin.getPosition().getX(), linkerToJoin.getPosition().getY(), "░");
-        }
-        view.setColor(Color.CRIMSON);
-        for (Linker linkerToPreserve : locomotive.getTrain().getLinkersToRemove()) {
-            view.set(linkerToPreserve.getPosition().getX(), linkerToPreserve.getPosition().getY(), "░");
+        if (locomotive.getTrain() != null) {
+            for (Linker linkerToJoin : locomotive.getTrain().getLinkersToJoin()) {
+                view.set(linkerToJoin.getPosition().getX(), linkerToJoin.getPosition().getY(), "░");
+            }
+            view.setColor(Color.WHITE);
+            for (Linker linkerToPreserve : locomotive.getTrain().getLinkersToRemove()) {
+                view.set(linkerToPreserve.getPosition().getX(), linkerToPreserve.getPosition().getY(), "░");
+            }
         }
 
     }
 
     @Override
     public void visitLinker(Linker linker) {
+        view.setColor(Color.AZURE);
         view.set(linker.getPosition().getX(), linker.getPosition().getY(), "?");
     }
 
     @Override
     public void visitWagon(Wagon wagon) {
+        view.setColor(Color.BROWN);
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
     }
 

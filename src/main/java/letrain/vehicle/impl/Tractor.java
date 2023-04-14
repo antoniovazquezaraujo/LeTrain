@@ -17,7 +17,4 @@ public interface Tractor extends Reversible {
 
     void decSpeed();
 
-    void toggleMotorInversion();
-
-    boolean isMotorInverted();
 }

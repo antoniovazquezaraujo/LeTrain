@@ -11,8 +11,6 @@ public class Locomotive extends Linker implements Tractor {
     int speed;
     int turns;
     private String aspect;
-    float brakes;
-    boolean motorInverted = false;
 
     public Locomotive(String aspect) {
         this.aspect = aspect;
@@ -23,23 +21,11 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     @Override
-    public void toggleMotorInversion() {
+    public void toggleReversed() {
         Dir pushDir = getDir();
         Track nextTrack = getTrack();
         setDir(nextTrack.getDir(pushDir));
-    }
-
-    void setDirectorLinkerDir(boolean isNormalSense) {
-        if (!isNormalSense) {
-            Dir pushDir = getDir();
-            Track nextTrack = getTrack();
-            setDir(nextTrack.getDir(pushDir));
-        }
-    }
-
-    @Override
-    public boolean isMotorInverted() {
-        return motorInverted;
+        setReversed(!isReversed());
     }
 
     /***********************************************************
@@ -48,13 +34,13 @@ public class Locomotive extends Linker implements Tractor {
 
     @Override
     public void accept(Visitor visitor) {
-        for (Linker linker : this.getTrain().getLinkers()) {
-            if (linker instanceof Locomotive) {
-                visitor.visitLocomotive((Locomotive) linker);
-            } else {
-                visitor.visitWagon((Wagon) linker);
-            }
-        }
+        // for (Linker linker : this.getTrain().getLinkers()) {
+        // if (linker instanceof Locomotive) {
+        visitor.visitLocomotive(this);
+        // } else {
+        // visitor.visitWagon((Wagon) linker);
+        // }
+        // }
     }
 
     public String getAspect() {
@@ -63,11 +49,6 @@ public class Locomotive extends Linker implements Tractor {
 
     public void update() {
         if (isTimeToMove()) {
-            if (isMotorInverted()) {
-                setReversed(true);
-            } else {
-                setReversed(false);
-            }
             getTrain().advance();
             resetTurns();
         } else {

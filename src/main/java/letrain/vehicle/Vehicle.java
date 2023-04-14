@@ -17,11 +17,9 @@ public abstract class Vehicle<T extends Track>
         Renderable {
     protected Point pos = new Point(0, 0);
 
-
     protected Dir dir = Dir.N;
     private boolean selected = false;
     private boolean reversed = false;
-
 
     protected Vehicle() {
     }
@@ -30,11 +28,10 @@ public abstract class Vehicle<T extends Track>
      * Transportable implementation
      **********************************************************/
     @Override
-    public boolean advance(){
+    public boolean advance() {
         return true;
     };
 
-    
     /***********************************************************
      * Mapeable implementation
      **********************************************************/
@@ -102,15 +99,25 @@ public abstract class Vehicle<T extends Track>
      * Reversible implementation
      **********************************************************/
 
-
     @Override
-    public void setReversed(boolean reversed){
+    public void setReversed(boolean reversed) {
         this.reversed = reversed;
     }
 
     @Override
     public boolean isReversed() {
         return reversed;
+    }
+
+    @Override
+    public void toggleReversed() {
+        setReversed(!isReversed());
+    }
+
+    @Override
+    public Dir getRealDir() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

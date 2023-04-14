@@ -20,4 +20,12 @@ public abstract class Tracker
         return this.track;
     }
 
+    @Override
+    public Dir getRealDir() {
+        if (this.isReversed()) {
+            return this.track.getDir(this.getDir());
+        } else {
+            return this.getDir();
+        }
+    }
 }

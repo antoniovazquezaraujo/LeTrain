@@ -5,24 +5,28 @@ import letrain.visitor.Visitor;
 import letrain.vehicle.Vehicle;
 
 public class Cursor extends Vehicle {
-    public enum CursorMode{
+    public enum CursorMode {
         DRAWING,
         ERASING,
         MOVING
     }
+
     private CursorMode mode;
 
-    public Cursor(){
+    public Cursor() {
         this.mode = CursorMode.DRAWING;
     }
+
     @Override
     public void setPosition(Point pos) {
         super.setPosition(pos);
     }
-    public void setMode(CursorMode mode){
+
+    public void setMode(CursorMode mode) {
         this.mode = mode;
     }
-    public CursorMode getMode(){
+
+    public CursorMode getMode() {
         return mode;
     }
 
@@ -31,5 +35,9 @@ public class Cursor extends Vehicle {
         visitor.visitCursor(this);
     }
 
+    @Override
+    public void toggleReversed() {
+        setReversed(!isReversed());
+    }
 
 }
