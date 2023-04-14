@@ -114,4 +114,10 @@ public abstract class Vehicle<T extends Track>
         setReversed(!isReversed());
     }
 
+    @Override
+    public Dir getRealDir() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
 }

@@ -88,12 +88,14 @@ public class RenderVisitor implements Visitor {
         }
         view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), locomotive.getAspect());
         view.setColor(Color.BLUEVIOLET);
-        for (Linker linkerToJoin : locomotive.getTrain().getLinkersToJoin()) {
-            view.set(linkerToJoin.getPosition().getX(), linkerToJoin.getPosition().getY(), "░");
-        }
-        view.setColor(Color.WHITE);
-        for (Linker linkerToPreserve : locomotive.getTrain().getLinkersToRemove()) {
-            view.set(linkerToPreserve.getPosition().getX(), linkerToPreserve.getPosition().getY(), "░");
+        if (locomotive.getTrain() != null) {
+            for (Linker linkerToJoin : locomotive.getTrain().getLinkersToJoin()) {
+                view.set(linkerToJoin.getPosition().getX(), linkerToJoin.getPosition().getY(), "░");
+            }
+            view.setColor(Color.WHITE);
+            for (Linker linkerToPreserve : locomotive.getTrain().getLinkersToRemove()) {
+                view.set(linkerToPreserve.getPosition().getX(), linkerToPreserve.getPosition().getY(), "░");
+            }
         }
 
     }

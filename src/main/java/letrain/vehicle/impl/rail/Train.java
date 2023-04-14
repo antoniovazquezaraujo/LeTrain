@@ -1,5 +1,6 @@
 package letrain.vehicle.impl.rail;
 
+import java.io.LineNumberReader;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -218,7 +219,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     private boolean moveLinkers(boolean isNormalSense) {
         Iterator<Linker> iterator;
-        if (isNormalSense) {
+        if (isNormalSense && !getDirectorLinker().isReversed()) {
             iterator = getLinkers().iterator();
         } else {
             iterator = getLinkers().descendingIterator();
@@ -270,66 +271,101 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         visitor.visitLocomotive((Locomotive) this.getDirectorLinker());
     }
 
+    /*
+     * - Vaciamos los linkersToJoin
+     * - Si solicitan forwardDirection, lastLinker es getFirst(), si no es
+     * getLast(), es decir, que vamos agregar linkers en ese sentido seleccionado.
+     * - En dir ponemos la dirección de "salida" del tren, es decir, la que apuntará
+     * a despegarse del tren. Pero ahí necesitamos saber si el tren está invertido o
+     * no.
+     * - Si el tren no está invertido, la dirección de salida del primer linker es
+     * la correcta, pero la del último será la inversa de su track.
+     * - Si el tren está invertido es lo contrario, la que hay que invertir es la
+     * primera.
+     */
     public void setLinkersToJoin(boolean forwardDirection) {
         linkersToJoin.clear();
         joined = false;
         Linker lastLinker = null;
         Dir dir;
-        if (forwardDirection) {
-            lastLinker = getLinkers().getFirst();
-            dir = lastLinker.getDir();
-            linkerJoinSense = LinkersSense.FRONT;
+
+        if (getLinkers().size() == 1) {
+            lastLinker = (Linker) getDirectorLinker();
+            if (forwardDirection) {
+                linkerJoinSense = LinkersSense.FRONT;
+                dir = lastLinker.getRealDir();
+            } else {
+                linkerJoinSense = LinkersSense.BACK;
+                dir = lastLinker.getTrack().getDir(lastLinker.getRealDir());
+            }
         } else {
-            lastLinker = getLinkers().getLast();
-            dir = lastLinker.getDir().inverse();
-            linkerJoinSense = LinkersSense.BACK;
+            if (forwardDirection) {
+                lastLinker = getLinkers().getFirst();
+                dir = getLinkDir(lastLinker);
+                linkerJoinSense = LinkersSense.FRONT;
+            } else {
+                lastLinker = getLinkers().getLast();
+                dir = getLinkDir(lastLinker);
+                linkerJoinSense = LinkersSense.BACK;
+            }
         }
 
         Track track = lastLinker.getTrack();
         Track nextTrack = track.getConnected(dir);
-        if (nextTrack.getLinker() != null && nextTrack.getLinker().getTrain() == this) {
-            dir = dir.inverse();
-            nextTrack = track.getConnected(dir);
-        }
         RailIterator iterator = new RailIterator(nextTrack, dir);
         Linker nextLinker = iterator.getTrack().getLinker();
-        while (nextLinker != null) {
-            linkersToJoin.add(nextLinker);
-            iterator.advance();
-            nextLinker = iterator.getTrack().getLinker();
+        if (this != nextLinker.getTrain()) {
+            while (nextLinker != null) {
+                linkersToJoin.add(nextLinker);
+                iterator.advance();
+                nextLinker = iterator.getTrack().getLinker();
+            }
         }
     }
 
-    public void toggleLinkersToJoin() {
+    public void joinLinkers() {
         if (!joined) {
-            if (linkerJoinSense == LinkersSense.FRONT) {
-                for (Linker linker : linkersToJoin) {
-                    pushFront(linker);
-                    linker.setTrain(this);
+
+            for (Linker linkerToRemove : linkersToJoin) {
+                if (linkerJoinSense == LinkersSense.FRONT) {
+                    this.linkers.addFirst(linkerToRemove);
+                } else {
+                    this.linkers.addLast(linkerToRemove);
                 }
-            } else {
-                for (Linker linker : linkersToJoin) {
-                    pushBack(linker);
-                    linker.setTrain(this);
+
+                Train train = linkerToRemove.getTrain();
+                linkerToRemove.setTrain(this);
+                if (train != null && linkerToRemove == train.getDirectorLinker()) {
+                    train.assignDefaultDirectorLinker();
+                    if (train.getDirectorLinker() == null) {
+                        train.getLinkers().stream().forEach(linker -> linker.setTrain(null));
+                    }
                 }
             }
+
+            // if (linkerJoinSense == LinkersSense.FRONT) {
+            // for (Linker linker : linkersToJoin) {
+            // this.linkers.addFirst(linker);
+            // Train train = linker.getTrain();
+            // if (train != null) {
+            // linker.getTrain().linkers.remove(linker);
+            // linker.getTrain().assignDefaultDirectorLinker();
+            // }
+            // linker.setTrain(this);
+            // }
+            // } else {
+            // for (Linker linker : linkersToJoin) {
+            // this.linkers.addLast(linker);
+            // Train train = linker.getTrain();
+            // if(train!= null){
+            // linker.getTrain().linkers.remove(linker);
+            // linker.getTrain().assignDefaultDirectorLinker();
+            // }
+            // linker.setTrain(this);
+            // }
+            // }
             linkersToJoin.clear();
             joined = true;
-        } else {
-            if (linkerJoinSense == LinkersSense.FRONT) {
-                for (Linker linker : linkers) {
-                    Linker popFront = popFront();
-                    popFront.setTrain(null);
-                    linkersToJoin.addLast(popFront);
-                }
-            } else {
-                for (Linker linker : linkers) {
-                    Linker popBack = popBack();
-                    popBack.setTrain(null);
-                    linkersToJoin.addFirst(popBack);
-                }
-            }
-            joined = false;
         }
     }
 
@@ -386,26 +422,43 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public void divideTrain() {
-        Iterator<Linker> linkerIterator = getLinkers().iterator();
-        if (linkerDivisionSense == LinkersSense.FRONT) {
-            linkerIterator = getLinkers().descendingIterator();
-        } else {
-            linkerIterator = getLinkers().iterator();
+        Linker linkerToRemove = null;
+        for (int n = 0; n < numLinkersToRemove; n++) {
+            if (linkerDivisionSense == LinkersSense.BACK) {
+                linkerToRemove = getLinkers().removeFirst();
+            } else {
+                linkerToRemove = getLinkers().removeLast();
+            }
+            linkerToRemove.setTrain(null);
         }
         linkersToRemove.clear();
-        for (int n = 0; n < numLinkersToRemove; n++) {
-            Linker next = linkerIterator.next();
-            if (next != getDirectorLinker()) {
-                next.setTrain(null);
-                linkerIterator.remove();
-            } else {
-                return;
-            }
-        }
-
+        numLinkersToRemove = 0;
     }
 
     public Deque<Linker> getLinkersToRemove() {
         return this.linkersToRemove;
+    }
+
+    Dir getLinkDir(Linker linker) {
+        Dir linkerDir = linker.getDir();
+        Dir resultDir = linker.getTrack().getDir(linkerDir);
+        Train train = getAdjacentTrain(linker, resultDir);
+        try {
+            if (train == null || train != linker.getTrain()) {
+                return resultDir;
+            }
+            resultDir = linker.getTrack().getDir(resultDir);
+            train = getAdjacentTrain(linker, resultDir);
+            if (train == null || train != linker.getTrain()) {
+                return resultDir;
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    Train getAdjacentTrain(Linker linker, Dir dir) {
+        return linker.getTrack().getConnected(dir).getLinker().getTrain();
     }
 }

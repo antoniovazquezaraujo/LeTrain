@@ -6,4 +6,6 @@ public interface Reversible {
     void toggleReversed();
 
     boolean isReversed();
+
+    Dir getRealDir();
 }

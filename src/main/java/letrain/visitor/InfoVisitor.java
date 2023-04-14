@@ -26,23 +26,23 @@ public class InfoVisitor implements Visitor {
     @Override
     public void visitModel(Model model) {
         infoBarText = "";
-        switch(model.getMode()){
+        switch (model.getMode()) {
             case TRACKS:
                 Point pos = model.getCursor().getPosition();
                 RailTrack track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
-                if(track != null) {
+                if (track != null) {
                     visitRailTrack(track);
                 }
                 break;
             case LOCOMOTIVES:
                 Locomotive locomotive = model.getSelectedLocomotive();
-                if(locomotive!= null){
+                if (locomotive != null) {
                     visitLocomotive(locomotive);
                 }
                 break;
             case FORKS:
                 ForkRailTrack fork = model.getSelectedFork();
-                if(fork !=null){
+                if (fork != null) {
                     visitForkRailTrack(fork);
                 }
                 break;
@@ -64,22 +64,24 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        infoBarText+="Track:["+track.getPosition().getX()+"," + track.getPosition().getY()+"]"+ getRouterAspect(track.getRouter())+ " "+
-                getTrackConnectionsAspect(track)+ "\n";
+        infoBarText += "Track:[" + track.getPosition().getX() + "," + track.getPosition().getY() + "]"
+                + getRouterAspect(track.getRouter()) + " " +
+                getTrackConnectionsAspect(track) + "\n";
     }
 
     private String getRouterAspect(Router router) {
         StringBuffer ret = new StringBuffer();
-        router.forEach(t->{
-            ret.append("("+t.getKey()+ "<->"+ t.getValue()+") ");
+        router.forEach(t -> {
+            ret.append("(" + t.getKey() + "<->" + t.getValue() + ") ");
         });
         return ret.toString();
     }
-    private String getTrackConnectionsAspect(RailTrack track){
+
+    private String getTrackConnectionsAspect(RailTrack track) {
         StringBuffer ret = new StringBuffer();
-        for(Dir d: Dir.values()){
+        for (Dir d : Dir.values()) {
             Track connected = track.getConnected(d);
-            if(connected != null) {
+            if (connected != null) {
                 ret.append("(" + d + "->" + connected + ")");
             }
         }
@@ -92,19 +94,21 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        infoBarText+="Track:["+track.getPosition().getX()+"," + track.getPosition().getY()+"]"+"\n"+ getDynamicRouterAspect((DynamicRouter) track.getRouter())+ "\n"+getTrackConnectionsAspect(track)+"\n";
+        infoBarText += "Track:[" + track.getPosition().getX() + "," + track.getPosition().getY() + "]" + "\n"
+                + getDynamicRouterAspect((DynamicRouter) track.getRouter()) + "\n" + getTrackConnectionsAspect(track)
+                + "\n";
     }
 
-
     private String getDynamicRouterAspect(DynamicRouter router) {
-            StringBuffer ret = new StringBuffer();
-            router.forEach(t->{
-                if(t.getValue()!=null) {
-                    ret.append("(" + t.getKey() + "<->" + t.getValue() + ") ");
-                }
-            });
-            ret.append("\nNorm:"+ router.getOriginalRoute()+ " Alt:"+ router.getAlternativeRoute()+" Using Alt:"+ (router.isUsingAlternativeRoute()?"TRUE":"FALSE"));
-            return ret.toString();
+        StringBuffer ret = new StringBuffer();
+        router.forEach(t -> {
+            if (t.getValue() != null) {
+                ret.append("(" + t.getKey() + "<->" + t.getValue() + ") ");
+            }
+        });
+        ret.append("\nNorm:" + router.getOriginalRoute() + " Alt:" + router.getAlternativeRoute() + " Using Alt:"
+                + (router.isUsingAlternativeRoute() ? "TRUE" : "FALSE"));
+        return ret.toString();
     }
 
     @Override
@@ -113,17 +117,18 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitTunnelRailTrack(TunnelRailTrack track) {
-        infoBarText+="Track:["+track.getPosition().getX()+"," + track.getPosition().getY()+"]"+ getRouterAspect(track.getRouter())+ "\n";
-        infoBarText+="Connect:...";
+        infoBarText += "Track:[" + track.getPosition().getX() + "," + track.getPosition().getY() + "]"
+                + getRouterAspect(track.getRouter()) + "\n";
+        infoBarText += "Connect:...";
     }
-
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        DecimalFormat df = new DecimalFormat("0000.0000");
-        infoBarText+=
-                " S:" + df.format(locomotive.getSpeed())+
-                " RE:"+ locomotive.isReversed();
+        infoBarText += " Speed:" + locomotive.getSpeed() +
+                " Rev:" + locomotive.isReversed() +
+                " Dir:" + locomotive.getDir() +
+                " RealDir:" + locomotive.getRealDir() +
+                " ";
     }
 
     @Override
@@ -131,15 +136,14 @@ public class InfoVisitor implements Visitor {
 
     }
 
- 
     @Override
     public void visitWagon(Wagon wagon) {
-        infoBarText+= "Wagon:"+ wagon.getAspect()+ " Dir"+ wagon.getDir()+"\n";
+        infoBarText += "Wagon:" + wagon.getAspect() + " Dir" + wagon.getDir() + "\n";
     }
 
     @Override
     public void visitCursor(Cursor cursor) {
-        infoBarText+="Cursor:["+cursor.getPosition().getX()+"," + cursor.getPosition().getY()+"]"+ "\n";
+        infoBarText += "Cursor:[" + cursor.getPosition().getX() + "," + cursor.getPosition().getY() + "]" + "\n";
     }
 
 }

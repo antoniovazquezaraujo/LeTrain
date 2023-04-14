@@ -34,13 +34,13 @@ public class Locomotive extends Linker implements Tractor {
 
     @Override
     public void accept(Visitor visitor) {
-        for (Linker linker : this.getTrain().getLinkers()) {
-            if (linker instanceof Locomotive) {
-                visitor.visitLocomotive((Locomotive) linker);
-            } else {
-                visitor.visitWagon((Wagon) linker);
-            }
-        }
+        // for (Linker linker : this.getTrain().getLinkers()) {
+        // if (linker instanceof Locomotive) {
+        visitor.visitLocomotive(this);
+        // } else {
+        // visitor.visitWagon((Wagon) linker);
+        // }
+        // }
     }
 
     public String getAspect() {
