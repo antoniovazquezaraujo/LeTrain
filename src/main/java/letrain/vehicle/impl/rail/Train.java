@@ -430,6 +430,12 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 linkerToRemove = getLinkers().removeLast();
             }
             linkerToRemove.setTrain(null);
+            if (linkerToRemove instanceof Locomotive) {
+                Train train = new Train();
+                linkerToRemove.setTrain(train);
+                train.getLinkers().add(linkerToRemove);
+                train.assignDefaultDirectorLinker();
+            }
         }
         linkersToRemove.clear();
         numLinkersToRemove = 0;
