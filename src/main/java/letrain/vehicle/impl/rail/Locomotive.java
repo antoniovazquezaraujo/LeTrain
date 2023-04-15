@@ -11,6 +11,7 @@ public class Locomotive extends Linker implements Tractor {
     int speed;
     int turns;
     private String aspect;
+    int showingDirTurns;
 
     public Locomotive(String aspect) {
         this.aspect = aspect;
@@ -26,6 +27,7 @@ public class Locomotive extends Linker implements Tractor {
         Track nextTrack = getTrack();
         setDir(nextTrack.getDir(pushDir));
         setReversed(!isReversed());
+        showingDirTurns = 5;
     }
 
     /***********************************************************
@@ -115,5 +117,13 @@ public class Locomotive extends Linker implements Tractor {
 
     public boolean isDirectorLinker() {
         return getTrain() != null && getTrain().getDirectorLinker() == this;
+    }
+
+    public boolean isShowingDir() {
+        if (showingDirTurns > 0) {
+            showingDirTurns--;
+            return true;
+        }
+        return false;
     }
 }
