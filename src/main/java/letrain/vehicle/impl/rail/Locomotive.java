@@ -48,11 +48,13 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void update() {
-        if (isTimeToMove()) {
-            getTrain().advance();
-            resetTurns();
-        } else {
-            consumeTurn();
+        if (isDirectorLinker()) {
+            if (isTimeToMove()) {
+                getTrain().advance();
+                resetTurns();
+            } else {
+                consumeTurn();
+            }
         }
     }
 
@@ -109,5 +111,9 @@ public class Locomotive extends Linker implements Tractor {
         if (turns > 0) {
             turns--;
         }
+    }
+
+    public boolean isDirectorLinker() {
+        return getTrain() != null && getTrain().getDirectorLinker() == this;
     }
 }
