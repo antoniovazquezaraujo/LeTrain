@@ -148,11 +148,13 @@ public class Model implements Serializable, letrain.mvp.Model {
         if (getLocomotives().isEmpty()) {
             return;
         }
-        selectedLocomotiveIndex++;
-        if (selectedLocomotiveIndex >= getLocomotives().size()) {
-            selectedLocomotiveIndex = 0;
-        }
-        selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
+        do {
+            selectedLocomotiveIndex++;
+            if (selectedLocomotiveIndex >= getLocomotives().size()) {
+                selectedLocomotiveIndex = 0;
+            }
+            selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
+        } while (!selectedLocomotive.isDirectorLinker() && selectedLocomotiveIndex < getLocomotives().size());
     }
 
     @Override
@@ -160,11 +162,13 @@ public class Model implements Serializable, letrain.mvp.Model {
         if (getLocomotives().isEmpty()) {
             return;
         }
-        selectedLocomotiveIndex--;
-        if (selectedLocomotiveIndex < 0) {
-            selectedLocomotiveIndex = getLocomotives().size() - 1;
-        }
-        selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
+        do {
+            selectedLocomotiveIndex--;
+            if (selectedLocomotiveIndex < 0) {
+                selectedLocomotiveIndex = getLocomotives().size() - 1;
+            }
+            selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
+        } while (!selectedLocomotive.isDirectorLinker() && selectedLocomotiveIndex >= 0);
     }
 
     @Override
