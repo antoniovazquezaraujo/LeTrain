@@ -1,5 +1,15 @@
 package letrain.mvp.impl;
 
+import static letrain.mvp.Model.GameMode.DIVIDE_TRAINS;
+import static letrain.mvp.Model.GameMode.FORKS;
+import static letrain.mvp.Model.GameMode.LINK_TRAINS;
+import static letrain.mvp.Model.GameMode.LOAD_TRAINS;
+import static letrain.mvp.Model.GameMode.LOCOMOTIVES;
+import static letrain.mvp.Model.GameMode.MAKE_TRAINS;
+import static letrain.mvp.Model.GameMode.TRACKS;
+
+import java.util.List;
+
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.scene.input.KeyEvent;
@@ -8,13 +18,12 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
 import letrain.track.rail.RailTrack;
+import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 import letrain.visitor.InfoVisitor;
 import letrain.visitor.RenderVisitor;
-
-import static letrain.mvp.Model.GameMode.*;
 
 public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter {
     public enum TrackType {
@@ -240,8 +249,24 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                     case SPACE:
                         divideTrain();
                         break;
+                    case DELETE:
+                        destroyLinkers();
+                        break;
+
                 }
                 break;
+        }
+    }
+
+    private void destroyLinkers() {
+        List<Linker> linkersToDestroy = model.getSelectedLocomotive().getTrain().destroyLinkers();
+        for (Linker linker : linkersToDestroy) {
+            if (linker instanceof Locomotive) {
+                model.removeLocomotive((Locomotive) linker);
+            } else {
+                model.removeWagon((Wagon) linker);
+            }
+            linker.getTrack().removeLinker();
         }
     }
 
