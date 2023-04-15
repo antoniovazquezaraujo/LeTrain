@@ -441,6 +441,29 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         numLinkersToRemove = 0;
     }
 
+    public List<Linker> destroyLinkers() {
+        List<Linker> linkersToDestroy = new ArrayList<>();
+        Linker linkerToRemove = null;
+        for (int n = 0; n < numLinkersToRemove; n++) {
+            if (linkerDivisionSense == LinkersSense.BACK) {
+                linkerToRemove = getLinkers().removeFirst();
+            } else {
+                linkerToRemove = getLinkers().removeLast();
+            }
+            linkerToRemove.setTrain(null);
+            if (linkerToRemove instanceof Locomotive) {
+                Train train = new Train();
+                linkerToRemove.setTrain(train);
+                train.getLinkers().add(linkerToRemove);
+                train.assignDefaultDirectorLinker();
+            }
+            linkersToDestroy.add(linkerToRemove);
+        }
+        linkersToRemove.clear();
+        numLinkersToRemove = 0;
+        return linkersToDestroy;
+    }
+
     public Deque<Linker> getLinkersToRemove() {
         return this.linkersToRemove;
     }
@@ -467,4 +490,5 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     Train getAdjacentTrain(Linker linker, Dir dir) {
         return linker.getTrack().getConnected(dir).getLinker().getTrain();
     }
+
 }
