@@ -144,6 +144,10 @@ public class ViewGrid extends BorderPane implements View {
     }
 
     @Override
+    public void setHelpBarText(String info) {
+    }
+
+    @Override
     public void incZoom() {
         this.zoom++;
         recalcFontSize();
