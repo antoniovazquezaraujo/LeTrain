@@ -28,6 +28,9 @@ public class TrackDirector<T extends Track> implements Serializable {
 
     public Linker removeLinker(T track) {
         Linker ret = track.getLinker();
+        if (ret != null) {
+            ret.setTrack(null);
+        }
         track.setLinker(null);
         return ret;
     }
