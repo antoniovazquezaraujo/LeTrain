@@ -2,47 +2,54 @@ package letrain.mvp.impl;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.scene.Node;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import letrain.map.Point;
-import letrain.mvp.Model;
 import letrain.mvp.GameViewListener;
 
 public class View extends BorderPane implements letrain.mvp.View {
     private final GameViewListener gameViewListener;
     private final ViewGrid viewGrid;
-    private Point position = new Point(0, 0); // scroll position of the viewer
     private Text statusBar = new Text();
     private Text infoBar = new Text();
+    private Text helpBar = new Text();
 
     public View(GameViewListener gameViewListener) {
         viewGrid = new ViewGrid();
         this.gameViewListener = gameViewListener;
         setCenter(viewGrid);
-        HBox bottomBox = new HBox();
-        statusBar.setWrappingWidth(100);
-        // infoBar.setWrappingWidth(1200);
+        VBox bottomBox = new VBox();
+        bottomBox.setStyle("-fx-background-color: #000000;");
+
+        helpBar.setFill(Color.WHITE);
+        helpBar.setStroke(Color.WHITE);
+        helpBar.setFont(new Font("Lucida Sans Unicode", 12));
+        helpBar.setWrappingWidth(1200);
+        helpBar.setWrappingWidth(getWidth());
+
+        statusBar.setFill(Color.GREEN);
+        statusBar.setStroke(Color.GREEN);
+        statusBar.setFont(new Font("Lucida Sans Unicode", 12));
+        statusBar.setWrappingWidth(getWidth());
+
+        infoBar.setFill(Color.YELLOW);
+        infoBar.setStroke(Color.YELLOW);
+        infoBar.setFont(new Font("Lucida Sans Unicode", 12));
+        infoBar.setWrappingWidth(getWidth());
+
         bottomBox.getChildren().add(statusBar);
         bottomBox.getChildren().add(infoBar);
+        bottomBox.getChildren().add(helpBar);
+
         setBottom(bottomBox);
         this.setFocusTraversable(true);
         clear();
         addEventListener();
         this.requestFocus();
-        statusBar.setFill(Color.GREEN);
-        statusBar.setStroke(Color.GREEN);
-        statusBar.setFont(new Font("Lucida Sans Unicode", 15));
-        infoBar.setFill(Color.YELLOW);
-        infoBar.setStroke(Color.YELLOW);
-        infoBar.setFont(new Font("Lucida Sans Unicode", 15));
     }
 
     private void addEventListener() {
@@ -53,7 +60,6 @@ public class View extends BorderPane implements letrain.mvp.View {
             @Override
             public void changed(ObservableValue<? extends Number> observableValue, Number oldSceneWidth,
                     Number newSceneWidth) {
-                // viewGrid.setWidth(newSceneWidth.doubleValue());
                 viewGrid.recalcFontSize();
                 viewGrid.paint();
             }
@@ -62,7 +68,6 @@ public class View extends BorderPane implements letrain.mvp.View {
             @Override
             public void changed(ObservableValue<? extends Number> observableValue, Number oldSceneHeight,
                     Number newSceneHeight) {
-                // viewGrid.setHeight(newSceneHeight.doubleValue());
                 viewGrid.recalcFontSize();
                 viewGrid.paint();
             }
@@ -86,6 +91,11 @@ public class View extends BorderPane implements letrain.mvp.View {
 
     public void setInfoBarText(String text) {
         infoBar.setText(text);
+    }
+
+    @Override
+    public void setHelpBarText(String info) {
+        helpBar.setText(info);
     }
 
     @Override
