@@ -2,10 +2,6 @@ package letrain.mvp.impl;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.scene.Node;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.MenuItem;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -13,7 +9,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import letrain.map.Point;
-import letrain.mvp.Model;
 import letrain.mvp.GameViewListener;
 
 public class View extends BorderPane implements letrain.mvp.View {
@@ -28,6 +23,7 @@ public class View extends BorderPane implements letrain.mvp.View {
         this.gameViewListener = gameViewListener;
         setCenter(viewGrid);
         HBox bottomBox = new HBox();
+        bottomBox.setStyle("-fx-background-color: #000000;");
         statusBar.setWrappingWidth(100);
         // infoBar.setWrappingWidth(1200);
         bottomBox.getChildren().add(statusBar);
