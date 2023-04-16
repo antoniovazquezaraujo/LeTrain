@@ -2,8 +2,12 @@ package letrain.mvp.impl;
 
 import com.sun.javafx.tk.FontMetrics;
 import com.sun.javafx.tk.Toolkit;
+
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -11,29 +15,46 @@ import javafx.scene.text.TextAlignment;
 import letrain.map.Point;
 import letrain.mvp.View;
 
-
-public class ViewGrid extends Pane implements View {
-    private static final int ROWS = 40;
-    private static final int COLS = 100;
+public class ViewGrid extends BorderPane implements View {
+    private static final int DEFAULT_ROWS = 40;
+    private static final int DEFAULT_COLS = 100;
+    int cols = DEFAULT_COLS;
+    int rows = DEFAULT_ROWS;
     private Point mapScrollPage = new Point(0, 0);
     private final Canvas canvas;
     private final GraphicsContext gc;
-    private static final int TEXT_SIZE = 20;
-    private static final Font font = Font.font("Monospace", TEXT_SIZE);
-
-    private final float charWidth;
-    private final float charHeight;
+    private static final int TEXT_SIZE = 10;
+    private static Font font = Font.font("Monospace", TEXT_SIZE);
+    private int zoom = 0;
+    private float charWidth;
+    private float charHeight;
 
     public ViewGrid() {
         setStyle("-fx-background-color: black;");
         FontMetrics metrics = Toolkit.getToolkit().getFontLoader().getFontMetrics(font);
         charWidth = metrics.computeStringWidth("X");
         charHeight = metrics.getLineHeight();
-        canvas = new Canvas(COLS * charWidth, ROWS * charHeight);
-        getChildren().add(canvas);
+        canvas = new Canvas(cols * charWidth, rows * charHeight);
+        setCenter(canvas);
         gc = canvas.getGraphicsContext2D();
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFont(font);
+
+    }
+
+    void recalcFontSize() {
+        this.font = Font.font("Monospace", TEXT_SIZE + zoom);
+        FontMetrics metrics = Toolkit.getToolkit().getFontLoader().getFontMetrics(font);
+        charWidth = metrics.computeStringWidth("X");
+        charHeight = metrics.getLineHeight();
+        double height = getHeight();
+        double width = getWidth();
+        cols = (int) (width / charWidth);
+        rows = (int) (height / charHeight);
+        canvas.setWidth(cols * charWidth);
+        canvas.setHeight(rows * charHeight);
+        gc.setFont(this.font);
+
     }
 
     @Override
@@ -46,7 +67,6 @@ public class ViewGrid extends Pane implements View {
         this.mapScrollPage = pos;
     }
 
-
     @Override
     public void paint() {
 
@@ -55,18 +75,17 @@ public class ViewGrid extends Pane implements View {
     @Override
     public void clear() {
         gc.setFill(Color.BLACK);
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        gc.fillRect(0, 0, getWidth(), getHeight());
     }
 
     @Override
     public void set(int x, int y, String c) {
-        x -= mapScrollPage.getX() * COLS;
-        y -= mapScrollPage.getY() * ROWS;
-        if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
+        x -= mapScrollPage.getX() * cols;
+        y -= mapScrollPage.getY() * rows;
+        if (x >= 0 && x < cols && y >= 0 && y < rows) {
 
-            //TODO probar diferentes grosores para diferentes elementos???
+            // TODO probar diferentes grosores para diferentes elementos???
             gc.setLineWidth(1);
-
 
             gc.strokeText(c, x * charWidth, y * charHeight);
         }
@@ -79,10 +98,12 @@ public class ViewGrid extends Pane implements View {
 
     @Override
     public void setPageOfPos(int x, int y) {
-        if (x < 0) x -= COLS;
-        if (y < 0) y -= ROWS;
-        int pageX = x / COLS;
-        int pageY = y / ROWS;
+        if (x < 0)
+            x -= cols;
+        if (y < 0)
+            y -= rows;
+        int pageX = x / cols;
+        int pageY = y / rows;
         setMapScrollPage(new Point(pageX, pageY));
     }
 
@@ -120,6 +141,24 @@ public class ViewGrid extends Pane implements View {
     @Override
     public void setInfoBarText(String info) {
 
+    }
+
+    @Override
+    public void incZoom() {
+        this.zoom++;
+        recalcFontSize();
+    }
+
+    @Override
+    public void decZoom() {
+        this.zoom--;
+        recalcFontSize();
+    }
+
+    @Override
+    public void resetZoom() {
+        this.zoom = 0;
+        recalcFontSize();
     }
 
 }

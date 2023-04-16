@@ -1,5 +1,7 @@
 package letrain.mvp.impl;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.scene.Node;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -14,7 +16,6 @@ import letrain.map.Point;
 import letrain.mvp.Model;
 import letrain.mvp.GameViewListener;
 
-
 public class View extends BorderPane implements letrain.mvp.View {
     private final GameViewListener gameViewListener;
     private final ViewGrid viewGrid;
@@ -28,7 +29,7 @@ public class View extends BorderPane implements letrain.mvp.View {
         setCenter(viewGrid);
         HBox bottomBox = new HBox();
         statusBar.setWrappingWidth(100);
-//        infoBar.setWrappingWidth(1200);
+        // infoBar.setWrappingWidth(1200);
         bottomBox.getChildren().add(statusBar);
         bottomBox.getChildren().add(infoBar);
         setBottom(bottomBox);
@@ -48,6 +49,24 @@ public class View extends BorderPane implements letrain.mvp.View {
         addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> {
             gameViewListener.onChar(keyEvent);
         });
+        widthProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observableValue, Number oldSceneWidth,
+                    Number newSceneWidth) {
+                // viewGrid.setWidth(newSceneWidth.doubleValue());
+                viewGrid.recalcFontSize();
+                viewGrid.paint();
+            }
+        });
+        heightProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observableValue, Number oldSceneHeight,
+                    Number newSceneHeight) {
+                // viewGrid.setHeight(newSceneHeight.doubleValue());
+                viewGrid.recalcFontSize();
+                viewGrid.paint();
+            }
+        });
     }
 
     @Override
@@ -61,10 +80,11 @@ public class View extends BorderPane implements letrain.mvp.View {
         setStatusBarText("Página: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
     }
 
-    public void setStatusBarText(String text){
+    public void setStatusBarText(String text) {
         statusBar.setText(text);
     }
-    public void setInfoBarText(String text){
+
+    public void setInfoBarText(String text) {
         infoBar.setText(text);
     }
 
@@ -107,6 +127,21 @@ public class View extends BorderPane implements letrain.mvp.View {
     @Override
     public void box(int x, int y, int width, int height) {
         viewGrid.box(x, y, width, height);
+    }
+
+    @Override
+    public void incZoom() {
+        viewGrid.incZoom();
+    }
+
+    @Override
+    public void decZoom() {
+        viewGrid.decZoom();
+    }
+
+    @Override
+    public void resetZoom() {
+        viewGrid.resetZoom();
     }
 
 }

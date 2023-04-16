@@ -120,6 +120,12 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             case F7:
                 model.setMode(DIVIDE_TRAINS);
                 break;
+            case PLUS:
+                view.incZoom();
+                break;
+            case MINUS:
+                view.decZoom();
+                break;
 
         }
 

@@ -16,6 +16,12 @@ public interface View {
 
     void setColor(Color color);
 
+    void incZoom();
+
+    void decZoom();
+
+    void resetZoom();
+
     void setPageOfPos(int x, int y);
 
     void clear(int x, int y);

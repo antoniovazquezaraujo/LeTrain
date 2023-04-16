@@ -25,11 +25,12 @@ public class RailIterator implements Transportable, Trackeable, Rotable, Mapeabl
     @Override
     public boolean advance() {
         Track track = getTrack();
-        Dir nextDir = getDir();
+        Dir nextDir = track.getDir(getDir().inverse());
         Track nextTrack = track.getConnected(nextDir);
         setTrack(nextTrack);
         setPosition(nextTrack.getPosition());
-        setDir(nextTrack.getRouter().getDir(dir.inverse()));
+        // This is wrong, but it works for now
+        setDir(nextTrack.getDir(nextDir.inverse()));
         return true;
     }
 
