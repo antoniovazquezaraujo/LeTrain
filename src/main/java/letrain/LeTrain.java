@@ -1,18 +1,18 @@
 package letrain;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javafx.application.Application;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import letrain.mvp.impl.CompactPresenter;
 import letrain.mvp.impl.Model;
 import letrain.mvp.impl.View;
 
 public class LeTrain extends Application {
-
+    Logger log = LoggerFactory.getLogger(LeTrain.class);
     private letrain.mvp.Model model = null;
     private CompactPresenter presenter;
 
@@ -31,6 +31,7 @@ public class LeTrain extends Application {
         stage.setScene(scene);
         stage.show();
         presenter.start();
+        log.info("LeTrain started");
     }
 
     @Override
