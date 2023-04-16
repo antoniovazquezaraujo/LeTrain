@@ -10,7 +10,7 @@
             "request": "launch",
             "mainClass": "letrain.LeTrain",
             "projectName": "JLeTrain",
-            "javaExec": "W:/bin/java/jdk1.8.0_121/bin/javaw.exe"
+            "javaExec": "W:/bin/java/jdk1.8.0_121/bin/java.exe"
         }
     ]
 }
