@@ -1,3 +1,13 @@
 {
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.test.config": {
+        "workingDirectory": "${workspaceFolder}",
+        "classpath": [
+            "${workspaceFolder}/target/classes",
+            "${workspaceFolder}/target/test-classes"
+        ],
+        "sources": [
+            "${workspaceFolder}/src/main/java",
+            "${workspaceFolder}/src/test/java"
+        ]
+    }
 }
