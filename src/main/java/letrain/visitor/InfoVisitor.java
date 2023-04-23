@@ -100,15 +100,13 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        infoBarText += "Track:[" + track.getPosition().getX() + "," + track.getPosition().getY() + "]"
-                + getRouterAspect(track.getRouter()) + " " +
-                getTrackConnectionsAspect(track) + "\n";
+        infoBarText += "Track:{" + track + "}\n";
     }
 
     private String getRouterAspect(Router router) {
         StringBuffer ret = new StringBuffer();
         router.forEach(t -> {
-            ret.append("(" + t.getKey() + "<->" + t.getValue() + ") ");
+            ret.append("(" + t.getKey() + ">" + t.getValue() + ") ");
         });
         return ret.toString();
     }
@@ -130,16 +128,14 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        infoBarText += "Track:[" + track.getPosition().getX() + "," + track.getPosition().getY() + "]" + "\n"
-                + getDynamicRouterAspect((DynamicRouter) track.getRouter()) + "\n" + getTrackConnectionsAspect(track)
-                + "\n";
+        infoBarText += "Track:{" + track + "}\n";
     }
 
     private String getDynamicRouterAspect(DynamicRouter router) {
         StringBuffer ret = new StringBuffer();
         router.forEach(t -> {
             if (t.getValue() != null) {
-                ret.append("(" + t.getKey() + "<->" + t.getValue() + ") ");
+                ret.append("(" + t.getKey() + ">" + t.getValue() + ") ");
             }
         });
         ret.append("\nNorm:" + router.getOriginalRoute() + " Alt:" + router.getAlternativeRoute() + " Using Alt:"

@@ -21,7 +21,7 @@ public abstract class Track implements
 
     private TrackDirector trackDirector;
     private Linker linker = null;
-    private Point pos = new Point(0,0);
+    private Point pos = new Point(0, 0);
     protected Track[] connections;
     private final List<LinkerCompartmentListener> trackeableCompartmentListeners = new ArrayList<>();
 
@@ -31,9 +31,7 @@ public abstract class Track implements
 
     @Override
     public String toString() {
-        return "Track{" +
-                ", pos=" + pos +
-                '}';
+        return "{" + pos + " Connections:(" + getConnectedPositions().toString() + ")}";
     }
 
     public List<LinkerCompartmentListener> getTrackeableCompartmentListeners() {
@@ -42,14 +40,13 @@ public abstract class Track implements
 
     public abstract Router getRouter();
 
-    protected TrackDirector  getTrackDirector() {
+    protected TrackDirector getTrackDirector() {
         return trackDirector;
     }
 
     protected void setTrackDirector(TrackDirector trackDirector) {
         this.trackDirector = trackDirector;
     }
-
 
     /***********************************************************
      * Router implementation
@@ -74,7 +71,7 @@ public abstract class Track implements
         return getRouter().isCross();
     }
 
-     @Override
+    @Override
     public Dir getDir(Dir dir) {
         return getRouter().getDir(dir);
     }
@@ -104,18 +101,16 @@ public abstract class Track implements
         getRouter().clear();
     }
 
-
     @Override
     public void forEach(Consumer<Pair<Dir, Dir>> routeConsumer) {
         getRouter().forEach(routeConsumer);
     }
 
-
-
     /**************************************************************
      * Connectable implementation
      **************************************************************
-     * @return*/
+     * @return
+     */
 
     @Override
     public Track getConnected(Dir dir) {
@@ -135,6 +130,30 @@ public abstract class Track implements
         return true;
     }
 
+    @Override
+    public List<Dir> getConnections() {
+        List<Dir> ret = new ArrayList<>();
+        for (int i = 0; i < connections.length; i++) {
+            if (connections[i] != null) {
+                ret.add(Dir.values()[i]);
+            }
+        }
+        return ret;
+    }
+
+    public List<Pair<Dir, Point>> getConnectedPositions() {
+        List<Pair<Dir, Point>> ret = new ArrayList<>();
+        for (int i = 0; i < connections.length; i++) {
+            if (connections[i] != null) {
+                Track connected = getConnected(Dir.values()[i]);
+                if (!ret.contains(connected)) {
+                    ret.add(new Pair<Dir, Point>(Dir.values()[i], connected.getPosition()));
+                }
+            }
+        }
+        return ret;
+    }
+
     /**************************************************************
      * Mapeable implementation
      ***************************************************************/
@@ -149,11 +168,11 @@ public abstract class Track implements
         this.pos.setY(pos.getY());
     }
 
-
     /**************************************************************
      * LinkerCompartment implementation
      **************************************************************
-     * @return*/
+     * @return
+     */
 
     @Override
     public Linker getLinker() {
@@ -197,6 +216,5 @@ public abstract class Track implements
     public boolean canExit(Dir d) {
         return getTrackDirector().canExit(this, d);
     }
-
 
 }

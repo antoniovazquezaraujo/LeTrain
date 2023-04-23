@@ -10,15 +10,19 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
     @Override
     public String toString() {
         String ret = "";
+        String first = "", second = "", third = "";
         if (originalRoute != null) {
-            ret += "Orig: " + originalRoute.getKey() + "->" + originalRoute.getValue() + "\n";
+            first = originalRoute.getKey() + ">" + originalRoute.getValue();
         }
         if (alternativeRoute != null) {
-            ret += "Alt: " + alternativeRoute.getKey() + "->" + alternativeRoute.getValue() + "\n";
+            second = alternativeRoute.getKey() + ">" + alternativeRoute.getValue();
         }
         for (Dir dir : dirMap.keySet()) {
-            ret += " (" + dir + "-> " + dirMap.get(dir) + ") ";
+            third = dir + ">" + dirMap.get(dir);
         }
+        ret += !isUsingAlternativeRoute() ? "(" + first + ")," : first;
+        ret += isUsingAlternativeRoute() ? ("(" + second + ")") : second;
+        ret += "," + third;
         return ret;
     }
 
@@ -75,27 +79,27 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
 
     @Override
     public void addRoute(Dir from, Dir to) {
-        //ruta repetida
+        // ruta repetida
         if (dirMap.containsKey(from) && dirMap.get(from).equals(to)) {
             return;
         }
-        if(originalRoute!=null && originalRoute.getKey().equals(from) && originalRoute.getValue().equals(to)){
+        if (originalRoute != null && originalRoute.getKey().equals(from) && originalRoute.getValue().equals(to)) {
             return;
         }
-        if(alternativeRoute!=null && alternativeRoute.getKey().equals(from) && alternativeRoute.getValue().equals(to)){
+        if (alternativeRoute != null && alternativeRoute.getKey().equals(from)
+                && alternativeRoute.getValue().equals(to)) {
             return;
         }
 
-        //ruta adicional para la ruta from
-        if (dirMap.containsKey(from)) {//&& !dirMap.containsKey(to)) {
+        // ruta adicional para la ruta from
+        if (dirMap.containsKey(from)) {// && !dirMap.containsKey(to)) {
             originalRoute = new Pair<>(from, dirMap.get(from));
             alternativeRoute = new Pair<>(from, to);
             usingAlternativeRoute = true;
         }
 
-
-        //ruta adicional para la ruta to
-        if (dirMap.containsKey(to)) {//&& !dirMap.containsKey(from)) {
+        // ruta adicional para la ruta to
+        if (dirMap.containsKey(to)) {// && !dirMap.containsKey(from)) {
             originalRoute = new Pair<>(to, dirMap.get(to));
             alternativeRoute = new Pair<>(to, from);
             usingAlternativeRoute = true;

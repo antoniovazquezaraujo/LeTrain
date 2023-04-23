@@ -13,5 +13,5 @@ public interface TerrainMap<T> extends Renderable {
 
     void addTrack(Point p, T t);
 
-    T removeTrack(int x, int y);
+    T removeTrack(Point p);
 }

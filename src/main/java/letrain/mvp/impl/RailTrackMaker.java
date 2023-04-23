@@ -23,7 +23,6 @@ public class RailTrackMaker {
     boolean reversed = false;
     boolean makingTraks = false;
 
-
     public RailTrackMaker(Model model, letrain.mvp.View view) {
         this.model = model;
         this.view = view;
@@ -98,11 +97,11 @@ public class RailTrackMaker {
         reversed = false;
     }
 
-    private void removeTrack() {
+    void removeTrack() {
         Point position = model.getCursor().getPosition();
         RailTrack track = model.getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            model.getRailMap().removeTrack(position.getX(), position.getY());
+            model.getRailMap().removeTrack(position);
         }
         if (model.getForks().contains(track)) {
             model.getForks().remove(track);
@@ -119,20 +118,23 @@ public class RailTrackMaker {
 
     }
 
-    private void createTrack() {
+    void createTrack() {
         degreesOfRotation = 0;
         makeTrack();
         Point position = model.getCursor().getPosition();
         view.setPageOfPos(position.getX(), position.getY());
     }
 
-    private boolean makeTrack() {
+    boolean makeTrack() {
         makingTraks = true;
         Point cursorPosition = model.getCursor().getPosition();
         Dir dir = model.getCursor().getDir();
+
+        // Si venimos de algún track, obtenemos la dirección de salida
         if (oldTrack != null) {
             oldDir = cursorPosition.locate(oldTrack.getPosition());
         } else {
+            // Si no venimos de ningún track, la oldDir será la nueva o su inversa
             if (!reversed) {
                 oldDir = model.getCursor().getDir().inverse();
             } else {
@@ -140,10 +142,10 @@ public class RailTrackMaker {
             }
         }
 
-        //Obtenemos el track bajo el cursor
-        RailTrack track = model.getRailMap().getTrackAt(cursorPosition.getX(), cursorPosition.getY());
+        // Obtenemos el track bajo el cursor
+        RailTrack track = model.getRailMap().getTrackAt(cursorPosition);
         if (track == null) {
-            //si no había nada creamos un track normal
+            // si no había nada creamos un track normal
             track = createTrackOfSelectedType();
         } else {
             // si había un fork no seguimos
@@ -151,37 +153,26 @@ public class RailTrackMaker {
                 return false;
             }
         }
-        // al track que había (o al que hemos creado normal) le agregamos la ruta entre la vieja dir y la nueva
+        // al track que había (o al que hemos creado normal) le agregamos la ruta entre
+        // la vieja dir y la nueva
         track.addRoute(oldDir, dir);
         track.setPosition(cursorPosition);
         model.getRailMap().addTrack(cursorPosition, track);
         if (canBeAFork(track, oldDir, dir)) {
-            final ForkRailTrack myNewTrack = new ForkRailTrack();
-            myNewTrack.setPosition(cursorPosition);
-            model.addFork(myNewTrack);
-            final Router router = track.getRouter();
-            router.forEach(t -> {
-                myNewTrack.addRoute(t.getKey(), t.getValue());
-            });
-            myNewTrack.setNormalRoute();
-            model.getRailMap().removeTrack(track.getPosition().getX(), track.getPosition().getY());
-            model.getRailMap().addTrack(model.getCursor().getPosition(), myNewTrack);
-            for (Dir d : Dir.values()) {
-                if (track.getConnected(d) != null) {
-                    Track connected = track.getConnected(d);
-                    connected.disconnect(d.inverse());
-                    connected.connect(d.inverse(), myNewTrack);
-                    myNewTrack.connect(d, connected);
-                }
-            }
-            track = myNewTrack;
-//            myNewTrack.setAlternativeRoute();
+            RailTrack trackToSubstitute = track;
+            final ForkRailTrack fork = createForkRailTrack(cursorPosition, trackToSubstitute);
+            addRoutesToFork(trackToSubstitute, fork);
+            fork.setNormalRoute();
+            model.addFork(fork);
+            substituteInMapTrackWithFork(trackToSubstitute, fork);
+            addTrackConnectionsToFork(trackToSubstitute, fork);
+            track = fork;
         }
         if (oldTrack != null) {
-            //conectamos el track con oldTrack en oldDir, bien.
+            // conectamos el track con oldTrack en oldDir, bien.
             track.connect(oldDir, oldTrack);
-            //conectamos a oldTrack con track, en la inversa
-            oldTrack.connect(track.getDir(dir).inverse(), track);
+            // conectamos a oldTrack con track, en la inversa
+            oldTrack.connect(oldDir.inverse(), track);
         }
 
         Point newPos = new Point(cursorPosition);
@@ -193,6 +184,35 @@ public class RailTrackMaker {
         model.getCursor().setPosition(newPos);
         oldTrack = track;
         return true;
+    }
+
+    private void substituteInMapTrackWithFork(RailTrack track1, final ForkRailTrack fork) {
+        model.getRailMap().removeTrack(track1.getPosition());
+        model.getRailMap().addTrack(model.getCursor().getPosition(), fork);
+    }
+
+    ForkRailTrack createForkRailTrack(Point cursorPosition, RailTrack track) {
+        final ForkRailTrack fork = new ForkRailTrack();
+        fork.setPosition(cursorPosition);
+        return fork;
+    }
+
+    private void addRoutesToFork(RailTrack track, final ForkRailTrack fork) {
+        final Router router = track.getRouter();
+        router.forEach(t -> {
+            fork.addRoute(t.getKey(), t.getValue());
+        });
+    }
+
+    void addTrackConnectionsToFork(RailTrack track, final ForkRailTrack fork) {
+        for (Dir d : Dir.values()) {
+            if (track.getConnected(d) != null) {
+                Track connectedTrack = track.getConnected(d);
+                connectedTrack.disconnect(d.inverse());
+                connectedTrack.connect(d.inverse(), fork);
+                fork.connect(d, connectedTrack);
+            }
+        }
     }
 
     public void selectNewTrackType(CompactPresenter.TrackType type) {
@@ -249,7 +269,7 @@ public class RailTrackMaker {
         }
     }
 
-    private void cursorForward() {
+    void cursorForward() {
         Point newPos = new Point(model.getCursor().getPosition());
         if (!reversed) {
             newPos.move(model.getCursor().getDir(), 1);
@@ -261,13 +281,13 @@ public class RailTrackMaker {
         view.setPageOfPos(position.getX(), position.getY());
     }
 
-    private void cursorBackward() {
+    void cursorBackward() {
         reversed = true;
         cursorForward();
         reversed = false;
     }
 
-    private void mapPageDown() {
+    void mapPageDown() {
         view.clear();
         Point p = view.getMapScrollPage();
         p.setY(p.getY() + 1);
@@ -276,7 +296,7 @@ public class RailTrackMaker {
 
     }
 
-    private void mapPageLeft() {
+    void mapPageLeft() {
         view.clear();
         Point p = view.getMapScrollPage();
         p.setX(p.getX() - 1);
@@ -285,7 +305,7 @@ public class RailTrackMaker {
 
     }
 
-    private void mapPageUp() {
+    void mapPageUp() {
         view.clear();
         Point p = view.getMapScrollPage();
         p.setY(p.getY() - 1);
@@ -294,7 +314,7 @@ public class RailTrackMaker {
 
     }
 
-    private void mapPageRight() {
+    void mapPageRight() {
         view.clear();
         Point p = view.getMapScrollPage();
         p.setX(p.getX() + 1);
