@@ -314,7 +314,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         Track nextTrack = track.getConnected(dir);
         RailIterator iterator = new RailIterator(nextTrack, dir);
         Linker nextLinker = iterator.getTrack().getLinker();
-        if (this != nextLinker.getTrain()) {
+        if (nextLinker != null && this != nextLinker.getTrain()) {
             while (nextLinker != null) {
                 linkersToJoin.add(nextLinker);
                 iterator.advance();
