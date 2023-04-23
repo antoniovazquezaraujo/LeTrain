@@ -19,6 +19,8 @@ public class View extends BorderPane implements letrain.mvp.View {
     private Text helpBar = new Text();
 
     public View(GameViewListener gameViewListener) {
+        setPrefHeight(600);
+        setPrefWidth(800);
         viewGrid = new ViewGrid();
         this.gameViewListener = gameViewListener;
         setCenter(viewGrid);

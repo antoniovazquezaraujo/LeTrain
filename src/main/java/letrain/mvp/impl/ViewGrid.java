@@ -7,6 +7,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -25,9 +26,14 @@ public class ViewGrid extends BorderPane implements View {
     private final GraphicsContext gc;
     private static final int TEXT_SIZE = 10;
     private static Font font = Font.font("Monospace", TEXT_SIZE);
-    private int zoom = 0;
+    private int zoom = 10;
     private float charWidth;
     private float charHeight;
+    private double lastMouseX;
+    private double lastMouseY;
+    private boolean isDragging;
+    private double currentTranslateX;
+    private double currentTranslateY;
 
     public ViewGrid() {
         setStyle("-fx-background-color: black;");
@@ -39,7 +45,37 @@ public class ViewGrid extends BorderPane implements View {
         gc = canvas.getGraphicsContext2D();
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFont(font);
+        addListener();
+    }
 
+    void addListener() {
+        canvas.setOnMousePressed(event -> {
+            lastMouseX = event.getX();
+            lastMouseY = event.getY();
+            isDragging = true;
+        });
+
+        canvas.setOnMouseReleased(event -> {
+            isDragging = false;
+        });
+
+        canvas.setOnMouseDragged(event -> {
+            if (isDragging) {
+                double deltaX = event.getX() - lastMouseX;
+                double deltaY = event.getY() - lastMouseY;
+                currentTranslateX += deltaX;
+                currentTranslateY += deltaY;
+
+                lastMouseX = event.getX();
+                lastMouseY = event.getY();
+            }
+        });
+        canvas.setOnScroll((ScrollEvent event) -> {
+            double zoomFactor = event.getDeltaY();
+            this.zoom += zoomFactor > 0 ? 1 : -1;
+            event.consume();
+            recalcFontSize();
+        });
     }
 
     void recalcFontSize() {
@@ -80,13 +116,10 @@ public class ViewGrid extends BorderPane implements View {
 
     @Override
     public void set(int x, int y, String c) {
-        x -= mapScrollPage.getX() * cols;
-        y -= mapScrollPage.getY() * rows;
+        x -= (mapScrollPage.getX() * cols) - ((currentTranslateX / charWidth));
+        y -= (mapScrollPage.getY() * rows) - ((currentTranslateY / charHeight));
         if (x >= 0 && x < cols && y >= 0 && y < rows) {
-
-            // TODO probar diferentes grosores para diferentes elementos???
             gc.setLineWidth(1);
-
             gc.strokeText(c, x * charWidth, y * charHeight);
         }
     }
