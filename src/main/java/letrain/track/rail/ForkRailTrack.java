@@ -1,29 +1,21 @@
 package letrain.track.rail;
 
+import java.util.function.Consumer;
+
 import javafx.util.Pair;
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.map.ForkRouter;
-import letrain.map.Router;
 import letrain.visitor.Visitor;
-
-import java.util.function.Consumer;
 
 public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     @Override
     public DynamicRouter getRouter() {
-        if(router == null){
+        if (router == null) {
             router = new ForkRouter();
         }
         return (DynamicRouter) router;
-    }
-
-    @Override
-    public String toString() {
-        String ret = "";
-        ret = getRouter().toString();
-        return ret;
     }
 
     /***********************************************************
@@ -39,6 +31,7 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     public void accept(Visitor visitor) {
         visitor.visitForkRailTrack(this);
     }
+
     @Override
     public void setAlternativeRoute() {
         getRouter().setAlternativeRoute();
@@ -53,6 +46,7 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     public boolean flipRoute() {
         return getRouter().flipRoute();
     }
+
     @Override
     public boolean isUsingAlternativeRoute() {
         return getRouter().isUsingAlternativeRoute();
@@ -67,7 +61,6 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     public Pair<Dir, Dir> getOriginalRoute() {
         return getRouter().getOriginalRoute();
     }
-
 
     @Override
     public Dir getAnyDir() {
@@ -98,7 +91,6 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     public Dir getFirstOpenDir() {
         return getRouter().getFirstOpenDir();
     }
-
 
     @Override
     public void addRoute(Dir from, Dir to) {

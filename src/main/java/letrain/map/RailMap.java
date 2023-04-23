@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class RailMap implements Serializable, TerrainMap<RailTrack> , Renderable {
+public class RailMap implements Serializable, TerrainMap<RailTrack>, Renderable {
 
     private final Map<Integer, Map<Integer, RailTrack>> rails;
 
@@ -58,9 +58,9 @@ public class RailMap implements Serializable, TerrainMap<RailTrack> , Renderable
     }
 
     @Override
-    public RailTrack removeTrack(int x, int y) {
-        RailTrack ret = getTrackAt(x, y);
-        rails.get(y).remove(x);
+    public RailTrack removeTrack(Point p) {
+        RailTrack ret = getTrackAt(p);
+        rails.get(p.getY()).remove(p.getX());
         return ret;
     }
 

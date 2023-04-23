@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-
 public class SimpleRouter implements Serializable, Router {
 
     protected final Map<Dir, Dir> dirMap = new HashMap<>();
@@ -16,17 +15,16 @@ public class SimpleRouter implements Serializable, Router {
 
     }
 
-    public boolean isHorizontalOrVertical(){
+    public boolean isHorizontalOrVertical() {
         return dirMap.keySet().stream()
-        .filter(t-> {
-            return (t == Dir.N) || t== Dir.S | t == Dir.E | t== Dir.W;
-        }).count()> 0;
+                .filter(t -> {
+                    return (t == Dir.N) || t == Dir.S | t == Dir.E | t == Dir.W;
+                }).count() > 0;
     }
+
     @Override
     public String toString() {
-        return "SimpleRouter{" +
-                "dirMap=" + dirMap +
-                '}';
+        return "{" + dirMap + '}';
     }
 
     @Override
@@ -82,7 +80,7 @@ public class SimpleRouter implements Serializable, Router {
 
     @Override
     public void addRoute(Dir from, Dir to) {
-        //ruta repetida
+        // ruta repetida
         if (dirMap.containsKey(from) && dirMap.get(from).equals(to)) {
             return;
         }
@@ -96,7 +94,6 @@ public class SimpleRouter implements Serializable, Router {
         dirMap.remove(from);
         dirMap.remove(to);
     }
-
 
     @Override
     public void forEach(Consumer<Pair<Dir, Dir>> routeConsumer) {

@@ -59,7 +59,7 @@ public class Point implements Serializable {
             } else {
                 return S;
             }
-        } else {//y == p.y
+        } else {// y == p.y
             if (x > p.x) {
                 return W;
             } else if (x < p.x) {
@@ -69,13 +69,12 @@ public class Point implements Serializable {
             }
         }
     }
+
     @Override
     public String toString() {
-        return "Point{" +
-                "x=" + x +
-                ", y=" + y +
-                '}';
+        return "[" + x + "," + y + ']';
     }
+
     public void move(Dir dir) {
         move(dir, 1);
     }
