@@ -289,36 +289,36 @@ public class RailTrackMaker {
 
     void mapPageDown() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Point p = view.getGridPositionInMap();
         p.setY(p.getY() + 1);
-        view.setMapScrollPage(p);
+        view.setGridPositionInMap(p);
         view.clear();
 
     }
 
     void mapPageLeft() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Point p = view.getGridPositionInMap();
         p.setX(p.getX() - 1);
-        view.setMapScrollPage(p);
+        view.setGridPositionInMap(p);
         view.clear();
 
     }
 
     void mapPageUp() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Point p = view.getGridPositionInMap();
         p.setY(p.getY() - 1);
-        view.setMapScrollPage(p);
+        view.setGridPositionInMap(p);
         view.clear();
 
     }
 
     void mapPageRight() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Point p = view.getGridPositionInMap();
         p.setX(p.getX() + 1);
-        view.setMapScrollPage(p);
+        view.setGridPositionInMap(p);
         view.clear();
 
     }

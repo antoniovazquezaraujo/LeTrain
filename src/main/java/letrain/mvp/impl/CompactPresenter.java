@@ -379,34 +379,34 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void mapPageDown() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Point p = view.getGridPositionInMap();
         p.setY(p.getY() + 1);
-        view.setMapScrollPage(p);
+        view.setGridPositionInMap(p);
         view.clear();
     }
 
     private void mapPageLeft() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Point p = view.getGridPositionInMap();
         p.setX(p.getX() - 1);
-        view.setMapScrollPage(p);
+        view.setGridPositionInMap(p);
         view.clear();
 
     }
 
     private void mapPageUp() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Point p = view.getGridPositionInMap();
         p.setY(p.getY() - 1);
-        view.setMapScrollPage(p);
+        view.setGridPositionInMap(p);
         view.clear();
     }
 
     private void mapPageRight() {
         view.clear();
-        Point p = view.getMapScrollPage();
+        Point p = view.getGridPositionInMap();
         p.setX(p.getX() + 1);
-        view.setMapScrollPage(p);
+        view.setGridPositionInMap(p);
         view.clear();
 
     }

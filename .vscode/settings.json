@@ -9,5 +9,8 @@
             "${workspaceFolder}/src/main/java",
             "${workspaceFolder}/src/test/java"
         ]
-    }
+    },
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "maven.view": "hierarchical",
+    "java.debug.settings.onBuildFailureProceed": true
 }
