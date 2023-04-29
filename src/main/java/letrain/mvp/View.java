@@ -4,9 +4,9 @@ import javafx.scene.paint.Color;
 import letrain.map.Point;
 
 public interface View {
-    Point getMapScrollPage();
+    Point getGridPositionInMap();
 
-    void setMapScrollPage(Point pos);
+    void setGridPositionInMap(Point pos);
 
     void paint();
 

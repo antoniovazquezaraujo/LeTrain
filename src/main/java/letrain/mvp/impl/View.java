@@ -19,6 +19,8 @@ public class View extends BorderPane implements letrain.mvp.View {
     private Text helpBar = new Text();
 
     public View(GameViewListener gameViewListener) {
+        setPrefHeight(600);
+        setPrefWidth(800);
         viewGrid = new ViewGrid();
         this.gameViewListener = gameViewListener;
         setCenter(viewGrid);
@@ -75,14 +77,15 @@ public class View extends BorderPane implements letrain.mvp.View {
     }
 
     @Override
-    public Point getMapScrollPage() {
-        return viewGrid.getMapScrollPage();
+    public Point getGridPositionInMap() {
+        return viewGrid.getGridPositionInMap();
     }
 
     @Override
-    public void setMapScrollPage(Point pos) {
-        viewGrid.setMapScrollPage(pos);
-        setStatusBarText("Página: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
+    public void setGridPositionInMap(Point pos) {
+        viewGrid.setGridPositionInMap(pos);
+        setStatusBarText(
+                "Página: " + viewGrid.getGridPositionInMap().getX() + ", " + viewGrid.getGridPositionInMap().getY());
     }
 
     public void setStatusBarText(String text) {
@@ -121,7 +124,8 @@ public class View extends BorderPane implements letrain.mvp.View {
     @Override
     public void setPageOfPos(int x, int y) {
         viewGrid.setPageOfPos(x, y);
-        setStatusBarText("Página: " + viewGrid.getMapScrollPage().getX() + ", " + viewGrid.getMapScrollPage().getY());
+        setStatusBarText(
+                "Página: " + viewGrid.getGridPositionInMap().getX() + ", " + viewGrid.getGridPositionInMap().getY());
     }
 
     @Override

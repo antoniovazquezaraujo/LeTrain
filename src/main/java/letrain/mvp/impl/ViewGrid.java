@@ -3,14 +3,16 @@ package letrain.mvp.impl;
 import com.sun.javafx.tk.FontMetrics;
 import com.sun.javafx.tk.Toolkit;
 
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import javafx.geometry.Bounds;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
 import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import letrain.map.Point;
 import letrain.mvp.View;
@@ -18,35 +20,75 @@ import letrain.mvp.View;
 public class ViewGrid extends BorderPane implements View {
     private static final int DEFAULT_ROWS = 40;
     private static final int DEFAULT_COLS = 100;
+    private static final int TEXT_SIZE = 10;
+    private final GraphicsContext gc;
+    private final Canvas canvas;
+    private static Font font = Font.font("Monospace", TEXT_SIZE);
     int cols = DEFAULT_COLS;
     int rows = DEFAULT_ROWS;
-    private Point mapScrollPage = new Point(0, 0);
-    private final Canvas canvas;
-    private final GraphicsContext gc;
-    private static final int TEXT_SIZE = 10;
-    private static Font font = Font.font("Monospace", TEXT_SIZE);
-    private int zoom = 0;
+    private int zoom = 10;
+
+    private Point gridPositionInMap = new Point(0, 0);
+
     private float charWidth;
     private float charHeight;
 
+    private double lastMouseX;
+    private double lastMouseY;
+
+    private boolean isDragging;
+
+    private double currentTranslateX;
+    private double currentTranslateY;
+
     public ViewGrid() {
         setStyle("-fx-background-color: black;");
-        FontMetrics metrics = Toolkit.getToolkit().getFontLoader().getFontMetrics(font);
-        charWidth = metrics.computeStringWidth("X");
-        charHeight = metrics.getLineHeight();
+        CharSize s = getCharSize("M", font);
+        charWidth = s.width;
+        charHeight = s.height;
         canvas = new Canvas(cols * charWidth, rows * charHeight);
         setCenter(canvas);
         gc = canvas.getGraphicsContext2D();
         gc.setTextAlign(TextAlignment.CENTER);
         gc.setFont(font);
+        addListener();
+    }
 
+    void addListener() {
+        canvas.setOnMousePressed(event -> {
+            lastMouseX = event.getX();
+            lastMouseY = event.getY();
+            isDragging = true;
+        });
+
+        canvas.setOnMouseReleased(event -> {
+            isDragging = false;
+        });
+
+        canvas.setOnMouseDragged(event -> {
+            if (isDragging) {
+                double deltaX = event.getX() - lastMouseX;
+                double deltaY = event.getY() - lastMouseY;
+                currentTranslateX += deltaX;
+                currentTranslateY += deltaY;
+
+                lastMouseX = event.getX();
+                lastMouseY = event.getY();
+            }
+        });
+        canvas.setOnScroll((ScrollEvent event) -> {
+            double zoomFactor = event.getDeltaY();
+            this.zoom += zoomFactor > 0 ? 1 : -1;
+            event.consume();
+            recalcFontSize();
+        });
     }
 
     void recalcFontSize() {
         this.font = Font.font("Monospace", TEXT_SIZE + zoom);
-        FontMetrics metrics = Toolkit.getToolkit().getFontLoader().getFontMetrics(font);
-        charWidth = metrics.computeStringWidth("X");
-        charHeight = metrics.getLineHeight();
+        CharSize s = getCharSize("M", font);
+        charWidth = s.width;
+        charHeight = s.height;
         double height = getHeight();
         double width = getWidth();
         cols = (int) (width / charWidth);
@@ -54,17 +96,16 @@ public class ViewGrid extends BorderPane implements View {
         canvas.setWidth(cols * charWidth);
         canvas.setHeight(rows * charHeight);
         gc.setFont(this.font);
-
     }
 
     @Override
-    public Point getMapScrollPage() {
-        return this.mapScrollPage;
+    public Point getGridPositionInMap() {
+        return this.gridPositionInMap;
     }
 
     @Override
-    public void setMapScrollPage(Point pos) {
-        this.mapScrollPage = pos;
+    public void setGridPositionInMap(Point pos) {
+        this.gridPositionInMap = pos;
     }
 
     @Override
@@ -80,13 +121,10 @@ public class ViewGrid extends BorderPane implements View {
 
     @Override
     public void set(int x, int y, String c) {
-        x -= mapScrollPage.getX() * cols;
-        y -= mapScrollPage.getY() * rows;
+        x -= (getGridPositionInMap().getX() * cols) - ((currentTranslateX / charWidth));
+        y -= (getGridPositionInMap().getY() * rows) - ((currentTranslateY / charHeight));
         if (x >= 0 && x < cols && y >= 0 && y < rows) {
-
-            // TODO probar diferentes grosores para diferentes elementos???
             gc.setLineWidth(1);
-
             gc.strokeText(c, x * charWidth, y * charHeight);
         }
     }
@@ -104,7 +142,7 @@ public class ViewGrid extends BorderPane implements View {
             y -= rows;
         int pageX = x / cols;
         int pageY = y / rows;
-        setMapScrollPage(new Point(pageX, pageY));
+        setGridPositionInMap(new Point(pageX, pageY));
     }
 
     @Override
@@ -163,6 +201,23 @@ public class ViewGrid extends BorderPane implements View {
     public void resetZoom() {
         this.zoom = 0;
         recalcFontSize();
+    }
+
+    public record CharSize(float width, float height) {
+    }
+
+    public CharSize getCharSize(String s, Font font) {
+        Text text = new Text(s);
+        text.setFont(font);
+        Bounds tb = text.getBoundsInLocal();
+        Rectangle stencil = new Rectangle(
+                tb.getMinX(),
+                tb.getMinY(),
+                tb.getWidth(),
+                tb.getHeight());
+        Shape intersection = Shape.intersect(text, stencil);
+        Bounds ib = intersection.getBoundsInLocal();
+        return new CharSize((float) (ib.getWidth()), (float) (ib.getHeight()));
     }
 
 }
