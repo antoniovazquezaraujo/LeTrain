@@ -1,6 +1,6 @@
 package letrain.map;
 
-import javafx.util.Pair;
+import letrain.utils.Pair;
 
 public class ForkRouter extends SimpleRouter implements DynamicRouter {
     private Pair<Dir, Dir> alternativeRoute = null;

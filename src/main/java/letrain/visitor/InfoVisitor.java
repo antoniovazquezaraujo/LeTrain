@@ -1,6 +1,6 @@
 package letrain.visitor;
 
-import javafx.scene.paint.Color;
+import com.googlecode.lanterna.TextColor;
 import letrain.map.*;
 import letrain.mvp.Model;
 import letrain.mvp.View;
@@ -16,8 +16,8 @@ import letrain.mvp.Model.GameMode;
 import static letrain.mvp.Model.GameMode.*;
 
 public class InfoVisitor implements Visitor {
-    private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
-    public static final Color FORK_COLOR = Color.grayRgb(180);
+    private static final TextColor RAIL_TRACK_COLOR = new TextColor.RGB(80, 80, 80);
+    public static final TextColor FORK_COLOR = new TextColor.RGB(180, 180, 180);
     String infoBarText = "";
     String helpBarText = "";
     private final View view;

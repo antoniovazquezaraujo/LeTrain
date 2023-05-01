@@ -1,8 +1,8 @@
 package letrain.map;
 
-import javafx.util.Pair;
+import letrain.utils.Pair;
 
-public interface DynamicRouter extends Router{
+public interface DynamicRouter extends Router {
     void setAlternativeRoute();
 
     void setNormalRoute();
@@ -13,5 +13,5 @@ public interface DynamicRouter extends Router{
 
     Pair<Dir, Dir> getAlternativeRoute();
 
-    Pair<Dir,Dir> getOriginalRoute();
+    Pair<Dir, Dir> getOriginalRoute();
 }

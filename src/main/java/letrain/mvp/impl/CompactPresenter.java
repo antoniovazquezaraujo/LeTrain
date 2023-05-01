@@ -8,12 +8,14 @@ import static letrain.mvp.Model.GameMode.LOCOMOTIVES;
 import static letrain.mvp.Model.GameMode.MAKE_TRAINS;
 import static letrain.mvp.Model.GameMode.TRACKS;
 
+import java.io.IOException;
 import java.util.List;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.scene.input.KeyEvent;
-import javafx.util.Duration;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.screen.TerminalScreen;
+import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
+import com.googlecode.lanterna.terminal.Terminal;
+
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
@@ -35,11 +37,11 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private final letrain.mvp.Model model;
     private final letrain.mvp.View view;
-    private Timeline loop;
     private final RenderVisitor renderer;
     private final InfoVisitor informer;
 
     RailTrackMaker maker;
+    private TerminalScreen screen;
 
     public CompactPresenter() {
         this(null);
@@ -58,18 +60,47 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     }
 
     public void start() {
-        loop = new Timeline();
-        loop.setCycleCount(Timeline.INDEFINITE);
+        DefaultTerminalFactory defaultTerminalFactory = new DefaultTerminalFactory();
+        try {
+            Terminal terminal = defaultTerminalFactory.createTerminal();
+            terminal.setCursorVisible(false);
+            this.screen = new TerminalScreen(terminal);
+            this.screen.setCursorPosition(null);
 
-        KeyFrame kf = new KeyFrame(Duration.seconds(.1), actionEvent -> {
-            view.clear();
-            renderer.visitModel(model);
-            informer.visitModel(model);
-            view.paint();
-            model.moveLocomotives();
-        });
-        loop.getKeyFrames().add(kf);
-        loop.play();
+            view.setScreen(this.screen);
+            this.screen.startScreen();
+            KeyStroke stroke = null;
+            while (true) {
+                stroke = null;
+                stroke = view.readKey();
+                if (view.isEndOfGame(stroke)) {
+                    break;
+                }
+                if (null != stroke) {
+                    onChar(stroke);
+                    while (stroke != null) {
+                        stroke = view.readKey();
+                    }
+                }
+                renderer.visitModel(model);
+                informer.visitModel(model);
+                view.paint();
+                model.moveLocomotives();
+                Thread.sleep(100);
+                view.clear();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (this.screen != null) {
+                try {
+                    this.screen.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
     }
 
     /***********************************************************
@@ -96,8 +127,8 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     }
 
     @Override
-    public void onChar(KeyEvent keyEvent) {
-        switch (keyEvent.getCode()) {
+    public void onChar(KeyStroke keyEvent) {
+        switch (keyEvent.getKeyType()) {
             case F1:
                 model.setMode(TRACKS);
                 break;
@@ -120,12 +151,6 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             case F7:
                 model.setMode(DIVIDE_TRAINS);
                 break;
-            case PLUS:
-                view.incZoom();
-                break;
-            case MINUS:
-                view.decZoom();
-                break;
 
         }
 
@@ -135,31 +160,33 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 break;
             case LOCOMOTIVES:
                 this.newTrain = null;
-                switch (keyEvent.getCode()) {
-                    case SPACE:
-                        toggleReversed();
+                switch (keyEvent.getKeyType()) {
+                    case Character:
+                        if (keyEvent.getCharacter() == ' ') {
+                            toggleReversed();
+                        }
                         break;
-                    case UP:
+                    case ArrowUp:
                         accelerateLocomotive();
                         break;
-                    case DOWN:
+                    case ArrowDown:
                         decelerateLocomotive();
                         break;
-                    case LEFT:
+                    case ArrowLeft:
                         selectPrevLocomotive();
                         break;
-                    case RIGHT:
+                    case ArrowRight:
                         selectNextLocomotive();
                         break;
-                    case PAGE_UP:
-                        if (keyEvent.isControlDown()) {
+                    case PageUp:
+                        if (keyEvent.isCtrlDown()) {
                             mapPageRight();
                         } else {
                             mapPageUp();
                         }
                         break;
-                    case PAGE_DOWN:
-                        if (keyEvent.isControlDown()) {
+                    case PageDown:
+                        if (keyEvent.isCtrlDown()) {
                             mapPageLeft();
                         } else {
                             mapPageDown();
@@ -168,40 +195,40 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 break;
 
             case CREATE_LOAD_PLATFORM:
-                switch (keyEvent.getCode()) {
-                    case UP:
+                switch (keyEvent.getKeyType()) {
+                    case ArrowUp:
                         createLoadPlatformTrack();
                         break;
                 }
                 break;
             case FORKS:
-                switch (keyEvent.getCode()) {
-                    case UP:
+                switch (keyEvent.getKeyType()) {
+                    case ArrowUp:
                         toggleFork();
                         break;
-                    case DOWN:
+                    case ArrowDown:
                         toggleFork();
                         break;
-                    case LEFT:
+                    case ArrowLeft:
                         selectPrevFork();
                         break;
-                    case RIGHT:
+                    case ArrowRight:
                         selectNextFork();
                         break;
                 }
                 break;
             case LOAD_TRAINS:
-                switch (keyEvent.getCode()) {
-                    case UP:
+                switch (keyEvent.getKeyType()) {
+                    case ArrowUp:
                         loadTrain();
                         break;
-                    case DOWN:
+                    case ArrowDown:
                         // unloadTrain();
                         break;
-                    case LEFT:
+                    case ArrowLeft:
                         selectPrevLoadPlatform();
                         break;
-                    case RIGHT:
+                    case ArrowRight:
                         selectNextLoadPlatform();
                         break;
                 }
@@ -210,7 +237,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 if (model.getRailMap().getTrackAt(model.getCursor().getPosition()) == null) {
                     break;
                 }
-                String c = keyEvent.getText();
+                String c = keyEvent.getCharacter().toString();
                 if (c.isEmpty()) {
                     break;
                 }
@@ -226,36 +253,40 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 model.getCursor().getPosition().move(Dir.E);
                 break;
             case LINK_TRAINS:
-                switch (keyEvent.getCode()) {
-                    case UP:
+                switch (keyEvent.getKeyType()) {
+                    case ArrowUp:
                         selectVehiclesInFront();
                         break;
-                    case DOWN:
+                    case ArrowDown:
                         selectVehiclesAtBack();
                         break;
-                    case SPACE:
-                        linkOkUnlinkSelectedVehicles();
-                        break;
+                    case Character:
+                        if (keyEvent.getCharacter() == ' ') {
+                            linkOkUnlinkSelectedVehicles();
+                            break;
+                        }
                 }
                 break;
             case DIVIDE_TRAINS:
-                switch (keyEvent.getCode()) {
-                    case LEFT:
+                switch (keyEvent.getKeyType()) {
+                    case ArrowLeft:
                         selectFrontDivisionSense();
                         break;
-                    case RIGHT:
+                    case ArrowRight:
                         selectBackDivisionSense();
                         break;
-                    case UP:
+                    case ArrowUp:
                         selectNextLink();
                         break;
-                    case DOWN:
+                    case ArrowDown:
                         selectPrevLink();
                         break;
-                    case SPACE:
-                        divideTrain();
+                    case Character:
+                        if (keyEvent.getCharacter() == ' ') {
+                            divideTrain();
+                        }
                         break;
-                    case DELETE:
+                    case Delete:
                         destroyLinkers();
                         break;
 
@@ -379,34 +410,34 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void mapPageDown() {
         view.clear();
-        Point p = view.getGridPositionInMap();
+        Point p = view.getMapScrollPage();
         p.setY(p.getY() + 1);
-        view.setGridPositionInMap(p);
+        view.setMapScrollPage(p);
         view.clear();
     }
 
     private void mapPageLeft() {
         view.clear();
-        Point p = view.getGridPositionInMap();
+        Point p = view.getMapScrollPage();
         p.setX(p.getX() - 1);
-        view.setGridPositionInMap(p);
+        view.setMapScrollPage(p);
         view.clear();
 
     }
 
     private void mapPageUp() {
         view.clear();
-        Point p = view.getGridPositionInMap();
+        Point p = view.getMapScrollPage();
         p.setY(p.getY() - 1);
-        view.setGridPositionInMap(p);
+        view.setMapScrollPage(p);
         view.clear();
     }
 
     private void mapPageRight() {
         view.clear();
-        Point p = view.getGridPositionInMap();
+        Point p = view.getMapScrollPage();
         p.setX(p.getX() + 1);
-        view.setGridPositionInMap(p);
+        view.setMapScrollPage(p);
         view.clear();
 
     }

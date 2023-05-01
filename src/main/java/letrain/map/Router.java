@@ -1,8 +1,8 @@
 package letrain.map;
 
-import javafx.util.Pair;
-
 import java.util.function.Consumer;
+
+import letrain.utils.Pair;
 
 public interface Router {
     Dir getDir(Dir dir);
