@@ -1,17 +1,18 @@
 package letrain.mvp.impl;
 
+import com.googlecode.lanterna.input.KeyStroke;
+
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.SimpleRouter;
 import letrain.track.Track;
-import letrain.track.rail.*;
+import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.RailTrack;
+import letrain.track.rail.StopRailTrack;
+import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
-
-import static letrain.mvp.impl.CompactPresenter.TrackType.STOP_TRACK;
-import static letrain.mvp.impl.CompactPresenter.TrackType.TUNNEL_GATE;
-
-import com.googlecode.lanterna.input.KeyStroke;
 
 public class RailTrackMaker {
     private final Model model;
@@ -31,18 +32,6 @@ public class RailTrackMaker {
 
     public void onChar(KeyStroke keyEvent) {
         switch (keyEvent.getKeyType()) {
-            // case 'T':
-            // selectNewTrackType(TUNNEL_GATE);
-            // createTrack();
-            // selectNewTrackType(CompactPresenter.TrackType.NORMAL_TRACK);
-            // makingTraks = false;
-            // break;
-            // case 'S':
-            // selectNewTrackType(STOP_TRACK);
-            // createTrack();
-            // selectNewTrackType(CompactPresenter.TrackType.NORMAL_TRACK);
-            // makingTraks = false;
-            // break;
             case ArrowUp:
                 if (keyEvent.isShiftDown()) {
                     if (!makingTraks) {

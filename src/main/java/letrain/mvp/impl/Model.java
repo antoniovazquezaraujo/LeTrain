@@ -19,7 +19,7 @@ public class Model implements Serializable, letrain.mvp.Model {
     private int selectedLocomotiveIndex;
     private int selectedForkIndex;
 
-    private GameMode mode = letrain.mvp.Model.GameMode.TRACKS;
+    private GameMode mode = letrain.mvp.Model.GameMode.RAILS;
     private RailMap map;
     private final List<Locomotive> locomotives;
     List<Wagon> wagons;

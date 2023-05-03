@@ -1,17 +1,18 @@
 package letrain.mvp.impl;
 
-import static letrain.mvp.Model.GameMode.DIVIDE_TRAINS;
+import static letrain.mvp.Model.GameMode.DRIVE;
 import static letrain.mvp.Model.GameMode.FORKS;
-import static letrain.mvp.Model.GameMode.LINK_TRAINS;
-import static letrain.mvp.Model.GameMode.LOAD_TRAINS;
-import static letrain.mvp.Model.GameMode.LOCOMOTIVES;
-import static letrain.mvp.Model.GameMode.MAKE_TRAINS;
-import static letrain.mvp.Model.GameMode.TRACKS;
+import static letrain.mvp.Model.GameMode.LINK;
+import static letrain.mvp.Model.GameMode.MENU;
+import static letrain.mvp.Model.GameMode.RAILS;
+import static letrain.mvp.Model.GameMode.TRAINS;
+import static letrain.mvp.Model.GameMode.UNLINK;
 
 import java.io.IOException;
 import java.util.List;
 
 import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
@@ -70,6 +71,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             view.setScreen(this.screen);
             this.screen.startScreen();
             KeyStroke stroke = null;
+            model.setMode(MENU);
             while (true) {
                 stroke = null;
                 stroke = view.readKey();
@@ -125,173 +127,177 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     public void onGameModeSelected(letrain.mvp.Model.GameMode mode) {
         // Avisamos al anterior y al nuevo
     }
+    // [r:Rails d:Drive f:Forks t:Trains l:Link u:Unlink
 
     @Override
     public void onChar(KeyStroke keyEvent) {
-        switch (keyEvent.getKeyType()) {
-            case F1:
-                model.setMode(TRACKS);
-                break;
-            case F2:
-                model.setMode(LOCOMOTIVES);
-                break;
-            case F3:
-                model.setMode(FORKS);
-                break;
-            case F4:
-                model.setMode(LOAD_TRAINS);
-                break;
-            case F5:
-                model.setMode(MAKE_TRAINS);
-                newTrain = null;
-                break;
-            case F6:
-                model.setMode(LINK_TRAINS);
-                break;
-            case F7:
-                model.setMode(DIVIDE_TRAINS);
-                break;
-
+        if (keyEvent.getKeyType() == KeyType.Character) {
+            switch (keyEvent.getCharacter()) {
+                case 'r':
+                    model.setMode(RAILS);
+                    break;
+                case 'd':
+                    model.setMode(DRIVE);
+                    break;
+                case 'f':
+                    model.setMode(FORKS);
+                    break;
+                case 't':
+                    model.setMode(TRAINS);
+                    newTrain = null;
+                    break;
+                case 'l':
+                    model.setMode(LINK);
+                    break;
+                case 'u':
+                    model.setMode(UNLINK);
+                    break;
+            }
         }
 
         switch (model.getMode()) {
-            case TRACKS:
+            case RAILS:
                 maker.onChar(keyEvent);
                 break;
-            case LOCOMOTIVES:
-                this.newTrain = null;
-                switch (keyEvent.getKeyType()) {
-                    case Character:
-                        if (keyEvent.getCharacter() == ' ') {
-                            toggleReversed();
-                        }
-                        break;
-                    case ArrowUp:
-                        accelerateLocomotive();
-                        break;
-                    case ArrowDown:
-                        decelerateLocomotive();
-                        break;
-                    case ArrowLeft:
-                        selectPrevLocomotive();
-                        break;
-                    case ArrowRight:
-                        selectNextLocomotive();
-                        break;
-                    case PageUp:
-                        if (keyEvent.isCtrlDown()) {
-                            mapPageRight();
-                        } else {
-                            mapPageUp();
-                        }
-                        break;
-                    case PageDown:
-                        if (keyEvent.isCtrlDown()) {
-                            mapPageLeft();
-                        } else {
-                            mapPageDown();
-                        }
-                }
-                break;
-
-            case CREATE_LOAD_PLATFORM:
-                switch (keyEvent.getKeyType()) {
-                    case ArrowUp:
-                        createLoadPlatformTrack();
-                        break;
-                }
+            case DRIVE:
+                trainDriverOnChar(keyEvent);
                 break;
             case FORKS:
-                switch (keyEvent.getKeyType()) {
-                    case ArrowUp:
-                        toggleFork();
-                        break;
-                    case ArrowDown:
-                        toggleFork();
-                        break;
-                    case ArrowLeft:
-                        selectPrevFork();
-                        break;
-                    case ArrowRight:
-                        selectNextFork();
-                        break;
-                }
+                forkManagerOnChar(keyEvent);
                 break;
-            case LOAD_TRAINS:
-                switch (keyEvent.getKeyType()) {
-                    case ArrowUp:
-                        loadTrain();
-                        break;
-                    case ArrowDown:
-                        // unloadTrain();
-                        break;
-                    case ArrowLeft:
-                        selectPrevLoadPlatform();
-                        break;
-                    case ArrowRight:
-                        selectNextLoadPlatform();
-                        break;
-                }
+            case TRAINS:
+                trainManagerOnChar(keyEvent);
                 break;
-            case MAKE_TRAINS:
-                if (model.getRailMap().getTrackAt(model.getCursor().getPosition()) == null) {
-                    break;
-                }
-                String c = keyEvent.getCharacter().toString();
-                if (c.isEmpty()) {
-                    break;
-                }
-                if (!c.matches("([A-Za-z])?")) {
-                    break;
-                }
-                RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition());
-                if (c.toUpperCase().equals(c)) {
-                    createLocomotive(model.getCursor().getDir(), c, track);
-                } else {
-                    createWagon(model.getCursor().getDir(), c, track);
-                }
-                model.getCursor().getPosition().move(Dir.E);
+            case LINK:
+                linkerOnChar(keyEvent);
                 break;
-            case LINK_TRAINS:
-                switch (keyEvent.getKeyType()) {
-                    case ArrowUp:
-                        selectVehiclesInFront();
-                        break;
-                    case ArrowDown:
-                        selectVehiclesAtBack();
-                        break;
-                    case Character:
-                        if (keyEvent.getCharacter() == ' ') {
-                            linkOkUnlinkSelectedVehicles();
-                            break;
-                        }
-                }
+            case UNLINK:
+                unlinkerOnChar(keyEvent);
                 break;
-            case DIVIDE_TRAINS:
-                switch (keyEvent.getKeyType()) {
-                    case ArrowLeft:
-                        selectFrontDivisionSense();
-                        break;
-                    case ArrowRight:
-                        selectBackDivisionSense();
-                        break;
-                    case ArrowUp:
-                        selectNextLink();
-                        break;
-                    case ArrowDown:
-                        selectPrevLink();
-                        break;
-                    case Character:
-                        if (keyEvent.getCharacter() == ' ') {
-                            divideTrain();
-                        }
-                        break;
-                    case Delete:
-                        destroyLinkers();
-                        break;
+        }
+    }
 
+    private void unlinkerOnChar(KeyStroke keyEvent) {
+        switch (keyEvent.getKeyType()) {
+            case ArrowLeft:
+                selectFrontDivisionSense();
+                break;
+            case ArrowRight:
+                selectBackDivisionSense();
+                break;
+            case ArrowUp:
+                selectNextLink();
+                break;
+            case ArrowDown:
+                selectPrevLink();
+                break;
+            case Character:
+                if (keyEvent.getCharacter() == ' ') {
+                    divideTrain();
                 }
                 break;
+            case Delete:
+                destroyLinkers();
+                break;
+
+        }
+    }
+
+    private void linkerOnChar(KeyStroke keyEvent) {
+        switch (keyEvent.getKeyType()) {
+            case ArrowUp:
+                selectVehiclesInFront();
+                break;
+            case ArrowDown:
+                selectVehiclesAtBack();
+                break;
+            case Character:
+                if (keyEvent.getCharacter() == ' ') {
+                    linkOkUnlinkSelectedVehicles();
+                }
+                break;
+        }
+    }
+
+    private void trainManagerOnChar(KeyStroke keyEvent) {
+        if (model.getRailMap().getTrackAt(model.getCursor().getPosition()) == null) {
+            return;
+        }
+        String c = keyEvent.getCharacter().toString();
+        if (keyEvent.getKeyType() == KeyType.Tab) {
+            model.setMode(MENU);
+            return;
+        }
+        if (c.isEmpty()) {
+            return;
+        }
+        if (!c.matches("([A-Za-z])?")) {
+            return;
+        }
+        RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition());
+        if (c.toUpperCase().equals(c)) {
+            createLocomotive(model.getCursor().getDir(), c, track);
+        } else {
+            createWagon(model.getCursor().getDir(), c, track);
+        }
+        model.getCursor().getPosition().move(Dir.E);
+    }
+
+    private void forkManagerOnChar(KeyStroke keyEvent) {
+        switch (keyEvent.getKeyType()) {
+            case Character:
+                if (keyEvent.getCharacter() == ' ') {
+                    toggleFork();
+                }
+                break;
+            case ArrowUp:
+                toggleFork();
+                break;
+            case ArrowDown:
+                toggleFork();
+                break;
+            case ArrowLeft:
+                selectPrevFork();
+                break;
+            case ArrowRight:
+                selectNextFork();
+                break;
+        }
+    }
+
+    private void trainDriverOnChar(KeyStroke keyEvent) {
+        this.newTrain = null;
+        switch (keyEvent.getKeyType()) {
+            case Character:
+                if (keyEvent.getCharacter() == ' ') {
+                    toggleReversed();
+                }
+                break;
+            case ArrowUp:
+                accelerateLocomotive();
+                break;
+            case ArrowDown:
+                decelerateLocomotive();
+                break;
+            case ArrowLeft:
+                selectPrevLocomotive();
+                break;
+            case ArrowRight:
+                selectNextLocomotive();
+                break;
+            case PageUp:
+                if (keyEvent.isCtrlDown()) {
+                    mapPageRight();
+                } else {
+                    mapPageUp();
+                }
+                break;
+            case PageDown:
+                if (keyEvent.isCtrlDown()) {
+                    mapPageLeft();
+                } else {
+                    mapPageDown();
+                }
         }
     }
 

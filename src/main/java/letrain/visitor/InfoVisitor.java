@@ -1,19 +1,25 @@
 package letrain.visitor;
 
 import com.googlecode.lanterna.TextColor;
-import letrain.map.*;
+
+import letrain.map.Dir;
+import letrain.map.DynamicRouter;
+import letrain.map.Point;
+import letrain.map.RailMap;
+import letrain.map.Router;
 import letrain.mvp.Model;
+import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
 import letrain.track.Track;
-import letrain.track.rail.*;
+import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.RailTrack;
+import letrain.track.rail.StopRailTrack;
+import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Wagon;
-
-import java.text.DecimalFormat;
-import letrain.mvp.Model.GameMode;
-import static letrain.mvp.Model.GameMode.*;
 
 public class InfoVisitor implements Visitor {
     private static final TextColor RAIL_TRACK_COLOR = new TextColor.RGB(80, 80, 80);
@@ -30,14 +36,14 @@ public class InfoVisitor implements Visitor {
     public void visitModel(Model model) {
         infoBarText = "";
         switch (model.getMode()) {
-            case TRACKS:
+            case RAILS:
                 Point pos = model.getCursor().getPosition();
                 RailTrack track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
                 if (track != null) {
                     visitRailTrack(track);
                 }
                 break;
-            case LOCOMOTIVES:
+            case DRIVE:
                 Locomotive locomotive = model.getSelectedLocomotive();
                 if (locomotive != null) {
                     visitLocomotive(locomotive);
@@ -53,7 +59,7 @@ public class InfoVisitor implements Visitor {
                 break;
             case LOAD_TRAINS:
                 break;
-            case MAKE_TRAINS:
+            case TRAINS:
                 break;
         }
         visitCursor(model.getCursor());
@@ -63,12 +69,12 @@ public class InfoVisitor implements Visitor {
 
     private String getModeHelp(GameMode mode) {
         String ret = mode
-                + " (F1:tracks. F2:locomotives. F3:forks. F4:load train. F5:make train. F6:link. F7:unlink.)\n";
+                + " (r:Rails d:Drive f:Forks t:Trains l:link u:unlink Esc:Menu)\n";
         switch (mode) {
-            case TRACKS:
+            case RAILS:
                 ret += "LEFT/RIGHT:rotate cursor. UP/DOWN:forward/backward. SHIFT+UP create rail. CTRL+UP: delete rail";
                 break;
-            case LOCOMOTIVES:
+            case DRIVE:
                 ret += "SPACE:invert motor. UP/DOWN:inc/dec speed. LEFT/RIGHT:prev/next train. PAGE-U/D:map up/down. CTRL+PAGE-U/D:map left/right.";
                 break;
             case FORKS:
@@ -80,13 +86,13 @@ public class InfoVisitor implements Visitor {
             case LOAD_TRAINS:
                 ret += "UP:load. DOWN:unload. LEFT:prev platform. RIGHT:next platform.";
                 break;
-            case MAKE_TRAINS:
+            case TRAINS:
                 ret += "[A-Z]:create locomotive. [a-z]:create wagon.";
                 break;
-            case DIVIDE_TRAINS:
+            case UNLINK:
                 ret += "UP/DOWN:select wagons. SPACE:divide train. DELETE:delete wagons.";
                 break;
-            case LINK_TRAINS:
+            case LINK:
                 ret += "UP/DOWN:select front/back. SPACE:link wagons.";
                 break;
         }

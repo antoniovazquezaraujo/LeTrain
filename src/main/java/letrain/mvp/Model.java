@@ -55,14 +55,15 @@ public interface Model {
     void selectPrevLocomotive();
 
     enum GameMode {
-        TRACKS("Navigate map, create and delete tracks"),
-        LOCOMOTIVES("Manage locomotives"),
+        MENU("Menu mode"),
+        RAILS("Navigate map, create and delete tracks"),
+        DRIVE("Manage locomotives"),
         FORKS("Manage forks"),
+        TRAINS("Use factory platforms"),
+        LINK("Link trains"),
+        UNLINK("Divide trains"),
         CREATE_LOAD_PLATFORM("Create load platform"),
-        LOAD_TRAINS("Use load platforms"),
-        LINK_TRAINS("Link trains"),
-        DIVIDE_TRAINS("Divide trains"),
-        MAKE_TRAINS("Use factory platforms");
+        LOAD_TRAINS("Use load platforms");
 
         private String name;
 
