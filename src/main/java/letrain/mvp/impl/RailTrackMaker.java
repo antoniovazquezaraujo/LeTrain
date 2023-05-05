@@ -1,16 +1,18 @@
 package letrain.mvp.impl;
 
-import javafx.scene.input.KeyEvent;
+import com.googlecode.lanterna.input.KeyStroke;
+
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.SimpleRouter;
 import letrain.track.Track;
-import letrain.track.rail.*;
+import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.RailTrack;
+import letrain.track.rail.StopRailTrack;
+import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
-
-import static letrain.mvp.impl.CompactPresenter.TrackType.STOP_TRACK;
-import static letrain.mvp.impl.CompactPresenter.TrackType.TUNNEL_GATE;
 
 public class RailTrackMaker {
     private final Model model;
@@ -28,21 +30,9 @@ public class RailTrackMaker {
         this.view = view;
     }
 
-    public void onChar(KeyEvent keyEvent) {
-        switch (keyEvent.getCode()) {
-            case T:
-                selectNewTrackType(TUNNEL_GATE);
-                createTrack();
-                selectNewTrackType(CompactPresenter.TrackType.NORMAL_TRACK);
-                makingTraks = false;
-                break;
-            case S:
-                selectNewTrackType(STOP_TRACK);
-                createTrack();
-                selectNewTrackType(CompactPresenter.TrackType.NORMAL_TRACK);
-                makingTraks = false;
-                break;
-            case UP:
+    public void onChar(KeyStroke keyEvent) {
+        switch (keyEvent.getKeyType()) {
+            case ArrowUp:
                 if (keyEvent.isShiftDown()) {
                     if (!makingTraks) {
                         reset();
@@ -50,7 +40,7 @@ public class RailTrackMaker {
                     model.getCursor().setMode(Cursor.CursorMode.DRAWING);
                     createTrack();
                     makingTraks = true;
-                } else if (keyEvent.isControlDown()) {
+                } else if (keyEvent.isCtrlDown()) {
                     model.getCursor().setMode(Cursor.CursorMode.ERASING);
                     removeTrack();
                     makingTraks = false;
@@ -60,29 +50,29 @@ public class RailTrackMaker {
                     makingTraks = false;
                 }
                 break;
-            case PAGE_UP:
-                if (keyEvent.isControlDown()) {
+            case PageUp:
+                if (keyEvent.isCtrlDown()) {
                     mapPageLeft();
                 } else {
                     mapPageUp();
                 }
                 break;
-            case PAGE_DOWN:
-                if (keyEvent.isControlDown()) {
+            case PageDown:
+                if (keyEvent.isCtrlDown()) {
                     mapPageRight();
                 } else {
                     mapPageDown();
                 }
                 break;
-            case DOWN:
+            case ArrowDown:
                 model.getCursor().setMode(Cursor.CursorMode.MOVING);
                 cursorBackward();
                 makingTraks = false;
                 break;
-            case LEFT:
+            case ArrowLeft:
                 cursorTurnLeft();
                 break;
-            case RIGHT:
+            case ArrowRight:
                 cursorTurnRight();
                 break;
         }
@@ -289,36 +279,36 @@ public class RailTrackMaker {
 
     void mapPageDown() {
         view.clear();
-        Point p = view.getGridPositionInMap();
+        Point p = view.getMapScrollPage();
         p.setY(p.getY() + 1);
-        view.setGridPositionInMap(p);
+        view.setMapScrollPage(p);
         view.clear();
 
     }
 
     void mapPageLeft() {
         view.clear();
-        Point p = view.getGridPositionInMap();
+        Point p = view.getMapScrollPage();
         p.setX(p.getX() - 1);
-        view.setGridPositionInMap(p);
+        view.setMapScrollPage(p);
         view.clear();
 
     }
 
     void mapPageUp() {
         view.clear();
-        Point p = view.getGridPositionInMap();
+        Point p = view.getMapScrollPage();
         p.setY(p.getY() - 1);
-        view.setGridPositionInMap(p);
+        view.setMapScrollPage(p);
         view.clear();
 
     }
 
     void mapPageRight() {
         view.clear();
-        Point p = view.getGridPositionInMap();
+        Point p = view.getMapScrollPage();
         p.setX(p.getX() + 1);
-        view.setGridPositionInMap(p);
+        view.setMapScrollPage(p);
         view.clear();
 
     }

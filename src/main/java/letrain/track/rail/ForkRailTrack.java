@@ -2,10 +2,10 @@ package letrain.track.rail;
 
 import java.util.function.Consumer;
 
-import javafx.util.Pair;
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.map.ForkRouter;
+import letrain.utils.Pair;
 import letrain.visitor.Visitor;
 
 public class ForkRailTrack extends RailTrack implements DynamicRouter {

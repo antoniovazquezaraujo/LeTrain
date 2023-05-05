@@ -1,11 +1,11 @@
 package letrain.map;
 
-import javafx.util.Pair;
-
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import letrain.utils.Pair;
 
 public class SimpleRouter implements Serializable, Router {
 

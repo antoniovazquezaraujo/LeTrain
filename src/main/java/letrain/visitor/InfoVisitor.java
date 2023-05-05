@@ -1,23 +1,29 @@
 package letrain.visitor;
 
-import javafx.scene.paint.Color;
-import letrain.map.*;
+import com.googlecode.lanterna.TextColor;
+
+import letrain.map.Dir;
+import letrain.map.DynamicRouter;
+import letrain.map.Point;
+import letrain.map.RailMap;
+import letrain.map.Router;
 import letrain.mvp.Model;
+import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
 import letrain.track.Track;
-import letrain.track.rail.*;
+import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.RailTrack;
+import letrain.track.rail.StopRailTrack;
+import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Wagon;
 
-import java.text.DecimalFormat;
-import letrain.mvp.Model.GameMode;
-import static letrain.mvp.Model.GameMode.*;
-
 public class InfoVisitor implements Visitor {
-    private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
-    public static final Color FORK_COLOR = Color.grayRgb(180);
+    private static final TextColor RAIL_TRACK_COLOR = new TextColor.RGB(80, 80, 80);
+    public static final TextColor FORK_COLOR = new TextColor.RGB(180, 180, 180);
     String infoBarText = "";
     String helpBarText = "";
     private final View view;
@@ -30,14 +36,14 @@ public class InfoVisitor implements Visitor {
     public void visitModel(Model model) {
         infoBarText = "";
         switch (model.getMode()) {
-            case TRACKS:
+            case RAILS:
                 Point pos = model.getCursor().getPosition();
                 RailTrack track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
                 if (track != null) {
                     visitRailTrack(track);
                 }
                 break;
-            case LOCOMOTIVES:
+            case DRIVE:
                 Locomotive locomotive = model.getSelectedLocomotive();
                 if (locomotive != null) {
                     visitLocomotive(locomotive);
@@ -53,7 +59,7 @@ public class InfoVisitor implements Visitor {
                 break;
             case LOAD_TRAINS:
                 break;
-            case MAKE_TRAINS:
+            case TRAINS:
                 break;
         }
         visitCursor(model.getCursor());
@@ -62,32 +68,29 @@ public class InfoVisitor implements Visitor {
     }
 
     private String getModeHelp(GameMode mode) {
-        String ret = mode
-                + " (F1:tracks. F2:locomotives. F3:forks. F4:load train. F5:make train. F6:link. F7:unlink.)\n";
+        String ret = " r:rails d:drive f:forks t:trains l:link u:unlink esc:exit\n"
+                + mode + ": ";
         switch (mode) {
-            case TRACKS:
-                ret += "LEFT/RIGHT:rotate cursor. UP/DOWN:forward/backward. SHIFT+UP create rail. CTRL+UP: delete rail";
+            case MENU:
+                ret += " ";
                 break;
-            case LOCOMOTIVES:
-                ret += "SPACE:invert motor. UP/DOWN:inc/dec speed. LEFT/RIGHT:prev/next train. PAGE-U/D:map up/down. CTRL+PAGE-U/D:map left/right.";
+            case RAILS:
+                ret += "<:left >:right ^:forwd v:backwd shift+^:rail ctrl+^:del";
+                break;
+            case DRIVE:
+                ret += "<:prev >:next ^:accel v:decel space:reverse (pgup, pgdn, ctrl+pgup, ctrl+pgdn):move map";
                 break;
             case FORKS:
-                ret += "UP/DOWN:toggle fork. LEFT:previous fork. RIGHT:next fork.";
+                ret += "<:prev >:next space:toggle";
                 break;
-            case CREATE_LOAD_PLATFORM:
-                ret += "UP:create platform";
+            case TRAINS:
+                ret += "A-Z:locomotive a-z:wagon enter:end";
                 break;
-            case LOAD_TRAINS:
-                ret += "UP:load. DOWN:unload. LEFT:prev platform. RIGHT:next platform.";
+            case UNLINK:
+                ret += "<:back >:forwd ^:add v:del space:unlink";
                 break;
-            case MAKE_TRAINS:
-                ret += "[A-Z]:create locomotive. [a-z]:create wagon.";
-                break;
-            case DIVIDE_TRAINS:
-                ret += "UP/DOWN:select wagons. SPACE:divide train. DELETE:delete wagons.";
-                break;
-            case LINK_TRAINS:
-                ret += "UP/DOWN:select front/back. SPACE:link wagons.";
+            case LINK:
+                ret += "<:back >:forwd space:link";
                 break;
         }
         return ret;

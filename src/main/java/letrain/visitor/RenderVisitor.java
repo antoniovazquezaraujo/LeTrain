@@ -1,6 +1,8 @@
 package letrain.visitor;
 
-import javafx.scene.paint.Color;
+import com.googlecode.lanterna.Symbols;
+import com.googlecode.lanterna.TextColor;
+
 import letrain.map.Dir;
 import letrain.map.RailMap;
 import letrain.map.SimpleRouter;
@@ -18,9 +20,9 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Wagon;
 
 public class RenderVisitor implements Visitor {
-    private static final Color RAIL_TRACK_COLOR = Color.grayRgb(80);
-    public static final Color FORK_COLOR = Color.grayRgb(180);
-    public static final Color SELECTED_FORK_COLOR = Color.RED;
+    private static final TextColor RAIL_TRACK_COLOR = new TextColor.RGB(80, 80, 80);
+    public static final TextColor FORK_COLOR = new TextColor.RGB(80, 80, 80);
+    public static final TextColor SELECTED_FORK_COLOR = new TextColor.RGB(255, 0, 0);
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     private final View view;
@@ -69,7 +71,7 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitTrainFactoryRailTrack(TrainFactoryRailTrack track) {
-        view.setColor(Color.LIGHTBLUE);
+        view.setColor(TextColor.ANSI.BLUE_BRIGHT);
         view.set(track.getPosition().getX(), track.getPosition().getY(), "⎵");
     }
 
@@ -82,9 +84,9 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitLocomotive(Locomotive locomotive) {
         if (locomotive == selectedLocomotive) {
-            view.setColor(Color.RED);
+            view.setColor(TextColor.ANSI.RED);
         } else {
-            view.setColor(Color.LIGHTYELLOW);
+            view.setColor(TextColor.ANSI.YELLOW_BRIGHT);
         }
         if (locomotive.isShowingDir()) {
             view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(),
@@ -92,12 +94,12 @@ public class RenderVisitor implements Visitor {
         } else {
             view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), locomotive.getAspect());
         }
-        view.setColor(Color.BLUEVIOLET);
+        view.setColor(TextColor.ANSI.MAGENTA_BRIGHT);
         if (locomotive.getTrain() != null) {
             for (Linker linkerToJoin : locomotive.getTrain().getLinkersToJoin()) {
                 view.set(linkerToJoin.getPosition().getX(), linkerToJoin.getPosition().getY(), "░");
             }
-            view.setColor(Color.WHITE);
+            view.setColor(TextColor.ANSI.WHITE);
             for (Linker linkerToPreserve : locomotive.getTrain().getLinkersToRemove()) {
                 view.set(linkerToPreserve.getPosition().getX(), linkerToPreserve.getPosition().getY(), "░");
             }
@@ -107,13 +109,13 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitLinker(Linker linker) {
-        view.setColor(Color.AZURE);
+        view.setColor(TextColor.ANSI.YELLOW_BRIGHT);
         view.set(linker.getPosition().getX(), linker.getPosition().getY(), "?");
     }
 
     @Override
     public void visitWagon(Wagon wagon) {
-        view.setColor(Color.BROWN);
+        view.setColor(TextColor.ANSI.RED_BRIGHT);
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
     }
 
@@ -121,13 +123,13 @@ public class RenderVisitor implements Visitor {
     public void visitCursor(Cursor cursor) {
         switch (cursor.getMode()) {
             case DRAWING:
-                view.setColor(Color.LIGHTGREEN);
+                view.setColor(TextColor.ANSI.GREEN_BRIGHT);
                 break;
             case ERASING:
-                view.setColor(Color.ORANGERED);
+                view.setColor(TextColor.ANSI.RED_BRIGHT);
                 break;
             case MOVING:
-                view.setColor(Color.YELLOW);
+                view.setColor(TextColor.ANSI.YELLOW);
                 break;
         }
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
@@ -138,7 +140,7 @@ public class RenderVisitor implements Visitor {
         if (track.getRouter().isStraight()) {
             return dirGraphicAspect(track.getRouter().getFirstOpenDir());
         } else if (track.getRouter().isCurve()) {
-            return "∙";
+            return ".";
         } else {
             return getCrossAspect(track);
         }
@@ -151,7 +153,7 @@ public class RenderVisitor implements Visitor {
         switch (dir) {
             case E:
             case W:
-                return "−";
+                return "─";
             case NE:
             case SW:
                 return "/";
@@ -175,17 +177,17 @@ public class RenderVisitor implements Visitor {
             case W:
                 return "<";
             case NE:
-                return "⌝";
+                return "" + Symbols.SINGLE_LINE_TOP_RIGHT_CORNER;
             case SW:
-                return "⌞";
+                return "" + Symbols.SINGLE_LINE_BOTTOM_LEFT_CORNER;
             case N:
-                return "⌃";
+                return "^";
             case S:
-                return "⌄";
+                return "v";
             case NW:
-                return "⌜";
+                return "" + Symbols.SINGLE_LINE_TOP_LEFT_CORNER;
             case SE:
-                return "⌟";
+                return "" + Symbols.SINGLE_LINE_BOTTOM_RIGHT_CORNER;
         }
         return "?";
     }
