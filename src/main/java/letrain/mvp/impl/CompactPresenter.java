@@ -61,15 +61,8 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     }
 
     public void start() {
-        DefaultTerminalFactory defaultTerminalFactory = new DefaultTerminalFactory();
         try {
-            Terminal terminal = defaultTerminalFactory.createTerminal();
-            terminal.setCursorVisible(false);
-            this.screen = new TerminalScreen(terminal);
-            this.screen.setCursorPosition(null);
 
-            view.setScreen(this.screen);
-            this.screen.startScreen();
             KeyStroke stroke = null;
             model.setMode(MENU);
             while (true) {
@@ -88,7 +81,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 informer.visitModel(model);
                 view.paint();
                 model.moveLocomotives();
-                Thread.sleep(100);
+                Thread.sleep(50);
                 view.clear();
             }
         } catch (Exception e) {

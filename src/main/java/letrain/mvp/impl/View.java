@@ -2,6 +2,8 @@ package letrain.mvp.impl;
 
 import java.io.IOException;
 
+import com.googlecode.lanterna.Symbols;
+import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
@@ -9,36 +11,46 @@ import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
+import com.googlecode.lanterna.screen.TerminalScreen;
+import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
+import com.googlecode.lanterna.terminal.Terminal;
 
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
 
 public class View implements letrain.mvp.View {
     private final GameViewListener gameViewListener;
-    private Point position = new Point(0, 0); // scroll position of the viewer
     private Point mapScrollPage = new Point(0, 0);
-    private TextGraphics statusBar;
-    private TextGraphics infoBar;
-    private TextGraphics helpBar;
-    private TextGraphics mainGraphics;
     private Screen screen;
-    static TerminalSize terminalSize;
-    private static final int ROWS = 25;
-    private static final int COLS = 80;
+    private DefaultTerminalFactory terminalFactory;
+    private Terminal terminal;
+    private TerminalSize terminalSize;
+    private TextGraphics centralGraphics;
+    private TerminalPosition centralGraphicsPosition;
+    private TerminalSize centralGraphicsSize;
+    private TextGraphics bottomGraphics;
+    private TerminalPosition bottonGraphicsPosition;
+    private TerminalSize bottonGraphicsSize;
+
     private TextColor color;
 
     public View(GameViewListener gameViewListener) {
         this.gameViewListener = gameViewListener;
+        terminalFactory = new DefaultTerminalFactory();
+        try {
+            terminal = terminalFactory.createTerminal();
+            terminal.setCursorVisible(false);
+            setScreen(createScreen(terminal));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        terminalSize = screen.getTerminalSize();
 
-        // statusBar = new Text();
-        // infoBar = new Text();
-        // helpBar = new Text();
+        centralGraphics = screen.newTextGraphics();
+        bottomGraphics = screen.newTextGraphics();
 
-        // setBottom(bottomBox);
-        // this.setFocusTraversable(true);
-        // clear();
-        // addEventListener();
-        // this.requestFocus();
+        recalculateSizes(terminalSize);
+
     }
 
     public void setScreen(Screen screen) {
@@ -84,11 +96,22 @@ public class View implements letrain.mvp.View {
     }
 
     public void setHelpBarText(String text) {
-        // helpBar.setText(text);
+        String[] lines = text.split("\n");
+        bottomGraphics.putString(bottonGraphicsPosition.withRelative(1, 1), lines[0]);
+        bottomGraphics.putString(bottonGraphicsPosition.withRelative(1, 2), lines[1]);
     }
 
     @Override
     public void paint() {
+        TerminalSize changedSize = screen.doResizeIfNecessary();
+        if (changedSize != null) {
+            terminalSize = changedSize;
+            recalculateSizes(terminalSize);
+            centralGraphics.fillRectangle(centralGraphicsPosition, centralGraphicsSize, ' ');
+        }
+        // drawBox(centralGraphics, centralGraphicsPosition, terminalSize);
+        drawBox(bottomGraphics, bottonGraphicsPosition, bottonGraphicsSize);
+
         try {
             this.screen.refresh();
             Thread.yield();
@@ -97,23 +120,20 @@ public class View implements letrain.mvp.View {
         }
     }
 
-    public void resizePartsIfNecessary() {
-        TerminalSize newSize = this.screen.doResizeIfNecessary();
-        if (newSize != null) {
-            terminalSize = newSize;
-            // labelTextGraphics = screen.newTextGraphics();
-            // lineTextGraphics = screen.newTextGraphics();
-            // TerminalPosition upLeft = new TerminalPosition(1, 1);
-            // baseTextGraphics = baseTextGraphics.newTextGraphics(upLeft,
-            // terminalSize.withRelativeRows(terminalSize.getRows()));
-        }
+    //////////////////////////////////////////
+
+    public int getCols() {
+        return centralGraphicsSize.getColumns();
     }
 
-    //////////////////////////////////////////
+    public int getRows() {
+        return centralGraphicsSize.getRows() - 2;
+    }
+
     public void set(int x, int y, String c) {
-        x -= mapScrollPage.getX() * COLS;
-        y -= mapScrollPage.getY() * ROWS;
-        if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
+        x -= mapScrollPage.getX() * getCols();
+        y -= mapScrollPage.getY() * getRows();
+        if (x >= 0 && x < getCols() && y >= 0 && y < getRows()) {
             screen.setCharacter(x, y, TextCharacter.fromCharacter(c.charAt(0), this.color, TextColor.ANSI.BLACK)[0]);
         }
     }
@@ -126,11 +146,11 @@ public class View implements letrain.mvp.View {
     @Override
     public void setPageOfPos(int x, int y) {
         if (x < 0)
-            x -= COLS;
+            x -= getCols();
         if (y < 0)
-            y -= ROWS;
-        int pageX = x / COLS;
-        int pageY = y / ROWS;
+            y -= getRows();
+        int pageX = x / getCols();
+        int pageY = y / getRows();
         setMapScrollPage(new Point(pageX, pageY));
     }
 
@@ -162,7 +182,40 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void clear() {
-        this.screen.clear();
+        bottomGraphics.fillRectangle(bottonGraphicsPosition, bottonGraphicsSize, ' ');
+        centralGraphics.fillRectangle(centralGraphicsPosition, centralGraphicsSize, ' ');
     }
 
+    void recalculateSizes(TerminalSize terminalSize) {
+        centralGraphicsSize = new TerminalSize(terminalSize.getColumns(), terminalSize.getRows() - 2);
+        centralGraphicsPosition = TerminalPosition.TOP_LEFT_CORNER;
+        bottonGraphicsSize = new TerminalSize(terminalSize.getColumns(), 4);
+        bottonGraphicsPosition = new TerminalPosition(0, terminalSize.getRows() - 4);
+    }
+
+    Screen createScreen(Terminal terminal) throws IOException {
+        Screen screen;
+        screen = new TerminalScreen(terminal);
+        screen.startScreen();
+        screen.setCursorPosition(null);
+        return screen;
+    }
+
+    public static void drawBox(TextGraphics textGraphics, TerminalPosition topLeft, TerminalSize size) {
+        TerminalPosition topRight = topLeft.withRelativeColumn(size.getColumns() - 1);
+        TerminalPosition bottomLeft = topLeft.withRelativeRow(size.getRows() - 1);
+        TerminalPosition bottomRight = bottomLeft.withRelativeColumn(size.getColumns() - 1);
+
+        textGraphics.drawLine(topLeft.withRelative(1, 0), topRight.withRelative(-1, 0), Symbols.SINGLE_LINE_HORIZONTAL);
+        textGraphics.drawLine(bottomLeft.withRelative(1, 0), bottomRight.withRelative(-1, 0),
+                Symbols.SINGLE_LINE_HORIZONTAL);
+        textGraphics.drawLine(topLeft.withRelative(0, 1), bottomLeft.withRelative(0, -1), Symbols.SINGLE_LINE_VERTICAL);
+        textGraphics.drawLine(topRight.withRelative(0, 1), bottomRight.withRelative(0, -1),
+                Symbols.SINGLE_LINE_VERTICAL);
+
+        textGraphics.setCharacter(topLeft, Symbols.SINGLE_LINE_TOP_LEFT_CORNER);
+        textGraphics.setCharacter(topRight, Symbols.SINGLE_LINE_TOP_RIGHT_CORNER);
+        textGraphics.setCharacter(bottomLeft, Symbols.SINGLE_LINE_BOTTOM_LEFT_CORNER);
+        textGraphics.setCharacter(bottomRight, Symbols.SINGLE_LINE_BOTTOM_RIGHT_CORNER);
+    }
 }

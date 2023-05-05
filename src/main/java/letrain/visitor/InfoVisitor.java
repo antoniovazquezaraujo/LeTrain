@@ -68,32 +68,29 @@ public class InfoVisitor implements Visitor {
     }
 
     private String getModeHelp(GameMode mode) {
-        String ret = mode
-                + " (r:Rails d:Drive f:Forks t:Trains l:link u:unlink Esc:Menu)\n";
+        String ret = " r:rails d:drive f:forks t:trains l:link u:unlink esc:exit\n"
+                + mode + ": ";
         switch (mode) {
+            case MENU:
+                ret += " ";
+                break;
             case RAILS:
-                ret += "LEFT/RIGHT:rotate cursor. UP/DOWN:forward/backward. SHIFT+UP create rail. CTRL+UP: delete rail";
+                ret += "<:left >:right ^:forwd v:backwd shift+^:rail ctrl+^:del";
                 break;
             case DRIVE:
-                ret += "SPACE:invert motor. UP/DOWN:inc/dec speed. LEFT/RIGHT:prev/next train. PAGE-U/D:map up/down. CTRL+PAGE-U/D:map left/right.";
+                ret += "<:prev >:next ^:accel v:decel space:reverse (pgup, pgdn, ctrl+pgup, ctrl+pgdn):move map";
                 break;
             case FORKS:
-                ret += "UP/DOWN:toggle fork. LEFT:previous fork. RIGHT:next fork.";
-                break;
-            case CREATE_LOAD_PLATFORM:
-                ret += "UP:create platform";
-                break;
-            case LOAD_TRAINS:
-                ret += "UP:load. DOWN:unload. LEFT:prev platform. RIGHT:next platform.";
+                ret += "<:prev >:next space:toggle";
                 break;
             case TRAINS:
-                ret += "[A-Z]:create locomotive. [a-z]:create wagon.";
+                ret += "A-Z:locomotive a-z:wagon enter:end";
                 break;
             case UNLINK:
-                ret += "UP/DOWN:select wagons. SPACE:divide train. DELETE:delete wagons.";
+                ret += "<:back >:forwd ^:add v:del space:unlink";
                 break;
             case LINK:
-                ret += "UP/DOWN:select front/back. SPACE:link wagons.";
+                ret += "<:back >:forwd space:link";
                 break;
         }
         return ret;
