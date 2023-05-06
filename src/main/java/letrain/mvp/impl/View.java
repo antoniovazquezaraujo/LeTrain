@@ -2,6 +2,7 @@ package letrain.mvp.impl;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.googlecode.lanterna.Symbols;
@@ -18,7 +19,6 @@ import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
 
-import org.slf4j.Logger;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
 
@@ -126,8 +126,6 @@ public class View implements letrain.mvp.View {
             e.printStackTrace();
         }
     }
-
-    //////////////////////////////////////////
 
     public int getCols() {
         return centralGraphicsSize.getColumns();
