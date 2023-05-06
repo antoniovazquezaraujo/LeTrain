@@ -17,7 +17,9 @@ public interface View {
 
     void set(int x, int y, String c);
 
-    void setColor(TextColor color);
+    void setFgColor(TextColor color);
+
+    void setBgColor(TextColor color);
 
     void setPageOfPos(int x, int y);
 
