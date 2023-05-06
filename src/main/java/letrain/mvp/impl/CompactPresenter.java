@@ -8,7 +8,6 @@ import static letrain.mvp.Model.GameMode.RAILS;
 import static letrain.mvp.Model.GameMode.TRAINS;
 import static letrain.mvp.Model.GameMode.UNLINK;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -16,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
-import com.googlecode.lanterna.screen.TerminalScreen;
 
 import letrain.map.Dir;
 import letrain.map.Point;
@@ -46,7 +44,6 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     private final InfoVisitor informer;
 
     RailTrackMaker maker;
-    private TerminalScreen screen;
 
     public CompactPresenter() {
         this(null);
@@ -90,16 +87,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             }
         } catch (Exception e) {
             log.error("Error in main loop", e);
-        } finally {
-            if (this.screen != null) {
-                try {
-                    this.screen.close();
-                } catch (IOException e) {
-                    log.error("Error closing screen", e);
-                }
-            }
         }
-
     }
 
     /***********************************************************
