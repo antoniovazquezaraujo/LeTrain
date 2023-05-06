@@ -29,8 +29,8 @@ public class RailTrackMakerTest {
                 track.addRoute(from, to);
                 fork.addRoute(from, toTurnedLeft);
                 maker.addTrackConnectionsToFork(track, fork);
-                System.out.println("T:" + track);
-                System.out.println("F:" + fork);
+                // System.out.println("T:" + track);
+                // System.out.println("F:" + fork);
 
         }
 }

@@ -235,7 +235,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                     if (nextTrack.canEnter(next.getDir().inverse(), next)) {
                         nextTrack.enterLinkerFromDir(next.getDir().inverse(), next);
                     } else {
-                        System.out.println("NO PUEDO ENTRAR AQUÍ !!!");
+                        // System.out.println("NO PUEDO ENTRAR AQUÍ !!!");
                         return false;
                     }
                 } else {
@@ -243,7 +243,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                     return false;
                 }
             } else {
-                System.out.println("Ojo, no hay track en " + track.getPosition() + " -> " + next.getDir());
+                // System.out.println("Ojo, no hay track en " + track.getPosition() + " -> " +
+                // next.getDir());
                 return false;
             }
         }
@@ -251,7 +252,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     private void crash(Linker linker) {
-        System.out.println("Choque de :" + linker);
+        // System.out.println("Choque de :" + linker);
     }
 
     public Linker getFirstLinker() {

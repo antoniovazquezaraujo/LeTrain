@@ -2,6 +2,8 @@ package letrain.mvp.impl;
 
 import java.io.IOException;
 
+import org.slf4j.LoggerFactory;
+
 import com.googlecode.lanterna.Symbols;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
@@ -15,10 +17,12 @@ import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
 
+import org.slf4j.Logger;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
 
 public class View implements letrain.mvp.View {
+    Logger log = LoggerFactory.getLogger(View.class);
     private final GameViewListener gameViewListener;
     private Point mapScrollPage = new Point(0, 0);
     private Screen screen;
@@ -109,7 +113,6 @@ public class View implements letrain.mvp.View {
             recalculateSizes(terminalSize);
             centralGraphics.fillRectangle(centralGraphicsPosition, centralGraphicsSize, ' ');
         }
-        // drawBox(centralGraphics, centralGraphicsPosition, terminalSize);
         drawBox(bottomGraphics, bottonGraphicsPosition, bottonGraphicsSize);
 
         try {
@@ -134,7 +137,8 @@ public class View implements letrain.mvp.View {
         x -= mapScrollPage.getX() * getCols();
         y -= mapScrollPage.getY() * getRows();
         if (x >= 0 && x < getCols() && y >= 0 && y < getRows()) {
-            screen.setCharacter(x, y, TextCharacter.fromCharacter(c.charAt(0), this.color, TextColor.ANSI.BLACK)[0]);
+            centralGraphics.setCharacter(x, y,
+                    TextCharacter.fromCharacter(c.charAt(0), this.color, TextColor.ANSI.BLACK)[0]);
         }
     }
 

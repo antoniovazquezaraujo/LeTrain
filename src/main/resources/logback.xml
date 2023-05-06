@@ -1,17 +1,6 @@
-<!-- <?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
-
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{5} - %msg%n
-            </pattern>
-        </encoder>
-    </appender>
-    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="CONSOLE" />
-    </appender>
-
     <appender name="FILE"
         class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/.LeTrain.log
@@ -22,7 +11,7 @@
         </encoder>
 
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <FileNamePattern>${user.home}/.LeTrain.log.zip
+            <FileNamePattern>${user.home}/.LeTrain.%i.log.zip
             </FileNamePattern>
             <MinIndex>1</MinIndex>
             <MaxIndex>10</MaxIndex>
@@ -40,12 +29,10 @@
 
     <root level="WARN">
         <appender-ref ref="ASYNC_FILE" />
-        <appender-ref ref="ASYNC_CONSOLE" />
     </root>
 
     <logger name="letrain" level="INFO" additivity="false">
         <appender-ref ref="ASYNC_FILE" />
-        <appender-ref ref="ASYNC_CONSOLE" />
     </logger>
 
     <logger name="ErrorFileLogger" level="ERROR">
@@ -55,18 +42,8 @@
     <logger name="ch.qos.logback" level="ERROR">
         <appender-ref ref="FILE" />
     </logger>
-
-</configuration> -->
-
-
-<configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
-
     <root level="debug">
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
     </root>
+
 </configuration>

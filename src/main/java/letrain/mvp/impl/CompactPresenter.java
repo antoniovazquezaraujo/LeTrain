@@ -124,27 +124,33 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     @Override
     public void onChar(KeyStroke keyEvent) {
-        if (keyEvent.getKeyType() == KeyType.Character) {
-            switch (keyEvent.getCharacter()) {
-                case 'r':
-                    model.setMode(RAILS);
-                    break;
-                case 'd':
-                    model.setMode(DRIVE);
-                    break;
-                case 'f':
-                    model.setMode(FORKS);
-                    break;
-                case 't':
-                    model.setMode(TRAINS);
-                    newTrain = null;
-                    break;
-                case 'l':
-                    model.setMode(LINK);
-                    break;
-                case 'u':
-                    model.setMode(UNLINK);
-                    break;
+        if (keyEvent.getKeyType() == KeyType.Enter) {
+            model.setMode(MENU);
+        } else if (keyEvent.getKeyType() == KeyType.Character) {
+            if (model.getMode() == TRAINS) {
+                trainManagerOnChar(keyEvent);
+            } else {
+                switch (keyEvent.getCharacter()) {
+                    case 'r':
+                        model.setMode(RAILS);
+                        break;
+                    case 'd':
+                        model.setMode(DRIVE);
+                        break;
+                    case 'f':
+                        model.setMode(FORKS);
+                        break;
+                    case 't':
+                        model.setMode(TRAINS);
+                        newTrain = null;
+                        break;
+                    case 'l':
+                        model.setMode(LINK);
+                        break;
+                    case 'u':
+                        model.setMode(UNLINK);
+                        break;
+                }
             }
         }
 
@@ -159,7 +165,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 forkManagerOnChar(keyEvent);
                 break;
             case TRAINS:
-                trainManagerOnChar(keyEvent);
+                // trainManagerOnChar(keyEvent);
                 break;
             case LINK:
                 linkerOnChar(keyEvent);
@@ -198,10 +204,10 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void linkerOnChar(KeyStroke keyEvent) {
         switch (keyEvent.getKeyType()) {
-            case ArrowUp:
+            case ArrowLeft:
                 selectVehiclesInFront();
                 break;
-            case ArrowDown:
+            case ArrowRight:
                 selectVehiclesAtBack();
                 break;
             case Character:
@@ -217,10 +223,6 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             return;
         }
         String c = keyEvent.getCharacter().toString();
-        if (keyEvent.getKeyType() == KeyType.Tab) {
-            model.setMode(MENU);
-            return;
-        }
         if (c.isEmpty()) {
             return;
         }

@@ -97,11 +97,15 @@ public class RenderVisitor implements Visitor {
         view.setColor(TextColor.ANSI.MAGENTA_BRIGHT);
         if (locomotive.getTrain() != null) {
             for (Linker linkerToJoin : locomotive.getTrain().getLinkersToJoin()) {
-                view.set(linkerToJoin.getPosition().getX(), linkerToJoin.getPosition().getY(), "░");
+                if (linkerToJoin != null) {
+                    view.set(linkerToJoin.getPosition().getX(), linkerToJoin.getPosition().getY(), "X");// "░");
+                }
             }
             view.setColor(TextColor.ANSI.WHITE);
             for (Linker linkerToPreserve : locomotive.getTrain().getLinkersToRemove()) {
-                view.set(linkerToPreserve.getPosition().getX(), linkerToPreserve.getPosition().getY(), "░");
+                if (linkerToPreserve != null) {
+                    view.set(linkerToPreserve.getPosition().getX(), linkerToPreserve.getPosition().getY(), "O");// "░");
+                }
             }
         }
 
@@ -140,7 +144,7 @@ public class RenderVisitor implements Visitor {
         if (track.getRouter().isStraight()) {
             return dirGraphicAspect(track.getRouter().getFirstOpenDir());
         } else if (track.getRouter().isCurve()) {
-            return ".";
+            return "·";
         } else {
             return getCrossAspect(track);
         }

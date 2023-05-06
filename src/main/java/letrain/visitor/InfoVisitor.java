@@ -87,10 +87,10 @@ public class InfoVisitor implements Visitor {
                 ret += "A-Z:locomotive a-z:wagon enter:end";
                 break;
             case UNLINK:
-                ret += "<:back >:forwd ^:add v:del space:unlink";
+                ret += "<:front >:back ^:add v:del space:unlink";
                 break;
             case LINK:
-                ret += "<:back >:forwd space:link";
+                ret += "<:front >:back space:link";
                 break;
         }
         return ret;
