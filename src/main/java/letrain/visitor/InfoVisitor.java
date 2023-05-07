@@ -89,7 +89,7 @@ public class InfoVisitor implements Visitor {
                 ret += "<:front >:back ^:add v:del space:unlink";
                 break;
             case LINK:
-                ret += "<:front >:back space:link";
+                ret += "^:front v:back space:link";
                 break;
         }
         return ret;

@@ -49,9 +49,9 @@ public class RenderVisitor implements Visitor {
         model.getForks().forEach(t -> t.accept(this));
         model.getWagons().forEach(t -> t.accept(this));
         model.getLocomotives().forEach(t -> t.accept(this));
-        if (model.getMode() == GameMode.RAILS) {
-            visitCursor(model.getCursor());
-        }
+        // if (model.getMode() == GameMode.RAILS) {
+        visitCursor(model.getCursor());
+        // }
     }
 
     @Override

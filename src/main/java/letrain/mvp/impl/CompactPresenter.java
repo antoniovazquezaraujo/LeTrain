@@ -200,10 +200,10 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void linkerOnChar(KeyStroke keyEvent) {
         switch (keyEvent.getKeyType()) {
-            case ArrowLeft:
+            case ArrowUp:
                 selectVehiclesInFront();
                 break;
-            case ArrowRight:
+            case ArrowDown:
                 selectVehiclesAtBack();
                 break;
             case Character:
@@ -227,12 +227,29 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             return;
         }
         RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition());
-        if (c.toUpperCase().equals(c)) {
-            createLocomotive(model.getCursor().getDir(), c, track);
-        } else {
-            createWagon(model.getCursor().getDir(), c, track);
+        if (track.getLinker() != null) {
+            log.warn("Can't add a train to a track with a linker");
+            return;
         }
-        model.getCursor().getPosition().move(Dir.E);
+        Dir cursorDir = Dir.E;
+        if (c.toUpperCase().equals(c)) {
+            Locomotive locomotive = new Locomotive(c);
+            Train train = new Train();
+            train.pushBack(locomotive);
+            train.setDirectorLinker(locomotive);
+            model.addLocomotive(locomotive);
+            track.enterLinkerFromDir(model.getCursor().getDir().inverse(), locomotive);
+            cursorDir = locomotive.getDir();
+        } else {
+            Wagon wagon = new Wagon(c);
+            model.addWagon(wagon);
+            track.enterLinkerFromDir(model.getCursor().getDir().inverse(), wagon);
+            cursorDir = wagon.getDir();
+        }
+        Point newPos = new Point(model.getCursor().getPosition());
+        newPos.move(cursorDir, 1);
+        model.getCursor().setDir(cursorDir);
+        model.getCursor().setPosition(newPos);
     }
 
     private void forkManagerOnChar(KeyStroke keyEvent) {

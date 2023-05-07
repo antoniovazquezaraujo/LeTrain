@@ -324,9 +324,18 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             Linker nextLinker = iterator.getTrack().getLinker();
             if (nextLinker != null && this != nextLinker.getTrain()) {
                 while (nextLinker != null) {
-                    linkersToJoin.add(nextLinker);
+                    if (nextLinker.getTrain() != this) {
+                        linkersToJoin.add(nextLinker);
+                    }
+                    log.debug(
+                            "Antes- Iterator dir: " + iterator.getDir() + " pos:" + iterator.getPosition() + " track: "
+                                    + iterator.getTrack());
                     iterator.advance();
+                    log.debug("Después- Iterator dir: " + iterator.getDir() + " pos:" + iterator.getPosition()
+                            + " track: "
+                            + iterator.getTrack());
                     nextLinker = iterator.getTrack().getLinker();
+                    log.debug("setLinkersToJoin: nextLinker despues de avanzar: " + nextLinker);
                 }
             }
         }
@@ -455,24 +464,47 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         return this.linkersToRemove;
     }
 
-    Dir getLinkDir(Linker linker) {
+    // Devuelve la dirección en la que hay un linker que no pertenece al tren
+    Dir getLinkDir2(Linker linker) {
         Dir linkerDir = linker.getDir();
-        Dir resultDir = linker.getTrack().getDir(linkerDir);
-        Train train = getAdjacentTrain(linker, resultDir);
+        Dir resultDir = linkerDir;
+        Train train = getAdjacentTrain(linker, linkerDir);
         try {
-            if (train != null && train != linker.getTrain()) {
+            if (train != this) {
                 return resultDir;
             }
             resultDir = linker.getTrack().getDir(resultDir);
             train = getAdjacentTrain(linker, resultDir);
-            if (train != null && train != linker.getTrain()) {
+            if (train != this) {
                 return resultDir;
             }
+            log.error("Error getting link dir:" + resultDir + " train:" + train);
             return null;
         } catch (Exception e) {
             log.error("Error getting link dir", e);
             return null;
         }
+    }
+
+    Dir getLinkDir(Linker linker) {
+        Dir linkerDir = linker.getDir();
+        Linker adjacentLinker = getAdjacentLinker(linker, linkerDir);
+        if (adjacentLinker != null && adjacentLinker.getTrain() != this) {
+            return linkerDir;
+        }
+        linkerDir = linker.getTrack().getDir(linkerDir);
+        adjacentLinker = getAdjacentLinker(linker, linkerDir);
+        if (adjacentLinker != null && adjacentLinker.getTrain() != this) {
+            return linkerDir;
+        }
+        return null;
+    }
+
+    Linker getAdjacentLinker(Linker linker, Dir dir) {
+        if (linker.getTrack().getConnected(dir) != null) {
+            return linker.getTrack().getConnected(dir).getLinker();
+        }
+        return null;
     }
 
     Train getAdjacentTrain(Linker linker, Dir dir) {
