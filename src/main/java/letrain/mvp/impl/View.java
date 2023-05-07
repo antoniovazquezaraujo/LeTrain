@@ -2,11 +2,15 @@ package letrain.mvp.impl;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.googlecode.lanterna.Symbols;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.TextColor.ANSI;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -19,6 +23,7 @@ import letrain.map.Point;
 import letrain.mvp.GameViewListener;
 
 public class View implements letrain.mvp.View {
+    Logger log = LoggerFactory.getLogger(View.class);
     private final GameViewListener gameViewListener;
     private Point mapScrollPage = new Point(0, 0);
     private Screen screen;
@@ -32,7 +37,8 @@ public class View implements letrain.mvp.View {
     private TerminalPosition bottonGraphicsPosition;
     private TerminalSize bottonGraphicsSize;
 
-    private TextColor color;
+    private TextColor fgColor;
+    private TextColor bgColor;
 
     public View(GameViewListener gameViewListener) {
         this.gameViewListener = gameViewListener;
@@ -48,6 +54,8 @@ public class View implements letrain.mvp.View {
 
         centralGraphics = screen.newTextGraphics();
         bottomGraphics = screen.newTextGraphics();
+        this.fgColor = ANSI.WHITE;
+        this.bgColor = ANSI.BLACK;
 
         recalculateSizes(terminalSize);
 
@@ -109,7 +117,6 @@ public class View implements letrain.mvp.View {
             recalculateSizes(terminalSize);
             centralGraphics.fillRectangle(centralGraphicsPosition, centralGraphicsSize, ' ');
         }
-        // drawBox(centralGraphics, centralGraphicsPosition, terminalSize);
         drawBox(bottomGraphics, bottonGraphicsPosition, bottonGraphicsSize);
 
         try {
@@ -119,8 +126,6 @@ public class View implements letrain.mvp.View {
             e.printStackTrace();
         }
     }
-
-    //////////////////////////////////////////
 
     public int getCols() {
         return centralGraphicsSize.getColumns();
@@ -134,13 +139,18 @@ public class View implements letrain.mvp.View {
         x -= mapScrollPage.getX() * getCols();
         y -= mapScrollPage.getY() * getRows();
         if (x >= 0 && x < getCols() && y >= 0 && y < getRows()) {
-            screen.setCharacter(x, y, TextCharacter.fromCharacter(c.charAt(0), this.color, TextColor.ANSI.BLACK)[0]);
+            centralGraphics.setCharacter(x, y, TextCharacter.fromCharacter(c.charAt(0), this.fgColor, bgColor)[0]);
         }
     }
 
     @Override
-    public void setColor(TextColor color) {
-        this.color = color;
+    public void setFgColor(TextColor color) {
+        this.fgColor = color;
+    }
+
+    @Override
+    public void setBgColor(TextColor color) {
+        this.bgColor = color;
     }
 
     @Override

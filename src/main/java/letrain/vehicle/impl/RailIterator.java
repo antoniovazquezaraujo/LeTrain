@@ -2,6 +2,9 @@ package letrain.vehicle.impl;
 
 import java.util.Iterator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import letrain.map.Dir;
 import letrain.map.Mapeable;
 import letrain.map.Point;
@@ -11,7 +14,7 @@ import letrain.track.Trackeable;
 import letrain.vehicle.Transportable;
 
 public class RailIterator implements Transportable, Trackeable, Rotable, Mapeable {
-
+    Logger log = LoggerFactory.getLogger(RailIterator.class);
     Point position;
     Dir dir;
     Track track;
@@ -25,11 +28,14 @@ public class RailIterator implements Transportable, Trackeable, Rotable, Mapeabl
     @Override
     public boolean advance() {
         Track track = getTrack();
-        Dir nextDir = track.getDir(getDir().inverse());
+        Dir nextDir = getDir();
         Track nextTrack = track.getConnected(nextDir);
+        if (nextTrack == null) {
+            log.error("No track connected to " + track + " in direction " + nextDir);
+            return false;
+        }
         setTrack(nextTrack);
         setPosition(nextTrack.getPosition());
-        // This is wrong, but it works for now
         setDir(nextTrack.getDir(nextDir.inverse()));
         return true;
     }

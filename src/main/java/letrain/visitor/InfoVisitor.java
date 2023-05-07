@@ -22,8 +22,7 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Wagon;
 
 public class InfoVisitor implements Visitor {
-    private static final TextColor RAIL_TRACK_COLOR = new TextColor.RGB(80, 80, 80);
-    public static final TextColor FORK_COLOR = new TextColor.RGB(180, 180, 180);
+
     String infoBarText = "";
     String helpBarText = "";
     private final View view;
@@ -87,10 +86,10 @@ public class InfoVisitor implements Visitor {
                 ret += "A-Z:locomotive a-z:wagon enter:end";
                 break;
             case UNLINK:
-                ret += "<:back >:forwd ^:add v:del space:unlink";
+                ret += "<:front >:back ^:add v:del space:unlink";
                 break;
             case LINK:
-                ret += "<:back >:forwd space:link";
+                ret += "^:front v:back space:link";
                 break;
         }
         return ret;
