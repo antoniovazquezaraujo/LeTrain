@@ -75,4 +75,6 @@ public interface Model {
             return name;
         }
     }
+
+    void selectFork(int id);
 }

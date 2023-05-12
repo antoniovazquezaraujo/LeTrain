@@ -139,7 +139,10 @@ public class View implements letrain.mvp.View {
         x -= mapScrollPage.getX() * getCols();
         y -= mapScrollPage.getY() * getRows();
         if (x >= 0 && x < getCols() && y >= 0 && y < getRows()) {
-            centralGraphics.setCharacter(x, y, TextCharacter.fromCharacter(c.charAt(0), this.fgColor, bgColor)[0]);
+            for (int i = 0; i < c.length(); i++) {
+                centralGraphics.setCharacter(x + i, y,
+                        TextCharacter.fromCharacter(c.charAt(i), this.fgColor, bgColor)[0]);
+            }
         }
     }
 

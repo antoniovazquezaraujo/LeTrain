@@ -34,6 +34,7 @@ public class RenderVisitor implements Visitor {
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     private final View view;
+    private GameMode mode;
 
     public RenderVisitor(View view) {
         this.view = view;
@@ -43,6 +44,7 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitModel(Model model) {
+        this.mode = model.getMode();
         selectedLocomotive = model.getSelectedLocomotive();
         selectedFork = model.getSelectedFork();
         model.getRailMap().accept(this);
@@ -79,6 +81,10 @@ public class RenderVisitor implements Visitor {
             view.setFgColor(FORK_COLOR);
         }
         view.set(track.getPosition().getX(), track.getPosition().getY(), dirGraphicAspect(track.getFirstOpenDir()));
+        if (this.mode == GameMode.FORKS) {
+            view.set(track.getPosition().getX() + 1, track.getPosition().getY(), "" + track.getId());
+        }
+
     }
 
     @Override

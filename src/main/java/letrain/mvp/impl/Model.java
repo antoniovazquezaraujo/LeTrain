@@ -117,6 +117,15 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.selectedFork = selectedFork;
     }
 
+    public void selectFork(int id) {
+        for (ForkRailTrack fork : getForks()) {
+            if (fork.getId() == id) {
+                selectedFork = fork;
+                break;
+            }
+        }
+    }
+
     @Override
     public void selectNextFork() {
         if (getForks().isEmpty()) {
