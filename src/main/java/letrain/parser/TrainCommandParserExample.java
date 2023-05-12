@@ -2,13 +2,16 @@ package letrain.parser;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 
 public class TrainCommandParserExample {
+    static Logger log = LoggerFactory.getLogger(TrainCommandParserExample.class);
 
     public static void main(String[] args) throws IOException {
-        CharStream codePointCharStream = CharStreams.fromFileName("commands.txt");
+        CharStream input = CharStreams.fromFileName("commands.txt");
         TrainCommandLexer lexer = new TrainCommandLexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         TrainCommandParser parser = new TrainCommandParser(tokens);
@@ -23,16 +26,19 @@ public class TrainCommandParserExample {
                 switch (command) {
                     case "semaphore":
                         String semaphoreCommand = ctx.getChild(2).getText();
-                        System.out.println("Semaphore " + id + " " + semaphoreCommand);
+                        String semaphorePosition = ctx.getChild(3).getText();
+                        System.out.println("semaphoreCommand: {}" + semaphoreCommand + ", " + semaphorePosition);
                         break;
                     case "fork":
                         String forkPosition = ctx.getChild(3).getText();
-                        System.out.println("Fork " + id + " " + forkPosition);
+                        String forkCommand = ctx.getChild(2).getText();
+                        System.out.println("forkCommand: {}" + forkCommand + ", " + forkPosition);
                         break;
                     case "train":
                         String trainCommand = ctx.getChild(2).getText();
                         String trainValue = ctx.getChild(3).getText();
-                        System.out.println("Train " + trainCommand + " " + trainValue);
+                        System.out.println("trainCommand: {}" + trainCommand + ", " + trainValue);
+
                         break;
                 }
             }
