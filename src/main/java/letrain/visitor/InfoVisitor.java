@@ -76,7 +76,7 @@ public class InfoVisitor implements Visitor {
                 ret += "escape:exit ";
                 break;
             case RAILS:
-                ret += "<:left >:right ^:forwd v:backwd shift+^:rail ctrl+^:del";
+                ret += "<:left >:right ^:forwd v:backwd shift+^:rail ctrl+^:del insert:add sensor delete:delete sensor";
                 break;
             case DRIVE:
                 ret += "<:prev >:next ^:accel v:decel space:reverse (pgup, pgdn, ctrl+pgup, ctrl+pgdn):move map";

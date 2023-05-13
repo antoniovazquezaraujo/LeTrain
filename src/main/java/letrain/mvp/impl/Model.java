@@ -1,19 +1,23 @@
 package letrain.mvp.impl;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.RailMap;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
+import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-
 public class Model implements Serializable, letrain.mvp.Model {
-
+    Logger log = LoggerFactory.getLogger(Model.class);
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     private int selectedLocomotiveIndex;
@@ -56,6 +60,18 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     public void addSensor(Sensor sensor) {
+        sensor.addSensorEventListener(new SensorEventListener() {
+
+            @Override
+            public void onExitTrain(Train train) {
+                log.debug("Train " + train + " exited sensor " + sensor);
+            }
+
+            @Override
+            public void onEnterTrain(Train train) {
+                log.debug("Train " + train + " entered sensor " + sensor);
+            }
+        });
         sensors.add(sensor);
     }
 

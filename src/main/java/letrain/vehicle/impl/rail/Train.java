@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import letrain.map.Dir;
+import letrain.mvp.impl.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Transportable;
@@ -30,6 +31,9 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     protected final Deque<Linker> linkersToJoin;
     int numLinkersToRemove = 0;
     protected final Deque<Linker> linkersToRemove;
+    static int numTrainsCreated = 0;
+
+    int id;
 
     enum LinkersSense {
         FRONT, BACK
@@ -41,10 +45,19 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     protected Tractor directorLinker;
 
     public Train() {
+        setId(++numTrainsCreated);
         this.linkers = new LinkedList<>();
         this.tractors = new ArrayList<>();
         this.linkersToJoin = new LinkedList<>();
         this.linkersToRemove = new LinkedList<>();
+    }
+
+    public int getId() {
+        return this.id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     /***********************************************************
@@ -221,11 +234,17 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     private boolean moveLinkers(boolean isNormalSense) {
+        Linker firstLinker = getLinkers().getFirst();
+        Linker lastLinker = getLinkers().getLast();
         Iterator<Linker> iterator;
         if (isNormalSense && !getDirectorLinker().isReversed()) {
             iterator = getLinkers().iterator();
+            firstLinker = getLinkers().getFirst();
+            lastLinker = getLinkers().getLast();
         } else {
             iterator = getLinkers().descendingIterator();
+            firstLinker = getLinkers().getLast();
+            lastLinker = getLinkers().getFirst();
         }
         while (iterator.hasNext()) {
             Linker next = iterator.next();
@@ -234,9 +253,17 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             Track nextTrack = track.getConnected(nextDir);
             if (nextTrack != null) {
                 if (nextTrack.getLinker() == null) {
+                    Sensor sensor = nextTrack.getSensor();
+                    if (sensor != null && next == lastLinker) {
+                        sensor.onExitTrain(next.getTrain());
+                    }
                     next.getTrack().removeLinker();
                     if (nextTrack.canEnter(next.getDir().inverse(), next)) {
                         nextTrack.enterLinkerFromDir(next.getDir().inverse(), next);
+                        sensor = nextTrack.getSensor();
+                        if (sensor != null && next == firstLinker) {
+                            sensor.onEnterTrain(next.getTrain());
+                        }
                     } else {
                         // System.out.println("NO PUEDO ENTRAR AQUÍ !!!");
                         return false;
@@ -510,4 +537,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         return null;
     }
 
+    @Override
+    public String toString() {
+        return "Train " + getId();
+    }
 }
