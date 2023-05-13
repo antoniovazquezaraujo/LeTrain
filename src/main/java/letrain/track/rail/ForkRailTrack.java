@@ -16,7 +16,7 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     public ForkRailTrack() {
         super();
-        setId(numForksCreated++);
+        setId(++numForksCreated);
     }
 
     public int getId() {
