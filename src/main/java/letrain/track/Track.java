@@ -23,6 +23,7 @@ public abstract class Track implements
     private Linker linker = null;
     private Point pos = new Point(0, 0);
     protected Track[] connections;
+    List<Pair<Dir, Point>> connectedPositions = new ArrayList<>();
     private final List<LinkerCompartmentListener> trackeableCompartmentListeners = new ArrayList<>();
 
     protected Track() {
@@ -89,16 +90,19 @@ public abstract class Track implements
     @Override
     public void addRoute(Dir from, Dir to) {
         getRouter().addRoute(from, to);
+        resolveConnectedPositions();
     }
 
     @Override
     public void removeRoute(Dir from, Dir to) {
         getRouter().removeRoute(from, to);
+        resolveConnectedPositions();
     }
 
     @Override
     public void clear() {
         getRouter().clear();
+        resolveConnectedPositions();
     }
 
     @Override
@@ -121,12 +125,14 @@ public abstract class Track implements
     public Track disconnect(Dir dir) {
         Track ret = connections[dir.getValue()];
         connections[dir.getValue()] = null;
+        resolveConnectedPositions();
         return ret;
     }
 
     @Override
     public boolean connect(Dir dir, Track r) {
         connections[dir.getValue()] = r;
+        resolveConnectedPositions();
         return true;
     }
 
@@ -142,16 +148,19 @@ public abstract class Track implements
     }
 
     public List<Pair<Dir, Point>> getConnectedPositions() {
-        List<Pair<Dir, Point>> ret = new ArrayList<>();
+        return this.connectedPositions;
+    }
+
+    public void resolveConnectedPositions() {
+        this.connectedPositions = new ArrayList<>();
         for (int i = 0; i < connections.length; i++) {
             if (connections[i] != null) {
                 Track connected = getConnected(Dir.values()[i]);
-                if (!ret.contains(connected)) {
-                    ret.add(new Pair<Dir, Point>(Dir.values()[i], connected.getPosition()));
+                if (!this.connectedPositions.contains(connected)) {
+                    this.connectedPositions.add(new Pair<Dir, Point>(Dir.values()[i], connected.getPosition()));
                 }
             }
         }
-        return ret;
     }
 
     /**************************************************************
