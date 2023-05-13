@@ -1,7 +1,6 @@
 package letrain.track;
 
 import letrain.map.*;
-import letrain.mvp.impl.Sensor;
 import letrain.utils.Pair;
 import letrain.vehicle.impl.Linker;
 import letrain.visitor.Renderable;

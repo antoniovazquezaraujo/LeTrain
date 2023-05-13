@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import letrain.map.Dir;
-import letrain.mvp.impl.Sensor;
+import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Transportable;

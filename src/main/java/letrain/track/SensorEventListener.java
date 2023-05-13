@@ -1,4 +1,4 @@
-package letrain.mvp.impl;
+package letrain.track;
 
 import letrain.vehicle.impl.rail.Train;
 

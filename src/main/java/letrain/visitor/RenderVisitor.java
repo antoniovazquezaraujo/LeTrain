@@ -12,7 +12,7 @@ import letrain.map.SimpleRouter;
 import letrain.mvp.Model;
 import letrain.mvp.View;
 import letrain.mvp.Model.GameMode;
-import letrain.mvp.impl.Sensor;
+import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;

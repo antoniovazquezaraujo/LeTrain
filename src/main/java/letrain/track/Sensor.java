@@ -1,9 +1,8 @@
-package letrain.mvp.impl;
+package letrain.track;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import letrain.track.Track;
 import letrain.vehicle.impl.rail.Train;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;

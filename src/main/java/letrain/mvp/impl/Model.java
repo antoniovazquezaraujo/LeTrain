@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.RailMap;
+import letrain.track.Sensor;
+import letrain.track.SensorEventListener;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;

@@ -3,7 +3,7 @@ package letrain.mvp;
 import java.util.List;
 
 import letrain.map.RailMap;
-import letrain.mvp.impl.Sensor;
+import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;

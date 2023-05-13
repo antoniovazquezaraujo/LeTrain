@@ -6,6 +6,7 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.SimpleRouter;
+import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;

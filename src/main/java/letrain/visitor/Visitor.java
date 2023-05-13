@@ -2,7 +2,7 @@ package letrain.visitor;
 
 import letrain.map.RailMap;
 import letrain.mvp.Model;
-import letrain.mvp.impl.Sensor;
+import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.StopRailTrack;
