@@ -25,6 +25,7 @@ public class Model implements Serializable, letrain.mvp.Model {
     List<Wagon> wagons;
     private Cursor cursor;
     private List<ForkRailTrack> forks;
+    private List<Sensor> sensors;
 
     public Model() {
         this.cursor = new Cursor();
@@ -33,6 +34,7 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.locomotives = new ArrayList<>();
         this.wagons = new ArrayList<>();
         this.forks = new ArrayList<>();
+        this.sensors = new ArrayList<>();
         this.map = new RailMap();
         selectedLocomotiveIndex = 0;
         if (!getLocomotives().isEmpty()) {
@@ -47,6 +49,28 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public RailMap getRailMap() {
         return map;
+    }
+
+    public List<Sensor> getSensors() {
+        return sensors;
+    }
+
+    public void addSensor(Sensor sensor) {
+        sensors.add(sensor);
+    }
+
+    public void removeSensor(Sensor sensor) {
+        sensors.remove(sensor);
+    }
+
+    @Override
+    public Sensor getSensor(int id) {
+        for (Sensor sensor : getSensors()) {
+            if (sensor.getId() == id) {
+                return sensor;
+            }
+        }
+        return null;
     }
 
     public List<Locomotive> getLocomotives() {
@@ -189,4 +213,5 @@ public class Model implements Serializable, letrain.mvp.Model {
     public void setSelectedLocomotive(Locomotive selectedLocomotive) {
         this.selectedLocomotive = selectedLocomotive;
     }
+
 }

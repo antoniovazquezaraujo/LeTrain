@@ -10,6 +10,7 @@ import letrain.map.Router;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
+import letrain.mvp.impl.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
@@ -195,6 +196,11 @@ public class InfoVisitor implements Visitor {
     @Override
     public void visitCursor(Cursor cursor) {
         infoBarText += "Cursor:[" + cursor.getPosition().getX() + "," + cursor.getPosition().getY() + "]" + "\n";
+    }
+
+    @Override
+    public void visitSensor(Sensor sensor) {
+        infoBarText += "Sensor:[" + sensor.getId() + "]" + "\n";
     }
 
 }
