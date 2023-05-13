@@ -67,11 +67,12 @@ public class InfoVisitor implements Visitor {
     }
 
     private String getModeHelp(GameMode mode) {
-        String ret = " r:rails d:drive f:forks t:trains l:link u:unlink esc:exit\n"
-                + mode + ": ";
+        String[] menuOptions = { "(r)ails", "(d)rive", "(f)orks", "(t)rains", "(l)ink", "(u)nlink" };
+        String title = getOptionsWithHighlight(menuOptions, mode.ordinal() - 1) + "\n";
+        String ret = title;
         switch (mode) {
             case MENU:
-                ret += " ";
+                ret += "escape:exit ";
                 break;
             case RAILS:
                 ret += "<:left >:right ^:forwd v:backwd shift+^:rail ctrl+^:del";
@@ -80,7 +81,7 @@ public class InfoVisitor implements Visitor {
                 ret += "<:prev >:next ^:accel v:decel space:reverse (pgup, pgdn, ctrl+pgup, ctrl+pgdn):move map";
                 break;
             case FORKS:
-                ret += "<:prev >:next space:toggle";
+                ret += "<:prev >:next space:toggle #:select";
                 break;
             case TRAINS:
                 ret += "A-Z:locomotive a-z:wagon enter:end";
@@ -93,6 +94,21 @@ public class InfoVisitor implements Visitor {
                 break;
         }
         return ret;
+    }
+
+    private String getOptionsWithHighlight(String[] menuOptions, int ordinal) {
+        StringBuffer ret = new StringBuffer();
+        for (int i = 0; i < menuOptions.length; i++) {
+            if (i == ordinal) {
+                ret.append("[" + menuOptions[i] + "]");
+            } else {
+                ret.append(menuOptions[i]);
+            }
+            if (i < menuOptions.length - 1) {
+                ret.append(" ");
+            }
+        }
+        return ret.toString();
     }
 
     @Override
@@ -130,7 +146,8 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        infoBarText += "Track:{" + track + "}\n";
+        infoBarText += "Fork:{" + track.getId() + " Dir:"
+                + (track.isUsingAlternativeRoute() ? track.getAlternativeRoute() : track.getOriginalRoute()) + "}\n";
     }
 
     private String getDynamicRouterAspect(DynamicRouter router) {

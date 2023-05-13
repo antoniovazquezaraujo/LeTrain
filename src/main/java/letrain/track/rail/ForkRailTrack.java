@@ -10,6 +10,23 @@ import letrain.visitor.Visitor;
 
 public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
+    private static int numForksCreated = 0;
+
+    int id;
+
+    public ForkRailTrack() {
+        super();
+        setId(++numForksCreated);
+    }
+
+    public int getId() {
+        return this.id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
     @Override
     public DynamicRouter getRouter() {
         if (router == null) {

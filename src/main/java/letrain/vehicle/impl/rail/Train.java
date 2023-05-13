@@ -327,15 +327,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                     if (nextLinker.getTrain() != this) {
                         linkersToJoin.add(nextLinker);
                     }
-                    log.debug(
-                            "Antes- Iterator dir: " + iterator.getDir() + " pos:" + iterator.getPosition() + " track: "
-                                    + iterator.getTrack());
                     iterator.advance();
-                    log.debug("Después- Iterator dir: " + iterator.getDir() + " pos:" + iterator.getPosition()
-                            + " track: "
-                            + iterator.getTrack());
                     nextLinker = iterator.getTrack().getLinker();
-                    log.debug("setLinkersToJoin: nextLinker despues de avanzar: " + nextLinker);
                 }
             }
         }

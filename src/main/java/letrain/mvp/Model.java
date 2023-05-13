@@ -42,6 +42,8 @@ public interface Model {
 
     void setSelectedLocomotive(Locomotive selectedLocomotive);
 
+    void selectFork(int id);
+
     ForkRailTrack getSelectedFork();
 
     void setSelectedFork(ForkRailTrack selectedFork);
@@ -75,4 +77,5 @@ public interface Model {
             return name;
         }
     }
+
 }
