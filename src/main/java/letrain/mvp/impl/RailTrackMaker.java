@@ -6,6 +6,7 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.SimpleRouter;
+import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
@@ -75,8 +76,37 @@ public class RailTrackMaker {
             case ArrowRight:
                 cursorTurnRight();
                 break;
+            case Delete:
+                removeSensor();
+                break;
+            case Insert:
+                addSensor();
+                break;
         }
 
+    }
+
+    void addSensor() {
+        Point position = model.getCursor().getPosition();
+        Track track = model.getRailMap().getTrackAt(position.getX(), position.getY());
+        if (track != null) {
+            Sensor sensor = new Sensor();
+            sensor.setTrack(track);
+            track.setSensor(sensor);
+            model.addSensor(sensor);
+        }
+    }
+
+    void removeSensor() {
+        Point position = model.getCursor().getPosition();
+        Track track = model.getRailMap().getTrackAt(position.getX(), position.getY());
+        if (track != null) {
+            Sensor sensor = track.getSensor();
+            if (sensor != null) {
+                track.setSensor(null);
+                model.removeSensor(sensor);
+            }
+        }
     }
 
     private void reset() {

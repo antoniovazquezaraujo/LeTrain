@@ -1,19 +1,25 @@
 package letrain.mvp.impl;
 
-import letrain.map.Dir;
-import letrain.map.Point;
-import letrain.map.RailMap;
-import letrain.track.rail.ForkRailTrack;
-import letrain.vehicle.impl.Cursor;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Wagon;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Model implements Serializable, letrain.mvp.Model {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import letrain.map.Dir;
+import letrain.map.Point;
+import letrain.map.RailMap;
+import letrain.track.Sensor;
+import letrain.track.SensorEventListener;
+import letrain.track.rail.ForkRailTrack;
+import letrain.vehicle.impl.Cursor;
+import letrain.vehicle.impl.rail.Locomotive;
+import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.impl.rail.Wagon;
+
+public class Model implements Serializable, letrain.mvp.Model {
+    Logger log = LoggerFactory.getLogger(Model.class);
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     private int selectedLocomotiveIndex;
@@ -25,6 +31,7 @@ public class Model implements Serializable, letrain.mvp.Model {
     List<Wagon> wagons;
     private Cursor cursor;
     private List<ForkRailTrack> forks;
+    private List<Sensor> sensors;
 
     public Model() {
         this.cursor = new Cursor();
@@ -33,6 +40,7 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.locomotives = new ArrayList<>();
         this.wagons = new ArrayList<>();
         this.forks = new ArrayList<>();
+        this.sensors = new ArrayList<>();
         this.map = new RailMap();
         selectedLocomotiveIndex = 0;
         if (!getLocomotives().isEmpty()) {
@@ -47,6 +55,40 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public RailMap getRailMap() {
         return map;
+    }
+
+    public List<Sensor> getSensors() {
+        return sensors;
+    }
+
+    public void addSensor(Sensor sensor) {
+        sensor.addSensorEventListener(new SensorEventListener() {
+
+            @Override
+            public void onExitTrain(Train train) {
+                log.debug("Train " + train + " exited sensor " + sensor);
+            }
+
+            @Override
+            public void onEnterTrain(Train train) {
+                log.debug("Train " + train + " entered sensor " + sensor);
+            }
+        });
+        sensors.add(sensor);
+    }
+
+    public void removeSensor(Sensor sensor) {
+        sensors.remove(sensor);
+    }
+
+    @Override
+    public Sensor getSensor(int id) {
+        for (Sensor sensor : getSensors()) {
+            if (sensor.getId() == id) {
+                return sensor;
+            }
+        }
+        return null;
     }
 
     public List<Locomotive> getLocomotives() {
@@ -189,4 +231,5 @@ public class Model implements Serializable, letrain.mvp.Model {
     public void setSelectedLocomotive(Locomotive selectedLocomotive) {
         this.selectedLocomotive = selectedLocomotive;
     }
+
 }

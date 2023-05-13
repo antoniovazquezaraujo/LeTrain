@@ -45,7 +45,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     int forkId;
 
-    RailTrackMaker maker;
+    RailTrackMaker railTrackMaker;
 
     public CompactPresenter() {
         this(null);
@@ -60,7 +60,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         view = new View(this);
         renderer = new RenderVisitor(view);
         informer = new InfoVisitor(view);
-        maker = new RailTrackMaker(model, view);
+        railTrackMaker = new RailTrackMaker(model, view);
     }
 
     public void start() {
@@ -159,7 +159,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
         switch (model.getMode()) {
             case RAILS:
-                maker.onChar(keyEvent);
+                railTrackMaker.onChar(keyEvent);
                 break;
             case DRIVE:
                 trainDriverOnChar(keyEvent);
@@ -168,6 +168,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 forkManagerOnChar(keyEvent);
                 break;
             case TRAINS:
+                // Not managed here!!
                 // trainManagerOnChar(keyEvent);
                 break;
             case LINK:

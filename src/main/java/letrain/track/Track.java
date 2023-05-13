@@ -21,6 +21,7 @@ public abstract class Track implements
 
     private TrackDirector trackDirector;
     private Linker linker = null;
+    private Sensor sensor = null;
     private Point pos = new Point(0, 0);
     protected Track[] connections;
     List<Pair<Dir, Point>> connectedPositions = new ArrayList<>();
@@ -224,6 +225,14 @@ public abstract class Track implements
     @Override
     public boolean canExit(Dir d) {
         return getTrackDirector().canExit(this, d);
+    }
+
+    public Sensor getSensor() {
+        return sensor;
+    }
+
+    public void setSensor(Sensor sensor) {
+        this.sensor = sensor;
     }
 
 }

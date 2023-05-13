@@ -1,13 +1,13 @@
 package letrain.mvp;
 
+import java.util.List;
+
 import letrain.map.RailMap;
-import letrain.mvp.impl.delegates.TrainFactory;
+import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Wagon;
-
-import java.util.List;
 
 public interface Model {
     RailMap getRailMap();
@@ -31,6 +31,14 @@ public interface Model {
     void addWagon(Wagon wagon);
 
     void removeWagon(Wagon wagon);
+
+    List<Sensor> getSensors();
+
+    Sensor getSensor(int id);
+
+    void addSensor(Sensor sensor);
+
+    void removeSensor(Sensor sensor);
 
     void moveLocomotives();
 
