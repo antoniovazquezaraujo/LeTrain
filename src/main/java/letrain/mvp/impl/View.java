@@ -100,12 +100,32 @@ public class View implements letrain.mvp.View {
     }
 
     public void setInfoBarText(String text) {
-        // infoBar.setText(text);
+        bottomGraphics.putString(bottonGraphicsPosition.withRelative(1, 3), text);
+    }
+
+    // Método que recibe una lista de cadenas y pinta en bottomGraphics todas las
+    // opciones pero
+    // con un color de fondo diferente la opción que va entre corchetes
+    public void paintOptions(String[] options) {
+        // If the option contains "[", it means that it is a selected option
+        // We need to paint it yellow
+        int length = 0;
+        for (String option : options) {
+            if (option.contains("[")) {
+                TextColor oldColor = bgColor;
+                bottomGraphics.setBackgroundColor(TextColor.ANSI.YELLOW);
+                bottomGraphics.putString(bottonGraphicsPosition.withRelative(length, 1), option);
+                bottomGraphics.setBackgroundColor(oldColor);
+            } else {
+                bottomGraphics.putString(bottonGraphicsPosition.withRelative(length, 1), option);
+            }
+            length += option.length() + 1;
+        }
     }
 
     public void setHelpBarText(String text) {
         String[] lines = text.split("\n");
-        bottomGraphics.putString(bottonGraphicsPosition.withRelative(1, 1), lines[0]);
+        paintOptions(lines[0].split(" "));
         bottomGraphics.putString(bottonGraphicsPosition.withRelative(1, 2), lines[1]);
     }
 
@@ -117,7 +137,11 @@ public class View implements letrain.mvp.View {
             recalculateSizes(terminalSize);
             centralGraphics.fillRectangle(centralGraphicsPosition, centralGraphicsSize, ' ');
         }
-        drawBox(bottomGraphics, bottonGraphicsPosition, bottonGraphicsSize);
+        // drawBox(bottomGraphics, bottonGraphicsPosition, bottonGraphicsSize);
+        // draw a line ober botomGraphics
+        bottomGraphics.drawLine(bottonGraphicsPosition.withRelative(1, 0),
+                bottonGraphicsPosition.withRelative(bottonGraphicsSize.getColumns() - 2, 0),
+                TextCharacter.fromCharacter(Symbols.SINGLE_LINE_HORIZONTAL, fgColor, bgColor)[0]);
 
         try {
             this.screen.refresh();
@@ -147,6 +171,11 @@ public class View implements letrain.mvp.View {
     }
 
     @Override
+    public TextColor getFgColor() {
+        return fgColor;
+    }
+
+    @Override
     public void setFgColor(TextColor color) {
         this.fgColor = color;
     }
@@ -169,6 +198,10 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void clear(int x, int y) {
+        bottomGraphics.setBackgroundColor(bgColor);
+        centralGraphics.setBackgroundColor(bgColor);
+        bottomGraphics.setForegroundColor(fgColor);
+        centralGraphics.setForegroundColor(fgColor);
         set(x, y, " ");
     }
 
@@ -195,6 +228,10 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void clear() {
+        bottomGraphics.setBackgroundColor(bgColor);
+        centralGraphics.setBackgroundColor(bgColor);
+        bottomGraphics.setForegroundColor(fgColor);
+        centralGraphics.setForegroundColor(fgColor);
         bottomGraphics.fillRectangle(bottonGraphicsPosition, bottonGraphicsSize, ' ');
         centralGraphics.fillRectangle(centralGraphicsPosition, centralGraphicsSize, ' ');
     }
