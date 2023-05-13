@@ -102,9 +102,9 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitLocomotive(Locomotive locomotive) {
         if (locomotive == selectedLocomotive) {
-            view.setFgColor(TextColor.ANSI.RED);
+            view.setFgColor(TextColor.ANSI.RED_BRIGHT);
         } else {
-            view.setFgColor(TextColor.ANSI.YELLOW_BRIGHT);
+            view.setFgColor(TextColor.ANSI.WHITE);
         }
         if (locomotive.isShowingDir()) {
             view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(),
@@ -136,6 +136,7 @@ public class RenderVisitor implements Visitor {
                 }
             }
             view.setBgColor(BG_COLOR);
+            view.setFgColor(FG_COLOR);
         }
 
     }
@@ -148,12 +149,13 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitWagon(Wagon wagon) {
-        view.setFgColor(TextColor.ANSI.RED_BRIGHT);
+        view.setFgColor(TextColor.ANSI.WHITE);
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
     }
 
     @Override
     public void visitCursor(Cursor cursor) {
+        TextColor oldColor = view.getFgColor();
         switch (cursor.getMode()) {
             case DRAWING:
                 view.setFgColor(TextColor.ANSI.GREEN_BRIGHT);
@@ -166,6 +168,7 @@ public class RenderVisitor implements Visitor {
                 break;
         }
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
+        view.setFgColor(oldColor);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
