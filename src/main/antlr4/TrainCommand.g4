@@ -1,22 +1,21 @@
 grammar TrainCommand;
-@header {
-    package letrain.parser;
-}
 
 start : command+;
 command : 
-    'sensor' NUM 'on'
-        ('train' (NUM)? ('enter' | 'exit') (DIR)?) 
+    'sensor' NUMBER 'on' 'train' (NUMBER)? (trainAction)? (dir)? 
     commandBlock
     ;
+trainAction : 'enter' | 'exit' ;
 commandBlock : '{' commandItem* '}';
 commandItem : (
-    'semaphore' NUM ('open' | 'close') 
-    | 'fork' NUM DIR 
-    | 'train' ('max'|'min')? 'speed' NUM     
+    'semaphore' NUMBER semaphoreAction
+    | 'fork' NUMBER dir 
+    | 'train' (speedLimit)? 'speed' NUMBER     
     )
     ';'
     ;
-NUM : [0-9]+;
-DIR: 'E'| 'NE' | 'N' | 'NW' | 'W' | 'SW' | 'S' | 'SE'; 
+semaphoreAction: 'open' | 'close'; 
+speedLimit: 'max' | 'min';   
+dir: 'E'| 'NE' | 'N' | 'NW' | 'W' | 'SW' | 'S' | 'SE'; 
+NUMBER : [0-9]+;
 WS : [ \t\r\n]+ -> skip;

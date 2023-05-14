@@ -10,3 +10,7 @@ sensor 41 on train enter {
      fork 4 N;
      train speed 11;
 }
+sensor 41 on train {
+     fork 44 N;
+     train min speed 5;
+}
