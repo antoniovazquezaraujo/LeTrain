@@ -12,6 +12,7 @@ import letrain.map.SimpleRouter;
 import letrain.mvp.Model;
 import letrain.mvp.View;
 import letrain.mvp.Model.GameMode;
+import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
@@ -26,6 +27,7 @@ import letrain.vehicle.impl.rail.Wagon;
 public class RenderVisitor implements Visitor {
     Logger log = LoggerFactory.getLogger(RenderVisitor.class);
     private static final TextColor RAIL_TRACK_COLOR = TextColor.ANSI.BLACK_BRIGHT;
+    private static final TextColor SENSOR_COLOR = TextColor.ANSI.CYAN_BRIGHT;
     public static final TextColor FORK_COLOR = TextColor.ANSI.WHITE_BRIGHT;
     public static final TextColor SELECTED_FORK_COLOR = TextColor.ANSI.RED_BRIGHT;
     public static final TextColor FG_COLOR = TextColor.ANSI.WHITE;
@@ -34,6 +36,7 @@ public class RenderVisitor implements Visitor {
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     private final View view;
+    private GameMode mode;
 
     public RenderVisitor(View view) {
         this.view = view;
@@ -43,9 +46,11 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitModel(Model model) {
+        this.mode = model.getMode();
         selectedLocomotive = model.getSelectedLocomotive();
         selectedFork = model.getSelectedFork();
         model.getRailMap().accept(this);
+        model.getSensors().forEach(t -> t.accept(this));
         model.getForks().forEach(t -> t.accept(this));
         model.getWagons().forEach(t -> t.accept(this));
         model.getLocomotives().forEach(t -> t.accept(this));
@@ -61,8 +66,21 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        view.setFgColor(RAIL_TRACK_COLOR);
+        if (track.getSensor() != null) {
+            view.setFgColor(SENSOR_COLOR);
+        } else {
+            view.setFgColor(RAIL_TRACK_COLOR);
+        }
         view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
+    }
+
+    @Override
+    public void visitSensor(Sensor sensor) {
+        Track track = sensor.getTrack();
+        if (track.getSensor() != null && this.mode == GameMode.RAILS) {
+            view.setFgColor(SENSOR_COLOR);
+            view.set(track.getPosition().getX(), track.getPosition().getY(), "₪" + track.getSensor().getId());
+        }
     }
 
     @Override
@@ -79,6 +97,10 @@ public class RenderVisitor implements Visitor {
             view.setFgColor(FORK_COLOR);
         }
         view.set(track.getPosition().getX(), track.getPosition().getY(), dirGraphicAspect(track.getFirstOpenDir()));
+        if (this.mode == GameMode.FORKS) {
+            view.set(track.getPosition().getX() + 1, track.getPosition().getY(), "" + track.getId());
+        }
+
     }
 
     @Override
@@ -96,9 +118,9 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitLocomotive(Locomotive locomotive) {
         if (locomotive == selectedLocomotive) {
-            view.setFgColor(TextColor.ANSI.RED);
+            view.setFgColor(TextColor.ANSI.RED_BRIGHT);
         } else {
-            view.setFgColor(TextColor.ANSI.YELLOW_BRIGHT);
+            view.setFgColor(TextColor.ANSI.WHITE);
         }
         if (locomotive.isShowingDir()) {
             view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(),
@@ -130,6 +152,7 @@ public class RenderVisitor implements Visitor {
                 }
             }
             view.setBgColor(BG_COLOR);
+            view.setFgColor(FG_COLOR);
         }
 
     }
@@ -142,12 +165,13 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitWagon(Wagon wagon) {
-        view.setFgColor(TextColor.ANSI.RED_BRIGHT);
+        view.setFgColor(TextColor.ANSI.WHITE);
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
     }
 
     @Override
     public void visitCursor(Cursor cursor) {
+        TextColor oldColor = view.getFgColor();
         switch (cursor.getMode()) {
             case DRAWING:
                 view.setFgColor(TextColor.ANSI.GREEN_BRIGHT);
@@ -160,6 +184,7 @@ public class RenderVisitor implements Visitor {
                 break;
         }
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
+        view.setFgColor(oldColor);
     }
 
     ////////////////////////////////////////////////////////////////////////////////

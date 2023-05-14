@@ -43,7 +43,9 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     private final RenderVisitor renderer;
     private final InfoVisitor informer;
 
-    RailTrackMaker maker;
+    int forkId;
+
+    RailTrackMaker railTrackMaker;
 
     public CompactPresenter() {
         this(null);
@@ -58,7 +60,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         view = new View(this);
         renderer = new RenderVisitor(view);
         informer = new InfoVisitor(view);
-        maker = new RailTrackMaker(model, view);
+        railTrackMaker = new RailTrackMaker(model, view);
     }
 
     public void start() {
@@ -116,6 +118,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     @Override
     public void onChar(KeyStroke keyEvent) {
+        boolean isAMenuKey = true;
         if (keyEvent.getKeyType() == KeyType.Enter) {
             model.setMode(MENU);
             return;
@@ -143,14 +146,20 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                     case 'u':
                         model.setMode(UNLINK);
                         break;
+                    default:
+                        isAMenuKey = false;
+                        break;
+
                 }
-                return;
+                if (isAMenuKey) {
+                    return;
+                }
             }
         }
 
         switch (model.getMode()) {
             case RAILS:
-                maker.onChar(keyEvent);
+                railTrackMaker.onChar(keyEvent);
                 break;
             case DRIVE:
                 trainDriverOnChar(keyEvent);
@@ -159,6 +168,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 forkManagerOnChar(keyEvent);
                 break;
             case TRAINS:
+                // Not managed here!!
                 // trainManagerOnChar(keyEvent);
                 break;
             case LINK:
@@ -254,16 +264,26 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void forkManagerOnChar(KeyStroke keyEvent) {
         switch (keyEvent.getKeyType()) {
+            case Backspace:
+                forkId = forkId / 10;
+                selectFork(forkId);
+                break;
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
                     toggleFork();
+                    forkId = 0;
+                } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
+                    forkId = forkId * 10 + (keyEvent.getCharacter() - '0');
+                    selectFork(forkId);
                 }
                 break;
             case ArrowUp:
                 toggleFork();
+                forkId = 0;
                 break;
             case ArrowDown:
                 toggleFork();
+                forkId = 0;
                 break;
             case ArrowLeft:
                 selectPrevFork();
@@ -410,6 +430,10 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void selectPrevFork() {
         model.selectPrevFork();
+    }
+
+    private void selectFork(int id) {
+        model.selectFork(id);
     }
 
     private void toggleFork() {

@@ -40,4 +40,6 @@ public interface View {
     public KeyStroke readKey();
 
     public void setScreen(Screen screen);
+
+    TextColor getFgColor();
 }
