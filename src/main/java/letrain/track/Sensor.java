@@ -25,7 +25,7 @@ public class Sensor implements Renderable {
         setId(++numSensorsCreated);
     }
 
-    private void setId(int i) {
+    public void setId(int i) {
         this.id = i;
     }
 

@@ -1,4 +1,4 @@
-grammar TrainCommand;
+grammar LeTrainProgram;
 
 start : command+;
 command : 

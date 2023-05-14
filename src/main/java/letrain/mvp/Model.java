@@ -52,6 +52,8 @@ public interface Model {
 
     void selectFork(int id);
 
+    ForkRailTrack getFork(int id);
+
     ForkRailTrack getSelectedFork();
 
     void setSelectedFork(ForkRailTrack selectedFork);

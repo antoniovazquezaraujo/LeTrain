@@ -34,7 +34,7 @@
                         </goals>
                         <configuration>
                             <!-- <sourceDirectory>${basedir}/src/main/antlr4</sourceDirectory> -->
-                            <!-- <outputDirectory>${project.build.directory}/generated-sources/antlr4/letrain/parser</outputDirectory> -->
+                            <outputDirectory>${project.build.directory}/generated-sources/antlr4</outputDirectory>
                             <listener>true</listener>
                             <visitor>true</visitor>
                         </configuration>

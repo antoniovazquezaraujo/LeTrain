@@ -61,19 +61,28 @@ public class Model implements Serializable, letrain.mvp.Model {
         return sensors;
     }
 
+    public Train getTrainFromLocomotiveId(int locomotiveId) {
+        for (Locomotive locomotive : getLocomotives()) {
+            if (locomotive.getId() == locomotiveId) {
+                return locomotive.getTrain();
+            }
+        }
+        return null;
+    }
+
     public void addSensor(Sensor sensor) {
-        sensor.addSensorEventListener(new SensorEventListener() {
+        // sensor.addSensorEventListener(new SensorEventListener() {
 
-            @Override
-            public void onExitTrain(Train train) {
-                log.debug("Train " + train + " exited sensor " + sensor);
-            }
+        // @Override
+        // public void onExitTrain(Train train) {
+        // log.debug("Train " + train + " exited sensor " + sensor);
+        // }
 
-            @Override
-            public void onEnterTrain(Train train) {
-                log.debug("Train " + train + " entered sensor " + sensor);
-            }
-        });
+        // @Override
+        // public void onEnterTrain(Train train) {
+        // log.debug("Train " + train + " entered sensor " + sensor);
+        // }
+        // });
         sensors.add(sensor);
     }
 
@@ -166,6 +175,16 @@ public class Model implements Serializable, letrain.mvp.Model {
                 break;
             }
         }
+    }
+
+    @Override
+    public ForkRailTrack getFork(int id) {
+        for (ForkRailTrack fork : getForks()) {
+            if (fork.getId() == id) {
+                return fork;
+            }
+        }
+        return null;
     }
 
     @Override
