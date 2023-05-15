@@ -64,6 +64,10 @@ public interface Model {
 
     void selectPrevLocomotive();
 
+    void saveModel(String file);
+
+    void loadModel(String file);
+
     enum GameMode {
         MENU("Menu mode"),
         RAILS("Navigate map, create and delete tracks"),

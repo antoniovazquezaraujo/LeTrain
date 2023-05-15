@@ -13,13 +13,16 @@ public class LeTrain {
     }
 
     public void start(String[] args) {
-        model = new Model();
-        // RailMapFactory railMapFactory = new RailMapFactory(model);
-        // railMapFactory.read("30,20 e30 r1 r1 r1 r35 r1 r1 r1 r5 l5 r5 r5 l3");
-        // TrainFactory trainFactory = new TrainFactory(model);
-        // trainFactory.read("50,20 w #Letrain");
+        try {
+            model = new Model();
+            model.loadModel("game.ltr");
+        } catch (Exception e) {
+            model = new Model();
+            System.out.println("No game.ltr file found, creating a new one");
+        }
         presenter = new CompactPresenter((Model) model);
         presenter.start();
+        model.saveModel("game.ltr");
     }
 
 }
