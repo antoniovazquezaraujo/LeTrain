@@ -1,5 +1,10 @@
 package letrain.mvp.impl;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +32,7 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     private GameMode mode = letrain.mvp.Model.GameMode.RAILS;
     private RailMap map;
-    private final List<Locomotive> locomotives;
+    private List<Locomotive> locomotives;
     List<Wagon> wagons;
     private Cursor cursor;
     private List<ForkRailTrack> forks;
@@ -249,6 +254,40 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public void setSelectedLocomotive(Locomotive selectedLocomotive) {
         this.selectedLocomotive = selectedLocomotive;
+    }
+
+    @Override
+    public void saveModel(String file) {
+        // serialize the model
+        try (FileOutputStream fos = new FileOutputStream(file);
+                ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+            oos.writeObject(this);
+        } catch (IOException ex) {
+            log.error("Error saving model", ex);
+        }
+
+    }
+
+    @Override
+    public void loadModel(String file) {
+        // deserialize the model
+        try (FileInputStream fis = new FileInputStream(file);
+                ObjectInputStream ois = new ObjectInputStream(fis)) {
+            Model model = (Model) ois.readObject();
+            this.cursor = model.cursor;
+            this.locomotives = model.locomotives;
+            this.wagons = model.wagons;
+            this.forks = model.forks;
+            this.map = model.map;
+            this.sensors = model.sensors;
+            this.selectedLocomotiveIndex = model.selectedLocomotiveIndex;
+            this.selectedLocomotive = model.selectedLocomotive;
+            this.selectedForkIndex = model.selectedForkIndex;
+            this.selectedFork = model.selectedFork;
+            this.mode = model.mode;
+        } catch (IOException | ClassNotFoundException ex) {
+            log.error("Error loading model", ex);
+        }
     }
 
 }
