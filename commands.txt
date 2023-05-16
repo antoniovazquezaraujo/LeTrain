@@ -1,16 +1,13 @@
-sensor 43 on train enter N {
-    semaphore 4 open;
-    train speed 10;
+sensor 1 on train enter {
+    fork 1 E;
 }
-sensor 21 on train 24 exit {
-     fork 4 NW;
-     train max speed 3;
+sensor 1 on train exit {
+    fork 1 NE;
 }
-sensor 41 on train enter {
-     fork 4 N;
-     train speed 11;
+
+sensor 2 on train enter {
+    fork 2 W;
 }
-sensor 41 on train {
-     fork 44 N;
-     train min speed 5;
+sensor 2 on train exit {
+    fork 2 SW;
 }

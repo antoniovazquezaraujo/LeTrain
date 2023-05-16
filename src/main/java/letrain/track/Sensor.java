@@ -1,5 +1,6 @@
 package letrain.track;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,7 +8,7 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 
-public class Sensor implements Renderable {
+public class Sensor implements Renderable, Serializable {
     private static int numSensorsCreated = 0;
     private int id;
     Track track;

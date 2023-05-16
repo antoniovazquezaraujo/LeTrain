@@ -1,10 +1,5 @@
 package letrain.mvp.impl;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +11,6 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.RailMap;
 import letrain.track.Sensor;
-import letrain.track.SensorEventListener;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
@@ -24,19 +18,19 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public class Model implements Serializable, letrain.mvp.Model {
-    Logger log = LoggerFactory.getLogger(Model.class);
+    static Logger log = LoggerFactory.getLogger(Model.class);
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
-    private int selectedLocomotiveIndex;
-    private int selectedForkIndex;
+    int selectedLocomotiveIndex;
+    int selectedForkIndex;
 
-    private GameMode mode = letrain.mvp.Model.GameMode.RAILS;
-    private RailMap map;
-    private List<Locomotive> locomotives;
+    GameMode mode = letrain.mvp.Model.GameMode.RAILS;
+    RailMap map;
+    List<Locomotive> locomotives;
     List<Wagon> wagons;
-    private Cursor cursor;
-    private List<ForkRailTrack> forks;
-    private List<Sensor> sensors;
+    Cursor cursor;
+    List<ForkRailTrack> forks;
+    List<Sensor> sensors;
 
     public Model() {
         this.cursor = new Cursor();
@@ -62,10 +56,12 @@ public class Model implements Serializable, letrain.mvp.Model {
         return map;
     }
 
+    @Override
     public List<Sensor> getSensors() {
         return sensors;
     }
 
+    @Override
     public Train getTrainFromLocomotiveId(int locomotiveId) {
         for (Locomotive locomotive : getLocomotives()) {
             if (locomotive.getId() == locomotiveId) {
@@ -75,22 +71,12 @@ public class Model implements Serializable, letrain.mvp.Model {
         return null;
     }
 
+    @Override
     public void addSensor(Sensor sensor) {
-        // sensor.addSensorEventListener(new SensorEventListener() {
-
-        // @Override
-        // public void onExitTrain(Train train) {
-        // log.debug("Train " + train + " exited sensor " + sensor);
-        // }
-
-        // @Override
-        // public void onEnterTrain(Train train) {
-        // log.debug("Train " + train + " entered sensor " + sensor);
-        // }
-        // });
         sensors.add(sensor);
     }
 
+    @Override
     public void removeSensor(Sensor sensor) {
         sensors.remove(sensor);
     }
@@ -105,18 +91,22 @@ public class Model implements Serializable, letrain.mvp.Model {
         return null;
     }
 
+    @Override
     public List<Locomotive> getLocomotives() {
         return locomotives;
     }
 
+    @Override
     public List<Wagon> getWagons() {
         return wagons;
     }
 
+    @Override
     public void removeWagon(Wagon wagon) {
         this.wagons.remove(wagon);
     }
 
+    @Override
     public void addWagon(Wagon wagon) {
         this.wagons.add(wagon);
     }
@@ -141,14 +131,17 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.forks.remove(fork);
     }
 
+    @Override
     public void addLocomotive(Locomotive locomotive) {
         this.locomotives.add(locomotive);
     }
 
+    @Override
     public void removeLocomotive(Locomotive locomotive) {
         this.locomotives.remove(locomotive);
     }
 
+    @Override
     public void moveLocomotives() {
         locomotives.forEach(Locomotive::update);
     }
@@ -173,6 +166,7 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.selectedFork = selectedFork;
     }
 
+    @Override
     public void selectFork(int id) {
         for (ForkRailTrack fork : getForks()) {
             if (fork.getId() == id) {
@@ -254,40 +248,6 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public void setSelectedLocomotive(Locomotive selectedLocomotive) {
         this.selectedLocomotive = selectedLocomotive;
-    }
-
-    @Override
-    public void saveModel(String file) {
-        // serialize the model
-        try (FileOutputStream fos = new FileOutputStream(file);
-                ObjectOutputStream oos = new ObjectOutputStream(fos)) {
-            oos.writeObject(this);
-        } catch (IOException ex) {
-            log.error("Error saving model", ex);
-        }
-
-    }
-
-    @Override
-    public void loadModel(String file) {
-        // deserialize the model
-        try (FileInputStream fis = new FileInputStream(file);
-                ObjectInputStream ois = new ObjectInputStream(fis)) {
-            Model model = (Model) ois.readObject();
-            this.cursor = model.cursor;
-            this.locomotives = model.locomotives;
-            this.wagons = model.wagons;
-            this.forks = model.forks;
-            this.map = model.map;
-            this.sensors = model.sensors;
-            this.selectedLocomotiveIndex = model.selectedLocomotiveIndex;
-            this.selectedLocomotive = model.selectedLocomotive;
-            this.selectedForkIndex = model.selectedForkIndex;
-            this.selectedFork = model.selectedFork;
-            this.mode = model.mode;
-        } catch (IOException | ClassNotFoundException ex) {
-            log.error("Error loading model", ex);
-        }
     }
 
 }

@@ -16,7 +16,7 @@ import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 
 public class RailTrackMaker {
-    private final Model model;
+    private final letrain.mvp.Model model;
     private final letrain.mvp.View view;
     private CompactPresenter.TrackType newTrackType = CompactPresenter.TrackType.NORMAL_TRACK;
     private int degreesOfRotation = 0;
@@ -26,7 +26,7 @@ public class RailTrackMaker {
     boolean reversed = false;
     boolean makingTraks = false;
 
-    public RailTrackMaker(Model model, letrain.mvp.View view) {
+    public RailTrackMaker(letrain.mvp.Model model, letrain.mvp.View view) {
         this.model = model;
         this.view = view;
     }
