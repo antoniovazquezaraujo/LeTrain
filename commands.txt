@@ -1,13 +1,8 @@
 sensor 1 on train enter {
     fork 1 E;
+    semaphore 2 open;
 }
-sensor 1 on train exit {
-    fork 1 NE;
-}
-
 sensor 2 on train enter {
-    fork 2 W;
-}
-sensor 2 on train exit {
-    fork 2 SW;
+    fork 1 NE;
+    semaphore 2 closed;
 }

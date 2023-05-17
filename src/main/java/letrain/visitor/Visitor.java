@@ -2,6 +2,7 @@ package letrain.visitor;
 
 import letrain.map.RailMap;
 import letrain.mvp.Model;
+import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
@@ -37,4 +38,6 @@ public interface Visitor {
     void visitCursor(Cursor cursor);
 
     void visitSensor(Sensor sensor);
+
+    void visitSemaphore(RailSemaphore semaphore);
 }

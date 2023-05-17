@@ -3,6 +3,7 @@ package letrain.mvp;
 import java.util.List;
 
 import letrain.map.RailMap;
+import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
@@ -42,6 +43,14 @@ public interface Model {
     void addSensor(Sensor sensor);
 
     void removeSensor(Sensor sensor);
+
+    List<RailSemaphore> getSemaphores();
+
+    RailSemaphore getSemaphore(int id);
+
+    void addSemaphore(RailSemaphore semaphore);
+
+    void removeSemaphore(RailSemaphore sensor);
 
     void moveLocomotives();
 

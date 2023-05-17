@@ -10,6 +10,7 @@ import letrain.map.Router;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
+import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
@@ -201,6 +202,11 @@ public class InfoVisitor implements Visitor {
     @Override
     public void visitSensor(Sensor sensor) {
         infoBarText += "Sensor:[" + sensor.getId() + "]" + "\n";
+    }
+
+    @Override
+    public void visitSemaphore(RailSemaphore semaphore) {
+        infoBarText += "Semaphore:[" + semaphore.getId() + ":" + (semaphore.isOpen() ? "open" : "closed") + "]" + "\n";
     }
 
 }

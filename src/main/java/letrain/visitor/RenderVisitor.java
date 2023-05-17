@@ -7,11 +7,13 @@ import com.googlecode.lanterna.Symbols;
 import com.googlecode.lanterna.TextColor;
 
 import letrain.map.Dir;
+import letrain.map.Point;
 import letrain.map.RailMap;
 import letrain.map.SimpleRouter;
 import letrain.mvp.Model;
 import letrain.mvp.View;
 import letrain.mvp.Model.GameMode;
+import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
@@ -33,6 +35,8 @@ public class RenderVisitor implements Visitor {
     public static final TextColor FG_COLOR = TextColor.ANSI.WHITE;
     public static final TextColor BG_COLOR = TextColor.ANSI.BLACK;
     public static final TextColor SELECTED_LINKER_COLOR = TextColor.ANSI.YELLOW;
+    public static final TextColor SEMAPHORE_OPEN_COLOR = TextColor.ANSI.GREEN;
+    public static final TextColor SEMAPHORE_CLOSED_COLOR = TextColor.ANSI.RED;
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     private final View view;
@@ -52,6 +56,7 @@ public class RenderVisitor implements Visitor {
         model.getRailMap().accept(this);
         model.getSensors().forEach(t -> t.accept(this));
         model.getForks().forEach(t -> t.accept(this));
+        model.getSemaphores().forEach(t -> t.accept(this));
         model.getWagons().forEach(t -> t.accept(this));
         model.getLocomotives().forEach(t -> t.accept(this));
         // if (model.getMode() == GameMode.RAILS) {
@@ -81,6 +86,18 @@ public class RenderVisitor implements Visitor {
             view.setFgColor(SENSOR_COLOR);
             view.set(track.getPosition().getX(), track.getPosition().getY(), "₪" + track.getSensor().getId());
         }
+    }
+
+    @Override
+    public void visitSemaphore(RailSemaphore semaphore) {
+        Point pos = semaphore.getPosition();
+        if (semaphore.isOpen()) {
+            view.setFgColor(SEMAPHORE_OPEN_COLOR);
+        } else {
+            view.setFgColor(SEMAPHORE_CLOSED_COLOR);
+        }
+        view.set(pos.getX(), pos.getY(), ":" + (mode.equals(GameMode.RAILS) ? semaphore.getId() : ""));
+
     }
 
     @Override

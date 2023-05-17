@@ -14,7 +14,7 @@ commandItem : (
     )
     ';'
     ;
-semaphoreAction: 'open' | 'close'; 
+semaphoreAction: 'open' | 'closed'; 
 speedLimit: 'max' | 'min';   
 dir: 'E'| 'NE' | 'N' | 'NW' | 'W' | 'SW' | 'S' | 'SE'; 
 NUMBER : [0-9]+;

@@ -6,6 +6,7 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.SimpleRouter;
+import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
@@ -82,6 +83,9 @@ public class RailTrackMaker {
             case Insert:
                 addSensor();
                 break;
+            case Home:
+                addSemaphore();
+                break;
         }
 
     }
@@ -95,6 +99,12 @@ public class RailTrackMaker {
             track.setSensor(sensor);
             model.addSensor(sensor);
         }
+    }
+
+    void addSemaphore() {
+        Point position = model.getCursor().getPosition();
+        RailSemaphore semaphore = new RailSemaphore(position);
+        model.addSemaphore(semaphore);
     }
 
     void removeSensor() {
