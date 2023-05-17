@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.RailMap;
+import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
@@ -31,6 +32,7 @@ public class Model implements Serializable, letrain.mvp.Model {
     Cursor cursor;
     List<ForkRailTrack> forks;
     List<Sensor> sensors;
+    List<RailSemaphore> semaphores;
 
     public Model() {
         this.cursor = new Cursor();
@@ -40,6 +42,7 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.wagons = new ArrayList<>();
         this.forks = new ArrayList<>();
         this.sensors = new ArrayList<>();
+        this.semaphores = new ArrayList<>();
         this.map = new RailMap();
         selectedLocomotiveIndex = 0;
         if (!getLocomotives().isEmpty()) {
@@ -248,6 +251,31 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public void setSelectedLocomotive(Locomotive selectedLocomotive) {
         this.selectedLocomotive = selectedLocomotive;
+    }
+
+    @Override
+    public List<RailSemaphore> getSemaphores() {
+        return this.semaphores;
+    }
+
+    @Override
+    public RailSemaphore getSemaphore(int id) {
+        for (RailSemaphore semaphore : getSemaphores()) {
+            if (semaphore.getId() == id) {
+                return semaphore;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void addSemaphore(RailSemaphore semaphore) {
+        this.semaphores.add(semaphore);
+    }
+
+    @Override
+    public void removeSemaphore(RailSemaphore semaphore) {
+        this.semaphores.remove(semaphore);
     }
 
 }

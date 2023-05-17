@@ -9,6 +9,7 @@ import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 
 public class Sensor implements Renderable, Serializable {
+    private static final long serialVersionUID = 1L;
     private static int numSensorsCreated = 0;
     private int id;
     Track track;
@@ -53,6 +54,14 @@ public class Sensor implements Renderable, Serializable {
 
     public void addSensorEventListener(SensorEventListener listener) {
         this.listeners.add(listener);
+    }
+
+    public void removeSensorEventListener(SensorEventListener listener) {
+        this.listeners.remove(listener);
+    }
+
+    public void removeAllSensorEventListeners() {
+        this.listeners.clear();
     }
 
     // toString

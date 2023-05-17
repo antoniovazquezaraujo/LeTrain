@@ -5,7 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.function.Consumer;
+import java.io.Serializable;
 
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -15,25 +15,16 @@ import org.slf4j.LoggerFactory;
 
 import letrain.map.Dir;
 import letrain.mvp.Model;
+import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.SensorEventListener;
 import letrain.track.rail.ForkRailTrack;
 import letrain.utils.Pair;
 import letrain.vehicle.impl.rail.Train;
 
-public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void> {
+public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void> implements Serializable {
+    private static final long serialVersionUID = 1L;
     static Logger log = LoggerFactory.getLogger(LeTrainSensorProgramVisitor.class);
-
-    static final class ForkDirConsumer implements Consumer<Pair<ForkRailTrack, Dir>> {
-        @Override
-        public void accept(Pair<ForkRailTrack, Dir> input) {
-            if (input.getFirst().getAlternativeRoute().getSecond().equals(input.getSecond())) {
-                input.getFirst().setAlternativeRoute();
-            } else {
-                input.getFirst().setNormalRoute();
-            }
-        }
-    }
 
     String sensorId;
     String trainId;
@@ -56,8 +47,9 @@ public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void>
 
     @Override
     public Void visitCommandItem(LeTrainProgramParser.CommandItemContext ctx) {
-        String semaphoreId = null;
-        String semaphoreAction = null;
+        final String semaphoreId;
+        final String semaphoreAction;
+        final SemaphoreStateConsumer semaphoreStateConsumer;
         final String forkId;
         final String forkDirection;
         final ForkDirConsumer forkDirConsumer;
@@ -69,52 +61,81 @@ public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void>
             forkDirection = null;
             semaphoreId = ctx.NUMBER().getText();
             semaphoreAction = ctx.semaphoreAction().getText();
+            semaphoreStateConsumer = new SemaphoreStateConsumer();
         } else if (ctx.dir() != null) {
             forkId = ctx.NUMBER().getText();
             forkDirection = ctx.dir().getText();
             forkDirConsumer = new ForkDirConsumer();
+            semaphoreId = null;
+            semaphoreAction = null;
+            semaphoreStateConsumer = null;
         } else if (ctx.speedLimit() != null) {
             forkDirConsumer = null;
             forkId = null;
             forkDirection = null;
             speedLimitType = ctx.speedLimit().getText();
             speedLimit = ctx.NUMBER().getText();
+            semaphoreId = null;
+            semaphoreAction = null;
+            semaphoreStateConsumer = null;
         } else {
             forkDirConsumer = null;
             forkId = null;
             forkDirection = null;
+            semaphoreId = null;
+            semaphoreAction = null;
+            semaphoreStateConsumer = null;
         }
 
         Sensor sensor = model.getSensor(Integer.parseInt(sensorId));
         if (sensor == null) {
             return null;
-
         }
         if ("enter".equals(trainAction)) {
             sensor.addSensorEventListener(new SensorEventListener() {
                 @Override
                 public void onEnterTrain(Train train) {
-                    doForkAction(forkId, forkDirection, forkDirConsumer, train);
+                    if (forkDirConsumer != null) {
+                        doForkAction(forkId, forkDirection, forkDirConsumer, train);
+                    }
+                    if (semaphoreStateConsumer != null) {
+                        doSemaphoreAction(semaphoreId, semaphoreAction, semaphoreStateConsumer);
+                    }
                 }
             });
         } else if ("exit".equals(trainAction)) {
             sensor.addSensorEventListener(new SensorEventListener() {
                 @Override
                 public void onExitTrain(Train train) {
-                    doForkAction(forkId, forkDirection, forkDirConsumer, train);
+                    if (forkDirConsumer != null) {
+                        doForkAction(forkId, forkDirection, forkDirConsumer, train);
+                    }
+                    if (semaphoreStateConsumer != null) {
+                        doSemaphoreAction(semaphoreId, semaphoreAction, semaphoreStateConsumer);
+                    }
                 }
             });
         } else {
             sensor.addSensorEventListener(new SensorEventListener() {
                 @Override
                 public void onEnterTrain(Train train) {
-                    doForkAction(forkId, forkDirection, forkDirConsumer, train);
+                    if (forkDirConsumer != null) {
+                        doForkAction(forkId, forkDirection, forkDirConsumer, train);
+                    }
+                    if (semaphoreStateConsumer != null) {
+                        doSemaphoreAction(semaphoreId, semaphoreAction, semaphoreStateConsumer);
+                    }
                 }
             });
             sensor.addSensorEventListener(new SensorEventListener() {
                 @Override
                 public void onExitTrain(Train train) {
-                    doForkAction(forkId, forkDirection, forkDirConsumer, train);
+                    if (forkDirConsumer != null) {
+                        doForkAction(forkId, forkDirection, forkDirConsumer, train);
+                    }
+                    if (semaphoreStateConsumer != null) {
+                        doSemaphoreAction(semaphoreId, semaphoreAction, semaphoreStateConsumer);
+                    }
                 }
             });
         }
@@ -128,10 +149,16 @@ public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void>
                 return;
             }
         }
-        if (forkDirConsumer != null) {
-            ForkRailTrack fork = model.getFork(Integer.parseInt(forkId));
-            forkDirConsumer.accept(new Pair<ForkRailTrack, Dir>(fork, Dir.valueOf(forkDirection)));
-        }
+        ForkRailTrack fork = model.getFork(Integer.parseInt(forkId));
+        forkDirConsumer.accept(new Pair<ForkRailTrack, Dir>(fork, Dir.valueOf(forkDirection)));
+    }
+
+    void doSemaphoreAction(final String semaphoreId, final String semaphoreState,
+            final SemaphoreStateConsumer semaphoreStateConsumer) {
+        RailSemaphore semaphore = model.getSemaphore(Integer.parseInt(semaphoreId));
+        Boolean state = semaphoreState.toUpperCase().equals("OPEN") ? true : false;
+        semaphoreStateConsumer.accept(new Pair<RailSemaphore, Boolean>(semaphore,
+                state));
     }
 
     public static void saveModel(Model model, String file) {
@@ -156,6 +183,10 @@ public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void>
     }
 
     public static void readProgram(letrain.mvp.Model model) {
+        for (Sensor sensor : model.getSensors()) {
+            sensor.removeAllSensorEventListeners();
+        }
+
         CharStream input = null;
         try {
             input = CharStreams.fromFileName("commands.txt");

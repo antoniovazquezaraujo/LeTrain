@@ -1,13 +1,6 @@
 package letrain;
 
-import java.io.IOException;
-
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-
 import letrain.mvp.impl.CompactPresenter;
-import letrain.mvp.Model;
 
 public class LeTrain {
 
