@@ -18,7 +18,7 @@ public abstract class Track implements
         Mapeable,
         LinkerCompartmentListener,
         Renderable {
-
+    private static final long serialVersionUID = 1L;
     private TrackDirector trackDirector;
     private Linker linker = null;
     private Sensor sensor = null;

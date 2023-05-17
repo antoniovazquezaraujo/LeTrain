@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 
+import letrain.LeTrainSensorProgramVisitor;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
@@ -51,7 +52,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         this(null);
     }
 
-    public CompactPresenter(Model model) {
+    public CompactPresenter(letrain.mvp.Model model) {
         if (model != null) {
             this.model = model;
         } else {
@@ -127,6 +128,9 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 trainManagerOnChar(keyEvent);
             } else {
                 switch (keyEvent.getCharacter()) {
+                    case 'p':
+                        LeTrainSensorProgramVisitor.readProgram(model);
+                        break;
                     case 'r':
                         model.setMode(RAILS);
                         break;

@@ -1,0 +1,13 @@
+sensor 1 on train enter {
+    fork 1 E;
+}
+sensor 1 on train exit {
+    fork 1 NE;
+}
+
+sensor 2 on train enter {
+    fork 2 W;
+}
+sensor 2 on train exit {
+    fork 2 SW;
+}

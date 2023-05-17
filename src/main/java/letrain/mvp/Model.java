@@ -7,6 +7,7 @@ import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
+import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public interface Model {
@@ -17,6 +18,8 @@ public interface Model {
     List<Wagon> getWagons();
 
     Cursor getCursor();
+
+    Train getTrainFromLocomotiveId(int locomotiveId);
 
     List<ForkRailTrack> getForks();
 
@@ -52,6 +55,8 @@ public interface Model {
 
     void selectFork(int id);
 
+    ForkRailTrack getFork(int id);
+
     ForkRailTrack getSelectedFork();
 
     void setSelectedFork(ForkRailTrack selectedFork);
@@ -63,10 +68,6 @@ public interface Model {
     void selectNextLocomotive();
 
     void selectPrevLocomotive();
-
-    void saveModel(String file);
-
-    void loadModel(String file);
 
     enum GameMode {
         MENU("Menu mode"),
