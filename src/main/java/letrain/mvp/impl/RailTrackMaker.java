@@ -77,14 +77,17 @@ public class RailTrackMaker {
             case ArrowRight:
                 cursorTurnRight();
                 break;
-            case Delete:
-                removeSensor();
-                break;
             case Insert:
                 addSensor();
                 break;
+            case Delete:
+                removeSensor();
+                break;
             case Home:
                 addSemaphore();
+                break;
+            case End:
+                removeSemaphore();
                 break;
         }
 
@@ -116,6 +119,14 @@ public class RailTrackMaker {
                 track.setSensor(null);
                 model.removeSensor(sensor);
             }
+        }
+    }
+
+    void removeSemaphore() {
+        Point position = model.getCursor().getPosition();
+        RailSemaphore semaphore = model.getSemaphoreAt(position);
+        if (semaphore != null) {
+            model.removeSemaphore(semaphore);
         }
     }
 

@@ -69,7 +69,7 @@ public class InfoVisitor implements Visitor {
     }
 
     private String getModeHelp(GameMode mode) {
-        String[] menuOptions = { "(r)ails", "(d)rive", "(f)orks", "(t)rains", "(l)ink", "(u)nlink" };
+        String[] menuOptions = { "(r)ails", "(d)rive", "(f)orks", "(s)emaphores", "(t)rains", "(l)ink", "(u)nlink" };
         String title = getOptionsWithHighlight(menuOptions, mode.ordinal() - 1) + "\n";
         String ret = title;
         switch (mode) {
@@ -77,12 +77,15 @@ public class InfoVisitor implements Visitor {
                 ret += "escape:exit ";
                 break;
             case RAILS:
-                ret += "<:left >:right ^:forwd v:backwd shift+^:rail ctrl+^:del insert:add sensor delete:delete sensor";
+                ret += "<:left >:right ^:forwd v:backwd shift+^:rail ctrl+^:del insert:add sensor delete:delete sensor home:insert semaphore end:delete semaphore";
                 break;
             case DRIVE:
                 ret += "<:prev >:next ^:accel v:decel space:reverse (pgup, pgdn, ctrl+pgup, ctrl+pgdn):move map";
                 break;
             case FORKS:
+                ret += "<:prev >:next space:toggle #:select";
+                break;
+            case SEMAPHORES:
                 ret += "<:prev >:next space:toggle #:select";
                 break;
             case TRAINS:

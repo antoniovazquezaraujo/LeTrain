@@ -5,6 +5,7 @@ import static letrain.mvp.Model.GameMode.FORKS;
 import static letrain.mvp.Model.GameMode.LINK;
 import static letrain.mvp.Model.GameMode.MENU;
 import static letrain.mvp.Model.GameMode.RAILS;
+import static letrain.mvp.Model.GameMode.SEMAPHORES;
 import static letrain.mvp.Model.GameMode.TRAINS;
 import static letrain.mvp.Model.GameMode.UNLINK;
 
@@ -45,6 +46,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     private final InfoVisitor informer;
 
     int forkId;
+    int semaphoreId;
 
     RailTrackMaker railTrackMaker;
 
@@ -140,6 +142,9 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                     case 'f':
                         model.setMode(FORKS);
                         break;
+                    case 's':
+                        model.setMode(SEMAPHORES);
+                        break;
                     case 't':
                         model.setMode(TRAINS);
                         newTrain = null;
@@ -171,6 +176,9 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
             case FORKS:
                 forkManagerOnChar(keyEvent);
                 break;
+            case SEMAPHORES:
+                semaphoreManagerOnChar(keyEvent);
+                break;
             case TRAINS:
                 // Not managed here!!
                 // trainManagerOnChar(keyEvent);
@@ -180,6 +188,38 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 break;
             case UNLINK:
                 unlinkerOnChar(keyEvent);
+                break;
+        }
+    }
+
+    private void semaphoreManagerOnChar(KeyStroke keyEvent) {
+        switch (keyEvent.getKeyType()) {
+            case Backspace:
+                semaphoreId = semaphoreId / 10;
+                selectSemaphore(semaphoreId);
+                break;
+            case Character:
+                if (keyEvent.getCharacter() == ' ') {
+                    toggleSemaphore();
+                    semaphoreId = 0;
+                } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
+                    semaphoreId = semaphoreId * 10 + (keyEvent.getCharacter() - '0');
+                    selectSemaphore(semaphoreId);
+                }
+                break;
+            case ArrowUp:
+                toggleSemaphore();
+                semaphoreId = 0;
+                break;
+            case ArrowDown:
+                toggleSemaphore();
+                semaphoreId = 0;
+                break;
+            case ArrowLeft:
+                selectPrevSemaphore();
+                break;
+            case ArrowRight:
+                selectNextSemaphore();
                 break;
         }
     }
@@ -443,6 +483,28 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     private void toggleFork() {
         if (model.getSelectedFork() != null) {
             model.getSelectedFork().flipRoute();
+        }
+    }
+
+    /***********************************************************
+     * SEMAPHORES
+     **********************************************************/
+
+    private void selectNextSemaphore() {
+        model.selectNextSemaphore();
+    }
+
+    private void selectPrevSemaphore() {
+        model.selectPrevSemaphore();
+    }
+
+    private void selectSemaphore(int id) {
+        model.selectSemaphore(id);
+    }
+
+    private void toggleSemaphore() {
+        if (model.getSelectedSemaphore() != null) {
+            model.getSelectedSemaphore().setOpen(!model.getSelectedSemaphore().isOpen());
         }
     }
 

@@ -96,7 +96,7 @@ public class RenderVisitor implements Visitor {
         } else {
             view.setFgColor(SEMAPHORE_CLOSED_COLOR);
         }
-        view.set(pos.getX(), pos.getY(), ":" + (mode.equals(GameMode.RAILS) ? semaphore.getId() : ""));
+        view.set(pos.getX(), pos.getY(), ":" + (mode.equals(GameMode.SEMAPHORES) ? semaphore.getId() : ""));
 
     }
 

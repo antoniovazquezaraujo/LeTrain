@@ -2,6 +2,7 @@ package letrain.mvp;
 
 import java.util.List;
 
+import letrain.map.Point;
 import letrain.map.RailMap;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
@@ -50,7 +51,17 @@ public interface Model {
 
     void addSemaphore(RailSemaphore semaphore);
 
-    void removeSemaphore(RailSemaphore sensor);
+    void removeSemaphore(RailSemaphore semaphore);
+
+    RailSemaphore getSemaphoreAt(Point point);
+
+    void selectNextSemaphore();
+
+    void selectPrevSemaphore();
+
+    void selectSemaphore(int id);
+
+    RailSemaphore getSelectedSemaphore();
 
     void moveLocomotives();
 
@@ -83,6 +94,7 @@ public interface Model {
         RAILS("Navigate map, create and delete tracks"),
         DRIVE("Manage locomotives"),
         FORKS("Manage forks"),
+        SEMAPHORES("Manage semaphores"),
         TRAINS("Use factory platforms"),
         LINK("Link trains"),
         UNLINK("Divide trains"),
