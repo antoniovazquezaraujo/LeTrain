@@ -22,8 +22,11 @@ public class Model implements Serializable, letrain.mvp.Model {
     static Logger log = LoggerFactory.getLogger(Model.class);
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
+    RailSemaphore selectedSemaphore;
+
     int selectedLocomotiveIndex;
     int selectedForkIndex;
+    int selectedSemaphoreIndex;
 
     GameMode mode = letrain.mvp.Model.GameMode.RAILS;
     RailMap map;
@@ -51,6 +54,10 @@ public class Model implements Serializable, letrain.mvp.Model {
         selectedForkIndex = 0;
         if (!getForks().isEmpty()) {
             selectedFork = getForks().get(selectedForkIndex);
+        }
+        selectedSemaphoreIndex = 0;
+        if (!getSemaphores().isEmpty()) {
+            selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
         }
     }
 
@@ -276,6 +283,57 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public void removeSemaphore(RailSemaphore semaphore) {
         this.semaphores.remove(semaphore);
+    }
+
+    @Override
+    public RailSemaphore getSemaphoreAt(Point pos) {
+        for (RailSemaphore semaphore : getSemaphores()) {
+            if (semaphore.getPosition().equals(pos)) {
+                return semaphore;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void selectNextSemaphore() {
+        if (getSemaphores().isEmpty()) {
+            return;
+        }
+
+        selectedSemaphoreIndex++;
+        if (selectedSemaphoreIndex >= getSemaphores().size()) {
+            selectedSemaphoreIndex = 0;
+        }
+        selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
+
+    }
+
+    @Override
+    public void selectPrevSemaphore() {
+        if (getSemaphores().isEmpty()) {
+            return;
+        }
+        selectedSemaphoreIndex--;
+        if (selectedSemaphoreIndex < 0) {
+            selectedSemaphoreIndex = getSemaphores().size() - 1;
+        }
+        selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
+    }
+
+    @Override
+    public RailSemaphore getSelectedSemaphore() {
+        return selectedSemaphore;
+    }
+
+    @Override
+    public void selectSemaphore(int id) {
+        for (RailSemaphore semaphore : getSemaphores()) {
+            if (semaphore.getId() == id) {
+                selectedSemaphore = semaphore;
+                break;
+            }
+        }
     }
 
 }

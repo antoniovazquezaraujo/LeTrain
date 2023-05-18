@@ -47,7 +47,6 @@ public class RailSemaphore implements Renderable, Serializable {
         visitor.visitSemaphore(this);
     }
 
-    // toString
     @Override
     public String toString() {
         return "Semaphore [id=" + id + "]";
