@@ -6,27 +6,6 @@
     "configurations": [
         {
             "type": "java",
-            "name": "TrainCommandParserExample",
-            "request": "launch",
-            "mainClass": "TrainCommandParserExample",
-            "projectName": "JLeTrain"
-        },
-        {
-            "type": "java",
-            "name": "TrainCommandParserExample",
-            "request": "launch",
-            "mainClass": "src.main.java.letrain.parser.TrainCommandParserExample",
-            "projectName": "JLeTrain"
-        },
-        {
-            "type": "java",
-            "name": "TrainCommandParserExample",
-            "request": "launch",
-            "mainClass": "letrain.parser.TrainCommandParserExample",
-            "projectName": "JLeTrain"
-        },
-        {
-            "type": "java",
             "name": "LeTrain",
             "request": "launch",
             "mainClass": "letrain.LeTrain",

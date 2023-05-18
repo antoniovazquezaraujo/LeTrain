@@ -13,6 +13,14 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public interface Model {
+    public int nextSemaphoreId();
+
+    public int nextForkId();
+
+    public int nextLocomotiveId();
+
+    public int nextSensorId();
+
     RailMap getRailMap();
 
     List<Locomotive> getLocomotives();

@@ -87,7 +87,7 @@ class TestCircuit1TraitTest {
         }
         railMap.addTrack(cursorPosition, track);
         if (canBeAFork(track, oldDir, dir)) {
-            final ForkRailTrack myNewTrack = new ForkRailTrack();
+            final ForkRailTrack myNewTrack = new ForkRailTrack(1);
             // Modmodel.addFork(myNewTrack)
             final Router router = track.getRouter();
             // TODO: recover this!

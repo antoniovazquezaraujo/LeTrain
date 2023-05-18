@@ -7,7 +7,6 @@ import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 
 public class Locomotive extends Linker implements Tractor {
-    static int numLocomotivesCreated = 0;
     final static int MAX_SPEED = 5;
     int speed;
     int turns;
@@ -15,13 +14,13 @@ public class Locomotive extends Linker implements Tractor {
     int showingDirTurns;
     int id;
 
-    public Locomotive(String aspect) {
-        this.id = (++numLocomotivesCreated);
+    public Locomotive(int id, String aspect) {
+        this.id = id;
         this.aspect = aspect;
     }
 
-    public Locomotive(char c) {
-        this("" + c);
+    public Locomotive(int id, char c) {
+        this(id, "" + c);
     }
 
     public int getId() {

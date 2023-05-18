@@ -10,7 +10,6 @@ import letrain.visitor.Visitor;
 
 public class Sensor implements Renderable, Serializable {
     private static final long serialVersionUID = 1L;
-    private static int numSensorsCreated = 0;
     private int id;
     Track track;
     List<SensorEventListener> listeners = new ArrayList<>();
@@ -23,8 +22,8 @@ public class Sensor implements Renderable, Serializable {
         this.track = track;
     }
 
-    public Sensor() {
-        setId(++numSensorsCreated);
+    public Sensor(int id) {
+        setId(id);
     }
 
     public void setId(int i) {

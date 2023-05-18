@@ -8,7 +8,6 @@ import letrain.visitor.Visitor;
 
 public class RailSemaphore implements Renderable, Serializable {
     private static final long serialVersionUID = 1L;
-    private static int numSemaphoresCreated = 0;
     private int id;
     private Point position;
     private boolean open;
@@ -29,8 +28,8 @@ public class RailSemaphore implements Renderable, Serializable {
         this.position = position;
     }
 
-    public RailSemaphore(Point position) {
-        setId(++numSemaphoresCreated);
+    public RailSemaphore(int id, Point position) {
+        setId(id);
         setPosition(new Point(position));
     }
 

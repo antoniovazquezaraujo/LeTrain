@@ -23,7 +23,7 @@ public class RailTrackMakerTest {
         void testConnectTrack(Dir from) {
                 RailTrackMaker maker = new RailTrackMaker(null, null);
                 RailTrack track = new RailTrack();
-                ForkRailTrack fork = new ForkRailTrack();
+                ForkRailTrack fork = new ForkRailTrack(1);
                 Dir to = from.inverse();
                 Dir toTurnedLeft = to.turnLeft();
                 track.addRoute(from, to);
