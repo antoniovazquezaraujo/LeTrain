@@ -97,7 +97,7 @@ public class RailTrackMaker {
         Point position = model.getCursor().getPosition();
         Track track = model.getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            Sensor sensor = new Sensor();
+            Sensor sensor = new Sensor(model.nextSensorId());
             sensor.setTrack(track);
             track.setSensor(sensor);
             model.addSensor(sensor);
@@ -106,7 +106,7 @@ public class RailTrackMaker {
 
     void addSemaphore() {
         Point position = model.getCursor().getPosition();
-        RailSemaphore semaphore = new RailSemaphore(position);
+        RailSemaphore semaphore = new RailSemaphore(model.nextSemaphoreId(), position);
         model.addSemaphore(semaphore);
     }
 
@@ -233,7 +233,7 @@ public class RailTrackMaker {
     }
 
     ForkRailTrack createForkRailTrack(Point cursorPosition, RailTrack track) {
-        final ForkRailTrack fork = new ForkRailTrack();
+        final ForkRailTrack fork = new ForkRailTrack(model.nextForkId());
         fork.setPosition(cursorPosition);
         return fork;
     }

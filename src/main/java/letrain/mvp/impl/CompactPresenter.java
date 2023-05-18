@@ -287,7 +287,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         }
         Dir cursorDir = Dir.E;
         if (c.toUpperCase().equals(c)) {
-            Locomotive locomotive = new Locomotive(c);
+            Locomotive locomotive = new Locomotive(model.nextLocomotiveId(), c);
             Train train = new Train();
             train.pushBack(locomotive);
             train.setDirectorLinker(locomotive);
@@ -456,7 +456,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     }
 
     private void createLocomotive(Dir d, String c, RailTrack track) {
-        Locomotive locomotive = new Locomotive(c);
+        Locomotive locomotive = new Locomotive(model.nextLocomotiveId(), c);
         Train train = new Train();
         train.pushBack(locomotive);
         train.setDirectorLinker(locomotive);

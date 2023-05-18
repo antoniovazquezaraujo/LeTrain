@@ -36,6 +36,26 @@ public class Model implements Serializable, letrain.mvp.Model {
     List<ForkRailTrack> forks;
     List<Sensor> sensors;
     List<RailSemaphore> semaphores;
+    int nextLocomotiveId;
+    int nextForkId;
+    int nextSensorId;
+    int nextSemaphoreId;
+
+    public int nextSemaphoreId() {
+        return nextSemaphoreId++;
+    }
+
+    public int nextForkId() {
+        return nextForkId++;
+    }
+
+    public int nextLocomotiveId() {
+        return nextLocomotiveId++;
+    }
+
+    public int nextSensorId() {
+        return nextSensorId++;
+    }
 
     public Model() {
         this.cursor = new Cursor();
