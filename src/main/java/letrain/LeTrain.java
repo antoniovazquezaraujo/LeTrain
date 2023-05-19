@@ -18,6 +18,7 @@ public class LeTrain {
         }
         presenter = new CompactPresenter((letrain.mvp.Model) this.model);
         presenter.start();
+        presenter.stop();
         LeTrainSensorProgramVisitor.saveModel(this.model, "game.ltr");
     }
 

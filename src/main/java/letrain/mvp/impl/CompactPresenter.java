@@ -44,9 +44,11 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     private final letrain.mvp.View view;
     private final RenderVisitor renderer;
     private final InfoVisitor informer;
+    boolean running;
 
     int forkId;
     int semaphoreId;
+    int locomotiveId;
 
     RailTrackMaker railTrackMaker;
 
@@ -66,12 +68,17 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         railTrackMaker = new RailTrackMaker(model, view);
     }
 
+    public void stop() {
+        running = false;
+    }
+
     public void start() {
+        running = true;
         try {
 
             KeyStroke stroke = null;
             model.setMode(MENU);
-            while (true) {
+            while (running) {
                 stroke = null;
                 stroke = view.readKey();
                 if (view.isEndOfGame(stroke)) {
@@ -340,23 +347,40 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void trainDriverOnChar(KeyStroke keyEvent) {
         this.newTrain = null;
+        model.setShowId(false);
         switch (keyEvent.getKeyType()) {
+            case Backspace:
+                locomotiveId = locomotiveId / 10;
+                selectLocomotive(locomotiveId);
+                break;
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
                     toggleReversed();
+                    locomotiveId = 0;
+                } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
+                    if (keyEvent.getCharacter() == '0' && locomotiveId == 0) {
+                        model.setShowId(true);
+                    } else {
+                        locomotiveId = locomotiveId * 10 + (keyEvent.getCharacter() - '0');
+                        selectLocomotive(locomotiveId);
+                    }
                 }
                 break;
             case ArrowUp:
                 accelerateLocomotive();
+                locomotiveId = 0;
                 break;
             case ArrowDown:
                 decelerateLocomotive();
+                locomotiveId = 0;
                 break;
             case ArrowLeft:
                 selectPrevLocomotive();
+                locomotiveId = 0;
                 break;
             case ArrowRight:
                 selectNextLocomotive();
+                locomotiveId = 0;
                 break;
             case PageUp:
                 if (keyEvent.isCtrlDown()) {
@@ -441,6 +465,10 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void divideTrain() {
         model.getSelectedLocomotive().getTrain().divideTrain();
+    }
+
+    public void selectLocomotive(int id) {
+        model.selectLocomotive(id);
     }
 
     /***********************************************************

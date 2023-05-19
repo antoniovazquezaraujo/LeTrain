@@ -27,6 +27,7 @@ public class Model implements Serializable, letrain.mvp.Model {
     int selectedLocomotiveIndex;
     int selectedForkIndex;
     int selectedSemaphoreIndex;
+    boolean showId = false;
 
     GameMode mode = letrain.mvp.Model.GameMode.RAILS;
     RailMap map;
@@ -42,19 +43,19 @@ public class Model implements Serializable, letrain.mvp.Model {
     int nextSemaphoreId;
 
     public int nextSemaphoreId() {
-        return nextSemaphoreId++;
+        return ++nextSemaphoreId;
     }
 
     public int nextForkId() {
-        return nextForkId++;
+        return ++nextForkId;
     }
 
     public int nextLocomotiveId() {
-        return nextLocomotiveId++;
+        return ++nextLocomotiveId;
     }
 
     public int nextSensorId() {
-        return nextSensorId++;
+        return ++nextSensorId;
     }
 
     public Model() {
@@ -280,6 +281,15 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.selectedLocomotive = selectedLocomotive;
     }
 
+    public void selectLocomotive(int id) {
+        for (Locomotive Locomotive : getLocomotives()) {
+            if (Locomotive.getId() == id) {
+                selectedLocomotive = Locomotive;
+                break;
+            }
+        }
+    }
+
     @Override
     public List<RailSemaphore> getSemaphores() {
         return this.semaphores;
@@ -354,6 +364,16 @@ public class Model implements Serializable, letrain.mvp.Model {
                 break;
             }
         }
+    }
+
+    @Override
+    public void setShowId(boolean b) {
+        this.showId = b;
+    }
+
+    @Override
+    public boolean isShowId() {
+        return this.showId;
     }
 
 }
