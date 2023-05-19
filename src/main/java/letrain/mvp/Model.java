@@ -13,6 +13,11 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public interface Model {
+
+    public void setShowId(boolean b);
+
+    public boolean isShowId();
+
     public int nextSemaphoreId();
 
     public int nextForkId();
@@ -80,6 +85,8 @@ public interface Model {
     Locomotive getSelectedLocomotive();
 
     void setSelectedLocomotive(Locomotive selectedLocomotive);
+
+    public void selectLocomotive(int id);
 
     void selectFork(int id);
 
