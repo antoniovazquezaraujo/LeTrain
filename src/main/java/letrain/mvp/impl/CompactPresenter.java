@@ -469,6 +469,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     public void selectLocomotive(int id) {
         model.selectLocomotive(id);
+        setPageOfPoint(model.getSelectedLocomotive().getTrack().getPosition());
     }
 
     /***********************************************************
@@ -506,6 +507,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void selectFork(int id) {
         model.selectFork(id);
+        setPageOfPoint(model.getSelectedFork().getPosition());
     }
 
     private void toggleFork() {
@@ -528,6 +530,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void selectSemaphore(int id) {
         model.selectSemaphore(id);
+        setPageOfPoint(model.getSelectedSemaphore().getPosition());
     }
 
     private void toggleSemaphore() {
@@ -592,6 +595,10 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         view.setMapScrollPage(p);
         view.clear();
 
+    }
+
+    void setPageOfPoint(Point p) {
+        view.setPageOfPos(p.getX(), p.getY());
     }
 
     /***********************************************************
