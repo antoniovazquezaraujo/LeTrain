@@ -7,12 +7,20 @@ import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 
 public class Locomotive extends Linker implements Tractor {
+    private static final long serialVersionUID = 1L;
     final static int MAX_SPEED = 5;
     int speed;
     int turns;
     private String aspect;
     int showingDirTurns;
     int id;
+    int maxSpeed = MAX_SPEED;
+    int minSpeed = 0;
+
+    public enum SpeedLimitType {
+        MAX_SPEED,
+        MIN_SPEED
+    }
 
     public Locomotive(int id, String aspect) {
         this.id = id;
@@ -42,13 +50,7 @@ public class Locomotive extends Linker implements Tractor {
 
     @Override
     public void accept(Visitor visitor) {
-        // for (Linker linker : this.getTrain().getLinkers()) {
-        // if (linker instanceof Locomotive) {
         visitor.visitLocomotive(this);
-        // } else {
-        // visitor.visitWagon((Wagon) linker);
-        // }
-        // }
     }
 
     public String getAspect() {
@@ -100,9 +102,18 @@ public class Locomotive extends Linker implements Tractor {
     public boolean isTimeToMove() {
         if (this.turns == 0) {
             resetTurns();
+            updateLimitedSpeed();
             return true;
         }
         return false;
+    }
+
+    public void updateLimitedSpeed() {
+        if (getSpeed() > getMaxSpeed()) {
+            decSpeed();
+        } else if (getSpeed() < getMinSpeed()) {
+            incSpeed();
+        }
     }
 
     public void resetTurnsIfNeeded() {
@@ -132,4 +143,23 @@ public class Locomotive extends Linker implements Tractor {
         }
         return false;
     }
+
+    public int getMaxSpeed() {
+        return maxSpeed;
+    }
+
+    public void setMaxSpeed(int maxSpeed) {
+        this.maxSpeed = maxSpeed;
+        this.minSpeed = 0;
+    }
+
+    public int getMinSpeed() {
+        return minSpeed;
+    }
+
+    public void setMinSpeed(int minspeed) {
+        this.minSpeed = minspeed;
+        this.maxSpeed = MAX_SPEED;
+    }
+
 }
