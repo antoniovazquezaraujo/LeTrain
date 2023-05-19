@@ -21,6 +21,7 @@ import letrain.track.SensorEventListener;
 import letrain.track.rail.ForkRailTrack;
 import letrain.utils.Pair;
 import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.impl.rail.Locomotive.SpeedLimitType;
 
 public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void> implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -53,8 +54,9 @@ public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void>
         final String forkId;
         final String forkDirection;
         final ForkDirConsumer forkDirConsumer;
-        String speedLimitType = null;
-        String speedLimit = null;
+        final String speedLimitType;
+        final String speedLimit;
+        final TrainSpeedConsumer trainSpeedConsumer;
         if (ctx.semaphoreAction() != null) {
             forkDirConsumer = null;
             forkId = null;
@@ -62,6 +64,9 @@ public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void>
             semaphoreId = ctx.NUMBER().getText();
             semaphoreAction = ctx.semaphoreAction().getText();
             semaphoreStateConsumer = new SemaphoreStateConsumer();
+            trainSpeedConsumer = null;
+            speedLimitType = null;
+            speedLimit = null;
         } else if (ctx.dir() != null) {
             forkId = ctx.NUMBER().getText();
             forkDirection = ctx.dir().getText();
@@ -69,10 +74,14 @@ public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void>
             semaphoreId = null;
             semaphoreAction = null;
             semaphoreStateConsumer = null;
+            trainSpeedConsumer = null;
+            speedLimitType = null;
+            speedLimit = null;
         } else if (ctx.speedLimit() != null) {
             forkDirConsumer = null;
             forkId = null;
             forkDirection = null;
+            trainSpeedConsumer = new TrainSpeedConsumer();
             speedLimitType = ctx.speedLimit().getText();
             speedLimit = ctx.NUMBER().getText();
             semaphoreId = null;
@@ -82,9 +91,12 @@ public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void>
             forkDirConsumer = null;
             forkId = null;
             forkDirection = null;
+            semaphoreStateConsumer = null;
             semaphoreId = null;
             semaphoreAction = null;
-            semaphoreStateConsumer = null;
+            trainSpeedConsumer = null;
+            speedLimitType = null;
+            speedLimit = null;
         }
 
         Sensor sensor = model.getSensor(Integer.parseInt(sensorId));
@@ -100,6 +112,9 @@ public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void>
                     }
                     if (semaphoreStateConsumer != null) {
                         doSemaphoreAction(semaphoreId, semaphoreAction, semaphoreStateConsumer);
+                    }
+                    if (trainSpeedConsumer != null) {
+                        doTrainSpeedAction(speedLimitType, speedLimit, trainSpeedConsumer, train);
                     }
                 }
             });
@@ -161,6 +176,25 @@ public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void>
                 state));
     }
 
+    void doTrainSpeedAction(final String speedLimitType, final String speedLimit,
+            final TrainSpeedConsumer trainSpeedConsumer, Train train) {
+        if (trainId != null && !trainId.isEmpty()) {
+            if (Integer.parseInt(trainId) != train.getId()) {
+                return;
+            }
+        }
+        SpeedLimitType type;
+        if (speedLimitType.toUpperCase().equals("MAX")) {
+            type = SpeedLimitType.MAX_SPEED;
+        } else {
+            type = SpeedLimitType.MIN_SPEED;
+        }
+        trainSpeedConsumer.accept(new Pair<Train, Pair<SpeedLimitType, Integer>>(
+                train,
+                new Pair<SpeedLimitType, Integer>(type, Integer.parseInt(speedLimit))));
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
     public static void saveModel(Model model, String file) {
         try (FileOutputStream fos = new FileOutputStream(file);
                 ObjectOutputStream oos = new ObjectOutputStream(fos)) {

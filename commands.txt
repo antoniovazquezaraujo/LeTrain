@@ -1,8 +1,10 @@
 sensor 1 on train enter {
     fork 1 E;
     semaphore 2 open;
+    train max speed 0;
 }
 sensor 2 on train enter {
     fork 1 NE;
     semaphore 2 closed;
+    train min speed 5;
 }
