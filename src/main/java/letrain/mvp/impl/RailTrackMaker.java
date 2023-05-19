@@ -26,6 +26,7 @@ public class RailTrackMaker {
     Dir oldDir;
     boolean reversed = false;
     boolean makingTraks = false;
+    int numSteps = 0;
 
     public RailTrackMaker(letrain.mvp.Model model, letrain.mvp.View view) {
         this.model = model;
@@ -40,7 +41,15 @@ public class RailTrackMaker {
                         reset();
                     }
                     model.getCursor().setMode(Cursor.CursorMode.DRAWING);
-                    createTrack();
+                    if (numSteps > 0) {
+                        for (int n = 0; n < numSteps; n++) {
+                            if (!createTrack()) {
+                                break;
+                            }
+                        }
+                    } else {
+                        createTrack();
+                    }
                     makingTraks = true;
                 } else if (keyEvent.isCtrlDown()) {
                     model.getCursor().setMode(Cursor.CursorMode.ERASING);
@@ -48,8 +57,25 @@ public class RailTrackMaker {
                     makingTraks = false;
                 } else {
                     model.getCursor().setMode(Cursor.CursorMode.MOVING);
-                    cursorForward();
+                    if (numSteps > 0) {
+                        for (int n = 0; n < numSteps; n++) {
+                            cursorForward();
+                        }
+                    } else {
+                        cursorForward();
+                    }
                     makingTraks = false;
+                }
+                break;
+            case Character:
+                if (keyEvent.getCharacter() == ' ') {
+                    numSteps = 0;
+                } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
+                    if (keyEvent.getCharacter() == '0' && numSteps == 0) {
+                        model.setShowId(true);
+                    } else {
+                        numSteps = numSteps * 10 + (keyEvent.getCharacter() - '0');
+                    }
                 }
                 break;
             case PageUp:
@@ -159,11 +185,14 @@ public class RailTrackMaker {
 
     }
 
-    void createTrack() {
+    boolean createTrack() {
         degreesOfRotation = 0;
-        makeTrack();
-        Point position = model.getCursor().getPosition();
-        view.setPageOfPos(position.getX(), position.getY());
+        if (makeTrack()) {
+            Point position = model.getCursor().getPosition();
+            view.setPageOfPos(position.getX(), position.getY());
+            return true;
+        }
+        return false;
     }
 
     boolean makeTrack() {
