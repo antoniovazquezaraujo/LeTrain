@@ -26,6 +26,8 @@ public interface Model {
 
     public int nextSensorId();
 
+    public int nextTrainId();
+
     RailMap getRailMap();
 
     List<Locomotive> getLocomotives();

@@ -41,6 +41,7 @@ public class Model implements Serializable, letrain.mvp.Model {
     int nextForkId;
     int nextSensorId;
     int nextSemaphoreId;
+    int nextTrainId;
 
     public int nextSemaphoreId() {
         return ++nextSemaphoreId;
@@ -56,6 +57,10 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     public int nextSensorId() {
         return ++nextSensorId;
+    }
+
+    public int nextTrainId() {
+        return ++nextTrainId;
     }
 
     public Model() {
