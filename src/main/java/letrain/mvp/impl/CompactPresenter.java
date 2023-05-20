@@ -295,7 +295,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         Dir cursorDir = Dir.E;
         if (c.toUpperCase().equals(c)) {
             Locomotive locomotive = new Locomotive(model.nextLocomotiveId(), c);
-            Train train = new Train();
+            Train train = new Train(model.nextTrainId());
             train.pushBack(locomotive);
             train.setDirectorLinker(locomotive);
             model.addLocomotive(locomotive);
@@ -400,7 +400,8 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void destroyLinkers() {
         if (model.getSelectedLocomotive() != null) {
-            List<Linker> linkersToDestroy = model.getSelectedLocomotive().getTrain().destroyLinkers();
+            List<Linker> linkersToDestroy = model.getSelectedLocomotive().getTrain()
+                    .destroyLinkers(() -> model.nextTrainId());
             for (Linker linker : linkersToDestroy) {
                 if (linker instanceof Locomotive) {
                     model.removeLocomotive((Locomotive) linker);
@@ -464,7 +465,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
     }
 
     private void divideTrain() {
-        model.getSelectedLocomotive().getTrain().divideTrain();
+        model.getSelectedLocomotive().getTrain().divideTrain(() -> model.nextTrainId());
     }
 
     public void selectLocomotive(int id) {
@@ -486,7 +487,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void createLocomotive(Dir d, String c, RailTrack track) {
         Locomotive locomotive = new Locomotive(model.nextLocomotiveId(), c);
-        Train train = new Train();
+        Train train = new Train(model.nextTrainId());
         train.pushBack(locomotive);
         train.setDirectorLinker(locomotive);
         model.addLocomotive(locomotive);

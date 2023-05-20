@@ -36,5 +36,4 @@ public interface Trailer<T extends Track> {
 
     int size();
 
-    Trailer divide(Linker p);
 }

@@ -1,12 +1,12 @@
 package letrain.vehicle.impl.rail;
 
-import java.io.LineNumberReader;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -31,7 +31,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     protected final Deque<Linker> linkersToJoin;
     int numLinkersToRemove = 0;
     protected final Deque<Linker> linkersToRemove;
-    static int numTrainsCreated = 0;
 
     int id;
 
@@ -44,8 +43,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     boolean joined = false;
     protected Tractor directorLinker;
 
-    public Train() {
-        setId(++numTrainsCreated);
+    public Train(int id) {
+        setId(id);
         this.linkers = new LinkedList<>();
         this.tractors = new ArrayList<>();
         this.linkersToJoin = new LinkedList<>();
@@ -121,18 +120,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     @Override
     public int size() {
         return linkers.size();
-    }
-
-    @Override
-    public Trailer divide(Linker p) {
-        Trailer<RailTrack> ret = new Train();
-        Linker first = getLinkers().getFirst();
-        while (first != p) {
-            ret.pushFront(getLinkers().removeFirst());
-            first = getLinkers().getFirst();
-        }
-        assignDefaultDirectorLinker();
-        return ret;
     }
 
     public void assignDefaultDirectorLinker() {
@@ -437,7 +424,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         }
     }
 
-    public void divideTrain() {
+    public void divideTrain(Supplier<Integer> nextTrainIdSupplier) {
         Linker linkerToRemove = null;
         for (int n = 0; n < numLinkersToRemove; n++) {
             if (linkerDivisionSense == LinkersSense.BACK) {
@@ -447,7 +434,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             }
             linkerToRemove.setTrain(null);
             if (linkerToRemove instanceof Locomotive) {
-                Train train = new Train();
+                Train train = new Train(nextTrainIdSupplier.get());
                 linkerToRemove.setTrain(train);
                 train.getLinkers().add(linkerToRemove);
                 train.assignDefaultDirectorLinker();
@@ -457,7 +444,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         numLinkersToRemove = 0;
     }
 
-    public List<Linker> destroyLinkers() {
+    public List<Linker> destroyLinkers(Supplier<Integer> nextTrainIdSupplier) {
         List<Linker> linkersToDestroy = new ArrayList<>();
         Linker linkerToRemove = null;
         for (int n = 0; n < numLinkersToRemove; n++) {
@@ -468,7 +455,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             }
             linkerToRemove.setTrain(null);
             if (linkerToRemove instanceof Locomotive) {
-                Train train = new Train();
+                Train train = new Train(nextTrainIdSupplier.get());
                 linkerToRemove.setTrain(train);
                 train.getLinkers().add(linkerToRemove);
                 train.assignDefaultDirectorLinker();
