@@ -35,6 +35,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     public enum TrackType {
         NORMAL_TRACK,
+        PLATFORM_TRACK,
         STOP_TRACK,
         TRAIN_FACTORY_GATE,
         TUNNEL_GATE
@@ -357,6 +358,12 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 if (keyEvent.getCharacter() == ' ') {
                     toggleReversed();
                     locomotiveId = 0;
+                } else if (keyEvent.getCharacter() == '-') {
+                    if (model.getSelectedLocomotive().getTrain().isLoading) {
+                        model.getSelectedLocomotive().getTrain().endLoadUnloadProcess();
+                    } else {
+                        model.getSelectedLocomotive().getTrain().startLoadUnloadProcess();
+                    }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     if (keyEvent.getCharacter() == '0' && locomotiveId == 0) {
                         model.setShowId(true);
@@ -367,8 +374,10 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 }
                 break;
             case ArrowUp:
-                accelerateLocomotive();
-                locomotiveId = 0;
+                if (!model.getSelectedLocomotive().getTrain().isLoading) {
+                    accelerateLocomotive();
+                    locomotiveId = 0;
+                }
                 break;
             case ArrowDown:
                 decelerateLocomotive();

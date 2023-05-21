@@ -31,7 +31,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     protected final Deque<Linker> linkersToJoin;
     int numLinkersToRemove = 0;
     protected final Deque<Linker> linkersToRemove;
-
+    int railPlatformId = 0;
+    public boolean isLoading = false;
     int id;
 
     enum LinkersSense {
@@ -527,5 +528,22 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     @Override
     public String toString() {
         return "Train " + getId();
+    }
+
+    public void setPlatformId(int railPlatformId) {
+        this.railPlatformId = railPlatformId;
+    }
+
+    public void startLoadUnloadProcess() {
+        if (railPlatformId != 0 && getDirectorLinker().getSpeed() == 0) {
+            isLoading = true;
+        }
+    }
+
+    public void endLoadUnloadProcess() {
+        if (railPlatformId != 0 && getDirectorLinker().getSpeed() == 0) {
+            isLoading = false;
+        }
+
     }
 }

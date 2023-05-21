@@ -6,10 +6,13 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.SimpleRouter;
+import letrain.mvp.impl.CompactPresenter.TrackType;
+import letrain.track.PlatformSensor;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.PlatformTrack;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.StopRailTrack;
 import letrain.track.rail.TrainFactoryRailTrack;
@@ -27,6 +30,7 @@ public class RailTrackMaker {
     boolean reversed = false;
     boolean makingTraks = false;
     int numSteps = 0;
+    boolean creatingPlatform = false;
 
     public RailTrackMaker(letrain.mvp.Model model, letrain.mvp.View view) {
         this.model = model;
@@ -70,6 +74,13 @@ public class RailTrackMaker {
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
                     numSteps = 0;
+                } else if (keyEvent.getCharacter() == 'w') {
+                    creatingPlatform = !creatingPlatform;
+                    if (creatingPlatform) {
+                        selectNewTrackType(TrackType.PLATFORM_TRACK);
+                    } else {
+                        selectNewTrackType(TrackType.NORMAL_TRACK);
+                    }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     if (keyEvent.getCharacter() == '0' && numSteps == 0) {
                         model.setShowId(true);
@@ -104,39 +115,19 @@ public class RailTrackMaker {
                 cursorTurnRight();
                 break;
             case Insert:
-                addSensor();
-                break;
-            case Delete:
-                removeSensor();
+                manageSensor();
                 break;
             case Home:
-                addSemaphore();
+                manageSemaphore();
                 break;
             case End:
-                removeSemaphore();
+                managePlatformSensor();
                 break;
         }
 
     }
 
-    void addSensor() {
-        Point position = model.getCursor().getPosition();
-        Track track = model.getRailMap().getTrackAt(position.getX(), position.getY());
-        if (track != null) {
-            Sensor sensor = new Sensor(model.nextSensorId());
-            sensor.setTrack(track);
-            track.setSensor(sensor);
-            model.addSensor(sensor);
-        }
-    }
-
-    void addSemaphore() {
-        Point position = model.getCursor().getPosition();
-        RailSemaphore semaphore = new RailSemaphore(model.nextSemaphoreId(), position);
-        model.addSemaphore(semaphore);
-    }
-
-    void removeSensor() {
+    void manageSensor() {
         Point position = model.getCursor().getPosition();
         Track track = model.getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
@@ -144,16 +135,44 @@ public class RailTrackMaker {
             if (sensor != null) {
                 track.setSensor(null);
                 model.removeSensor(sensor);
+            } else {
+                sensor = new Sensor(model.nextSensorId());
+                sensor.setTrack(track);
+                track.setSensor(sensor);
+                model.addSensor(sensor);
             }
         }
     }
 
-    void removeSemaphore() {
+    void manageSemaphore() {
         Point position = model.getCursor().getPosition();
         RailSemaphore semaphore = model.getSemaphoreAt(position);
         if (semaphore != null) {
             model.removeSemaphore(semaphore);
+        } else {
+            semaphore = new RailSemaphore(model.nextSemaphoreId(), position);
+            model.addSemaphore(semaphore);
         }
+    }
+
+    void managePlatformSensor() {
+        Point position = model.getCursor().getPosition();
+        Track track = model.getRailMap().getTrackAt(position.getX(), position.getY());
+        if (track != null && track instanceof PlatformTrack) {
+            Sensor sensor = track.getSensor();
+            if (sensor != null) {
+                if (sensor instanceof PlatformSensor) {
+                    track.setSensor(null);
+                }
+                model.removeSensor(sensor);
+            } else {
+                sensor = new PlatformSensor(model.nextSensorId());
+                sensor.setTrack(track);
+                track.setSensor(sensor);
+                model.addSensor(sensor);
+            }
+        }
+
     }
 
     private void reset() {
@@ -295,6 +314,8 @@ public class RailTrackMaker {
 
     public RailTrack createTrackOfSelectedType() {
         switch (newTrackType) {
+            case PLATFORM_TRACK:
+                return new PlatformTrack();
             case STOP_TRACK:
                 return new StopRailTrack();
             case TRAIN_FACTORY_GATE:
