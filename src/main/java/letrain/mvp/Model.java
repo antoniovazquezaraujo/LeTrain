@@ -129,4 +129,6 @@ public interface Model {
         }
     }
 
+    public void removeDestroyedTrains();
+
 }

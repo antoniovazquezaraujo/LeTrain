@@ -18,6 +18,8 @@ public class Locomotive extends Linker implements Tractor {
     int id;
     int maxSpeed = MAX_SPEED;
     int minSpeed = 0;
+    boolean destroying = false;
+    int destroyingTurns = 0;
 
     public enum SpeedLimitType {
         MAX_SPEED,
@@ -27,6 +29,7 @@ public class Locomotive extends Linker implements Tractor {
     public Locomotive(int id, String aspect) {
         this.id = id;
         this.aspect = aspect;
+        resetTurns();
     }
 
     public Locomotive(int id, char c) {
@@ -60,6 +63,10 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void update() {
+        if (isDestroying()) {
+            return;
+        }
+
         if (isDirectorLinker()) {
             if (isTimeToMove()) {
                 getTrain().advance();
@@ -167,6 +174,25 @@ public class Locomotive extends Linker implements Tractor {
     public void setMinSpeed(int minspeed) {
         this.minSpeed = minspeed;
         this.maxSpeed = MAX_SPEED;
+    }
+
+    @Override
+    public void destroy() {
+        this.destroying = true;
+        this.destroyingTurns = 1000;
+    }
+
+    @Override
+    public boolean isDestroying() {
+        return this.destroying;
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        if (isDestroying() && destroyingTurns-- <= 0) {
+            return true;
+        }
+        return false;
     }
 
 }

@@ -3,6 +3,7 @@ package letrain.mvp.impl;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -379,6 +380,35 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public boolean isShowId() {
         return this.showId;
+    }
+
+    @Override
+    public void removeDestroyedTrains() {
+        AtomicBoolean removed = new AtomicBoolean(false);
+        getLocomotives().forEach(locomotive -> {
+            if (locomotive.isDestroyed()) {
+                removed.set(true);
+            }
+        });
+
+        getLocomotives().removeIf(locomotive -> {
+            if (locomotive.isDestroyed()) {
+                removed.set(true);
+                locomotive.getTrack().removeLinker();
+            }
+            return locomotive.isDestroyed();
+        });
+
+        getWagons().removeIf(wagon -> {
+            if (wagon.isDestroyed()) {
+                wagon.getTrack().removeLinker();
+            }
+            return wagon.isDestroyed();
+        });
+
+        if (removed.get()) {
+            selectNextLocomotive();
+        }
     }
 
 }

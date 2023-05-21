@@ -95,6 +95,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 informer.visitModel(model);
                 view.paint();
                 model.moveLocomotives();
+                model.removeDestroyedTrains();
                 Thread.sleep(50);
                 view.clear();
             }

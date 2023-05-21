@@ -257,8 +257,15 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                         return false;
                     }
                 } else {
-                    crash(nextTrack.getLinker());
-                    return false;
+                    if (getDirectorLinker().getSpeed() > 1) {
+                        crash(nextTrack.getLinker());
+                        return false;
+                    }
+                    Train crashedTrain = nextTrack.getLinker().getTrain();
+                    if (crashedTrain != null && crashedTrain.getDirectorLinker().getSpeed() > 1) {
+                        crash(nextTrack.getLinker());
+                        return false;
+                    }
                 }
             } else {
                 // System.out.println("Ojo, no hay track en " + track.getPosition() + " -> " +
@@ -270,7 +277,13 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     private void crash(Linker linker) {
-        // System.out.println("Choque de :" + linker);
+        getLinkers().forEach(Linker::destroy);
+        if (linker.getTrain() != null) {
+            linker.getTrain().getLinkers().forEach(Linker::destroy);
+            ;
+        } else {
+            linker.destroy();
+        }
     }
 
     public Linker getFirstLinker() {
