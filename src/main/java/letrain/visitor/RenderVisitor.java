@@ -13,10 +13,12 @@ import letrain.map.SimpleRouter;
 import letrain.mvp.Model;
 import letrain.mvp.View;
 import letrain.mvp.Model.GameMode;
+import letrain.track.PlatformSensor;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.PlatformTrack;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.StopRailTrack;
 import letrain.track.rail.TrainFactoryRailTrack;
@@ -30,6 +32,7 @@ public class RenderVisitor implements Visitor {
     Logger log = LoggerFactory.getLogger(RenderVisitor.class);
     private static final TextColor RAIL_TRACK_COLOR = TextColor.ANSI.BLACK_BRIGHT;
     private static final TextColor SENSOR_COLOR = TextColor.ANSI.CYAN_BRIGHT;
+    private static final TextColor PLATFORM_SENSOR_COLOR = TextColor.ANSI.MAGENTA_BRIGHT;
     public static final TextColor FORK_COLOR = TextColor.ANSI.WHITE_BRIGHT;
     public static final TextColor SELECTED_FORK_COLOR = TextColor.ANSI.RED_BRIGHT;
     public static final TextColor FG_COLOR = TextColor.ANSI.WHITE;
@@ -78,7 +81,11 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitRailTrack(RailTrack track) {
         if (track.getSensor() != null) {
-            view.setFgColor(SENSOR_COLOR);
+            if (track.getSensor() instanceof PlatformSensor) {
+                view.setFgColor(PLATFORM_SENSOR_COLOR);
+            } else {
+                view.setFgColor(SENSOR_COLOR);
+            }
         } else {
             view.setFgColor(RAIL_TRACK_COLOR);
         }
@@ -89,7 +96,11 @@ public class RenderVisitor implements Visitor {
     public void visitSensor(Sensor sensor) {
         Track track = sensor.getTrack();
         if (track.getSensor() != null && this.mode == GameMode.RAILS) {
-            view.setFgColor(SENSOR_COLOR);
+            if (track.getSensor() instanceof PlatformSensor) {
+                view.setFgColor(PLATFORM_SENSOR_COLOR);
+            } else {
+                view.setFgColor(SENSOR_COLOR);
+            }
             view.set(track.getPosition().getX(), track.getPosition().getY(), "₪" + track.getSensor().getId());
         }
     }
@@ -190,7 +201,11 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitWagon(Wagon wagon) {
-        view.setFgColor(TextColor.ANSI.WHITE);
+        if (wagon.getTrain() != null && wagon.getTrain().isLoading) {
+            view.setFgColor(TextColor.ANSI.RED_BRIGHT);
+        } else {
+            view.setFgColor(TextColor.ANSI.WHITE);
+        }
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
     }
 
@@ -214,6 +229,9 @@ public class RenderVisitor implements Visitor {
 
     ////////////////////////////////////////////////////////////////////////////////
     private String getTrackAspect(Track track) {
+        if (track instanceof PlatformTrack) {
+            return "#";
+        }
         if (track.getRouter().isStraight()) {
             return dirGraphicAspect(track.getRouter().getFirstOpenDir());
         } else if (track.getRouter().isCurve()) {
