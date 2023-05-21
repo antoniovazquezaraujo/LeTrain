@@ -40,6 +40,17 @@ public class RenderVisitor implements Visitor {
     public static final TextColor SELECTED_LINKER_COLOR = TextColor.ANSI.YELLOW;
     public static final TextColor SEMAPHORE_OPEN_COLOR = TextColor.ANSI.GREEN;
     public static final TextColor SEMAPHORE_CLOSED_COLOR = TextColor.ANSI.RED;
+    public static final TextColor[] CRASH_COLORS = {
+            TextColor.ANSI.RED,
+            TextColor.ANSI.RED_BRIGHT,
+            TextColor.ANSI.YELLOW,
+            TextColor.ANSI.YELLOW_BRIGHT,
+            TextColor.ANSI.BLACK
+    };
+    public static final char[] CRASH_ASPECTS = {
+            '*', '+', 'X', 'x', '*', '.', '-', '@', '#', '0'
+    };
+
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     private final View view;
@@ -56,6 +67,11 @@ public class RenderVisitor implements Visitor {
         return showId;
     }
 
+    public void resetColors() {
+        view.setFgColor(FG_COLOR);
+        view.setBgColor(BG_COLOR);
+    }
+
     @Override
     public void visitModel(Model model) {
         this.showId = model.isShowId();
@@ -68,9 +84,7 @@ public class RenderVisitor implements Visitor {
         model.getSemaphores().forEach(t -> t.accept(this));
         model.getWagons().forEach(t -> t.accept(this));
         model.getLocomotives().forEach(t -> t.accept(this));
-        // if (model.getMode() == GameMode.RAILS) {
         visitCursor(model.getCursor());
-        // }
     }
 
     @Override
@@ -90,6 +104,7 @@ public class RenderVisitor implements Visitor {
             view.setFgColor(RAIL_TRACK_COLOR);
         }
         view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
+        resetColors();
     }
 
     @Override
@@ -103,6 +118,7 @@ public class RenderVisitor implements Visitor {
             }
             view.set(track.getPosition().getX(), track.getPosition().getY(), "₪" + track.getSensor().getId());
         }
+        resetColors();
     }
 
     @Override
@@ -114,13 +130,14 @@ public class RenderVisitor implements Visitor {
             view.setFgColor(SEMAPHORE_CLOSED_COLOR);
         }
         view.set(pos.getX(), pos.getY(), ":" + (mode.equals(GameMode.SEMAPHORES) ? semaphore.getId() : ""));
-
+        resetColors();
     }
 
     @Override
     public void visitStopRailTrack(StopRailTrack track) {
         view.setFgColor(RAIL_TRACK_COLOR);
         view.set(track.getPosition().getX(), track.getPosition().getY(), "⍚");
+        resetColors();
     }
 
     @Override
@@ -134,23 +151,32 @@ public class RenderVisitor implements Visitor {
         if (this.mode == GameMode.FORKS) {
             view.set(track.getPosition().getX() + 1, track.getPosition().getY(), "" + track.getId());
         }
-
+        resetColors();
     }
 
     @Override
     public void visitTrainFactoryRailTrack(TrainFactoryRailTrack track) {
         view.setFgColor(TextColor.ANSI.BLUE_BRIGHT);
         view.set(track.getPosition().getX(), track.getPosition().getY(), "⎵");
+        resetColors();
     }
 
     @Override
     public void visitTunnelRailTrack(TunnelRailTrack track) {
         view.setFgColor(RAIL_TRACK_COLOR);
         view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
+        resetColors();
     }
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
+        if (locomotive.isDestroying()) {
+            view.setFgColor(getCrashColor());
+            // view.setBgColor(getCrashColor());
+            view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), getCrashAspect());
+            resetColors();
+            return;
+        }
         if (locomotive == selectedLocomotive) {
             view.setFgColor(TextColor.ANSI.RED_BRIGHT);
         } else {
@@ -187,31 +213,36 @@ public class RenderVisitor implements Visitor {
                     view.set(linkerToPreserve.getPosition().getX(), linkerToPreserve.getPosition().getY(), aspect);
                 }
             }
-            view.setBgColor(BG_COLOR);
-            view.setFgColor(FG_COLOR);
+            resetColors();
         }
-
     }
 
     @Override
     public void visitLinker(Linker linker) {
         view.setFgColor(TextColor.ANSI.YELLOW_BRIGHT);
         view.set(linker.getPosition().getX(), linker.getPosition().getY(), "?");
+        resetColors();
     }
 
     @Override
     public void visitWagon(Wagon wagon) {
+        if (wagon.isDestroying()) {
+            view.setFgColor(getCrashColor());
+            // view.setBgColor(getCrashColor());
+            view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), getCrashAspect());
+            return;
+        }
         if (wagon.getTrain() != null && wagon.getTrain().isLoading) {
             view.setFgColor(TextColor.ANSI.RED_BRIGHT);
         } else {
             view.setFgColor(TextColor.ANSI.WHITE);
         }
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
+        resetColors();
     }
 
     @Override
     public void visitCursor(Cursor cursor) {
-        TextColor oldColor = view.getFgColor();
         switch (cursor.getMode()) {
             case DRAWING:
                 view.setFgColor(TextColor.ANSI.GREEN_BRIGHT);
@@ -224,7 +255,7 @@ public class RenderVisitor implements Visitor {
                 break;
         }
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
-        view.setFgColor(oldColor);
+        resetColors();
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -295,4 +326,13 @@ public class RenderVisitor implements Visitor {
             return "x";
         }
     }
+
+    public String getCrashAspect() {
+        return "" + CRASH_ASPECTS[(int) (Math.random() * CRASH_ASPECTS.length)];
+    }
+
+    public TextColor getCrashColor() {
+        return CRASH_COLORS[(int) (Math.random() * CRASH_COLORS.length)];
+    }
+
 }

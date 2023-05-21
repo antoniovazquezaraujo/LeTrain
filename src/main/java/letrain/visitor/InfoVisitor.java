@@ -180,11 +180,7 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        infoBarText += " Speed:" + locomotive.getSpeed() +
-                " Rev:" + locomotive.isReversed() +
-                " Dir:" + locomotive.getDir() +
-                " RealDir:" + locomotive.getRealDir() +
-                " ";
+        infoBarText += " Speed:" + locomotive.getSpeed() + " ";
     }
 
     @Override

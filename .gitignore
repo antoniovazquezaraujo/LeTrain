@@ -1,4 +1,4 @@
 .idea\
 Ideas.adoc
 /target/
-game.ltr
+*.ltr

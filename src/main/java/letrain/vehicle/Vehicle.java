@@ -14,7 +14,8 @@ public abstract class Vehicle<T extends Track>
         Selectable,
         Mapeable,
         Transportable,
-        Renderable {
+        Renderable,
+        Destructible {
     protected Point pos = new Point(0, 0);
 
     protected Dir dir = Dir.N;
