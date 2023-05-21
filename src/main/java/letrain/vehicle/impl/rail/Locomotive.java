@@ -8,7 +8,9 @@ import letrain.vehicle.impl.Tractor;
 
 public class Locomotive extends Linker implements Tractor {
     private static final long serialVersionUID = 1L;
-    final static int MAX_SPEED = 5;
+    final static int MAX_SPEED = 10;
+    final static int SPEED_CHANGE_MAX_RELUCTANCE = 2;
+    int speedChangeReluctance = SPEED_CHANGE_MAX_RELUCTANCE;
     int speed;
     int turns;
     private String aspect;
@@ -109,6 +111,11 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void updateLimitedSpeed() {
+        if (speedChangeReluctance > 0) {
+            speedChangeReluctance--;
+            return;
+        }
+        speedChangeReluctance = SPEED_CHANGE_MAX_RELUCTANCE;
         if (getSpeed() > getMaxSpeed()) {
             decSpeed();
         } else if (getSpeed() < getMinSpeed()) {
@@ -123,7 +130,7 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void resetTurns() {
-        this.turns = speed == 0 ? -1 : 10 / speed;
+        this.turns = speed == 0 ? -1 : 50 / speed;
     }
 
     public void consumeTurn() {
