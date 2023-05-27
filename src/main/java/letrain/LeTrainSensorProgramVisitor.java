@@ -1,5 +1,6 @@
 package letrain;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -20,8 +21,8 @@ import letrain.track.Sensor;
 import letrain.track.SensorEventListener;
 import letrain.track.rail.ForkRailTrack;
 import letrain.utils.Pair;
-import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Locomotive.SpeedLimitType;
+import letrain.vehicle.impl.rail.Train;
 
 public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void> implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -202,6 +203,15 @@ public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void>
         } catch (IOException ex) {
             LeTrainSensorProgramVisitor.log.error("Error saving model", ex);
         }
+    }
+
+    public static void saveModel(Model model, File file) {
+        try (FileOutputStream fos = new FileOutputStream(file);
+                ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+            oos.writeObject(model);
+        } catch (IOException ex) {
+            LeTrainSensorProgramVisitor.log.error("Error saving model", ex);
+        }
 
     }
 
@@ -216,7 +226,43 @@ public class LeTrainSensorProgramVisitor extends LeTrainProgramBaseVisitor<Void>
         }
     }
 
+    public static Model loadModel(File file) {
+        try (FileInputStream fis = new FileInputStream(file);
+                ObjectInputStream ois = new ObjectInputStream(fis)) {
+            Model model = (Model) ois.readObject();
+            return model;
+        } catch (IOException | ClassNotFoundException ex) {
+            log.error("Error loading model", ex);
+            return null;
+        }
+    }
+
     public static void readProgram(letrain.mvp.Model model) {
+        for (Sensor sensor : model.getSensors()) {
+            sensor.removeAllSensorEventListeners();
+        }
+
+        CharStream input = null;
+        try {
+            input = CharStreams.fromFileName("commands.txt");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
+
+        // Obtener el árbol de análisis sintáctico
+        LeTrainProgramParser.StartContext tree = parser.start();
+
+        // Crear un Visitor personalizado para procesar los comandos
+        LeTrainSensorProgramVisitor visitor = new LeTrainSensorProgramVisitor(model);
+
+        // Visitar el árbol utilizando el Visitor personalizado
+        visitor.visit(tree);
+    }
+
+    public static void loadProgram(letrain.mvp.Model model) {
         for (Sensor sensor : model.getSensors()) {
             sensor.removeAllSensorEventListeners();
         }

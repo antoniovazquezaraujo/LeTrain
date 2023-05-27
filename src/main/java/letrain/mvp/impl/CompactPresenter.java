@@ -9,6 +9,7 @@ import static letrain.mvp.Model.GameMode.SEMAPHORES;
 import static letrain.mvp.Model.GameMode.TRAINS;
 import static letrain.mvp.Model.GameMode.UNLINK;
 
+import java.io.File;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -20,7 +21,6 @@ import com.googlecode.lanterna.input.KeyType;
 import letrain.LeTrainSensorProgramVisitor;
 import letrain.map.Dir;
 import letrain.map.Point;
-import letrain.mvp.GameViewListener;
 import letrain.mvp.Model.GameMode;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Linker;
@@ -30,7 +30,7 @@ import letrain.vehicle.impl.rail.Wagon;
 import letrain.visitor.InfoVisitor;
 import letrain.visitor.RenderVisitor;
 
-public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter {
+public class CompactPresenter implements letrain.mvp.Presenter {
     Logger log = LoggerFactory.getLogger(CompactPresenter.class);
 
     public enum TrackType {
@@ -41,7 +41,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         TUNNEL_GATE
     }
 
-    private final letrain.mvp.Model model;
+    letrain.mvp.Model model;
     private final letrain.mvp.View view;
     private final RenderVisitor renderer;
     private final InfoVisitor informer;
@@ -57,16 +57,20 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         this(null);
     }
 
-    public CompactPresenter(letrain.mvp.Model model) {
+    public CompactPresenter(Model model) {
+        setModel(model);
+        view = new View(this);
+        renderer = new RenderVisitor(view);
+        informer = new InfoVisitor(view);
+        railTrackMaker = new RailTrackMaker(this);
+    }
+
+    void setModel(letrain.mvp.Model model) {
         if (model != null) {
             this.model = model;
         } else {
             this.model = new Model();
         }
-        view = new View(this);
-        renderer = new RenderVisitor(view);
-        informer = new InfoVisitor(view);
-        railTrackMaker = new RailTrackMaker(model, view);
     }
 
     public void stop() {
@@ -134,6 +138,8 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         if (keyEvent.getKeyType() == KeyType.Enter) {
             model.setMode(MENU);
             return;
+        } else if (keyEvent.getKeyType() == KeyType.Tab) {
+            showMainDialog();
         } else if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != ' ') {
             if (model.getMode() == TRAINS) {
                 trainManagerOnChar(keyEvent);
@@ -199,6 +205,10 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 unlinkerOnChar(keyEvent);
                 break;
         }
+    }
+
+    void showMainDialog() {
+        view.showMainDialog();
     }
 
     private void semaphoreManagerOnChar(KeyStroke keyEvent) {
@@ -634,6 +644,49 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     private void loadTrain() {
 
+    }
+
+    @Override
+    public void onNewGame() {
+    }
+
+    @Override
+    public void onSaveGame(File file) {
+        if (file != null) {
+            LeTrainSensorProgramVisitor.saveModel(this.model, file);
+        }
+    }
+
+    @Override
+    public void onLoadGame(File file) {
+        if (file != null && file.exists()) {
+            letrain.mvp.Model model = LeTrainSensorProgramVisitor.loadModel(file);
+            if (model != null) {
+                stop();
+                setModel(model);
+                start();
+            }
+        }
+    }
+
+    @Override
+    public void onSaveCommands(File file) {
+    }
+
+    @Override
+    public void onLoadCommands(File file) {
+    }
+
+    @Override
+    public void onEditCommands(String content) {
+    }
+
+    @Override
+    public void onExitGame() {
+    }
+
+    @Override
+    public void onPlay() {
     }
 
 }

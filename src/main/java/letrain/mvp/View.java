@@ -42,4 +42,6 @@ public interface View {
     public void setScreen(Screen screen);
 
     TextColor getFgColor();
+
+    void showMainDialog();
 }
