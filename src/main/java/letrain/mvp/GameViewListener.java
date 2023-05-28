@@ -25,4 +25,8 @@ public interface GameViewListener {
 
     void onChar(KeyStroke c);
 
+    String getProgram();
+
+    void setProgram(String program);
+
 }
