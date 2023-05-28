@@ -12,14 +12,11 @@ public class LeTrain {
     }
 
     public void start(String[] args) {
-        this.model = LeTrainSensorProgramVisitor.loadModel("game.ltr");
         if (this.model == null) {
             this.model = new letrain.mvp.impl.Model();
         }
-        presenter = new CompactPresenter((letrain.mvp.Model) this.model);
+        presenter = new CompactPresenter((letrain.mvp.impl.Model) this.model);
         presenter.start();
         presenter.stop();
-        LeTrainSensorProgramVisitor.saveModel(this.model, "game.ltr");
     }
-
 }

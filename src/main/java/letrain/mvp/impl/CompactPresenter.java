@@ -9,19 +9,30 @@ import static letrain.mvp.Model.GameMode.SEMAPHORES;
 import static letrain.mvp.Model.GameMode.TRAINS;
 import static letrain.mvp.Model.GameMode.UNLINK;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.List;
 
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 
-import letrain.LeTrainSensorProgramVisitor;
+import letrain.command.CommandManager;
+import letrain.command.LeTrainProgramLexer;
+import letrain.command.LeTrainProgramParser;
 import letrain.map.Dir;
 import letrain.map.Point;
-import letrain.mvp.GameViewListener;
 import letrain.mvp.Model.GameMode;
+import letrain.track.Sensor;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
@@ -30,7 +41,7 @@ import letrain.vehicle.impl.rail.Wagon;
 import letrain.visitor.InfoVisitor;
 import letrain.visitor.RenderVisitor;
 
-public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter {
+public class CompactPresenter implements letrain.mvp.Presenter {
     Logger log = LoggerFactory.getLogger(CompactPresenter.class);
 
     public enum TrackType {
@@ -41,7 +52,7 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         TUNNEL_GATE
     }
 
-    private final letrain.mvp.Model model;
+    Model model;
     private final letrain.mvp.View view;
     private final RenderVisitor renderer;
     private final InfoVisitor informer;
@@ -57,16 +68,20 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         this(null);
     }
 
-    public CompactPresenter(letrain.mvp.Model model) {
+    public CompactPresenter(Model model) {
+        setModel(model);
+        view = new View(this);
+        renderer = new RenderVisitor(view);
+        informer = new InfoVisitor(view);
+        railTrackMaker = new RailTrackMaker(this);
+    }
+
+    void setModel(Model model) {
         if (model != null) {
             this.model = model;
         } else {
             this.model = new Model();
         }
-        view = new View(this);
-        renderer = new RenderVisitor(view);
-        informer = new InfoVisitor(view);
-        railTrackMaker = new RailTrackMaker(model, view);
     }
 
     public void stop() {
@@ -134,14 +149,13 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
         if (keyEvent.getKeyType() == KeyType.Enter) {
             model.setMode(MENU);
             return;
+        } else if (keyEvent.getKeyType() == KeyType.Escape) {
+            showMainDialog();
         } else if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != ' ') {
             if (model.getMode() == TRAINS) {
                 trainManagerOnChar(keyEvent);
             } else {
                 switch (keyEvent.getCharacter()) {
-                    case 'p':
-                        LeTrainSensorProgramVisitor.readProgram(model);
-                        break;
                     case 'r':
                         model.setMode(RAILS);
                         break;
@@ -199,6 +213,10 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
                 unlinkerOnChar(keyEvent);
                 break;
         }
+    }
+
+    void showMainDialog() {
+        view.showMainDialog();
     }
 
     private void semaphoreManagerOnChar(KeyStroke keyEvent) {
@@ -636,4 +654,134 @@ public class CompactPresenter implements GameViewListener, letrain.mvp.Presenter
 
     }
 
+    @Override
+    public void onNewGame() {
+    }
+
+    @Override
+    public void onSaveGame(File file) {
+        if (file != null) {
+            saveModel(this.model, file);
+        }
+    }
+
+    @Override
+    public void onLoadGame(File file) {
+        if (file != null && file.exists()) {
+            Model model = loadModel(file);
+            if (model != null) {
+                stop();
+                setModel(model);
+                start();
+            }
+        }
+    }
+
+    @Override
+    public void onSaveCommands(File file) {
+        if (file != null) {
+            saveProgram(this.model.getProgram(), file);
+        }
+    }
+
+    @Override
+    public void onLoadCommands(File file) {
+        CharStream input = loadProgram(file);
+        if (input == null) {
+            return;
+        }
+        for (Sensor sensor : model.getSensors()) {
+            sensor.removeAllSensorEventListeners();
+        }
+        LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
+
+        LeTrainProgramParser.StartContext sintaxTree = parser.start();
+        CommandManager manager = new CommandManager(model);
+        manager.visit(sintaxTree);
+        model.setProgram(input.toString());
+    }
+
+    @Override
+    public void onEditCommands(String content) {
+        CharStream input = CharStreams.fromString(content);
+        for (Sensor sensor : model.getSensors()) {
+            sensor.removeAllSensorEventListeners();
+        }
+        LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
+
+        LeTrainProgramParser.StartContext sintaxTree = parser.start();
+        CommandManager manager = new CommandManager(model);
+        manager.visit(sintaxTree);
+        model.setProgram(content);
+
+    }
+
+    @Override
+    public void onExitGame() {
+        stop();
+        System.exit(0);
+    }
+
+    @Override
+    public void onPlay() {
+        // start();
+    }
+
+    void saveModel(Model model, File file) {
+        try (FileOutputStream fos = new FileOutputStream(file);
+                ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+            oos.writeObject(model);
+        } catch (IOException ex) {
+            log.error("Error saving model", ex);
+        }
+    }
+
+    Model loadModel(File file) {
+        try (FileInputStream fis = new FileInputStream(file);
+                ObjectInputStream ois = new ObjectInputStream(fis)) {
+            Model model = (Model) ois.readObject();
+            return model;
+        } catch (IOException | ClassNotFoundException ex) {
+            log.error("Error loading model", ex);
+            return null;
+        }
+    }
+
+    CharStream loadProgram(File file) {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            CharStream program = null;
+            try {
+                program = CharStreams.fromFileName(file.getName());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return program;
+        } catch (IOException ex) {
+            log.error("Error loading program", ex);
+            return null;
+        }
+    }
+
+    void saveProgram(String content, File file) {
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            fos.write(content.getBytes());
+        } catch (IOException ex) {
+            log.error("Error saving model", ex);
+        }
+
+    }
+
+    @Override
+    public String getProgram() {
+        return model.getProgram();
+    }
+
+    @Override
+    public void setProgram(String program) {
+        model.setProgram(program);
+    }
 }

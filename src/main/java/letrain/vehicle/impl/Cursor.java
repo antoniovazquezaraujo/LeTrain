@@ -40,4 +40,18 @@ public class Cursor extends Vehicle {
         setReversed(!isReversed());
     }
 
+    @Override
+    public void destroy() {
+    }
+
+    @Override
+    public boolean isDestroying() {
+        return false;
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        return false;
+    }
+
 }

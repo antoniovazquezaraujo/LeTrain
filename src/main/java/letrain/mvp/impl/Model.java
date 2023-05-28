@@ -43,6 +43,7 @@ public class Model implements Serializable, letrain.mvp.Model {
     int nextSensorId;
     int nextSemaphoreId;
     int nextTrainId;
+    String program;
 
     public int nextSemaphoreId() {
         return ++nextSemaphoreId;
@@ -74,6 +75,7 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.sensors = new ArrayList<>();
         this.semaphores = new ArrayList<>();
         this.map = new RailMap();
+        this.program = "";
         selectedLocomotiveIndex = 0;
         if (!getLocomotives().isEmpty()) {
             selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
@@ -409,6 +411,15 @@ public class Model implements Serializable, letrain.mvp.Model {
         if (removed.get()) {
             selectNextLocomotive();
         }
+    }
+
+    @Override
+    public void setProgram(String program) {
+        this.program = program;
+    }
+
+    public String getProgram() {
+        return this.program;
     }
 
 }

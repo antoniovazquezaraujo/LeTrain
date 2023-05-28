@@ -6,6 +6,7 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.SimpleRouter;
+import letrain.mvp.Presenter;
 import letrain.mvp.impl.CompactPresenter.TrackType;
 import letrain.track.PlatformSensor;
 import letrain.track.RailSemaphore;
@@ -20,8 +21,6 @@ import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 
 public class RailTrackMaker {
-    private final letrain.mvp.Model model;
-    private final letrain.mvp.View view;
     private CompactPresenter.TrackType newTrackType = CompactPresenter.TrackType.NORMAL_TRACK;
     private int degreesOfRotation = 0;
     private Dir dir = Dir.N;
@@ -31,10 +30,10 @@ public class RailTrackMaker {
     boolean makingTraks = false;
     int numSteps = 0;
     boolean creatingPlatform = false;
+    Presenter presenter;
 
-    public RailTrackMaker(letrain.mvp.Model model, letrain.mvp.View view) {
-        this.model = model;
-        this.view = view;
+    public RailTrackMaker(Presenter presenter) {
+        this.presenter = presenter;
     }
 
     public void onChar(KeyStroke keyEvent) {
@@ -44,7 +43,7 @@ public class RailTrackMaker {
                     if (!makingTraks) {
                         reset();
                     }
-                    model.getCursor().setMode(Cursor.CursorMode.DRAWING);
+                    presenter.getModel().getCursor().setMode(Cursor.CursorMode.DRAWING);
                     if (numSteps > 0) {
                         for (int n = 0; n < numSteps; n++) {
                             if (!createTrack()) {
@@ -56,11 +55,11 @@ public class RailTrackMaker {
                     }
                     makingTraks = true;
                 } else if (keyEvent.isCtrlDown()) {
-                    model.getCursor().setMode(Cursor.CursorMode.ERASING);
+                    presenter.getModel().getCursor().setMode(Cursor.CursorMode.ERASING);
                     removeTrack();
                     makingTraks = false;
                 } else {
-                    model.getCursor().setMode(Cursor.CursorMode.MOVING);
+                    presenter.getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
                     if (numSteps > 0) {
                         for (int n = 0; n < numSteps; n++) {
                             cursorForward();
@@ -83,7 +82,7 @@ public class RailTrackMaker {
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     if (keyEvent.getCharacter() == '0' && numSteps == 0) {
-                        model.setShowId(true);
+                        presenter.getModel().setShowId(true);
                     } else {
                         numSteps = numSteps * 10 + (keyEvent.getCharacter() - '0');
                     }
@@ -104,7 +103,7 @@ public class RailTrackMaker {
                 }
                 break;
             case ArrowDown:
-                model.getCursor().setMode(Cursor.CursorMode.MOVING);
+                presenter.getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
                 cursorBackward();
                 makingTraks = false;
                 break;
@@ -128,48 +127,48 @@ public class RailTrackMaker {
     }
 
     void manageSensor() {
-        Point position = model.getCursor().getPosition();
-        Track track = model.getRailMap().getTrackAt(position.getX(), position.getY());
+        Point position = presenter.getModel().getCursor().getPosition();
+        Track track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
             Sensor sensor = track.getSensor();
             if (sensor != null) {
                 track.setSensor(null);
-                model.removeSensor(sensor);
+                presenter.getModel().removeSensor(sensor);
             } else {
-                sensor = new Sensor(model.nextSensorId());
+                sensor = new Sensor(presenter.getModel().nextSensorId());
                 sensor.setTrack(track);
                 track.setSensor(sensor);
-                model.addSensor(sensor);
+                presenter.getModel().addSensor(sensor);
             }
         }
     }
 
     void manageSemaphore() {
-        Point position = model.getCursor().getPosition();
-        RailSemaphore semaphore = model.getSemaphoreAt(position);
+        Point position = presenter.getModel().getCursor().getPosition();
+        RailSemaphore semaphore = presenter.getModel().getSemaphoreAt(position);
         if (semaphore != null) {
-            model.removeSemaphore(semaphore);
+            presenter.getModel().removeSemaphore(semaphore);
         } else {
-            semaphore = new RailSemaphore(model.nextSemaphoreId(), position);
-            model.addSemaphore(semaphore);
+            semaphore = new RailSemaphore(presenter.getModel().nextSemaphoreId(), position);
+            presenter.getModel().addSemaphore(semaphore);
         }
     }
 
     void managePlatformSensor() {
-        Point position = model.getCursor().getPosition();
-        Track track = model.getRailMap().getTrackAt(position.getX(), position.getY());
+        Point position = presenter.getModel().getCursor().getPosition();
+        Track track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null && track instanceof PlatformTrack) {
             Sensor sensor = track.getSensor();
             if (sensor != null) {
                 if (sensor instanceof PlatformSensor) {
                     track.setSensor(null);
                 }
-                model.removeSensor(sensor);
+                presenter.getModel().removeSensor(sensor);
             } else {
-                sensor = new PlatformSensor(model.nextSensorId());
+                sensor = new PlatformSensor(presenter.getModel().nextSensorId());
                 sensor.setTrack(track);
                 track.setSensor(sensor);
-                model.addSensor(sensor);
+                presenter.getModel().addSensor(sensor);
             }
         }
 
@@ -177,38 +176,38 @@ public class RailTrackMaker {
 
     private void reset() {
         degreesOfRotation = 0;
-        dir = model.getCursor().getDir();
+        dir = presenter.getModel().getCursor().getDir();
         oldTrack = null;
         oldDir = dir;
         reversed = false;
     }
 
     void removeTrack() {
-        Point position = model.getCursor().getPosition();
-        RailTrack track = model.getRailMap().getTrackAt(position.getX(), position.getY());
+        Point position = presenter.getModel().getCursor().getPosition();
+        RailTrack track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            model.getRailMap().removeTrack(position);
+            presenter.getModel().getRailMap().removeTrack(position);
         }
-        if (model.getForks().contains(track)) {
-            model.getForks().remove(track);
+        if (presenter.getModel().getForks().contains(track)) {
+            presenter.getModel().getForks().remove(track);
         }
-        Point newPos = new Point(model.getCursor().getPosition());
+        Point newPos = new Point(presenter.getModel().getCursor().getPosition());
         if (!reversed) {
-            newPos.move(model.getCursor().getDir(), 1);
+            newPos.move(presenter.getModel().getCursor().getDir(), 1);
         } else {
-            newPos.move(model.getCursor().getDir().inverse());
+            newPos.move(presenter.getModel().getCursor().getDir().inverse());
         }
-        model.getCursor().setPosition(newPos);
-        Point p = model.getCursor().getPosition();
-        view.setPageOfPos(p.getX(), p.getY());
+        presenter.getModel().getCursor().setPosition(newPos);
+        Point p = presenter.getModel().getCursor().getPosition();
+        presenter.getView().setPageOfPos(p.getX(), p.getY());
 
     }
 
     boolean createTrack() {
         degreesOfRotation = 0;
         if (makeTrack()) {
-            Point position = model.getCursor().getPosition();
-            view.setPageOfPos(position.getX(), position.getY());
+            Point position = presenter.getModel().getCursor().getPosition();
+            presenter.getView().setPageOfPos(position.getX(), position.getY());
             return true;
         }
         return false;
@@ -216,8 +215,8 @@ public class RailTrackMaker {
 
     boolean makeTrack() {
         makingTraks = true;
-        Point cursorPosition = model.getCursor().getPosition();
-        Dir dir = model.getCursor().getDir();
+        Point cursorPosition = presenter.getModel().getCursor().getPosition();
+        Dir dir = presenter.getModel().getCursor().getDir();
 
         // Si venimos de algún track, obtenemos la dirección de salida
         if (oldTrack != null) {
@@ -225,14 +224,14 @@ public class RailTrackMaker {
         } else {
             // Si no venimos de ningún track, la oldDir será la nueva o su inversa
             if (!reversed) {
-                oldDir = model.getCursor().getDir().inverse();
+                oldDir = presenter.getModel().getCursor().getDir().inverse();
             } else {
-                oldDir = model.getCursor().getDir();
+                oldDir = presenter.getModel().getCursor().getDir();
             }
         }
 
         // Obtenemos el track bajo el cursor
-        RailTrack track = model.getRailMap().getTrackAt(cursorPosition);
+        RailTrack track = presenter.getModel().getRailMap().getTrackAt(cursorPosition);
         if (track == null) {
             // si no había nada creamos un track normal
             track = createTrackOfSelectedType();
@@ -246,13 +245,13 @@ public class RailTrackMaker {
         // la vieja dir y la nueva
         track.addRoute(oldDir, dir);
         track.setPosition(cursorPosition);
-        model.getRailMap().addTrack(cursorPosition, track);
+        presenter.getModel().getRailMap().addTrack(cursorPosition, track);
         if (canBeAFork(track, oldDir, dir)) {
             RailTrack trackToSubstitute = track;
             final ForkRailTrack fork = createForkRailTrack(cursorPosition, trackToSubstitute);
             addRoutesToFork(trackToSubstitute, fork);
             fork.setNormalRoute();
-            model.addFork(fork);
+            presenter.getModel().addFork(fork);
             substituteInMapTrackWithFork(trackToSubstitute, fork);
             addTrackConnectionsToFork(trackToSubstitute, fork);
             track = fork;
@@ -266,22 +265,22 @@ public class RailTrackMaker {
 
         Point newPos = new Point(cursorPosition);
         if (!reversed) {
-            newPos.move(model.getCursor().getDir(), 1);
+            newPos.move(presenter.getModel().getCursor().getDir(), 1);
         } else {
-            newPos.move(model.getCursor().getDir().inverse());
+            newPos.move(presenter.getModel().getCursor().getDir().inverse());
         }
-        model.getCursor().setPosition(newPos);
+        presenter.getModel().getCursor().setPosition(newPos);
         oldTrack = track;
         return true;
     }
 
     private void substituteInMapTrackWithFork(RailTrack track1, final ForkRailTrack fork) {
-        model.getRailMap().removeTrack(track1.getPosition());
-        model.getRailMap().addTrack(model.getCursor().getPosition(), fork);
+        presenter.getModel().getRailMap().removeTrack(track1.getPosition());
+        presenter.getModel().getRailMap().addTrack(presenter.getModel().getCursor().getPosition(), fork);
     }
 
     ForkRailTrack createForkRailTrack(Point cursorPosition, RailTrack track) {
-        final ForkRailTrack fork = new ForkRailTrack(model.nextForkId());
+        final ForkRailTrack fork = new ForkRailTrack(presenter.getModel().nextForkId());
         fork.setPosition(cursorPosition);
         return fork;
     }
@@ -338,12 +337,12 @@ public class RailTrackMaker {
         if (makingTraks) {
             if (degreesOfRotation >= 0) {
                 this.dir = this.dir.turnRight();
-                model.getCursor().setDir(this.dir);
+                presenter.getModel().getCursor().setDir(this.dir);
                 degreesOfRotation -= 1;
             }
         } else {
             this.dir = this.dir.turnRight();
-            model.getCursor().setDir(this.dir);
+            presenter.getModel().getCursor().setDir(this.dir);
         }
     }
 
@@ -351,25 +350,25 @@ public class RailTrackMaker {
         if (makingTraks) {
             if (degreesOfRotation <= 0) {
                 this.dir = this.dir.turnLeft();
-                model.getCursor().setDir(this.dir);
+                presenter.getModel().getCursor().setDir(this.dir);
                 degreesOfRotation += 1;
             }
         } else {
             this.dir = this.dir.turnLeft();
-            model.getCursor().setDir(this.dir);
+            presenter.getModel().getCursor().setDir(this.dir);
         }
     }
 
     void cursorForward() {
-        Point newPos = new Point(model.getCursor().getPosition());
+        Point newPos = new Point(presenter.getModel().getCursor().getPosition());
         if (!reversed) {
-            newPos.move(model.getCursor().getDir(), 1);
+            newPos.move(presenter.getModel().getCursor().getDir(), 1);
         } else {
-            newPos.move(model.getCursor().getDir().inverse());
+            newPos.move(presenter.getModel().getCursor().getDir().inverse());
         }
-        model.getCursor().setPosition(newPos);
-        Point position = model.getCursor().getPosition();
-        view.setPageOfPos(position.getX(), position.getY());
+        presenter.getModel().getCursor().setPosition(newPos);
+        Point position = presenter.getModel().getCursor().getPosition();
+        presenter.getView().setPageOfPos(position.getX(), position.getY());
     }
 
     void cursorBackward() {
@@ -379,38 +378,38 @@ public class RailTrackMaker {
     }
 
     void mapPageDown() {
-        view.clear();
-        Point p = view.getMapScrollPage();
+        presenter.getView().clear();
+        Point p = presenter.getView().getMapScrollPage();
         p.setY(p.getY() + 1);
-        view.setMapScrollPage(p);
-        view.clear();
+        presenter.getView().setMapScrollPage(p);
+        presenter.getView().clear();
 
     }
 
     void mapPageLeft() {
-        view.clear();
-        Point p = view.getMapScrollPage();
+        presenter.getView().clear();
+        Point p = presenter.getView().getMapScrollPage();
         p.setX(p.getX() - 1);
-        view.setMapScrollPage(p);
-        view.clear();
+        presenter.getView().setMapScrollPage(p);
+        presenter.getView().clear();
 
     }
 
     void mapPageUp() {
-        view.clear();
-        Point p = view.getMapScrollPage();
+        presenter.getView().clear();
+        Point p = presenter.getView().getMapScrollPage();
         p.setY(p.getY() - 1);
-        view.setMapScrollPage(p);
-        view.clear();
+        presenter.getView().setMapScrollPage(p);
+        presenter.getView().clear();
 
     }
 
     void mapPageRight() {
-        view.clear();
-        Point p = view.getMapScrollPage();
+        presenter.getView().clear();
+        Point p = presenter.getView().getMapScrollPage();
         p.setX(p.getX() + 1);
-        view.setMapScrollPage(p);
-        view.clear();
+        presenter.getView().setMapScrollPage(p);
+        presenter.getView().clear();
 
     }
 

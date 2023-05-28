@@ -1,6 +1,8 @@
 package letrain.mvp.impl;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,9 +13,21 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.TextColor.ANSI;
+import com.googlecode.lanterna.bundle.LanternaThemes;
 import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.gui2.BasicWindow;
+import com.googlecode.lanterna.gui2.Button;
+import com.googlecode.lanterna.gui2.Direction;
+import com.googlecode.lanterna.gui2.EmptySpace;
+import com.googlecode.lanterna.gui2.Label;
+import com.googlecode.lanterna.gui2.LinearLayout;
+import com.googlecode.lanterna.gui2.LocalizedString;
+import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
+import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.Window;
+import com.googlecode.lanterna.gui2.dialogs.FileDialogBuilder;
+import com.googlecode.lanterna.gui2.dialogs.TextInputDialogBuilder;
 import com.googlecode.lanterna.input.KeyStroke;
-import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
@@ -39,6 +53,7 @@ public class View implements letrain.mvp.View {
 
     private TextColor fgColor;
     private TextColor bgColor;
+    boolean endOfGame = false;
 
     public View(GameViewListener gameViewListener) {
         this.gameViewListener = gameViewListener;
@@ -76,12 +91,7 @@ public class View implements letrain.mvp.View {
     }
 
     public boolean isEndOfGame(KeyStroke keyStroke) {
-        if (keyStroke != null &&
-                (keyStroke.getKeyType() == KeyType.Escape
-                        || keyStroke.getKeyType() == KeyType.EOF)) {
-            return true;
-        }
-        return false;
+        return endOfGame;
     }
 
     @Override
@@ -104,8 +114,8 @@ public class View implements letrain.mvp.View {
     }
 
     // Método que recibe una lista de cadenas y pinta en bottomGraphics todas las
-    // opciones pero
-    // con un color de fondo diferente la opción que va entre corchetes
+    // opciones pero con un color de fondo diferente la opción que va entre
+    // corchetes
     public void paintOptions(String[] options) {
         // If the option contains "[", it means that it is a selected option
         // We need to paint it yellow
@@ -267,5 +277,116 @@ public class View implements letrain.mvp.View {
         textGraphics.setCharacter(topRight, Symbols.SINGLE_LINE_TOP_RIGHT_CORNER);
         textGraphics.setCharacter(bottomLeft, Symbols.SINGLE_LINE_BOTTOM_LEFT_CORNER);
         textGraphics.setCharacter(bottomRight, Symbols.SINGLE_LINE_BOTTOM_RIGHT_CORNER);
+    }
+
+    @Override
+    public void showMainDialog() {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        String theme = "businessmachine";
+        if (theme != null) {
+            gui.setTheme(LanternaThemes.getRegisteredTheme(theme));
+        }
+        BasicWindow window = new BasicWindow();
+        window.setHints(Arrays.asList(Window.Hint.CENTERED));
+        window.setTitle("LeTrain");
+        Panel contentPanel = new Panel();
+        contentPanel.setLayoutManager(new LinearLayout(Direction.VERTICAL));
+        contentPanel.addComponent(new Label("Menu"));
+        contentPanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
+        contentPanel.addComponent(new Button("New Game", new Runnable() {
+            @Override
+            public void run() {
+                View.this.gameViewListener.onNewGame();
+                window.close();
+            }
+        }));
+        contentPanel.addComponent(new Button("Save Game", new Runnable() {
+            @Override
+            public void run() {
+                File result = new FileDialogBuilder()
+                        .setTitle("Save File")
+                        .setDescription("Choose a file:")
+                        .setActionLabel(LocalizedString.Save.toString())
+                        .build()
+                        .showDialog(gui);
+                View.this.gameViewListener.onSaveGame(result);
+                window.close();
+            }
+        }));
+        contentPanel.addComponent(new Button("Load Game", new Runnable() {
+            @Override
+            public void run() {
+                File result = new FileDialogBuilder()
+                        .setTitle("Open File")
+                        .setDescription("Choose a file:")
+                        .setActionLabel(LocalizedString.Open.toString())
+                        .build()
+                        .showDialog(gui);
+                View.this.gameViewListener.onLoadGame(result);
+                window.close();
+            }
+        }));
+        contentPanel.addComponent(new Button("Save commands", new Runnable() {
+            @Override
+            public void run() {
+                File result = new FileDialogBuilder()
+                        .setTitle("Save File")
+                        .setDescription("Choose a file:")
+                        .setActionLabel(LocalizedString.Save.toString())
+                        .build()
+                        .showDialog(gui);
+                View.this.gameViewListener.onSaveCommands(result);
+                window.close();
+            }
+        }));
+        contentPanel.addComponent(new Button("Load commands", new Runnable() {
+            @Override
+            public void run() {
+                File result = new FileDialogBuilder()
+                        .setTitle("Open File")
+                        .setDescription("Choose a file:")
+                        .setActionLabel(LocalizedString.Open.toString())
+                        .build()
+                        .showDialog(gui);
+                View.this.gameViewListener.onLoadCommands(result);
+                window.close();
+            }
+        }));
+        contentPanel.addComponent(new Button("Edit commands", new Runnable() {
+            @Override
+            public void run() {
+                String result = new TextInputDialogBuilder()
+                        .setTitle("LeTrain program editor")
+                        .setTextBoxSize(new TerminalSize(85, 25))
+                        .setInitialContent(gameViewListener.getProgram())
+                        .build()
+                        .showDialog(gui);
+                if (result != null) {
+                    View.this.gameViewListener.onEditCommands(result);
+                }
+                window.close();
+            }
+        }));
+
+        contentPanel.addComponent(new Button("Exit game", new Runnable() {
+            @Override
+            public void run() {
+                setEndOfGame(true);
+                window.close();
+            }
+        }));
+        contentPanel.addComponent(new Button("Play!", new Runnable() {
+            @Override
+            public void run() {
+                window.close();
+            }
+        }));
+
+        window.setComponent(contentPanel);
+        gui.addWindowAndWait(window);
+    }
+
+    protected void setEndOfGame(boolean endOfGame) {
+        this.endOfGame = endOfGame;
     }
 }
