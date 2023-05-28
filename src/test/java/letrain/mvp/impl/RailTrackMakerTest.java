@@ -21,7 +21,7 @@ public class RailTrackMakerTest {
                         "SE "
         })
         void testConnectTrack(Dir from) {
-                RailTrackMaker maker = new RailTrackMaker(null, null);
+                RailTrackMaker maker = new RailTrackMaker(null);
                 RailTrack track = new RailTrack();
                 ForkRailTrack fork = new ForkRailTrack(1);
                 Dir to = from.inverse();
