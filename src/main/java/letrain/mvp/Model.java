@@ -131,4 +131,7 @@ public interface Model {
 
     public void removeDestroyedTrains();
 
+    public void setProgram(String program);
+
+    public String getProgram();
 }
