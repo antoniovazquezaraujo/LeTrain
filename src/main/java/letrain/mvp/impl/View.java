@@ -28,7 +28,6 @@ import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.dialogs.FileDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.TextInputDialogBuilder;
 import com.googlecode.lanterna.input.KeyStroke;
-import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
@@ -54,6 +53,7 @@ public class View implements letrain.mvp.View {
 
     private TextColor fgColor;
     private TextColor bgColor;
+    boolean endOfGame = false;
 
     public View(GameViewListener gameViewListener) {
         this.gameViewListener = gameViewListener;
@@ -91,12 +91,7 @@ public class View implements letrain.mvp.View {
     }
 
     public boolean isEndOfGame(KeyStroke keyStroke) {
-        if (keyStroke != null &&
-                (keyStroke.getKeyType() == KeyType.Escape
-                        || keyStroke.getKeyType() == KeyType.EOF)) {
-            return true;
-        }
-        return false;
+        return endOfGame;
     }
 
     @Override
@@ -119,8 +114,8 @@ public class View implements letrain.mvp.View {
     }
 
     // Método que recibe una lista de cadenas y pinta en bottomGraphics todas las
-    // opciones pero
-    // con un color de fondo diferente la opción que va entre corchetes
+    // opciones pero con un color de fondo diferente la opción que va entre
+    // corchetes
     public void paintOptions(String[] options) {
         // If the option contains "[", it means that it is a selected option
         // We need to paint it yellow
@@ -361,11 +356,14 @@ public class View implements letrain.mvp.View {
             @Override
             public void run() {
                 String result = new TextInputDialogBuilder()
-                        .setTitle("Multi-line editor")
+                        .setTitle("LeTrain program editor")
                         .setTextBoxSize(new TerminalSize(85, 25))
+                        .setInitialContent(gameViewListener.getProgram())
                         .build()
                         .showDialog(gui);
-                View.this.gameViewListener.onEditCommands(result);
+                if (result != null) {
+                    View.this.gameViewListener.onEditCommands(result);
+                }
                 window.close();
             }
         }));
@@ -373,6 +371,7 @@ public class View implements letrain.mvp.View {
         contentPanel.addComponent(new Button("Exit game", new Runnable() {
             @Override
             public void run() {
+                setEndOfGame(true);
                 window.close();
             }
         }));
@@ -385,5 +384,9 @@ public class View implements letrain.mvp.View {
 
         window.setComponent(contentPanel);
         gui.addWindowAndWait(window);
+    }
+
+    protected void setEndOfGame(boolean endOfGame) {
+        this.endOfGame = endOfGame;
     }
 }
