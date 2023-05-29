@@ -303,17 +303,17 @@ public class RenderVisitor implements Visitor {
             case W:
                 return "<";
             case NE:
-                return "" + Symbols.SINGLE_LINE_TOP_RIGHT_CORNER;
+                return "⌝";
             case SW:
-                return "" + Symbols.SINGLE_LINE_BOTTOM_LEFT_CORNER;
+                return "⌞";
             case N:
-                return "^";
+                return "⌃";
             case S:
-                return "v";
+                return "⌄";
             case NW:
-                return "" + Symbols.SINGLE_LINE_TOP_LEFT_CORNER;
+                return "⌜";
             case SE:
-                return "" + Symbols.SINGLE_LINE_BOTTOM_RIGHT_CORNER;
+                return "⌟";
         }
         return "?";
     }
