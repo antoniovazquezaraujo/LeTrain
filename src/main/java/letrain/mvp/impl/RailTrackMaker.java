@@ -23,7 +23,7 @@ import letrain.vehicle.impl.Cursor;
 public class RailTrackMaker {
     private CompactPresenter.TrackType newTrackType = CompactPresenter.TrackType.NORMAL_TRACK;
     private int degreesOfRotation = 0;
-    private Dir dir = Dir.N;
+    private Dir dir = Dir.E;
     Track oldTrack;
     Dir oldDir;
     boolean reversed = false;
