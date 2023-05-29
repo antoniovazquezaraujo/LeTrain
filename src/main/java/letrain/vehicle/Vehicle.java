@@ -17,8 +17,7 @@ public abstract class Vehicle<T extends Track>
         Renderable,
         Destructible {
     protected Point pos = new Point(0, 0);
-
-    protected Dir dir = Dir.N;
+    Dir dir;
     private boolean selected = false;
     private boolean reversed = false;
 
@@ -117,8 +116,7 @@ public abstract class Vehicle<T extends Track>
 
     @Override
     public Dir getRealDir() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.dir;
     }
 
 }
