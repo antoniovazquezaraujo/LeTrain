@@ -25,6 +25,7 @@ import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 
 public class Train implements Serializable, Trailer<RailTrack>, Renderable, Transportable {
+    private static final int MAX_LOADING_COUNT = 1000;
     Logger log = LoggerFactory.getLogger(Train.class);
     protected final Deque<Linker> linkers;
     protected final List<Tractor> tractors;
@@ -43,6 +44,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     LinkersSense linkerDivisionSense;
     boolean joined = false;
     protected Tractor directorLinker;
+    private int loadingCount;
 
     public Train(int id) {
         setId(id);
@@ -549,14 +551,40 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     public void startLoadUnloadProcess() {
         if (railPlatformId != 0 && getDirectorLinker().getSpeed() == 0) {
-            isLoading = true;
+            setLoadingCount(MAX_LOADING_COUNT);
+            setLoading(true);
         }
     }
 
     public void endLoadUnloadProcess() {
         if (railPlatformId != 0 && getDirectorLinker().getSpeed() == 0) {
-            isLoading = false;
+            setLoading(false);
         }
+    }
 
+    public void load() {
+        if (isLoading()) {
+            if (getLoadingCount() > 0) {
+                setLoadingCount(getLoadingCount() - 1);
+            } else {
+                endLoadUnloadProcess();
+            }
+        }
+    }
+
+    public int getLoadingCount() {
+        return loadingCount;
+    }
+
+    public void setLoadingCount(int loadingCount) {
+        this.loadingCount = loadingCount;
+    }
+
+    public boolean isLoading() {
+        return isLoading;
+    }
+
+    public void setLoading(boolean isLoading) {
+        this.isLoading = isLoading;
     }
 }
