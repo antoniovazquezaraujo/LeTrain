@@ -110,6 +110,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 informer.visitModel(model);
                 view.paint();
                 model.moveLocomotives();
+                model.loadAndUnloadTrains();
                 model.removeDestroyedTrains();
                 Thread.sleep(50);
                 view.clear();
@@ -378,9 +379,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                     toggleReversed();
                     locomotiveId = 0;
                 } else if (keyEvent.getCharacter() == '-') {
-                    if (model.getSelectedLocomotive().getTrain().isLoading) {
-                        model.getSelectedLocomotive().getTrain().endLoadUnloadProcess();
-                    } else {
+                    if (!model.getSelectedLocomotive().getTrain().isLoading()) {
                         model.getSelectedLocomotive().getTrain().startLoadUnloadProcess();
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {

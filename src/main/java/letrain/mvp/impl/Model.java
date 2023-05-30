@@ -422,4 +422,17 @@ public class Model implements Serializable, letrain.mvp.Model {
         return this.program;
     }
 
+    public void loadAndUnloadTrains() {
+        AtomicBoolean removed = new AtomicBoolean(false);
+        getLocomotives().forEach(locomotive -> {
+            Train train = locomotive.getTrain();
+            if (train != null) {
+                if (train.isLoading()) {
+                    train.load();
+                }
+            }
+        });
+
+    }
+
 }

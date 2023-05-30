@@ -1,9 +1,10 @@
 package letrain.visitor;
 
+import java.util.Random;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.googlecode.lanterna.Symbols;
 import com.googlecode.lanterna.TextColor;
 
 import letrain.map.Dir;
@@ -11,8 +12,8 @@ import letrain.map.Point;
 import letrain.map.RailMap;
 import letrain.map.SimpleRouter;
 import letrain.mvp.Model;
-import letrain.mvp.View;
 import letrain.mvp.Model.GameMode;
+import letrain.mvp.View;
 import letrain.track.PlatformSensor;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
@@ -233,7 +234,7 @@ public class RenderVisitor implements Visitor {
             return;
         }
         if (wagon.getTrain() != null && wagon.getTrain().isLoading) {
-            view.setFgColor(TextColor.ANSI.RED_BRIGHT);
+            view.setFgColor(TextColor.ANSI.values()[new Random().nextInt(TextColor.ANSI.values().length)]);
         } else {
             view.setFgColor(TextColor.ANSI.WHITE);
         }

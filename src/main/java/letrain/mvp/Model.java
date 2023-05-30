@@ -129,6 +129,8 @@ public interface Model {
         }
     }
 
+    public void loadAndUnloadTrains();
+
     public void removeDestroyedTrains();
 
     public void setProgram(String program);

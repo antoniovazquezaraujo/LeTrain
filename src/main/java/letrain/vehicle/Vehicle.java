@@ -17,7 +17,7 @@ public abstract class Vehicle<T extends Track>
         Renderable,
         Destructible {
     protected Point pos = new Point(0, 0);
-    Dir dir;
+    protected Dir dir;
     private boolean selected = false;
     private boolean reversed = false;
 
