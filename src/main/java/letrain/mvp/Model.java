@@ -4,6 +4,7 @@ import java.util.List;
 
 import letrain.map.Point;
 import letrain.map.RailMap;
+import letrain.track.Platform;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
@@ -21,6 +22,8 @@ public interface Model {
     public int nextSemaphoreId();
 
     public int nextForkId();
+
+    public int nextPlatformId();
 
     public int nextLocomotiveId();
 
@@ -43,6 +46,24 @@ public interface Model {
     void addFork(ForkRailTrack fork);
 
     void removeFork(ForkRailTrack fork);
+
+    List<Platform> getPlatforms();
+
+    void addPlatform(Platform platform);
+
+    void removePlatform(Platform platform);
+
+    Platform getPlatform(int id);
+
+    Platform getSelectedPlatform();
+
+    void setSelectedPlatform(Platform selectedPlatform);
+
+    void selectNextPlatform();
+
+    void selectPrevPlatform();
+
+    void selectPlatform(int id);
 
     void addLocomotive(Locomotive locomotive);
 
@@ -112,10 +133,10 @@ public interface Model {
         DRIVE("Manage locomotives"),
         FORKS("Manage forks"),
         SEMAPHORES("Manage semaphores"),
-        TRAINS("Use factory platforms"),
+        TRAINS("Create trains"),
         LINK("Link trains"),
         UNLINK("Divide trains"),
-        CREATE_LOAD_PLATFORM("Create load platform"),
+        PLATFORMS("Platforms"),
         LOAD_TRAINS("Use load platforms");
 
         private String name;

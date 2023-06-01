@@ -1,7 +1,5 @@
 package letrain.visitor;
 
-import com.googlecode.lanterna.TextColor;
-
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.map.Point;
@@ -10,6 +8,7 @@ import letrain.map.Router;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
+import letrain.track.Platform;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
@@ -56,7 +55,11 @@ public class InfoVisitor implements Visitor {
                     visitForkRailTrack(fork);
                 }
                 break;
-            case CREATE_LOAD_PLATFORM:
+            case PLATFORMS:
+                Platform platform = model.getSelectedPlatform();
+                if (platform != null) {
+                    visitPlatform(platform);
+                }
                 break;
             case LOAD_TRAINS:
                 break;
@@ -69,7 +72,8 @@ public class InfoVisitor implements Visitor {
     }
 
     private String getModeHelp(GameMode mode) {
-        String[] menuOptions = { "(r)ails", "(d)rive", "(f)orks", "(s)emaphores", "(t)rains", "(l)ink", "(u)nlink" };
+        String[] menuOptions = { "(r)ails", "(d)rive", "(f)orks", "(s)emaphores", "(t)rains", "(l)ink",
+                "(u)nlink", "(p)latforms" };
         String title = getOptionsWithHighlight(menuOptions, mode.ordinal() - 1) + "\n";
         String ret = title;
         switch (mode) {
@@ -96,6 +100,9 @@ public class InfoVisitor implements Visitor {
                 break;
             case LINK:
                 ret += "^:front v:back space:link";
+                break;
+            case PLATFORMS:
+                ret += "platform";
                 break;
         }
         return ret;
@@ -206,6 +213,11 @@ public class InfoVisitor implements Visitor {
     @Override
     public void visitSemaphore(RailSemaphore semaphore) {
         infoBarText += "Semaphore:[" + semaphore.getId() + ":" + (semaphore.isOpen() ? "open" : "closed") + "]" + "\n";
+    }
+
+    @Override
+    public void visitPlatform(Platform platform) {
+        infoBarText += "Platform:[" + platform.getId() + "]" + "\n" + "Position:" + platform.getPosition() + "\n";
     }
 
 }
