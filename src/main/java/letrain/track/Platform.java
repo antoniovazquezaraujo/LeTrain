@@ -1,10 +1,11 @@
 package letrain.track;
 
 import letrain.vehicle.impl.rail.Train;
+import letrain.visitor.Visitor;
 
-public class PlatformSensor extends Sensor {
+public class Platform extends Sensor {
 
-    public PlatformSensor(int id) {
+    public Platform(int id) {
         super(id);
     }
 
@@ -20,7 +21,12 @@ public class PlatformSensor extends Sensor {
 
     @Override
     public String toString() {
-        return "PlatformSensor [id=" + getId() + "]";
+        return "Platform [id=" + getId() + "]";
+    }
+
+    @Override
+    public void accept(Visitor visitor) {
+        visitor.visitPlatform(this);
     }
 
 }

@@ -8,6 +8,7 @@ import static letrain.mvp.Model.GameMode.RAILS;
 import static letrain.mvp.Model.GameMode.SEMAPHORES;
 import static letrain.mvp.Model.GameMode.TRAINS;
 import static letrain.mvp.Model.GameMode.UNLINK;
+import static letrain.mvp.Model.GameMode.PLATFORMS;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -61,6 +62,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     int forkId;
     int semaphoreId;
     int locomotiveId;
+    int platformId;
 
     RailTrackMaker railTrackMaker;
 
@@ -179,6 +181,9 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                     case 'u':
                         model.setMode(UNLINK);
                         break;
+                    case 'p':
+                        model.setMode(PLATFORMS);
+                        break;
                     default:
                         isAMenuKey = false;
                         break;
@@ -213,7 +218,34 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             case UNLINK:
                 unlinkerOnChar(keyEvent);
                 break;
+            case PLATFORMS:
+                platformManagerOnChar(keyEvent);
+                break;
         }
+    }
+
+    void platformManagerOnChar(KeyStroke keyEvent) {
+        switch (keyEvent.getKeyType()) {
+            case Backspace:
+                platformId = platformId / 10;
+                selectPlatform(platformId);
+                break;
+            case Character:
+                if (keyEvent.getCharacter() == ' ') {
+                    platformId = 0;
+                } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
+                    platformId = platformId * 10 + (keyEvent.getCharacter() - '0');
+                    selectPlatform(platformId);
+                }
+                break;
+            case ArrowLeft:
+                selectPrevPlatform();
+                break;
+            case ArrowRight:
+                selectNextPlatform();
+                break;
+        }
+
     }
 
     void showMainDialog() {
@@ -630,27 +662,20 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
 
     /***********************************************************
-     * LOAD_PLATFORM
+     * PLATFORMS
      **********************************************************/
 
-    private void createLoadPlatformTrack() {
-
+    private void selectNextPlatform() {
+        model.selectNextPlatform();
     }
 
-    private void selectNextLoadPlatform() {
-
+    private void selectPrevPlatform() {
+        model.selectPrevPlatform();
     }
 
-    private void selectPrevLoadPlatform() {
-
-    }
-
-    private void unloadLocomotive() {
-
-    }
-
-    private void loadTrain() {
-
+    private void selectPlatform(int id) {
+        model.selectPlatform(id);
+        setPageOfPoint(model.getSelectedPlatform().getPosition());
     }
 
     @Override

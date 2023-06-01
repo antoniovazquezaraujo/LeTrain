@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.RailMap;
+import letrain.track.Platform;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
@@ -24,10 +25,12 @@ public class Model implements Serializable, letrain.mvp.Model {
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     RailSemaphore selectedSemaphore;
+    Platform selectedPlatform;
 
     int selectedLocomotiveIndex;
     int selectedForkIndex;
     int selectedSemaphoreIndex;
+    int selectedPlatformIndex;
     boolean showId = false;
 
     GameMode mode = letrain.mvp.Model.GameMode.RAILS;
@@ -38,11 +41,13 @@ public class Model implements Serializable, letrain.mvp.Model {
     List<ForkRailTrack> forks;
     List<Sensor> sensors;
     List<RailSemaphore> semaphores;
+    List<Platform> platforms;
     int nextLocomotiveId;
     int nextForkId;
     int nextSensorId;
     int nextSemaphoreId;
     int nextTrainId;
+    int nextPlatformId;
     String program;
 
     public int nextSemaphoreId() {
@@ -65,6 +70,10 @@ public class Model implements Serializable, letrain.mvp.Model {
         return ++nextTrainId;
     }
 
+    public int nextPlatformId() {
+        return ++nextPlatformId;
+    }
+
     public Model() {
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
@@ -74,6 +83,7 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.forks = new ArrayList<>();
         this.sensors = new ArrayList<>();
         this.semaphores = new ArrayList<>();
+        this.platforms = new ArrayList<>();
         this.map = new RailMap();
         this.program = "";
         selectedLocomotiveIndex = 0;
@@ -87,6 +97,10 @@ public class Model implements Serializable, letrain.mvp.Model {
         selectedSemaphoreIndex = 0;
         if (!getSemaphores().isEmpty()) {
             selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
+        }
+        selectedPlatformIndex = 0;
+        if (!getPlatforms().isEmpty()) {
+            selectedPlatform = getPlatforms().get(selectedPlatformIndex);
         }
     }
 
@@ -435,4 +449,72 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     }
 
+    @Override
+    public List<Platform> getPlatforms() {
+        return this.platforms;
+    }
+
+    @Override
+    public void addPlatform(Platform platform) {
+        this.platforms.add(platform);
+    }
+
+    @Override
+    public void removePlatform(Platform platform) {
+        this.platforms.remove(platform);
+    }
+
+    @Override
+    public Platform getPlatform(int id) {
+        for (Platform platform : getPlatforms()) {
+            if (platform.getId() == id) {
+                return platform;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Platform getSelectedPlatform() {
+        return selectedPlatform;
+    }
+
+    @Override
+    public void setSelectedPlatform(Platform selectedPlatform) {
+        this.selectedPlatform = selectedPlatform;
+    }
+
+    @Override
+    public void selectNextPlatform() {
+        if (getPlatforms().isEmpty()) {
+            return;
+        }
+        selectedPlatformIndex++;
+        if (selectedPlatformIndex >= getPlatforms().size()) {
+            selectedPlatformIndex = 0;
+        }
+        selectedPlatform = getPlatforms().get(selectedPlatformIndex);
+    }
+
+    @Override
+    public void selectPrevPlatform() {
+        if (getPlatforms().isEmpty()) {
+            return;
+        }
+        selectedPlatformIndex--;
+        if (selectedPlatformIndex < 0) {
+            selectedPlatformIndex = getPlatforms().size() - 1;
+        }
+        selectedPlatform = getPlatforms().get(selectedPlatformIndex);
+    }
+
+    @Override
+    public void selectPlatform(int id) {
+        for (Platform platform : getPlatforms()) {
+            if (platform.getId() == id) {
+                selectedPlatform = platform;
+                break;
+            }
+        }
+    }
 }

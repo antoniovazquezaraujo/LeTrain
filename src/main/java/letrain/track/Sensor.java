@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import letrain.map.Point;
 import letrain.vehicle.impl.rail.Train;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
@@ -28,6 +29,13 @@ public class Sensor implements Renderable, Serializable {
 
     public void setId(int i) {
         this.id = i;
+    }
+
+    public Point getPosition() {
+        if (track == null) {
+            return null;
+        }
+        return track.getPosition();
     }
 
     public int getId() {

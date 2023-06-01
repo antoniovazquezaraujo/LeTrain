@@ -14,7 +14,7 @@ import letrain.map.SimpleRouter;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
-import letrain.track.PlatformSensor;
+import letrain.track.Platform;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
@@ -33,7 +33,8 @@ public class RenderVisitor implements Visitor {
     Logger log = LoggerFactory.getLogger(RenderVisitor.class);
     private static final TextColor RAIL_TRACK_COLOR = TextColor.ANSI.BLACK_BRIGHT;
     private static final TextColor SENSOR_COLOR = TextColor.ANSI.CYAN_BRIGHT;
-    private static final TextColor PLATFORM_SENSOR_COLOR = TextColor.ANSI.MAGENTA_BRIGHT;
+    private static final TextColor PLATFORM_COLOR = TextColor.ANSI.MAGENTA_BRIGHT;
+    private static final TextColor SELECTED_PLATFORM_COLOR = TextColor.ANSI.RED_BRIGHT;
     public static final TextColor FORK_COLOR = TextColor.ANSI.WHITE_BRIGHT;
     public static final TextColor SELECTED_FORK_COLOR = TextColor.ANSI.RED_BRIGHT;
     public static final TextColor FG_COLOR = TextColor.ANSI.WHITE;
@@ -41,6 +42,8 @@ public class RenderVisitor implements Visitor {
     public static final TextColor SELECTED_LINKER_COLOR = TextColor.ANSI.YELLOW;
     public static final TextColor SEMAPHORE_OPEN_COLOR = TextColor.ANSI.GREEN;
     public static final TextColor SEMAPHORE_CLOSED_COLOR = TextColor.ANSI.RED;
+    public static final TextColor SEMAPHORE_COLOR = TextColor.ANSI.BLUE;
+    public static final TextColor SELECTED_SEMAPHORE_COLOR = TextColor.ANSI.RED_BRIGHT;
     public static final TextColor[] CRASH_COLORS = {
             TextColor.ANSI.RED,
             TextColor.ANSI.RED_BRIGHT,
@@ -54,6 +57,8 @@ public class RenderVisitor implements Visitor {
 
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
+    Platform selectedPlatform;
+    RailSemaphore selectedSemaphore;
     private final View view;
     private GameMode mode;
     boolean showId = false;
@@ -79,8 +84,11 @@ public class RenderVisitor implements Visitor {
         this.mode = model.getMode();
         selectedLocomotive = model.getSelectedLocomotive();
         selectedFork = model.getSelectedFork();
+        selectedPlatform = model.getSelectedPlatform();
+        selectedSemaphore = model.getSelectedSemaphore();
         model.getRailMap().accept(this);
         model.getSensors().forEach(t -> t.accept(this));
+        model.getPlatforms().forEach(t -> t.accept(this));
         model.getForks().forEach(t -> t.accept(this));
         model.getSemaphores().forEach(t -> t.accept(this));
         model.getWagons().forEach(t -> t.accept(this));
@@ -96,8 +104,8 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitRailTrack(RailTrack track) {
         if (track.getSensor() != null) {
-            if (track.getSensor() instanceof PlatformSensor) {
-                view.setFgColor(PLATFORM_SENSOR_COLOR);
+            if (track.getSensor() instanceof Platform) {
+                view.setFgColor(PLATFORM_COLOR);
             } else {
                 view.setFgColor(SENSOR_COLOR);
             }
@@ -109,11 +117,26 @@ public class RenderVisitor implements Visitor {
     }
 
     @Override
+    public void visitPlatform(Platform platform) {
+        Track track = platform.getTrack();
+        if (this.mode == GameMode.PLATFORMS) {
+            if (platform == selectedPlatform) {
+                view.setFgColor(SELECTED_PLATFORM_COLOR);
+            } else {
+                view.setFgColor(PLATFORM_COLOR);
+            }
+
+            view.set(track.getPosition().getX(), track.getPosition().getY(), "₪" + platform.getId());
+        }
+        resetColors();
+    }
+
+    @Override
     public void visitSensor(Sensor sensor) {
         Track track = sensor.getTrack();
         if (track.getSensor() != null && this.mode == GameMode.RAILS) {
-            if (track.getSensor() instanceof PlatformSensor) {
-                view.setFgColor(PLATFORM_SENSOR_COLOR);
+            if (track.getSensor() instanceof Platform) {
+                view.setFgColor(PLATFORM_COLOR);
             } else {
                 view.setFgColor(SENSOR_COLOR);
             }
@@ -130,7 +153,13 @@ public class RenderVisitor implements Visitor {
         } else {
             view.setFgColor(SEMAPHORE_CLOSED_COLOR);
         }
-        view.set(pos.getX(), pos.getY(), ":" + (mode.equals(GameMode.SEMAPHORES) ? semaphore.getId() : ""));
+        view.set(pos.getX(), pos.getY(), ":");
+        if (semaphore == selectedSemaphore) {
+            view.setFgColor(SELECTED_SEMAPHORE_COLOR);
+        } else {
+            view.setFgColor(SEMAPHORE_COLOR);
+        }
+        view.set(pos.getX() + 1, pos.getY(), "" + (mode.equals(GameMode.SEMAPHORES) ? semaphore.getId() : ""));
         resetColors();
     }
 

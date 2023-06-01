@@ -8,7 +8,7 @@ import letrain.map.Router;
 import letrain.map.SimpleRouter;
 import letrain.mvp.Presenter;
 import letrain.mvp.impl.CompactPresenter.TrackType;
-import letrain.track.PlatformSensor;
+import letrain.track.Platform;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
@@ -160,15 +160,15 @@ public class RailTrackMaker {
         if (track != null && track instanceof PlatformTrack) {
             Sensor sensor = track.getSensor();
             if (sensor != null) {
-                if (sensor instanceof PlatformSensor) {
+                if (sensor instanceof Platform) {
                     track.setSensor(null);
                 }
                 presenter.getModel().removeSensor(sensor);
             } else {
-                sensor = new PlatformSensor(presenter.getModel().nextSensorId());
+                sensor = new Platform(presenter.getModel().nextPlatformId());
                 sensor.setTrack(track);
                 track.setSensor(sensor);
-                presenter.getModel().addSensor(sensor);
+                presenter.getModel().addPlatform((Platform) sensor);
             }
         }
 
