@@ -25,7 +25,7 @@ import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 
 public class Train implements Serializable, Trailer<RailTrack>, Renderable, Transportable {
-    private static final int MAX_LOADING_COUNT = 1000;
+    private static final int MAX_LOADING_COUNT = 200;
     Logger log = LoggerFactory.getLogger(Train.class);
     protected final Deque<Linker> linkers;
     protected final List<Tractor> tractors;

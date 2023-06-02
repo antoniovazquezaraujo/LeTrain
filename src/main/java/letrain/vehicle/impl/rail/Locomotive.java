@@ -7,6 +7,7 @@ import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 
 public class Locomotive extends Linker implements Tractor {
+    private static final int MAX_DESTROY_TURNS = 400;
     private static final long serialVersionUID = 1L;
     final static int MAX_SPEED = 10;
     final static int SPEED_CHANGE_MAX_RELUCTANCE = 2;
@@ -179,7 +180,7 @@ public class Locomotive extends Linker implements Tractor {
     @Override
     public void destroy() {
         this.destroying = true;
-        this.destroyingTurns = 1000;
+        this.destroyingTurns = MAX_DESTROY_TURNS;
     }
 
     @Override

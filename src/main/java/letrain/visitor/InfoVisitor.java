@@ -67,15 +67,16 @@ public class InfoVisitor implements Visitor {
                 break;
         }
         visitCursor(model.getCursor());
-        view.setInfoBarText(infoBarText);
+        String[] menuOptions = { "&rails", "&drive", "&forks", "&semaphores", "&trains", "&link",
+                "&unlink", "&platforms" };
+
+        view.setMenu(menuOptions, model.getMode().ordinal() - 1);
         view.setHelpBarText(getModeHelp(model.getMode()));
+        view.setInfoBarText(infoBarText);
     }
 
     private String getModeHelp(GameMode mode) {
-        String[] menuOptions = { "(r)ails", "(d)rive", "(f)orks", "(s)emaphores", "(t)rains", "(l)ink",
-                "(u)nlink", "(p)latforms" };
-        String title = getOptionsWithHighlight(menuOptions, mode.ordinal() - 1) + "\n";
-        String ret = title;
+        String ret = "";
         switch (mode) {
             case MENU:
                 ret += "escape:exit ";
@@ -95,32 +96,17 @@ public class InfoVisitor implements Visitor {
             case TRAINS:
                 ret += "A-Z:locomotive a-z:wagon enter:end";
                 break;
-            case UNLINK:
-                ret += "<:front >:back ^:add v:del space:unlink";
-                break;
             case LINK:
                 ret += "^:front v:back space:link";
+                break;
+            case UNLINK:
+                ret += "<:front >:back ^:add v:del space:unlink";
                 break;
             case PLATFORMS:
                 ret += "platform";
                 break;
         }
         return ret;
-    }
-
-    private String getOptionsWithHighlight(String[] menuOptions, int ordinal) {
-        StringBuffer ret = new StringBuffer();
-        for (int i = 0; i < menuOptions.length; i++) {
-            if (i == ordinal) {
-                ret.append("[" + menuOptions[i] + "]");
-            } else {
-                ret.append(menuOptions[i]);
-            }
-            if (i < menuOptions.length - 1) {
-                ret.append(" ");
-            }
-        }
-        return ret.toString();
     }
 
     @Override

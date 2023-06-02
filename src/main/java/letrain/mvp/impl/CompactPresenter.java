@@ -411,8 +411,10 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                     toggleReversed();
                     locomotiveId = 0;
                 } else if (keyEvent.getCharacter() == '-') {
-                    if (!model.getSelectedLocomotive().getTrain().isLoading()) {
-                        model.getSelectedLocomotive().getTrain().startLoadUnloadProcess();
+                    if (model.getSelectedLocomotive() != null) {
+                        if (!model.getSelectedLocomotive().getTrain().isLoading()) {
+                            model.getSelectedLocomotive().getTrain().startLoadUnloadProcess();
+                        }
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     if (keyEvent.getCharacter() == '0' && locomotiveId == 0) {
@@ -424,9 +426,11 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 }
                 break;
             case ArrowUp:
-                if (!model.getSelectedLocomotive().getTrain().isLoading) {
-                    accelerateLocomotive();
-                    locomotiveId = 0;
+                if (model.getSelectedLocomotive() != null) {
+                    if (!model.getSelectedLocomotive().getTrain().isLoading) {
+                        accelerateLocomotive();
+                        locomotiveId = 0;
+                    }
                 }
                 break;
             case ArrowDown:
@@ -529,7 +533,9 @@ public class CompactPresenter implements letrain.mvp.Presenter {
 
     public void selectLocomotive(int id) {
         model.selectLocomotive(id);
-        setPageOfPoint(model.getSelectedLocomotive().getTrack().getPosition());
+        if (model.getSelectedLocomotive() != null) {
+            setPageOfPoint(model.getSelectedLocomotive().getTrack().getPosition());
+        }
     }
 
     /***********************************************************
@@ -567,7 +573,9 @@ public class CompactPresenter implements letrain.mvp.Presenter {
 
     private void selectFork(int id) {
         model.selectFork(id);
-        setPageOfPoint(model.getSelectedFork().getPosition());
+        if (model.getSelectedFork() != null) {
+            setPageOfPoint(model.getSelectedFork().getPosition());
+        }
     }
 
     private void toggleFork() {
@@ -590,7 +598,9 @@ public class CompactPresenter implements letrain.mvp.Presenter {
 
     private void selectSemaphore(int id) {
         model.selectSemaphore(id);
-        setPageOfPoint(model.getSelectedSemaphore().getPosition());
+        if (model.getSelectedSemaphore() != null) {
+            setPageOfPoint(model.getSelectedSemaphore().getPosition());
+        }
     }
 
     private void toggleSemaphore() {
