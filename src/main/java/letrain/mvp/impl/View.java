@@ -109,34 +109,48 @@ public class View implements letrain.mvp.View {
         // statusBar.setText(text);
     }
 
+    @Override
     public void setInfoBarText(String text) {
         bottomGraphics.putString(bottonGraphicsPosition.withRelative(1, 3), text);
     }
 
-    // Método que recibe una lista de cadenas y pinta en bottomGraphics todas las
-    // opciones pero con un color de fondo diferente la opción que va entre
-    // corchetes
-    public void paintOptions(String[] options) {
-        // If the option contains "[", it means that it is a selected option
-        // We need to paint it yellow
-        int length = 0;
-        for (String option : options) {
-            if (option.contains("[")) {
-                TextColor oldColor = bgColor;
-                bottomGraphics.setBackgroundColor(TextColor.ANSI.YELLOW);
-                bottomGraphics.putString(bottonGraphicsPosition.withRelative(length, 1), option);
-                bottomGraphics.setBackgroundColor(oldColor);
+    @Override
+    public void setMenu(String[] options, int selectedOption) {
+        int length = 1;
+        TextColor oldBgColor = bgColor;
+        for (int option = 0; option < options.length; option++) {
+            String[] parts = options[option].split("&");
+            String firstPart = parts[0];
+            String secondPart = parts[1].substring(0, 1);
+            String thirdPart = parts[1].substring(1);
+            TextColor oldFgColor = fgColor;
+            if (option == selectedOption) {
+                bgColor = ANSI.BLUE;
+                bottomGraphics.setBackgroundColor(bgColor);
             } else {
-                bottomGraphics.putString(bottonGraphicsPosition.withRelative(length, 1), option);
+                bgColor = oldBgColor;
+                bottomGraphics.setBackgroundColor(bgColor);
             }
-            length += option.length() + 1;
+            bottomGraphics.setForegroundColor(oldFgColor);
+            bottomGraphics.putString(bottonGraphicsPosition.withRelative(length, 1), firstPart);
+            bottomGraphics.setForegroundColor(TextColor.ANSI.YELLOW);
+            length += firstPart.length();
+            bottomGraphics.putString(bottonGraphicsPosition.withRelative(length, 1), secondPart);
+            bottomGraphics.setForegroundColor(oldFgColor);
+            length += secondPart.length();
+            bottomGraphics.putString(bottonGraphicsPosition.withRelative(length, 1), thirdPart);
+            bottomGraphics.setForegroundColor(oldFgColor);
+            length += thirdPart.length() + 1;
+            bottomGraphics.setBackgroundColor(oldBgColor);
+            bgColor = oldBgColor;
+            fgColor = oldFgColor;
         }
+
     }
 
+    @Override
     public void setHelpBarText(String text) {
-        String[] lines = text.split("\n");
-        paintOptions(lines[0].split(" "));
-        bottomGraphics.putString(bottonGraphicsPosition.withRelative(1, 2), lines[1]);
+        bottomGraphics.putString(bottonGraphicsPosition.withRelative(1, 2), text);
     }
 
     @Override

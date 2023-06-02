@@ -33,6 +33,8 @@ public interface View {
 
     void setInfoBarText(String info);
 
+    void setMenu(String[] options, int selectedOption);
+
     void setHelpBarText(String info);
 
     boolean isEndOfGame(KeyStroke stroke);
