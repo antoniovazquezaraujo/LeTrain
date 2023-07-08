@@ -7,10 +7,13 @@ import org.slf4j.LoggerFactory;
 
 import com.googlecode.lanterna.TextColor;
 
+import letrain.ground.Ground;
+import letrain.ground.Ground.GroundType;
 import letrain.map.Dir;
 import letrain.map.Point;
-import letrain.map.RailMap;
-import letrain.map.SimpleRouter;
+import letrain.map.impl.GroundMap;
+import letrain.map.impl.RailMap;
+import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
@@ -86,6 +89,7 @@ public class RenderVisitor implements Visitor {
         selectedFork = model.getSelectedFork();
         selectedPlatform = model.getSelectedPlatform();
         selectedSemaphore = model.getSelectedSemaphore();
+        model.getGroundMap().accept(this);
         model.getRailMap().accept(this);
         model.getSensors().forEach(t -> t.accept(this));
         model.getPlatforms().forEach(t -> t.accept(this));
@@ -97,7 +101,7 @@ public class RenderVisitor implements Visitor {
     }
 
     @Override
-    public void visitMap(RailMap map) {
+    public void visitRailMap(RailMap map) {
         map.forEach(t -> t.accept(this));
     }
 
@@ -365,4 +369,15 @@ public class RenderVisitor implements Visitor {
         return CRASH_COLORS[(int) (Math.random() * CRASH_COLORS.length)];
     }
 
+	@Override
+	public void visitGroundMap(GroundMap groundMap) {
+        groundMap.forEach(t -> t.accept(this));
+	}
+
+	@Override
+	public void visitGround(Ground ground) {
+        Ground.GroundType type = ground.getType();
+        view.set(ground.getPosition().getX(), ground.getPosition().getY(), type.equals(GroundType.GROUND)?"#":" ");
+        resetColors();
+    }
 }

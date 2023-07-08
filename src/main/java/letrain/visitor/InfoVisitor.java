@@ -3,8 +3,8 @@ package letrain.visitor;
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.map.Point;
-import letrain.map.RailMap;
 import letrain.map.Router;
+import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
@@ -110,7 +110,7 @@ public class InfoVisitor implements Visitor {
     }
 
     @Override
-    public void visitMap(RailMap map) {
+    public void visitRailMap(RailMap map) {
         map.forEach(t -> t.accept(this));
     }
 

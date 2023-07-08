@@ -1,10 +1,12 @@
-package letrain.map;
+package letrain.map.impl;
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import letrain.map.Dir;
+import letrain.map.Router;
 import letrain.utils.Pair;
 
 public class SimpleRouter implements Serializable, Router {

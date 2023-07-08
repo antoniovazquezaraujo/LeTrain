@@ -3,6 +3,8 @@ package letrain.map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import letrain.map.impl.RailMap;
+import letrain.map.impl.SimpleRouter;
 import letrain.mvp.impl.CompactPresenter;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;

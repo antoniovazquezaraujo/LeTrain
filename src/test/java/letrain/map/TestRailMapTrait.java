@@ -1,5 +1,6 @@
 package letrain.map;
 
+import letrain.map.impl.RailMap;
 import letrain.track.rail.RailTrack;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -5,7 +5,7 @@ import com.googlecode.lanterna.input.KeyStroke;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.Router;
-import letrain.map.SimpleRouter;
+import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Presenter;
 import letrain.mvp.impl.CompactPresenter.TrackType;
 import letrain.track.Platform;

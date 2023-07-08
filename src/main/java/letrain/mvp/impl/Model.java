@@ -9,8 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import letrain.map.Dir;
+import letrain.map.GroundMap;
 import letrain.map.Point;
-import letrain.map.RailMap;
+import letrain.map.impl.RailMap;
 import letrain.track.Platform;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
@@ -33,6 +34,7 @@ public class Model implements Serializable, letrain.mvp.Model {
     int selectedPlatformIndex;
     boolean showId = false;
 
+    letrain.map.GroundMap groundMap;
     GameMode mode = letrain.mvp.Model.GameMode.RAILS;
     RailMap map;
     List<Locomotive> locomotives;
@@ -75,6 +77,7 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     public Model() {
+        this.groundMap = new letrain.ground.GroundMap ();
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
         this.cursor.setPosition(new Point(10, 10));
@@ -107,6 +110,10 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public RailMap getRailMap() {
         return map;
+    }
+    @Override
+    public GroundMap getGroundMap() {
+        return groundMap;
     }
 
     @Override
@@ -517,4 +524,8 @@ public class Model implements Serializable, letrain.mvp.Model {
             }
         }
     }
+
+	public void updateGroundMap(Point mapScrollPage, int columns, int rows) {
+        this.groundMap.update(mapScrollPage.getX(), mapScrollPage.getY(), columns, rows);
+	}
 }
