@@ -4,7 +4,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import letrain.ground.Ground;
@@ -17,8 +19,13 @@ public class GroundMap implements letrain.ground.GroundMap {
     static final int ITERACTIONS = 5;
     final Map<Integer, Map<Integer, Integer>> cells;
 
+    record Block(int x, int y, int width, int height) {
+    }
+    Set<Block> blocks ;
+
     public GroundMap() {
         cells = new HashMap<>();
+        blocks = new HashSet<>();
         try {
             digest = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
@@ -74,6 +81,11 @@ public class GroundMap implements letrain.ground.GroundMap {
     }
 
     public void renderBlock(int startx, int starty, int width, int height) {
+        Block block = new Block(startx, starty, width, height);
+        if(blocks.contains(block)){
+            return;
+        }
+        blocks.add(block);
         randomizeBlock(startx, starty, width, height);
         generateTerrain(startx, starty, width, height);
     }
