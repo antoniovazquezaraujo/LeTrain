@@ -1,5 +1,7 @@
 package letrain.visitor;
 
+import letrain.ground.Ground;
+import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.map.Point;
@@ -205,5 +207,13 @@ public class InfoVisitor implements Visitor {
     public void visitPlatform(Platform platform) {
         infoBarText += "Platform:[" + platform.getId() + "]" + "\n" + "Position:" + platform.getPosition() + "\n";
     }
+
+	@Override
+	public void visitGroundMap(GroundMap groundMap) {
+	}
+
+	@Override
+	public void visitGround(Ground ground) {
+	}
 
 }

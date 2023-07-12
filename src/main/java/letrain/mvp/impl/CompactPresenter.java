@@ -96,7 +96,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
 
             KeyStroke stroke = null;
             model.setMode(MENU);
-            model.updateGroundMap(new Point(0,0), 1,1);
+            model.updateGroundMap(new Point(0, 0), 1, 1);
             while (running) {
                 stroke = null;
                 stroke = view.readKey();
@@ -820,8 +820,8 @@ public class CompactPresenter implements letrain.mvp.Presenter {
         model.setProgram(program);
     }
 
-	@Override
-	public void onMapPageChanged(Point mapScrollPage, int columns, int rows) {
+    @Override
+    public void onMapPageChanged(Point mapScrollPage, int columns, int rows) {
         model.updateGroundMap(mapScrollPage, columns, rows);
 
     }

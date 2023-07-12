@@ -1,7 +1,7 @@
 package letrain.visitor;
 
 import letrain.ground.Ground;
-import letrain.map.GroundMap;
+import letrain.ground.GroundMap;
 import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
 import letrain.track.Platform;

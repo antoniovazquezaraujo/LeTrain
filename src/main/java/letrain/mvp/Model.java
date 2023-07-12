@@ -3,7 +3,7 @@ package letrain.mvp;
 import java.util.List;
 
 import letrain.ground.Ground;
-import letrain.map.GroundMap;
+import letrain.ground.GroundMap;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
 import letrain.track.Platform;

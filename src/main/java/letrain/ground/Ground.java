@@ -21,8 +21,12 @@ public class Ground implements
     private static final long serialVersionUID = 1L;
     private Point pos = new Point(0, 0);
 
-    Ground() {
+    private Ground() {
 
+    }
+    public Ground(  Point pos, GroundType type) {
+        this.pos = pos;
+        this.type = type;
     }
     Ground (GroundType type){
         this.type = type;

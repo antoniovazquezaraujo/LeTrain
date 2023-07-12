@@ -219,7 +219,10 @@ public class View implements letrain.mvp.View {
             y -= getRows();
         int pageX = x / getCols();
         int pageY = y / getRows();
-        setMapScrollPage(new Point(pageX, pageY));
+        Point actualPage = getMapScrollPage();
+        if (pageX != actualPage.getX() || pageY != actualPage.getY()){
+            setMapScrollPage(new Point(pageX, pageY));
+        }
     }
 
     @Override

@@ -9,9 +9,9 @@ import com.googlecode.lanterna.TextColor;
 
 import letrain.ground.Ground;
 import letrain.ground.Ground.GroundType;
+import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
-import letrain.map.impl.GroundMap;
 import letrain.map.impl.RailMap;
 import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Model;
@@ -369,15 +369,16 @@ public class RenderVisitor implements Visitor {
         return CRASH_COLORS[(int) (Math.random() * CRASH_COLORS.length)];
     }
 
-	@Override
-	public void visitGroundMap(GroundMap groundMap) {
-        groundMap.forEach(t -> t.accept(this));
-	}
+    @Override
+    public void visitGroundMap(GroundMap groundMap) {        
+        groundMap.forEach(ground -> visitGround(ground));
+    }
 
-	@Override
-	public void visitGround(Ground ground) {
+    @Override
+    public void visitGround(Ground ground) {
         Ground.GroundType type = ground.getType();
-        view.set(ground.getPosition().getX(), ground.getPosition().getY(), type.equals(GroundType.GROUND)?"#":" ");
+        view.set(ground.getPosition().getX(), ground.getPosition().getY(), type.equals(GroundType.GROUND) ? " " : "#");
         resetColors();
     }
+
 }
