@@ -6,6 +6,10 @@ import letrain.map.Point;
 import letrain.visitor.Renderable;
 
 public interface GroundMap extends Renderable {
+    public static final int GROUND = 0;
+    public static final int WATER = 1;
+    public static final int ROCK = 2;
+
     void renderBlock(int startx, int starty, int width, int height);
 
     Integer getValueAt(int x, int y);

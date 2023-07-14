@@ -6,6 +6,34 @@
     "configurations": [
         {
             "type": "java",
+            "name": "TerrainGenerationLab",
+            "request": "launch",
+            "mainClass": "letrain.ground.impl.TerrainGenerationLab",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "Terminal24bitColorTest",
+            "request": "launch",
+            "mainClass": "letrain.ground.impl.Terminal24bitColorTest",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "PerlinNoise",
+            "request": "launch",
+            "mainClass": "letrain.ground.PerlinNoise",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "Terrain2D",
+            "request": "launch",
+            "mainClass": "letrain.ground.impl.Terrain2D",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
             "name": "Borrame",
             "request": "launch",
             "mainClass": "letrain.ground.impl.Borrame",

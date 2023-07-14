@@ -1,6 +1,5 @@
 package letrain.ground.impl;
 
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -9,19 +8,29 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import letrain.ground.Ground;
-import letrain.ground.Ground.GroundType;
+import letrain.ground.NoiseGenerator;
 import letrain.map.Point;
 import letrain.visitor.Visitor;
 
 public class GroundMap implements letrain.ground.GroundMap {
+    Logger log = LoggerFactory.getLogger(getClass());
     MessageDigest digest;
     static final int ITERACTIONS = 5;
     final Map<Integer, Map<Integer, Integer>> cells;
+    NoiseGenerator noiseGenerator = new NoiseGenerator(123456789);
+
+    record CellEnv(int ground, int rock, int water) {
+
+    }
 
     record Block(int x, int y, int width, int height) {
     }
-    Set<Block> blocks ;
+
+    Set<Block> blocks;
 
     public GroundMap() {
         cells = new HashMap<>();
@@ -35,8 +44,8 @@ public class GroundMap implements letrain.ground.GroundMap {
 
     public void forEach(Consumer<Ground> c) {
         for (int row : cells.keySet()) {
-            for(int col: cells.get(row).keySet()) {
-                c.accept(new Ground(new Point(col, row), 1==cells.get(row).get(col)?GroundType.MOUNTAIN: GroundType.GROUND));
+            for (int col : cells.get(row).keySet()) {
+                c.accept(new Ground(col, row, cells.get(row).get(col)));
             }
         }
     }
@@ -57,7 +66,8 @@ public class GroundMap implements letrain.ground.GroundMap {
     public void setValueAt(Point p, Integer value) {
         setValueAt(p.getX(), p.getY(), value);
     }
-   @Override
+
+    @Override
     public void setValueAt(int x, int y, Integer value) {
         if (!cells.containsKey(y)) {
             cells.put(y, new HashMap<>());
@@ -82,12 +92,12 @@ public class GroundMap implements letrain.ground.GroundMap {
 
     public void renderBlock(int startx, int starty, int width, int height) {
         Block block = new Block(startx, starty, width, height);
-        if(blocks.contains(block)){
+        if (blocks.contains(block)) {
             return;
         }
         blocks.add(block);
         randomizeBlock(startx, starty, width, height);
-        generateTerrain(startx, starty, width, height);
+        //generateTerrain(startx, starty, width, height);
     }
 
     void randomizeBlock(int startX, int startY, int width, int height) {
@@ -95,10 +105,16 @@ public class GroundMap implements letrain.ground.GroundMap {
             for (int y = 0; y < height; y++) {
                 int column = startX + x;
                 int row = startY + y;
-                String coordenadas = (column) + "-" + (row);
-                byte[] hashBytes = digest.digest(coordenadas.getBytes(StandardCharsets.UTF_8));
-                byte numero = (byte) (Math.abs(bytesToInt(hashBytes)) % 100);
-                setValueAt(column, row, (numero % 100) > 50 ? 1 : 0);
+                     double scl = 0.8F;
+                double v = noiseGenerator.noise(column * scl, row * scl, 1000);                
+                log.debug("v:"+ v);      
+                if (v < 0.7D) {
+                  setValueAt(x,y,0);
+                } else if (v < 0.5D) {
+                  setValueAt(x,y,1);
+                } else {
+                    setValueAt(x,y,2);
+                }
             }
         }
     }
@@ -118,23 +134,55 @@ public class GroundMap implements letrain.ground.GroundMap {
                 for (int row = 0; row < height; row++) {
                     int colIndex = x + col;
                     int rowIndex = y + row;
-                    int aliveNeighbors = countAliveNeighbors(colIndex, rowIndex);
-                    if (1 == getValueAt(colIndex, rowIndex)) {
-                        if (aliveNeighbors < 4) {
-                            setValueAt(colIndex, rowIndex, 0); // Cell dies due to underpopulation
-                        } else {
-                            setValueAt(colIndex, rowIndex, 1); // Cell survives
+
+                    int type = getValueAt(colIndex, rowIndex);
+                    CellEnv env = getCellEnv(colIndex, rowIndex);
+                    if (type == GROUND) {
+                        if (env.ground <= 3) {
+                            setValueAt(x, y, WATER);
+                        } else if (env.water > 4) {
+                            setValueAt(x, y, ROCK);
                         }
-                    } else {
-                        if (aliveNeighbors > 4) {
-                            setValueAt(colIndex, rowIndex, 1); // Cell becomes alive due to reproduction
-                        } else {
-                            setValueAt(colIndex, rowIndex, 0); // Cell remains dead
+                    } else if (type == WATER) {
+                        if (env.water <= 4) {
+                            setValueAt(x, y, ROCK);
+                        } else if (env.rock > 4) {
+                            setValueAt(x, y, GROUND);
+                        }
+                    } else if (type == ROCK) {
+                        if (env.rock <= 5) {
+                            setValueAt(x, y, GROUND);
+                        } else if (env.ground > 4) {
+                            setValueAt(x, y, WATER);
                         }
                     }
                 }
             }
         }
+    }
+
+    CellEnv getCellEnv(int x, int y) {
+        int countGround = 0;
+        int countRock = 0;
+        int countWater = 0;
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                int neighborX = x + i;
+                int neighborY = y + j;
+                if (i == 0 && j == 0)
+                    continue; // Exclude the current cell
+                if (GROUND == getValueAt(neighborX, neighborY)) {
+                    countGround++;
+                }
+                if (ROCK == getValueAt(neighborX, neighborY)) {
+                    countRock++;
+                }
+                if (WATER == getValueAt(neighborX, neighborY)) {
+                    countWater++;
+                }
+            }
+        }
+        return new CellEnv(countGround, countRock, countWater);
     }
 
     int countAliveNeighbors(int x, int y) {
@@ -155,6 +203,6 @@ public class GroundMap implements letrain.ground.GroundMap {
 
     @Override
     public void accept(Visitor visitor) {
-       visitor.visitGroundMap(this);
+        visitor.visitGroundMap(this);
     }
 }

@@ -12,35 +12,31 @@ public class Ground implements
         Mapeable,
         Renderable {
 
-    public enum GroundType {
-        GROUND,
-        MOUNTAIN
-    }
-    GroundType type = GroundType.GROUND;
-
+ 
+    int type;
+    int x;
+    int y;
+    Point pos = new Point(x, y);
     private static final long serialVersionUID = 1L;
-    private Point pos = new Point(0, 0);
 
     private Ground() {
 
     }
-    public Ground(  Point pos, GroundType type) {
-        this.pos = pos;
+    public Ground(  int x, int y, int type) {
+        this.x = x;
+        this.y = y;
         this.type = type;
     }
-    Ground (GroundType type){
-        this.type = type;
-    }
-    public GroundType getType(){
+    public int getType(){
         return type;
     }
-    public void setType(GroundType type){
+    public void setType(int type){
         this.type = type;
     }
 
     @Override
     public String toString() {
-        return "{" + pos + ", " + getClass().getSimpleName() + "}";
+        return "{" + x + ", " + y + ":" + type + "}";
     }
 
     /**************************************************************
@@ -48,13 +44,15 @@ public class Ground implements
      ***************************************************************/
     @Override
     public Point getPosition() {
+        pos.setX(x);
+        pos.setY(y);
         return pos;
     }
 
     @Override
     public void setPosition(Point pos) {
-        this.pos.setX(pos.getX());
-        this.pos.setY(pos.getY());
+        this.x = pos.getX();
+        this.y = pos.getY();
     }
 
 	@Override

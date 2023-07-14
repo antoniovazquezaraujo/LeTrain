@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import com.googlecode.lanterna.TextColor;
 
 import letrain.ground.Ground;
-import letrain.ground.Ground.GroundType;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
@@ -376,8 +375,12 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitGround(Ground ground) {
-        Ground.GroundType type = ground.getType();
-        view.set(ground.getPosition().getX(), ground.getPosition().getY(), type.equals(GroundType.GROUND) ? " " : "#");
+        int type = ground.getType();
+        view.set(
+            ground.getPosition().getX(), 
+            ground.getPosition().getY(), 
+            type == GroundMap.GROUND ? " "
+            :type == GroundMap.WATER ? "~":"*");
         resetColors();
     }
 
