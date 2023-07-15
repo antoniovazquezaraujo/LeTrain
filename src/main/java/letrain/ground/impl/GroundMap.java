@@ -12,16 +12,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import letrain.ground.Ground;
-import letrain.ground.NoiseGenerator;
+import letrain.ground.PerlinNoise;
 import letrain.map.Point;
 import letrain.visitor.Visitor;
 
 public class GroundMap implements letrain.ground.GroundMap {
     Logger log = LoggerFactory.getLogger(getClass());
-    MessageDigest digest;
-    static final int ITERACTIONS = 5;
     final Map<Integer, Map<Integer, Integer>> cells;
-    NoiseGenerator noiseGenerator = new NoiseGenerator(123456789);
+    PerlinNoise noise = new PerlinNoise(254);
+
+    int octaves = 5;
+    int col = 1000;
+    int row = 1000;
+    int water = 113;
+    int ground = 158;
+    int mountain = 200;
 
     record CellEnv(int ground, int rock, int water) {
 
@@ -35,11 +40,6 @@ public class GroundMap implements letrain.ground.GroundMap {
     public GroundMap() {
         cells = new HashMap<>();
         blocks = new HashSet<>();
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
     }
 
     public void forEach(Consumer<Ground> c) {
@@ -96,109 +96,32 @@ public class GroundMap implements letrain.ground.GroundMap {
             return;
         }
         blocks.add(block);
-        randomizeBlock(startx, starty, width, height);
-        //generateTerrain(startx, starty, width, height);
+
+        generateTerrain(startx, starty, width, height);
     }
 
-    void randomizeBlock(int startX, int startY, int width, int height) {
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                int column = startX + x;
-                int row = startY + y;
-                     double scl = 0.8F;
-                double v = noiseGenerator.noise(column * scl, row * scl, 1000);                
-                log.debug("v:"+ v);      
-                if (v < 0.7D) {
-                  setValueAt(x,y,0);
-                } else if (v < 0.5D) {
-                  setValueAt(x,y,1);
+    void generateTerrain(int startX, int startY, int width, int height) {
+
+        for (int col = 0; col < width; col++) {
+            for (int row = 0; row < height; row++) {
+                int colIndex = ((startX) + col);
+                int rowIndex = ((startY) + row);
+                float rand = (noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 0, octaves));
+                rand = scaleAndShift(rand, -0.7F, 0.7F, 0F, 255F);
+                int intColor = (int) rand;
+                if (rand < water) {
+                    setValueAt(colIndex, rowIndex, 1);
+                } else if (intColor < ground) {
+                    setValueAt(colIndex, rowIndex, 0);
                 } else {
-                    setValueAt(x,y,2);
+                    setValueAt(colIndex, rowIndex, 2);
                 }
             }
         }
     }
 
-    static int bytesToInt(byte[] bytes) {
-        int result = 0;
-        for (int i = 0; i < 4; i++) {
-            result <<= 8;
-            result |= (bytes[i] & 0xFF);
-        }
-        return result;
-    }
-
-    void generateTerrain(int x, int y, int width, int height) {
-        for (int iteraction = 0; iteraction < ITERACTIONS; iteraction++) {
-            for (int col = 0; col < width; col++) {
-                for (int row = 0; row < height; row++) {
-                    int colIndex = x + col;
-                    int rowIndex = y + row;
-
-                    int type = getValueAt(colIndex, rowIndex);
-                    CellEnv env = getCellEnv(colIndex, rowIndex);
-                    if (type == GROUND) {
-                        if (env.ground <= 3) {
-                            setValueAt(x, y, WATER);
-                        } else if (env.water > 4) {
-                            setValueAt(x, y, ROCK);
-                        }
-                    } else if (type == WATER) {
-                        if (env.water <= 4) {
-                            setValueAt(x, y, ROCK);
-                        } else if (env.rock > 4) {
-                            setValueAt(x, y, GROUND);
-                        }
-                    } else if (type == ROCK) {
-                        if (env.rock <= 5) {
-                            setValueAt(x, y, GROUND);
-                        } else if (env.ground > 4) {
-                            setValueAt(x, y, WATER);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    CellEnv getCellEnv(int x, int y) {
-        int countGround = 0;
-        int countRock = 0;
-        int countWater = 0;
-        for (int i = -1; i <= 1; i++) {
-            for (int j = -1; j <= 1; j++) {
-                int neighborX = x + i;
-                int neighborY = y + j;
-                if (i == 0 && j == 0)
-                    continue; // Exclude the current cell
-                if (GROUND == getValueAt(neighborX, neighborY)) {
-                    countGround++;
-                }
-                if (ROCK == getValueAt(neighborX, neighborY)) {
-                    countRock++;
-                }
-                if (WATER == getValueAt(neighborX, neighborY)) {
-                    countWater++;
-                }
-            }
-        }
-        return new CellEnv(countGround, countRock, countWater);
-    }
-
-    int countAliveNeighbors(int x, int y) {
-        int count = 0;
-        for (int i = -1; i <= 1; i++) {
-            for (int j = -1; j <= 1; j++) {
-                int neighborX = x + i;
-                int neighborY = y + j;
-                if (i == 0 && j == 0)
-                    continue; // Exclude the current cell
-                if (1 == getValueAt(neighborX, neighborY)) {
-                    count++;
-                }
-            }
-        }
-        return count;
+    float scaleAndShift(float value, float inMin, float inMax, float outMin, float outMax) {
+        return ((value - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin;
     }
 
     @Override

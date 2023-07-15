@@ -369,18 +369,31 @@ public class RenderVisitor implements Visitor {
     }
 
     @Override
-    public void visitGroundMap(GroundMap groundMap) {        
+    public void visitGroundMap(GroundMap groundMap) {
         groundMap.forEach(ground -> visitGround(ground));
     }
 
     @Override
     public void visitGround(Ground ground) {
         int type = ground.getType();
-        view.set(
-            ground.getPosition().getX(), 
-            ground.getPosition().getY(), 
-            type == GroundMap.GROUND ? " "
-            :type == GroundMap.WATER ? "~":"*");
+        int x = ground.getPosition().getX();
+        int y = ground.getPosition().getY();
+        String aspect = " ";
+        switch (type) {
+            case GroundMap.GROUND:
+                view.setFgColor(TextColor.ANSI.WHITE);
+                aspect = " ";
+                break;
+            case GroundMap.WATER:
+                view.setFgColor(TextColor.ANSI.BLUE);
+                aspect = "~";
+                break;
+            case GroundMap.ROCK:
+                view.setFgColor(TextColor.ANSI.RED_BRIGHT);
+                aspect = "*";
+                break;
+        }
+        view.set(x, y, aspect);
         resetColors();
     }
 
