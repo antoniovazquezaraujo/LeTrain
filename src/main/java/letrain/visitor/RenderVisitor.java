@@ -312,7 +312,7 @@ public class RenderVisitor implements Visitor {
         switch (dir) {
             case E:
             case W:
-                return "─";
+                return "-";
             case NE:
             case SW:
                 return "/";
