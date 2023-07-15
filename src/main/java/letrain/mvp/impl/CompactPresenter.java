@@ -48,9 +48,10 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     public enum TrackType {
         NORMAL_TRACK,
         PLATFORM_TRACK,
-        STOP_TRACK,
-        TRAIN_FACTORY_GATE,
-        TUNNEL_GATE
+        TUNNEL_TRACK,
+        TUNNEL_GATE_TRACK,
+        BRIDGE_TRACK,
+        BRIDGE_GATE_TRACK
     }
 
     Model model;

@@ -20,11 +20,14 @@ import letrain.track.Platform;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
+import letrain.track.rail.BridgeGateRailTrack;
+import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.PlatformTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.StopRailTrack;
+
 import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
@@ -167,13 +170,6 @@ public class RenderVisitor implements Visitor {
     }
 
     @Override
-    public void visitStopRailTrack(StopRailTrack track) {
-        view.setFgColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⍚");
-        resetColors();
-    }
-
-    @Override
     public void visitForkRailTrack(ForkRailTrack track) {
         if (track == selectedFork) {
             view.setFgColor(SELECTED_FORK_COLOR);
@@ -195,14 +191,10 @@ public class RenderVisitor implements Visitor {
     }
 
     @Override
-    public void visitTunnelRailTrack(TunnelRailTrack track) {
-        view.setFgColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
-        resetColors();
-    }
-
-    @Override
     public void visitLocomotive(Locomotive locomotive) {
+        if (locomotive.getTrack().getClass().equals(TunnelRailTrack.class) && this.mode != GameMode.RAILS) {
+            return;
+        }
         if (locomotive.isDestroying()) {
             view.setFgColor(getCrashColor());
             // view.setBgColor(getCrashColor());
@@ -259,6 +251,10 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitWagon(Wagon wagon) {
+        if (wagon.getTrack().getClass().equals(TunnelRailTrack.class) &&
+                this.mode != GameMode.RAILS) {
+            return;
+        }
         if (wagon.isDestroying()) {
             view.setFgColor(getCrashColor());
             // view.setBgColor(getCrashColor());
@@ -395,6 +391,36 @@ public class RenderVisitor implements Visitor {
         }
         view.set(x, y, aspect);
         resetColors();
+    }
+
+    @Override
+    public void visitBridgeGateRailTrack(BridgeGateRailTrack track) {
+        view.setFgColor(RAIL_TRACK_COLOR);
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "\u224E");
+        resetColors();
+    }
+
+    @Override
+    public void visitBridgeRailTrack(BridgeRailTrack track) {
+        view.setFgColor(RAIL_TRACK_COLOR);
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "\u252C");
+        resetColors();
+    }
+
+    @Override
+    public void visitTunnelGateRailTrack(TunnelGateRailTrack track) {
+        view.setFgColor(RAIL_TRACK_COLOR);
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
+        resetColors();
+    }
+
+    @Override
+    public void visitTunnelRailTrack(TunnelRailTrack track) {
+        if (this.mode == GameMode.RAILS) {
+            view.setFgColor(RAIL_TRACK_COLOR);
+            view.set(track.getPosition().getX(), track.getPosition().getY(), ".");
+            resetColors();
+        }
     }
 
 }
