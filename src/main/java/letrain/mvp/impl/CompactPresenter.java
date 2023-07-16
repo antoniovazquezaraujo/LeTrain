@@ -45,15 +45,6 @@ import letrain.visitor.RenderVisitor;
 public class CompactPresenter implements letrain.mvp.Presenter {
     Logger log = LoggerFactory.getLogger(CompactPresenter.class);
 
-    public enum TrackType {
-        NORMAL_TRACK,
-        PLATFORM_TRACK,
-        TUNNEL_TRACK,
-        TUNNEL_GATE_TRACK,
-        BRIDGE_TRACK,
-        BRIDGE_GATE_TRACK
-    }
-
     Model model;
     private final letrain.mvp.View view;
     private final RenderVisitor renderer;
@@ -354,11 +345,13 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             train.pushBack(locomotive);
             train.setDirectorLinker(locomotive);
             model.addLocomotive(locomotive);
+            model.getEconomyManager().onLocomotiveConstructed(locomotive);
             track.enterLinkerFromDir(model.getCursor().getDir().inverse(), locomotive);
             cursorDir = locomotive.getDir();
         } else {
             Wagon wagon = new Wagon(c);
             model.addWagon(wagon);
+            model.getEconomyManager().onWagonConstructed(wagon);
             track.enterLinkerFromDir(model.getCursor().getDir().inverse(), wagon);
             cursorDir = wagon.getDir();
         }
@@ -416,6 +409,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                     if (model.getSelectedLocomotive() != null) {
                         if (!model.getSelectedLocomotive().getTrain().isLoading()) {
                             model.getSelectedLocomotive().getTrain().startLoadUnloadProcess();
+                            model.getEconomyManager().onLoadPassengers(model.getSelectedLocomotive().getTrain());
                         }
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {

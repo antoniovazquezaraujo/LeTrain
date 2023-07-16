@@ -8,7 +8,6 @@ import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Presenter;
-import letrain.mvp.impl.CompactPresenter.TrackType;
 import letrain.track.Platform;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
@@ -23,7 +22,7 @@ import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 
 public class RailTrackMaker {
-    private CompactPresenter.TrackType newTrackType = CompactPresenter.TrackType.NORMAL_TRACK;
+    private Presenter.TrackType newTrackType = Presenter.TrackType.NORMAL_TRACK;
     private int degreesOfRotation = 0;
     private Dir dir = Dir.E;
     Track oldTrack;
@@ -38,7 +37,7 @@ public class RailTrackMaker {
 
     public RailTrackMaker(Presenter presenter) {
         this.presenter = presenter;
-        if(presenter != null){
+        if (presenter != null) {
             lastCursorPosition = presenter.getModel().getCursor().getPosition();
             oldGroundType = presenter.getModel().getGroundMap().getValueAt(this.lastCursorPosition);
         }
@@ -84,9 +83,9 @@ public class RailTrackMaker {
                 } else if (keyEvent.getCharacter() == 'w') {
                     creatingPlatform = !creatingPlatform;
                     if (creatingPlatform) {
-                        selectNewTrackType(TrackType.PLATFORM_TRACK);
+                        selectNewTrackType(Presenter.TrackType.PLATFORM_TRACK);
                     } else {
-                        selectNewTrackType(TrackType.NORMAL_TRACK);
+                        selectNewTrackType(Presenter.TrackType.NORMAL_TRACK);
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     if (keyEvent.getCharacter() == '0' && numSteps == 0) {
@@ -226,7 +225,7 @@ public class RailTrackMaker {
         makingTraks = true;
         Point actualCursorPosition = presenter.getModel().getCursor().getPosition();
         Integer actualGroundType = presenter.getModel().getGroundMap().getValueAt(actualCursorPosition);
-        if(oldGroundType == null) {
+        if (oldGroundType == null) {
             oldGroundType = actualGroundType;
         }
         Dir dir = presenter.getModel().getCursor().getDir();
@@ -247,14 +246,18 @@ public class RailTrackMaker {
             // seguimos con el mismo tipo de suelo
             switch (actualGroundType) {
                 case GroundMap.GROUND:
-                selectNewTrackType(TrackType.NORMAL_TRACK);
-                break;
+                    selectNewTrackType(Presenter.TrackType.NORMAL_TRACK);
+                    if (creatingPlatform) {
+                        selectNewTrackType(Presenter.TrackType.PLATFORM_TRACK);
+                    }
+
+                    break;
                 case GroundMap.WATER:
-                selectNewTrackType(TrackType.BRIDGE_TRACK);
-                break;
+                    selectNewTrackType(Presenter.TrackType.BRIDGE_TRACK);
+                    break;
                 case GroundMap.ROCK:
-                selectNewTrackType(TrackType.TUNNEL_TRACK);
-                break;
+                    selectNewTrackType(Presenter.TrackType.TUNNEL_TRACK);
+                    break;
             }
         } else {
             // cambio de suelo
@@ -262,10 +265,10 @@ public class RailTrackMaker {
                 // pasamos de GROUND a otro tipo de suelo
                 if (actualGroundType == GroundMap.WATER) {
                     // entramos en agua
-                    selectNewTrackType(TrackType.BRIDGE_GATE_TRACK);
+                    selectNewTrackType(Presenter.TrackType.BRIDGE_GATE_TRACK);
                 } else if (actualGroundType == GroundMap.ROCK) {
                     // entramos en roca
-                    selectNewTrackType(TrackType.TUNNEL_GATE_TRACK);
+                    selectNewTrackType(Presenter.TrackType.TUNNEL_GATE_TRACK);
                 }
             } else {
                 // salimos de otro tipo de suelo
@@ -275,10 +278,10 @@ public class RailTrackMaker {
                 }
                 if (oldGroundType == GroundMap.WATER) {
                     // salimos de agua
-                    selectNewTrackType(TrackType.BRIDGE_GATE_TRACK);
+                    selectNewTrackType(Presenter.TrackType.BRIDGE_GATE_TRACK);
                 } else if (oldGroundType == GroundMap.ROCK) {
                     // salimos de roca
-                    selectNewTrackType(TrackType.TUNNEL_GATE_TRACK);
+                    selectNewTrackType(Presenter.TrackType.TUNNEL_GATE_TRACK);
                 }
             }
         }
@@ -289,9 +292,9 @@ public class RailTrackMaker {
             // si no había nada creamos un track normal
             track = createTrackOfSelectedType();
         } else {
-            if(actualGroundType != GroundMap.GROUND){
+            if (actualGroundType != GroundMap.GROUND) {
                 // si la dirección del cursor es distinta de la del track actual retornamos
-                if (track!= null && !track.canExit(presenter.getModel().getCursor().getDir())) {
+                if (track != null && !track.canExit(presenter.getModel().getCursor().getDir())) {
                     return false;
                 }
             }
@@ -305,12 +308,14 @@ public class RailTrackMaker {
         track.addRoute(oldDir, dir);
         track.setPosition(actualCursorPosition);
         presenter.getModel().getRailMap().addTrack(actualCursorPosition, track);
+        presenter.getModel().getEconomyManager().onRailTrackConstructed(newTrackType);
         if (canBeAFork(track, oldDir, dir)) {
             RailTrack trackToSubstitute = track;
             final ForkRailTrack fork = createForkRailTrack(actualCursorPosition, trackToSubstitute);
             addRoutesToFork(trackToSubstitute, fork);
             fork.setNormalRoute();
             presenter.getModel().addFork(fork);
+            presenter.getModel().getEconomyManager().onForkConstructed(fork);
             substituteInMapTrackWithFork(trackToSubstitute, fork);
             addTrackConnectionsToFork(trackToSubstitute, fork);
             track = fork;
@@ -363,11 +368,11 @@ public class RailTrackMaker {
         }
     }
 
-    public void selectNewTrackType(CompactPresenter.TrackType type) {
+    public void selectNewTrackType(Presenter.TrackType type) {
         this.newTrackType = type;
     }
 
-    public CompactPresenter.TrackType getNewTrackType() {
+    public Presenter.TrackType getNewTrackType() {
         return this.newTrackType;
     }
 

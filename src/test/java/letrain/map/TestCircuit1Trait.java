@@ -5,7 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 
 import letrain.map.impl.RailMap;
 import letrain.map.impl.SimpleRouter;
-import letrain.mvp.impl.CompactPresenter;
+import letrain.mvp.Presenter;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
@@ -21,7 +21,7 @@ class TestCircuit1TraitTest {
     private RailTrack oldTrack;
     private Dir oldDir;
     private boolean reversed;
-    private CompactPresenter.TrackType newTrackType = CompactPresenter.TrackType.NORMAL_TRACK;
+    private Presenter.TrackType newTrackType = Presenter.TrackType.NORMAL_TRACK;
 
     @BeforeEach
     void setupTestRailMap() {
@@ -57,7 +57,7 @@ class TestCircuit1TraitTest {
         oldTrack = null;
         oldDir = null;
         reversed = false;
-        newTrackType = CompactPresenter.TrackType.NORMAL_TRACK;
+        newTrackType = Presenter.TrackType.NORMAL_TRACK;
     }
 
     private boolean makeTrack() {

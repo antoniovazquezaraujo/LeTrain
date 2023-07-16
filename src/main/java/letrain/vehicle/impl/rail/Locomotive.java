@@ -63,19 +63,22 @@ public class Locomotive extends Linker implements Tractor {
         return aspect;
     }
 
-    public void update() {
+    public boolean update() {
+        boolean moved = false;
         if (isDestroying()) {
-            return;
+            return moved;
         }
 
         if (isDirectorLinker()) {
             if (isTimeToMove()) {
                 getTrain().advance();
+                moved = true;
                 resetTurns();
             } else {
                 consumeTurn();
-            }
+            }            
         }
+        return moved;
     }
 
     public void incSpeed() {

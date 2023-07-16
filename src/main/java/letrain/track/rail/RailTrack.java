@@ -10,7 +10,7 @@ import letrain.visitor.Visitor;
 public class RailTrack extends Track {
     protected Router router;
 
-    public enum TrackType {
+    public enum TrackFormat {
         STRAIGHT,
         CURVE,
         CROSS,
@@ -30,20 +30,20 @@ public class RailTrack extends Track {
         return this.router;
     }
 
-    public TrackType getType() {
+    public TrackFormat getType() {
         if (getNumRoutes() == 2) {
             Dir d1 = getFirstOpenDir();
             Dir d2 = d1.inverse();
             Dir inverted = getDir(d2);
             if (inverted != null && inverted.equals(d1)) {
                 if (d1.isStraight(d2)) {
-                    return TrackType.STRAIGHT;
+                    return TrackFormat.STRAIGHT;
                 }
             } else {
-                return TrackType.CURVE;
+                return TrackFormat.CURVE;
             }
         }
-        return TrackType.FORK;
+        return TrackFormat.FORK;
     }
 
     /***********************************************************

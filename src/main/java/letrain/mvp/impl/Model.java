@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import letrain.economy.impl.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
@@ -23,6 +24,7 @@ import letrain.vehicle.impl.rail.Wagon;
 
 public class Model implements Serializable, letrain.mvp.Model {
     static Logger log = LoggerFactory.getLogger(Model.class);
+    EconomyManager economyManager;
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     RailSemaphore selectedSemaphore;
@@ -52,32 +54,9 @@ public class Model implements Serializable, letrain.mvp.Model {
     int nextPlatformId;
     String program;
 
-    public int nextSemaphoreId() {
-        return ++nextSemaphoreId;
-    }
-
-    public int nextForkId() {
-        return ++nextForkId;
-    }
-
-    public int nextLocomotiveId() {
-        return ++nextLocomotiveId;
-    }
-
-    public int nextSensorId() {
-        return ++nextSensorId;
-    }
-
-    public int nextTrainId() {
-        return ++nextTrainId;
-    }
-
-    public int nextPlatformId() {
-        return ++nextPlatformId;
-    }
-
     public Model() {
-        this.groundMap = new letrain.ground.impl.GroundMap ();
+        this.economyManager = new EconomyManager();
+        this.groundMap = new letrain.ground.impl.GroundMap();
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
         this.cursor.setPosition(new Point(10, 10));
@@ -107,10 +86,35 @@ public class Model implements Serializable, letrain.mvp.Model {
         }
     }
 
+    public int nextSemaphoreId() {
+        return ++nextSemaphoreId;
+    }
+
+    public int nextForkId() {
+        return ++nextForkId;
+    }
+
+    public int nextLocomotiveId() {
+        return ++nextLocomotiveId;
+    }
+
+    public int nextSensorId() {
+        return ++nextSensorId;
+    }
+
+    public int nextTrainId() {
+        return ++nextTrainId;
+    }
+
+    public int nextPlatformId() {
+        return ++nextPlatformId;
+    }
+
     @Override
     public RailMap getRailMap() {
         return map;
     }
+
     @Override
     public GroundMap getGroundMap() {
         return groundMap;
@@ -203,7 +207,11 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     @Override
     public void moveLocomotives() {
-        locomotives.forEach(Locomotive::update);
+        locomotives.forEach(locomotive -> {
+            if (locomotive.update()) {
+                getEconomyManager().onTrainMoved(locomotive.getTrain());
+            }
+        });
     }
 
     @Override
@@ -525,7 +533,13 @@ public class Model implements Serializable, letrain.mvp.Model {
         }
     }
 
-	public void updateGroundMap(Point mapScrollPage, int columns, int rows) {
-        this.groundMap.renderBlock(mapScrollPage.getX()*columns, mapScrollPage.getY()*rows, columns, rows);
-	}
+    public void updateGroundMap(Point mapScrollPage, int columns, int rows) {
+        this.groundMap.renderBlock(mapScrollPage.getX() * columns, mapScrollPage.getY() * rows, columns, rows);
+    }
+
+    @Override
+    public EconomyManager getEconomyManager() {
+        return this.economyManager;
+    }
+
 }

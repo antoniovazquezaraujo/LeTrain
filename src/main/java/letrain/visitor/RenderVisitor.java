@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import com.googlecode.lanterna.TextColor;
 
+import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -421,6 +422,12 @@ public class RenderVisitor implements Visitor {
             view.set(track.getPosition().getX(), track.getPosition().getY(), ".");
             resetColors();
         }
+    }
+
+    @Override
+    public void visitEconomyManager(EconomyManager economyManager) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitEconomyManager'");
     }
 
 }

@@ -1,5 +1,6 @@
 package letrain.visitor;
 
+import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -74,6 +75,7 @@ public class InfoVisitor implements Visitor {
         String[] menuOptions = { "&rails", "&drive", "&forks", "&semaphores", "&trains", "&link",
                 "&unlink", "&platforms" };
 
+        visitEconomyManager(model.getEconomyManager());
         view.setMenu(menuOptions, model.getMode().ordinal() - 1);
         view.setHelpBarText(getModeHelp(model.getMode()));
         view.setInfoBarText(infoBarText);
@@ -120,7 +122,7 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        infoBarText += "Track:{" + track + "}\n";
+        // infoBarText += "Track:{" + track + "}\n";
     }
 
     private String getRouterAspect(Router router) {
@@ -189,7 +191,7 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitCursor(Cursor cursor) {
-        infoBarText += "Cursor:[" + cursor.getPosition().getX() + "," + cursor.getPosition().getY() + "]" + "\n";
+        infoBarText += "Cursor:[" + cursor.getPosition().getX() + "," + cursor.getPosition().getY() + "]";
     }
 
     @Override
@@ -231,6 +233,12 @@ public class InfoVisitor implements Visitor {
     public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'visitTunnelGateRailTrack'");
+    }
+
+    @Override
+    public void visitEconomyManager(EconomyManager economyManager) {
+        String info = "$: " + economyManager.getBalance() + " ";
+        infoBarText += info;
     }
 
 }

@@ -2,7 +2,7 @@ package letrain.mvp;
 
 import java.util.List;
 
-import letrain.ground.Ground;
+import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
@@ -161,5 +161,7 @@ public interface Model {
     public void setProgram(String program);
 
     public String getProgram();
+
+    public EconomyManager getEconomyManager();
 
 }
