@@ -290,7 +290,10 @@ public class RailTrackMaker {
             track = createTrackOfSelectedType();
         } else {
             if(actualGroundType != GroundMap.GROUND){
-                return false;
+                // si la dirección del cursor es distinta de la del track actual retornamos
+                if (track!= null && !track.canExit(presenter.getModel().getCursor().getDir())) {
+                    return false;
+                }
             }
             // si había un fork no seguimos
             if (ForkRailTrack.class.isAssignableFrom(track.getClass())) {
