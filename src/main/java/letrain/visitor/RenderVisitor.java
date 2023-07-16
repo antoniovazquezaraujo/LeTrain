@@ -7,10 +7,12 @@ import org.slf4j.LoggerFactory;
 
 import com.googlecode.lanterna.TextColor;
 
+import letrain.ground.Ground;
+import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
-import letrain.map.RailMap;
-import letrain.map.SimpleRouter;
+import letrain.map.impl.RailMap;
+import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
@@ -18,11 +20,14 @@ import letrain.track.Platform;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
+import letrain.track.rail.BridgeGateRailTrack;
+import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.PlatformTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.StopRailTrack;
+
 import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
@@ -86,6 +91,7 @@ public class RenderVisitor implements Visitor {
         selectedFork = model.getSelectedFork();
         selectedPlatform = model.getSelectedPlatform();
         selectedSemaphore = model.getSelectedSemaphore();
+        model.getGroundMap().accept(this);
         model.getRailMap().accept(this);
         model.getSensors().forEach(t -> t.accept(this));
         model.getPlatforms().forEach(t -> t.accept(this));
@@ -97,7 +103,7 @@ public class RenderVisitor implements Visitor {
     }
 
     @Override
-    public void visitMap(RailMap map) {
+    public void visitRailMap(RailMap map) {
         map.forEach(t -> t.accept(this));
     }
 
@@ -164,13 +170,6 @@ public class RenderVisitor implements Visitor {
     }
 
     @Override
-    public void visitStopRailTrack(StopRailTrack track) {
-        view.setFgColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⍚");
-        resetColors();
-    }
-
-    @Override
     public void visitForkRailTrack(ForkRailTrack track) {
         if (track == selectedFork) {
             view.setFgColor(SELECTED_FORK_COLOR);
@@ -192,14 +191,10 @@ public class RenderVisitor implements Visitor {
     }
 
     @Override
-    public void visitTunnelRailTrack(TunnelRailTrack track) {
-        view.setFgColor(RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
-        resetColors();
-    }
-
-    @Override
     public void visitLocomotive(Locomotive locomotive) {
+        if (locomotive.getTrack().getClass().equals(TunnelRailTrack.class) && this.mode != GameMode.RAILS) {
+            return;
+        }
         if (locomotive.isDestroying()) {
             view.setFgColor(getCrashColor());
             // view.setBgColor(getCrashColor());
@@ -256,6 +251,10 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitWagon(Wagon wagon) {
+        if (wagon.getTrack().getClass().equals(TunnelRailTrack.class) &&
+                this.mode != GameMode.RAILS) {
+            return;
+        }
         if (wagon.isDestroying()) {
             view.setFgColor(getCrashColor());
             // view.setBgColor(getCrashColor());
@@ -309,7 +308,7 @@ public class RenderVisitor implements Visitor {
         switch (dir) {
             case E:
             case W:
-                return "─";
+                return "-";
             case NE:
             case SW:
                 return "/";
@@ -363,6 +362,65 @@ public class RenderVisitor implements Visitor {
 
     public TextColor getCrashColor() {
         return CRASH_COLORS[(int) (Math.random() * CRASH_COLORS.length)];
+    }
+
+    @Override
+    public void visitGroundMap(GroundMap groundMap) {
+        groundMap.forEach(ground -> visitGround(ground));
+    }
+
+    @Override
+    public void visitGround(Ground ground) {
+        int type = ground.getType();
+        int x = ground.getPosition().getX();
+        int y = ground.getPosition().getY();
+        String aspect = " ";
+        switch (type) {
+            case GroundMap.GROUND:
+                view.setFgColor(TextColor.ANSI.WHITE);
+                aspect = " ";
+                break;
+            case GroundMap.WATER:
+                view.setFgColor(TextColor.ANSI.BLUE);
+                aspect = "~";
+                break;
+            case GroundMap.ROCK:
+                view.setFgColor(TextColor.ANSI.RED_BRIGHT);
+                aspect = "*";
+                break;
+        }
+        view.set(x, y, aspect);
+        resetColors();
+    }
+
+    @Override
+    public void visitBridgeGateRailTrack(BridgeGateRailTrack track) {
+        view.setFgColor(RAIL_TRACK_COLOR);
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "\u224E");
+        resetColors();
+    }
+
+    @Override
+    public void visitBridgeRailTrack(BridgeRailTrack track) {
+        view.setFgColor(RAIL_TRACK_COLOR);
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "\u252C");
+        resetColors();
+    }
+
+    @Override
+    public void visitTunnelGateRailTrack(TunnelGateRailTrack track) {
+        view.setFgColor(RAIL_TRACK_COLOR);
+        view.set(track.getPosition().getX(), track.getPosition().getY(), "⋂");
+        resetColors();
+    }
+
+    @Override
+    public void visitTunnelRailTrack(TunnelRailTrack track) {
+        if (this.mode == GameMode.RAILS) {
+            view.setFgColor(RAIL_TRACK_COLOR);
+            view.set(track.getPosition().getX(), track.getPosition().getY(), ".");
+            resetColors();
+        }
     }
 
 }

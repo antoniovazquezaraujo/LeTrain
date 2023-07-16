@@ -48,9 +48,10 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     public enum TrackType {
         NORMAL_TRACK,
         PLATFORM_TRACK,
-        STOP_TRACK,
-        TRAIN_FACTORY_GATE,
-        TUNNEL_GATE
+        TUNNEL_TRACK,
+        TUNNEL_GATE_TRACK,
+        BRIDGE_TRACK,
+        BRIDGE_GATE_TRACK
     }
 
     Model model;
@@ -96,6 +97,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
 
             KeyStroke stroke = null;
             model.setMode(MENU);
+            model.updateGroundMap(new Point(0, 0), 1, 1);
             while (running) {
                 stroke = null;
                 stroke = view.readKey();
@@ -817,5 +819,11 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     @Override
     public void setProgram(String program) {
         model.setProgram(program);
+    }
+
+    @Override
+    public void onMapPageChanged(Point mapScrollPage, int columns, int rows) {
+        model.updateGroundMap(mapScrollPage, columns, rows);
+
     }
 }

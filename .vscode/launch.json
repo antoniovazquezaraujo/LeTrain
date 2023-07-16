@@ -6,6 +6,83 @@
     "configurations": [
         {
             "type": "java",
+            "name": "TerrainGenerationLab",
+            "request": "launch",
+            "mainClass": "letrain.ground.impl.TerrainGenerationLab",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "Terminal24bitColorTest",
+            "request": "launch",
+            "mainClass": "letrain.ground.impl.Terminal24bitColorTest",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "PerlinNoise",
+            "request": "launch",
+            "mainClass": "letrain.ground.PerlinNoise",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "Terrain2D",
+            "request": "launch",
+            "mainClass": "letrain.ground.impl.Terrain2D",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "Borrame",
+            "request": "launch",
+            "mainClass": "letrain.ground.impl.Borrame",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "CellularAutomataTerrainGenerator",
+            "request": "launch",
+            "mainClass": "letrain.ground.impl.CellularAutomataTerrainGenerator",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "GroundMap",
+            "request": "launch",
+            "mainClass": "letrain.ground.impl.GroundMap",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "Generador",
+            "request": "launch",
+            "mainClass": "letrain.ground.Generador",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "Basura",
+            "request": "launch",
+            "mainClass": "letrain.map.Basura",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "TerrainGenerator",
+            "request": "launch",
+            "mainClass": "letrain.map.TerrainGenerator",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
+            "name": "MapGen",
+            "request": "launch",
+            "mainClass": "letrain.map.MapGen",
+            "projectName": "JLeTrain"
+        },
+        {
+            "type": "java",
             "name": "LeTrain",
             "request": "launch",
             "mainClass": "letrain.LeTrain",

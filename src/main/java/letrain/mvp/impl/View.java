@@ -103,6 +103,7 @@ public class View implements letrain.mvp.View {
     public void setMapScrollPage(Point pos) {
         this.mapScrollPage = pos;
         setStatusBarText("Page: " + mapScrollPage.getX() + ", " + mapScrollPage.getY());
+        View.this.gameViewListener.onMapPageChanged(mapScrollPage, terminalSize.getColumns(), terminalSize.getRows());
     }
 
     public void setStatusBarText(String text) {
@@ -159,6 +160,7 @@ public class View implements letrain.mvp.View {
         if (changedSize != null) {
             terminalSize = changedSize;
             recalculateSizes(terminalSize);
+            View.this.gameViewListener.onMapPageChanged(mapScrollPage, terminalSize.getColumns(), terminalSize.getRows());
             centralGraphics.fillRectangle(centralGraphicsPosition, centralGraphicsSize, ' ');
         }
         // drawBox(bottomGraphics, bottonGraphicsPosition, bottonGraphicsSize);
@@ -217,7 +219,10 @@ public class View implements letrain.mvp.View {
             y -= getRows();
         int pageX = x / getCols();
         int pageY = y / getRows();
-        setMapScrollPage(new Point(pageX, pageY));
+        Point actualPage = getMapScrollPage();
+        if (pageX != actualPage.getX() || pageY != actualPage.getY()){
+            setMapScrollPage(new Point(pageX, pageY));
+        }
     }
 
     @Override

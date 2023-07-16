@@ -2,6 +2,8 @@ package letrain.map;
 
 import org.junit.jupiter.api.BeforeEach;
 
+import letrain.map.impl.RailMap;
+
 public class RailMapTest {
 
     private RailMap railMap;

@@ -2,6 +2,8 @@ package letrain.map;
 
 import org.junit.jupiter.api.*;
 
+import letrain.map.impl.SimpleRouter;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class RouterTest {

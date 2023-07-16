@@ -2,8 +2,10 @@ package letrain.mvp;
 
 import java.util.List;
 
+import letrain.ground.Ground;
+import letrain.ground.GroundMap;
 import letrain.map.Point;
-import letrain.map.RailMap;
+import letrain.map.impl.RailMap;
 import letrain.track.Platform;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
@@ -32,6 +34,8 @@ public interface Model {
     public int nextTrainId();
 
     RailMap getRailMap();
+
+    GroundMap  getGroundMap();
 
     List<Locomotive> getLocomotives();
 
@@ -157,4 +161,5 @@ public interface Model {
     public void setProgram(String program);
 
     public String getProgram();
+
 }

@@ -1,5 +1,7 @@
-package letrain.map;
+package letrain.map.impl;
 
+import letrain.map.Dir;
+import letrain.map.DynamicRouter;
 import letrain.utils.Pair;
 
 public class ForkRouter extends SimpleRouter implements DynamicRouter {

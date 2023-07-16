@@ -4,7 +4,7 @@ import java.util.function.Consumer;
 
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
-import letrain.map.ForkRouter;
+import letrain.map.impl.ForkRouter;
 import letrain.utils.Pair;
 import letrain.visitor.Visitor;
 

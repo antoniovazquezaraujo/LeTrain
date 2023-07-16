@@ -2,7 +2,7 @@ package letrain.track.rail;
 
 import letrain.map.Dir;
 import letrain.map.Router;
-import letrain.map.SimpleRouter;
+import letrain.map.impl.SimpleRouter;
 import letrain.track.Track;
 import letrain.track.TrackDirector;
 import letrain.visitor.Visitor;

@@ -1,10 +1,12 @@
 package letrain.visitor;
 
+import letrain.ground.Ground;
+import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.map.Point;
-import letrain.map.RailMap;
 import letrain.map.Router;
+import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
@@ -12,10 +14,12 @@ import letrain.track.Platform;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
+import letrain.track.rail.BridgeGateRailTrack;
+import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.StopRailTrack;
 import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
@@ -110,7 +114,7 @@ public class InfoVisitor implements Visitor {
     }
 
     @Override
-    public void visitMap(RailMap map) {
+    public void visitRailMap(RailMap map) {
         map.forEach(t -> t.accept(this));
     }
 
@@ -138,9 +142,6 @@ public class InfoVisitor implements Visitor {
         return ret.toString();
     }
 
-    @Override
-    public void visitStopRailTrack(StopRailTrack track) {
-    }
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
@@ -204,6 +205,32 @@ public class InfoVisitor implements Visitor {
     @Override
     public void visitPlatform(Platform platform) {
         infoBarText += "Platform:[" + platform.getId() + "]" + "\n" + "Position:" + platform.getPosition() + "\n";
+    }
+
+	@Override
+	public void visitGroundMap(GroundMap groundMap) {
+	}
+
+	@Override
+	public void visitGround(Ground ground) {
+	}
+
+    @Override
+    public void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitBridgeGateRailTrack'");
+    }
+
+    @Override
+    public void visitBridgeRailTrack(BridgeRailTrack bridgeRailTrack) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitBridgeRailTrack'");
+    }
+
+    @Override
+    public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitTunnelGateRailTrack'");
     }
 
 }

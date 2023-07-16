@@ -2,21 +2,23 @@ package letrain.mvp.impl;
 
 import com.googlecode.lanterna.input.KeyStroke;
 
+import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.Router;
-import letrain.map.SimpleRouter;
+import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Presenter;
 import letrain.mvp.impl.CompactPresenter.TrackType;
 import letrain.track.Platform;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
+import letrain.track.rail.BridgeGateRailTrack;
+import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.PlatformTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.StopRailTrack;
-import letrain.track.rail.TrainFactoryRailTrack;
+import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 
@@ -31,9 +33,15 @@ public class RailTrackMaker {
     int numSteps = 0;
     boolean creatingPlatform = false;
     Presenter presenter;
+    Point lastCursorPosition = null;
+    Integer oldGroundType = null;
 
     public RailTrackMaker(Presenter presenter) {
         this.presenter = presenter;
+        if(presenter != null){
+            lastCursorPosition = presenter.getModel().getCursor().getPosition();
+            oldGroundType = presenter.getModel().getGroundMap().getValueAt(this.lastCursorPosition);
+        }
     }
 
     public void onChar(KeyStroke keyEvent) {
@@ -180,6 +188,7 @@ public class RailTrackMaker {
         oldTrack = null;
         oldDir = dir;
         reversed = false;
+        oldGroundType = null;
     }
 
     void removeTrack() {
@@ -197,7 +206,7 @@ public class RailTrackMaker {
         } else {
             newPos.move(presenter.getModel().getCursor().getDir().inverse());
         }
-        presenter.getModel().getCursor().setPosition(newPos);
+        updateCursorPosition(newPos);
         Point p = presenter.getModel().getCursor().getPosition();
         presenter.getView().setPageOfPos(p.getX(), p.getY());
 
@@ -215,12 +224,16 @@ public class RailTrackMaker {
 
     boolean makeTrack() {
         makingTraks = true;
-        Point cursorPosition = presenter.getModel().getCursor().getPosition();
+        Point actualCursorPosition = presenter.getModel().getCursor().getPosition();
+        Integer actualGroundType = presenter.getModel().getGroundMap().getValueAt(actualCursorPosition);
+        if(oldGroundType == null) {
+            oldGroundType = actualGroundType;
+        }
         Dir dir = presenter.getModel().getCursor().getDir();
 
         // Si venimos de algún track, obtenemos la dirección de salida
         if (oldTrack != null) {
-            oldDir = cursorPosition.locate(oldTrack.getPosition());
+            oldDir = actualCursorPosition.locate(oldTrack.getPosition());
         } else {
             // Si no venimos de ningún track, la oldDir será la nueva o su inversa
             if (!reversed) {
@@ -230,12 +243,58 @@ public class RailTrackMaker {
             }
         }
 
+        if (actualGroundType == oldGroundType) {
+            // seguimos con el mismo tipo de suelo
+            switch (actualGroundType) {
+                case GroundMap.GROUND:
+                selectNewTrackType(TrackType.NORMAL_TRACK);
+                break;
+                case GroundMap.WATER:
+                selectNewTrackType(TrackType.BRIDGE_TRACK);
+                break;
+                case GroundMap.ROCK:
+                selectNewTrackType(TrackType.TUNNEL_TRACK);
+                break;
+            }
+        } else {
+            // cambio de suelo
+            if (oldGroundType == GroundMap.GROUND) {
+                // pasamos de GROUND a otro tipo de suelo
+                if (actualGroundType == GroundMap.WATER) {
+                    // entramos en agua
+                    selectNewTrackType(TrackType.BRIDGE_GATE_TRACK);
+                } else if (actualGroundType == GroundMap.ROCK) {
+                    // entramos en roca
+                    selectNewTrackType(TrackType.TUNNEL_GATE_TRACK);
+                }
+            } else {
+                // salimos de otro tipo de suelo
+                if (actualGroundType != GroundMap.GROUND) {
+                    // no podemos pasar de un tipo de suelo a otro sin pasar por GROUND
+                    return false;
+                }
+                if (oldGroundType == GroundMap.WATER) {
+                    // salimos de agua
+                    selectNewTrackType(TrackType.BRIDGE_GATE_TRACK);
+                } else if (oldGroundType == GroundMap.ROCK) {
+                    // salimos de roca
+                    selectNewTrackType(TrackType.TUNNEL_GATE_TRACK);
+                }
+            }
+        }
+
         // Obtenemos el track bajo el cursor
-        RailTrack track = presenter.getModel().getRailMap().getTrackAt(cursorPosition);
+        RailTrack track = presenter.getModel().getRailMap().getTrackAt(actualCursorPosition);
         if (track == null) {
             // si no había nada creamos un track normal
             track = createTrackOfSelectedType();
         } else {
+            if(actualGroundType != GroundMap.GROUND){
+                // si la dirección del cursor es distinta de la del track actual retornamos
+                if (track!= null && !track.canExit(presenter.getModel().getCursor().getDir())) {
+                    return false;
+                }
+            }
             // si había un fork no seguimos
             if (ForkRailTrack.class.isAssignableFrom(track.getClass())) {
                 return false;
@@ -244,11 +303,11 @@ public class RailTrackMaker {
         // al track que había (o al que hemos creado normal) le agregamos la ruta entre
         // la vieja dir y la nueva
         track.addRoute(oldDir, dir);
-        track.setPosition(cursorPosition);
-        presenter.getModel().getRailMap().addTrack(cursorPosition, track);
+        track.setPosition(actualCursorPosition);
+        presenter.getModel().getRailMap().addTrack(actualCursorPosition, track);
         if (canBeAFork(track, oldDir, dir)) {
             RailTrack trackToSubstitute = track;
-            final ForkRailTrack fork = createForkRailTrack(cursorPosition, trackToSubstitute);
+            final ForkRailTrack fork = createForkRailTrack(actualCursorPosition, trackToSubstitute);
             addRoutesToFork(trackToSubstitute, fork);
             fork.setNormalRoute();
             presenter.getModel().addFork(fork);
@@ -263,14 +322,15 @@ public class RailTrackMaker {
             oldTrack.connect(oldDir.inverse(), track);
         }
 
-        Point newPos = new Point(cursorPosition);
+        Point newPos = new Point(actualCursorPosition);
         if (!reversed) {
             newPos.move(presenter.getModel().getCursor().getDir(), 1);
         } else {
             newPos.move(presenter.getModel().getCursor().getDir().inverse());
         }
-        presenter.getModel().getCursor().setPosition(newPos);
+        updateCursorPosition(newPos);
         oldTrack = track;
+        oldGroundType = actualGroundType;
         return true;
     }
 
@@ -315,12 +375,14 @@ public class RailTrackMaker {
         switch (newTrackType) {
             case PLATFORM_TRACK:
                 return new PlatformTrack();
-            case STOP_TRACK:
-                return new StopRailTrack();
-            case TRAIN_FACTORY_GATE:
-                return new TrainFactoryRailTrack();
-            case TUNNEL_GATE:
+            case TUNNEL_GATE_TRACK:
+                return new TunnelGateRailTrack();
+            case TUNNEL_TRACK:
                 return new TunnelRailTrack();
+            case BRIDGE_GATE_TRACK:
+                return new BridgeGateRailTrack();
+            case BRIDGE_TRACK:
+                return new BridgeRailTrack();
             default:
                 return new RailTrack();
         }
@@ -366,9 +428,14 @@ public class RailTrackMaker {
         } else {
             newPos.move(presenter.getModel().getCursor().getDir().inverse());
         }
-        presenter.getModel().getCursor().setPosition(newPos);
+        updateCursorPosition(newPos);
         Point position = presenter.getModel().getCursor().getPosition();
         presenter.getView().setPageOfPos(position.getX(), position.getY());
+    }
+
+    private void updateCursorPosition(Point newPos) {
+        presenter.getModel().getCursor().setPosition(newPos);
+        lastCursorPosition = newPos;
     }
 
     void cursorBackward() {

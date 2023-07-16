@@ -4,6 +4,8 @@ import java.io.File;
 
 import com.googlecode.lanterna.input.KeyStroke;
 
+import letrain.map.Point;
+
 public interface GameViewListener {
     void onGameModeSelected(Model.GameMode mode);
 
@@ -28,5 +30,7 @@ public interface GameViewListener {
     String getProgram();
 
     void setProgram(String program);
+
+	void onMapPageChanged(Point mapScrollPage, int columns, int rows);
 
 }

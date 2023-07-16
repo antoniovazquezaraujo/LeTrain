@@ -3,11 +3,13 @@ package letrain.map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import letrain.map.impl.RailMap;
+import letrain.map.impl.SimpleRouter;
 import letrain.mvp.impl.CompactPresenter;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.StopRailTrack;
+
 import letrain.track.rail.TrainFactoryRailTrack;
 import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
@@ -119,11 +121,7 @@ class TestCircuit1TraitTest {
 
     public RailTrack createTrackOfSelectedType() {
         switch (newTrackType) {
-            case STOP_TRACK:
-                return new StopRailTrack();
-            case TRAIN_FACTORY_GATE:
-                return new TrainFactoryRailTrack();
-            case TUNNEL_GATE:
+            case TUNNEL_GATE_TRACK:
                 return new TunnelRailTrack();
             default:
                 return new RailTrack();
