@@ -188,6 +188,7 @@ public class RailTrackMaker {
         oldTrack = null;
         oldDir = dir;
         reversed = false;
+        oldGroundType = null;
     }
 
     void removeTrack() {
@@ -225,6 +226,9 @@ public class RailTrackMaker {
         makingTraks = true;
         Point actualCursorPosition = presenter.getModel().getCursor().getPosition();
         Integer actualGroundType = presenter.getModel().getGroundMap().getValueAt(actualCursorPosition);
+        if(oldGroundType == null) {
+            oldGroundType = actualGroundType;
+        }
         Dir dir = presenter.getModel().getCursor().getDir();
 
         // Si venimos de algún track, obtenemos la dirección de salida
