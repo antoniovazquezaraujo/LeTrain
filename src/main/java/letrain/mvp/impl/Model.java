@@ -241,13 +241,14 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
-    public void selectFork(int id) {
+    public boolean selectFork(int id) {
         for (ForkRailTrack fork : getForks()) {
             if (fork.getId() == id) {
                 selectedFork = fork;
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     @Override
@@ -261,9 +262,9 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
-    public void selectNextFork() {
+    public boolean selectNextFork() {
         if (getForks().isEmpty()) {
-            return;
+            return false;
         }
 
         selectedForkIndex++;
@@ -271,25 +272,27 @@ public class Model implements Serializable, letrain.mvp.Model {
             selectedForkIndex = 0;
         }
         selectedFork = getForks().get(selectedForkIndex);
+        return true;
 
     }
 
     @Override
-    public void selectPrevFork() {
+    public boolean selectPrevFork() {
         if (getForks().isEmpty()) {
-            return;
+            return false;
         }
         selectedForkIndex--;
         if (selectedForkIndex < 0) {
             selectedForkIndex = getForks().size() - 1;
         }
         selectedFork = getForks().get(selectedForkIndex);
+        return true;
     }
 
     @Override
-    public void selectNextLocomotive() {
+    public boolean selectNextLocomotive() {
         if (getLocomotives().isEmpty()) {
-            return;
+            return false;
         }
         do {
             selectedLocomotiveIndex++;
@@ -298,12 +301,13 @@ public class Model implements Serializable, letrain.mvp.Model {
             }
             selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
         } while (!selectedLocomotive.isDirectorLinker() && selectedLocomotiveIndex < getLocomotives().size());
+        return true;
     }
 
     @Override
-    public void selectPrevLocomotive() {
+    public boolean selectPrevLocomotive() {
         if (getLocomotives().isEmpty()) {
-            return;
+            return false;
         }
         do {
             selectedLocomotiveIndex--;
@@ -312,6 +316,7 @@ public class Model implements Serializable, letrain.mvp.Model {
             }
             selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
         } while (!selectedLocomotive.isDirectorLinker() && selectedLocomotiveIndex >= 0);
+        return true;
     }
 
     @Override
@@ -324,13 +329,15 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.selectedLocomotive = selectedLocomotive;
     }
 
-    public void selectLocomotive(int id) {
+    @Override
+    public boolean selectLocomotive(int id) {
         for (Locomotive Locomotive : getLocomotives()) {
             if (Locomotive.getId() == id) {
                 selectedLocomotive = Locomotive;
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     @Override
@@ -369,9 +376,9 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
-    public void selectNextSemaphore() {
+    public boolean selectNextSemaphore() {
         if (getSemaphores().isEmpty()) {
-            return;
+            return false;
         }
 
         selectedSemaphoreIndex++;
@@ -379,19 +386,20 @@ public class Model implements Serializable, letrain.mvp.Model {
             selectedSemaphoreIndex = 0;
         }
         selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
-
+return true;
     }
 
     @Override
-    public void selectPrevSemaphore() {
+    public boolean selectPrevSemaphore() {
         if (getSemaphores().isEmpty()) {
-            return;
+            return false;
         }
         selectedSemaphoreIndex--;
         if (selectedSemaphoreIndex < 0) {
             selectedSemaphoreIndex = getSemaphores().size() - 1;
         }
         selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
+        return true;
     }
 
     @Override
@@ -400,13 +408,14 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
-    public void selectSemaphore(int id) {
+    public boolean selectSemaphore(int id) {
         for (RailSemaphore semaphore : getSemaphores()) {
             if (semaphore.getId() == id) {
                 selectedSemaphore = semaphore;
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     @Override
@@ -506,37 +515,40 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
-    public void selectNextStation() {
+    public boolean selectNextStation() {
         if (getStations().isEmpty()) {
-            return;
+            return false;
         }
         selectedStationIndex++;
         if (selectedStationIndex >= getStations().size()) {
             selectedStationIndex = 0;
         }
         selectedStation = getStations().get(selectedStationIndex);
+        return true;
     }
 
     @Override
-    public void selectPrevStation() {
+    public boolean selectPrevStation() {
         if (getStations().isEmpty()) {
-            return;
+            return false;
         }
         selectedStationIndex--;
         if (selectedStationIndex < 0) {
             selectedStationIndex = getStations().size() - 1;
         }
         selectedStation = getStations().get(selectedStationIndex);
+        return true;
     }
 
     @Override
-    public void selectStation(int id) {
+    public boolean selectStation(int id) {
         for (Station Station : getStations()) {
             if (Station.getId() == id) {
                 selectedStation = Station;
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     public void updateGroundMap(Point mapScrollPage, int columns, int rows) {

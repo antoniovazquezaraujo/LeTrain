@@ -63,11 +63,11 @@ public interface Model {
 
     void setSelectedStation(Station selectedStation);
 
-    void selectNextStation();
+    boolean selectNextStation();
 
-    void selectPrevStation();
+    boolean selectPrevStation();
 
-    void selectStation(int id);
+    boolean selectStation(int id);
 
     void addLocomotive(Locomotive locomotive);
 
@@ -95,11 +95,11 @@ public interface Model {
 
     RailSemaphore getSemaphoreAt(Point point);
 
-    void selectNextSemaphore();
+    boolean selectNextSemaphore();
 
-    void selectPrevSemaphore();
+    boolean selectPrevSemaphore();
 
-    void selectSemaphore(int id);
+    boolean selectSemaphore(int id);
 
     RailSemaphore getSelectedSemaphore();
 
@@ -113,9 +113,9 @@ public interface Model {
 
     void setSelectedLocomotive(Locomotive selectedLocomotive);
 
-    public void selectLocomotive(int id);
+    boolean selectLocomotive(int id);
 
-    void selectFork(int id);
+    boolean selectFork(int id);
 
     ForkRailTrack getFork(int id);
 
@@ -123,13 +123,13 @@ public interface Model {
 
     void setSelectedFork(ForkRailTrack selectedFork);
 
-    void selectNextFork();
+    boolean selectNextFork();
 
-    void selectPrevFork();
+    boolean selectPrevFork();
 
-    void selectNextLocomotive();
+    boolean selectNextLocomotive();
 
-    void selectPrevLocomotive();
+    boolean selectPrevLocomotive();
 
     enum GameMode {
         MENU("Menu mode"),

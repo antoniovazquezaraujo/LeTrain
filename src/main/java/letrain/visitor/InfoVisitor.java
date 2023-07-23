@@ -109,7 +109,7 @@ public class InfoVisitor implements Visitor {
                 ret += "<:front >:back ^:add v:del space:unlink";
                 break;
             case STATIONS:
-                ret += "<:prev >:next space:toggle #:select";
+                ret += "<:prev >:next -:load/unload passengers space:clean selection backspace:del number #:select";
                 break;
         }
         return ret;
