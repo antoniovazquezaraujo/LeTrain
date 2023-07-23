@@ -1,5 +1,6 @@
 package letrain.economy;
 
+import java.time.LocalDateTime;
 import java.util.concurrent.Semaphore;
 
 import letrain.mvp.Presenter;
@@ -79,9 +80,7 @@ public interface EconomyManager {
 
     void onWagonDestroyed(Wagon wagon);
 
-    void onLoadPassengers(Train train);
-
-    void onUnloadPassengers(Train train);
+    void onLoadPassengers(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled, double linearDistanceToStart);
 
     void onTrainMoved(Train train);
 

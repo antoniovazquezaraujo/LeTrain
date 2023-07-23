@@ -6,7 +6,7 @@ import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
-import letrain.track.Platform;
+import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
@@ -25,7 +25,7 @@ public interface Model {
 
     public int nextForkId();
 
-    public int nextPlatformId();
+    public int nextStationId();
 
     public int nextLocomotiveId();
 
@@ -51,23 +51,23 @@ public interface Model {
 
     void removeFork(ForkRailTrack fork);
 
-    List<Platform> getPlatforms();
+    List<Station> getStations();
 
-    void addPlatform(Platform platform);
+    void addStation(Station Station);
 
-    void removePlatform(Platform platform);
+    void removeStation(Station Station);
 
-    Platform getPlatform(int id);
+    Station getStation(int id);
 
-    Platform getSelectedPlatform();
+    Station getSelectedStation();
 
-    void setSelectedPlatform(Platform selectedPlatform);
+    void setSelectedStation(Station selectedStation);
 
-    void selectNextPlatform();
+    void selectNextStation();
 
-    void selectPrevPlatform();
+    void selectPrevStation();
 
-    void selectPlatform(int id);
+    void selectStation(int id);
 
     void addLocomotive(Locomotive locomotive);
 
@@ -140,8 +140,8 @@ public interface Model {
         TRAINS("Create trains"),
         LINK("Link trains"),
         UNLINK("Divide trains"),
-        PLATFORMS("Platforms"),
-        LOAD_TRAINS("Use load platforms");
+        STATIONS("Stations"),
+        LOAD_TRAINS("Use load Stations");
 
         private String name;
 

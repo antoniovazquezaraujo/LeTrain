@@ -5,7 +5,7 @@ import letrain.ground.Ground;
 import letrain.ground.GroundMap;
 import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
-import letrain.track.Platform;
+import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.BridgeGateRailTrack;
@@ -47,7 +47,7 @@ public interface Visitor {
 
     void visitSemaphore(RailSemaphore semaphore);
 
-    void visitPlatform(Platform platform);
+    void visitStation(Station Station);
 
     void visitGroundMap(GroundMap groundMap);
 

@@ -8,14 +8,14 @@ import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Presenter;
-import letrain.track.Platform;
+import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.BridgeGateRailTrack;
 import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
-import letrain.track.rail.PlatformTrack;
+import letrain.track.rail.RailStation;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
@@ -30,7 +30,7 @@ public class RailTrackMaker {
     boolean reversed = false;
     boolean makingTraks = false;
     int numSteps = 0;
-    boolean creatingPlatform = false;
+    boolean creatingStation = false;
     Presenter presenter;
     Point lastCursorPosition = null;
     Integer oldGroundType = null;
@@ -81,9 +81,9 @@ public class RailTrackMaker {
                 if (keyEvent.getCharacter() == ' ') {
                     numSteps = 0;
                 } else if (keyEvent.getCharacter() == 'w') {
-                    creatingPlatform = !creatingPlatform;
-                    if (creatingPlatform) {
-                        selectNewTrackType(Presenter.TrackType.PLATFORM_TRACK);
+                    creatingStation = !creatingStation;
+                    if (creatingStation) {
+                        selectNewTrackType(Presenter.TrackType.STATION_TRACK);
                     } else {
                         selectNewTrackType(Presenter.TrackType.NORMAL_TRACK);
                     }
@@ -127,7 +127,7 @@ public class RailTrackMaker {
                 manageSemaphore();
                 break;
             case End:
-                managePlatformSensor();
+                manageStationSensor();
                 break;
         }
 
@@ -161,21 +161,21 @@ public class RailTrackMaker {
         }
     }
 
-    void managePlatformSensor() {
+    void manageStationSensor() {
         Point position = presenter.getModel().getCursor().getPosition();
         Track track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
-        if (track != null && track instanceof PlatformTrack) {
+        if (track != null && track instanceof RailStation) {
             Sensor sensor = track.getSensor();
             if (sensor != null) {
-                if (sensor instanceof Platform) {
+                if (sensor instanceof Station) {
                     track.setSensor(null);
                 }
                 presenter.getModel().removeSensor(sensor);
             } else {
-                sensor = new Platform(presenter.getModel().nextPlatformId());
+                sensor = new Station(presenter.getModel().nextStationId());
                 sensor.setTrack(track);
                 track.setSensor(sensor);
-                presenter.getModel().addPlatform((Platform) sensor);
+                presenter.getModel().addStation((Station) sensor);
             }
         }
 
@@ -247,8 +247,8 @@ public class RailTrackMaker {
             switch (actualGroundType) {
                 case GroundMap.GROUND:
                     selectNewTrackType(Presenter.TrackType.NORMAL_TRACK);
-                    if (creatingPlatform) {
-                        selectNewTrackType(Presenter.TrackType.PLATFORM_TRACK);
+                    if (creatingStation) {
+                        selectNewTrackType(Presenter.TrackType.STATION_TRACK);
                     }
 
                     break;
@@ -378,8 +378,8 @@ public class RailTrackMaker {
 
     public RailTrack createTrackOfSelectedType() {
         switch (newTrackType) {
-            case PLATFORM_TRACK:
-                return new PlatformTrack();
+            case STATION_TRACK:
+                return new RailStation();
             case TUNNEL_GATE_TRACK:
                 return new TunnelGateRailTrack();
             case TUNNEL_TRACK:

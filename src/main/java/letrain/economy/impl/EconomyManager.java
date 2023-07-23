@@ -1,5 +1,7 @@
 package letrain.economy.impl;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -17,7 +19,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     float balance;
 
     Map<ExpenseType, Float> prices = new HashMap<>();
-    
+
     int constructedNormalRailTracks = 0;
     int constructedBridgeRailTracks = 0;
     int constructedTunnelRailTracks = 0;
@@ -36,7 +38,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     int destroyedSemaphores = 0;
     int destroyedLocomotives = 0;
     int destroyedWagons = 0;
-    
+
     public EconomyManager() {
         prices.put(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK, 100f);
         prices.put(ExpenseType.CONSTRUCTED_BRIDGE_RAIL_TRACK, 20000f);
@@ -66,16 +68,18 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     public float getCost(ExpenseType type) {
         return prices.get(type);
     }
+
     @Override
     public void spend(ExpenseType type) {
         Float amount = prices.get(type);
         totalExpenses += amount;
         balance -= amount;
     }
+
     @Override
     public void spend(ExpenseType type, int amount) {
         Float price = prices.get(type);
-        float total = price*amount;
+        float total = price * amount;
         totalExpenses += total;
         balance -= total;
     }
@@ -86,10 +90,11 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         totalIncome += price;
         balance += price;
     }
+
     @Override
     public void earn(ExpenseType type, int amount) {
         Float price = prices.get(type);
-        float total = price*amount;
+        float total = price * amount;
         totalIncome += (total);
         balance += (total);
     }
@@ -111,7 +116,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
                 constructedTunnelRailTracks++;
                 spend(ExpenseType.CONSTRUCTED_TUNNEL_RAIL_TRACK);
                 break;
-            case PLATFORM_TRACK:
+            case STATION_TRACK:
                 // TODO pending
                 break;
         }
@@ -193,13 +198,41 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     }
 
     @Override
-    public void onLoadPassengers(Train train) {
-        earn(ExpenseType.LOAD_PASSENGERS, train.getLinkers().size());
+    public void onLoadPassengers(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled,
+            double linearDistanceToStart) {
+        int amount = calculateMoneyAmount(train, elapsedTime, totalDistanceTraveled, linearDistanceToStart);
+        earn(ExpenseType.LOAD_PASSENGERS, amount);
     }
 
-    @Override
-    public void onUnloadPassengers(Train train) {
+    /**
+     * Calculates the money amount earned by loading passengers.
+     * 
+     * @param train
+     * @param elapsedTime
+     * @param totalDistanceTraveled
+     * @param linearDistanceToStart
+     * @return the calculated money amount
+     *
+     */
+    private int calculateMoneyAmount(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled,
+            double linearDistanceToStart) {
+                final int TICKET_PRICE = 10;
+                final double LINEAR_DISTANCE_PRICE = 0.2;
+                final double DISTANCE_PRICE = 0.05;
+                final double TIME_FACTOR = 1;
+                final double MIN_AVERAGE_SPEED = 8;
 
+                int moneyAmount = 0;
+                moneyAmount += train.getLinkers().size()*  TICKET_PRICE;;
+                moneyAmount += LINEAR_DISTANCE_PRICE * linearDistanceToStart;
+                moneyAmount += DISTANCE_PRICE * totalDistanceTraveled;
+                if(elapsedTime.getMinute()> 0){
+                    double averageSpeed = totalDistanceTraveled / elapsedTime.getMinute();
+                    if(averageSpeed < MIN_AVERAGE_SPEED){
+                        moneyAmount -= TIME_FACTOR * elapsedTime.getMinute();
+                    }
+                }
+                return moneyAmount;
     }
 
     @Override

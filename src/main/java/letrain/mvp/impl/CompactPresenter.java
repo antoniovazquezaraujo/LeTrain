@@ -6,9 +6,9 @@ import static letrain.mvp.Model.GameMode.LINK;
 import static letrain.mvp.Model.GameMode.MENU;
 import static letrain.mvp.Model.GameMode.RAILS;
 import static letrain.mvp.Model.GameMode.SEMAPHORES;
+import static letrain.mvp.Model.GameMode.STATIONS;
 import static letrain.mvp.Model.GameMode.TRAINS;
 import static letrain.mvp.Model.GameMode.UNLINK;
-import static letrain.mvp.Model.GameMode.PLATFORMS;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,6 +16,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.antlr.v4.runtime.CharStream;
@@ -36,7 +38,9 @@ import letrain.mvp.Model.GameMode;
 import letrain.track.Sensor;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Linker;
+import letrain.vehicle.impl.rail.Itinerary;
 import letrain.vehicle.impl.rail.Locomotive;
+import letrain.vehicle.impl.rail.Stop;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 import letrain.visitor.InfoVisitor;
@@ -54,7 +58,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     int forkId;
     int semaphoreId;
     int locomotiveId;
-    int platformId;
+    int StationId;
 
     RailTrackMaker railTrackMaker;
 
@@ -174,8 +178,8 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                     case 'u':
                         model.setMode(UNLINK);
                         break;
-                    case 'p':
-                        model.setMode(PLATFORMS);
+                    case 'n':
+                        model.setMode(STATIONS);
                         break;
                     default:
                         isAMenuKey = false;
@@ -211,31 +215,31 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             case UNLINK:
                 unlinkerOnChar(keyEvent);
                 break;
-            case PLATFORMS:
-                platformManagerOnChar(keyEvent);
+            case STATIONS:
+                StationManagerOnChar(keyEvent);
                 break;
         }
     }
 
-    void platformManagerOnChar(KeyStroke keyEvent) {
+    void StationManagerOnChar(KeyStroke keyEvent) {
         switch (keyEvent.getKeyType()) {
             case Backspace:
-                platformId = platformId / 10;
-                selectPlatform(platformId);
+                StationId = StationId / 10;
+                selectStation(StationId);
                 break;
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
-                    platformId = 0;
+                    StationId = 0;
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
-                    platformId = platformId * 10 + (keyEvent.getCharacter() - '0');
-                    selectPlatform(platformId);
+                    StationId = StationId * 10 + (keyEvent.getCharacter() - '0');
+                    selectStation(StationId);
                 }
                 break;
             case ArrowLeft:
-                selectPrevPlatform();
+                selectPrevStation();
                 break;
             case ArrowRight:
-                selectNextPlatform();
+                selectNextStation();
                 break;
         }
 
@@ -404,12 +408,26 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
                     toggleReversed();
-                    locomotiveId = 0;
+                    locomotiveId = 0;                    
                 } else if (keyEvent.getCharacter() == '-') {
                     if (model.getSelectedLocomotive() != null) {
                         if (!model.getSelectedLocomotive().getTrain().isLoading()) {
-                            model.getSelectedLocomotive().getTrain().startLoadUnloadProcess();
-                            model.getEconomyManager().onLoadPassengers(model.getSelectedLocomotive().getTrain());
+                            Train train = model.getSelectedLocomotive().getTrain();
+                            train.startLoadUnloadProcess();
+                            Stop actualStop = train.recordStopAtStation();
+                            Itinerary.ItineraryState state = train.getItinerary().getState();
+                            if(!state.equals(Itinerary.ItineraryState.STARTING)){
+                                int startStationId = train.getItinerary().getFirstStop().stationId();
+                                int firstStopDistanceTraveled = train.getItinerary().getFirstStop().distanceTraveled();
+                                int totalDistanceTraveled = actualStop.distanceTraveled() - firstStopDistanceTraveled;
+                                LocalDateTime startTime = train.getItinerary().getFirstStop().stopTime();
+                                LocalDateTime elapsedTime = actualStop.stopTime().minusMinutes(startTime.toEpochSecond(ZoneOffset.UTC));
+                                double linearDistanceToStart = model.getLinearDistanceBetweenStations(startStationId, actualStop.stationId());
+                                model.getEconomyManager().onLoadPassengers(train, elapsedTime, totalDistanceTraveled, linearDistanceToStart);
+                            }
+                            if(state.equals(Itinerary.ItineraryState.AT_END)){
+                                train.getItinerary().restart(actualStop);
+                            }
                         }
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
@@ -586,10 +604,12 @@ public class CompactPresenter implements letrain.mvp.Presenter {
 
     private void selectNextSemaphore() {
         model.selectNextSemaphore();
+        setPageOfPoint(model.getSelectedSemaphore().getPosition());
     }
 
     private void selectPrevSemaphore() {
         model.selectPrevSemaphore();
+        setPageOfPoint(model.getSelectedSemaphore().getPosition());
     }
 
     private void selectSemaphore(int id) {
@@ -611,10 +631,12 @@ public class CompactPresenter implements letrain.mvp.Presenter {
 
     private void selectNextLocomotive() {
         model.selectNextLocomotive();
+        setPageOfPoint(model.getSelectedLocomotive().getTrack().getPosition());
     }
 
     private void selectPrevLocomotive() {
         model.selectPrevLocomotive();
+        setPageOfPoint(model.getSelectedLocomotive().getTrack().getPosition());
     }
 
     private void decelerateLocomotive() {
@@ -668,20 +690,22 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
 
     /***********************************************************
-     * PLATFORMS
+     * StationS
      **********************************************************/
 
-    private void selectNextPlatform() {
-        model.selectNextPlatform();
+    private void selectNextStation() {
+        model.selectNextStation();
+        setPageOfPoint(model.getSelectedStation().getPosition());
     }
 
-    private void selectPrevPlatform() {
-        model.selectPrevPlatform();
+    private void selectPrevStation() {
+        model.selectPrevStation();
+        setPageOfPoint(model.getSelectedStation().getPosition());
     }
 
-    private void selectPlatform(int id) {
-        model.selectPlatform(id);
-        setPageOfPoint(model.getSelectedPlatform().getPosition());
+    private void selectStation(int id) {
+        model.selectStation(id);
+        setPageOfPoint(model.getSelectedStation().getPosition());
     }
 
     @Override

@@ -17,4 +17,8 @@ public interface Tractor extends Reversible {
 
     void decSpeed();
 
+    int getDistanceTraveled();
+
+    void incDistanceTraveled();
+
 }

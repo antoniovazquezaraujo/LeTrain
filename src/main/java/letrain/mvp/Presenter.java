@@ -5,7 +5,7 @@ public interface Presenter extends GameViewListener {
 
     enum TrackType {
         NORMAL_TRACK,
-        PLATFORM_TRACK,
+        STATION_TRACK,
         TUNNEL_TRACK,
         TUNNEL_GATE_TRACK,
         BRIDGE_TRACK,

@@ -11,7 +11,7 @@ import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
-import letrain.track.Platform;
+import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
@@ -60,10 +60,10 @@ public class InfoVisitor implements Visitor {
                     visitForkRailTrack(fork);
                 }
                 break;
-            case PLATFORMS:
-                Platform platform = model.getSelectedPlatform();
-                if (platform != null) {
-                    visitPlatform(platform);
+            case STATIONS:
+                Station Station = model.getSelectedStation();
+                if (Station != null) {
+                    visitStation(Station);
                 }
                 break;
             case LOAD_TRAINS:
@@ -73,7 +73,7 @@ public class InfoVisitor implements Visitor {
         }
         visitCursor(model.getCursor());
         String[] menuOptions = { "&rails", "&drive", "&forks", "&semaphores", "&trains", "&link",
-                "&unlink", "&platforms" };
+                "&unlink", "statio&ns" };
 
         visitEconomyManager(model.getEconomyManager());
         view.setMenu(menuOptions, model.getMode().ordinal() - 1);
@@ -108,8 +108,8 @@ public class InfoVisitor implements Visitor {
             case UNLINK:
                 ret += "<:front >:back ^:add v:del space:unlink";
                 break;
-            case PLATFORMS:
-                ret += "platform";
+            case STATIONS:
+                ret += "<:prev >:next space:toggle #:select";
                 break;
         }
         return ret;
@@ -205,8 +205,8 @@ public class InfoVisitor implements Visitor {
     }
 
     @Override
-    public void visitPlatform(Platform platform) {
-        infoBarText += "Platform:[" + platform.getId() + "]" + "\n" + "Position:" + platform.getPosition() + "\n";
+    public void visitStation(Station Station) {
+        infoBarText += "Station:[" + Station.getId() + "]" + "\n" + "Position:" + Station.getPosition() + "\n";
     }
 
 	@Override
