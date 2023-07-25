@@ -177,10 +177,12 @@ public class View implements letrain.mvp.View {
         }
     }
 
+    @Override
     public int getCols() {
         return centralGraphicsSize.getColumns();
     }
 
+    @Override
     public int getRows() {
         return centralGraphicsSize.getRows() - 2;
     }

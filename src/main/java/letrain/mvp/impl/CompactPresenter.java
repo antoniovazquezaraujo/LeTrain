@@ -91,8 +91,8 @@ public class CompactPresenter implements letrain.mvp.Presenter {
         try {
 
             KeyStroke stroke = null;
-            model.setMode(MENU);
-            model.updateGroundMap(new Point(0, 0), 1, 1);
+            model.setMode(RAILS);
+            model.updateGroundMap(new Point(0, 0), view.getCols(), view.getRows());
             while (running) {
                 stroke = null;
                 stroke = view.readKey();
