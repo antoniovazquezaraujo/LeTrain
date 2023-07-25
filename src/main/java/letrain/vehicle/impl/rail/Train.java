@@ -1,6 +1,7 @@
 package letrain.vehicle.impl.rail;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Iterator;
@@ -32,9 +33,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     protected final Deque<Linker> linkersToJoin;
     int numLinkersToRemove = 0;
     protected final Deque<Linker> linkersToRemove;
-    int railPlatformId = 0;
+    int railStationId = 0;
     public boolean isLoading = false;
     int id;
+    Itinerary itinerary;
 
     enum LinkersSense {
         FRONT, BACK
@@ -545,19 +547,19 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         return "Train " + getId();
     }
 
-    public void setPlatformId(int railPlatformId) {
-        this.railPlatformId = railPlatformId;
+    public void setStationId(int railStationId) {
+        this.railStationId = railStationId;
     }
 
     public void startLoadUnloadProcess() {
-        if (railPlatformId != 0 && getDirectorLinker().getSpeed() == 0) {
+        if (railStationId != 0 && getDirectorLinker().getSpeed() == 0) {
             setLoadingCount(MAX_LOADING_COUNT);
             setLoading(true);
         }
     }
 
     public void endLoadUnloadProcess() {
-        if (railPlatformId != 0 && getDirectorLinker().getSpeed() == 0) {
+        if (railStationId != 0 && getDirectorLinker().getSpeed() == 0) {
             setLoading(false);
         }
     }
@@ -586,5 +588,19 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     public void setLoading(boolean isLoading) {
         this.isLoading = isLoading;
+    }
+    public int getDistanceTraveled(){
+        return getDirectorLinker().getDistanceTraveled();
+    }
+    public Stop recordStopAtStation() {
+        Stop stop = new Stop(railStationId, LocalDateTime.now(), getDistanceTraveled());
+        if(this.itinerary == null){
+            this.itinerary = new Itinerary();
+        }
+        this.itinerary.addStop(stop);
+        return stop;
+    }
+    public Itinerary getItinerary(){
+        return this.itinerary;
     }
 }

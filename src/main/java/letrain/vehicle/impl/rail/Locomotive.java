@@ -12,6 +12,7 @@ public class Locomotive extends Linker implements Tractor {
     final static int MAX_SPEED = 10;
     final static int SPEED_CHANGE_MAX_RELUCTANCE = 2;
     int speedChangeReluctance = SPEED_CHANGE_MAX_RELUCTANCE;
+    int distanceTraveled=0;
     int speed;
     int turns;
     private String aspect;
@@ -63,19 +64,23 @@ public class Locomotive extends Linker implements Tractor {
         return aspect;
     }
 
-    public void update() {
+    public boolean update() {
+        boolean moved = false;
         if (isDestroying()) {
-            return;
+            return moved;
         }
 
         if (isDirectorLinker()) {
             if (isTimeToMove()) {
                 getTrain().advance();
+                moved = true;
+                incDistanceTraveled();
                 resetTurns();
             } else {
                 consumeTurn();
-            }
+            }            
         }
+        return moved;
     }
 
     public void incSpeed() {
@@ -194,6 +199,15 @@ public class Locomotive extends Linker implements Tractor {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public int getDistanceTraveled() {
+        return distanceTraveled;
+    }
+    @Override
+    public void incDistanceTraveled() {
+        distanceTraveled++;
     }
 
 }

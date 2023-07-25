@@ -2,11 +2,11 @@ package letrain.mvp;
 
 import java.util.List;
 
-import letrain.ground.Ground;
+import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
-import letrain.track.Platform;
+import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
@@ -25,7 +25,7 @@ public interface Model {
 
     public int nextForkId();
 
-    public int nextPlatformId();
+    public int nextStationId();
 
     public int nextLocomotiveId();
 
@@ -51,23 +51,23 @@ public interface Model {
 
     void removeFork(ForkRailTrack fork);
 
-    List<Platform> getPlatforms();
+    List<Station> getStations();
 
-    void addPlatform(Platform platform);
+    void addStation(Station Station);
 
-    void removePlatform(Platform platform);
+    void removeStation(Station Station);
 
-    Platform getPlatform(int id);
+    Station getStation(int id);
 
-    Platform getSelectedPlatform();
+    Station getSelectedStation();
 
-    void setSelectedPlatform(Platform selectedPlatform);
+    void setSelectedStation(Station selectedStation);
 
-    void selectNextPlatform();
+    boolean selectNextStation();
 
-    void selectPrevPlatform();
+    boolean selectPrevStation();
 
-    void selectPlatform(int id);
+    boolean selectStation(int id);
 
     void addLocomotive(Locomotive locomotive);
 
@@ -95,11 +95,11 @@ public interface Model {
 
     RailSemaphore getSemaphoreAt(Point point);
 
-    void selectNextSemaphore();
+    boolean selectNextSemaphore();
 
-    void selectPrevSemaphore();
+    boolean selectPrevSemaphore();
 
-    void selectSemaphore(int id);
+    boolean selectSemaphore(int id);
 
     RailSemaphore getSelectedSemaphore();
 
@@ -113,9 +113,9 @@ public interface Model {
 
     void setSelectedLocomotive(Locomotive selectedLocomotive);
 
-    public void selectLocomotive(int id);
+    boolean selectLocomotive(int id);
 
-    void selectFork(int id);
+    boolean selectFork(int id);
 
     ForkRailTrack getFork(int id);
 
@@ -123,13 +123,13 @@ public interface Model {
 
     void setSelectedFork(ForkRailTrack selectedFork);
 
-    void selectNextFork();
+    boolean selectNextFork();
 
-    void selectPrevFork();
+    boolean selectPrevFork();
 
-    void selectNextLocomotive();
+    boolean selectNextLocomotive();
 
-    void selectPrevLocomotive();
+    boolean selectPrevLocomotive();
 
     enum GameMode {
         MENU("Menu mode"),
@@ -140,8 +140,8 @@ public interface Model {
         TRAINS("Create trains"),
         LINK("Link trains"),
         UNLINK("Divide trains"),
-        PLATFORMS("Platforms"),
-        LOAD_TRAINS("Use load platforms");
+        STATIONS("Stations"),
+        LOAD_TRAINS("Use load Stations");
 
         private String name;
 
@@ -161,5 +161,7 @@ public interface Model {
     public void setProgram(String program);
 
     public String getProgram();
+
+    public EconomyManager getEconomyManager();
 
 }

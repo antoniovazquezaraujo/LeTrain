@@ -1,5 +1,6 @@
 package letrain.visitor;
 
+import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -10,7 +11,7 @@ import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
-import letrain.track.Platform;
+import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
@@ -59,10 +60,10 @@ public class InfoVisitor implements Visitor {
                     visitForkRailTrack(fork);
                 }
                 break;
-            case PLATFORMS:
-                Platform platform = model.getSelectedPlatform();
-                if (platform != null) {
-                    visitPlatform(platform);
+            case STATIONS:
+                Station Station = model.getSelectedStation();
+                if (Station != null) {
+                    visitStation(Station);
                 }
                 break;
             case LOAD_TRAINS:
@@ -72,8 +73,9 @@ public class InfoVisitor implements Visitor {
         }
         visitCursor(model.getCursor());
         String[] menuOptions = { "&rails", "&drive", "&forks", "&semaphores", "&trains", "&link",
-                "&unlink", "&platforms" };
+                "&unlink", "statio&ns" };
 
+        visitEconomyManager(model.getEconomyManager());
         view.setMenu(menuOptions, model.getMode().ordinal() - 1);
         view.setHelpBarText(getModeHelp(model.getMode()));
         view.setInfoBarText(infoBarText);
@@ -106,8 +108,8 @@ public class InfoVisitor implements Visitor {
             case UNLINK:
                 ret += "<:front >:back ^:add v:del space:unlink";
                 break;
-            case PLATFORMS:
-                ret += "platform";
+            case STATIONS:
+                ret += "<:prev >:next -:load/unload passengers space:clean selection backspace:del number #:select";
                 break;
         }
         return ret;
@@ -120,7 +122,7 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        infoBarText += "Track:{" + track + "}\n";
+        // infoBarText += "Track:{" + track + "}\n";
     }
 
     private String getRouterAspect(Router router) {
@@ -189,7 +191,7 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitCursor(Cursor cursor) {
-        infoBarText += "Cursor:[" + cursor.getPosition().getX() + "," + cursor.getPosition().getY() + "]" + "\n";
+        infoBarText += "Cursor:[" + cursor.getPosition().getX() + "," + cursor.getPosition().getY() + "]";
     }
 
     @Override
@@ -203,8 +205,8 @@ public class InfoVisitor implements Visitor {
     }
 
     @Override
-    public void visitPlatform(Platform platform) {
-        infoBarText += "Platform:[" + platform.getId() + "]" + "\n" + "Position:" + platform.getPosition() + "\n";
+    public void visitStation(Station Station) {
+        infoBarText += "Station:[" + Station.getId() + "]" + "\n" + "Position:" + Station.getPosition() + "\n";
     }
 
 	@Override
@@ -231,6 +233,12 @@ public class InfoVisitor implements Visitor {
     public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'visitTunnelGateRailTrack'");
+    }
+
+    @Override
+    public void visitEconomyManager(EconomyManager economyManager) {
+        String info = "$: " + economyManager.getBalance() + " ";
+        infoBarText += info;
     }
 
 }

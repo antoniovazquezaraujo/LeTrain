@@ -46,4 +46,6 @@ public interface View {
     TextColor getFgColor();
 
     void showMainDialog();
+    public int getCols();
+    public int getRows();
 }

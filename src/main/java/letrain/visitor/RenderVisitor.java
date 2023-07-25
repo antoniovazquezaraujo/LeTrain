@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import com.googlecode.lanterna.TextColor;
 
+import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -16,14 +17,14 @@ import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
-import letrain.track.Platform;
+import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.BridgeGateRailTrack;
 import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
-import letrain.track.rail.PlatformTrack;
+import letrain.track.rail.RailStation;
 import letrain.track.rail.RailTrack;
 
 import letrain.track.rail.TrainFactoryRailTrack;
@@ -38,8 +39,8 @@ public class RenderVisitor implements Visitor {
     Logger log = LoggerFactory.getLogger(RenderVisitor.class);
     private static final TextColor RAIL_TRACK_COLOR = TextColor.ANSI.BLACK_BRIGHT;
     private static final TextColor SENSOR_COLOR = TextColor.ANSI.CYAN_BRIGHT;
-    private static final TextColor PLATFORM_COLOR = TextColor.ANSI.MAGENTA_BRIGHT;
-    private static final TextColor SELECTED_PLATFORM_COLOR = TextColor.ANSI.RED_BRIGHT;
+    private static final TextColor STATION_COLOR = TextColor.ANSI.MAGENTA_BRIGHT;
+    private static final TextColor SELECTED_STATION_COLOR = TextColor.ANSI.RED_BRIGHT;
     public static final TextColor FORK_COLOR = TextColor.ANSI.WHITE_BRIGHT;
     public static final TextColor SELECTED_FORK_COLOR = TextColor.ANSI.RED_BRIGHT;
     public static final TextColor FG_COLOR = TextColor.ANSI.WHITE;
@@ -62,7 +63,7 @@ public class RenderVisitor implements Visitor {
 
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
-    Platform selectedPlatform;
+    Station selectedStation;
     RailSemaphore selectedSemaphore;
     private final View view;
     private GameMode mode;
@@ -89,12 +90,12 @@ public class RenderVisitor implements Visitor {
         this.mode = model.getMode();
         selectedLocomotive = model.getSelectedLocomotive();
         selectedFork = model.getSelectedFork();
-        selectedPlatform = model.getSelectedPlatform();
+        selectedStation = model.getSelectedStation();
         selectedSemaphore = model.getSelectedSemaphore();
         model.getGroundMap().accept(this);
         model.getRailMap().accept(this);
         model.getSensors().forEach(t -> t.accept(this));
-        model.getPlatforms().forEach(t -> t.accept(this));
+        model.getStations().forEach(t -> t.accept(this));
         model.getForks().forEach(t -> t.accept(this));
         model.getSemaphores().forEach(t -> t.accept(this));
         model.getWagons().forEach(t -> t.accept(this));
@@ -110,8 +111,8 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitRailTrack(RailTrack track) {
         if (track.getSensor() != null) {
-            if (track.getSensor() instanceof Platform) {
-                view.setFgColor(PLATFORM_COLOR);
+            if (track.getSensor() instanceof Station) {
+                view.setFgColor(STATION_COLOR);
             } else {
                 view.setFgColor(SENSOR_COLOR);
             }
@@ -123,16 +124,16 @@ public class RenderVisitor implements Visitor {
     }
 
     @Override
-    public void visitPlatform(Platform platform) {
-        Track track = platform.getTrack();
-        if (this.mode == GameMode.PLATFORMS) {
-            if (platform == selectedPlatform) {
-                view.setFgColor(SELECTED_PLATFORM_COLOR);
+    public void visitStation(Station Station) {
+        Track track = Station.getTrack();
+        if (this.mode == GameMode.STATIONS) {
+            if (Station == selectedStation) {
+                view.setFgColor(SELECTED_STATION_COLOR);
             } else {
-                view.setFgColor(PLATFORM_COLOR);
+                view.setFgColor(STATION_COLOR);
             }
 
-            view.set(track.getPosition().getX(), track.getPosition().getY(), "₪" + platform.getId());
+            view.set(track.getPosition().getX(), track.getPosition().getY(), "₪" + Station.getId());
         }
         resetColors();
     }
@@ -141,8 +142,8 @@ public class RenderVisitor implements Visitor {
     public void visitSensor(Sensor sensor) {
         Track track = sensor.getTrack();
         if (track.getSensor() != null && this.mode == GameMode.RAILS) {
-            if (track.getSensor() instanceof Platform) {
-                view.setFgColor(PLATFORM_COLOR);
+            if (track.getSensor() instanceof Station) {
+                view.setFgColor(STATION_COLOR);
             } else {
                 view.setFgColor(SENSOR_COLOR);
             }
@@ -289,7 +290,7 @@ public class RenderVisitor implements Visitor {
 
     ////////////////////////////////////////////////////////////////////////////////
     private String getTrackAspect(Track track) {
-        if (track instanceof PlatformTrack) {
+        if (track instanceof RailStation) {
             return "#";
         }
         if (track.getRouter().isStraight()) {
@@ -421,6 +422,12 @@ public class RenderVisitor implements Visitor {
             view.set(track.getPosition().getX(), track.getPosition().getY(), ".");
             resetColors();
         }
+    }
+
+    @Override
+    public void visitEconomyManager(EconomyManager economyManager) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitEconomyManager'");
     }
 
 }

@@ -8,11 +8,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import letrain.economy.impl.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
-import letrain.track.Platform;
+import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
@@ -23,15 +24,16 @@ import letrain.vehicle.impl.rail.Wagon;
 
 public class Model implements Serializable, letrain.mvp.Model {
     static Logger log = LoggerFactory.getLogger(Model.class);
+    EconomyManager economyManager;
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     RailSemaphore selectedSemaphore;
-    Platform selectedPlatform;
+    Station selectedStation;
 
     int selectedLocomotiveIndex;
     int selectedForkIndex;
     int selectedSemaphoreIndex;
-    int selectedPlatformIndex;
+    int selectedStationIndex;
     boolean showId = false;
 
     letrain.ground.GroundMap groundMap;
@@ -43,14 +45,46 @@ public class Model implements Serializable, letrain.mvp.Model {
     List<ForkRailTrack> forks;
     List<Sensor> sensors;
     List<RailSemaphore> semaphores;
-    List<Platform> platforms;
+    List<Station> stations;
     int nextLocomotiveId;
     int nextForkId;
     int nextSensorId;
     int nextSemaphoreId;
     int nextTrainId;
-    int nextPlatformId;
+    int nextStationId;
     String program;
+
+    public Model() {
+        this.economyManager = new EconomyManager();
+        this.groundMap = new letrain.ground.impl.GroundMap();
+        this.cursor = new Cursor();
+        this.cursor.setDir(Dir.E);
+        this.cursor.setPosition(new Point(10, 10));
+        this.locomotives = new ArrayList<>();
+        this.wagons = new ArrayList<>();
+        this.forks = new ArrayList<>();
+        this.sensors = new ArrayList<>();
+        this.semaphores = new ArrayList<>();
+        this.stations = new ArrayList<>();
+        this.map = new RailMap();
+        this.program = "";
+        selectedLocomotiveIndex = 0;
+        if (!getLocomotives().isEmpty()) {
+            selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
+        }
+        selectedForkIndex = 0;
+        if (!getForks().isEmpty()) {
+            selectedFork = getForks().get(selectedForkIndex);
+        }
+        selectedSemaphoreIndex = 0;
+        if (!getSemaphores().isEmpty()) {
+            selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
+        }
+        selectedStationIndex = 0;
+        if (!getStations().isEmpty()) {
+            selectedStation = getStations().get(selectedStationIndex);
+        }
+    }
 
     public int nextSemaphoreId() {
         return ++nextSemaphoreId;
@@ -72,45 +106,21 @@ public class Model implements Serializable, letrain.mvp.Model {
         return ++nextTrainId;
     }
 
-    public int nextPlatformId() {
-        return ++nextPlatformId;
+    public int nextStationId() {
+        return ++nextStationId;
     }
 
-    public Model() {
-        this.groundMap = new letrain.ground.impl.GroundMap ();
-        this.cursor = new Cursor();
-        this.cursor.setDir(Dir.E);
-        this.cursor.setPosition(new Point(10, 10));
-        this.locomotives = new ArrayList<>();
-        this.wagons = new ArrayList<>();
-        this.forks = new ArrayList<>();
-        this.sensors = new ArrayList<>();
-        this.semaphores = new ArrayList<>();
-        this.platforms = new ArrayList<>();
-        this.map = new RailMap();
-        this.program = "";
-        selectedLocomotiveIndex = 0;
-        if (!getLocomotives().isEmpty()) {
-            selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
-        }
-        selectedForkIndex = 0;
-        if (!getForks().isEmpty()) {
-            selectedFork = getForks().get(selectedForkIndex);
-        }
-        selectedSemaphoreIndex = 0;
-        if (!getSemaphores().isEmpty()) {
-            selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
-        }
-        selectedPlatformIndex = 0;
-        if (!getPlatforms().isEmpty()) {
-            selectedPlatform = getPlatforms().get(selectedPlatformIndex);
-        }
+    public double getLinearDistanceBetweenStations(int startStationId, int endStationId) {
+        Point from = getStation(startStationId).getPosition();
+        Point to = getStation(endStationId).getPosition();
+        return Math.sqrt(Math.pow(from.getX() - to.getX(), 2) + Math.pow(from.getY() - to.getY(), 2));
     }
 
     @Override
     public RailMap getRailMap() {
         return map;
     }
+
     @Override
     public GroundMap getGroundMap() {
         return groundMap;
@@ -203,7 +213,11 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     @Override
     public void moveLocomotives() {
-        locomotives.forEach(Locomotive::update);
+        locomotives.forEach(locomotive -> {
+            if (locomotive.update()) {
+                getEconomyManager().onTrainMoved(locomotive.getTrain());
+            }
+        });
     }
 
     @Override
@@ -227,13 +241,14 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
-    public void selectFork(int id) {
+    public boolean selectFork(int id) {
         for (ForkRailTrack fork : getForks()) {
             if (fork.getId() == id) {
                 selectedFork = fork;
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     @Override
@@ -247,9 +262,9 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
-    public void selectNextFork() {
+    public boolean selectNextFork() {
         if (getForks().isEmpty()) {
-            return;
+            return false;
         }
 
         selectedForkIndex++;
@@ -257,25 +272,27 @@ public class Model implements Serializable, letrain.mvp.Model {
             selectedForkIndex = 0;
         }
         selectedFork = getForks().get(selectedForkIndex);
+        return true;
 
     }
 
     @Override
-    public void selectPrevFork() {
+    public boolean selectPrevFork() {
         if (getForks().isEmpty()) {
-            return;
+            return false;
         }
         selectedForkIndex--;
         if (selectedForkIndex < 0) {
             selectedForkIndex = getForks().size() - 1;
         }
         selectedFork = getForks().get(selectedForkIndex);
+        return true;
     }
 
     @Override
-    public void selectNextLocomotive() {
+    public boolean selectNextLocomotive() {
         if (getLocomotives().isEmpty()) {
-            return;
+            return false;
         }
         do {
             selectedLocomotiveIndex++;
@@ -284,12 +301,13 @@ public class Model implements Serializable, letrain.mvp.Model {
             }
             selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
         } while (!selectedLocomotive.isDirectorLinker() && selectedLocomotiveIndex < getLocomotives().size());
+        return true;
     }
 
     @Override
-    public void selectPrevLocomotive() {
+    public boolean selectPrevLocomotive() {
         if (getLocomotives().isEmpty()) {
-            return;
+            return false;
         }
         do {
             selectedLocomotiveIndex--;
@@ -298,6 +316,7 @@ public class Model implements Serializable, letrain.mvp.Model {
             }
             selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
         } while (!selectedLocomotive.isDirectorLinker() && selectedLocomotiveIndex >= 0);
+        return true;
     }
 
     @Override
@@ -310,13 +329,15 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.selectedLocomotive = selectedLocomotive;
     }
 
-    public void selectLocomotive(int id) {
+    @Override
+    public boolean selectLocomotive(int id) {
         for (Locomotive Locomotive : getLocomotives()) {
             if (Locomotive.getId() == id) {
                 selectedLocomotive = Locomotive;
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     @Override
@@ -355,9 +376,9 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
-    public void selectNextSemaphore() {
+    public boolean selectNextSemaphore() {
         if (getSemaphores().isEmpty()) {
-            return;
+            return false;
         }
 
         selectedSemaphoreIndex++;
@@ -365,19 +386,20 @@ public class Model implements Serializable, letrain.mvp.Model {
             selectedSemaphoreIndex = 0;
         }
         selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
-
+return true;
     }
 
     @Override
-    public void selectPrevSemaphore() {
+    public boolean selectPrevSemaphore() {
         if (getSemaphores().isEmpty()) {
-            return;
+            return false;
         }
         selectedSemaphoreIndex--;
         if (selectedSemaphoreIndex < 0) {
             selectedSemaphoreIndex = getSemaphores().size() - 1;
         }
         selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
+        return true;
     }
 
     @Override
@@ -386,13 +408,14 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
-    public void selectSemaphore(int id) {
+    public boolean selectSemaphore(int id) {
         for (RailSemaphore semaphore : getSemaphores()) {
             if (semaphore.getId() == id) {
                 selectedSemaphore = semaphore;
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     @Override
@@ -457,75 +480,84 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
-    public List<Platform> getPlatforms() {
-        return this.platforms;
+    public List<Station> getStations() {
+        return this.stations;
     }
 
     @Override
-    public void addPlatform(Platform platform) {
-        this.platforms.add(platform);
+    public void addStation(Station Station) {
+        this.stations.add(Station);
     }
 
     @Override
-    public void removePlatform(Platform platform) {
-        this.platforms.remove(platform);
+    public void removeStation(Station Station) {
+        this.stations.remove(Station);
     }
 
     @Override
-    public Platform getPlatform(int id) {
-        for (Platform platform : getPlatforms()) {
-            if (platform.getId() == id) {
-                return platform;
+    public Station getStation(int id) {
+        for (Station Station : getStations()) {
+            if (Station.getId() == id) {
+                return Station;
             }
         }
         return null;
     }
 
     @Override
-    public Platform getSelectedPlatform() {
-        return selectedPlatform;
+    public Station getSelectedStation() {
+        return selectedStation;
     }
 
     @Override
-    public void setSelectedPlatform(Platform selectedPlatform) {
-        this.selectedPlatform = selectedPlatform;
+    public void setSelectedStation(Station selectedStation) {
+        this.selectedStation = selectedStation;
     }
 
     @Override
-    public void selectNextPlatform() {
-        if (getPlatforms().isEmpty()) {
-            return;
+    public boolean selectNextStation() {
+        if (getStations().isEmpty()) {
+            return false;
         }
-        selectedPlatformIndex++;
-        if (selectedPlatformIndex >= getPlatforms().size()) {
-            selectedPlatformIndex = 0;
+        selectedStationIndex++;
+        if (selectedStationIndex >= getStations().size()) {
+            selectedStationIndex = 0;
         }
-        selectedPlatform = getPlatforms().get(selectedPlatformIndex);
+        selectedStation = getStations().get(selectedStationIndex);
+        return true;
     }
 
     @Override
-    public void selectPrevPlatform() {
-        if (getPlatforms().isEmpty()) {
-            return;
+    public boolean selectPrevStation() {
+        if (getStations().isEmpty()) {
+            return false;
         }
-        selectedPlatformIndex--;
-        if (selectedPlatformIndex < 0) {
-            selectedPlatformIndex = getPlatforms().size() - 1;
+        selectedStationIndex--;
+        if (selectedStationIndex < 0) {
+            selectedStationIndex = getStations().size() - 1;
         }
-        selectedPlatform = getPlatforms().get(selectedPlatformIndex);
+        selectedStation = getStations().get(selectedStationIndex);
+        return true;
     }
 
     @Override
-    public void selectPlatform(int id) {
-        for (Platform platform : getPlatforms()) {
-            if (platform.getId() == id) {
-                selectedPlatform = platform;
-                break;
+    public boolean selectStation(int id) {
+        for (Station Station : getStations()) {
+            if (Station.getId() == id) {
+                selectedStation = Station;
+                return true;
             }
         }
+        return false;
     }
 
-	public void updateGroundMap(Point mapScrollPage, int columns, int rows) {
-        this.groundMap.renderBlock(mapScrollPage.getX()*columns, mapScrollPage.getY()*rows, columns, rows);
-	}
+    public void updateGroundMap(Point mapScrollPage, int columns, int rows) {
+        this.groundMap.renderBlock(mapScrollPage.getX() * columns, mapScrollPage.getY() * rows, columns, rows);
+    }
+
+    @Override
+    public EconomyManager getEconomyManager() {
+        return this.economyManager;
+    }
+
 }

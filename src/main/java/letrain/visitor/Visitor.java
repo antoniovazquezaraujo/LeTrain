@@ -1,10 +1,11 @@
 package letrain.visitor;
 
+import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
 import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
-import letrain.track.Platform;
+import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.BridgeGateRailTrack;
@@ -20,6 +21,8 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Wagon;
 
 public interface Visitor {
+    void visitEconomyManager(EconomyManager economyManager);
+
     void visitModel(Model model);
 
     void visitRailMap(RailMap map);
@@ -44,7 +47,7 @@ public interface Visitor {
 
     void visitSemaphore(RailSemaphore semaphore);
 
-    void visitPlatform(Platform platform);
+    void visitStation(Station Station);
 
     void visitGroundMap(GroundMap groundMap);
 

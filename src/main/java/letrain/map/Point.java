@@ -1,8 +1,15 @@
 package letrain.map;
 
-import java.io.Serializable;
+import static letrain.map.Dir.E;
+import static letrain.map.Dir.N;
+import static letrain.map.Dir.NE;
+import static letrain.map.Dir.NW;
+import static letrain.map.Dir.S;
+import static letrain.map.Dir.SE;
+import static letrain.map.Dir.SW;
+import static letrain.map.Dir.W;
 
-import static letrain.map.Dir.*;
+import java.io.Serializable;
 
 public class Point implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -121,5 +128,8 @@ public class Point implements Serializable {
             default:
                 assert (false);
         }
+    }
+    public static double distance(Point from , Point to){
+        return Math.sqrt(Math.pow((to.getX() - from.getX()), 2) + Math.pow((to.getY() - from.getY()), 2));   
     }
 }
