@@ -36,6 +36,7 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Model.GameMode;
 import letrain.track.Sensor;
+import letrain.track.Station;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Itinerary;
@@ -236,26 +237,29 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 break;
             case Character:
                 if (keyEvent.getCharacter() == '-') {
-                    Linker linker = model.getSelectedStation().getTrack().getLinker();
-                    if (linker != null) {
-                        Train train = linker.getTrain();
-                        train.startLoadUnloadProcess();
-                        Stop actualStop = train.recordStopAtStation();
-                        Itinerary.ItineraryState state = train.getItinerary().getState();
-                        if (!state.equals(Itinerary.ItineraryState.STARTING)) {
-                            int startStationId = train.getItinerary().getFirstStop().stationId();
-                            int firstStopDistanceTraveled = train.getItinerary().getFirstStop().distanceTraveled();
-                            int totalDistanceTraveled = actualStop.distanceTraveled() - firstStopDistanceTraveled;
-                            LocalDateTime startTime = train.getItinerary().getFirstStop().stopTime();
-                            LocalDateTime elapsedTime = actualStop.stopTime()
-                                    .minusMinutes(startTime.toEpochSecond(ZoneOffset.UTC));
-                            double linearDistanceToStart = model.getLinearDistanceBetweenStations(startStationId,
-                                    actualStop.stationId());
-                            model.getEconomyManager().onLoadPassengers(train, elapsedTime, totalDistanceTraveled,
-                                    linearDistanceToStart);
-                        }
-                        if (state.equals(Itinerary.ItineraryState.AT_END)) {
-                            train.getItinerary().restart(actualStop);
+                    Station selectedStation = model.getSelectedStation();
+                    if (selectedStation != null) {
+                        Linker linker = selectedStation.getTrack().getLinker();
+                        if (linker != null) {
+                            Train train = linker.getTrain();
+                            train.startLoadUnloadProcess();
+                            Stop actualStop = train.recordStopAtStation();
+                            Itinerary.ItineraryState state = train.getItinerary().getState();
+                            if (!state.equals(Itinerary.ItineraryState.STARTING)) {
+                                int startStationId = train.getItinerary().getFirstStop().stationId();
+                                int firstStopDistanceTraveled = train.getItinerary().getFirstStop().distanceTraveled();
+                                int totalDistanceTraveled = actualStop.distanceTraveled() - firstStopDistanceTraveled;
+                                LocalDateTime startTime = train.getItinerary().getFirstStop().stopTime();
+                                LocalDateTime elapsedTime = actualStop.stopTime()
+                                        .minusMinutes(startTime.toEpochSecond(ZoneOffset.UTC));
+                                double linearDistanceToStart = model.getLinearDistanceBetweenStations(startStationId,
+                                        actualStop.stationId());
+                                model.getEconomyManager().onLoadPassengers(train, elapsedTime, totalDistanceTraveled,
+                                        linearDistanceToStart);
+                            }
+                            if (state.equals(Itinerary.ItineraryState.AT_END)) {
+                                train.getItinerary().restart(actualStop);
+                            }
                         }
                     }
                 } else if (keyEvent.getCharacter() == ' ') {
@@ -555,7 +559,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
 
     public void selectLocomotive(int id) {
-        if(model.selectLocomotive(id)){
+        if (model.selectLocomotive(id)) {
             setPageOfPoint(model.getSelectedLocomotive().getTrack().getPosition());
         }
     }
@@ -586,19 +590,19 @@ public class CompactPresenter implements letrain.mvp.Presenter {
      **********************************************************/
 
     private void selectNextFork() {
-        if(model.selectNextFork()){
+        if (model.selectNextFork()) {
             setPageOfPoint(model.getSelectedFork().getPosition());
         }
     }
 
     private void selectPrevFork() {
-        if(model.selectPrevFork()){
+        if (model.selectPrevFork()) {
             setPageOfPoint(model.getSelectedFork().getPosition());
         }
     }
 
     private void selectFork(int id) {
-        if(model.selectFork(id)){
+        if (model.selectFork(id)) {
             setPageOfPoint(model.getSelectedFork().getPosition());
         }
     }
@@ -721,7 +725,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
 
     private void selectStation(int id) {
-        if(model.selectStation(id)){
+        if (model.selectStation(id)) {
             setPageOfPoint(model.getSelectedStation().getPosition());
         }
     }

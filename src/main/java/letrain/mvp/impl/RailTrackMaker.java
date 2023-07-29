@@ -15,7 +15,7 @@ import letrain.track.Track;
 import letrain.track.rail.BridgeGateRailTrack;
 import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
-import letrain.track.rail.RailStation;
+import letrain.track.rail.StationRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
@@ -34,6 +34,8 @@ public class RailTrackMaker {
     Presenter presenter;
     Point lastCursorPosition = null;
     Integer oldGroundType = null;
+    private int stationSize;
+    private Point stationStart;
 
     public RailTrackMaker(Presenter presenter) {
         this.presenter = presenter;
@@ -83,8 +85,11 @@ public class RailTrackMaker {
                 } else if (keyEvent.getCharacter() == 'w') {
                     creatingStation = !creatingStation;
                     if (creatingStation) {
+                        saveStationStart();
+                        resetStationSize();
                         selectNewTrackType(Presenter.TrackType.STATION_TRACK);
                     } else {
+                        createStation();
                         selectNewTrackType(Presenter.TrackType.NORMAL_TRACK);
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
@@ -133,6 +138,33 @@ public class RailTrackMaker {
 
     }
 
+    private void saveStationStart() {
+        this.stationStart = new Point(presenter.getModel().getCursor().getPosition());
+    }
+
+    private void resetStationSize() {
+        this.stationSize=0;
+    }
+
+    private void createStation() {
+        Point position = presenter.getModel().getCursor().getPosition();
+        int x = (position.getX()==this.stationStart.getX())
+            ? position.getX()
+            : (position.getX()-(position.getX() +1 - this.stationStart.getX())/2);
+        int y = (position.getY() == this.stationStart
+                .getY())
+                ? position.getY()
+                : position.getY()-(position.getY()+1 - this.stationStart.getY())/2;
+        Point sensorPosition = new Point(x,y);
+        Track track = presenter.getModel().getRailMap().getTrackAt(sensorPosition.getX(), sensorPosition.getY());
+        if (track != null && track instanceof StationRailTrack) {
+                Station station = new Station(presenter.getModel().nextStationId());
+                station.setTrack(track);
+                track.setSensor(station);
+                presenter.getModel().addStation(station);
+        }
+    }
+
     void manageSensor() {
         Point position = presenter.getModel().getCursor().getPosition();
         Track track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
@@ -164,7 +196,7 @@ public class RailTrackMaker {
     void manageStationSensor() {
         Point position = presenter.getModel().getCursor().getPosition();
         Track track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
-        if (track != null && track instanceof RailStation) {
+        if (track != null && track instanceof StationRailTrack) {
             Sensor sensor = track.getSensor();
             if (sensor != null) {
                 if (sensor instanceof Station) {
@@ -260,6 +292,9 @@ public class RailTrackMaker {
                     break;
             }
         } else {
+            if(creatingStation){
+                return false;
+            }
             // cambio de suelo
             if (oldGroundType == GroundMap.GROUND) {
                 // pasamos de GROUND a otro tipo de suelo
@@ -292,6 +327,12 @@ public class RailTrackMaker {
             // si no había nada creamos un track normal
             track = createTrackOfSelectedType();
         } else {
+            if(creatingStation){
+                return false;
+            }
+            if(StationRailTrack.class.isAssignableFrom(track.getClass())){
+                return false;
+            }
             if (actualGroundType != GroundMap.GROUND) {
                 // si la dirección del cursor es distinta de la del track actual retornamos
                 if (track != null && !track.canExit(presenter.getModel().getCursor().getDir())) {
@@ -379,7 +420,8 @@ public class RailTrackMaker {
     public RailTrack createTrackOfSelectedType() {
         switch (newTrackType) {
             case STATION_TRACK:
-                return new RailStation();
+                incStationSize();
+                return new StationRailTrack();
             case TUNNEL_GATE_TRACK:
                 return new TunnelGateRailTrack();
             case TUNNEL_TRACK:
@@ -393,6 +435,10 @@ public class RailTrackMaker {
         }
     }
 
+    private void incStationSize() {
+        this.stationSize++;
+    }
+
     public boolean canBeAFork(Track track, Dir from, Dir to) {
         final Router r = new SimpleRouter();
         track.getRouter().forEach(t -> r.addRoute(t.getKey(), t.getValue()));
@@ -401,6 +447,9 @@ public class RailTrackMaker {
     }
 
     private void cursorTurnRight() {
+        if (creatingStation) {
+            return;
+        }
         if (makingTraks) {
             if (degreesOfRotation >= 0) {
                 this.dir = this.dir.turnRight();
@@ -414,6 +463,9 @@ public class RailTrackMaker {
     }
 
     private void cursorTurnLeft() {
+        if (creatingStation) {
+            return;
+        }
         if (makingTraks) {
             if (degreesOfRotation <= 0) {
                 this.dir = this.dir.turnLeft();
