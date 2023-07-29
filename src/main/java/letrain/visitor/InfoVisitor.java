@@ -11,19 +11,17 @@ import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
-import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
+import letrain.track.Station;
 import letrain.track.Track;
 import letrain.track.rail.BridgeGateRailTrack;
 import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.TrainFactoryRailTrack;
 import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
-import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Wagon;
 
@@ -162,11 +160,7 @@ public class InfoVisitor implements Visitor {
                 + (router.isUsingAlternativeRoute() ? "TRUE" : "FALSE"));
         return ret.toString();
     }
-
-    @Override
-    public void visitTrainFactoryRailTrack(TrainFactoryRailTrack track) {
-    }
-
+ 
     @Override
     public void visitTunnelRailTrack(TunnelRailTrack track) {
         infoBarText += "Track:[" + track.getPosition().getX() + "," + track.getPosition().getY() + "]"
@@ -177,11 +171,6 @@ public class InfoVisitor implements Visitor {
     @Override
     public void visitLocomotive(Locomotive locomotive) {
         infoBarText += " Speed:" + locomotive.getSpeed() + " ";
-    }
-
-    @Override
-    public void visitLinker(Linker linker) {
-
     }
 
     @Override
