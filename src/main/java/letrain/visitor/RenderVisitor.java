@@ -39,7 +39,7 @@ public class RenderVisitor implements Visitor {
     private static final TextColor WATER_COLOR = TextColor.ANSI.BLUE_BRIGHT;
     private static final TextColor ROCK_COLOR = TextColor.ANSI.RED_BRIGHT;
     private static final TextColor CURSOR_DRAWING_COLOR = TextColor.ANSI.GREEN_BRIGHT;
-    private static final TextColor CURSOR_MOVING_COLOR = TextColor.ANSI.YELLOW;
+    private static final TextColor CURSOR_MOVING_COLOR = TextColor.ANSI.YELLOW_BRIGHT;
     private static final TextColor CURSOR_ERASING_COLOR = TextColor.ANSI.RED_BRIGHT;
     private static final TextColor WAGON_COLOR = TextColor.ANSI.WHITE;
     private static final TextColor LOCOMOTIVE_COLOR = TextColor.ANSI.WHITE;
