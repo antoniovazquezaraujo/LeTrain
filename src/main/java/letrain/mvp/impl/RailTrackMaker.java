@@ -101,6 +101,7 @@ public class RailTrackMaker {
                 }
                 break;
             case PageUp:
+                makingTraks = false;
                 if (keyEvent.isCtrlDown()) {
                     mapPageLeft();
                 } else {
@@ -108,6 +109,7 @@ public class RailTrackMaker {
                 }
                 break;
             case PageDown:
+                makingTraks = false;
                 if (keyEvent.isCtrlDown()) {
                     mapPageRight();
                 } else {
@@ -149,19 +151,19 @@ public class RailTrackMaker {
     private void createStation() {
         Point position = presenter.getModel().getCursor().getPosition();
         int x = (position.getX()==this.stationStart.getX())
-            ? position.getX()
+                ? position.getX()
             : (position.getX()-(position.getX() +1 - this.stationStart.getX())/2);
         int y = (position.getY() == this.stationStart
                 .getY())
-                ? position.getY()
+                        ? position.getY()
                 : position.getY()-(position.getY()+1 - this.stationStart.getY())/2;
         Point sensorPosition = new Point(x,y);
         Track track = presenter.getModel().getRailMap().getTrackAt(sensorPosition.getX(), sensorPosition.getY());
         if (track != null && track instanceof StationRailTrack) {
-                Station station = new Station(presenter.getModel().nextStationId());
-                station.setTrack(track);
-                track.setSensor(station);
-                presenter.getModel().addStation(station);
+            Station station = new Station(presenter.getModel().nextStationId());
+            station.setTrack(track);
+            track.setSensor(station);
+            presenter.getModel().addStation(station);
         }
     }
 
@@ -495,6 +497,14 @@ public class RailTrackMaker {
         lastCursorPosition = newPos;
     }
 
+    private void varyCursorPosition(Point newPos) {
+        Point oldPos = presenter.getModel().getCursor().getPosition();
+        newPos.setX(oldPos.getX() + newPos.getX());
+        newPos.setY(oldPos.getY() + newPos.getY());
+        presenter.getModel().getCursor().setPosition(newPos);
+        lastCursorPosition = newPos;
+    }
+
     void cursorBackward() {
         reversed = true;
         cursorForward();
@@ -505,6 +515,7 @@ public class RailTrackMaker {
         presenter.getView().clear();
         Point p = presenter.getView().getMapScrollPage();
         p.setY(p.getY() + 1);
+        varyCursorPosition(new Point(0, 1 * presenter.getView().getRows()));
         presenter.getView().setMapScrollPage(p);
         presenter.getView().clear();
 
@@ -514,6 +525,7 @@ public class RailTrackMaker {
         presenter.getView().clear();
         Point p = presenter.getView().getMapScrollPage();
         p.setX(p.getX() - 1);
+        varyCursorPosition(new Point((-1 * presenter.getView().getCols()), 0));
         presenter.getView().setMapScrollPage(p);
         presenter.getView().clear();
 
@@ -523,6 +535,7 @@ public class RailTrackMaker {
         presenter.getView().clear();
         Point p = presenter.getView().getMapScrollPage();
         p.setY(p.getY() - 1);
+        varyCursorPosition(new Point(0, -1 * presenter.getView().getRows()));
         presenter.getView().setMapScrollPage(p);
         presenter.getView().clear();
 
@@ -532,6 +545,7 @@ public class RailTrackMaker {
         presenter.getView().clear();
         Point p = presenter.getView().getMapScrollPage();
         p.setX(p.getX() + 1);
+        varyCursorPosition(new Point((1 * presenter.getView().getCols()), 0));
         presenter.getView().setMapScrollPage(p);
         presenter.getView().clear();
 
