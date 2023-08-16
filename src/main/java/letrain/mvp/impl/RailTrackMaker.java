@@ -34,7 +34,6 @@ public class RailTrackMaker {
     Presenter presenter;
     Point lastCursorPosition = null;
     Integer oldGroundType = null;
-    private int stationSize;
     private Point stationStart;
 
     public RailTrackMaker(Presenter presenter) {
@@ -68,6 +67,12 @@ public class RailTrackMaker {
                     removeTrack();
                     makingTraks = false;
                 } else {
+                    makingTraks = false;
+                    if (creatingStation) {
+                        createStation();
+                        selectNewTrackType(Presenter.TrackType.NORMAL_TRACK);
+                        creatingStation = false;
+                    }
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
                     if (numSteps > 0) {
                         for (int n = 0; n < numSteps; n++) {
@@ -76,7 +81,6 @@ public class RailTrackMaker {
                     } else {
                         cursorForward();
                     }
-                    makingTraks = false;
                 }
                 break;
             case Character:
@@ -86,7 +90,6 @@ public class RailTrackMaker {
                     creatingStation = !creatingStation;
                     if (creatingStation) {
                         saveStationStart();
-                        resetStationSize();
                         selectNewTrackType(Presenter.TrackType.STATION_TRACK);
                     } else {
                         createStation();
@@ -141,11 +144,7 @@ public class RailTrackMaker {
     }
 
     private void saveStationStart() {
-        this.stationStart = new Point(presenter.getModel().getCursor().getPosition());
-    }
-
-    private void resetStationSize() {
-        this.stationSize=0;
+        stationStart = new Point(presenter.getModel().getCursor().getPosition());
     }
 
     private void createStation() {
@@ -315,8 +314,8 @@ public class RailTrackMaker {
                 }
                 if (oldGroundType == GroundMap.WATER) {
                     // salimos de agua
-                    selectNewTrackType(Presenter.TrackType.BRIDGE_GATE_TRACK);
-                } else if (oldGroundType == GroundMap.ROCK) {
+                    this.selectNewTrackType(Presenter.TrackType.BRIDGE_GATE_TRACK);
+                } else if (this.oldGroundType == GroundMap.ROCK) {
                     // salimos de roca
                     selectNewTrackType(Presenter.TrackType.TUNNEL_GATE_TRACK);
                 }
@@ -422,7 +421,6 @@ public class RailTrackMaker {
     public RailTrack createTrackOfSelectedType() {
         switch (newTrackType) {
             case STATION_TRACK:
-                incStationSize();
                 return new StationRailTrack();
             case TUNNEL_GATE_TRACK:
                 return new TunnelGateRailTrack();
@@ -435,10 +433,6 @@ public class RailTrackMaker {
             default:
                 return new RailTrack();
         }
-    }
-
-    private void incStationSize() {
-        this.stationSize++;
     }
 
     public boolean canBeAFork(Track track, Dir from, Dir to) {
