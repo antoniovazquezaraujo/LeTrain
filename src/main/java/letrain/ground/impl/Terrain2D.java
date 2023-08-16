@@ -15,7 +15,7 @@ public class Terrain2D {
   int[] tiles;
 
   NoiseGenerator noiseGenerator = new NoiseGenerator();
- 
+
   void setup() {
     w = 100;
     h = 100;
@@ -28,25 +28,26 @@ public class Terrain2D {
   }
 
   // void keyPressed() {
-  //   if (key == ' ') {
-  //     noiseSeed(millis());
-  //     drawTerrain();
-  //   }
-  //   if (key == 'w')
-  //     y -= speed;
-  //   if (key == 's')
-  //     y += speed;
-  //   if (key == 'a')
-  //     x -= speed;
-  //   if (key == 'd')
-  //     x += speed;
+  // if (key == ' ') {
+  // noiseSeed(millis());
+  // drawTerrain();
+  // }
+  // if (key == 'w')
+  // y -= speed;
+  // if (key == 's')
+  // y += speed;
+  // if (key == 'a')
+  // x -= speed;
+  // if (key == 'd')
+  // x += speed;
   // }
 
-    public static void main(String[] args) {
-        Terrain2D t = new Terrain2D();
-        t.setup();
-        t.draw();
-    }
+  public static void main(String[] args) {
+    Terrain2D t = new Terrain2D();
+    t.setup();
+    t.draw();
+  }
+
   void drawTerrain() {
     xRO = x % tileSize;
     yRO = y % tileSize;
@@ -60,11 +61,11 @@ public class Terrain2D {
     for (int i = 0; i < w; i++) {
       for (int j = 0; j < h; j++) {
         System.out.println(":"
-        + tiles[i + j * w]+ ","+ ((i - buffer / 2) * tileSize - xRO) 
-        + ", " + ((j - buffer / 2) * tileSize - yRO )
-        + ", "
-        + tileSize
-        + ","+ tileSize);
+            + tiles[i + j * w] + "," + ((i - buffer / 2) * tileSize - xRO)
+            + ", " + ((j - buffer / 2) * tileSize - yRO)
+            + ", "
+            + tileSize
+            + "," + tileSize);
       }
     }
   }

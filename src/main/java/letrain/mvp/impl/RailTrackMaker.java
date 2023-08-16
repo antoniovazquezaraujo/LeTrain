@@ -1,22 +1,21 @@
 package letrain.mvp.impl;
 
 import com.googlecode.lanterna.input.KeyStroke;
-
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Presenter;
-import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
+import letrain.track.Station;
 import letrain.track.Track;
 import letrain.track.rail.BridgeGateRailTrack;
 import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
-import letrain.track.rail.StationRailTrack;
 import letrain.track.rail.RailTrack;
+import letrain.track.rail.StationRailTrack;
 import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
@@ -149,14 +148,14 @@ public class RailTrackMaker {
 
     private void createStation() {
         Point position = presenter.getModel().getCursor().getPosition();
-        int x = (position.getX()==this.stationStart.getX())
+        int x = (position.getX() == this.stationStart.getX())
                 ? position.getX()
-            : (position.getX()-(position.getX() +1 - this.stationStart.getX())/2);
+                : (position.getX() - (position.getX() + 1 - this.stationStart.getX()) / 2);
         int y = (position.getY() == this.stationStart
                 .getY())
                         ? position.getY()
-                : position.getY()-(position.getY()+1 - this.stationStart.getY())/2;
-        Point sensorPosition = new Point(x,y);
+                        : position.getY() - (position.getY() + 1 - this.stationStart.getY()) / 2;
+        Point sensorPosition = new Point(x, y);
         Track track = presenter.getModel().getRailMap().getTrackAt(sensorPosition.getX(), sensorPosition.getY());
         if (track != null && track instanceof StationRailTrack) {
             Station station = new Station(presenter.getModel().nextStationId());
@@ -293,7 +292,7 @@ public class RailTrackMaker {
                     break;
             }
         } else {
-            if(creatingStation){
+            if (creatingStation) {
                 return false;
             }
             // cambio de suelo
@@ -328,10 +327,10 @@ public class RailTrackMaker {
             // si no había nada creamos un track normal
             track = createTrackOfSelectedType();
         } else {
-            if(creatingStation){
+            if (creatingStation) {
                 return false;
             }
-            if(StationRailTrack.class.isAssignableFrom(track.getClass())){
+            if (StationRailTrack.class.isAssignableFrom(track.getClass())) {
                 return false;
             }
             if (actualGroundType != GroundMap.GROUND) {

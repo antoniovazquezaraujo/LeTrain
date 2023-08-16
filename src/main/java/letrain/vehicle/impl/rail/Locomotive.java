@@ -12,7 +12,7 @@ public class Locomotive extends Linker implements Tractor {
     final static int MAX_SPEED = 10;
     final static int SPEED_CHANGE_MAX_RELUCTANCE = 2;
     int speedChangeReluctance = SPEED_CHANGE_MAX_RELUCTANCE;
-    int distanceTraveled=0;
+    int distanceTraveled = 0;
     int speed;
     int turns;
     private String aspect;
@@ -78,7 +78,7 @@ public class Locomotive extends Linker implements Tractor {
                 resetTurns();
             } else {
                 consumeTurn();
-            }            
+            }
         }
         return moved;
     }
@@ -205,6 +205,7 @@ public class Locomotive extends Linker implements Tractor {
     public int getDistanceTraveled() {
         return distanceTraveled;
     }
+
     @Override
     public void incDistanceTraveled() {
         distanceTraveled++;

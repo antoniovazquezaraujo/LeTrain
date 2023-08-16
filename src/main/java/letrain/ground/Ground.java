@@ -12,7 +12,6 @@ public class Ground implements
         Mapeable,
         Renderable {
 
- 
     int type;
     int x;
     int y;
@@ -22,15 +21,18 @@ public class Ground implements
     private Ground() {
 
     }
-    public Ground(  int x, int y, int type) {
+
+    public Ground(int x, int y, int type) {
         this.x = x;
         this.y = y;
         this.type = type;
     }
-    public int getType(){
+
+    public int getType() {
         return type;
     }
-    public void setType(int type){
+
+    public void setType(int type) {
         this.type = type;
     }
 
@@ -55,9 +57,9 @@ public class Ground implements
         this.y = pos.getY();
     }
 
-	@Override
-	public void accept(Visitor visitor) {
+    @Override
+    public void accept(Visitor visitor) {
         visitor.visitGround(this);
-	}
+    }
 
 }

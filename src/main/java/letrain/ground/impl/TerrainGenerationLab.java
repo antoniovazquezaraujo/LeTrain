@@ -68,7 +68,8 @@ public class TerrainGenerationLab {
         while (true) {
             for (int y = 0; y < 30; y += 1) {
                 for (int x = 0; x < 100; x += 1) {
-                    float rand = (noise.smoothNoise(Math.abs((col + x) * 0.01F), Math.abs((row + y) * 0.02F), 0, octaves));
+                    float rand = (noise.smoothNoise(Math.abs((col + x) * 0.01F), Math.abs((row + y) * 0.02F), 0,
+                            octaves));
                     rand = scaleAndShift(rand, -0.7F, 0.7F, 0F, 255F);
                     int intColor = (int) rand;
                     if (rand < water) {
@@ -85,7 +86,8 @@ public class TerrainGenerationLab {
                     }
                 }
             }
-            centralGraphics.putString(0, 31, "" + "ground:"+ ground + " mountain:" + mountain + " water:" + water + " octaves:" + octaves) ;
+            centralGraphics.putString(0, 31,
+                    "" + "ground:" + ground + " mountain:" + mountain + " water:" + water + " octaves:" + octaves);
 
             try {
                 this.screen.refresh();

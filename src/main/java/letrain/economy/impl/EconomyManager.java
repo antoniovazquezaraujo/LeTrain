@@ -216,23 +216,24 @@ public class EconomyManager implements letrain.economy.EconomyManager {
      */
     private int calculateMoneyAmount(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled,
             double linearDistanceToStart) {
-                final int TICKET_PRICE = 10;
-                final double LINEAR_DISTANCE_PRICE = 0.2;
-                final double DISTANCE_PRICE = 0.05;
-                final double TIME_FACTOR = 1;
-                final double MIN_AVERAGE_SPEED = 8;
+        final int TICKET_PRICE = 10;
+        final double LINEAR_DISTANCE_PRICE = 0.2;
+        final double DISTANCE_PRICE = 0.05;
+        final double TIME_FACTOR = 1;
+        final double MIN_AVERAGE_SPEED = 8;
 
-                int moneyAmount = 0;
-                moneyAmount += train.getLinkers().size()*  TICKET_PRICE;;
-                moneyAmount += LINEAR_DISTANCE_PRICE * linearDistanceToStart;
-                moneyAmount += DISTANCE_PRICE * totalDistanceTraveled;
-                if(elapsedTime.getMinute()> 0){
-                    double averageSpeed = totalDistanceTraveled / elapsedTime.getMinute();
-                    if(averageSpeed < MIN_AVERAGE_SPEED){
-                        moneyAmount -= TIME_FACTOR * elapsedTime.getMinute();
-                    }
-                }
-                return moneyAmount;
+        int moneyAmount = 0;
+        moneyAmount += train.getLinkers().size() * TICKET_PRICE;
+        ;
+        moneyAmount += LINEAR_DISTANCE_PRICE * linearDistanceToStart;
+        moneyAmount += DISTANCE_PRICE * totalDistanceTraveled;
+        if (elapsedTime.getMinute() > 0) {
+            double averageSpeed = totalDistanceTraveled / elapsedTime.getMinute();
+            if (averageSpeed < MIN_AVERAGE_SPEED) {
+                moneyAmount -= TIME_FACTOR * elapsedTime.getMinute();
+            }
+        }
+        return moneyAmount;
     }
 
     @Override
