@@ -120,9 +120,6 @@ public class View implements letrain.mvp.View {
                     gameBoxSize.getRows());
             gameBox.fillRectangle(gameBoxPosition, gameBoxSize, ' ');
         }
-        menuBox.drawLine(menuBoxPosition.withRelative(1, 0),
-                menuBoxPosition.withRelative(menuBoxSize.getColumns() - 2, 0),
-                TextCharacter.fromCharacter(Symbols.SINGLE_LINE_HORIZONTAL, fgColor, bgColor)[0]);
 
         try {
             this.screen.refresh();
