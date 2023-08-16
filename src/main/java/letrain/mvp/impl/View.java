@@ -44,12 +44,12 @@ public class View implements letrain.mvp.View {
     private DefaultTerminalFactory terminalFactory;
     private Terminal terminal;
     private TerminalSize terminalSize;
-    private TextGraphics centralGraphics;
-    private TerminalPosition centralGraphicsPosition;
-    private TerminalSize centralGraphicsSize;
-    private TextGraphics bottomGraphics;
-    private TerminalPosition bottonGraphicsPosition;
-    private TerminalSize bottonGraphicsSize;
+    private TextGraphics gameBox;
+    private TerminalPosition gameBoxPosition;
+    private TerminalSize gameBoxSize;
+    private TextGraphics menuBox;
+    private TerminalPosition menuBoxPosition;
+    private TerminalSize menuBoxSize;
 
     private TextColor fgColor;
     private TextColor bgColor;
@@ -66,14 +66,12 @@ public class View implements letrain.mvp.View {
             e.printStackTrace();
         }
         terminalSize = screen.getTerminalSize();
-
-        centralGraphics = screen.newTextGraphics();
-        bottomGraphics = screen.newTextGraphics();
+        gameBox = screen.newTextGraphics();
+        menuBox = screen.newTextGraphics();
         this.fgColor = ANSI.WHITE;
         this.bgColor = ANSI.BLACK;
 
         recalculateSizes(terminalSize);
-
     }
 
     public void setScreen(Screen screen) {
@@ -83,9 +81,7 @@ public class View implements letrain.mvp.View {
     public KeyStroke readKey() {
         try {
             return screen.pollInput();
-
         } catch (IOException e) {
-
         }
         return null;
     }
@@ -103,7 +99,7 @@ public class View implements letrain.mvp.View {
     public void setMapScrollPage(Point pos) {
         this.mapScrollPage = pos;
         setStatusBarText("Page: " + mapScrollPage.getX() + ", " + mapScrollPage.getY());
-        View.this.gameViewListener.onMapPageChanged(mapScrollPage, terminalSize.getColumns(), terminalSize.getRows());
+        View.this.gameViewListener.onMapPageChanged(mapScrollPage, gameBoxSize.getColumns(), gameBoxSize.getRows());
     }
 
     public void setStatusBarText(String text) {
@@ -112,7 +108,38 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void setInfoBarText(String text) {
-        bottomGraphics.putString(bottonGraphicsPosition.withRelative(1, 3), text);
+        menuBox.putString(menuBoxPosition.withRelative(1, 3), text);
+    }
+    @Override
+    public void paint() {
+        TerminalSize changedSize = screen.doResizeIfNecessary();
+        if (changedSize != null) {
+            terminalSize = changedSize;
+            recalculateSizes(terminalSize);
+            View.this.gameViewListener.onMapPageChanged(mapScrollPage, gameBoxSize.getColumns(),
+                    gameBoxSize.getRows());
+            gameBox.fillRectangle(gameBoxPosition, gameBoxSize, ' ');
+        }
+        menuBox.drawLine(menuBoxPosition.withRelative(1, 0),
+                menuBoxPosition.withRelative(menuBoxSize.getColumns() - 2, 0),
+                TextCharacter.fromCharacter(Symbols.SINGLE_LINE_HORIZONTAL, fgColor, bgColor)[0]);
+
+        try {
+            this.screen.refresh();
+            Thread.yield();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public int getCols() {
+        return gameBoxSize.getColumns();
+    }
+
+    @Override
+    public int getRows() {
+        return gameBoxSize.getRows();
     }
 
     @Override
@@ -127,22 +154,22 @@ public class View implements letrain.mvp.View {
             TextColor oldFgColor = fgColor;
             if (option == selectedOption) {
                 bgColor = ANSI.BLUE;
-                bottomGraphics.setBackgroundColor(bgColor);
+                menuBox.setBackgroundColor(bgColor);
             } else {
                 bgColor = oldBgColor;
-                bottomGraphics.setBackgroundColor(bgColor);
+                menuBox.setBackgroundColor(bgColor);
             }
-            bottomGraphics.setForegroundColor(oldFgColor);
-            bottomGraphics.putString(bottonGraphicsPosition.withRelative(length, 1), firstPart);
-            bottomGraphics.setForegroundColor(TextColor.ANSI.YELLOW);
+            menuBox.setForegroundColor(oldFgColor);
+            menuBox.putString(menuBoxPosition.withRelative(length, 1), firstPart);
+            menuBox.setForegroundColor(TextColor.ANSI.YELLOW);
             length += firstPart.length();
-            bottomGraphics.putString(bottonGraphicsPosition.withRelative(length, 1), secondPart);
-            bottomGraphics.setForegroundColor(oldFgColor);
+            menuBox.putString(menuBoxPosition.withRelative(length, 1), secondPart);
+            menuBox.setForegroundColor(oldFgColor);
             length += secondPart.length();
-            bottomGraphics.putString(bottonGraphicsPosition.withRelative(length, 1), thirdPart);
-            bottomGraphics.setForegroundColor(oldFgColor);
+            menuBox.putString(menuBoxPosition.withRelative(length, 1), thirdPart);
+            menuBox.setForegroundColor(oldFgColor);
             length += thirdPart.length() + 1;
-            bottomGraphics.setBackgroundColor(oldBgColor);
+            menuBox.setBackgroundColor(oldBgColor);
             bgColor = oldBgColor;
             fgColor = oldFgColor;
         }
@@ -151,49 +178,16 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void setHelpBarText(String text) {
-        bottomGraphics.putString(bottonGraphicsPosition.withRelative(1, 2), text);
+        menuBox.putString(menuBoxPosition.withRelative(1, 2), text);
     }
 
-    @Override
-    public void paint() {
-        TerminalSize changedSize = screen.doResizeIfNecessary();
-        if (changedSize != null) {
-            terminalSize = changedSize;
-            recalculateSizes(terminalSize);
-            View.this.gameViewListener.onMapPageChanged(mapScrollPage, terminalSize.getColumns(),
-                    terminalSize.getRows());
-            centralGraphics.fillRectangle(centralGraphicsPosition, centralGraphicsSize, ' ');
-        }
-        // drawBox(bottomGraphics, bottonGraphicsPosition, bottonGraphicsSize);
-        // draw a line ober botomGraphics
-        bottomGraphics.drawLine(bottonGraphicsPosition.withRelative(1, 0),
-                bottonGraphicsPosition.withRelative(bottonGraphicsSize.getColumns() - 2, 0),
-                TextCharacter.fromCharacter(Symbols.SINGLE_LINE_HORIZONTAL, fgColor, bgColor)[0]);
-
-        try {
-            this.screen.refresh();
-            Thread.yield();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public int getCols() {
-        return centralGraphicsSize.getColumns();
-    }
-
-    @Override
-    public int getRows() {
-        return centralGraphicsSize.getRows() - 2;
-    }
 
     public void set(int x, int y, String c) {
         x -= mapScrollPage.getX() * getCols();
         y -= mapScrollPage.getY() * getRows();
         if (x >= 0 && x < getCols() && y >= 0 && y < getRows()) {
             for (int i = 0; i < c.length(); i++) {
-                centralGraphics.setCharacter(x + i, y,
+                gameBox.setCharacter(x + i, y,
                         TextCharacter.fromCharacter(c.charAt(i), this.fgColor, bgColor)[0]);
             }
         }
@@ -230,10 +224,10 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void clear(int x, int y) {
-        bottomGraphics.setBackgroundColor(bgColor);
-        centralGraphics.setBackgroundColor(bgColor);
-        bottomGraphics.setForegroundColor(fgColor);
-        centralGraphics.setForegroundColor(fgColor);
+        menuBox.setBackgroundColor(bgColor);
+        gameBox.setBackgroundColor(bgColor);
+        menuBox.setForegroundColor(fgColor);
+        gameBox.setForegroundColor(fgColor);
         set(x, y, " ");
     }
 
@@ -260,19 +254,19 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void clear() {
-        bottomGraphics.setBackgroundColor(bgColor);
-        centralGraphics.setBackgroundColor(bgColor);
-        bottomGraphics.setForegroundColor(fgColor);
-        centralGraphics.setForegroundColor(fgColor);
-        bottomGraphics.fillRectangle(bottonGraphicsPosition, bottonGraphicsSize, ' ');
-        centralGraphics.fillRectangle(centralGraphicsPosition, centralGraphicsSize, ' ');
+        menuBox.setBackgroundColor(bgColor);
+        gameBox.setBackgroundColor(bgColor);
+        menuBox.setForegroundColor(fgColor);
+        gameBox.setForegroundColor(fgColor);
+        menuBox.fillRectangle(menuBoxPosition, menuBoxSize, ' ');
+        gameBox.fillRectangle(gameBoxPosition, gameBoxSize, ' ');
     }
 
     void recalculateSizes(TerminalSize terminalSize) {
-        centralGraphicsSize = new TerminalSize(terminalSize.getColumns(), terminalSize.getRows() - 2);
-        centralGraphicsPosition = TerminalPosition.TOP_LEFT_CORNER;
-        bottonGraphicsSize = new TerminalSize(terminalSize.getColumns(), 4);
-        bottonGraphicsPosition = new TerminalPosition(0, terminalSize.getRows() - 4);
+        gameBoxSize = new TerminalSize(terminalSize.getColumns(), terminalSize.getRows() - 4);
+        gameBoxPosition = TerminalPosition.TOP_LEFT_CORNER;
+        menuBoxSize = new TerminalSize(terminalSize.getColumns(), 4);
+        menuBoxPosition = new TerminalPosition(0, terminalSize.getRows() - 4);
     }
 
     Screen createScreen(Terminal terminal) throws IOException {
