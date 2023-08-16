@@ -142,7 +142,6 @@ public class InfoVisitor implements Visitor {
         return ret.toString();
     }
 
-
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
         infoBarText += "Fork:{" + track.getId() + " Dir:"
@@ -160,7 +159,7 @@ public class InfoVisitor implements Visitor {
                 + (router.isUsingAlternativeRoute() ? "TRUE" : "FALSE"));
         return ret.toString();
     }
- 
+
     @Override
     public void visitTunnelRailTrack(TunnelRailTrack track) {
         infoBarText += "Track:[" + track.getPosition().getX() + "," + track.getPosition().getY() + "]"
@@ -198,13 +197,13 @@ public class InfoVisitor implements Visitor {
         infoBarText += "Station:[" + Station.getId() + "]" + "\n" + "Position:" + Station.getPosition() + "\n";
     }
 
-	@Override
-	public void visitGroundMap(GroundMap groundMap) {
-	}
+    @Override
+    public void visitGroundMap(GroundMap groundMap) {
+    }
 
-	@Override
-	public void visitGround(Ground ground) {
-	}
+    @Override
+    public void visitGround(Ground ground) {
+    }
 
     @Override
     public void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack) {

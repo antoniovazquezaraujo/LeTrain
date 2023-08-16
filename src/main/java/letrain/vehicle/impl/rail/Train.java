@@ -589,18 +589,21 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     public void setLoading(boolean isLoading) {
         this.isLoading = isLoading;
     }
-    public int getDistanceTraveled(){
+
+    public int getDistanceTraveled() {
         return getDirectorLinker().getDistanceTraveled();
     }
+
     public Stop recordStopAtStation() {
         Stop stop = new Stop(railStationId, LocalDateTime.now(), getDistanceTraveled());
-        if(this.itinerary == null){
+        if (this.itinerary == null) {
             this.itinerary = new Itinerary();
         }
         this.itinerary.addStop(stop);
         return stop;
     }
-    public Itinerary getItinerary(){
+
+    public Itinerary getItinerary() {
         return this.itinerary;
     }
 }

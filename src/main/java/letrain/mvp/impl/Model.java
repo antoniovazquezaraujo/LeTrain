@@ -386,7 +386,7 @@ public class Model implements Serializable, letrain.mvp.Model {
             selectedSemaphoreIndex = 0;
         }
         selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
-return true;
+        return true;
     }
 
     @Override

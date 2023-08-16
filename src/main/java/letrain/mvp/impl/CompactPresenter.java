@@ -20,15 +20,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
-
 import letrain.command.CommandManager;
 import letrain.command.LeTrainProgramLexer;
 import letrain.command.LeTrainProgramParser;
@@ -46,6 +39,11 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 import letrain.visitor.InfoVisitor;
 import letrain.visitor.RenderVisitor;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CompactPresenter implements letrain.mvp.Presenter {
     Logger log = LoggerFactory.getLogger(CompactPresenter.class);

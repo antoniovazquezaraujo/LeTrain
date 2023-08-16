@@ -160,7 +160,8 @@ public class View implements letrain.mvp.View {
         if (changedSize != null) {
             terminalSize = changedSize;
             recalculateSizes(terminalSize);
-            View.this.gameViewListener.onMapPageChanged(mapScrollPage, terminalSize.getColumns(), terminalSize.getRows());
+            View.this.gameViewListener.onMapPageChanged(mapScrollPage, terminalSize.getColumns(),
+                    terminalSize.getRows());
             centralGraphics.fillRectangle(centralGraphicsPosition, centralGraphicsSize, ' ');
         }
         // drawBox(bottomGraphics, bottonGraphicsPosition, bottonGraphicsSize);
@@ -222,7 +223,7 @@ public class View implements letrain.mvp.View {
         int pageX = x / getCols();
         int pageY = y / getRows();
         Point actualPage = getMapScrollPage();
-        if (pageX != actualPage.getX() || pageY != actualPage.getY()){
+        if (pageX != actualPage.getX() || pageY != actualPage.getY()) {
             setMapScrollPage(new Point(pageX, pageY));
         }
     }
