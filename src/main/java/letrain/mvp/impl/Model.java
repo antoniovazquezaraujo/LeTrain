@@ -5,22 +5,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import letrain.economy.impl.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
-import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
+import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Model implements Serializable, letrain.mvp.Model {
     static Logger log = LoggerFactory.getLogger(Model.class);
@@ -53,10 +52,14 @@ public class Model implements Serializable, letrain.mvp.Model {
     int nextTrainId;
     int nextStationId;
     String program;
+    int seed = 0;
 
     public Model() {
         this.economyManager = new EconomyManager();
-        this.groundMap = new letrain.ground.impl.GroundMap();
+        if (seed == 0) {
+            seed = 1 + (int) (Math.random() * 255);
+        }
+        this.groundMap = new letrain.ground.impl.GroundMap(seed);
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
         this.cursor.setPosition(new Point(10, 10));
