@@ -1,10 +1,5 @@
 package letrain.vehicle.impl;
 
-import java.util.Iterator;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import letrain.map.Dir;
 import letrain.map.Mapeable;
 import letrain.map.Point;
@@ -12,6 +7,8 @@ import letrain.map.Rotable;
 import letrain.track.Track;
 import letrain.track.Trackeable;
 import letrain.vehicle.Transportable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RailIterator implements Transportable, Trackeable, Rotable, Mapeable {
     Logger log = LoggerFactory.getLogger(RailIterator.class);

@@ -6,9 +6,9 @@ import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
-import letrain.track.Station;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
+import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
@@ -35,7 +35,7 @@ public interface Model {
 
     RailMap getRailMap();
 
-    GroundMap  getGroundMap();
+    GroundMap getGroundMap();
 
     List<Locomotive> getLocomotives();
 
@@ -163,6 +163,5 @@ public interface Model {
     public String getProgram();
 
     public EconomyManager getEconomyManager();
-
 
 }

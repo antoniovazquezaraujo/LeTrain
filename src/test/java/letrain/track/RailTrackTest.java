@@ -1,13 +1,17 @@
 package letrain.track;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import letrain.map.Dir;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Vehicle;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Wagon;
-import org.junit.jupiter.api.*;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class RailTrackTest {
 

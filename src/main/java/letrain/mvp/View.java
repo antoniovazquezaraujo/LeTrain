@@ -3,7 +3,6 @@ package letrain.mvp;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
-
 import letrain.map.Point;
 
 public interface View {
@@ -46,6 +45,8 @@ public interface View {
     TextColor getFgColor();
 
     void showMainDialog();
+
     public int getCols();
+
     public int getRows();
 }

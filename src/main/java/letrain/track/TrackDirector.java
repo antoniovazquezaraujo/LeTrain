@@ -1,9 +1,9 @@
 package letrain.track;
 
+import java.io.Serializable;
+
 import letrain.map.Dir;
 import letrain.vehicle.impl.Linker;
-
-import java.io.Serializable;
 
 public class TrackDirector<T extends Track> implements Serializable {
     private static TrackDirector instance;

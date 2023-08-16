@@ -1,8 +1,7 @@
 package letrain.map;
 
-import org.junit.jupiter.api.BeforeEach;
-
 import letrain.map.impl.RailMap;
+import org.junit.jupiter.api.BeforeEach;
 
 public class RailMapTest {
 

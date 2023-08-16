@@ -10,9 +10,6 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import letrain.map.Dir;
 import letrain.track.Sensor;
 import letrain.track.Track;
@@ -24,6 +21,8 @@ import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Train implements Serializable, Trailer<RailTrack>, Renderable, Transportable {
     private static final int MAX_LOADING_COUNT = 200;

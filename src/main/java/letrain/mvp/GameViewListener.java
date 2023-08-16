@@ -3,7 +3,6 @@ package letrain.mvp;
 import java.io.File;
 
 import com.googlecode.lanterna.input.KeyStroke;
-
 import letrain.map.Point;
 
 public interface GameViewListener {
@@ -31,6 +30,6 @@ public interface GameViewListener {
 
     void setProgram(String program);
 
-	void onMapPageChanged(Point mapScrollPage, int columns, int rows);
+    void onMapPageChanged(Point mapScrollPage, int columns, int rows);
 
 }

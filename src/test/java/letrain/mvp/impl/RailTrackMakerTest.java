@@ -1,11 +1,10 @@
 package letrain.mvp.impl;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-
 import letrain.map.Dir;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class RailTrackMakerTest {
 

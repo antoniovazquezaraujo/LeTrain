@@ -1,15 +1,14 @@
 package letrain.map.impl;
 
-import letrain.visitor.Visitor;
-import letrain.map.Point;
-
-import letrain.track.rail.RailTrack;
-import letrain.visitor.Renderable;
-
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import letrain.map.Point;
+import letrain.track.rail.RailTrack;
+import letrain.visitor.Renderable;
+import letrain.visitor.Visitor;
 
 public class RailMap implements Serializable, letrain.map.RailMap<RailTrack>, Renderable {
 

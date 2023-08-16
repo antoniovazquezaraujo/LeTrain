@@ -1,10 +1,14 @@
 package letrain.vehicle;
 
-import letrain.map.*;
+import java.io.Serializable;
+
+import letrain.map.Dir;
+import letrain.map.Mapeable;
+import letrain.map.Point;
+import letrain.map.Reversible;
+import letrain.map.Rotable;
 import letrain.track.Track;
 import letrain.visitor.Renderable;
-
-import java.io.Serializable;
 
 public abstract class Vehicle<T extends Track>
         implements
