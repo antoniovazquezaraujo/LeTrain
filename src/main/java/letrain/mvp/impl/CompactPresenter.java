@@ -704,6 +704,11 @@ public class CompactPresenter implements letrain.mvp.Presenter {
 
     void setPageOfPoint(Point p) {
         view.setPageOfPos(p.getX(), p.getY());
+        updateCursorPosition(p);
+    }
+
+    private void updateCursorPosition(Point newPos) {
+        getModel().getCursor().setPosition(newPos);
     }
 
     /***********************************************************
