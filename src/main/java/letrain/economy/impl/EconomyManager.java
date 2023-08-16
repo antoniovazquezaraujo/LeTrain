@@ -1,7 +1,7 @@
 package letrain.economy.impl;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -13,7 +13,8 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
-public class EconomyManager implements letrain.economy.EconomyManager {
+public class EconomyManager implements letrain.economy.EconomyManager, Serializable {
+    private static final long serialVersionUID = 1L;
     float totalIncome;
     float totalExpenses;
     float balance;
