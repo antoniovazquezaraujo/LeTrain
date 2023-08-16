@@ -4,9 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.googlecode.lanterna.Symbols;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
@@ -32,9 +29,10 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
-
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class View implements letrain.mvp.View {
     Logger log = LoggerFactory.getLogger(View.class);
@@ -110,6 +108,7 @@ public class View implements letrain.mvp.View {
     public void setInfoBarText(String text) {
         menuBox.putString(menuBoxPosition.withRelative(1, 3), text);
     }
+
     @Override
     public void paint() {
         TerminalSize changedSize = screen.doResizeIfNecessary();
@@ -177,7 +176,6 @@ public class View implements letrain.mvp.View {
     public void setHelpBarText(String text) {
         menuBox.putString(menuBoxPosition.withRelative(1, 2), text);
     }
-
 
     public void set(int x, int y, String c) {
         x -= mapScrollPage.getX() * getCols();

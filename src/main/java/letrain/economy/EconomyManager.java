@@ -80,7 +80,8 @@ public interface EconomyManager {
 
     void onWagonDestroyed(Wagon wagon);
 
-    void onLoadPassengers(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled, double linearDistanceToStart);
+    void onLoadPassengers(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled,
+            double linearDistanceToStart);
 
     void onTrainMoved(Train train);
 

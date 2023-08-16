@@ -1,14 +1,17 @@
 package letrain.track;
 
-import letrain.map.*;
-import letrain.utils.Pair;
-import letrain.vehicle.impl.Linker;
-import letrain.visitor.Renderable;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+
+import letrain.map.Dir;
+import letrain.map.Mapeable;
+import letrain.map.Point;
+import letrain.map.Router;
+import letrain.utils.Pair;
+import letrain.vehicle.impl.Linker;
+import letrain.visitor.Renderable;
 
 public abstract class Track implements
         Serializable,

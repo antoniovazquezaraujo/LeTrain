@@ -5,6 +5,7 @@ import java.util.Random;
 
 public class NoiseGenerator implements Serializable {
 	private static final long serialVersionUID = 1L;
+
 	private double seed;
 	private long default_size;
 	private int[] p;

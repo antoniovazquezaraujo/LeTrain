@@ -1,8 +1,8 @@
 package letrain.map;
 
-import letrain.visitor.Renderable;
-
 import java.util.function.Consumer;
+
+import letrain.visitor.Renderable;
 
 public interface RailMap<T> extends Renderable {
     void forEach(Consumer<T> c);

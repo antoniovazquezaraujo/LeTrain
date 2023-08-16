@@ -3,9 +3,6 @@ package letrain.command;
 import java.io.Serializable;
 import java.util.function.Consumer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import letrain.map.Dir;
 import letrain.mvp.Model;
 import letrain.track.RailSemaphore;
@@ -16,6 +13,8 @@ import letrain.utils.Pair;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Locomotive.SpeedLimitType;
 import letrain.vehicle.impl.rail.Train;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CommandManager extends LeTrainProgramBaseVisitor<Void> implements Serializable {
     private static final long serialVersionUID = 1L;

@@ -1,10 +1,10 @@
 package letrain.vehicle.impl.rail;
 
-import letrain.visitor.Visitor;
 import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
+import letrain.visitor.Visitor;
 
 public class Locomotive extends Linker implements Tractor {
     private static final int MAX_DESTROY_TURNS = 400;
