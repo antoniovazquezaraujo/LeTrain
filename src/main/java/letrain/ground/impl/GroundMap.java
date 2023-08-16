@@ -1,25 +1,25 @@
 package letrain.ground.impl;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import letrain.ground.Ground;
 import letrain.ground.PerlinNoise;
 import letrain.map.Point;
 import letrain.visitor.Visitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class GroundMap implements letrain.ground.GroundMap {
+public class GroundMap implements letrain.ground.GroundMap, Serializable {
+    private static final long serialVersionUID = 1L;
     Logger log = LoggerFactory.getLogger(getClass());
     final Map<Integer, Map<Integer, Integer>> cells;
-    PerlinNoise noise = new PerlinNoise(254);
+    PerlinNoise noise = null;
+    Set<Block> blocks;
 
     int octaves = 5;
     int col = 1000;
@@ -28,18 +28,18 @@ public class GroundMap implements letrain.ground.GroundMap {
     int ground = 158;
     int mountain = 200;
 
+    // Constructor
+    public GroundMap(int seed) {
+        noise = new PerlinNoise(seed);
+        cells = new HashMap<>();
+        blocks = new HashSet<>();
+    }
+
     record CellEnv(int ground, int rock, int water) {
 
     }
 
-    record Block(int x, int y, int width, int height) {
-    }
-
-    Set<Block> blocks;
-
-    public GroundMap() {
-        cells = new HashMap<>();
-        blocks = new HashSet<>();
+    record Block(int x, int y, int width, int height) implements Serializable {
     }
 
     public void forEach(Consumer<Ground> c) {
