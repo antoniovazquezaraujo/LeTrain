@@ -705,7 +705,8 @@ public class CompactPresenter implements letrain.mvp.Presenter {
 
     void setPageOfPoint(Point p) {
         view.setPageOfPos(p.getX(), p.getY());
-        updateCursorPosition(p);
+        Point page = view.getMapScrollPage();
+        railTrackMaker.setCursorPage(page);
     }
 
     private void updateCursorPosition(Point newPos) {
