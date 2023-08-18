@@ -572,6 +572,19 @@ public class RailTrackMaker {
         lastCursorPosition = newPos;
     }
 
+    public void setCursorPage(Point page) {
+       
+        int cols = presenter.getView().getCols();
+        int rows = presenter.getView().getRows();
+        Point oldPos = presenter.getModel().getCursor().getPosition();    
+        Point oldRelativePos = new Point(oldPos.getX() % cols, oldPos.getY() % rows);       
+        Point newPos = new Point(0, 0);
+        newPos.setX((oldRelativePos.getX() + ((page.getX()) * cols)));
+        newPos.setY((oldRelativePos.getY() + ((page.getY()) * rows)));       
+        presenter.getModel().getCursor().setPosition(newPos);
+        lastCursorPosition = newPos;
+    }
+
     private void varyCursorPosition(Point newPos) {
         Point oldPos = presenter.getModel().getCursor().getPosition();
         newPos.setX(oldPos.getX() + newPos.getX());
