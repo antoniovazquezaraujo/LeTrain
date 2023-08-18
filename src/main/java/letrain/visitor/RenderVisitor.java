@@ -309,6 +309,9 @@ public class RenderVisitor implements Visitor {
             case DRAWING:
                 view.setFgColor(CURSOR_DRAWING_COLOR);
                 break;
+            case MAKING_TRACKS:
+                view.setBgColor(Math.random() > 0.5 ? TextColor.ANSI.BLACK_BRIGHT : TextColor.ANSI.BLACK);
+                break;
             case ERASING:
                 view.setFgColor(CURSOR_ERASING_COLOR);
                 break;
