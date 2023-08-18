@@ -1,5 +1,7 @@
 package letrain.mvp.impl;
 
+import java.util.Map;
+
 import com.googlecode.lanterna.input.KeyStroke;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -7,6 +9,7 @@ import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Presenter;
+import letrain.mvp.Presenter.TrackType;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
@@ -19,6 +22,7 @@ import letrain.track.rail.StationRailTrack;
 import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
+import letrain.vehicle.impl.Cursor.CursorMode;
 
 public class RailTrackMaker {
     private Presenter.TrackType newTrackType = Presenter.TrackType.NORMAL_TRACK;
@@ -27,13 +31,34 @@ public class RailTrackMaker {
     Track oldTrack;
     Dir oldDir;
     boolean reversed = false;
-    boolean makingTraks = false;
-    int numSteps = 0;
+    boolean makingTracks = false;
+    int quantifier = 1;
+    int quantifierSteps = 0;
     boolean creatingStation = false;
     Presenter presenter;
     Point lastCursorPosition = null;
     Integer oldGroundType = null;
     private Point stationStart;
+    int trackConstructionTimeCounter = 0;
+    Map<TrackType, Integer> trackConstructionTime = Map.of(
+            TrackType.NORMAL_TRACK, 1,
+            TrackType.BRIDGE_TRACK, 10,
+            TrackType.BRIDGE_GATE_TRACK, 5,
+            TrackType.TUNNEL_TRACK, 20,
+            TrackType.TUNNEL_GATE_TRACK, 10,
+            TrackType.STATION_TRACK, 30);
+
+    public void startTrackConstruction(TrackType type) {
+        this.trackConstructionTimeCounter = trackConstructionTime.get(type);
+    }
+
+    public boolean isTrackConstructionFinished() {
+        return this.trackConstructionTimeCounter <= 0;
+    }
+
+    public void decreaseTrackConstructionTime() {
+        this.trackConstructionTimeCounter--;
+    }
 
     public RailTrackMaker(Presenter presenter) {
         this.presenter = presenter;
@@ -47,35 +72,32 @@ public class RailTrackMaker {
         switch (keyEvent.getKeyType()) {
             case ArrowUp:
                 if (keyEvent.isShiftDown()) {
-                    if (!makingTraks) {
+                    if (!makingTracks) {
                         reset();
+                        TrackType type = detectTrackType();
+                        resetTrackConstructionTime(type);
                     }
+                    resetQuantifierSteps();
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.DRAWING);
-                    if (numSteps > 0) {
-                        for (int n = 0; n < numSteps; n++) {
-                            if (!createTrack()) {
-                                break;
-                            }
-                        }
-                    } else {
-                        createTrack();
-                    }
-                    makingTraks = true;
+                    makingTracks = true;
+
                 } else if (keyEvent.isCtrlDown()) {
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.ERASING);
                     removeTrack();
-                    makingTraks = false;
+                    makingTracks = false;
                 } else {
-                    makingTraks = false;
+                    makingTracks = false;
                     if (creatingStation) {
                         createStation();
                         selectNewTrackType(Presenter.TrackType.NORMAL_TRACK);
                         creatingStation = false;
                     }
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
-                    if (numSteps > 0) {
-                        for (int n = 0; n < numSteps; n++) {
+                    if (quantifier > 0) {
+                        resetQuantifierSteps();
+                        while (isQuantifierPending()) {
                             cursorForward();
+                            decrementQuantifierSteps();
                         }
                     } else {
                         cursorForward();
@@ -84,7 +106,7 @@ public class RailTrackMaker {
                 break;
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
-                    numSteps = 0;
+                    quantifier = 0;
                 } else if (keyEvent.getCharacter() == 'w') {
                     creatingStation = !creatingStation;
                     if (creatingStation) {
@@ -95,15 +117,15 @@ public class RailTrackMaker {
                         selectNewTrackType(Presenter.TrackType.NORMAL_TRACK);
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
-                    if (keyEvent.getCharacter() == '0' && numSteps == 0) {
+                    if (keyEvent.getCharacter() == '0' && quantifier == 0) {
                         presenter.getModel().setShowId(true);
                     } else {
-                        numSteps = numSteps * 10 + (keyEvent.getCharacter() - '0');
+                        quantifier = quantifier * 10 + (keyEvent.getCharacter() - '0');
                     }
                 }
                 break;
             case PageUp:
-                makingTraks = false;
+                makingTracks = false;
                 if (keyEvent.isCtrlDown()) {
                     mapPageLeft();
                 } else {
@@ -111,7 +133,7 @@ public class RailTrackMaker {
                 }
                 break;
             case PageDown:
-                makingTraks = false;
+                makingTracks = false;
                 if (keyEvent.isCtrlDown()) {
                     mapPageRight();
                 } else {
@@ -121,7 +143,7 @@ public class RailTrackMaker {
             case ArrowDown:
                 presenter.getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
                 cursorBackward();
-                makingTraks = false;
+                makingTracks = false;
                 break;
             case ArrowLeft:
                 cursorTurnLeft();
@@ -243,9 +265,55 @@ public class RailTrackMaker {
 
     }
 
-    boolean createTrack() {
+    void makeTracks() {
+        if (makingTracks) {
+            if (isQuantifierPending()) {
+                if (isTrackConstructionPending()) {
+                    showAnimation();
+                    decrementTrackConstructionTime();
+                } else {
+                    TrackType type = detectTrackType();
+                    selectNewTrackType(type);
+                    createTrack(type);
+                    decrementQuantifierSteps();
+                    resetTrackConstructionTime(type);
+                }
+            }
+        }
+
+    }
+
+    private void resetTrackConstructionTime(TrackType type) {
+        startTrackConstruction(type);
+    }
+
+    private void decrementQuantifierSteps() {
+        this.quantifierSteps--;
+    }
+
+    public void resetQuantifierSteps() {
+        this.quantifierSteps = quantifier;
+    }
+
+    private void decrementTrackConstructionTime() {
+        decreaseTrackConstructionTime();
+    }
+
+    private boolean isTrackConstructionPending() {
+        return !isTrackConstructionFinished();
+    }
+
+    private boolean isQuantifierPending() {
+        return this.quantifierSteps >= 0;
+    }
+
+    void showAnimation() {
+        presenter.getModel().getCursor().setMode(CursorMode.MAKING_TRACKS);
+    }
+
+    boolean createTrack(TrackType type) {
         degreesOfRotation = 0;
-        if (makeTrack()) {
+        if (makeTrack(type)) {
             Point position = presenter.getModel().getCursor().getPosition();
             presenter.getView().setPageOfPos(position.getX(), position.getY());
             return true;
@@ -253,15 +321,12 @@ public class RailTrackMaker {
         return false;
     }
 
-    boolean makeTrack() {
-        makingTraks = true;
+    public TrackType detectTrackType() {
         Point actualCursorPosition = presenter.getModel().getCursor().getPosition();
         Integer actualGroundType = presenter.getModel().getGroundMap().getValueAt(actualCursorPosition);
         if (oldGroundType == null) {
             oldGroundType = actualGroundType;
         }
-        Dir dir = presenter.getModel().getCursor().getDir();
-
         // Si venimos de algún track, obtenemos la dirección de salida
         if (oldTrack != null) {
             oldDir = actualCursorPosition.locate(oldTrack.getPosition());
@@ -273,52 +338,69 @@ public class RailTrackMaker {
                 oldDir = presenter.getModel().getCursor().getDir();
             }
         }
-
+        TrackType type = null;
         if (actualGroundType == oldGroundType) {
             // seguimos con el mismo tipo de suelo
             switch (actualGroundType) {
                 case GroundMap.GROUND:
-                    selectNewTrackType(Presenter.TrackType.NORMAL_TRACK);
+                    type = Presenter.TrackType.NORMAL_TRACK;
                     if (creatingStation) {
-                        selectNewTrackType(Presenter.TrackType.STATION_TRACK);
+                        type = Presenter.TrackType.STATION_TRACK;
                     }
-
                     break;
                 case GroundMap.WATER:
-                    selectNewTrackType(Presenter.TrackType.BRIDGE_TRACK);
+                    type = Presenter.TrackType.BRIDGE_TRACK;
                     break;
                 case GroundMap.ROCK:
-                    selectNewTrackType(Presenter.TrackType.TUNNEL_TRACK);
+                    type = Presenter.TrackType.TUNNEL_TRACK;
                     break;
             }
         } else {
             if (creatingStation) {
-                return false;
+                return null;
             }
             // cambio de suelo
             if (oldGroundType == GroundMap.GROUND) {
                 // pasamos de GROUND a otro tipo de suelo
                 if (actualGroundType == GroundMap.WATER) {
                     // entramos en agua
-                    selectNewTrackType(Presenter.TrackType.BRIDGE_GATE_TRACK);
+                    type = Presenter.TrackType.BRIDGE_GATE_TRACK;
                 } else if (actualGroundType == GroundMap.ROCK) {
                     // entramos en roca
-                    selectNewTrackType(Presenter.TrackType.TUNNEL_GATE_TRACK);
+                    type = Presenter.TrackType.TUNNEL_GATE_TRACK;
                 }
             } else {
                 // salimos de otro tipo de suelo
                 if (actualGroundType != GroundMap.GROUND) {
                     // no podemos pasar de un tipo de suelo a otro sin pasar por GROUND
-                    return false;
+                    return null;
                 }
                 if (oldGroundType == GroundMap.WATER) {
                     // salimos de agua
-                    this.selectNewTrackType(Presenter.TrackType.BRIDGE_GATE_TRACK);
+                    type = Presenter.TrackType.BRIDGE_GATE_TRACK;
                 } else if (this.oldGroundType == GroundMap.ROCK) {
                     // salimos de roca
-                    selectNewTrackType(Presenter.TrackType.TUNNEL_GATE_TRACK);
+                    type = Presenter.TrackType.TUNNEL_GATE_TRACK;
                 }
             }
+        }
+        return type;
+    }
+
+    boolean makeTrack(TrackType type) {
+        makingTracks = true;
+
+        // TrackType type = detectTrackType();
+        Dir dir = presenter.getModel().getCursor().getDir();
+        Point actualCursorPosition = presenter.getModel().getCursor().getPosition();
+        Integer actualGroundType = presenter.getModel().getGroundMap().getValueAt(actualCursorPosition);
+        if (oldGroundType == null) {
+            oldGroundType = actualGroundType;
+        }
+        if (type == null) {
+            return false;
+        } else {
+            selectNewTrackType(type);
         }
 
         // Obtenemos el track bajo el cursor
@@ -445,7 +527,7 @@ public class RailTrackMaker {
         if (creatingStation) {
             return;
         }
-        if (makingTraks) {
+        if (makingTracks) {
             if (degreesOfRotation >= 0) {
                 this.dir = this.dir.turnRight();
                 presenter.getModel().getCursor().setDir(this.dir);
@@ -461,7 +543,7 @@ public class RailTrackMaker {
         if (creatingStation) {
             return;
         }
-        if (makingTraks) {
+        if (makingTracks) {
             if (degreesOfRotation <= 0) {
                 this.dir = this.dir.turnLeft();
                 presenter.getModel().getCursor().setDir(this.dir);

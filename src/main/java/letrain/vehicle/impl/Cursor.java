@@ -8,7 +8,8 @@ public class Cursor extends Vehicle {
     public enum CursorMode {
         DRAWING,
         ERASING,
-        MOVING
+        MOVING,
+        MAKING_TRACKS
     }
 
     private CursorMode mode;

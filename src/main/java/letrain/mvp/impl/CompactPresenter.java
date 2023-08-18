@@ -104,6 +104,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                         stroke = view.readKey();
                     }
                 }
+                railTrackMaker.makeTracks();
                 renderer.visitModel(model);
                 informer.visitModel(model);
                 view.paint();
