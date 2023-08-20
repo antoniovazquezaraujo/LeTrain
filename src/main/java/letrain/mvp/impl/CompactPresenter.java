@@ -26,6 +26,7 @@ import letrain.command.CommandManager;
 import letrain.command.LeTrainProgramLexer;
 import letrain.command.LeTrainProgramParser;
 import letrain.map.Dir;
+import letrain.map.Page;
 import letrain.map.Point;
 import letrain.mvp.Model.GameMode;
 import letrain.track.Sensor;
@@ -704,8 +705,8 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
 
     void setPageOfPoint(Point p) {
-        view.setPageOfPos(p.getX(), p.getY());
-        Point page = view.getMapScrollPage();
+        view.setPageOfPos(p.getX(), p.getY());        
+        Page page = p.getPage();
         railTrackMaker.setCursorPage(page);
     }
 
