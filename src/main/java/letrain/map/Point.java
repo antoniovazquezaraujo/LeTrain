@@ -88,12 +88,6 @@ public class Point implements Serializable {
         move(dir, 1);
     }
 
-    public Point copy(Dir dir) {
-        Point p = this;
-        p.move(dir);
-        return p;
-    }
-
     public void move(Dir dir, int distance) {
 
         switch (dir) {
@@ -133,4 +127,77 @@ public class Point implements Serializable {
     public static double distance(Point from, Point to) {
         return Math.sqrt(Math.pow((to.getX() - from.getX()), 2) + Math.pow((to.getY() - from.getY()), 2));
     }
+
+    public Page getPage() {
+        int pageX = (getX() < 0) ? (getX() + 1) / Page.getWidth() - 1 : getX() / Page.getWidth();
+        int pageY = (getY() < 0) ? (getY() + 1) / Page.getHeight() - 1 : getY() / Page.getHeight();
+        return new Page(pageX, pageY);
+    }
+    
+    public Point addPage(Page page) {
+        return new Point(
+                (getX() + page.getX() * Page.getWidth()),
+                (getY() + page.getY() * Page.getHeight()));
+    }
+
+    public Point setPage(Page page) {
+        Point relativePosition = this.getPosInPage();
+        return relativePosition.addPage(page);
+    }
+
+    public Point getPosInPage() {
+        Page currentPage = getPage();
+        int relativeX = getX() - currentPage.getX() * Page.getWidth();
+        int relativeY = getY() - currentPage.getY() * Page.getHeight();
+        return new Point(relativeX, relativeY);
+    }
+
+    public Point moveByPages(Dir dir) {
+        return this.moveByPages(dir, 1);
+    }
+
+    public Point moveByPages(Dir dir, int distance) {
+        int xOffset = 0;
+        int yOffset = 0;
+        switch (dir) {
+            case N:
+                yOffset = -distance;
+                break;
+            case NE:
+                yOffset = -distance;
+                xOffset = distance;
+                break;
+            case E:
+                xOffset = distance;
+                break;
+            case SE:
+                yOffset = distance;
+                xOffset = distance;
+                break;
+            case S:
+                yOffset = distance;
+                break;
+            case SW:
+                yOffset = distance;
+                xOffset = -distance;
+                break;
+            case W:
+                xOffset = -distance;
+                break;
+            case NW:
+                yOffset = -distance;
+                xOffset = -distance;
+                break;
+            default:
+                assert (false);
+        }
+        return moveByPages(xOffset, yOffset);
+    }
+
+    public Point moveByPages(int xOffset, int yOffset) {
+        int newX = getX() + (xOffset * Page.getWidth());
+        int newY = getY() + (yOffset * Page.getHeight());
+        return new Point(newX, newY);
+    }
+
 }

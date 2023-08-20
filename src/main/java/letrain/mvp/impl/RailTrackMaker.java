@@ -5,6 +5,7 @@ import java.util.Map;
 import com.googlecode.lanterna.input.KeyStroke;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
+import letrain.map.Page;
 import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.impl.SimpleRouter;
@@ -572,15 +573,9 @@ public class RailTrackMaker {
         lastCursorPosition = newPos;
     }
 
-    public void setCursorPage(Point page) {
-       
-        int cols = presenter.getView().getCols();
-        int rows = presenter.getView().getRows();
-        Point oldPos = presenter.getModel().getCursor().getPosition();    
-        Point oldRelativePos = new Point(oldPos.getX() % cols, oldPos.getY() % rows);       
-        Point newPos = new Point(0, 0);
-        newPos.setX((oldRelativePos.getX() + ((page.getX()) * cols)));
-        newPos.setY((oldRelativePos.getY() + ((page.getY()) * rows)));       
+     public void setCursorPage(Page page) {
+        Point oldPos = presenter.getModel().getCursor().getPosition();
+        Point newPos = oldPos.setPage(page);
         presenter.getModel().getCursor().setPosition(newPos);
         lastCursorPosition = newPos;
     }

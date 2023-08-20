@@ -29,6 +29,7 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
+import letrain.map.Page;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
 import org.slf4j.Logger;
@@ -205,15 +206,11 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void setPageOfPos(int x, int y) {
-        if (x < 0)
-            x -= getCols();
-        if (y < 0)
-            y -= getRows();
-        int pageX = x / getCols();
-        int pageY = y / getRows();
+
+        Page page = new Point(x, y).getPage();
         Point actualPage = getMapScrollPage();
-        if (pageX != actualPage.getX() || pageY != actualPage.getY()) {
-            setMapScrollPage(new Point(pageX, pageY));
+        if (page.getX() != actualPage.getX() || page.getY() != actualPage.getY()) {
+            setMapScrollPage(new Point(page.getX(), page.getY()));
         }
     }
 
@@ -260,6 +257,8 @@ public class View implements letrain.mvp.View {
     void recalculateSizes(TerminalSize terminalSize) {
         gameBoxSize = new TerminalSize(terminalSize.getColumns(), terminalSize.getRows() - 4);
         gameBoxPosition = TerminalPosition.TOP_LEFT_CORNER;
+        Page.setWidth(gameBoxSize.getColumns());
+        Page.setHeight(gameBoxSize.getRows());
         menuBoxSize = new TerminalSize(terminalSize.getColumns(), 4);
         menuBoxPosition = new TerminalPosition(0, terminalSize.getRows() - 4);
     }
