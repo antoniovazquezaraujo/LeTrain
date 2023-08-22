@@ -3,6 +3,7 @@ package letrain.mvp.impl;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import com.googlecode.lanterna.Symbols;
 import com.googlecode.lanterna.TerminalPosition;
@@ -32,6 +33,7 @@ import com.googlecode.lanterna.terminal.Terminal;
 import letrain.map.Page;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
+import letrain.visitor.InfoVisitor.GameModeMenuOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +55,11 @@ public class View implements letrain.mvp.View {
     private TextColor fgColor;
     private TextColor bgColor;
     boolean endOfGame = false;
+    static final TextColor NORMAL_MENU_FG_COLOR = ANSI.WHITE;
+    static final TextColor NORMAL_MENU_BG_COLOR = ANSI.BLACK;
+    static final TextColor DISABLED_FG_COLOR = ANSI.BLACK_BRIGHT;
+    static final TextColor SELECTED_BG_COLOR = ANSI.BLUE;
+    static final TextColor SHORTCUT_COLOR = ANSI.GREEN_BRIGHT;
 
     public View(GameViewListener gameViewListener) {
         this.gameViewListener = gameViewListener;
@@ -67,9 +74,8 @@ public class View implements letrain.mvp.View {
         terminalSize = screen.getTerminalSize();
         gameBox = screen.newTextGraphics();
         menuBox = screen.newTextGraphics();
-        this.fgColor = ANSI.WHITE;
-        this.bgColor = ANSI.BLACK;
-
+        this.fgColor = NORMAL_MENU_FG_COLOR;
+        this.bgColor = NORMAL_MENU_BG_COLOR;
         recalculateSizes(terminalSize);
     }
 
@@ -139,38 +145,41 @@ public class View implements letrain.mvp.View {
         return gameBoxSize.getRows();
     }
 
+    // TODO: this must be made in InfoViewer with a visitMenu method
     @Override
-    public void setMenu(String[] options, int selectedOption) {
+    public void setMenu(List<GameModeMenuOption> options) {
         int length = 1;
-        TextColor oldBgColor = bgColor;
-        for (int option = 0; option < options.length; option++) {
-            String[] parts = options[option].split("&");
+        for (GameModeMenuOption option : options) {
+            String[] parts = option.gameModeName().split("&");
             String firstPart = parts[0];
-            String secondPart = parts[1].substring(0, 1);
+            String shortcutPart = parts[1].substring(0, 1);
             String thirdPart = parts[1].substring(1);
-            TextColor oldFgColor = fgColor;
-            if (option == selectedOption) {
-                bgColor = ANSI.BLUE;
-                menuBox.setBackgroundColor(bgColor);
-            } else {
-                bgColor = oldBgColor;
-                menuBox.setBackgroundColor(bgColor);
-            }
-            menuBox.setForegroundColor(oldFgColor);
-            menuBox.putString(menuBoxPosition.withRelative(length, 1), firstPart);
-            menuBox.setForegroundColor(TextColor.ANSI.YELLOW);
-            length += firstPart.length();
-            menuBox.putString(menuBoxPosition.withRelative(length, 1), secondPart);
-            menuBox.setForegroundColor(oldFgColor);
-            length += secondPart.length();
-            menuBox.putString(menuBoxPosition.withRelative(length, 1), thirdPart);
-            menuBox.setForegroundColor(oldFgColor);
-            length += thirdPart.length() + 1;
-            menuBox.setBackgroundColor(oldBgColor);
-            bgColor = oldBgColor;
-            fgColor = oldFgColor;
-        }
 
+            menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
+            if (!option.enabledIf().get()) {
+                menuBox.setForegroundColor(DISABLED_FG_COLOR);
+            }
+
+            if (option.selectedIf().get()) {
+                menuBox.setBackgroundColor(SELECTED_BG_COLOR);
+            } else {
+                menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+            }
+            menuBox.putString(menuBoxPosition.withRelative(length, 1), firstPart);
+            length += firstPart.length();
+
+            menuBox.setForegroundColor(SHORTCUT_COLOR);
+            menuBox.putString(menuBoxPosition.withRelative(length, 1), shortcutPart);
+            length += shortcutPart.length();
+
+            menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
+            if (!option.enabledIf().get()) {
+                menuBox.setForegroundColor(DISABLED_FG_COLOR);
+            }
+            menuBox.putString(menuBoxPosition.withRelative(length, 1), thirdPart);
+
+            length += thirdPart.length() + 1;
+        }
     }
 
     @Override
@@ -183,8 +192,13 @@ public class View implements letrain.mvp.View {
         y -= mapScrollPage.getY() * getRows();
         if (x >= 0 && x < getCols() && y >= 0 && y < getRows()) {
             for (int i = 0; i < c.length(); i++) {
-                gameBox.setCharacter(x + i, y,
-                        TextCharacter.fromCharacter(c.charAt(i), this.fgColor, bgColor)[0]);
+                gameBox.setCharacter(
+                        x + i,
+                        y,
+                        TextCharacter.fromCharacter(
+                                c.charAt(i),
+                                fgColor,
+                                bgColor)[0]);
             }
         }
     }
@@ -206,7 +220,6 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void setPageOfPos(int x, int y) {
-
         Page page = new Point(x, y).getPage();
         Point actualPage = getMapScrollPage();
         if (page.getX() != actualPage.getX() || page.getY() != actualPage.getY()) {
@@ -216,10 +229,10 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void clear(int x, int y) {
-        menuBox.setBackgroundColor(bgColor);
-        gameBox.setBackgroundColor(bgColor);
-        menuBox.setForegroundColor(fgColor);
-        gameBox.setForegroundColor(fgColor);
+        menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+        gameBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+        menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
+        gameBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
         set(x, y, " ");
     }
 
@@ -246,10 +259,10 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void clear() {
-        menuBox.setBackgroundColor(bgColor);
-        gameBox.setBackgroundColor(bgColor);
-        menuBox.setForegroundColor(fgColor);
-        gameBox.setForegroundColor(fgColor);
+        menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+        gameBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+        menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
+        gameBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
         menuBox.fillRectangle(menuBoxPosition, menuBoxSize, ' ');
         gameBox.fillRectangle(gameBoxPosition, gameBoxSize, ' ');
     }

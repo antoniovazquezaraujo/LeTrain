@@ -14,6 +14,7 @@ import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
@@ -561,6 +562,9 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public EconomyManager getEconomyManager() {
         return this.economyManager;
+    }
+    public RailTrack getCursorRailTrack(){
+        return getRailMap().getTrackAt(getCursor().getPosition());
     }
 
 }

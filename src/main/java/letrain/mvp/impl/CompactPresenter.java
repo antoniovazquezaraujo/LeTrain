@@ -168,26 +168,40 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                         model.setMode(RAILS);
                         break;
                     case 'd':
-                        model.setMode(DRIVE);
+                        if (!model.getLocomotives().isEmpty()) {
+                            model.setMode(DRIVE);
+                        }
                         break;
                     case 'f':
-                        model.setMode(FORKS);
+                        if (!model.getForks().isEmpty()) {
+                            model.setMode(FORKS);
+                        }
                         break;
                     case 's':
-                        model.setMode(SEMAPHORES);
+                        if (!model.getSemaphores().isEmpty()) {
+                            model.setMode(SEMAPHORES);
+                        }
                         break;
                     case 't':
-                        model.setMode(TRAINS);
+                        if (model.getCursorRailTrack() != null) {
+                            model.setMode(TRAINS);
+                        }
                         newTrain = null;
                         break;
                     case 'l':
-                        model.setMode(LINK);
+                        if (!model.getLocomotives().isEmpty()) {
+                            model.setMode(LINK);
+                        }
                         break;
                     case 'u':
-                        model.setMode(UNLINK);
+                        if (!model.getLocomotives().isEmpty()) {
+                            model.setMode(UNLINK);
+                        }
                         break;
                     case 'n':
-                        model.setMode(STATIONS);
+                        if (!model.getStations().isEmpty()) {
+                            model.setMode(STATIONS);
+                        }
                         break;
                     default:
                         isAMenuKey = false;
@@ -705,7 +719,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
 
     void setPageOfPoint(Point p) {
-        view.setPageOfPos(p.getX(), p.getY());        
+        view.setPageOfPos(p.getX(), p.getY());
         Page page = p.getPage();
         railTrackMaker.setCursorPage(page);
     }

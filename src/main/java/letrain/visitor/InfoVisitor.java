@@ -1,5 +1,11 @@
 package letrain.visitor;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Supplier;
+
+import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.TextColor.ANSI;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
@@ -21,11 +27,20 @@ import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
+import letrain.utils.Pair;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Wagon;
 
 public class InfoVisitor implements Visitor {
+
+    public record GameModeMenuOption(
+            String gameModeName,
+            String gameModeDescription,
+            Supplier<Boolean> enabledIf,
+            Supplier<Boolean> selectedIf,
+            Supplier<GameMode> doWhenSelected) {
+    }
 
     String infoBarText = "";
     String helpBarText = "";
@@ -70,16 +85,108 @@ public class InfoVisitor implements Visitor {
                 break;
         }
         visitCursor(model.getCursor());
-        String[] menuOptions = { "&rails", "&drive", "&forks", "&semaphores", "&trains", "&link",
-                "&unlink", "statio&ns" };
+
+        List<GameModeMenuOption> gameModeMenuOptions = Arrays.asList(
+                new GameModeMenuOption(
+                        "&rails",
+                        "<:left >:right ^:forwd v:backwd shift+^:rail ctrl+^:del insert:add sensor delete:delete sensor home:insert semaphore end:delete semaphore",
+                        () -> true,
+                        () -> (model.getMode() == GameMode.RAILS),
+                        () -> (GameMode.RAILS)),
+                new GameModeMenuOption(
+                        "&drive",
+                        "<:prev >:next ^:accel v:decel space:reverse (pgup, pgdn, ctrl+pgup, ctrl+pgdn):move map",
+                        () -> !model.getLocomotives().isEmpty(),
+                        () -> model.getMode() == GameMode.DRIVE,
+                        () -> GameMode.DRIVE),
+                new GameModeMenuOption(
+                        "&forks",
+                        "<:prev >:next space:toggle #:select",
+                        () -> !model.getForks().isEmpty(),
+                        () -> model.getMode() == GameMode.FORKS,
+                        () -> GameMode.FORKS),
+                new GameModeMenuOption(
+                        "&semaphores",
+                        "<:prev >:next space:toggle #:select",
+                        () -> !model.getSemaphores().isEmpty(),
+                        () -> model.getMode() == GameMode.SEMAPHORES,
+                        () -> GameMode.SEMAPHORES),
+                new GameModeMenuOption(
+                        "&trains",
+                        "A-Z:locomotive a-z:wagon enter:end",
+                        () -> model.getCursorRailTrack() != null,
+                        () -> model.getMode() == GameMode.TRAINS,
+                        () -> GameMode.TRAINS),
+                new GameModeMenuOption(
+                        "&link",
+                        "^:front v:back space:link",
+                        () -> !model.getLocomotives().isEmpty(),
+                        () -> model.getMode() == GameMode.LINK,
+                        () -> GameMode.LINK),
+                new GameModeMenuOption(
+                        "&unlink",
+                        "<:front >:back ^:add v:del space:unlink",
+                        () -> !model.getLocomotives().isEmpty(),
+                        () -> model.getMode() == GameMode.UNLINK,
+                        () -> GameMode.UNLINK),
+                new GameModeMenuOption(
+                        "statio&ns",
+                        "<:prev >:next -:load/unload passengers space:clean selection backspace:del number #:select",
+                        () -> !model.getStations().isEmpty(),
+                        () -> model.getMode() == GameMode.STATIONS,
+                        () -> GameMode.STATIONS));
 
         visitEconomyManager(model.getEconomyManager());
-        view.setMenu(menuOptions, model.getMode().ordinal() - 1);
+        //visitMenu(gameModeMenuOptions);
+        view.setMenu(gameModeMenuOptions);
         view.setHelpBarText(getModeHelp(model.getMode()));
         view.setInfoBarText(infoBarText);
     }
+    static final TextColor NORMAL_MENU_FG_COLOR = ANSI.WHITE;
+    static final TextColor NORMAL_MENU_BG_COLOR = ANSI.BLACK;
+    static final TextColor DISABLED_FG_COLOR = ANSI.YELLOW;
+    static final TextColor SELECTED_FG_COLOR = ANSI.BLUE;
+    static final TextColor SHORTCUT_COLOR = ANSI.YELLOW;
 
-    private String getModeHelp(GameMode mode) {
+    private void visitMenu(List<GameModeMenuOption> gameModeMenuOptions) {
+                int length = 1;
+        // for (GameModeMenuOption option : gameModeMenuOptions) {
+        //     String[] parts = option.gameModeName.split("&");
+        //     String firstPart = parts[0];
+        //     String shortcutPart = parts[1].substring(0, 1);
+        //     String thirdPart = parts[1].substring(1);
+        //     view.menuBox.setFgColor(NORMAL_MENU_FG_COLOR);
+        //     if (!option.getSecond().enabledIf().get()) {
+        //         menuBox.setForegroundColor(DISABLED_FG_COLOR);
+        //     }
+
+        //     if (option.getSecond().selectedIf().get()) {
+        //         menuBox.setBackgroundColor(SELECTED_FG_COLOR);
+        //     } else {
+        //         menuBox.setBackgroundColor(NORMAL_MENU_FG_COLOR);
+        //     }
+        //     menuBox.putString(menuBoxPosition.withRelative(length, 1), firstPart);
+        //     length += firstPart.length();
+
+        //     menuBox.setForegroundColor(SHORTCUT_COLOR);
+        //     menuBox.putString(menuBoxPosition.withRelative(length, 1), shortcutPart);
+        //     length += shortcutPart.length();
+
+        //     menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
+        //     if (!option.getSecond().enabledIf().get()) {
+        //         menuBox.setForegroundColor(DISABLED_FG_COLOR);
+        //     }
+        //     menuBox.putString(menuBoxPosition.withRelative(length, 1), thirdPart);
+
+        //     // menuBox.setForegroundColor(fgColor);
+        //     length += thirdPart.length() + 1;
+        //     // menuBox.setBackgroundColor(oldBgColor);
+        //     // bgColor = oldBgColor;
+        //     // fgColor = oldFgColor;
+        // }
+	}
+
+	private String getModeHelp(GameMode mode) {
         String ret = "";
         switch (mode) {
             case MENU:

@@ -1,9 +1,12 @@
 package letrain.mvp;
 
+import java.util.List;
+
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
 import letrain.map.Point;
+import letrain.visitor.InfoVisitor.GameModeMenuOption;
 
 public interface View {
     Point getMapScrollPage();
@@ -32,7 +35,7 @@ public interface View {
 
     void setInfoBarText(String info);
 
-    void setMenu(String[] options, int selectedOption);
+    void setMenu(List< GameModeMenuOption> options);
 
     void setHelpBarText(String info);
 

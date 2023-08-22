@@ -10,6 +10,7 @@ import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
@@ -163,5 +164,7 @@ public interface Model {
     public String getProgram();
 
     public EconomyManager getEconomyManager();
+
+    public RailTrack getCursorRailTrack();
 
 }
