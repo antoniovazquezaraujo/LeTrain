@@ -141,15 +141,15 @@ You can save the LeTrain status in a file at any time. You can also save the sen
 ### Zoom
 You can use the console zoom keys to see more or less scenery when you need it. They are usually assigned to ctrl-+ and ctrl--.
 You can also use the PgUp and PgDown keys to move up and down pages or ctrl+PgUp or ctrl+PgDown to move across pages horizontally. It is easy to get lost, to go back just switch to "drive" mode and select with the arrows the next or previous locomotive. The same with crossovers, stations, sensors, etc. You can also select objects by their number, just type the number and the object will be selected.
-<video src="images/Library%20_%20Loom%20-%2022%20August%202023.mp4" controls title="Title"></video>
+<video src="images/zoom-out.mp4" controls title="Title"></video>
 
 ### Train crash
 In effect: if two trains approach each other at a speed greater than 1, a catastrophe will occur. You will lose the money you have spent to create them. The money is the number at the bottom right of the menu. It decreases when trains move, and when tracks are built. It increases when trains pick up passengers at stations.
-<video src="images/Library%20_%20Loom%20-%2022%20August%202023%20(3).mp4" controls title="Title"></video>
+<video src="images/train-crash.mp4" controls title="Title"></video>
 
 ### Linking and unlinking
 When creating wagons and locomotives they do not form a train, they are unlinked. To create a train you need to have the locomotive next to them and select "link" and then choose the direction to look for wagons. Then, with the space bar you will link all the wagons that are together. That will be a train. To unlink wagons, select "unlink", select the direction and move forward or backward to the wagon where you want to split. Then use the space bar
-<video src="images/Library%20_%20Loom%20-%2022%20August%202023%20(4).mp4" controls title="Title"></video>
+<video src="images/link-and-unlink.mp4" controls title="Title"></video>
 
 
  _For more examples, please refer to the [Documentation](https://github.com/antoniovazquezaraujo/letrain)_
