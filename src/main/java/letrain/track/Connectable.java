@@ -1,7 +1,8 @@
 package letrain.track;
 
-import letrain.map.Dir;
+import java.util.List;
 
+import letrain.map.Dir;
 
 interface Connectable {
     Track getConnected(Dir dir);
@@ -9,4 +10,6 @@ interface Connectable {
     boolean connect(Dir dir, Track t);
 
     Track disconnect(Dir dir);
+
+    List<Dir> getConnections();
 }

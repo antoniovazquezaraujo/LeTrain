@@ -1,66 +1,22 @@
 package letrain;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.layout.GridPane;
-import javafx.stage.Stage;
 import letrain.mvp.impl.CompactPresenter;
-import letrain.mvp.impl.Model;
-import letrain.mvp.impl.View;
 
-public class LeTrain extends Application {
+public class LeTrain {
 
-    private letrain.mvp.Model model= null;
+    private letrain.mvp.Model model = null;
     private CompactPresenter presenter;
 
     public static void main(String[] args) {
-        launch(args);
+        new LeTrain().start(args);
     }
 
-    @Override
-    public void start(Stage stage) {
-        model = new Model();
-        presenter = new CompactPresenter((Model) model);
-        GridPane pane = new GridPane();
-        pane.getChildren().add((View) presenter.getView());
-        final Scene scene = new Scene(pane);
-        stage.setTitle("LeTrain, the letter train simulator");
-        stage.setScene(scene);
-        stage.show();
-         presenter.start();
-    }
-
-    @Override
-    public void init() throws Exception {
-//        FileInputStream fis = null;
-//        ObjectInputStream in = null;
-//        try {
-//            File file = new File("TestCircuit1.sav");
-//            if(!file.exists()){
-//                return;
-//            }
-//            fis = new FileInputStream("TestCircuit1.sav");
-//            in = new ObjectInputStream(fis);
-//            this.model = (Model) in.readObject();
-//            in.close();
-//        } catch (Exception ex) {
-//            this.model = null;
-//            ex.printStackTrace();
-//        }
-    }
-
-    @Override
-    public void stop() throws Exception {
-//        String fileName = "LeTrain.sav";
-//        FileOutputStream fos = null;
-//        ObjectOutputStream out = null;
-//        try {
-//            fos = new FileOutputStream(fileName);
-//            out = new ObjectOutputStream(fos);
-//            out.writeObject(presenter.getModel());
-//            out.close();
-//        } catch (Exception ex) {
-//            ex.printStackTrace();
-//        }
+    public void start(String[] args) {
+        if (this.model == null) {
+            this.model = new letrain.mvp.impl.Model();
+        }
+        presenter = new CompactPresenter((letrain.mvp.impl.Model) this.model);
+        presenter.start();
+        presenter.stop();
     }
 }

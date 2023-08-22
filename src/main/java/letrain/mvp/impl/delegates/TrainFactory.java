@@ -1,11 +1,11 @@
 package letrain.mvp.impl.delegates;
 
-import letrain.map.Point;
-
 import java.io.Serializable;
 
+import letrain.map.Point;
+
 public class TrainFactory implements Serializable {
-    Point position = new Point(0,0);
+    Point position = new Point(0, 0);
 
     public Point getPosition() {
         return position;

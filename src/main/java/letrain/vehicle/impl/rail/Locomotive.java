@@ -1,44 +1,54 @@
 package letrain.vehicle.impl.rail;
 
-import letrain.visitor.Visitor;
 import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
+import letrain.visitor.Visitor;
 
 public class Locomotive extends Linker implements Tractor {
-    final static int MAX_SPEED = 5;
+    private static final int MAX_DESTROY_TURNS = 400;
+    private static final long serialVersionUID = 1L;
+    final static int MAX_SPEED = 10;
+    final static int SPEED_CHANGE_MAX_RELUCTANCE = 2;
+    int speedChangeReluctance = SPEED_CHANGE_MAX_RELUCTANCE;
+    int distanceTraveled = 0;
     int speed;
     int turns;
     private String aspect;
-    float brakes;
-    boolean motorInverted = false;
+    int showingDirTurns;
+    int id;
+    int maxSpeed = MAX_SPEED;
+    int minSpeed = 0;
+    boolean destroying = false;
+    int destroyingTurns = 0;
 
-    public Locomotive(String aspect) {
+    public enum SpeedLimitType {
+        MAX_SPEED,
+        MIN_SPEED
+    }
+
+    public Locomotive(int id, String aspect) {
+        this.id = id;
         this.aspect = aspect;
+        resetTurns();
     }
 
-    public Locomotive(char c) {
-        this("" + c);
+    public Locomotive(int id, char c) {
+        this(id, "" + c);
     }
 
-    @Override
-    public void setMotorInverted(boolean motorInverted) {
-        this.motorInverted = motorInverted;
-        setDirectorLinkerDir(!motorInverted);
-    }
-
-    void setDirectorLinkerDir(boolean isNormalSense) {
-        if (!isNormalSense) {
-            Dir pushDir = getDir();
-            Track nextTrack = getTrack();
-            setDir(nextTrack.getDir(pushDir));
-        }
+    public int getId() {
+        return this.id;
     }
 
     @Override
-    public boolean isMotorInverted() {
-        return motorInverted;
+    public void toggleReversed() {
+        Dir pushDir = getDir();
+        Track nextTrack = getTrack();
+        setDir(nextTrack.getDir(pushDir));
+        setReversed(!isReversed());
+        showingDirTurns = 5;
     }
 
     /***********************************************************
@@ -47,31 +57,30 @@ public class Locomotive extends Linker implements Tractor {
 
     @Override
     public void accept(Visitor visitor) {
-        for (Linker linker : this.getTrain().getLinkers()) {
-            if (linker instanceof Locomotive) {
-                visitor.visitLocomotive((Locomotive) linker);
-            } else {
-                visitor.visitWagon((Wagon) linker);
-            }
-        }
+        visitor.visitLocomotive(this);
     }
 
     public String getAspect() {
         return aspect;
     }
 
-    public void update() {
-        if (isTimeToMove()) {
-            if (isMotorInverted()) {
-                setReversed(true);
-            } else {
-                setReversed(false);
-            }
-            getTrain().advance();
-            resetTurns();
-        } else {
-            consumeTurn();
+    public boolean update() {
+        boolean moved = false;
+        if (isDestroying()) {
+            return moved;
         }
+
+        if (isDirectorLinker()) {
+            if (isTimeToMove()) {
+                getTrain().advance();
+                moved = true;
+                incDistanceTraveled();
+                resetTurns();
+            } else {
+                consumeTurn();
+            }
+        }
+        return moved;
     }
 
     public void incSpeed() {
@@ -108,9 +117,23 @@ public class Locomotive extends Linker implements Tractor {
     public boolean isTimeToMove() {
         if (this.turns == 0) {
             resetTurns();
+            updateLimitedSpeed();
             return true;
         }
         return false;
+    }
+
+    public void updateLimitedSpeed() {
+        if (speedChangeReluctance > 0) {
+            speedChangeReluctance--;
+            return;
+        }
+        speedChangeReluctance = SPEED_CHANGE_MAX_RELUCTANCE;
+        if (getSpeed() > getMaxSpeed()) {
+            decSpeed();
+        } else if (getSpeed() < getMinSpeed()) {
+            incSpeed();
+        }
     }
 
     public void resetTurnsIfNeeded() {
@@ -120,7 +143,7 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void resetTurns() {
-        this.turns = speed == 0 ? -1 : 10 / speed;
+        this.turns = speed == 0 ? -1 : 50 / speed;
     }
 
     public void consumeTurn() {
@@ -128,4 +151,64 @@ public class Locomotive extends Linker implements Tractor {
             turns--;
         }
     }
+
+    public boolean isDirectorLinker() {
+        return getTrain() != null && getTrain().getDirectorLinker() == this;
+    }
+
+    public boolean isShowingDir() {
+        if (showingDirTurns > 0) {
+            showingDirTurns--;
+            return true;
+        }
+        return false;
+    }
+
+    public int getMaxSpeed() {
+        return maxSpeed;
+    }
+
+    public void setMaxSpeed(int maxSpeed) {
+        this.maxSpeed = maxSpeed;
+        this.minSpeed = 0;
+    }
+
+    public int getMinSpeed() {
+        return minSpeed;
+    }
+
+    public void setMinSpeed(int minspeed) {
+        this.minSpeed = minspeed;
+        this.maxSpeed = MAX_SPEED;
+    }
+
+    @Override
+    public void destroy() {
+        this.destroying = true;
+        this.destroyingTurns = MAX_DESTROY_TURNS;
+    }
+
+    @Override
+    public boolean isDestroying() {
+        return this.destroying;
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        if (isDestroying() && destroyingTurns-- <= 0) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public int getDistanceTraveled() {
+        return distanceTraveled;
+    }
+
+    @Override
+    public void incDistanceTraveled() {
+        distanceTraveled++;
+    }
+
 }

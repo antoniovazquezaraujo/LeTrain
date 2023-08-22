@@ -1,16 +1,16 @@
 package letrain.track.rail;
 
-
 import letrain.map.Dir;
 import letrain.map.Router;
-import letrain.map.SimpleRouter;
+import letrain.map.impl.SimpleRouter;
 import letrain.track.Track;
 import letrain.track.TrackDirector;
 import letrain.visitor.Visitor;
 
-public class RailTrack extends Track  {
-    protected Router router ;
-    public enum TrackType {
+public class RailTrack extends Track {
+    protected Router router;
+
+    public enum TrackFormat {
         STRAIGHT,
         CURVE,
         CROSS,
@@ -24,27 +24,28 @@ public class RailTrack extends Track  {
 
     @Override
     public Router getRouter() {
-        if(router == null){
+        if (router == null) {
             router = new SimpleRouter();
         }
         return this.router;
     }
 
-    public TrackType getType() {
+    public TrackFormat getType() {
         if (getNumRoutes() == 2) {
             Dir d1 = getFirstOpenDir();
             Dir d2 = d1.inverse();
             Dir inverted = getDir(d2);
             if (inverted != null && inverted.equals(d1)) {
                 if (d1.isStraight(d2)) {
-                    return TrackType.STRAIGHT;
+                    return TrackFormat.STRAIGHT;
                 }
             } else {
-                return TrackType.CURVE;
+                return TrackFormat.CURVE;
             }
         }
-        return TrackType.FORK;
+        return TrackFormat.FORK;
     }
+
     /***********************************************************
      * Renderable implementation
      **********************************************************/
@@ -52,5 +53,10 @@ public class RailTrack extends Track  {
     @Override
     public void accept(Visitor visitor) {
         visitor.visitRailTrack(this);
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + " Dirs:(" + getRouter().toString() + ")";
     }
 }

@@ -1,0 +1,35 @@
+{
+    "java.test.config": {
+        "workingDirectory": "${workspaceFolder}",
+        "classpath": [
+            "${workspaceFolder}/target/classes",
+            "${workspaceFolder}/target/test-classes"
+        ],
+        "sources": [
+            "${workspaceFolder}/src/main/java",
+            "${workspaceFolder}/src/test/java"
+        ]
+    },
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "maven.view": "hierarchical",
+    "java.debug.settings.onBuildFailureProceed": true,
+    "java.debug.settings.showLogicalStructure": true,
+    "java.cleanup.actionsOnSave": [
+        "addOverride",
+        "addDeprecated"
+    ],
+    "java.saveActions.organizeImports": true,
+    "java.completion.importOrder": [
+        "#java",
+        "#*",
+        "java",
+        "*"
+    ],
+    "editor.defaultFormatter": "redhat.java",
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "file",
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+    }    
+
+}

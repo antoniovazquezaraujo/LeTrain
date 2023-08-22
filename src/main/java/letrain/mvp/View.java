@@ -1,6 +1,8 @@
 package letrain.mvp;
 
-import javafx.scene.paint.Color;
+import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.screen.Screen;
 import letrain.map.Point;
 
 public interface View {
@@ -14,7 +16,9 @@ public interface View {
 
     void set(int x, int y, String c);
 
-    void setColor(Color color);
+    void setFgColor(TextColor color);
+
+    void setBgColor(TextColor color);
 
     void setPageOfPos(int x, int y);
 
@@ -27,4 +31,22 @@ public interface View {
     void setStatusBarText(String info);
 
     void setInfoBarText(String info);
+
+    void setMenu(String[] options, int selectedOption);
+
+    void setHelpBarText(String info);
+
+    boolean isEndOfGame(KeyStroke stroke);
+
+    public KeyStroke readKey();
+
+    public void setScreen(Screen screen);
+
+    TextColor getFgColor();
+
+    void showMainDialog();
+
+    public int getCols();
+
+    public int getRows();
 }

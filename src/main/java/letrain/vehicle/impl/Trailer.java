@@ -1,9 +1,9 @@
 package letrain.vehicle.impl;
 
-import letrain.track.Track;
-
 import java.util.Deque;
 import java.util.List;
+
+import letrain.track.Track;
 
 public interface Trailer<T extends Track> {
     Deque<Linker> getLinkers();
@@ -36,5 +36,4 @@ public interface Trailer<T extends Track> {
 
     int size();
 
-    Trailer divide(Linker p);
 }

@@ -1,14 +1,17 @@
 package letrain.track;
 
-import javafx.util.Pair;
-import letrain.map.*;
-import letrain.vehicle.impl.Linker;
-import letrain.visitor.Renderable;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+
+import letrain.map.Dir;
+import letrain.map.Mapeable;
+import letrain.map.Point;
+import letrain.map.Router;
+import letrain.utils.Pair;
+import letrain.vehicle.impl.Linker;
+import letrain.visitor.Renderable;
 
 public abstract class Track implements
         Serializable,
@@ -18,11 +21,13 @@ public abstract class Track implements
         Mapeable,
         LinkerCompartmentListener,
         Renderable {
-
+    private static final long serialVersionUID = 1L;
     private TrackDirector trackDirector;
     private Linker linker = null;
-    private Point pos = new Point(0,0);
+    private Sensor sensor = null;
+    private Point pos = new Point(0, 0);
     protected Track[] connections;
+    List<Pair<Dir, Point>> connectedPositions = new ArrayList<>();
     private final List<LinkerCompartmentListener> trackeableCompartmentListeners = new ArrayList<>();
 
     protected Track() {
@@ -31,9 +36,7 @@ public abstract class Track implements
 
     @Override
     public String toString() {
-        return "Track{" +
-                ", pos=" + pos +
-                '}';
+        return "{" + pos + " Connections:(" + getConnectedPositions().toString() + ")}";
     }
 
     public List<LinkerCompartmentListener> getTrackeableCompartmentListeners() {
@@ -42,14 +45,13 @@ public abstract class Track implements
 
     public abstract Router getRouter();
 
-    protected TrackDirector  getTrackDirector() {
+    protected TrackDirector getTrackDirector() {
         return trackDirector;
     }
 
     protected void setTrackDirector(TrackDirector trackDirector) {
         this.trackDirector = trackDirector;
     }
-
 
     /***********************************************************
      * Router implementation
@@ -74,7 +76,7 @@ public abstract class Track implements
         return getRouter().isCross();
     }
 
-     @Override
+    @Override
     public Dir getDir(Dir dir) {
         return getRouter().getDir(dir);
     }
@@ -92,30 +94,31 @@ public abstract class Track implements
     @Override
     public void addRoute(Dir from, Dir to) {
         getRouter().addRoute(from, to);
+        resolveConnectedPositions();
     }
 
     @Override
     public void removeRoute(Dir from, Dir to) {
         getRouter().removeRoute(from, to);
+        resolveConnectedPositions();
     }
 
     @Override
     public void clear() {
         getRouter().clear();
+        resolveConnectedPositions();
     }
-
 
     @Override
     public void forEach(Consumer<Pair<Dir, Dir>> routeConsumer) {
         getRouter().forEach(routeConsumer);
     }
 
-
-
     /**************************************************************
      * Connectable implementation
      **************************************************************
-     * @return*/
+     * @return
+     */
 
     @Override
     public Track getConnected(Dir dir) {
@@ -126,13 +129,42 @@ public abstract class Track implements
     public Track disconnect(Dir dir) {
         Track ret = connections[dir.getValue()];
         connections[dir.getValue()] = null;
+        resolveConnectedPositions();
         return ret;
     }
 
     @Override
     public boolean connect(Dir dir, Track r) {
         connections[dir.getValue()] = r;
+        resolveConnectedPositions();
         return true;
+    }
+
+    @Override
+    public List<Dir> getConnections() {
+        List<Dir> ret = new ArrayList<>();
+        for (int i = 0; i < connections.length; i++) {
+            if (connections[i] != null) {
+                ret.add(Dir.values()[i]);
+            }
+        }
+        return ret;
+    }
+
+    public List<Pair<Dir, Point>> getConnectedPositions() {
+        return this.connectedPositions;
+    }
+
+    public void resolveConnectedPositions() {
+        this.connectedPositions = new ArrayList<>();
+        for (int i = 0; i < connections.length; i++) {
+            if (connections[i] != null) {
+                Track connected = getConnected(Dir.values()[i]);
+                if (!this.connectedPositions.contains(connected)) {
+                    this.connectedPositions.add(new Pair<Dir, Point>(Dir.values()[i], connected.getPosition()));
+                }
+            }
+        }
     }
 
     /**************************************************************
@@ -149,11 +181,11 @@ public abstract class Track implements
         this.pos.setY(pos.getY());
     }
 
-
     /**************************************************************
      * LinkerCompartment implementation
      **************************************************************
-     * @return*/
+     * @return
+     */
 
     @Override
     public Linker getLinker() {
@@ -198,5 +230,12 @@ public abstract class Track implements
         return getTrackDirector().canExit(this, d);
     }
 
+    public Sensor getSensor() {
+        return sensor;
+    }
+
+    public void setSensor(Sensor sensor) {
+        this.sensor = sensor;
+    }
 
 }

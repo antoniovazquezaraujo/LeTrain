@@ -1,10 +1,14 @@
 package letrain.vehicle;
 
-import letrain.map.*;
+import java.io.Serializable;
+
+import letrain.map.Dir;
+import letrain.map.Mapeable;
+import letrain.map.Point;
+import letrain.map.Reversible;
+import letrain.map.Rotable;
 import letrain.track.Track;
 import letrain.visitor.Renderable;
-
-import java.io.Serializable;
 
 public abstract class Vehicle<T extends Track>
         implements
@@ -14,14 +18,12 @@ public abstract class Vehicle<T extends Track>
         Selectable,
         Mapeable,
         Transportable,
-        Renderable {
+        Renderable,
+        Destructible {
     protected Point pos = new Point(0, 0);
-
-
-    protected Dir dir = Dir.N;
+    protected Dir dir;
     private boolean selected = false;
     private boolean reversed = false;
-
 
     protected Vehicle() {
     }
@@ -30,11 +32,10 @@ public abstract class Vehicle<T extends Track>
      * Transportable implementation
      **********************************************************/
     @Override
-    public boolean advance(){
+    public boolean advance() {
         return true;
     };
 
-    
     /***********************************************************
      * Mapeable implementation
      **********************************************************/
@@ -102,15 +103,24 @@ public abstract class Vehicle<T extends Track>
      * Reversible implementation
      **********************************************************/
 
-
     @Override
-    public void setReversed(boolean reversed){
+    public void setReversed(boolean reversed) {
         this.reversed = reversed;
     }
 
     @Override
     public boolean isReversed() {
         return reversed;
+    }
+
+    @Override
+    public void toggleReversed() {
+        setReversed(!isReversed());
+    }
+
+    @Override
+    public Dir getRealDir() {
+        return this.dir;
     }
 
 }

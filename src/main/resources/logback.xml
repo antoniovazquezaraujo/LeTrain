@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+    <appender name="FILE"
+        class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${user.home}/.LeTrain.log
+        </file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>%d{yyyy-MM-dd_HH:mm:ss.SSS} %-5level %logger{36} - %msg%n
+            </Pattern>
+        </encoder>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <FileNamePattern>${user.home}/.LeTrain.%i.log.zip
+            </FileNamePattern>
+            <MinIndex>1</MinIndex>
+            <MaxIndex>10</MaxIndex>
+        </rollingPolicy>
+
+        <triggeringPolicy
+            class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <MaxFileSize>2MB</MaxFileSize>
+        </triggeringPolicy>
+    </appender>
+
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE" />
+    </appender>
+
+    <root level="debug">
+        <appender-ref ref="ASYNC_FILE" />
+    </root>
+
+    <logger name="letrain" level="DEBUG" additivity="false">
+        <appender-ref ref="ASYNC_FILE" />
+    </logger>
+
+    <logger name="ErrorFileLogger" level="DEBUG">
+        <appender-ref ref="FILE" />
+    </logger>
+
+    <logger name="ch.qos.logback" level="DEBUG">
+        <appender-ref ref="FILE" />
+    </logger>
+    <root level="debug">
+        <appender-ref ref="FILE" />
+    </root>
+
+</configuration>

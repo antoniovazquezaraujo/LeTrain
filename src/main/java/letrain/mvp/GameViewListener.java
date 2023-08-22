@@ -1,18 +1,35 @@
 package letrain.mvp;
 
-import javafx.scene.input.KeyEvent;
+import java.io.File;
+
+import com.googlecode.lanterna.input.KeyStroke;
+import letrain.map.Point;
 
 public interface GameViewListener {
     void onGameModeSelected(Model.GameMode mode);
 
-//    void onUp();
-//
-//    void onDown();
-//
-//    void onLeft();
-//
-//    void onRight();
+    void onNewGame();
 
-    void onChar(KeyEvent c);
+    void onSaveGame(File file);
+
+    void onLoadGame(File file);
+
+    void onSaveCommands(File file);
+
+    void onLoadCommands(File file);
+
+    void onEditCommands(String content);
+
+    void onExitGame();
+
+    void onPlay();
+
+    void onChar(KeyStroke c);
+
+    String getProgram();
+
+    void setProgram(String program);
+
+    void onMapPageChanged(Point mapScrollPage, int columns, int rows);
 
 }
