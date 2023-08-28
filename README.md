@@ -7,15 +7,13 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 
-
 ```
      __       ______           _
     / /   ___/_  __/________ _(_)___
    / /   / _ \/ / / ___/ __ `/ / __ \
   / /___/  __/ / / /  / /_/ / / / / /
  /_____/\___/_/ /_/   \__,_/_/_/ /_/
-
-       The Letter Train Simulator           
+      The Letter Train Simulator           
   (C) 2006-2023 Antonio Vazquez Araujo 
 ```
 
@@ -137,6 +135,7 @@ When creating wagons and locomotives they do not form a train, they are unlinked
 If you leave the page with the cursor, you will see that the map continues. There is no limit but memory. 
 
 If you find that the cursor is moving too slowly, you can type any number before using it, and each step will be added to that number of steps. For example, if you type 30, each time you press the advance key, 31 steps will be advanced, the default step plus the other 30. (If you are a Vim user (cheers Bram, wherever you are) you will be familiar with this kind of quantifier). To return to de default quantifier, just use the space bar.
+
 ![Alt text](images/inside-tunnel.png)
 
 ### Programmable sensors
@@ -150,12 +149,12 @@ You can save the LeTrain status in a file at any time. You can also save the sen
 ### Zoom
 You can use the console zoom keys to see more or less scenery when you need it. They are usually assigned to ctrl-+ and ctrl--.
 You can also use the PgUp and PgDown keys to move up and down pages or ctrl+PgUp or ctrl+PgDown to move across pages horizontally. It is easy to get lost, to go back just switch to "drive" mode and select with the arrows the next or previous locomotive. The same with crossovers, stations, sensors, etc. You can also select objects by their number, just type the number and the object will be selected.
+
 ![Zoom](images/zoom.gif)
 
 ### Train crash
 In effect: if two trains approach each other at a speed greater than 1, a catastrophe will occur. You will lose the money you have spent to create them. The money is the number at the bottom right of the menu. It decreases when trains move, and when tracks are built. It increases when trains pick up passengers at stations.
 ![Alt text](images/train-crash.gif)
-
 
  _For more examples, please refer to the [Documentation](https://github.com/antoniovazquezaraujo/letrain)_
 
@@ -173,6 +172,7 @@ There are many things to do, but for the moment it works.
 - [ ] Improve menu
 - [ ] User manual
 - [ ] Much more
+
 
 See the [open issues](https://github.com/antoniovazquezaraujo/letrain/issues) for a full list of proposed features (and known issues).
 
@@ -209,11 +209,13 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
+
 Antonio Vazquez Araujo
 
 Twitter/X - [@avaraujo](https://twitter.com/avaraujo) 
 
 GMail - antoniovazquezaraujo@gmail.com
+
 
 Project Link: [https://github.com/antoniovazquezaraujo/letrain](https://github.com/antoniovazquezaraujo/letrain)
 
