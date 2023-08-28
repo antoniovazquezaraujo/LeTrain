@@ -7,15 +7,13 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 
-
 ```
      __       ______           _
     / /   ___/_  __/________ _(_)___
    / /   / _ \/ / / ___/ __ `/ / __ \
   / /___/  __/ / / /  / /_/ / / / / /
  /_____/\___/_/ /_/   \__,_/_/_/ /_/
-
-       The Letter Train Simulator           
+      The Letter Train Simulator           
   (C) 2006-2023 Antonio Vazquez Araujo 
 ```
 
@@ -117,17 +115,27 @@ To install it
 
 ### Ground, Water and Rock
 This is the general appearance of LeTrain. On the map, randomly generated for each game, you can see water areas in blue, mountain areas in orange and the dark area which is normal ground. Building tracks across normal ground is fast and cheap, however, creating bridges to cross lakes or drilling tunnels to cross mountains is slow and expensive.
+
 At the bottom you can see the menu, where the different game modes are selected, which will allow us to create tracks, build wagons and locomotives, turnouts, traffic lights and programmable sensors.
+
 Each option is activated with the letter that appears in a different color, for example, to enter "drive" mode use the "d" key.
-![Alt text](images/start.png)
 
-### Tracks and trains
-To create tracks on the map just select the "rails" mode and move with the cursor. Holding down the shift key will generate tracks and with control you can delete them. Turnouts and crossovers are created automatically. Once we have tracks, we just have to go to "trains" mode, which will allow us to create wagons (any lower case letter) and locomotives (any upper case letter).
+To create tracks on the map just select the "rails" mode and move with the cursor. Holding down the shift key will generate tracks and with control you can delete them. Turnouts and crossovers are created automatically. 
 
-**To exit this mode you need to press Enter.
-![Alt text](images/simple-train.png)
+Once we have tracks, we just have to go to "trains" mode, which will allow us to create wagons (any lower case letter) and locomotives (any upper case letter).
+**To exit this mode you need to press Enter**.
+
+![Creating tracks](images/creating-tracks.gif)
+
+### Linking and unlinking
+When creating wagons and locomotives they do not form a train, they are unlinked. To create a train you need to have the locomotive next to them and select "link" and then choose the direction to look for wagons. Then, with the space bar you will link all the wagons that are together. That will be a train. To unlink wagons, select "unlink", select the direction and move forward or backward to the wagon where you want to split. Then use the space bar
+![Link and unlink](images/link-and-unlink.gif)
+
 ### Infinite map
-If you leave the page with the cursor, you will see that the map continues. There is no limit but memory. If you find that the cursor is moving too slowly, you can type any number before using it, and each step will be added to that number of steps. For example, if you type 30, each time you press the advance key, 31 steps will be advanced, the default step plus the other 30. (If you are a Vim user (cheers Bram, wherever you are) you will be familiar with this kind of quantifier).
+If you leave the page with the cursor, you will see that the map continues. There is no limit but memory. 
+
+If you find that the cursor is moving too slowly, you can type any number before using it, and each step will be added to that number of steps. For example, if you type 30, each time you press the advance key, 31 steps will be advanced, the default step plus the other 30. (If you are a Vim user (cheers Bram, wherever you are) you will be familiar with this kind of quantifier). To return to de default quantifier, just use the space bar.
+
 ![Alt text](images/inside-tunnel.png)
 
 ### Programmable sensors
@@ -141,16 +149,12 @@ You can save the LeTrain status in a file at any time. You can also save the sen
 ### Zoom
 You can use the console zoom keys to see more or less scenery when you need it. They are usually assigned to ctrl-+ and ctrl--.
 You can also use the PgUp and PgDown keys to move up and down pages or ctrl+PgUp or ctrl+PgDown to move across pages horizontally. It is easy to get lost, to go back just switch to "drive" mode and select with the arrows the next or previous locomotive. The same with crossovers, stations, sensors, etc. You can also select objects by their number, just type the number and the object will be selected.
-<video src="images/Library%20_%20Loom%20-%2022%20August%202023.mp4" controls title="Title"></video>
+
+![Zoom](images/zoom.gif)
 
 ### Train crash
 In effect: if two trains approach each other at a speed greater than 1, a catastrophe will occur. You will lose the money you have spent to create them. The money is the number at the bottom right of the menu. It decreases when trains move, and when tracks are built. It increases when trains pick up passengers at stations.
-<video src="images/Library%20_%20Loom%20-%2022%20August%202023%20(3).mp4" controls title="Title"></video>
-
-### Linking and unlinking
-When creating wagons and locomotives they do not form a train, they are unlinked. To create a train you need to have the locomotive next to them and select "link" and then choose the direction to look for wagons. Then, with the space bar you will link all the wagons that are together. That will be a train. To unlink wagons, select "unlink", select the direction and move forward or backward to the wagon where you want to split. Then use the space bar
-<video src="images/Library%20_%20Loom%20-%2022%20August%202023%20(4).mp4" controls title="Title"></video>
-
+![Alt text](images/train-crash.gif)
 
  _For more examples, please refer to the [Documentation](https://github.com/antoniovazquezaraujo/letrain)_
 
@@ -161,9 +165,14 @@ When creating wagons and locomotives they do not form a train, they are unlinked
 
 There are many things to do, but for the moment it works.
 - [ ] Add sound
+- [ ] Add freight trains
 - [ ] Add cities
+- [ ] Add missions
 - [ ] Improve gameplay
+- [ ] Improve menu
 - [ ] User manual
+- [ ] Much more
+
 
 See the [open issues](https://github.com/antoniovazquezaraujo/letrain/issues) for a full list of proposed features (and known issues).
 
@@ -200,7 +209,13 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Antonio Vazquez Araujo - [@twitter_handle](https://twitter.com/avaraujo) - antoniovazquezaraujo@gmail.com
+
+Antonio Vazquez Araujo
+
+Twitter/X - [@avaraujo](https://twitter.com/avaraujo) 
+
+GMail - antoniovazquezaraujo@gmail.com
+
 
 Project Link: [https://github.com/antoniovazquezaraujo/letrain](https://github.com/antoniovazquezaraujo/letrain)
 
