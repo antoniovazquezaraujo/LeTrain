@@ -6,6 +6,7 @@ import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
+import letrain.mvp.impl.Model.GameModeMenuOption;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
@@ -142,7 +143,8 @@ public interface Model {
         LINK("Link trains"),
         UNLINK("Divide trains"),
         STATIONS("Stations"),
-        LOAD_TRAINS("Use load Stations");
+        LOAD_TRAINS("Use load Stations"),
+        PERSIST("Save and load");
 
         private String name;
 
@@ -166,5 +168,7 @@ public interface Model {
     public EconomyManager getEconomyManager();
 
     public RailTrack getCursorRailTrack();
+
+    public List<GameModeMenuOption> getMenuModel();
 
 }

@@ -2,9 +2,14 @@ package letrain.mvp.impl;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
+import letrain.command.CommandManager;
+import letrain.command.LeTrainProgramLexer;
+import letrain.command.LeTrainProgramParser;
 import letrain.economy.impl.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -19,11 +24,23 @@ import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Model implements Serializable, letrain.mvp.Model {
     static Logger log = LoggerFactory.getLogger(Model.class);
+
+    public record GameModeMenuOption(
+            String gameModeName,
+            String gameModeDescription,
+            Supplier<Boolean> enabledIf,
+            Supplier<Boolean> selectedIf,
+            Supplier<GameMode> doWhenSelected) {
+    }
+
     EconomyManager economyManager;
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
@@ -463,6 +480,14 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     @Override
     public void setProgram(String program) {
+        CharStream input = CharStreams.fromString(program);
+        LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
+
+        LeTrainProgramParser.StartContext sintaxTree = parser.start();
+        CommandManager manager = new CommandManager(this);
+        manager.visit(sintaxTree);
         this.program = program;
     }
 
@@ -563,8 +588,67 @@ public class Model implements Serializable, letrain.mvp.Model {
     public EconomyManager getEconomyManager() {
         return this.economyManager;
     }
-    public RailTrack getCursorRailTrack(){
+
+    public RailTrack getCursorRailTrack() {
         return getRailMap().getTrackAt(getCursor().getPosition());
+    }
+
+    public List<GameModeMenuOption> getMenuModel() {
+        return Arrays.asList(
+                new GameModeMenuOption(
+                        "&rails",
+                        "\u2190:left \u2192:right \u2191:forwd \u2193:backwd shift+\u2191:rail ctrl+\u2191:del insert:add sensor delete:delete sensor home:insert semaphore end:delete semaphore",
+                        () -> true,
+                        () -> (this.getMode() == GameMode.RAILS),
+                        () -> (GameMode.RAILS)),
+                new GameModeMenuOption(
+                        "&drive",
+                        "\u2190:prev \u2192:next \u2191:accel \u2193:decel space:reverse (pgup, pgdn, ctrl+pgup, ctrl+pgdn):move map",
+                        () -> !this.getLocomotives().isEmpty(),
+                        () -> this.getMode() == GameMode.DRIVE,
+                        () -> GameMode.DRIVE),
+                new GameModeMenuOption(
+                        "&forks",
+                        "\u2190:prev \u2192:next space:toggle #:select",
+                        () -> !this.getForks().isEmpty(),
+                        () -> this.getMode() == GameMode.FORKS,
+                        () -> GameMode.FORKS),
+                new GameModeMenuOption(
+                        "&semaphores",
+                        "\u2190:prev \u2192:next space:toggle #:select",
+                        () -> !this.getSemaphores().isEmpty(),
+                        () -> this.getMode() == GameMode.SEMAPHORES,
+                        () -> GameMode.SEMAPHORES),
+                new GameModeMenuOption(
+                        "&trains",
+                        "A-Z:locomotive a-z:wagon enter:end",
+                        () -> this.getCursorRailTrack() != null,
+                        () -> this.getMode() == GameMode.TRAINS,
+                        () -> GameMode.TRAINS),
+                new GameModeMenuOption(
+                        "&link",
+                        "\u2191:front \u2193:back space:link",
+                        () -> !this.getLocomotives().isEmpty(),
+                        () -> this.getMode() == GameMode.LINK,
+                        () -> GameMode.LINK),
+                new GameModeMenuOption(
+                        "&unlink",
+                        "\u2190:front \u2192:back \u2191:add \u2193:del space:unlink",
+                        () -> !this.getLocomotives().isEmpty(),
+                        () -> this.getMode() == GameMode.UNLINK,
+                        () -> GameMode.UNLINK),
+                new GameModeMenuOption(
+                        "&persist",
+                        "\u2191:load \u2193:save space:edit",
+                        () -> true,
+                        () -> this.getMode() == GameMode.PERSIST,
+                        () -> GameMode.PERSIST),
+                new GameModeMenuOption(
+                        "statio&ns",
+                        "\u2190:prev \u2192:next -:load/unload passengers space:clean selection backspace:del number #:select",
+                        () -> !this.getStations().isEmpty(),
+                        () -> this.getMode() == GameMode.STATIONS,
+                        () -> GameMode.STATIONS));
     }
 
 }

@@ -6,7 +6,7 @@ import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
 import letrain.map.Point;
-import letrain.visitor.InfoVisitor.GameModeMenuOption;
+import letrain.mvp.impl.Model.GameModeMenuOption;
 
 public interface View {
     Point getMapScrollPage();
@@ -35,7 +35,7 @@ public interface View {
 
     void setInfoBarText(String info);
 
-    void setMenu(List< GameModeMenuOption> options);
+    void setMenu(List<GameModeMenuOption> options);
 
     void setHelpBarText(String info);
 
@@ -47,7 +47,13 @@ public interface View {
 
     TextColor getFgColor();
 
-    void showMainDialog();
+    void showSaveDialog();
+
+    void showLoadDialog();
+
+    void showEditDialog();
+
+    void showExitDialog();
 
     public int getCols();
 
