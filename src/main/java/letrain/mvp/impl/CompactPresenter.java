@@ -9,6 +9,7 @@ import static letrain.mvp.Model.GameMode.SEMAPHORES;
 import static letrain.mvp.Model.GameMode.STATIONS;
 import static letrain.mvp.Model.GameMode.TRAINS;
 import static letrain.mvp.Model.GameMode.UNLINK;
+import static letrain.mvp.Model.GameMode.PERSIST;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -151,14 +152,14 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
     // [r:Rails d:Drive f:Forks t:Trains l:Link u:Unlink
 
-    @Override
-    public void onChar(KeyStroke keyEvent) {
+ 
+    public void OldonChar(KeyStroke keyEvent) {
         boolean isAMenuKey = true;
         if (keyEvent.getKeyType() == KeyType.Enter) {
             model.setMode(MENU);
             return;
         } else if (keyEvent.getKeyType() == KeyType.Escape) {
-            showMainDialog();
+            view.showExitDialog();
         } else if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != ' ') {
             if (model.getMode() == TRAINS) {
                 trainManagerOnChar(keyEvent);
@@ -168,26 +169,43 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                         model.setMode(RAILS);
                         break;
                     case 'd':
-                        model.setMode(DRIVE);
+                        if (!model.getLocomotives().isEmpty()) {
+                            model.setMode(DRIVE);
+                        }
                         break;
                     case 'f':
-                        model.setMode(FORKS);
+                        if (!model.getForks().isEmpty()) {
+                            model.setMode(FORKS);
+                        }
                         break;
                     case 's':
-                        model.setMode(SEMAPHORES);
+                        if (!model.getSemaphores().isEmpty()) {
+                            model.setMode(SEMAPHORES);
+                        }
                         break;
                     case 't':
-                        model.setMode(TRAINS);
+                        if (model.getCursorRailTrack() != null) {
+                            model.setMode(TRAINS);
+                        }
                         newTrain = null;
                         break;
                     case 'l':
-                        model.setMode(LINK);
+                        if (!model.getLocomotives().isEmpty()) {
+                            model.setMode(LINK);
+                        }
                         break;
                     case 'u':
-                        model.setMode(UNLINK);
+                        if (!model.getLocomotives().isEmpty()) {
+                            model.setMode(UNLINK);
+                        }
                         break;
                     case 'n':
-                        model.setMode(STATIONS);
+                        if (!model.getStations().isEmpty()) {
+                            model.setMode(STATIONS);
+                        }
+                        break;
+                    case 'p':
+                        model.setMode(PERSIST);
                         break;
                     default:
                         isAMenuKey = false;
@@ -224,12 +242,128 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 unlinkerOnChar(keyEvent);
                 break;
             case STATIONS:
-                StationManagerOnChar(keyEvent);
+                stationManagerOnChar(keyEvent);
+                break;
+            case PERSIST:
+                persistManagerOnChar(keyEvent);
                 break;
         }
     }
+ @Override
+    public void onChar(KeyStroke keyEvent) {
+        boolean isAMenuKey = true;
+        if (keyEvent.getKeyType() == KeyType.Enter) {
+            model.setMode(MENU);
+            return;
+        } else if (keyEvent.getKeyType() == KeyType.Escape) {
+            view.showExitDialog();
+        } else if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != ' ') {
+            if (model.getMode() == TRAINS) {
+                trainManagerOnChar(keyEvent);
+            } else {
+                switch (keyEvent.getCharacter()) {
+                    case 'r':
+                        model.setMode(RAILS);
+                        break;
+                    case 'd':
+                        if (!model.getLocomotives().isEmpty()) {
+                            model.setMode(DRIVE);
+                        }
+                        break;
+                    case 'f':
+                        if (!model.getForks().isEmpty()) {
+                            model.setMode(FORKS);
+                        }
+                        break;
+                    case 's':
+                        if (!model.getSemaphores().isEmpty()) {
+                            model.setMode(SEMAPHORES);
+                        }
+                        break;
+                    case 't':
+                        if (model.getCursorRailTrack() != null) {
+                            model.setMode(TRAINS);
+                        }
+                        newTrain = null;
+                        break;
+                    case 'l':
+                        if (!model.getLocomotives().isEmpty()) {
+                            model.setMode(LINK);
+                        }
+                        break;
+                    case 'u':
+                        if (!model.getLocomotives().isEmpty()) {
+                            model.setMode(UNLINK);
+                        }
+                        break;
+                    case 'n':
+                        if (!model.getStations().isEmpty()) {
+                            model.setMode(STATIONS);
+                        }
+                        break;
+                    case 'p':
+                        model.setMode(PERSIST);
+                        break;
+                    default:
+                        isAMenuKey = false;
+                        break;
 
-    void StationManagerOnChar(KeyStroke keyEvent) {
+                }
+                if (isAMenuKey) {
+                    return;
+                }
+            }
+        }
+
+        switch (model.getMode()) {
+            case RAILS:
+                railTrackMaker.onChar(keyEvent);
+                break;
+            case DRIVE:
+                trainDriverOnChar(keyEvent);
+                break;
+            case FORKS:
+                forkManagerOnChar(keyEvent);
+                break;
+            case SEMAPHORES:
+                semaphoreManagerOnChar(keyEvent);
+                break;
+            case TRAINS:
+                // Not managed here!!
+                // trainManagerOnChar(keyEvent);
+                break;
+            case LINK:
+                linkerOnChar(keyEvent);
+                break;
+            case UNLINK:
+                unlinkerOnChar(keyEvent);
+                break;
+            case STATIONS:
+                stationManagerOnChar(keyEvent);
+                break;
+            case PERSIST:
+                persistManagerOnChar(keyEvent);
+                break;
+        }
+    }
+    void persistManagerOnChar(KeyStroke keyEvent) {
+        switch (keyEvent.getKeyType()) {
+            case Character:
+                if (keyEvent.getCharacter() == ' ') {
+                    view.showEditDialog();
+                }
+                break;
+            case ArrowUp:
+                view.showLoadDialog();
+                break;
+            case ArrowDown:
+                view.showSaveDialog();
+                break;
+        }
+
+    }
+
+    void stationManagerOnChar(KeyStroke keyEvent) {
         switch (keyEvent.getKeyType()) {
             case Backspace:
                 StationId = StationId / 10;
@@ -277,10 +411,6 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 break;
         }
 
-    }
-
-    void showMainDialog() {
-        view.showMainDialog();
     }
 
     private void semaphoreManagerOnChar(KeyStroke keyEvent) {
@@ -705,7 +835,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
 
     void setPageOfPoint(Point p) {
-        view.setPageOfPos(p.getX(), p.getY());        
+        view.setPageOfPos(p.getX(), p.getY());
         Page page = p.getPage();
         railTrackMaker.setCursorPage(page);
     }
@@ -735,22 +865,35 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             setPageOfPoint(model.getSelectedStation().getPosition());
         }
     }
-
+    public File changeExtension(File originalFile, String newExtension) {
+        String directory = originalFile.getParent();
+        String fileName = originalFile.getName();
+        int lastDotIndex = fileName.lastIndexOf('.');
+        
+        String baseName = fileName;
+        if (lastDotIndex > 0) {
+            baseName = fileName.substring(0, lastDotIndex);
+        }
+        String newFileName = baseName + "." + newExtension;
+        return new File(directory, newFileName);
+    }
     @Override
     public void onNewGame() {
     }
 
     @Override
-    public void onSaveGame(File file) {
+    public void onSaveGame(File file) {        
         if (file != null) {
-            saveModel(this.model, file);
+            File mapFile = changeExtension(file,  "ltr");
+            saveModel(this.model, mapFile);
         }
     }
 
     @Override
     public void onLoadGame(File file) {
         if (file != null && file.exists()) {
-            Model model = loadModel(file);
+            File mapFile = changeExtension(file, "ltr");
+            Model model = loadModel(mapFile);
             if (model != null) {
                 stop();
                 setModel(model);
@@ -787,17 +930,17 @@ public class CompactPresenter implements letrain.mvp.Presenter {
 
     @Override
     public void onEditCommands(String content) {
-        CharStream input = CharStreams.fromString(content);
+        // CharStream input = CharStreams.fromString(content);
         for (Sensor sensor : model.getSensors()) {
             sensor.removeAllSensorEventListeners();
         }
-        LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
+        // LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
+        // CommonTokenStream tokens = new CommonTokenStream(lexer);
+        // LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
 
-        LeTrainProgramParser.StartContext sintaxTree = parser.start();
-        CommandManager manager = new CommandManager(model);
-        manager.visit(sintaxTree);
+        // LeTrainProgramParser.StartContext sintaxTree = parser.start();
+        // CommandManager manager = new CommandManager(model);
+        // manager.visit(sintaxTree);
         model.setProgram(content);
 
     }

@@ -3,6 +3,7 @@ package letrain.mvp.impl;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import com.googlecode.lanterna.Symbols;
 import com.googlecode.lanterna.TerminalPosition;
@@ -10,13 +11,11 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.TextColor.ANSI;
-import com.googlecode.lanterna.bundle.LanternaThemes;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.gui2.BasicWindow;
 import com.googlecode.lanterna.gui2.Button;
 import com.googlecode.lanterna.gui2.Direction;
 import com.googlecode.lanterna.gui2.EmptySpace;
-import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.LocalizedString;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
@@ -32,6 +31,7 @@ import com.googlecode.lanterna.terminal.Terminal;
 import letrain.map.Page;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
+import letrain.mvp.impl.Model.GameModeMenuOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +53,11 @@ public class View implements letrain.mvp.View {
     private TextColor fgColor;
     private TextColor bgColor;
     boolean endOfGame = false;
+    static final TextColor NORMAL_MENU_FG_COLOR = ANSI.WHITE;
+    static final TextColor NORMAL_MENU_BG_COLOR = ANSI.BLACK;
+    static final TextColor DISABLED_FG_COLOR = ANSI.BLACK_BRIGHT;
+    static final TextColor SELECTED_BG_COLOR = ANSI.BLUE;
+    static final TextColor SHORTCUT_COLOR = ANSI.GREEN_BRIGHT;
 
     public View(GameViewListener gameViewListener) {
         this.gameViewListener = gameViewListener;
@@ -67,9 +72,8 @@ public class View implements letrain.mvp.View {
         terminalSize = screen.getTerminalSize();
         gameBox = screen.newTextGraphics();
         menuBox = screen.newTextGraphics();
-        this.fgColor = ANSI.WHITE;
-        this.bgColor = ANSI.BLACK;
-
+        this.fgColor = NORMAL_MENU_FG_COLOR;
+        this.bgColor = NORMAL_MENU_BG_COLOR;
         recalculateSizes(terminalSize);
     }
 
@@ -139,38 +143,44 @@ public class View implements letrain.mvp.View {
         return gameBoxSize.getRows();
     }
 
+    // TODO: this must be made in InfoViewer with a visitMenu method
     @Override
-    public void setMenu(String[] options, int selectedOption) {
+    public void setMenu(List<GameModeMenuOption> options) {
         int length = 1;
-        TextColor oldBgColor = bgColor;
-        for (int option = 0; option < options.length; option++) {
-            String[] parts = options[option].split("&");
+        for (GameModeMenuOption option : options) {
+            String[] parts = option.gameModeName().split("&");
             String firstPart = parts[0];
-            String secondPart = parts[1].substring(0, 1);
+            String shortcutPart = parts[1].substring(0, 1);
             String thirdPart = parts[1].substring(1);
-            TextColor oldFgColor = fgColor;
-            if (option == selectedOption) {
-                bgColor = ANSI.BLUE;
-                menuBox.setBackgroundColor(bgColor);
-            } else {
-                bgColor = oldBgColor;
-                menuBox.setBackgroundColor(bgColor);
-            }
-            menuBox.setForegroundColor(oldFgColor);
-            menuBox.putString(menuBoxPosition.withRelative(length, 1), firstPart);
-            menuBox.setForegroundColor(TextColor.ANSI.YELLOW);
-            length += firstPart.length();
-            menuBox.putString(menuBoxPosition.withRelative(length, 1), secondPart);
-            menuBox.setForegroundColor(oldFgColor);
-            length += secondPart.length();
-            menuBox.putString(menuBoxPosition.withRelative(length, 1), thirdPart);
-            menuBox.setForegroundColor(oldFgColor);
-            length += thirdPart.length() + 1;
-            menuBox.setBackgroundColor(oldBgColor);
-            bgColor = oldBgColor;
-            fgColor = oldFgColor;
-        }
 
+            menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
+            if (!option.enabledIf().get()) {
+                menuBox.setForegroundColor(DISABLED_FG_COLOR);
+            }
+
+            if (option.selectedIf().get()) {
+                menuBox.setBackgroundColor(SELECTED_BG_COLOR);
+            } else {
+                menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+            }
+            menuBox.putString(menuBoxPosition.withRelative(length, 1), firstPart);
+            length += firstPart.length();
+
+            menuBox.setForegroundColor(SHORTCUT_COLOR);
+            menuBox.putString(menuBoxPosition.withRelative(length, 1), shortcutPart);
+            length += shortcutPart.length();
+
+            menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
+            if (!option.enabledIf().get()) {
+                menuBox.setForegroundColor(DISABLED_FG_COLOR);
+            }
+            menuBox.putString(menuBoxPosition.withRelative(length, 1), thirdPart);
+            menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+            length += thirdPart.length() + 1;
+            if (option.selectedIf().get()) {
+                setHelpBarText(option.gameModeDescription());
+            }
+        }
     }
 
     @Override
@@ -183,8 +193,13 @@ public class View implements letrain.mvp.View {
         y -= mapScrollPage.getY() * getRows();
         if (x >= 0 && x < getCols() && y >= 0 && y < getRows()) {
             for (int i = 0; i < c.length(); i++) {
-                gameBox.setCharacter(x + i, y,
-                        TextCharacter.fromCharacter(c.charAt(i), this.fgColor, bgColor)[0]);
+                gameBox.setCharacter(
+                        x + i,
+                        y,
+                        TextCharacter.fromCharacter(
+                                c.charAt(i),
+                                fgColor,
+                                bgColor)[0]);
             }
         }
     }
@@ -206,7 +221,6 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void setPageOfPos(int x, int y) {
-
         Page page = new Point(x, y).getPage();
         Point actualPage = getMapScrollPage();
         if (page.getX() != actualPage.getX() || page.getY() != actualPage.getY()) {
@@ -216,10 +230,10 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void clear(int x, int y) {
-        menuBox.setBackgroundColor(bgColor);
-        gameBox.setBackgroundColor(bgColor);
-        menuBox.setForegroundColor(fgColor);
-        gameBox.setForegroundColor(fgColor);
+        menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+        gameBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+        menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
+        gameBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
         set(x, y, " ");
     }
 
@@ -246,10 +260,10 @@ public class View implements letrain.mvp.View {
 
     @Override
     public void clear() {
-        menuBox.setBackgroundColor(bgColor);
-        gameBox.setBackgroundColor(bgColor);
-        menuBox.setForegroundColor(fgColor);
-        gameBox.setForegroundColor(fgColor);
+        menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+        gameBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+        menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
+        gameBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
         menuBox.fillRectangle(menuBoxPosition, menuBoxSize, ' ');
         gameBox.fillRectangle(gameBoxPosition, gameBoxSize, ' ');
     }
@@ -289,96 +303,51 @@ public class View implements letrain.mvp.View {
         textGraphics.setCharacter(bottomRight, Symbols.SINGLE_LINE_BOTTOM_RIGHT_CORNER);
     }
 
-    @Override
-    public void showMainDialog() {
+    public void showSaveDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        String theme = "businessmachine";
-        if (theme != null) {
-            gui.setTheme(LanternaThemes.getRegisteredTheme(theme));
+        File result = new FileDialogBuilder()
+                .setTitle("Save File")
+                .setDescription("Choose a file:")
+                .setActionLabel(LocalizedString.Save.toString())
+                .build()
+                .showDialog(gui);
+        View.this.gameViewListener.onSaveGame(result);
+    }
+
+    public void showLoadDialog() {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+
+        File result = new FileDialogBuilder()
+                .setTitle("Open File")
+                .setDescription("Choose a file:")
+                .setActionLabel(LocalizedString.Open.toString())
+                .build()
+                .showDialog(gui);
+        View.this.gameViewListener.onLoadGame(result);
+    }
+
+    public void showEditDialog() {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        String result = new TextInputDialogBuilder()
+                .setTitle("LeTrain program editor")
+                .setTextBoxSize(new TerminalSize(85, 25))
+                .setInitialContent(gameViewListener.getProgram())
+                .build()
+                .showDialog(gui);
+        if (result != null) {
+            View.this.gameViewListener.onEditCommands(result);
         }
+    }
+
+    public void showExitDialog() {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
         BasicWindow window = new BasicWindow();
         window.setHints(Arrays.asList(Window.Hint.CENTERED));
         window.setTitle("LeTrain");
         Panel contentPanel = new Panel();
         contentPanel.setLayoutManager(new LinearLayout(Direction.VERTICAL));
-        contentPanel.addComponent(new Label("Menu"));
         contentPanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        contentPanel.addComponent(new Button("New Game", new Runnable() {
-            @Override
-            public void run() {
-                View.this.gameViewListener.onNewGame();
-                window.close();
-            }
-        }));
-        contentPanel.addComponent(new Button("Save Game", new Runnable() {
-            @Override
-            public void run() {
-                File result = new FileDialogBuilder()
-                        .setTitle("Save File")
-                        .setDescription("Choose a file:")
-                        .setActionLabel(LocalizedString.Save.toString())
-                        .build()
-                        .showDialog(gui);
-                View.this.gameViewListener.onSaveGame(result);
-                window.close();
-            }
-        }));
-        contentPanel.addComponent(new Button("Load Game", new Runnable() {
-            @Override
-            public void run() {
-                File result = new FileDialogBuilder()
-                        .setTitle("Open File")
-                        .setDescription("Choose a file:")
-                        .setActionLabel(LocalizedString.Open.toString())
-                        .build()
-                        .showDialog(gui);
-                View.this.gameViewListener.onLoadGame(result);
-                window.close();
-            }
-        }));
-        contentPanel.addComponent(new Button("Save commands", new Runnable() {
-            @Override
-            public void run() {
-                File result = new FileDialogBuilder()
-                        .setTitle("Save File")
-                        .setDescription("Choose a file:")
-                        .setActionLabel(LocalizedString.Save.toString())
-                        .build()
-                        .showDialog(gui);
-                View.this.gameViewListener.onSaveCommands(result);
-                window.close();
-            }
-        }));
-        contentPanel.addComponent(new Button("Load commands", new Runnable() {
-            @Override
-            public void run() {
-                File result = new FileDialogBuilder()
-                        .setTitle("Open File")
-                        .setDescription("Choose a file:")
-                        .setActionLabel(LocalizedString.Open.toString())
-                        .build()
-                        .showDialog(gui);
-                View.this.gameViewListener.onLoadCommands(result);
-                window.close();
-            }
-        }));
-        contentPanel.addComponent(new Button("Edit commands", new Runnable() {
-            @Override
-            public void run() {
-                String result = new TextInputDialogBuilder()
-                        .setTitle("LeTrain program editor")
-                        .setTextBoxSize(new TerminalSize(85, 25))
-                        .setInitialContent(gameViewListener.getProgram())
-                        .build()
-                        .showDialog(gui);
-                if (result != null) {
-                    View.this.gameViewListener.onEditCommands(result);
-                }
-                window.close();
-            }
-        }));
-
-        contentPanel.addComponent(new Button("Exit game", new Runnable() {
+        contentPanel.addComponent(new Button("Exit", new Runnable() {
             @Override
             public void run() {
                 setEndOfGame(true);

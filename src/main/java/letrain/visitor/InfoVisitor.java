@@ -1,5 +1,7 @@
 package letrain.visitor;
 
+import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.TextColor.ANSI;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
@@ -9,7 +11,6 @@ import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
-import letrain.mvp.Model.GameMode;
 import letrain.mvp.View;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
@@ -26,6 +27,12 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Wagon;
 
 public class InfoVisitor implements Visitor {
+
+    static final TextColor NORMAL_MENU_FG_COLOR = ANSI.WHITE;
+    static final TextColor NORMAL_MENU_BG_COLOR = ANSI.BLACK;
+    static final TextColor DISABLED_FG_COLOR = ANSI.YELLOW;
+    static final TextColor SELECTED_FG_COLOR = ANSI.BLUE;
+    static final TextColor SHORTCUT_COLOR = ANSI.YELLOW;
 
     String infoBarText = "";
     String helpBarText = "";
@@ -59,9 +66,9 @@ public class InfoVisitor implements Visitor {
                 }
                 break;
             case STATIONS:
-                Station Station = model.getSelectedStation();
-                if (Station != null) {
-                    visitStation(Station);
+                Station station = model.getSelectedStation();
+                if (station != null) {
+                    visitStation(station);
                 }
                 break;
             case LOAD_TRAINS:
@@ -70,47 +77,10 @@ public class InfoVisitor implements Visitor {
                 break;
         }
         visitCursor(model.getCursor());
-        String[] menuOptions = { "&rails", "&drive", "&forks", "&semaphores", "&trains", "&link",
-                "&unlink", "statio&ns" };
 
         visitEconomyManager(model.getEconomyManager());
-        view.setMenu(menuOptions, model.getMode().ordinal() - 1);
-        view.setHelpBarText(getModeHelp(model.getMode()));
+        view.setMenu(model.getMenuModel());
         view.setInfoBarText(infoBarText);
-    }
-
-    private String getModeHelp(GameMode mode) {
-        String ret = "";
-        switch (mode) {
-            case MENU:
-                ret += "escape:exit ";
-                break;
-            case RAILS:
-                ret += "<:left >:right ^:forwd v:backwd shift+^:rail ctrl+^:del insert:add sensor delete:delete sensor home:insert semaphore end:delete semaphore";
-                break;
-            case DRIVE:
-                ret += "<:prev >:next ^:accel v:decel space:reverse (pgup, pgdn, ctrl+pgup, ctrl+pgdn):move map";
-                break;
-            case FORKS:
-                ret += "<:prev >:next space:toggle #:select";
-                break;
-            case SEMAPHORES:
-                ret += "<:prev >:next space:toggle #:select";
-                break;
-            case TRAINS:
-                ret += "A-Z:locomotive a-z:wagon enter:end";
-                break;
-            case LINK:
-                ret += "^:front v:back space:link";
-                break;
-            case UNLINK:
-                ret += "<:front >:back ^:add v:del space:unlink";
-                break;
-            case STATIONS:
-                ret += "<:prev >:next -:load/unload passengers space:clean selection backspace:del number #:select";
-                break;
-        }
-        return ret;
     }
 
     @Override
