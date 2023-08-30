@@ -1,5 +1,6 @@
 package letrain.mvp;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import letrain.economy.EconomyManager;
@@ -171,4 +172,15 @@ public interface Model {
 
     public List<GameModeMenuOption> getMenuModel();
 
+    public int getQuantifier();
+
+    public void setQuantifier(int quantifier);
+
+    public int getQuantifierSteps();
+
+    public void setQuantifierSteps(int quantifierSteps);
+
+    public void setLastSaveTime(LocalDateTime now);
+
+    public LocalDateTime getLastSaveTime();
 }

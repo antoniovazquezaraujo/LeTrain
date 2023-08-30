@@ -1,6 +1,7 @@
 package letrain.mvp.impl;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -71,6 +72,9 @@ public class Model implements Serializable, letrain.mvp.Model {
     int nextStationId;
     String program;
     int seed = 0;
+    int quantifier = 1;
+    int quantifierSteps = 0;
+    LocalDateTime lastSaveTime = null;
 
     public Model() {
         this.economyManager = new EconomyManager();
@@ -107,26 +111,32 @@ public class Model implements Serializable, letrain.mvp.Model {
         }
     }
 
+    @Override
     public int nextSemaphoreId() {
         return ++nextSemaphoreId;
     }
 
+    @Override
     public int nextForkId() {
         return ++nextForkId;
     }
 
+    @Override
     public int nextLocomotiveId() {
         return ++nextLocomotiveId;
     }
 
+    @Override
     public int nextSensorId() {
         return ++nextSensorId;
     }
 
+    @Override
     public int nextTrainId() {
         return ++nextTrainId;
     }
 
+    @Override
     public int nextStationId() {
         return ++nextStationId;
     }
@@ -491,10 +501,12 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.program = program;
     }
 
+    @Override
     public String getProgram() {
         return this.program;
     }
 
+    @Override
     public void loadAndUnloadTrains() {
         AtomicBoolean removed = new AtomicBoolean(false);
         getLocomotives().forEach(locomotive -> {
@@ -589,15 +601,17 @@ public class Model implements Serializable, letrain.mvp.Model {
         return this.economyManager;
     }
 
+    @Override
     public RailTrack getCursorRailTrack() {
         return getRailMap().getTrackAt(getCursor().getPosition());
     }
 
+    @Override
     public List<GameModeMenuOption> getMenuModel() {
         return Arrays.asList(
                 new GameModeMenuOption(
                         "&rails",
-                        "\u2190:left \u2192:right \u2191:forwd \u2193:backwd shift+\u2191:rail ctrl+\u2191:del insert:add sensor delete:delete sensor home:insert semaphore end:delete semaphore",
+                        "(\u2190 \u2192 \u2191 \u2193) shift+\u2191:add rail ctrl+\u2191:del rail ins:add/del sensor home:add/del semaphore w:start/end station",
                         () -> true,
                         () -> (this.getMode() == GameMode.RAILS),
                         () -> (GameMode.RAILS)),
@@ -649,6 +663,36 @@ public class Model implements Serializable, letrain.mvp.Model {
                         () -> !this.getStations().isEmpty(),
                         () -> this.getMode() == GameMode.STATIONS,
                         () -> GameMode.STATIONS));
+    }
+
+    @Override
+    public int getQuantifier() {
+        return quantifier;
+    }
+
+    @Override
+    public void setQuantifier(int quantifier) {
+        this.quantifier = quantifier;
+    }
+
+    @Override
+    public int getQuantifierSteps() {
+        return quantifierSteps;
+    }
+
+    @Override
+    public void setQuantifierSteps(int quantifierSteps) {
+        this.quantifierSteps = quantifierSteps;
+    }
+
+    @Override
+    public void setLastSaveTime(LocalDateTime now) {
+        this.lastSaveTime = now;
+    }
+
+    @Override
+    public LocalDateTime getLastSaveTime() {
+        return this.lastSaveTime;
     }
 
 }

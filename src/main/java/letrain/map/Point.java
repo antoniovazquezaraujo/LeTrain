@@ -81,7 +81,7 @@ public class Point implements Serializable {
 
     @Override
     public String toString() {
-        return "[" + x + "," + y + ']';
+        return "" + x + "," + y;
     }
 
     public void move(Dir dir) {
@@ -133,7 +133,7 @@ public class Point implements Serializable {
         int pageY = (getY() < 0) ? (getY() + 1) / Page.getHeight() - 1 : getY() / Page.getHeight();
         return new Page(pageX, pageY);
     }
-    
+
     public Point addPage(Page page) {
         return new Point(
                 (getX() + page.getX() * Page.getWidth()),
