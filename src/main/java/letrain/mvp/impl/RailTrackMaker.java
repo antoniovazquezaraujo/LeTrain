@@ -33,8 +33,6 @@ public class RailTrackMaker {
     Dir oldDir;
     boolean reversed = false;
     boolean makingTracks = false;
-    int quantifier = 1;
-    int quantifierSteps = 0;
     boolean creatingStation = false;
     Presenter presenter;
     Point lastCursorPosition = null;
@@ -94,7 +92,7 @@ public class RailTrackMaker {
                         creatingStation = false;
                     }
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
-                    if (quantifier > 0) {
+                    if (presenter.getModel().getQuantifier() > 0) {
                         resetQuantifierSteps();
                         while (isQuantifierPending()) {
                             cursorForward();
@@ -107,7 +105,7 @@ public class RailTrackMaker {
                 break;
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
-                    quantifier = 0;
+                    presenter.getModel().setQuantifier(1);
                 } else if (keyEvent.getCharacter() == 'w') {
                     creatingStation = !creatingStation;
                     if (creatingStation) {
@@ -118,10 +116,10 @@ public class RailTrackMaker {
                         selectNewTrackType(Presenter.TrackType.NORMAL_TRACK);
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
-                    if (keyEvent.getCharacter() == '0' && quantifier == 0) {
+                    if (keyEvent.getCharacter() == '0' && presenter.getModel().getQuantifier() == 0) {
                         presenter.getModel().setShowId(true);
                     } else {
-                        quantifier = quantifier * 10 + (keyEvent.getCharacter() - '0');
+                        presenter.getModel().setQuantifier(presenter.getModel().getQuantifier() * 10 + (keyEvent.getCharacter() - '0'));
                     }
                 }
                 break;
@@ -289,11 +287,11 @@ public class RailTrackMaker {
     }
 
     private void decrementQuantifierSteps() {
-        this.quantifierSteps--;
+        presenter.getModel().setQuantifierSteps(presenter.getModel().getQuantifierSteps() -1);
     }
 
     public void resetQuantifierSteps() {
-        this.quantifierSteps = quantifier;
+        presenter.getModel().setQuantifierSteps(presenter.getModel().getQuantifier());
     }
 
     private void decrementTrackConstructionTime() {
@@ -305,7 +303,7 @@ public class RailTrackMaker {
     }
 
     private boolean isQuantifierPending() {
-        return this.quantifierSteps >= 0;
+        return presenter.getModel().getQuantifierSteps() > 0;
     }
 
     void showAnimation() {

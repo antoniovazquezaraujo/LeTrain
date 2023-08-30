@@ -4,12 +4,12 @@ import static letrain.mvp.Model.GameMode.DRIVE;
 import static letrain.mvp.Model.GameMode.FORKS;
 import static letrain.mvp.Model.GameMode.LINK;
 import static letrain.mvp.Model.GameMode.MENU;
+import static letrain.mvp.Model.GameMode.PERSIST;
 import static letrain.mvp.Model.GameMode.RAILS;
 import static letrain.mvp.Model.GameMode.SEMAPHORES;
 import static letrain.mvp.Model.GameMode.STATIONS;
 import static letrain.mvp.Model.GameMode.TRAINS;
 import static letrain.mvp.Model.GameMode.UNLINK;
-import static letrain.mvp.Model.GameMode.PERSIST;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -957,6 +957,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
 
     void saveModel(Model model, File file) {
+        model.setLastSaveTime(LocalDateTime.now());
         try (FileOutputStream fos = new FileOutputStream(file);
                 ObjectOutputStream oos = new ObjectOutputStream(fos)) {
             oos.writeObject(model);

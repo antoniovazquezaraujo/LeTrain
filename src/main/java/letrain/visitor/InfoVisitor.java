@@ -7,7 +7,6 @@ import letrain.ground.Ground;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
-import letrain.map.Point;
 import letrain.map.Router;
 import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
@@ -47,11 +46,7 @@ public class InfoVisitor implements Visitor {
         infoBarText = "";
         switch (model.getMode()) {
             case RAILS:
-                Point pos = model.getCursor().getPosition();
-                RailTrack track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
-                if (track != null) {
-                    visitRailTrack(track);
-                }
+
                 break;
             case DRIVE:
                 Locomotive locomotive = model.getSelectedLocomotive();
@@ -75,12 +70,28 @@ public class InfoVisitor implements Visitor {
                 break;
             case TRAINS:
                 break;
+            case PERSIST:
+                visitPersistence(model);
+                break;
         }
-        visitCursor(model.getCursor());
 
-        visitEconomyManager(model.getEconomyManager());
         view.setMenu(model.getMenuModel());
-        view.setInfoBarText(infoBarText);
+        String commonText = getCommonInfoBarText(model);
+        int fillSpaces = view.getCols() - (infoBarText.length());
+        commonText = String.format("%" + fillSpaces + "s", commonText);
+        view.setInfoBarText(infoBarText + commonText);
+    }
+
+    private void visitPersistence(Model model) {
+        infoBarText += model.getLastSaveTime() != null ? "Last save: " + model.getLastSaveTime() : "Not saved";
+    }
+
+    public String getCommonInfoBarText(Model model) {
+        return "| Pag " + view.getMapScrollPage() +
+                "| Cursor " + model.getCursor().getPosition() +
+                "| Steps " + model.getQuantifierSteps() + "/" + model.getQuantifier() +
+                "| Balance " + model.getEconomyManager().getBalance() +
+                "|";
     }
 
     @Override
@@ -114,8 +125,8 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        infoBarText += "Fork:{" + track.getId() + " Dir:"
-                + (track.isUsingAlternativeRoute() ? track.getAlternativeRoute() : track.getOriginalRoute()) + "}\n";
+        infoBarText += "Fork " + track.getId() + " Dirs "
+                + (track.isUsingAlternativeRoute() ? track.getAlternativeRoute() : track.getOriginalRoute());
     }
 
     private String getDynamicRouterAspect(DynamicRouter router) {
@@ -139,17 +150,13 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        infoBarText += " Speed:" + locomotive.getSpeed() + " ";
+        infoBarText += "Train " + locomotive.getId() + " Speed " + locomotive.getSpeed() + " Wagons "
+                + (locomotive.getTrain().getLinkers().size() - 1) + (locomotive.isReversed() ? " Reversed" : "");
     }
 
     @Override
     public void visitWagon(Wagon wagon) {
-        infoBarText += "Wagon:" + wagon.getAspect() + " Dir" + wagon.getDir() + "\n";
-    }
-
-    @Override
-    public void visitCursor(Cursor cursor) {
-        infoBarText += "Cursor:[" + cursor.getPosition().getX() + "," + cursor.getPosition().getY() + "]";
+        infoBarText += "Wagon:" + wagon.getAspect() + " Dir" + wagon.getDir();
     }
 
     @Override
@@ -197,6 +204,12 @@ public class InfoVisitor implements Visitor {
     public void visitEconomyManager(EconomyManager economyManager) {
         String info = "$: " + economyManager.getBalance() + " ";
         infoBarText += info;
+    }
+
+    @Override
+    public void visitCursor(Cursor cursor) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitCursor'");
     }
 
 }
