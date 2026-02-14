@@ -100,6 +100,13 @@ public class Gdx3DView extends ApplicationAdapter
                 createVehicle(character);
                 return true;
             }
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.DRIVE) {
+            if (character == ' ') {
+                if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) {
+                    model.getSelectedLocomotive().toggleReversed();
+                }
+                return true;
+            }
         }
 
         switch (character) {
@@ -186,6 +193,8 @@ public class Gdx3DView extends ApplicationAdapter
         return false;
     }
 
+    private com.badlogic.gdx.math.Vector3 camTarget = new com.badlogic.gdx.math.Vector3();
+
     private float stateTime = 0f;
 
     @Override
@@ -216,10 +225,23 @@ public class Gdx3DView extends ApplicationAdapter
         renderer.getInstances().add(new ModelInstance(gridModel));
         renderer.visitModel(model);
 
-        // Centrar cámara en el cursor (más cerca para mejor visibilidad)
-        letrain.map.Point cursorState = model.getCursor().getPosition();
-        cam.position.lerp(new com.badlogic.gdx.math.Vector3(cursorState.getX(), 5f, cursorState.getY() + 5f), 0.1f);
-        cam.lookAt(cursorState.getX(), 0, cursorState.getY());
+        // Centrar cámara en el cursor o en la locomotora seleccionada
+        float targetX, targetZ;
+        if (model.getMode() == letrain.mvp.Model.GameMode.DRIVE && model.getSelectedLocomotive() != null) {
+            letrain.vehicle.impl.rail.Locomotive selected = model.getSelectedLocomotive();
+            targetX = selected.getPosition().getX() + 0.5f;
+            targetZ = selected.getPosition().getY() + 0.5f;
+        } else {
+            letrain.map.Point cursorState = model.getCursor().getPosition();
+            targetX = cursorState.getX() + 0.5f;
+            targetZ = cursorState.getY() + 0.5f;
+        }
+
+        // Interpolación de la posición y del punto de enfoque (camTarget) para suavizar
+        // saltos
+        cam.position.lerp(new com.badlogic.gdx.math.Vector3(targetX, 6f, targetZ + 6f), 0.05f);
+        camTarget.lerp(new com.badlogic.gdx.math.Vector3(targetX, 0, targetZ), 0.05f);
+        cam.lookAt(camTarget);
         cam.update();
 
         modelBatch.begin(cam);
@@ -250,6 +272,34 @@ public class Gdx3DView extends ApplicationAdapter
             }
         }
 
+        // Modo Conducción vs Otros Modos
+        if (model.getMode() == letrain.mvp.Model.GameMode.DRIVE) {
+            handleDriveInput();
+        } else {
+            handleStandardInput(ctrlPressed, shiftPressed);
+        }
+    }
+
+    private void handleDriveInput() {
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP)) {
+            if (model.getSelectedLocomotive() != null) {
+                model.getSelectedLocomotive().incSpeed();
+            }
+        }
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN)) {
+            if (model.getSelectedLocomotive() != null) {
+                model.getSelectedLocomotive().decSpeed();
+            }
+        }
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
+            model.selectPrevLocomotive();
+        }
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
+            model.selectNextLocomotive();
+        }
+    }
+
+    private void handleStandardInput(boolean ctrlPressed, boolean shiftPressed) {
         // Movimiento Longitudinal (Repetible con retardo controlado)
         if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP)) {
             trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp,

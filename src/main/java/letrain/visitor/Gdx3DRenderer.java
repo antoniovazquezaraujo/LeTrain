@@ -213,8 +213,8 @@ public class Gdx3DRenderer implements Visitor {
     public void visitLocomotive(Locomotive locomotive) {
         ModelInstance instance = new ModelInstance(locomotiveModel);
         // Offset +0.5f para centrar en la celda
-        // Elevamos ligeramente (0.3f) el centro de masa
-        instance.transform.setToTranslation(locomotive.getPosition().getX() + 0.5f, 0.3f,
+        // Elevamos el centro de masa (0.6f) para que se sitúe sobre las vías
+        instance.transform.setToTranslation(locomotive.getPosition().getX() + 0.5f, 0.6f,
                 locomotive.getPosition().getY() + 0.5f);
         // Orientación directa según Dir
         float angle = locomotive.getDir().getValue() * 45f;
@@ -225,8 +225,8 @@ public class Gdx3DRenderer implements Visitor {
     @Override
     public void visitWagon(Wagon wagon) {
         ModelInstance instance = new ModelInstance(wagonModel);
-        // Offset +0.5f para centrar en la celda
-        instance.transform.setToTranslation(wagon.getPosition().getX() + 0.5f, 0.3f, wagon.getPosition().getY() + 0.5f);
+        // Elevamos el centro de masa (0.6f) para que se sitúe sobre las vías
+        instance.transform.setToTranslation(wagon.getPosition().getX() + 0.5f, 0.6f, wagon.getPosition().getY() + 0.5f);
         // Orientación directa según Dir
         float angle = wagon.getDir().getValue() * 45f;
         instance.transform.rotate(0, 1, 0, angle);
