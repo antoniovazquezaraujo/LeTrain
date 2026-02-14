@@ -38,14 +38,14 @@ public class Gdx3DRenderer implements Visitor {
     public void init() {
         if (modelBuilder == null) {
             modelBuilder = new com.badlogic.gdx.graphics.g3d.utils.ModelBuilder();
-            // Medio tramo de vía (perfil cuadrado/rectangular de madera)
-            trackModel = modelBuilder.createBox(0.5f, 0.2f, 0.55f,
+            // Medio tramo de vía (perfil cuadrado/rectangular de madera, longitud base 0.7)
+            trackModel = modelBuilder.createBox(0.5f, 0.2f, 0.7f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(new com.badlogic.gdx.graphics.Color(0.25f, 0.25f, 0.25f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
             // Cursor base (mismo tamaño que medio raíl, pero ligeramente más alto)
-            cursorModel = modelBuilder.createBox(0.65f, 0.25f, 0.6f,
+            cursorModel = modelBuilder.createBox(0.65f, 0.25f, 0.7f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
@@ -106,18 +106,22 @@ public class Gdx3DRenderer implements Visitor {
     private void drawHalfTrack(letrain.map.Point pos, letrain.map.Dir d) {
         float dx = getDirX(d);
         float dz = getDirZ(d);
+        float magnitude = (float) Math.sqrt(dx * dx + dz * dz);
 
         // Ángulo hacia la cara del tile
         float angle = (float) Math.atan2(dx, dz) * MathUtils.radiansToDegrees;
 
         ModelInstance instance = new ModelInstance(trackModel);
+        // Escala proporcional a la distancia (0.5 para rectas, ~0.707 para diagonales)
+        float scale = magnitude / 0.5f;
+
         // Posición: Centro de la celda (pos + 0.5) + desplazamiento hacia la cara
-        // (0.25)
         instance.transform.setToTranslation(
                 pos.getX() + 0.5f + (dx / 2f),
                 0.05f,
                 pos.getY() + 0.5f + (dz / 2f));
         instance.transform.rotate(0, 1, 0, angle);
+        instance.transform.scale(1, 1, scale);
         instances.add(instance);
     }
 
@@ -147,10 +151,14 @@ public class Gdx3DRenderer implements Visitor {
     private void drawHalfCursor(letrain.map.Point pos, letrain.map.Dir d, com.badlogic.gdx.graphics.Color color) {
         float dx = getDirX(d);
         float dz = getDirZ(d);
+        float magnitude = (float) Math.sqrt(dx * dx + dz * dz);
         float angle = (float) Math.atan2(dx, dz) * MathUtils.radiansToDegrees;
 
         ModelInstance instance = new ModelInstance(cursorModel);
         instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
+
+        // Escala proporcional a la distancia
+        float scale = magnitude / 0.5f;
 
         // Elevamos el cursor (0.15f) para que se vea sobre el raíl
         instance.transform.setToTranslation(
@@ -158,6 +166,7 @@ public class Gdx3DRenderer implements Visitor {
                 0.15f,
                 pos.getY() + 0.5f + (dz / 2f));
         instance.transform.rotate(0, 1, 0, angle);
+        instance.transform.scale(1, 1, scale);
         instances.add(instance);
     }
 
