@@ -87,7 +87,7 @@
             "request": "launch",
             "mainClass": "letrain.LeTrain",
             "projectName": "JLeTrain",
-            "javaExec": "/usr/bin/java"
+            "javaExec": "C:\\Program Files\\Zulu\\zulu-17\\bin\\javaw.exe"
         }
     ]
 }

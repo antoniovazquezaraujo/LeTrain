@@ -40,14 +40,18 @@ public class RailTrackMaker {
     private Point stationStart;
     int trackConstructionTimeCounter = 0;
     Map<TrackType, Integer> trackConstructionTime = Map.of(
-            TrackType.NORMAL_TRACK, 1,
-            TrackType.BRIDGE_TRACK, 10,
-            TrackType.BRIDGE_GATE_TRACK, 5,
-            TrackType.TUNNEL_TRACK, 20,
-            TrackType.TUNNEL_GATE_TRACK, 10,
-            TrackType.STATION_TRACK, 30);
+            TrackType.NORMAL_TRACK, 0,
+            TrackType.BRIDGE_TRACK, 0,
+            TrackType.BRIDGE_GATE_TRACK, 0,
+            TrackType.TUNNEL_TRACK, 0,
+            TrackType.TUNNEL_GATE_TRACK, 0,
+            TrackType.STATION_TRACK, 0);
 
     public void startTrackConstruction(TrackType type) {
+        if (type == null) {
+            this.trackConstructionTimeCounter = 0;
+            return;
+        }
         this.trackConstructionTimeCounter = trackConstructionTime.get(type);
     }
 
@@ -119,7 +123,8 @@ public class RailTrackMaker {
                     if (keyEvent.getCharacter() == '0' && presenter.getModel().getQuantifier() == 0) {
                         presenter.getModel().setShowId(true);
                     } else {
-                        presenter.getModel().setQuantifier(presenter.getModel().getQuantifier() * 10 + (keyEvent.getCharacter() - '0'));
+                        presenter.getModel().setQuantifier(
+                                presenter.getModel().getQuantifier() * 10 + (keyEvent.getCharacter() - '0'));
                     }
                 }
                 break;
@@ -272,6 +277,10 @@ public class RailTrackMaker {
                     decrementTrackConstructionTime();
                 } else {
                     TrackType type = detectTrackType();
+                    if (type == null) {
+                        makingTracks = false;
+                        return;
+                    }
                     selectNewTrackType(type);
                     createTrack(type);
                     decrementQuantifierSteps();
@@ -287,7 +296,7 @@ public class RailTrackMaker {
     }
 
     private void decrementQuantifierSteps() {
-        presenter.getModel().setQuantifierSteps(presenter.getModel().getQuantifierSteps() -1);
+        presenter.getModel().setQuantifierSteps(presenter.getModel().getQuantifierSteps() - 1);
     }
 
     public void resetQuantifierSteps() {
@@ -571,7 +580,7 @@ public class RailTrackMaker {
         lastCursorPosition = newPos;
     }
 
-     public void setCursorPage(Page page) {
+    public void setCursorPage(Page page) {
         Point oldPos = presenter.getModel().getCursor().getPosition();
         Point newPos = oldPos.setPage(page);
         presenter.getModel().getCursor().setPosition(newPos);
