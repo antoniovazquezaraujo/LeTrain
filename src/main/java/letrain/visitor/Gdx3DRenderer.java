@@ -44,8 +44,9 @@ public class Gdx3DRenderer implements Visitor {
                             .createDiffuse(new com.badlogic.gdx.graphics.Color(0.25f, 0.25f, 0.25f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
-            // Cursor base (mismo tamaño que medio raíl, pero ligeramente más alto)
-            cursorModel = modelBuilder.createBox(0.65f, 0.25f, 0.7f,
+            // Cursor en forma de bloque triangular (prisma triangular plano)
+            // Altura 0.2f para que tenga el mismo grosor que la vía
+            cursorModel = modelBuilder.createCylinder(0.8f, 0.2f, 0.8f, 3,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
@@ -144,29 +145,18 @@ public class Gdx3DRenderer implements Visitor {
         }
 
         letrain.map.Dir d = cursor.getDir();
-        drawHalfCursor(cursor.getPosition(), d, color);
-        drawHalfCursor(cursor.getPosition(), d.inverse(), color);
-    }
-
-    private void drawHalfCursor(letrain.map.Point pos, letrain.map.Dir d, com.badlogic.gdx.graphics.Color color) {
+        letrain.map.Point pos = cursor.getPosition();
         float dx = getDirX(d);
         float dz = getDirZ(d);
-        float magnitude = (float) Math.sqrt(dx * dx + dz * dz);
         float angle = (float) Math.atan2(dx, dz) * MathUtils.radiansToDegrees;
 
         ModelInstance instance = new ModelInstance(cursorModel);
         instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
 
-        // Escala proporcional a la distancia
-        float scale = magnitude / 0.5f;
-
-        // Elevamos el cursor (0.15f) para que se vea sobre el raíl
-        instance.transform.setToTranslation(
-                pos.getX() + 0.5f + (dx / 2f),
-                0.15f,
-                pos.getY() + 0.5f + (dz / 2f));
-        instance.transform.rotate(0, 1, 0, angle);
-        instance.transform.scale(1, 1, scale);
+        // El prisma triangular ya está "tumbado" (caras planas Ry), solo rotamos yaw
+        // Aplicamos un desfase de -90 para que el vértice apunte a 'angle'
+        instance.transform.setToTranslation(pos.getX() + 0.5f, 0.25f, pos.getY() + 0.5f);
+        instance.transform.rotate(0, 1, 0, angle - 90f);
         instances.add(instance);
     }
 
