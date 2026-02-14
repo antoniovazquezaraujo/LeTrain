@@ -227,7 +227,7 @@ public class Gdx3DRenderer implements Visitor {
         ModelInstance instance = new ModelInstance(wagonModel);
         // Elevamos el centro de masa (0.6f) para que se sitúe sobre las vías
         instance.transform.setToTranslation(wagon.getPosition().getX() + 0.5f, 0.6f, wagon.getPosition().getY() + 0.5f);
-        // Orientación directa según Dir
+        // Orientación según la dirección del modelo
         float angle = wagon.getDir().getValue() * 45f;
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
