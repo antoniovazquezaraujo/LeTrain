@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.math.MathUtils;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
@@ -32,25 +33,24 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.utils.ModelBuilder modelBuilder;
     private com.badlogic.gdx.graphics.g3d.Model trackModel;
     private com.badlogic.gdx.graphics.g3d.Model cursorModel;
-
     private com.badlogic.gdx.graphics.g3d.Model locomotiveModel;
 
     public void init() {
         if (modelBuilder == null) {
             modelBuilder = new com.badlogic.gdx.graphics.g3d.utils.ModelBuilder();
-            // Vías más gruesas y visibles
-            trackModel = modelBuilder.createBox(0.9f, 0.1f, 0.9f,
+            // Medio tramo de vía (perfil cuadrado/rectangular de madera)
+            trackModel = modelBuilder.createBox(0.5f, 0.2f, 0.55f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(new com.badlogic.gdx.graphics.Color(0.25f, 0.25f, 0.25f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
-            // Cursor base
-            cursorModel = modelBuilder.createBox(1.1f, 1.1f, 1.1f,
+            // Cursor base (mismo tamaño que medio raíl, pero ligeramente más alto)
+            cursorModel = modelBuilder.createBox(0.65f, 0.25f, 0.6f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
-            locomotiveModel = modelBuilder.createBox(0.8f, 1.2f, 1.8f,
+            locomotiveModel = modelBuilder.createBox(0.8f, 1.2f, 1.5f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(new com.badlogic.gdx.graphics.Color(0.6f, 0.4f, 0.2f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
@@ -87,10 +87,108 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
+        // Renderizamos cada ruta del tramo como dos medios segmentos
+        // Esto permite que el raíl se "doble" en el centro para formar curvas
+        track.forEach(route -> {
+            drawHalfTrack(track.getPosition(), route.getKey());
+            drawHalfTrack(track.getPosition(), route.getValue());
+        });
+
+        // Fallback: si no hay rutas, usamos la dirección abierta
+        if (track.getNumRoutes() == 0) {
+            letrain.map.Dir d = track.getFirstOpenDir();
+            if (d != null) {
+                drawHalfTrack(track.getPosition(), d);
+            }
+        }
+    }
+
+    private void drawHalfTrack(letrain.map.Point pos, letrain.map.Dir d) {
+        float dx = getDirX(d);
+        float dz = getDirZ(d);
+
+        // Ángulo hacia la cara del tile
+        float angle = (float) Math.atan2(dx, dz) * MathUtils.radiansToDegrees;
+
         ModelInstance instance = new ModelInstance(trackModel);
-        // Altura realista: la caja mide 0.1f, así que 0.05f la deja a ras de suelo
-        instance.transform.setToTranslation(track.getPosition().getX(), 0.05f, track.getPosition().getY());
+        // Posición: Centro de la celda (pos + 0.5) + desplazamiento hacia la cara
+        // (0.25)
+        instance.transform.setToTranslation(
+                pos.getX() + 0.5f + (dx / 2f),
+                0.05f,
+                pos.getY() + 0.5f + (dz / 2f));
+        instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
+    }
+
+    @Override
+    public void visitCursor(Cursor cursor) {
+        // Determinamos el color según el modo
+        com.badlogic.gdx.graphics.Color color = com.badlogic.gdx.graphics.Color.YELLOW;
+        switch (cursor.getMode()) {
+            case DRAWING:
+                color = com.badlogic.gdx.graphics.Color.GREEN;
+                break;
+            case ERASING:
+                color = com.badlogic.gdx.graphics.Color.RED;
+                break;
+            case MAKING_TRACKS:
+                color = com.badlogic.gdx.graphics.Color.ORANGE;
+                break;
+            default:
+                break;
+        }
+
+        letrain.map.Dir d = cursor.getDir();
+        drawHalfCursor(cursor.getPosition(), d, color);
+        drawHalfCursor(cursor.getPosition(), d.inverse(), color);
+    }
+
+    private void drawHalfCursor(letrain.map.Point pos, letrain.map.Dir d, com.badlogic.gdx.graphics.Color color) {
+        float dx = getDirX(d);
+        float dz = getDirZ(d);
+        float angle = (float) Math.atan2(dx, dz) * MathUtils.radiansToDegrees;
+
+        ModelInstance instance = new ModelInstance(cursorModel);
+        instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
+
+        // Elevamos el cursor (0.15f) para que se vea sobre el raíl
+        instance.transform.setToTranslation(
+                pos.getX() + 0.5f + (dx / 2f),
+                0.15f,
+                pos.getY() + 0.5f + (dz / 2f));
+        instance.transform.rotate(0, 1, 0, angle);
+        instances.add(instance);
+    }
+
+    private float getDirX(letrain.map.Dir d) {
+        switch (d) {
+            case E:
+            case NE:
+            case SE:
+                return 0.5f;
+            case W:
+            case NW:
+            case SW:
+                return -0.5f;
+            default:
+                return 0f;
+        }
+    }
+
+    private float getDirZ(letrain.map.Dir d) {
+        switch (d) {
+            case S:
+            case SE:
+            case SW:
+                return 0.5f;
+            case N:
+            case NE:
+            case NW:
+                return -0.5f;
+            default:
+                return 0f;
+        }
     }
 
     @Override
@@ -106,43 +204,23 @@ public class Gdx3DRenderer implements Visitor {
     @Override
     public void visitLocomotive(Locomotive locomotive) {
         ModelInstance instance = new ModelInstance(locomotiveModel);
-        instance.transform.setToTranslation(locomotive.getPosition().getX(), 0.6f, locomotive.getPosition().getY());
-        // Rotar según la dirección: cada unidad de valor en Dir son 45 grados (sentido
-        // antihorario)
+        // Offset +0.5f para centrar en la celda
+        instance.transform.setToTranslation(locomotive.getPosition().getX() + 0.5f, 0.6f,
+                locomotive.getPosition().getY() + 0.5f);
+        // Orientación directa según Dir
         float angle = locomotive.getDir().getValue() * 45f;
-        instance.transform.rotate(0, 1, 0, -angle); // Ajuste de signo para rotación
+        instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
     }
 
     @Override
     public void visitWagon(Wagon wagon) {
         ModelInstance instance = new ModelInstance(locomotiveModel); // Reusar modelo para vagón
-        instance.transform.setToTranslation(wagon.getPosition().getX(), 0.6f, wagon.getPosition().getY());
+        // Offset +0.5f para centrar en la celda
+        instance.transform.setToTranslation(wagon.getPosition().getX() + 0.5f, 0.6f, wagon.getPosition().getY() + 0.5f);
+        // Orientación directa según Dir
         float angle = wagon.getDir().getValue() * 45f;
-        instance.transform.rotate(0, 1, 0, -angle); // Ajuste de signo para rotación
-        instances.add(instance);
-    }
-
-    @Override
-    public void visitCursor(Cursor cursor) {
-        ModelInstance instance = new ModelInstance(cursorModel);
-
-        // Cambiar color según el modo para dar feedback
-        com.badlogic.gdx.graphics.Color color = com.badlogic.gdx.graphics.Color.YELLOW;
-        switch (cursor.getMode()) {
-            case DRAWING:
-                color = com.badlogic.gdx.graphics.Color.GREEN;
-                break;
-            case ERASING:
-                color = com.badlogic.gdx.graphics.Color.RED;
-                break;
-            case MAKING_TRACKS:
-                color = com.badlogic.gdx.graphics.Color.ORANGE;
-                break;
-        }
-
-        instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
-        instance.transform.setToTranslation(cursor.getPosition().getX(), 0.5f, cursor.getPosition().getY());
+        instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
     }
 

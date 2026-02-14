@@ -73,12 +73,12 @@ public class Gdx3DView extends ApplicationAdapter implements letrain.mvp.View, l
                         ColorAttribute.createDiffuse(new Color(0.4f, 0.3f, 0.1f, 1f))),
                 Usage.Position | Usage.Normal);
 
-        // Rejilla para orientación
+        // Rejilla para orientación (1x1 para coincidir con las celdas)
         modelBuilder.begin();
         com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpb = modelBuilder.part("grid", GL20.GL_LINES,
                 Usage.Position | Usage.ColorUnpacked, new com.badlogic.gdx.graphics.g3d.Material());
         mpb.setColor(Color.LIGHT_GRAY);
-        for (int i = -100; i <= 100; i += 5) {
+        for (int i = -100; i <= 100; i += 1) {
             mpb.line(i, 0.01f, -100, i, 0.01f, 100);
             mpb.line(-100, 0.01f, i, 100, 0.01f, i);
         }
@@ -133,7 +133,13 @@ public class Gdx3DView extends ApplicationAdapter implements letrain.mvp.View, l
         modelBatch.end();
     }
 
+    private float inputDelay = 0f;
+
     private void handleInput() {
+        float deltaTime = Gdx.graphics.getDeltaTime();
+        if (inputDelay > 0)
+            inputDelay -= deltaTime;
+
         // Cuantificador por defecto si no hay ninguno al usar Shift (dibujar)
         boolean shiftPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)
                 || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
@@ -148,16 +154,25 @@ public class Gdx3DView extends ApplicationAdapter implements letrain.mvp.View, l
             }
         }
 
-        // Movimiento Longitudinal (Repetible)
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP)
-                || (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.UP) && stateTime == 0)) {
+        // Movimiento Longitudinal (Repetible con retardo controlado)
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP)) {
             trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp,
                     ctrlPressed, false, shiftPressed));
+            inputDelay = 0.5f;
+        } else if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.UP) && inputDelay <= 0) {
+            trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp,
+                    ctrlPressed, false, shiftPressed));
+            inputDelay = 0.5f;
         }
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN)
-                || (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.DOWN) && stateTime == 0)) {
+
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN)) {
             trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(
                     com.googlecode.lanterna.input.KeyType.ArrowDown, false, false, false));
+            inputDelay = 0.5f;
+        } else if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.DOWN) && inputDelay <= 0) {
+            trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(
+                    com.googlecode.lanterna.input.KeyType.ArrowDown, false, false, false));
+            inputDelay = 0.5f;
         }
 
         // Giro (Solo un paso por pulsación para evitar "girar de más")
