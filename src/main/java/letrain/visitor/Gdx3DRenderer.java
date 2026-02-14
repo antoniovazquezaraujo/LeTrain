@@ -34,6 +34,7 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model trackModel;
     private com.badlogic.gdx.graphics.g3d.Model cursorModel;
     private com.badlogic.gdx.graphics.g3d.Model locomotiveModel;
+    private com.badlogic.gdx.graphics.g3d.Model wagonModel;
 
     public void init() {
         if (modelBuilder == null) {
@@ -51,9 +52,17 @@ public class Gdx3DRenderer implements Visitor {
                             .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
-            locomotiveModel = modelBuilder.createBox(0.8f, 1.2f, 1.5f,
+            // Locomotora simple (Bloque Negro)
+            locomotiveModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.6f, 0.4f, 0.2f, 1f))),
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.BLACK)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Vagón simple (Bloque Azul)
+            wagonModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.BLUE)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
         }
@@ -204,7 +213,8 @@ public class Gdx3DRenderer implements Visitor {
     public void visitLocomotive(Locomotive locomotive) {
         ModelInstance instance = new ModelInstance(locomotiveModel);
         // Offset +0.5f para centrar en la celda
-        instance.transform.setToTranslation(locomotive.getPosition().getX() + 0.5f, 0.6f,
+        // Elevamos ligeramente (0.3f) el centro de masa
+        instance.transform.setToTranslation(locomotive.getPosition().getX() + 0.5f, 0.3f,
                 locomotive.getPosition().getY() + 0.5f);
         // Orientación directa según Dir
         float angle = locomotive.getDir().getValue() * 45f;
@@ -214,9 +224,9 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitWagon(Wagon wagon) {
-        ModelInstance instance = new ModelInstance(locomotiveModel); // Reusar modelo para vagón
+        ModelInstance instance = new ModelInstance(wagonModel);
         // Offset +0.5f para centrar en la celda
-        instance.transform.setToTranslation(wagon.getPosition().getX() + 0.5f, 0.6f, wagon.getPosition().getY() + 0.5f);
+        instance.transform.setToTranslation(wagon.getPosition().getX() + 0.5f, 0.3f, wagon.getPosition().getY() + 0.5f);
         // Orientación directa según Dir
         float angle = wagon.getDir().getValue() * 45f;
         instance.transform.rotate(0, 1, 0, angle);

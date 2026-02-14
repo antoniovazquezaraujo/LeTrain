@@ -21,7 +21,8 @@ import letrain.map.Point;
 import letrain.mvp.impl.Model.GameModeMenuOption;
 import letrain.visitor.Gdx3DRenderer;
 
-public class Gdx3DView extends ApplicationAdapter implements letrain.mvp.View, letrain.mvp.Presenter {
+public class Gdx3DView extends ApplicationAdapter
+        implements letrain.mvp.View, letrain.mvp.Presenter, com.badlogic.gdx.InputProcessor {
     private PerspectiveCamera cam;
     private ModelBatch modelBatch;
     private ModelBuilder modelBuilder;
@@ -88,6 +89,101 @@ public class Gdx3DView extends ApplicationAdapter implements letrain.mvp.View, l
                 new com.badlogic.gdx.graphics.g3d.Material(
                         ColorAttribute.createDiffuse(Color.FOREST)),
                 Usage.Position | Usage.Normal);
+
+        Gdx.input.setInputProcessor(this);
+    }
+
+    @Override
+    public boolean keyTyped(char character) {
+        if (model.getMode() == letrain.mvp.Model.GameMode.TRAINS) {
+            if (Character.isLetter(character)) {
+                createVehicle(character);
+                return true;
+            }
+        }
+
+        switch (character) {
+            case 'r':
+                model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                return true;
+            case 't':
+                if (model.getCursorRailTrack() != null) {
+                    model.setMode(letrain.mvp.Model.GameMode.TRAINS);
+                }
+                return true;
+            case 'd':
+                if (!model.getLocomotives().isEmpty()) {
+                    model.setMode(letrain.mvp.Model.GameMode.DRIVE);
+                }
+                return true;
+        }
+        return false;
+    }
+
+    private void createVehicle(char c) {
+        letrain.track.rail.RailTrack track = model.getCursorRailTrack();
+        if (track == null || track.getLinker() != null)
+            return;
+
+        letrain.map.Dir cursorDir = model.getCursor().getDir();
+
+        if (Character.isUpperCase(c)) {
+            letrain.vehicle.impl.rail.Locomotive locomotive = new letrain.vehicle.impl.rail.Locomotive(
+                    model.nextLocomotiveId(), "" + c);
+            letrain.vehicle.impl.rail.Train train = new letrain.vehicle.impl.rail.Train(model.nextTrainId());
+            train.pushBack(locomotive);
+            train.setDirectorLinker(locomotive);
+            model.addLocomotive(locomotive);
+            track.enterLinkerFromDir(cursorDir.inverse(), locomotive);
+        } else {
+            letrain.vehicle.impl.rail.Wagon wagon = new letrain.vehicle.impl.rail.Wagon("" + c);
+            model.addWagon(wagon);
+            track.enterLinkerFromDir(cursorDir.inverse(), wagon);
+        }
+    }
+
+    @Override
+    public boolean keyDown(int keycode) {
+        if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE || keycode == com.badlogic.gdx.Input.Keys.ENTER) {
+            model.setMode(letrain.mvp.Model.GameMode.RAILS);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean keyUp(int keycode) {
+        return false;
+    }
+
+    @Override
+    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+        return false;
+    }
+
+    @Override
+    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+        return false;
+    }
+
+    @Override
+    public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
+        return false;
+    }
+
+    @Override
+    public boolean touchDragged(int screenX, int screenY, int pointer) {
+        return false;
+    }
+
+    @Override
+    public boolean mouseMoved(int screenX, int screenY) {
+        return false;
+    }
+
+    @Override
+    public boolean scrolled(float amountX, float amountY) {
+        return false;
     }
 
     private float stateTime = 0f;
@@ -196,20 +292,6 @@ public class Gdx3DView extends ApplicationAdapter implements letrain.mvp.View, l
                 model.setQuantifier(1);
             trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp,
                     true, false));
-        }
-
-        // 'T' para crear una locomotora
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.T)) {
-            letrain.track.rail.RailTrack track = model.getCursorRailTrack();
-            if (track != null && track.getLinker() == null) {
-                letrain.vehicle.impl.rail.Locomotive locomotive = new letrain.vehicle.impl.rail.Locomotive(
-                        model.nextLocomotiveId(), "L");
-                letrain.vehicle.impl.rail.Train train = new letrain.vehicle.impl.rail.Train(model.nextTrainId());
-                train.pushBack(locomotive);
-                train.setDirectorLinker(locomotive);
-                model.addLocomotive(locomotive);
-                track.enterLinkerFromDir(model.getCursor().getDir().inverse(), locomotive);
-            }
         }
     }
 
