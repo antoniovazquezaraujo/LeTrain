@@ -37,8 +37,8 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model locomotiveModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonModel;
     private com.badlogic.gdx.graphics.g3d.Model highlightModel;
-    private com.badlogic.gdx.graphics.g3d.Model locomotiveHighlightModel; // Locomotora amarilla para modo LINK
-    private com.badlogic.gdx.graphics.g3d.Model wagonHighlightModel; // Vagón amarillo para modo LINK
+    private com.badlogic.gdx.graphics.g3d.Model locomotiveHighlightModel;
+    private com.badlogic.gdx.graphics.g3d.Model wagonHighlightModel;
     private com.badlogic.gdx.graphics.g3d.Model forkModel;
     private com.badlogic.gdx.graphics.g3d.Model groundModel;
     private com.badlogic.gdx.graphics.g3d.Model waterModel;
@@ -46,8 +46,7 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model ballastModel;
     private com.badlogic.gdx.graphics.g3d.Model bridgePillarModel;
     private com.badlogic.gdx.graphics.g3d.Model tunnelPortalModel;
-    private com.badlogic.gdx.graphics.g3d.Model directionIndicatorModel; // Flecha/cuña para indicar dirección de
-                                                                         // locomotora
+    private com.badlogic.gdx.graphics.g3d.Model directionIndicatorModel;
     private letrain.map.impl.RailMap railMap; // Referencia al mapa de vías
 
     public static class VehicleLabel {
@@ -214,10 +213,34 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        // Renderizamos cada ruta del tramo como dos medios segmentos paralelos
+        // Renderizamos cada ruta del tramo como dos medios segmentos
         track.forEach(route -> {
-            drawHalfTrack(track.getPosition(), route.getFirst(), true);
-            drawHalfTrack(track.getPosition(), route.getSecond(), true);
+            letrain.map.Dir d1 = route.getFirst();
+            letrain.map.Dir d2 = route.getSecond();
+            float shortenL1 = 1.0f;
+            float shortenR1 = 1.0f;
+            float shortenL2 = 1.0f;
+            float shortenR2 = 1.0f;
+
+            int dist = d1.angularDistance(d2);
+            int absDist = Math.abs(dist);
+            if (absDist >= 1 && absDist <= 3) {
+                if (dist > 0) { // Giro a la izquierda -> Raíl interior es el izquierdo de d1 (railR) y derecho
+                                // de d2 (railL)
+                    shortenR1 = 0.75f; // Interior (Perfecto según usuario)
+                    shortenL2 = 0.75f; // Interior
+                    shortenL1 = 0.9f; // Exterior (Quitar un poquito)
+                    shortenR2 = 0.9f; // Exterior
+                } else if (dist < 0) { // Giro a la derecha -> Raíl interior es el derecho de d1 (railL) y izquierdo de
+                                       // d2 (railR)
+                    shortenL1 = 0.75f; // Interior
+                    shortenR2 = 0.75f; // Interior
+                    shortenR1 = 0.9f; // Exterior
+                    shortenL2 = 0.9f; // Exterior
+                }
+            }
+            drawHalfTrack(track.getPosition(), d1, true, shortenL1, shortenR1);
+            drawHalfTrack(track.getPosition(), d2, true, shortenL2, shortenR2);
         });
 
         // Fallback: si no hay rutas, usamos la dirección abierta
@@ -230,10 +253,16 @@ public class Gdx3DRenderer implements Visitor {
     }
 
     private void drawHalfTrack(letrain.map.Point pos, letrain.map.Dir d, boolean active) {
-        drawHalfTrackElevated(pos, d, active, 0.0f);
+        drawHalfTrackElevated(pos, d, active, 0.0f, 1.0f, 1.0f);
     }
 
-    private void drawHalfTrackElevated(letrain.map.Point pos, letrain.map.Dir d, boolean active, float elevation) {
+    private void drawHalfTrack(letrain.map.Point pos, letrain.map.Dir d, boolean active, float shortenL,
+            float shortenR) {
+        drawHalfTrackElevated(pos, d, active, 0.0f, shortenL, shortenR);
+    }
+
+    private void drawHalfTrackElevated(letrain.map.Point pos, letrain.map.Dir d, boolean active, float elevation,
+            float shortenL, float shortenR) {
         float dx = getDirX(d);
         float dz = getDirZ(d);
         float magnitude = (float) Math.sqrt(dx * dx + dz * dz);
@@ -241,17 +270,17 @@ public class Gdx3DRenderer implements Visitor {
         // Ángulo hacia la cara del tile
         float angle = (float) Math.atan2(dx, dz) * MathUtils.radiansToDegrees;
 
-        // Escala proporcional a la distancia (0.5 para rectas, ~0.707 para diagonales)
-        float scale = magnitude / 0.5f;
-
         // Primero dibujamos el balasto (piedras grises)
+        // Usamos el promedio de acortamiento para el balasto
+        float shortenB = (shortenL + shortenR) / 2f;
+        float scaleB = (magnitude * shortenB) / 0.5f;
         ModelInstance ballast = new ModelInstance(ballastModel);
         ballast.transform.setToTranslation(
-                pos.getX() + 0.5f + (dx / 2f),
+                pos.getX() + 0.5f + (dx * (1f - shortenB / 2f)),
                 0.03f + elevation,
-                pos.getY() + 0.5f + (dz / 2f));
+                pos.getY() + 0.5f + (dz * (1f - shortenB / 2f)));
         ballast.transform.rotate(0, 1, 0, angle);
-        ballast.transform.scale(1, 1, scale);
+        ballast.transform.scale(1, 1, scaleB);
         instances.add(ballast);
 
         // Calculamos el vector perpendicular para el desplazamiento lateral de los
@@ -264,23 +293,34 @@ public class Gdx3DRenderer implements Visitor {
         com.badlogic.gdx.graphics.g3d.Model activeModel = active ? railModel : inactiveRailModel;
 
         // Raíl izquierdo
+        float scale = magnitude / 0.5f; // Base scale for a full half-track
         ModelInstance railL = new ModelInstance(activeModel);
+        // Ajuste de desplazamiento para mantener el extremo exterior fijo si se acorta
+        // Si shorten < 1, el raíl se encoge hacia su centro. Para que solo se encoja
+        // desde el centro del tile,
+        // debemos desplazarlo hacia afuera por la mitad de la longitud perdida.
+        float shiftX_L = dx * (1 - shortenL) / 2f;
+        float shiftZ_L = dz * (1 - shortenL) / 2f;
+
         railL.transform.setToTranslation(
-                pos.getX() + 0.5f + (dx / 2f) + offX,
+                pos.getX() + 0.5f + (dx / 2f) + offX + shiftX_L,
                 0.08f + elevation,
-                pos.getY() + 0.5f + (dz / 2f) + offZ);
+                pos.getY() + 0.5f + (dz / 2f) + offZ + shiftZ_L);
         railL.transform.rotate(0, 1, 0, angle);
-        railL.transform.scale(1, 1, scale);
+        railL.transform.scale(1, 1, scale * shortenL);
         instances.add(railL);
 
         // Raíl derecho
+        float shiftX_R = dx * (1 - shortenR) / 2f;
+        float shiftZ_R = dz * (1 - shortenR) / 2f;
+
         ModelInstance railR = new ModelInstance(activeModel);
         railR.transform.setToTranslation(
-                pos.getX() + 0.5f + (dx / 2f) - offX,
+                pos.getX() + 0.5f + (dx / 2f) - offX + shiftX_R,
                 0.08f + elevation,
-                pos.getY() + 0.5f + (dz / 2f) - offZ);
+                pos.getY() + 0.5f + (dz / 2f) - offZ + shiftZ_R);
         railR.transform.rotate(0, 1, 0, angle);
-        railR.transform.scale(1, 1, scale);
+        railR.transform.scale(1, 1, scale * shortenR);
         instances.add(railR);
     }
 
@@ -367,20 +407,48 @@ public class Gdx3DRenderer implements Visitor {
         }
 
         // Determinamos la ruta activa
-        letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> activeRoute = track.isUsingAlternativeRoute()
+        letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> route = track.isUsingAlternativeRoute()
                 ? track.getAlternativeRoute()
                 : track.getOriginalRoute();
 
-        // Solo dibujamos la ruta activa (brillante)
-        if (activeRoute != null) {
-            drawHalfTrack(track.getPosition(), activeRoute.getFirst(), true);
-            drawHalfTrack(track.getPosition(), activeRoute.getSecond(), true);
+        if (route != null) {
+            letrain.map.Dir d1 = route.getFirst();
+            letrain.map.Dir d2 = route.getSecond();
+            float shortenL1 = 1.0f;
+            float shortenR1 = 1.0f;
+            float shortenL2 = 1.0f;
+            float shortenR2 = 1.0f;
+
+            int dist = d1.angularDistance(d2);
+            int absDist = Math.abs(dist);
+            if (absDist >= 1 && absDist <= 3) {
+                if (dist > 0) { // Giro a la izquierda -> Raíl interior es el izquierdo de d1 (railR) y derecho
+                                // de d2 (railL)
+                    shortenR1 = 0.75f; // Interior
+                    shortenL2 = 0.75f; // Interior
+                    shortenL1 = 0.9f; // Exterior
+                    shortenR2 = 0.9f; // Exterior
+                } else if (dist < 0) { // Giro a la derecha -> Raíl interior es el derecho de d1 (railL) y izquierdo de
+                                       // d2 (railR)
+                    shortenL1 = 0.75f; // Interior
+                    shortenR2 = 0.75f; // Interior
+                    shortenR1 = 0.9f; // Exterior
+                    shortenL2 = 0.9f; // Exterior
+                }
+            }
+            drawHalfTrack(track.getPosition(), d1, true, shortenL1, shortenR1);
+            drawHalfTrack(track.getPosition(), d2, true, shortenL2, shortenR2);
+        }
+
+        // Si la vía está ocupada destacamos el vehículo
+        if (track.getLinker() != null) {
+            // TODO: Implementar resaltado de vehículo en desvío
         }
 
         // Indicador de ruta activa (bloque rojo)
-        if (activeRoute != null) {
+        if (route != null) {
             ModelInstance indicator = new ModelInstance(forkModel);
-            letrain.map.Dir d = activeRoute.getFirst(); // Tomamos una de las direcciones de la ruta para posicionar
+            letrain.map.Dir d = route.getFirst(); // Tomamos una de las direcciones de la ruta para posicionar
             float ox = getDirX(d);
             float oz = getDirZ(d);
             indicator.transform.setToTranslation(track.getPosition().getX() + 0.5f + ox * 0.4f, 0.25f,
