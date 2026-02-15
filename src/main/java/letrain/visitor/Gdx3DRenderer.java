@@ -42,6 +42,8 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model waterModel;
     private com.badlogic.gdx.graphics.g3d.Model mountainModel;
     private com.badlogic.gdx.graphics.g3d.Model ballastModel;
+    private com.badlogic.gdx.graphics.g3d.Model bridgePillarModel;
+    private com.badlogic.gdx.graphics.g3d.Model tunnelPortalModel;
 
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
@@ -137,6 +139,20 @@ public class Gdx3DRenderer implements Visitor {
                             .createDiffuse(new com.badlogic.gdx.graphics.Color(0.5f, 0.5f, 0.5f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Pilar de puente (columna vertical)
+            bridgePillarModel = modelBuilder.createBox(0.3f, 0.5f, 0.3f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.4f, 0.35f, 0.3f, 1f))),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Portal de túnel (arco oscuro)
+            tunnelPortalModel = modelBuilder.createBox(1.0f, 0.8f, 0.2f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.2f, 0.2f, 0.2f, 1f))),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
         }
     }
 
@@ -187,6 +203,10 @@ public class Gdx3DRenderer implements Visitor {
     }
 
     private void drawHalfTrack(letrain.map.Point pos, letrain.map.Dir d, boolean active) {
+        drawHalfTrackElevated(pos, d, active, 0.0f);
+    }
+
+    private void drawHalfTrackElevated(letrain.map.Point pos, letrain.map.Dir d, boolean active, float elevation) {
         float dx = getDirX(d);
         float dz = getDirZ(d);
         float magnitude = (float) Math.sqrt(dx * dx + dz * dz);
@@ -201,7 +221,7 @@ public class Gdx3DRenderer implements Visitor {
         ModelInstance ballast = new ModelInstance(ballastModel);
         ballast.transform.setToTranslation(
                 pos.getX() + 0.5f + (dx / 2f),
-                0.03f,
+                0.03f + elevation,
                 pos.getY() + 0.5f + (dz / 2f));
         ballast.transform.rotate(0, 1, 0, angle);
         ballast.transform.scale(1, 1, scale);
@@ -220,7 +240,7 @@ public class Gdx3DRenderer implements Visitor {
         ModelInstance railL = new ModelInstance(activeModel);
         railL.transform.setToTranslation(
                 pos.getX() + 0.5f + (dx / 2f) + offX,
-                0.08f,
+                0.08f + elevation,
                 pos.getY() + 0.5f + (dz / 2f) + offZ);
         railL.transform.rotate(0, 1, 0, angle);
         railL.transform.scale(1, 1, scale);
@@ -230,7 +250,7 @@ public class Gdx3DRenderer implements Visitor {
         ModelInstance railR = new ModelInstance(activeModel);
         railR.transform.setToTranslation(
                 pos.getX() + 0.5f + (dx / 2f) - offX,
-                0.08f,
+                0.08f + elevation,
                 pos.getY() + 0.5f + (dz / 2f) - offZ);
         railR.transform.rotate(0, 1, 0, angle);
         railR.transform.scale(1, 1, scale);
@@ -370,6 +390,10 @@ public class Gdx3DRenderer implements Visitor {
             mountainModel.dispose();
         if (ballastModel != null)
             ballastModel.dispose();
+        if (bridgePillarModel != null)
+            bridgePillarModel.dispose();
+        if (tunnelPortalModel != null)
+            tunnelPortalModel.dispose();
     }
 
     @Override
@@ -463,7 +487,7 @@ public class Gdx3DRenderer implements Visitor {
                 break;
             case GroundMap.WATER:
                 model = waterModel;
-                yPosition = 0.0f;
+                yPosition = -0.2f; // Agua hundida para que los puentes queden a nivel normal
                 break;
             case GroundMap.ROCK:
                 model = mountainModel;
@@ -487,16 +511,52 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack) {
+        // Renderizar pilares del puente que bajan hasta el agua
+        ModelInstance pillar = new ModelInstance(bridgePillarModel);
+        pillar.transform.setToTranslation(
+                bridgeGateRailTrack.getPosition().getX() + 0.5f,
+                -0.05f, // Posición para que el pilar baje hasta el agua (y=-0.2)
+                bridgeGateRailTrack.getPosition().getY() + 0.5f);
+        instances.add(pillar);
+
+        // Renderizar vías a nivel normal
         visitRailTrack(bridgeGateRailTrack);
     }
 
     @Override
     public void visitBridgeRailTrack(BridgeRailTrack bridgeRailTrack) {
+        // Renderizar pilares del puente que bajan hasta el agua
+        ModelInstance pillar = new ModelInstance(bridgePillarModel);
+        pillar.transform.setToTranslation(
+                bridgeRailTrack.getPosition().getX() + 0.5f,
+                -0.05f, // Posición para que el pilar baje hasta el agua (y=-0.2)
+                bridgeRailTrack.getPosition().getY() + 0.5f);
+        instances.add(pillar);
+
+        // Renderizar vías a nivel normal
         visitRailTrack(bridgeRailTrack);
     }
 
     @Override
     public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
+        // Renderizar portal del túnel
+        // Determinar la dirección del portal basado en las rutas
+        letrain.map.Dir portalDir = tunnelGateRailTrack.getFirstOpenDir();
+        if (portalDir != null) {
+            float dx = getDirX(portalDir);
+            float dz = getDirZ(portalDir);
+            float angle = (float) Math.atan2(dx, dz) * MathUtils.radiansToDegrees;
+
+            ModelInstance portal = new ModelInstance(tunnelPortalModel);
+            portal.transform.setToTranslation(
+                    tunnelGateRailTrack.getPosition().getX() + 0.5f,
+                    0.4f,
+                    tunnelGateRailTrack.getPosition().getY() + 0.5f);
+            portal.transform.rotate(0, 1, 0, angle);
+            instances.add(portal);
+        }
+
+        // Renderizar vías normales
         visitRailTrack(tunnelGateRailTrack);
     }
 }
