@@ -8,18 +8,22 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.math.Vector3;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
 import letrain.map.Point;
 import letrain.mvp.impl.Model.GameModeMenuOption;
 import letrain.visitor.Gdx3DRenderer;
+import letrain.visitor.Gdx3DRenderer.VehicleLabel;
 
 public class Gdx3DView extends ApplicationAdapter
         implements letrain.mvp.View, letrain.mvp.Presenter, com.badlogic.gdx.InputProcessor {
@@ -34,6 +38,10 @@ public class Gdx3DView extends ApplicationAdapter
     private com.badlogic.gdx.graphics.g3d.Model groundModel;
     private com.badlogic.gdx.graphics.g3d.Model gridModel;
     private RailTrackMaker trackMaker;
+
+    private SpriteBatch spriteBatch;
+    private BitmapFont font;
+    private Vector3 labelPos = new Vector3();
 
     public Gdx3DView(letrain.mvp.impl.Model model) {
         this.model = model;
@@ -89,6 +97,11 @@ public class Gdx3DView extends ApplicationAdapter
                 new com.badlogic.gdx.graphics.g3d.Material(
                         ColorAttribute.createDiffuse(Color.FOREST)),
                 Usage.Position | Usage.Normal);
+
+        spriteBatch = new SpriteBatch();
+        font = new BitmapFont();
+        font.setColor(Color.WHITE);
+        font.getData().setScale(1.5f);
 
         Gdx.input.setInputProcessor(this);
     }
@@ -240,9 +253,9 @@ public class Gdx3DView extends ApplicationAdapter
 
         // Actualizar instancias desde el modelo
         renderer.clear();
+        renderer.visitModel(model);
         renderer.getInstances().add(new ModelInstance(groundModel));
         renderer.getInstances().add(new ModelInstance(gridModel));
-        renderer.visitModel(model);
 
         // Centrar cámara en el cursor o en la locomotora seleccionada
         float targetX, targetZ;
@@ -265,10 +278,18 @@ public class Gdx3DView extends ApplicationAdapter
         cam.update();
 
         modelBatch.begin(cam);
-        for (ModelInstance instance : renderer.getInstances()) {
-            modelBatch.render(instance, environment);
-        }
+        modelBatch.render(renderer.getInstances(), environment);
         modelBatch.end();
+
+        // Renderizado de etiquetas (2D sobre 3D)
+        spriteBatch.begin();
+        for (VehicleLabel label : renderer.getLabels()) {
+            labelPos.set(label.pos);
+            cam.project(labelPos);
+            // Dibujamos el texto centrado sobre la posición proyectada
+            font.draw(spriteBatch, label.text, labelPos.x - 5, labelPos.y + 10);
+        }
+        spriteBatch.end();
     }
 
     private float inputDelay = 0f;
@@ -383,9 +404,12 @@ public class Gdx3DView extends ApplicationAdapter
     @Override
     public void dispose() {
         modelBatch.dispose();
-        boxModel.dispose();
         groundModel.dispose();
         gridModel.dispose();
+        boxModel.dispose();
+        renderer.dispose();
+        spriteBatch.dispose();
+        font.dispose();
     }
 
     // Presenter implementation

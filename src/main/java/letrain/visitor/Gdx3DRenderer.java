@@ -35,6 +35,24 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model cursorModel;
     private com.badlogic.gdx.graphics.g3d.Model locomotiveModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonModel;
+    private com.badlogic.gdx.graphics.g3d.Model highlightModel;
+
+    public static class VehicleLabel {
+        public com.badlogic.gdx.math.Vector3 pos;
+        public String text;
+
+        public VehicleLabel(com.badlogic.gdx.math.Vector3 pos, String text) {
+            this.pos = pos;
+            this.text = text;
+        }
+    }
+
+    private List<VehicleLabel> labels = new ArrayList<>();
+    private Model modelRef;
+
+    public List<VehicleLabel> getLabels() {
+        return labels;
+    }
 
     public void init() {
         if (modelBuilder == null) {
@@ -65,6 +83,13 @@ public class Gdx3DRenderer implements Visitor {
                             .createDiffuse(com.badlogic.gdx.graphics.Color.BLUE)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Modelo de resaltado (Bloque Amarillo)
+            highlightModel = modelBuilder.createBox(0.82f, 0.82f, 0.82f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
         }
     }
 
@@ -82,12 +107,14 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitModel(Model model) {
+        this.modelRef = model;
+        labels.clear();
+        // Ya no limpiamos instances aquí, lo hace la vista antes de empezar
+        model.getGroundMap().accept(this);
         model.getRailMap().accept(this);
-        for (Locomotive l : model.getLocomotives())
-            l.accept(this);
-        for (Wagon w : model.getWagons())
-            w.accept(this);
-        model.getCursor().accept(this);
+        model.getLocomotives().forEach(l -> l.accept(this));
+        model.getWagons().forEach(w -> w.accept(this));
+        visitCursor(model.getCursor());
     }
 
     @Override
@@ -209,28 +236,78 @@ public class Gdx3DRenderer implements Visitor {
         visitRailTrack(track);
     }
 
+    public void dispose() {
+        if (trackModel != null)
+            trackModel.dispose();
+        if (cursorModel != null)
+            cursorModel.dispose();
+        if (locomotiveModel != null)
+            locomotiveModel.dispose();
+        if (wagonModel != null)
+            wagonModel.dispose();
+        if (highlightModel != null)
+            highlightModel.dispose();
+    }
+
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        ModelInstance instance = new ModelInstance(locomotiveModel);
-        // Offset +0.5f para centrar en la celda
-        // Elevamos el centro de masa (0.6f) para que se sitúe sobre las vías
+        // ¿Debería resaltarse? (Modo LINK)
+        boolean highlight = false;
+        if (modelRef != null && modelRef.getMode() == Model.GameMode.LINK) {
+            Locomotive selected = modelRef.getSelectedLocomotive();
+            if (selected != null && selected.getTrain() != null) {
+                for (letrain.vehicle.impl.Linker l : selected.getTrain().getLinkersToJoin()) {
+                    if (l == locomotive) {
+                        highlight = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        ModelInstance instance = new ModelInstance(highlight ? highlightModel : locomotiveModel);
         instance.transform.setToTranslation(locomotive.getPosition().getX() + 0.5f, 0.6f,
                 locomotive.getPosition().getY() + 0.5f);
-        // Orientación directa según Dir
         float angle = locomotive.getDir().getValue() * 45f;
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
+
+        // Añadir etiqueta
+        labels.add(new VehicleLabel(
+                new com.badlogic.gdx.math.Vector3(locomotive.getPosition().getX() + 0.5f, 1.2f,
+                        locomotive.getPosition().getY() + 0.5f),
+                locomotive.getAspect()));
     }
 
     @Override
     public void visitWagon(Wagon wagon) {
-        ModelInstance instance = new ModelInstance(wagonModel);
+        // ¿Debería resaltarse? (Modo LINK)
+        boolean highlight = false;
+        if (modelRef != null && modelRef.getMode() == Model.GameMode.LINK) {
+            Locomotive selected = modelRef.getSelectedLocomotive();
+            if (selected != null && selected.getTrain() != null) {
+                for (letrain.vehicle.impl.Linker l : selected.getTrain().getLinkersToJoin()) {
+                    if (l == wagon) {
+                        highlight = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        ModelInstance instance = new ModelInstance(highlight ? highlightModel : wagonModel);
         // Elevamos el centro de masa (0.6f) para que se sitúe sobre las vías
         instance.transform.setToTranslation(wagon.getPosition().getX() + 0.5f, 0.6f, wagon.getPosition().getY() + 0.5f);
         // Orientación según la dirección del modelo
         float angle = wagon.getDir().getValue() * 45f;
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
+
+        // Añadir etiqueta
+        labels.add(new VehicleLabel(
+                new com.badlogic.gdx.math.Vector3(wagon.getPosition().getX() + 0.5f, 1.2f,
+                        wagon.getPosition().getY() + 0.5f),
+                wagon.getAspect()));
     }
 
     @Override
