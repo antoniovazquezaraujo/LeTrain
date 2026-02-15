@@ -4,9 +4,12 @@ import java.util.List;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -17,6 +20,14 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
@@ -42,6 +53,11 @@ public class Gdx3DView extends ApplicationAdapter
     private SpriteBatch spriteBatch;
     private BitmapFont font;
     private Vector3 labelPos = new Vector3();
+
+    private Stage stage;
+    private Skin skin;
+    private Table menuTable;
+    private Label descLabel;
 
     public Gdx3DView(letrain.mvp.impl.Model model) {
         this.model = model;
@@ -102,8 +118,87 @@ public class Gdx3DView extends ApplicationAdapter
         font = new BitmapFont();
         font.setColor(Color.WHITE);
         font.getData().setScale(1.5f);
+        font.getData().markupEnabled = true;
 
-        Gdx.input.setInputProcessor(this);
+        initUI();
+
+        InputMultiplexer multiplexer = new InputMultiplexer();
+        multiplexer.addProcessor(stage);
+        multiplexer.addProcessor(this);
+        Gdx.input.setInputProcessor(multiplexer);
+    }
+
+    private void initUI() {
+        stage = new Stage(new ScreenViewport());
+        skin = new Skin();
+
+        // Crear una skin procedimental básica
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
+        skin.add("white", new Texture(pixmap));
+
+        BitmapFont uiFont = new BitmapFont();
+        uiFont.getData().markupEnabled = true;
+        skin.add("default", uiFont);
+
+        TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle();
+        textButtonStyle.up = skin.newDrawable("white", Color.DARK_GRAY);
+        textButtonStyle.down = skin.newDrawable("white", Color.BLACK);
+        textButtonStyle.checked = skin.newDrawable("white", Color.BLUE);
+        textButtonStyle.over = skin.newDrawable("white", Color.LIGHT_GRAY);
+        textButtonStyle.font = skin.getFont("default");
+        skin.add("default", textButtonStyle);
+
+        Label.LabelStyle labelStyle = new Label.LabelStyle();
+        labelStyle.font = uiFont;
+        labelStyle.fontColor = Color.YELLOW;
+        skin.add("default", labelStyle);
+
+        menuTable = new Table();
+        menuTable.setFillParent(true);
+        menuTable.bottom();
+        stage.addActor(menuTable);
+
+        descLabel = new Label("", skin);
+        Table descTable = new Table();
+        descTable.setFillParent(true);
+        descTable.bottom();
+        descTable.add(descLabel).padBottom(50);
+        stage.addActor(descTable);
+
+        updateMenuButtons();
+    }
+
+    private void updateMenuButtons() {
+        menuTable.clearChildren();
+        for (GameModeMenuOption option : model.getMenuModel()) {
+            String rawName = option.gameModeName();
+            String formattedName = rawName;
+            if (rawName.contains("&")) {
+                int index = rawName.indexOf("&");
+                if (index + 1 < rawName.length()) {
+                    char mnemonic = rawName.charAt(index + 1);
+                    formattedName = rawName.substring(0, index) + "[YELLOW]" + mnemonic + "[]"
+                            + rawName.substring(index + 2);
+                }
+            }
+
+            TextButton button = new TextButton(formattedName, skin);
+            button.setChecked(option.selectedIf().get());
+            button.setDisabled(!option.enabledIf().get());
+
+            button.addListener(new ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    if (!button.isDisabled()) {
+                        model.setMode(option.doWhenSelected().get());
+                    }
+                }
+            });
+
+            menuTable.add(button).pad(5).height(30);
+        }
     }
 
     @Override
@@ -131,6 +226,13 @@ public class Gdx3DView extends ApplicationAdapter
                 }
                 return true;
             }
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS) {
+            if (character == ' ') {
+                if (model.getSelectedFork() != null) {
+                    model.getSelectedFork().flipRoute();
+                }
+                return true;
+            }
         }
 
         switch (character) {
@@ -150,6 +252,11 @@ public class Gdx3DView extends ApplicationAdapter
             case 'l':
                 if (!model.getLocomotives().isEmpty()) {
                     model.setMode(letrain.mvp.Model.GameMode.LINK);
+                }
+                return true;
+            case 'f':
+                if (!model.getForks().isEmpty()) {
+                    model.setMode(letrain.mvp.Model.GameMode.FORKS);
                 }
                 return true;
         }
@@ -264,6 +371,10 @@ public class Gdx3DView extends ApplicationAdapter
             letrain.vehicle.impl.rail.Locomotive selected = model.getSelectedLocomotive();
             targetX = selected.getPosition().getX() + 0.5f;
             targetZ = selected.getPosition().getY() + 0.5f;
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS && model.getSelectedFork() != null) {
+            letrain.track.rail.ForkRailTrack selected = model.getSelectedFork();
+            targetX = selected.getPosition().getX() + 0.5f;
+            targetZ = selected.getPosition().getY() + 0.5f;
         } else {
             letrain.map.Point cursorState = model.getCursor().getPosition();
             targetX = cursorState.getX() + 0.5f;
@@ -290,6 +401,32 @@ public class Gdx3DView extends ApplicationAdapter
             font.draw(spriteBatch, label.text, labelPos.x - 5, labelPos.y + 10);
         }
         spriteBatch.end();
+
+        // Renderizado de UI (Menú)
+        updateUIData();
+        stage.act(Gdx.graphics.getDeltaTime());
+        stage.draw();
+    }
+
+    private void updateUIData() {
+        // Marcamos el botón seleccionado según el modo
+        for (com.badlogic.gdx.scenes.scene2d.Actor actor : menuTable.getChildren()) {
+            if (actor instanceof TextButton) {
+                TextButton btn = (TextButton) actor;
+                String btnText = btn.getText().toString().toLowerCase()
+                        .replace("[yellow]", "").replace("[]", "");
+                for (GameModeMenuOption option : model.getMenuModel()) {
+                    String optionName = option.gameModeName().replace("&", "").toLowerCase();
+                    if (optionName.equals(btnText)) {
+                        btn.setChecked(option.selectedIf().get());
+                        btn.setDisabled(!option.enabledIf().get());
+                        if (btn.isChecked()) {
+                            descLabel.setText(option.gameModeDescription());
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private float inputDelay = 0f;
@@ -318,6 +455,8 @@ public class Gdx3DView extends ApplicationAdapter
             handleDriveInput();
         } else if (model.getMode() == letrain.mvp.Model.GameMode.LINK) {
             handleLinkInput();
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS) {
+            handleForkInput();
         } else {
             handleStandardInput(ctrlPressed, shiftPressed);
         }
@@ -352,6 +491,15 @@ public class Gdx3DView extends ApplicationAdapter
             if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
                 model.getSelectedLocomotive().getTrain().setLinkersToJoin(false);
             }
+        }
+    }
+
+    private void handleForkInput() {
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
+            model.selectPrevFork();
+        }
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
+            model.selectNextFork();
         }
     }
 
@@ -410,6 +558,8 @@ public class Gdx3DView extends ApplicationAdapter
         renderer.dispose();
         spriteBatch.dispose();
         font.dispose();
+        stage.dispose();
+        skin.dispose();
     }
 
     // Presenter implementation
@@ -573,6 +723,14 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void showExitDialog() {
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        stage.getViewport().update(width, height, true);
+        cam.viewportWidth = width;
+        cam.viewportHeight = height;
+        cam.update();
     }
 
     @Override

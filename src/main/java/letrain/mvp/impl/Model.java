@@ -259,6 +259,10 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public void setMode(GameMode mode) {
         this.mode = mode;
+        if (mode == GameMode.FORKS && selectedFork == null && !getForks().isEmpty()) {
+            selectedFork = getForks().get(0);
+            selectedForkIndex = 0;
+        }
     }
 
     @Override

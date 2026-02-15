@@ -31,11 +31,17 @@ public class Gdx3DRenderer implements Visitor {
     }
 
     private com.badlogic.gdx.graphics.g3d.utils.ModelBuilder modelBuilder;
-    private com.badlogic.gdx.graphics.g3d.Model trackModel;
+    private com.badlogic.gdx.graphics.g3d.Model railModel;
+    private com.badlogic.gdx.graphics.g3d.Model inactiveRailModel;
     private com.badlogic.gdx.graphics.g3d.Model cursorModel;
     private com.badlogic.gdx.graphics.g3d.Model locomotiveModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonModel;
     private com.badlogic.gdx.graphics.g3d.Model highlightModel;
+    private com.badlogic.gdx.graphics.g3d.Model forkModel;
+    private com.badlogic.gdx.graphics.g3d.Model groundModel;
+    private com.badlogic.gdx.graphics.g3d.Model waterModel;
+    private com.badlogic.gdx.graphics.g3d.Model mountainModel;
+    private com.badlogic.gdx.graphics.g3d.Model ballastModel;
 
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
@@ -57,19 +63,27 @@ public class Gdx3DRenderer implements Visitor {
     public void init() {
         if (modelBuilder == null) {
             modelBuilder = new com.badlogic.gdx.graphics.g3d.utils.ModelBuilder();
-            // Medio tramo de vía (perfil cuadrado/rectangular de madera, longitud base 0.7)
-            trackModel = modelBuilder.createBox(0.5f, 0.2f, 0.7f,
+            // Raíl fino (perfil rectangular, longitud base 0.7)
+            railModel = modelBuilder.createBox(0.06f, 0.2f, 0.7f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.25f, 0.25f, 0.25f, 1f))),
+                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.8f, 0.8f, 0.85f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Raíl inactivo (mucho más oscuro/negro para que se note el cambio)
+            inactiveRailModel = modelBuilder.createBox(0.06f, 0.2f, 0.7f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.1f, 0.1f, 0.12f, 1f))),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
             // Cursor en forma de bloque triangular (prisma triangular plano)
-            // Altura 0.2f para que tenga el mismo grosor que la vía
             cursorModel = modelBuilder.createCylinder(0.8f, 0.2f, 0.8f, 3,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
             // Locomotora simple (Bloque Negro)
             locomotiveModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -84,10 +98,43 @@ public class Gdx3DRenderer implements Visitor {
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
-            // Modelo de resaltado (Bloque Amarillo)
-            highlightModel = modelBuilder.createBox(0.82f, 0.82f, 0.82f,
+            // Modelo de resaltado (Caja amarilla más grande para que destaque)
+            highlightModel = modelBuilder.createBox(1.0f, 0.15f, 1.0f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Modelo de indicador de desvío (Bloque Rojo pequeño)
+            forkModel = modelBuilder.createBox(0.2f, 0.25f, 0.2f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.RED)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Modelos de terreno (planos de 1x1)
+            groundModel = modelBuilder.createBox(1.0f, 0.01f, 1.0f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.4f, 0.6f, 0.3f, 1f))),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            waterModel = modelBuilder.createBox(1.0f, 0.01f, 1.0f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.2f, 0.4f, 0.8f, 1f))),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            mountainModel = modelBuilder.createBox(1.0f, 0.01f, 1.0f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.5f, 0.4f, 0.3f, 1f))),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Balasto (piedras grises debajo de los raíles)
+            ballastModel = modelBuilder.createBox(0.5f, 0.1f, 0.7f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.5f, 0.5f, 0.5f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
         }
@@ -119,28 +166,27 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitRailMap(RailMap map) {
-        map.forEach(this::visitRailTrack);
+        map.forEach(track -> track.accept(this));
     }
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        // Renderizamos cada ruta del tramo como dos medios segmentos
-        // Esto permite que el raíl se "doble" en el centro para formar curvas
+        // Renderizamos cada ruta del tramo como dos medios segmentos paralelos
         track.forEach(route -> {
-            drawHalfTrack(track.getPosition(), route.getKey());
-            drawHalfTrack(track.getPosition(), route.getValue());
+            drawHalfTrack(track.getPosition(), route.getFirst(), true);
+            drawHalfTrack(track.getPosition(), route.getSecond(), true);
         });
 
         // Fallback: si no hay rutas, usamos la dirección abierta
         if (track.getNumRoutes() == 0) {
             letrain.map.Dir d = track.getFirstOpenDir();
             if (d != null) {
-                drawHalfTrack(track.getPosition(), d);
+                drawHalfTrack(track.getPosition(), d, true);
             }
         }
     }
 
-    private void drawHalfTrack(letrain.map.Point pos, letrain.map.Dir d) {
+    private void drawHalfTrack(letrain.map.Point pos, letrain.map.Dir d, boolean active) {
         float dx = getDirX(d);
         float dz = getDirZ(d);
         float magnitude = (float) Math.sqrt(dx * dx + dz * dz);
@@ -148,18 +194,47 @@ public class Gdx3DRenderer implements Visitor {
         // Ángulo hacia la cara del tile
         float angle = (float) Math.atan2(dx, dz) * MathUtils.radiansToDegrees;
 
-        ModelInstance instance = new ModelInstance(trackModel);
         // Escala proporcional a la distancia (0.5 para rectas, ~0.707 para diagonales)
         float scale = magnitude / 0.5f;
 
-        // Posición: Centro de la celda (pos + 0.5) + desplazamiento hacia la cara
-        instance.transform.setToTranslation(
+        // Primero dibujamos el balasto (piedras grises)
+        ModelInstance ballast = new ModelInstance(ballastModel);
+        ballast.transform.setToTranslation(
                 pos.getX() + 0.5f + (dx / 2f),
-                0.05f,
+                0.03f,
                 pos.getY() + 0.5f + (dz / 2f));
-        instance.transform.rotate(0, 1, 0, angle);
-        instance.transform.scale(1, 1, scale);
-        instances.add(instance);
+        ballast.transform.rotate(0, 1, 0, angle);
+        ballast.transform.scale(1, 1, scale);
+        instances.add(ballast);
+
+        // Calculamos el vector perpendicular para el desplazamiento lateral de los
+        // raíles
+        // Normalizado es (dx/magnitude, dz/magnitude)
+        // Perpendicular es (-dz/magnitude, dx/magnitude)
+        float offX = (-dz / magnitude) * 0.15f;
+        float offZ = (dx / magnitude) * 0.15f;
+
+        com.badlogic.gdx.graphics.g3d.Model activeModel = active ? railModel : inactiveRailModel;
+
+        // Raíl izquierdo
+        ModelInstance railL = new ModelInstance(activeModel);
+        railL.transform.setToTranslation(
+                pos.getX() + 0.5f + (dx / 2f) + offX,
+                0.08f,
+                pos.getY() + 0.5f + (dz / 2f) + offZ);
+        railL.transform.rotate(0, 1, 0, angle);
+        railL.transform.scale(1, 1, scale);
+        instances.add(railL);
+
+        // Raíl derecho
+        ModelInstance railR = new ModelInstance(activeModel);
+        railR.transform.setToTranslation(
+                pos.getX() + 0.5f + (dx / 2f) - offX,
+                0.08f,
+                pos.getY() + 0.5f + (dz / 2f) - offZ);
+        railR.transform.rotate(0, 1, 0, angle);
+        railR.transform.scale(1, 1, scale);
+        instances.add(railR);
     }
 
     @Override
@@ -175,6 +250,9 @@ public class Gdx3DRenderer implements Visitor {
                 break;
             case MAKING_TRACKS:
                 color = com.badlogic.gdx.graphics.Color.ORANGE;
+                break;
+            case MOVING:
+                color = com.badlogic.gdx.graphics.Color.CYAN;
                 break;
             default:
                 break;
@@ -228,7 +306,40 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        visitRailTrack(track);
+        // Resaltado si es el desvío seleccionado
+        if (modelRef != null && modelRef.getMode() == Model.GameMode.FORKS) {
+            if (modelRef.getSelectedFork() != null
+                    && modelRef.getSelectedFork().getPosition().equals(track.getPosition())) {
+                ModelInstance highlight = new ModelInstance(highlightModel);
+                // Situamos el resaltado en la base, un poco más alto para evitar z-fighting con
+                // el suelo
+                highlight.transform.setToTranslation(track.getPosition().getX() + 0.5f, 0.04f,
+                        track.getPosition().getY() + 0.5f);
+                instances.add(highlight);
+            }
+        }
+
+        // Determinamos la ruta activa
+        letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> activeRoute = track.isUsingAlternativeRoute()
+                ? track.getAlternativeRoute()
+                : track.getOriginalRoute();
+
+        // Solo dibujamos la ruta activa (brillante)
+        if (activeRoute != null) {
+            drawHalfTrack(track.getPosition(), activeRoute.getFirst(), true);
+            drawHalfTrack(track.getPosition(), activeRoute.getSecond(), true);
+        }
+
+        // Indicador de ruta activa (bloque rojo)
+        if (activeRoute != null) {
+            ModelInstance indicator = new ModelInstance(forkModel);
+            letrain.map.Dir d = activeRoute.getFirst(); // Tomamos una de las direcciones de la ruta para posicionar
+            float ox = getDirX(d);
+            float oz = getDirZ(d);
+            indicator.transform.setToTranslation(track.getPosition().getX() + 0.5f + ox * 0.4f, 0.25f,
+                    track.getPosition().getY() + 0.5f + oz * 0.4f);
+            instances.add(indicator);
+        }
     }
 
     @Override
@@ -237,8 +348,10 @@ public class Gdx3DRenderer implements Visitor {
     }
 
     public void dispose() {
-        if (trackModel != null)
-            trackModel.dispose();
+        if (railModel != null)
+            railModel.dispose();
+        if (inactiveRailModel != null)
+            inactiveRailModel.dispose();
         if (cursorModel != null)
             cursorModel.dispose();
         if (locomotiveModel != null)
@@ -247,6 +360,16 @@ public class Gdx3DRenderer implements Visitor {
             wagonModel.dispose();
         if (highlightModel != null)
             highlightModel.dispose();
+        if (forkModel != null)
+            forkModel.dispose();
+        if (groundModel != null)
+            groundModel.dispose();
+        if (waterModel != null)
+            waterModel.dispose();
+        if (mountainModel != null)
+            mountainModel.dispose();
+        if (ballastModel != null)
+            ballastModel.dispose();
     }
 
     @Override
@@ -324,10 +447,37 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitGroundMap(GroundMap groundMap) {
+        groundMap.forEach(ground -> visitGround(ground));
     }
 
     @Override
     public void visitGround(Ground ground) {
+        int type = ground.getType();
+        com.badlogic.gdx.graphics.g3d.Model model;
+
+        switch (type) {
+            case GroundMap.GROUND:
+                model = groundModel;
+                break;
+            case GroundMap.WATER:
+                model = waterModel;
+                break;
+            case GroundMap.ROCK:
+                model = mountainModel;
+                break;
+            default:
+                model = groundModel;
+                break;
+        }
+
+        if (model != null) {
+            ModelInstance instance = new ModelInstance(model);
+            instance.transform.setToTranslation(
+                    ground.getPosition().getX() + 0.5f,
+                    0.0f,
+                    ground.getPosition().getY() + 0.5f);
+            instances.add(instance);
+        }
     }
 
     @Override
