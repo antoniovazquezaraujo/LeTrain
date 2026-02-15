@@ -125,7 +125,7 @@ public class Gdx3DRenderer implements Visitor {
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
-            mountainModel = modelBuilder.createBox(1.0f, 0.01f, 1.0f,
+            mountainModel = modelBuilder.createBox(1.0f, 1.2f, 1.0f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(new com.badlogic.gdx.graphics.Color(0.5f, 0.4f, 0.3f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
@@ -454,19 +454,24 @@ public class Gdx3DRenderer implements Visitor {
     public void visitGround(Ground ground) {
         int type = ground.getType();
         com.badlogic.gdx.graphics.g3d.Model model;
+        float yPosition = 0.0f;
 
         switch (type) {
             case GroundMap.GROUND:
                 model = groundModel;
+                yPosition = 0.0f;
                 break;
             case GroundMap.WATER:
                 model = waterModel;
+                yPosition = 0.0f;
                 break;
             case GroundMap.ROCK:
                 model = mountainModel;
+                yPosition = 0.6f; // La mitad de la altura (1.2 / 2) para que la base esté al nivel del suelo
                 break;
             default:
                 model = groundModel;
+                yPosition = 0.0f;
                 break;
         }
 
@@ -474,7 +479,7 @@ public class Gdx3DRenderer implements Visitor {
             ModelInstance instance = new ModelInstance(model);
             instance.transform.setToTranslation(
                     ground.getPosition().getX() + 0.5f,
-                    0.0f,
+                    yPosition,
                     ground.getPosition().getY() + 0.5f);
             instances.add(instance);
         }
