@@ -37,6 +37,8 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model locomotiveModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonModel;
     private com.badlogic.gdx.graphics.g3d.Model highlightModel;
+    private com.badlogic.gdx.graphics.g3d.Model locomotiveHighlightModel; // Locomotora amarilla para modo LINK
+    private com.badlogic.gdx.graphics.g3d.Model wagonHighlightModel; // Vagón amarillo para modo LINK
     private com.badlogic.gdx.graphics.g3d.Model forkModel;
     private com.badlogic.gdx.graphics.g3d.Model groundModel;
     private com.badlogic.gdx.graphics.g3d.Model waterModel;
@@ -44,6 +46,8 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model ballastModel;
     private com.badlogic.gdx.graphics.g3d.Model bridgePillarModel;
     private com.badlogic.gdx.graphics.g3d.Model tunnelPortalModel;
+    private com.badlogic.gdx.graphics.g3d.Model directionIndicatorModel; // Flecha/cuña para indicar dirección de
+                                                                         // locomotora
     private letrain.map.impl.RailMap railMap; // Referencia al mapa de vías
 
     public static class VehicleLabel {
@@ -105,6 +109,27 @@ public class Gdx3DRenderer implements Visitor {
             highlightModel = modelBuilder.createBox(1.0f, 0.15f, 1.0f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Locomotora amarilla para modo LINK
+            locomotiveHighlightModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Vagón amarillo para modo LINK
+            wagonHighlightModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Indicador de dirección (cono verde que apunta hacia adelante)
+            directionIndicatorModel = modelBuilder.createCone(0.3f, 0.4f, 0.3f, 8,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.GREEN)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
@@ -414,12 +439,31 @@ public class Gdx3DRenderer implements Visitor {
             }
         }
 
-        ModelInstance instance = new ModelInstance(highlight ? highlightModel : locomotiveModel);
+        ModelInstance instance = new ModelInstance(highlight ? locomotiveHighlightModel : locomotiveModel);
         instance.transform.setToTranslation(locomotive.getPosition().getX() + 0.5f, 0.6f,
                 locomotive.getPosition().getY() + 0.5f);
         float angle = locomotive.getDir().getValue() * 45f;
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
+
+        // Añadir indicador de dirección: cara amarilla en el frente de la locomotora
+        com.badlogic.gdx.graphics.g3d.Material yellowFaceMaterial = new com.badlogic.gdx.graphics.g3d.Material(
+                com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                        .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW));
+
+        ModelInstance frontFace = new ModelInstance(
+                modelBuilder.createBox(0.02f, 0.82f, 0.82f, yellowFaceMaterial,
+                        com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                                | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal));
+
+        // Posicionar la cara en el frente de la locomotora
+        frontFace.transform.setToTranslation(
+                locomotive.getPosition().getX() + 0.5f,
+                0.6f,
+                locomotive.getPosition().getY() + 0.5f);
+        frontFace.transform.rotate(0, 1, 0, angle); // Rotar según dirección de locomotora
+        frontFace.transform.translate(0.41f, 0, 0); // Mover hacia el frente (en X local)
+        instances.add(frontFace);
 
         // Añadir etiqueta
         labels.add(new VehicleLabel(
@@ -444,7 +488,7 @@ public class Gdx3DRenderer implements Visitor {
             }
         }
 
-        ModelInstance instance = new ModelInstance(highlight ? highlightModel : wagonModel);
+        ModelInstance instance = new ModelInstance(highlight ? wagonHighlightModel : wagonModel);
         // Elevamos el centro de masa (0.6f) para que se sitúe sobre las vías
         instance.transform.setToTranslation(wagon.getPosition().getX() + 0.5f, 0.6f, wagon.getPosition().getY() + 0.5f);
         // Orientación según la dirección del modelo
