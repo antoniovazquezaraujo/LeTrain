@@ -290,6 +290,18 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public boolean keyDown(int keycode) {
+        // Interceptar Alt+flechas para controles de cámara (consumir evento)
+        boolean altPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
+                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
+
+        if (altPressed && (keycode == com.badlogic.gdx.Input.Keys.LEFT
+                || keycode == com.badlogic.gdx.Input.Keys.RIGHT
+                || keycode == com.badlogic.gdx.Input.Keys.UP
+                || keycode == com.badlogic.gdx.Input.Keys.DOWN)) {
+            // Consumir el evento para que no se procese en otros lugares
+            return true;
+        }
+
         if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE || keycode == com.badlogic.gdx.Input.Keys.ENTER) {
             model.setMode(letrain.mvp.Model.GameMode.RAILS);
             return true;
@@ -333,6 +345,9 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     private com.badlogic.gdx.math.Vector3 camTarget = new com.badlogic.gdx.math.Vector3();
+    private float cameraAngle = 45f; // Ángulo de rotación de la cámara alrededor del punto focal (en grados)
+    private float cameraDistance = 8.5f; // Distancia horizontal de la cámara al punto focal
+    private float cameraHeight = 6f; // Altura fija de la cámara sobre el suelo
 
     private float stateTime = 0f;
 
@@ -381,11 +396,20 @@ public class Gdx3DView extends ApplicationAdapter
             targetZ = cursorState.getY() + 0.5f;
         }
 
-        // Interpolación de la posición y del punto de enfoque (camTarget) para suavizar
-        // saltos
-        cam.position.lerp(new com.badlogic.gdx.math.Vector3(targetX, 6f, targetZ + 6f), 0.05f);
+        // Interpolación del punto de enfoque solo cuando el objetivo cambia
         camTarget.lerp(new com.badlogic.gdx.math.Vector3(targetX, 0, targetZ), 0.05f);
+
+        // Calcular posición de cámara usando ángulo y distancia horizontal
+        float angleRad = cameraAngle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
+        float camX = camTarget.x + cameraDistance * com.badlogic.gdx.math.MathUtils.sin(angleRad);
+        float camZ = camTarget.z + cameraDistance * com.badlogic.gdx.math.MathUtils.cos(angleRad);
+        // Altura fija para mantener inclinación constante
+        float camY = cameraHeight;
+
+        // Actualizar posición de cámara sin interpolación para respuesta inmediata
+        cam.position.set(camX, camY, camZ);
         cam.lookAt(camTarget);
+        cam.up.set(0, 1, 0); // Mantener vector up fijo para evitar volteo
         cam.update();
 
         modelBatch.begin(cam);
@@ -441,6 +465,31 @@ public class Gdx3DView extends ApplicationAdapter
                 || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
         boolean ctrlPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
                 || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_RIGHT);
+        boolean altPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
+                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
+
+        // Controles de cámara con Alt+flechas (funcionan en TODOS los modos)
+        if (altPressed) {
+            // Alt+izquierda/derecha: panear cámara alrededor del punto focal
+            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
+                cameraAngle -= 15f; // Rotar 15° a la izquierda
+                return; // No procesar más input para evitar mover el cursor
+            }
+            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
+                cameraAngle += 15f; // Rotar 15° a la derecha
+                return; // No procesar más input para evitar mover el cursor
+            }
+
+            // Alt+arriba/abajo: ajustar zoom
+            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP)) {
+                cameraDistance = Math.max(3f, cameraDistance - 1f); // Acercar (mínimo 3)
+                return; // No procesar más input para evitar mover el cursor
+            }
+            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN)) {
+                cameraDistance = Math.min(20f, cameraDistance + 1f); // Alejar (máximo 20)
+                return; // No procesar más input para evitar mover el cursor
+            }
+        }
 
         if (stateTime == 0) {
             if (shiftPressed || ctrlPressed) {
@@ -458,7 +507,7 @@ public class Gdx3DView extends ApplicationAdapter
         } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS) {
             handleForkInput();
         } else {
-            handleStandardInput(ctrlPressed, shiftPressed);
+            handleStandardInput(ctrlPressed, shiftPressed, altPressed);
         }
     }
 
@@ -503,34 +552,34 @@ public class Gdx3DView extends ApplicationAdapter
         }
     }
 
-    private void handleStandardInput(boolean ctrlPressed, boolean shiftPressed) {
+    private void handleStandardInput(boolean ctrlPressed, boolean shiftPressed, boolean altPressed) {
         // Movimiento Longitudinal (Repetible con retardo controlado)
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP)) {
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP) && !altPressed) {
             trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp,
                     ctrlPressed, false, shiftPressed));
             inputDelay = 0.5f;
-        } else if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.UP) && inputDelay <= 0) {
+        } else if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.UP) && inputDelay <= 0 && !altPressed) {
             trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp,
                     ctrlPressed, false, shiftPressed));
             inputDelay = 0.5f;
         }
 
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN)) {
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN) && !altPressed) {
             trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(
                     com.googlecode.lanterna.input.KeyType.ArrowDown, false, false, false));
             inputDelay = 0.5f;
-        } else if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.DOWN) && inputDelay <= 0) {
+        } else if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.DOWN) && inputDelay <= 0 && !altPressed) {
             trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(
                     com.googlecode.lanterna.input.KeyType.ArrowDown, false, false, false));
             inputDelay = 0.5f;
         }
 
         // Giro (Solo un paso por pulsación para evitar "girar de más")
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT) && !altPressed) {
             trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(
                     com.googlecode.lanterna.input.KeyType.ArrowLeft, false, false, false));
         }
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT) && !altPressed) {
             trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(
                     com.googlecode.lanterna.input.KeyType.ArrowRight, false, false, false));
         }
