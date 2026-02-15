@@ -615,25 +615,25 @@ public class Model implements Serializable, letrain.mvp.Model {
         return Arrays.asList(
                 new GameModeMenuOption(
                         "&rails",
-                        "(\u2190 \u2192 \u2191 \u2193) shift+\u2191:add rail ctrl+\u2191:del rail ins:add/del sensor home:add/del semaphore w:start/end station",
+                        "(<- -> ^ v) shift+^:add rail ctrl+^:del rail ins:add/del sensor home:add/del semaphore w:start/end station",
                         () -> true,
                         () -> (this.getMode() == GameMode.RAILS),
                         () -> (GameMode.RAILS)),
                 new GameModeMenuOption(
                         "&drive",
-                        "\u2190:prev \u2192:next \u2191:accel \u2193:decel space:reverse (pgup, pgdn, ctrl+pgup, ctrl+pgdn):move map",
+                        "<-:prev ->:next ^:accel v:decel space:reverse (pgup, pgdn, ctrl+pgup, ctrl+pgdn):move map",
                         () -> !this.getLocomotives().isEmpty(),
                         () -> this.getMode() == GameMode.DRIVE,
                         () -> GameMode.DRIVE),
                 new GameModeMenuOption(
                         "&forks",
-                        "\u2190:prev \u2192:next space:toggle #:select",
+                        "<-:prev ->:next space:toggle #:select",
                         () -> !this.getForks().isEmpty(),
                         () -> this.getMode() == GameMode.FORKS,
                         () -> GameMode.FORKS),
                 new GameModeMenuOption(
                         "&semaphores",
-                        "\u2190:prev \u2192:next space:toggle #:select",
+                        "<-:prev ->:next space:toggle #:select",
                         () -> !this.getSemaphores().isEmpty(),
                         () -> this.getMode() == GameMode.SEMAPHORES,
                         () -> GameMode.SEMAPHORES),
@@ -645,25 +645,25 @@ public class Model implements Serializable, letrain.mvp.Model {
                         () -> GameMode.TRAINS),
                 new GameModeMenuOption(
                         "&link",
-                        "\u2191:front \u2193:back space:link",
+                        "^:front v:back space:link",
                         () -> !this.getLocomotives().isEmpty(),
                         () -> this.getMode() == GameMode.LINK,
                         () -> GameMode.LINK),
                 new GameModeMenuOption(
                         "&unlink",
-                        "\u2190:front \u2192:back \u2191:add \u2193:del space:unlink",
+                        "<-:front ->:back ^:add v:del space:unlink",
                         () -> !this.getLocomotives().isEmpty(),
                         () -> this.getMode() == GameMode.UNLINK,
                         () -> GameMode.UNLINK),
                 new GameModeMenuOption(
                         "&persist",
-                        "\u2191:load \u2193:save space:edit",
+                        "^:load v:save space:edit",
                         () -> true,
                         () -> this.getMode() == GameMode.PERSIST,
                         () -> GameMode.PERSIST),
                 new GameModeMenuOption(
                         "statio&ns",
-                        "\u2190:prev \u2192:next -:load/unload passengers space:clean selection backspace:del number #:select",
+                        "<-:prev ->:next -:load/unload passengers space:clean selection backspace:del number #:select",
                         () -> !this.getStations().isEmpty(),
                         () -> this.getMode() == GameMode.STATIONS,
                         () -> GameMode.STATIONS));

@@ -38,6 +38,7 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model wagonModel;
     private com.badlogic.gdx.graphics.g3d.Model highlightModel;
     private com.badlogic.gdx.graphics.g3d.Model locomotiveHighlightModel;
+    private com.badlogic.gdx.graphics.g3d.Model locomotiveSelectedModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonHighlightModel;
     private com.badlogic.gdx.graphics.g3d.Model forkModel;
     private com.badlogic.gdx.graphics.g3d.Model groundModel;
@@ -115,6 +116,13 @@ public class Gdx3DRenderer implements Visitor {
             locomotiveHighlightModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Locomotora verde para seleccionada
+            locomotiveSelectedModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.GREEN)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
@@ -358,6 +366,9 @@ public class Gdx3DRenderer implements Visitor {
         // Aplicamos un desfase de -90 para que el vértice apunte a 'angle'
         instance.transform.setToTranslation(pos.getX() + 0.5f, 0.25f, pos.getY() + 0.5f);
         instance.transform.rotate(0, 1, 0, angle - 90f);
+        // Escalamos para afilar el cursor: más largo en X (dirección) y más estrecho en
+        // Z
+        instance.transform.scale(1.6f, 1f, 0.6f);
         instances.add(instance);
     }
 
@@ -507,7 +518,16 @@ public class Gdx3DRenderer implements Visitor {
             }
         }
 
-        ModelInstance instance = new ModelInstance(highlight ? locomotiveHighlightModel : locomotiveModel);
+        boolean isSelected = (modelRef != null && modelRef.getSelectedLocomotive() == locomotive);
+
+        com.badlogic.gdx.graphics.g3d.Model modelToUse = locomotiveModel;
+        if (highlight) {
+            modelToUse = locomotiveHighlightModel; // Amarillo (Link)
+        } else if (isSelected) {
+            modelToUse = locomotiveSelectedModel; // Verde (Seleccionada)
+        }
+
+        ModelInstance instance = new ModelInstance(modelToUse);
         instance.transform.setToTranslation(locomotive.getPosition().getX() + 0.5f, 0.6f,
                 locomotive.getPosition().getY() + 0.5f);
         float angle = locomotive.getDir().getValue() * 45f;
@@ -534,10 +554,8 @@ public class Gdx3DRenderer implements Visitor {
         instances.add(frontFace);
 
         // Añadir etiqueta
-        labels.add(new VehicleLabel(
-                new com.badlogic.gdx.math.Vector3(locomotive.getPosition().getX() + 0.5f, 1.2f,
-                        locomotive.getPosition().getY() + 0.5f),
-                locomotive.getAspect()));
+        labels.add(new VehicleLabel(new com.badlogic.gdx.math.Vector3(locomotive.getPosition().getX() + 0.5f, 1.2f,
+                locomotive.getPosition().getY() + 0.5f), locomotive.getAspect()));
     }
 
     @Override

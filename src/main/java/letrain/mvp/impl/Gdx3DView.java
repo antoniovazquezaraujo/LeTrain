@@ -286,6 +286,8 @@ public class Gdx3DView extends ApplicationAdapter
             model.addWagon(wagon);
             track.enterLinkerFromDir(cursorDir.inverse(), wagon);
         }
+        // Avanzar el cursor automáticamente para facilitar la creación de trenes largos
+        model.getCursor().getPosition().move(cursorDir);
     }
 
     @Override
@@ -589,13 +591,6 @@ public class Gdx3DView extends ApplicationAdapter
             trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(' ', false, false));
         }
 
-        // 'R' discreto
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.R)) {
-            if (model.getQuantifier() == 0)
-                model.setQuantifier(1);
-            trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp,
-                    true, false));
-        }
     }
 
     @Override
