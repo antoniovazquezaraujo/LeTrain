@@ -44,6 +44,7 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model ballastModel;
     private com.badlogic.gdx.graphics.g3d.Model bridgePillarModel;
     private com.badlogic.gdx.graphics.g3d.Model tunnelPortalModel;
+    private letrain.map.impl.RailMap railMap; // Referencia al mapa de vías
 
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
@@ -147,10 +148,10 @@ public class Gdx3DRenderer implements Visitor {
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
-            // Portal de túnel (arco oscuro)
-            tunnelPortalModel = modelBuilder.createBox(1.0f, 0.8f, 0.2f,
+            // Portal de túnel (bloque negro del mismo tamaño que montaña)
+            tunnelPortalModel = modelBuilder.createBox(1.0f, 1.2f, 1.0f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.2f, 0.2f, 0.2f, 1f))),
+                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.15f, 0.15f, 0.15f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
         }
@@ -182,6 +183,7 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitRailMap(RailMap map) {
+        this.railMap = (letrain.map.impl.RailMap) map; // Guardar referencia
         map.forEach(track -> track.accept(this));
     }
 
@@ -539,22 +541,13 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
-        // Renderizar portal del túnel
-        // Determinar la dirección del portal basado en las rutas
-        letrain.map.Dir portalDir = tunnelGateRailTrack.getFirstOpenDir();
-        if (portalDir != null) {
-            float dx = getDirX(portalDir);
-            float dz = getDirZ(portalDir);
-            float angle = (float) Math.atan2(dx, dz) * MathUtils.radiansToDegrees;
-
-            ModelInstance portal = new ModelInstance(tunnelPortalModel);
-            portal.transform.setToTranslation(
-                    tunnelGateRailTrack.getPosition().getX() + 0.5f,
-                    0.4f,
-                    tunnelGateRailTrack.getPosition().getY() + 0.5f);
-            portal.transform.rotate(0, 1, 0, angle);
-            instances.add(portal);
-        }
+        // Renderizar portal del túnel como bloque negro simple
+        ModelInstance portal = new ModelInstance(tunnelPortalModel);
+        portal.transform.setToTranslation(
+                tunnelGateRailTrack.getPosition().getX() + 0.5f,
+                0.6f, // Mismo nivel que montañas
+                tunnelGateRailTrack.getPosition().getY() + 0.5f);
+        instances.add(portal);
 
         // Renderizar vías normales
         visitRailTrack(tunnelGateRailTrack);
