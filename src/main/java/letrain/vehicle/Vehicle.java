@@ -21,6 +21,7 @@ public abstract class Vehicle<T extends Track>
         Renderable,
         Destructible {
     protected Point pos = new Point(0, 0);
+    protected Point previousPos = new Point(0, 0);
     protected Dir dir;
     private boolean selected = false;
     private boolean reversed = false;
@@ -44,8 +45,19 @@ public abstract class Vehicle<T extends Track>
     }
 
     public void setPosition(Point pos) {
+        this.previousPos.setX(this.pos.getX());
+        this.previousPos.setY(this.pos.getY());
         this.pos.setX(pos.getX());
         this.pos.setY(pos.getY());
+    }
+
+    public Point getPreviousPosition() {
+        return previousPos;
+    }
+
+    public void syncPosition() {
+        this.previousPos.setX(this.pos.getX());
+        this.previousPos.setY(this.pos.getY());
     }
 
     /***********************************************************

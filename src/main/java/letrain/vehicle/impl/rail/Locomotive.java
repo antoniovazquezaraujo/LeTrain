@@ -71,6 +71,9 @@ public class Locomotive extends Linker implements Tractor {
         }
 
         if (isDirectorLinker()) {
+            if (getTrain() != null) {
+                getTrain().syncLinkersPosition();
+            }
             if (isTimeToMove()) {
                 getTrain().advance();
                 moved = true;

@@ -62,6 +62,11 @@ public class Gdx3DRenderer implements Visitor {
 
     private List<VehicleLabel> labels = new ArrayList<>();
     private Model modelRef;
+    private float animationAlpha = 1.0f;
+
+    public void setAnimationAlpha(float alpha) {
+        this.animationAlpha = alpha;
+    }
 
     public List<VehicleLabel> getLabels() {
         return labels;
@@ -528,8 +533,24 @@ public class Gdx3DRenderer implements Visitor {
         }
 
         ModelInstance instance = new ModelInstance(modelToUse);
-        instance.transform.setToTranslation(locomotive.getPosition().getX() + 0.5f, 0.6f,
-                locomotive.getPosition().getY() + 0.5f);
+
+        float x = locomotive.getPosition().getX();
+        float y = locomotive.getPosition().getY();
+
+        // Interpolación
+        letrain.map.Point prevPos = locomotive.getPreviousPosition();
+        if (prevPos == null)
+            prevPos = locomotive.getPosition();
+
+        float prevX = prevPos.getX();
+        float prevY = prevPos.getY();
+        // Si la distancia es mayor a 1 (teletransporte/wrap), no interpolar
+        if (Math.abs(x - prevX) <= 1 && Math.abs(y - prevY) <= 1) {
+            x = prevX + (x - prevX) * animationAlpha;
+            y = prevY + (y - prevY) * animationAlpha;
+        }
+
+        instance.transform.setToTranslation(x + 0.5f, 0.6f, y + 0.5f);
         float angle = locomotive.getDir().getValue() * 45f;
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
@@ -544,18 +565,19 @@ public class Gdx3DRenderer implements Visitor {
                         com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                                 | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal));
 
-        // Posicionar la cara en el frente de la locomotora
+        // Posicionar la cara en el frente de la locomotora (usando las mismas
+        // coordenadas interpoladas)
         frontFace.transform.setToTranslation(
-                locomotive.getPosition().getX() + 0.5f,
+                x + 0.5f,
                 0.6f,
-                locomotive.getPosition().getY() + 0.5f);
+                y + 0.5f);
         frontFace.transform.rotate(0, 1, 0, angle); // Rotar según dirección de locomotora
         frontFace.transform.translate(0.41f, 0, 0); // Mover hacia el frente (en X local)
         instances.add(frontFace);
 
         // Añadir etiqueta
-        labels.add(new VehicleLabel(new com.badlogic.gdx.math.Vector3(locomotive.getPosition().getX() + 0.5f, 1.2f,
-                locomotive.getPosition().getY() + 0.5f), locomotive.getAspect()));
+        labels.add(new VehicleLabel(new com.badlogic.gdx.math.Vector3(x + 0.5f, 1.2f,
+                y + 0.5f), locomotive.getAspect()));
     }
 
     @Override
@@ -575,8 +597,24 @@ public class Gdx3DRenderer implements Visitor {
         }
 
         ModelInstance instance = new ModelInstance(highlight ? wagonHighlightModel : wagonModel);
+
+        float x = wagon.getPosition().getX();
+        float y = wagon.getPosition().getY();
+
+        // Interpolación
+        letrain.map.Point prevPos = wagon.getPreviousPosition();
+        if (prevPos == null)
+            prevPos = wagon.getPosition();
+
+        float prevX = prevPos.getX();
+        float prevY = prevPos.getY();
+        if (Math.abs(x - prevX) <= 1 && Math.abs(y - prevY) <= 1) {
+            x = prevX + (x - prevX) * animationAlpha;
+            y = prevY + (y - prevY) * animationAlpha;
+        }
+
         // Elevamos el centro de masa (0.6f) para que se sitúe sobre las vías
-        instance.transform.setToTranslation(wagon.getPosition().getX() + 0.5f, 0.6f, wagon.getPosition().getY() + 0.5f);
+        instance.transform.setToTranslation(x + 0.5f, 0.6f, y + 0.5f);
         // Orientación según la dirección del modelo
         float angle = wagon.getDir().getValue() * 45f;
         instance.transform.rotate(0, 1, 0, angle);
@@ -584,8 +622,8 @@ public class Gdx3DRenderer implements Visitor {
 
         // Añadir etiqueta
         labels.add(new VehicleLabel(
-                new com.badlogic.gdx.math.Vector3(wagon.getPosition().getX() + 0.5f, 1.2f,
-                        wagon.getPosition().getY() + 0.5f),
+                new com.badlogic.gdx.math.Vector3(x + 0.5f, 1.2f,
+                        y + 0.5f),
                 wagon.getAspect()));
     }
 

@@ -605,4 +605,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     public Itinerary getItinerary() {
         return this.itinerary;
     }
+
+    public void syncLinkersPosition() {
+        if (linkers != null) {
+            linkers.forEach(linker -> linker.syncPosition());
+        }
+    }
 }

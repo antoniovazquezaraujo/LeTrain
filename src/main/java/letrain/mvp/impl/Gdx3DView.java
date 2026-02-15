@@ -369,8 +369,16 @@ public class Gdx3DView extends ApplicationAdapter
             model.moveLocomotives();
             model.loadAndUnloadTrains();
             model.removeDestroyedTrains();
-            stateTime = 0;
+            stateTime -= 0.05f;
+            if (stateTime > 0.05f)
+                stateTime = 0.05f; // Evitar espiral de la muerte si hay mucho lag
         }
+
+        // Calcular factor de interpolación
+        float alpha = stateTime / 0.05f;
+        if (alpha > 1f)
+            alpha = 1f;
+        renderer.setAnimationAlpha(alpha);
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
