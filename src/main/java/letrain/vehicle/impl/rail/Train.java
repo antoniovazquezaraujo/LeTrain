@@ -30,7 +30,17 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     protected final Deque<Linker> linkers;
     protected final List<Tractor> tractors;
     protected final Deque<Linker> linkersToJoin;
-    int numLinkersToRemove = 0;
+    private int numLinkersToRemove = 0;
+    private int numLinkersToJoin = 0;
+
+    public int getNumLinkersToJoin() {
+        return numLinkersToJoin;
+    }
+
+    public int getNumLinkersToRemove() {
+        return numLinkersToRemove;
+    }
+
     protected final Deque<Linker> linkersToRemove;
     int railStationId = 0;
     public boolean isLoading = false;
@@ -57,6 +67,31 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     public int getId() {
         return this.id;
+    }
+
+    public void addLinkerToJoin() {
+        if (numLinkersToJoin < linkersToJoin.size()) {
+            numLinkersToJoin++;
+            System.out.println("Train.addLinkerToJoin: num=" + numLinkersToJoin); // DEBUG
+        }
+    }
+
+    public void removeLinkerToJoin() {
+        if (numLinkersToJoin > 0) {
+            numLinkersToJoin--;
+            System.out.println("Train.removeLinkerToJoin: num=" + numLinkersToJoin); // DEBUG
+        }
+    }
+
+    public List<Linker> getSelectedLinkersToJoin() {
+        if (linkersToJoin.isEmpty() || numLinkersToJoin == 0)
+            return new ArrayList<>();
+        // Convert deque to list to slice it
+        List<Linker> all = new ArrayList<>(linkersToJoin);
+        // Logic might differ based on iteration order of deque vs join sense
+        // linkersToJoin is populated in order of distance from train.
+        // so we just take the first N.
+        return all.subList(0, numLinkersToJoin);
     }
 
     public void setId(int id) {
@@ -363,12 +398,16 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 }
             }
         }
+        numLinkersToJoin = linkersToJoin.size();
     }
 
     public void joinLinkers() {
         if (!joined) {
-
+            int count = 0;
             for (Linker linkerToJoin : linkersToJoin) {
+                if (count >= numLinkersToJoin)
+                    break;
+
                 if (linkerJoinSense == LinkersSense.FRONT) {
                     this.linkers.addFirst(linkerToJoin);
                 } else {
@@ -383,6 +422,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                         train.getLinkers().stream().forEach(linker -> linker.setTrain(null));
                     }
                 }
+                count++;
             }
             linkersToJoin.clear();
             joined = true;
@@ -391,63 +431,80 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     public void setFrontDivisionSense() {
         linkerDivisionSense = LinkersSense.FRONT;
+        updateLinkersToRemove();
     }
 
     public void setBackDivisionSense() {
         linkerDivisionSense = LinkersSense.BACK;
+        updateLinkersToRemove();
+    }
+
+    public void resetUnlinkState() {
+        System.out.println("Train.resetUnlinkState: Resetting state"); // DEBUG
+        if (!linkers.isEmpty() && linkers.peekLast() == getDirectorLinker()) {
+            linkerDivisionSense = LinkersSense.FRONT;
+        } else {
+            linkerDivisionSense = LinkersSense.BACK;
+        }
+        numLinkersToRemove = 1;
+        updateLinkersToRemove();
+    }
+
+    public void resetLinkState() {
+        System.out.println("Train.resetLinkState: Resetting state"); // DEBUG
+        numLinkersToJoin = 0;
+        linkersToJoin.clear();
     }
 
     public void selectNextDivisionLink() {
         if (numLinkersToRemove < getLinkers().size() - 1) {
             numLinkersToRemove++;
         }
-        linkersToRemove.clear();
-        Iterator<Linker> linkerIterator = getLinkers().iterator();
-        if (linkerDivisionSense == LinkersSense.FRONT) {
-            linkerIterator = getLinkers().descendingIterator();
-        } else {
-            linkerIterator = getLinkers().iterator();
-        }
-        for (int n = 0; n < numLinkersToRemove; n++) {
-            Linker next = linkerIterator.next();
-            if (next != getDirectorLinker()) {
-                linkersToRemove.addLast(next);
-            } else {
-                numLinkersToRemove--;
-                return;
-            }
-        }
+        updateLinkersToRemove();
     }
 
     public void selectPrevDivisionLink() {
         if (numLinkersToRemove > 0) {
             numLinkersToRemove--;
         }
+        updateLinkersToRemove();
+    }
+
+    private void updateLinkersToRemove() {
         linkersToRemove.clear();
         Iterator<Linker> linkerIterator = getLinkers().iterator();
         if (linkerDivisionSense == LinkersSense.FRONT) {
-            linkerIterator = getLinkers().descendingIterator();
-        } else {
             linkerIterator = getLinkers().iterator();
+        } else {
+            linkerIterator = getLinkers().descendingIterator();
         }
         for (int n = 0; n < numLinkersToRemove; n++) {
-            Linker next = linkerIterator.next();
-            if (next != getDirectorLinker()) {
-                linkersToRemove.addLast(next);
-            } else {
-                numLinkersToRemove--;
-                return;
+            if (linkerIterator.hasNext()) {
+                Linker next = linkerIterator.next();
+                if (next != getDirectorLinker()) {
+                    linkersToRemove.addLast(next);
+                } else {
+                    // Si nos topamos con el director, no podemos desvincularlo, así que reducimos
+                    // la cuenta y paramos.
+                    // Esto asume que el director no se puede desvincular de sí mismo si es el
+                    // único.
+                    // Pero en divideTrain se intenta separar.
+                    // La lógica original tenía este check.
+                    numLinkersToRemove--;
+                    return;
+                }
             }
         }
     }
 
     public void divideTrain(Supplier<Integer> nextTrainIdSupplier) {
+        System.out.println("Train.divideTrain: numToRemove=" + numLinkersToRemove); // DEBUG
         Linker linkerToRemove = null;
         for (int n = 0; n < numLinkersToRemove; n++) {
             if (linkerDivisionSense == LinkersSense.BACK) {
-                linkerToRemove = getLinkers().removeFirst();
-            } else {
                 linkerToRemove = getLinkers().removeLast();
+            } else {
+                linkerToRemove = getLinkers().removeFirst();
             }
             linkerToRemove.setTrain(null);
             if (linkerToRemove instanceof Locomotive) {
@@ -466,9 +523,9 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         Linker linkerToRemove = null;
         for (int n = 0; n < numLinkersToRemove; n++) {
             if (linkerDivisionSense == LinkersSense.BACK) {
-                linkerToRemove = getLinkers().removeFirst();
-            } else {
                 linkerToRemove = getLinkers().removeLast();
+            } else {
+                linkerToRemove = getLinkers().removeFirst();
             }
             linkerToRemove.setTrain(null);
             if (linkerToRemove instanceof Locomotive) {

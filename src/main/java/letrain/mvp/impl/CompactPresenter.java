@@ -152,7 +152,6 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
     // [r:Rails d:Drive f:Forks t:Trains l:Link u:Unlink
 
- 
     public void OldonChar(KeyStroke keyEvent) {
         boolean isAMenuKey = true;
         if (keyEvent.getKeyType() == KeyType.Enter) {
@@ -249,7 +248,8 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 break;
         }
     }
- @Override
+
+    @Override
     public void onChar(KeyStroke keyEvent) {
         boolean isAMenuKey = true;
         if (keyEvent.getKeyType() == KeyType.Enter) {
@@ -289,11 +289,19 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                     case 'l':
                         if (!model.getLocomotives().isEmpty()) {
                             model.setMode(LINK);
+                            if (model.getSelectedLocomotive() != null
+                                    && model.getSelectedLocomotive().getTrain() != null) {
+                                model.getSelectedLocomotive().getTrain().resetLinkState();
+                            }
                         }
                         break;
                     case 'u':
                         if (!model.getLocomotives().isEmpty()) {
                             model.setMode(UNLINK);
+                            if (model.getSelectedLocomotive() != null
+                                    && model.getSelectedLocomotive().getTrain() != null) {
+                                model.getSelectedLocomotive().getTrain().resetUnlinkState();
+                            }
                         }
                         break;
                     case 'n':
@@ -346,6 +354,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 break;
         }
     }
+
     void persistManagerOnChar(KeyStroke keyEvent) {
         switch (keyEvent.getKeyType()) {
             case Character:
@@ -446,6 +455,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
 
     private void unlinkerOnChar(KeyStroke keyEvent) {
+        log.info("Unlinker key: " + keyEvent.getKeyType() + " char: " + keyEvent.getCharacter()); // DEBUG
         switch (keyEvent.getKeyType()) {
             case ArrowLeft:
                 selectFrontDivisionSense();
@@ -465,6 +475,10 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                     model.setMode(GameMode.MENU);
                 }
                 break;
+            case Enter:
+                divideTrain();
+                model.setMode(GameMode.MENU);
+                break;
             case Delete:
                 destroyLinkers();
                 model.setMode(GameMode.MENU);
@@ -474,6 +488,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
 
     private void linkerOnChar(KeyStroke keyEvent) {
+        log.info("Linker key: " + keyEvent.getKeyType() + " char: " + keyEvent.getCharacter()); // DEBUG
         switch (keyEvent.getKeyType()) {
             case ArrowUp:
                 selectVehiclesInFront();
@@ -481,11 +496,29 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             case ArrowDown:
                 selectVehiclesAtBack();
                 break;
+            case ArrowLeft:
+                if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+                    model.getSelectedLocomotive().getTrain().removeLinkerToJoin();
+                    log.info("Removed linker to join. Count: "
+                            + model.getSelectedLocomotive().getTrain().getNumLinkersToJoin()); // DEBUG
+                }
+                break;
+            case ArrowRight:
+                if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+                    model.getSelectedLocomotive().getTrain().addLinkerToJoin();
+                    log.info("Added linker to join. Count: "
+                            + model.getSelectedLocomotive().getTrain().getNumLinkersToJoin()); // DEBUG
+                }
+                break;
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
                     linkSelectedVehicles();
                     model.setMode(GameMode.MENU);
                 }
+                break;
+            case Enter:
+                linkSelectedVehicles();
+                model.setMode(GameMode.MENU);
                 break;
         }
     }
@@ -865,11 +898,12 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             setPageOfPoint(model.getSelectedStation().getPosition());
         }
     }
+
     public File changeExtension(File originalFile, String newExtension) {
         String directory = originalFile.getParent();
         String fileName = originalFile.getName();
         int lastDotIndex = fileName.lastIndexOf('.');
-        
+
         String baseName = fileName;
         if (lastDotIndex > 0) {
             baseName = fileName.substring(0, lastDotIndex);
@@ -877,14 +911,15 @@ public class CompactPresenter implements letrain.mvp.Presenter {
         String newFileName = baseName + "." + newExtension;
         return new File(directory, newFileName);
     }
+
     @Override
     public void onNewGame() {
     }
 
     @Override
-    public void onSaveGame(File file) {        
+    public void onSaveGame(File file) {
         if (file != null) {
-            File mapFile = changeExtension(file,  "ltr");
+            File mapFile = changeExtension(file, "ltr");
             saveModel(this.model, mapFile);
         }
     }

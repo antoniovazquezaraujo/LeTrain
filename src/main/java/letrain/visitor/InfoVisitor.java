@@ -66,6 +66,25 @@ public class InfoVisitor implements Visitor {
                     visitStation(station);
                 }
                 break;
+            case LINK:
+                infoBarText += "Modo: VINCULAR (LINK)\n";
+                infoBarText += "Flechas Arriba/Abajo: Seleccionar sentido\n";
+                infoBarText += "Flechas Izqu/Der: Ajustar cantidad\n";
+                infoBarText += "Espacio: Vincular\n";
+                Locomotive selected = model.getSelectedLocomotive();
+                if (selected != null && selected.getTrain() != null) {
+                    infoBarText += "Vagones: " + selected.getTrain().getSelectedLinkersToJoin().size() + "/"
+                            + selected.getTrain().getLinkersToJoin().size() + "\n";
+                }
+                break;
+            case UNLINK:
+                infoBarText += "Modo: DESVINCULAR (UNLINK)\n";
+                infoBarText += "Flechas: Seleccionar vagones\n";
+                infoBarText += "Espacio: Desvincular\n";
+                break;
+            case MENU:
+                infoBarText += "Menu Principal\n";
+                break;
             case LOAD_TRAINS:
                 break;
             case TRAINS:

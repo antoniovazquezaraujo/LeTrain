@@ -40,6 +40,8 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model locomotiveHighlightModel;
     private com.badlogic.gdx.graphics.g3d.Model locomotiveSelectedModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonHighlightModel;
+    private com.badlogic.gdx.graphics.g3d.Model wagonUnlinkModel;
+    private com.badlogic.gdx.graphics.g3d.Model locomotiveUnlinkModel;
     private com.badlogic.gdx.graphics.g3d.Model forkModel;
     private com.badlogic.gdx.graphics.g3d.Model groundModel;
     private com.badlogic.gdx.graphics.g3d.Model waterModel;
@@ -47,8 +49,6 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model ballastModel;
     private com.badlogic.gdx.graphics.g3d.Model bridgePillarModel;
     private com.badlogic.gdx.graphics.g3d.Model tunnelPortalModel;
-    private com.badlogic.gdx.graphics.g3d.Model directionIndicatorModel;
-    private letrain.map.impl.RailMap railMap; // Referencia al mapa de vías
 
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
@@ -138,10 +138,16 @@ public class Gdx3DRenderer implements Visitor {
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
-            // Indicador de dirección (cono verde que apunta hacia adelante)
-            directionIndicatorModel = modelBuilder.createCone(0.3f, 0.4f, 0.3f, 8,
+            // Modelos Rojos para UNLINK
+            locomotiveUnlinkModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(com.badlogic.gdx.graphics.Color.GREEN)),
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.RED)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            wagonUnlinkModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.RED)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
@@ -220,7 +226,7 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitRailMap(RailMap map) {
-        this.railMap = (letrain.map.impl.RailMap) map; // Guardar referencia
+        // this.railMap = (letrain.map.impl.RailMap) map; // Guardar referencia
         map.forEach(track -> track.accept(this));
     }
 
@@ -505,19 +511,36 @@ public class Gdx3DRenderer implements Visitor {
             bridgePillarModel.dispose();
         if (tunnelPortalModel != null)
             tunnelPortalModel.dispose();
+        if (locomotiveUnlinkModel != null)
+            locomotiveUnlinkModel.dispose();
+        if (wagonUnlinkModel != null)
+            wagonUnlinkModel.dispose();
     }
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        // ¿Debería resaltarse? (Modo LINK)
         boolean highlight = false;
-        if (modelRef != null && modelRef.getMode() == Model.GameMode.LINK) {
-            Locomotive selected = modelRef.getSelectedLocomotive();
-            if (selected != null && selected.getTrain() != null) {
-                for (letrain.vehicle.impl.Linker l : selected.getTrain().getLinkersToJoin()) {
-                    if (l == locomotive) {
-                        highlight = true;
-                        break;
+        boolean unlinkHighlight = false;
+
+        if (modelRef != null) {
+            if (modelRef.getMode() == Model.GameMode.LINK) {
+                Locomotive selected = modelRef.getSelectedLocomotive();
+                if (selected != null && selected.getTrain() != null) {
+                    for (letrain.vehicle.impl.Linker l : selected.getTrain().getSelectedLinkersToJoin()) {
+                        if (l == locomotive) {
+                            highlight = true;
+                            break;
+                        }
+                    }
+                }
+            } else if (modelRef.getMode() == Model.GameMode.UNLINK) {
+                Locomotive selected = modelRef.getSelectedLocomotive();
+                if (selected != null && selected.getTrain() != null) {
+                    for (letrain.vehicle.impl.Linker l : selected.getTrain().getLinkersToRemove()) {
+                        if (l == locomotive) {
+                            unlinkHighlight = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -526,7 +549,9 @@ public class Gdx3DRenderer implements Visitor {
         boolean isSelected = (modelRef != null && modelRef.getSelectedLocomotive() == locomotive);
 
         com.badlogic.gdx.graphics.g3d.Model modelToUse = locomotiveModel;
-        if (highlight) {
+        if (unlinkHighlight) {
+            modelToUse = locomotiveUnlinkModel; // Rojo (Unlink)
+        } else if (highlight) {
             modelToUse = locomotiveHighlightModel; // Amarillo (Link)
         } else if (isSelected) {
             modelToUse = locomotiveSelectedModel; // Verde (Seleccionada)
@@ -601,21 +626,41 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitWagon(Wagon wagon) {
-        // ¿Debería resaltarse? (Modo LINK)
         boolean highlight = false;
-        if (modelRef != null && modelRef.getMode() == Model.GameMode.LINK) {
-            Locomotive selected = modelRef.getSelectedLocomotive();
-            if (selected != null && selected.getTrain() != null) {
-                for (letrain.vehicle.impl.Linker l : selected.getTrain().getLinkersToJoin()) {
-                    if (l == wagon) {
-                        highlight = true;
-                        break;
+        boolean unlinkHighlight = false;
+
+        if (modelRef != null) {
+            if (modelRef.getMode() == Model.GameMode.LINK) {
+                Locomotive selected = modelRef.getSelectedLocomotive();
+                if (selected != null && selected.getTrain() != null) {
+                    for (letrain.vehicle.impl.Linker l : selected.getTrain().getSelectedLinkersToJoin()) {
+                        if (l == wagon) {
+                            highlight = true;
+                            break;
+                        }
+                    }
+                }
+            } else if (modelRef.getMode() == Model.GameMode.UNLINK) {
+                Locomotive selected = modelRef.getSelectedLocomotive();
+                if (selected != null && selected.getTrain() != null) {
+                    for (letrain.vehicle.impl.Linker l : selected.getTrain().getLinkersToRemove()) {
+                        if (l == wagon) {
+                            unlinkHighlight = true;
+                            break;
+                        }
                     }
                 }
             }
         }
 
-        ModelInstance instance = new ModelInstance(highlight ? wagonHighlightModel : wagonModel);
+        com.badlogic.gdx.graphics.g3d.Model modelToUse = wagonModel;
+        if (unlinkHighlight) {
+            modelToUse = wagonUnlinkModel;
+        } else if (highlight) {
+            modelToUse = wagonHighlightModel;
+        }
+
+        ModelInstance instance = new ModelInstance(modelToUse);
 
         float x = wagon.getPosition().getX();
         float y = wagon.getPosition().getY();

@@ -192,7 +192,21 @@ public class Gdx3DView extends ApplicationAdapter
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
                     if (!button.isDisabled()) {
-                        model.setMode(option.doWhenSelected().get());
+                        letrain.mvp.Model.GameMode newMode = option.doWhenSelected().get();
+                        model.setMode(newMode);
+
+                        // Inicialización de estados al cambiar de modo mediante botones
+                        if (newMode == letrain.mvp.Model.GameMode.LINK) {
+                            if (model.getSelectedLocomotive() != null
+                                    && model.getSelectedLocomotive().getTrain() != null) {
+                                model.getSelectedLocomotive().getTrain().resetLinkState();
+                            }
+                        } else if (newMode == letrain.mvp.Model.GameMode.UNLINK) {
+                            if (model.getSelectedLocomotive() != null
+                                    && model.getSelectedLocomotive().getTrain() != null) {
+                                model.getSelectedLocomotive().getTrain().resetUnlinkState();
+                            }
+                        }
                     }
                 }
             });
@@ -233,6 +247,14 @@ public class Gdx3DView extends ApplicationAdapter
                 }
                 return true;
             }
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.UNLINK) {
+            if (character == ' ') {
+                if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+                    model.getSelectedLocomotive().getTrain().divideTrain(model::nextTrainId);
+                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                }
+                return true;
+            }
         }
 
         switch (character) {
@@ -252,6 +274,17 @@ public class Gdx3DView extends ApplicationAdapter
             case 'l':
                 if (!model.getLocomotives().isEmpty()) {
                     model.setMode(letrain.mvp.Model.GameMode.LINK);
+                    if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+                        model.getSelectedLocomotive().getTrain().resetLinkState();
+                    }
+                }
+                return true;
+            case 'u':
+                if (!model.getLocomotives().isEmpty()) {
+                    model.setMode(letrain.mvp.Model.GameMode.UNLINK);
+                    if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+                        model.getSelectedLocomotive().getTrain().resetUnlinkState();
+                    }
                 }
                 return true;
             case 'f':
@@ -304,9 +337,17 @@ public class Gdx3DView extends ApplicationAdapter
             return true;
         }
 
-        if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE || keycode == com.badlogic.gdx.Input.Keys.ENTER) {
+        if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE) {
             model.setMode(letrain.mvp.Model.GameMode.RAILS);
             return true;
+        }
+
+        if (keycode == com.badlogic.gdx.Input.Keys.ENTER) {
+            if (model.getMode() != letrain.mvp.Model.GameMode.LINK
+                    && model.getMode() != letrain.mvp.Model.GameMode.UNLINK) {
+                model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                return true;
+            }
         }
         return false;
     }
@@ -516,6 +557,8 @@ public class Gdx3DView extends ApplicationAdapter
             handleLinkInput();
         } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS) {
             handleForkInput();
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.UNLINK) {
+            handleUnlinkInput();
         } else {
             handleStandardInput(ctrlPressed, shiftPressed, altPressed);
         }
@@ -551,6 +594,16 @@ public class Gdx3DView extends ApplicationAdapter
                 model.getSelectedLocomotive().getTrain().setLinkersToJoin(false);
             }
         }
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
+            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+                model.getSelectedLocomotive().getTrain().removeLinkerToJoin();
+            }
+        }
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
+            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+                model.getSelectedLocomotive().getTrain().addLinkerToJoin();
+            }
+        }
     }
 
     private void handleForkInput() {
@@ -559,6 +612,24 @@ public class Gdx3DView extends ApplicationAdapter
         }
         if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
             model.selectNextFork();
+        }
+    }
+
+    private void handleUnlinkInput() {
+        if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+            letrain.vehicle.impl.rail.Train train = model.getSelectedLocomotive().getTrain();
+            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP)) {
+                train.selectNextDivisionLink();
+            }
+            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN)) {
+                train.selectPrevDivisionLink();
+            }
+            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
+                train.setFrontDivisionSense();
+            }
+            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
+                train.setBackDivisionSense();
+            }
         }
     }
 
