@@ -482,7 +482,7 @@ public class Gdx3DView extends ApplicationAdapter
         renderer.clear();
         renderer.visitModel(model);
         renderer.getInstances().add(new ModelInstance(groundModel));
-        renderer.getInstances().add(new ModelInstance(gridModel));
+        // renderer.getInstances().add(new ModelInstance(gridModel)); // Grid oculto
 
         // Centrar cámara en el cursor o en la locomotora seleccionada
         float targetX, targetZ;
