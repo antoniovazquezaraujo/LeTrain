@@ -322,6 +322,9 @@ public class Gdx3DView extends ApplicationAdapter
                     model.setMode(letrain.mvp.Model.GameMode.SEMAPHORES);
                 }
                 return true;
+            case 'c':
+                cameraMode = (cameraMode == CameraMode.ORBIT) ? CameraMode.CAB : CameraMode.ORBIT;
+                return true;
         }
         return false;
     }
@@ -445,6 +448,9 @@ public class Gdx3DView extends ApplicationAdapter
     private float cameraAngle = 45f; // Ángulo de rotación de la cámara alrededor del punto focal (en grados)
     private float cameraDistance = 8.5f; // Distancia horizontal de la cámara al punto focal
     private float cameraHeight = 6f; // Altura fija de la cámara sobre el suelo
+    
+    private enum CameraMode { ORBIT, CAB }
+    private CameraMode cameraMode = CameraMode.ORBIT;
 
     private float stateTime = 0f;
 
@@ -506,20 +512,60 @@ public class Gdx3DView extends ApplicationAdapter
             targetZ = cursorState.getY() + 0.5f;
         }
 
-        // Interpolación del punto de enfoque solo cuando el objetivo cambia
-        camTarget.lerp(new com.badlogic.gdx.math.Vector3(targetX, 0, targetZ), 0.05f);
+        // Calcular posición de cámara
+        if (cameraMode == CameraMode.CAB) {
+            letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
+            if (loco == null && !model.getLocomotives().isEmpty()) {
+               loco = model.getLocomotives().get(0);
+            }
+            
+            if (loco != null) {
+                // Posición interpolada de la locomotora (visual)
+                com.badlogic.gdx.math.Vector2 interpPos = getInterpolatedPosition(loco, alpha);
+                float x = interpPos.x + 0.5f;
+                float z = interpPos.y + 0.5f;
+                
+                // Dirección de la locomotora para mirar hacia adelante
+                // Usamos la dirección interpolada si es posible, o la lógica básica.
+                // Para simplificar, usamos la dirección del modelo.
+                letrain.map.Dir d = loco.getDir();
+                float dx = letrain.visitor.Gdx3DRenderer.getDirX(d);
+                float dz = letrain.visitor.Gdx3DRenderer.getDirZ(d);
+                
+                // Altura de cabina ajustada: "Chase Cam"
+                // Posición: (x, y, z) - dir * 1.2 + (0, 2.0, 0)
+                // Esto coloca la cámara detrás y arriba, viendo un trozo de la locomotora.
+                float camX = x - dx * 1.2f;
+                float camY = 2.0f;
+                float camZ = z - dz * 1.2f;
+                
+                cam.position.set(camX, camY, camZ);
+                // Mirar hacia adelante (x + dx*5, 0.5, z + dz*5)
+                // Bajamos un poco el punto de mira para ver la vía y la locomotora
+                cam.lookAt(x + dx * 5f, 0.5f, z + dz * 5f);
+                cam.up.set(0, 1, 0);
+            } else {
+               // Fallback a Orbita
+               cameraMode = CameraMode.ORBIT;
+            }
+        } 
+        
+        if (cameraMode == CameraMode.ORBIT) {
+            // Interpolación del punto de enfoque solo cuando el objetivo cambia
+            camTarget.lerp(new com.badlogic.gdx.math.Vector3(targetX, 0, targetZ), 0.05f);
 
-        // Calcular posición de cámara usando ángulo y distancia horizontal
-        float angleRad = cameraAngle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
-        float camX = camTarget.x + cameraDistance * com.badlogic.gdx.math.MathUtils.sin(angleRad);
-        float camZ = camTarget.z + cameraDistance * com.badlogic.gdx.math.MathUtils.cos(angleRad);
-        // Altura fija para mantener inclinación constante
-        float camY = cameraHeight;
+            // Calcular posición de cámara usando ángulo y distancia horizontal
+            float angleRad = cameraAngle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
+            float camX = camTarget.x + cameraDistance * com.badlogic.gdx.math.MathUtils.sin(angleRad);
+            float camZ = camTarget.z + cameraDistance * com.badlogic.gdx.math.MathUtils.cos(angleRad);
+            // Altura fija para mantener inclinación constante
+            float camY = cameraHeight;
 
-        // Actualizar posición de cámara sin interpolación para respuesta inmediata
-        cam.position.set(camX, camY, camZ);
-        cam.lookAt(camTarget);
-        cam.up.set(0, 1, 0); // Mantener vector up fijo para evitar volteo
+            // Actualizar posición de cámara sin interpolación para respuesta inmediata
+            cam.position.set(camX, camY, camZ);
+            cam.lookAt(camTarget);
+            cam.up.set(0, 1, 0); // Mantener vector up fijo para evitar volteo
+        }
         cam.update();
 
         modelBatch.begin(cam);

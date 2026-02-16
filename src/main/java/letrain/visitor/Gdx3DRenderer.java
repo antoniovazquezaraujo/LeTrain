@@ -437,7 +437,7 @@ public class Gdx3DRenderer implements Visitor {
         instances.add(instance);
     }
 
-    private float getDirX(letrain.map.Dir d) {
+    public static float getDirX(letrain.map.Dir d) {
         switch (d) {
             case E:
             case NE:
@@ -452,7 +452,7 @@ public class Gdx3DRenderer implements Visitor {
         }
     }
 
-    private float getDirZ(letrain.map.Dir d) {
+    public static float getDirZ(letrain.map.Dir d) {
         switch (d) {
             case S:
             case SE:
@@ -626,6 +626,7 @@ public class Gdx3DRenderer implements Visitor {
 
         float x = locomotive.getPosition().getX();
         float y = locomotive.getPosition().getY();
+        float angle = locomotive.getDir().getValue() * 45f; // Default angle
 
         if (locomotive.getTotalTurns() >= 0) {
             float totalDelay = (float) locomotive.getTotalTurns() + 1.0f;
@@ -649,13 +650,52 @@ public class Gdx3DRenderer implements Visitor {
                     if (Math.abs(nextX - x) <= 1 && Math.abs(nextY - y) <= 1) {
                         x = x + (nextX - x) * progress;
                         y = y + (nextY - y) * progress;
+                        
+                        // Interpolación de ángulo para curvas
+                        // Ángulo objetivo (hacia donde vamos)
+                        float targetAngle = locomotive.getDir().getValue() * 45f;
+                         // Ángulo inicial (de donde venimos)
+                        float startAngle = targetAngle; // Por defecto recto
+                        
+                        // Determinar si estamos en una curva
+                        // Check de la otra conexión del track actual
+                        // Si currentTrack conecta con A y B. Y vamos hacia nextTrack (Dir A).
+                        // Entonces venimos de Dir B.
+                        // Nuestra dirección de entrada fue inverse(B).
+                        letrain.map.Dir exitDir = locomotive.getDir();
+                        // Iteramos direcciones para encontrar la otra conexión
+                        for (letrain.map.Dir d : letrain.map.Dir.values()) {
+                            if (d != exitDir && currentTrack.getConnected(d) != null) {
+                                // Encontramos la otra conexión (entrada)
+                                // Si entramos por 'd', nuetra dirección de movimiento era 'd.inverse()' o 'd'?
+                                // 'getConnected(d)' devuelve el track conectado en el puerto 'd'.
+                                // Si el track es una curva (S, E). Conectado en S y en E.
+                                // Si salimos por E (exitDir=E).
+                                // La otra conexión es S.
+                                // Eso significa que entramos por el puerto S.
+                                // Para entrar por el puerto S, venimos del Sur, moviéndonos hacia el Norte.
+                                // Dirección de movimiento anterior: N.
+                                // N es S.inverse().
+                                startAngle = d.inverse().getValue() * 45f;
+                                break; 
+                            }
+                        }
+                        
+                        
+                        // Interpolar suavemente
+                        // Multiplicamos progress por 2 para que el giro termine al llegar al borde de la casilla (0.5)
+                        // "Tienen que terminar el giro al salir de la curva"
+                        float rotProgress = progress * 2.0f;
+                        if (rotProgress > 1.0f) rotProgress = 1.0f;
+                        
+                        angle = com.badlogic.gdx.math.MathUtils.lerpAngleDeg(startAngle, targetAngle, rotProgress);
                     }
                 }
             }
         }
 
         instance.transform.setToTranslation(x + 0.5f, 0.6f, y + 0.5f);
-        float angle = locomotive.getDir().getValue() * 45f;
+        // float angle = locomotive.getDir().getValue() * 45f; // Ya calculado arriba o default
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
 
@@ -680,46 +720,22 @@ public class Gdx3DRenderer implements Visitor {
         instances.add(frontFace);
 
         // Añadir etiquetas a los lados
-        float dx = getDirX(locomotive.getDir());
-        float dz = getDirZ(locomotive.getDir());
+        // Calcular vectores dirección dinámicos basados en el ángulo interpolado
+        float rad = angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
         
-        // Normalizar vector de dirección
-        float len = (float) Math.sqrt(dx * dx + dz * dz);
-        if (len > 0) {
-            dx /= len;
-            dz /= len;
-        }
-
+        // En nuestro sistema:
+        // Angle 0 (N) -> dx=0, dz=-1. sin(0)=0, -cos(0)=-1. Correcto.
+        // Angle 90 (E) -> dx=1, dz=0. sin(90)=1, -cos(90)=0. Correcto.
+        float dx = com.badlogic.gdx.math.MathUtils.sin(rad);
+        float dz = -com.badlogic.gdx.math.MathUtils.cos(rad);
+        
         // Perpendicular: (dz, -dx)
-        // Offset ajustado a 0.42 (ancho del modelo 0.4 + 0.02 margen)
         float perpX = dz * 0.42f;
         float perpZ = -dx * 0.42f;
-        
-        // Lado Izquierdo (Normal hacia Z- local -> Angle + 180)
-        // El vector normal es la dirección de perp (perpX, 0, perpZ) normalizada?
-        // offsetX = dz * 0.42. perpX es el offset.
-        // La normal es simplemente (perpX, 0, perpZ) normalizada.
-        // Como perp ya tiene magnitud 0.42, podemos reusar (dz, 0, -dx) como normal base?
-        // dx, dz están normalizados.
-        // Perpendicular 1: (dz, 0, -dx). 
-        // Perpendicular 2: (-dz, 0, dx).
-        
-        // Lado 1: Offset (perpX, perpZ). Normal (dz, 0, -dx).
-        // Lado 2: Offset (-perpX, -perpZ). Normal (-dz, 0, dx).
-        
-        // Asumiendo perpX = dz*0.42, perpZ = -dx*0.42.
-        // Vector (perpX, perpZ) es paralelo a (dz, -dx).
         
         labels.add(new VehicleLabel(
             new com.badlogic.gdx.math.Vector3(x + 0.5f + perpX, 0.6f, y + 0.5f + perpZ), 
             locomotive.getAspect(), 
-            new com.badlogic.gdx.math.Vector3(dx == 0 ? 1 : dz, 0, dx == 0 ? 0 : -dx).nor() // Approximate normal
-        ));
-        
-        // Simplification: Use the offset direction as normal
-        labels.add(new VehicleLabel(
-            new com.badlogic.gdx.math.Vector3(x + 0.5f + perpX, 0.6f, y + 0.5f + perpZ),
-            locomotive.getAspect(),
             new com.badlogic.gdx.math.Vector3(perpX, 0, perpZ).nor()
         ));
         
@@ -770,6 +786,7 @@ public class Gdx3DRenderer implements Visitor {
 
         float x = wagon.getPosition().getX();
         float y = wagon.getPosition().getY();
+        float angle = wagon.getDir().getValue() * 45f; // Default angle
 
         // Interpolación continua (Predictiva) basada en la locomotora directora
         letrain.vehicle.impl.rail.Train train = wagon.getTrain();
@@ -796,6 +813,22 @@ public class Gdx3DRenderer implements Visitor {
                             if (Math.abs(nextX - x) <= 1 && Math.abs(nextY - y) <= 1) {
                                 x = x + (nextX - x) * progress;
                                 y = y + (nextY - y) * progress;
+                                
+                                float targetAngle = wagon.getDir().getValue() * 45f;
+                                float startAngle = targetAngle;
+                                letrain.map.Dir exitDir = wagon.getDir();
+                                for (letrain.map.Dir d : letrain.map.Dir.values()) {
+                                    if (d != exitDir && currentTrack.getConnected(d) != null) {
+                                        startAngle = d.inverse().getValue() * 45f;
+                                        break; 
+                                    }
+                                }
+                                
+                                // Multiplicamos progress por 2 para que el giro termine al llegar al borde de la casilla (0.5)
+                                float rotProgress = progress * 2.0f;
+                                if (rotProgress > 1.0f) rotProgress = 1.0f;
+                                
+                                angle = com.badlogic.gdx.math.MathUtils.lerpAngleDeg(startAngle, targetAngle, rotProgress);
                             }
                         }
                     }
@@ -806,20 +839,16 @@ public class Gdx3DRenderer implements Visitor {
         // Elevamos el centro de masa (0.6f) para que se sitúe sobre las vías
         instance.transform.setToTranslation(x + 0.5f, 0.6f, y + 0.5f);
         // Orientación según la dirección del modelo
-        float angle = wagon.getDir().getValue() * 45f;
+        // float angle = wagon.getDir().getValue() * 45f; // Ya calculado
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
 
         // Añadir etiquetas a los lados
-        float dx = getDirX(wagon.getDir());
-        float dz = getDirZ(wagon.getDir());
+        float rad = angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
         
-        float len = (float) Math.sqrt(dx * dx + dz * dz);
-        if (len > 0) {
-            dx /= len;
-            dz /= len;
-        }
-
+        float dx = com.badlogic.gdx.math.MathUtils.sin(rad);
+        float dz = -com.badlogic.gdx.math.MathUtils.cos(rad);
+        
         // Perpendicular: (dz, -dx)
         float perpX = dz * 0.42f;
         float perpZ = -dx * 0.42f;
