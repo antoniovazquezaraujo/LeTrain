@@ -817,6 +817,11 @@ public class Gdx3DRenderer implements Visitor {
 
         instance.transform.setToTranslation(x + 0.5f + offsetX, 0.5f, y + 0.5f + offsetZ);
         instance.transform.rotate(0, 1, 0, angle);
+        
+        if (modelRef.getSelectedSemaphore() == semaphore) {
+            instance.transform.scale(1.5f, 1.5f, 1.5f);
+        }
+        
         instances.add(instance);
     }
 

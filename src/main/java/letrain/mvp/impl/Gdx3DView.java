@@ -295,6 +295,11 @@ public class Gdx3DView extends ApplicationAdapter
                     model.setMode(letrain.mvp.Model.GameMode.FORKS);
                 }
                 return true;
+            case 's':
+                if (!model.getSemaphores().isEmpty()) {
+                    model.setMode(letrain.mvp.Model.GameMode.SEMAPHORES);
+                }
+                return true;
         }
         return false;
     }
@@ -359,6 +364,20 @@ public class Gdx3DView extends ApplicationAdapter
                 return true;
             } else if (keycode == com.badlogic.gdx.Input.Keys.INSERT) {
                 trackMaker.manageSensor();
+                return true;
+            }
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES) {
+             if (keycode == com.badlogic.gdx.Input.Keys.LEFT) {
+                model.selectPrevSemaphore();
+                return true;
+            } else if (keycode == com.badlogic.gdx.Input.Keys.RIGHT) {
+                model.selectNextSemaphore();
+                return true;
+            } else if (keycode == com.badlogic.gdx.Input.Keys.SPACE) {
+                letrain.track.RailSemaphore s = model.getSelectedSemaphore();
+                if (s != null) {
+                    s.setOpen(!s.isOpen());
+                }
                 return true;
             }
         }
@@ -453,6 +472,10 @@ public class Gdx3DView extends ApplicationAdapter
             targetZ = interpPos.y + 0.5f;
         } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS && model.getSelectedFork() != null) {
             letrain.track.rail.ForkRailTrack selected = model.getSelectedFork();
+            targetX = selected.getPosition().getX() + 0.5f;
+            targetZ = selected.getPosition().getY() + 0.5f;
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES && model.getSelectedSemaphore() != null) {
+            letrain.track.RailSemaphore selected = model.getSelectedSemaphore();
             targetX = selected.getPosition().getX() + 0.5f;
             targetZ = selected.getPosition().getY() + 0.5f;
         } else {
@@ -573,6 +596,8 @@ public class Gdx3DView extends ApplicationAdapter
             handleForkInput();
         } else if (model.getMode() == letrain.mvp.Model.GameMode.UNLINK) {
             handleUnlinkInput();
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES) {
+            // Controlado por keyDown/keyUp
         } else {
             handleStandardInput(ctrlPressed, shiftPressed, altPressed);
         }
