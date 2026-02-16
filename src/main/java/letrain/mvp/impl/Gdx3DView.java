@@ -435,8 +435,9 @@ public class Gdx3DView extends ApplicationAdapter
         if ((model.getMode() == letrain.mvp.Model.GameMode.DRIVE || model.getMode() == letrain.mvp.Model.GameMode.LINK)
                 && model.getSelectedLocomotive() != null) {
             letrain.vehicle.impl.rail.Locomotive selected = model.getSelectedLocomotive();
-            targetX = selected.getPosition().getX() + 0.5f;
-            targetZ = selected.getPosition().getY() + 0.5f;
+            com.badlogic.gdx.math.Vector2 interpPos = getInterpolatedPosition(selected, alpha);
+            targetX = interpPos.x + 0.5f;
+            targetZ = interpPos.y + 0.5f;
         } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS && model.getSelectedFork() != null) {
             letrain.track.rail.ForkRailTrack selected = model.getSelectedFork();
             targetX = selected.getPosition().getX() + 0.5f;
@@ -864,5 +865,38 @@ public class Gdx3DView extends ApplicationAdapter
     @Override
     public int getRows() {
         return 24;
+    }
+
+    private com.badlogic.gdx.math.Vector2 getInterpolatedPosition(letrain.vehicle.impl.rail.Locomotive locomotive,
+            float alpha) {
+        float x = locomotive.getPosition().getX();
+        float y = locomotive.getPosition().getY();
+
+        if (locomotive.getTotalTurns() >= 0) {
+            float totalDelay = (float) locomotive.getTotalTurns() + 1.0f;
+            float currentDelay = (float) locomotive.getTurns() + 1.0f - alpha;
+            float progress = 1.0f - (currentDelay / totalDelay);
+
+            if (progress < 0)
+                progress = 0;
+            if (progress > 1)
+                progress = 1;
+
+            letrain.track.Track currentTrack = locomotive.getTrack();
+            if (currentTrack != null) {
+                letrain.track.Track nextTrack = currentTrack.getConnected(locomotive.getDir());
+                if (nextTrack != null) {
+                    float nextX = nextTrack.getPosition().getX();
+                    float nextY = nextTrack.getPosition().getY();
+
+                    // Si la distancia es mayor a 1 (teletransporte/wrap), no interpolar
+                    if (Math.abs(nextX - x) <= 1 && Math.abs(nextY - y) <= 1) {
+                        x = x + (nextX - x) * progress;
+                        y = y + (nextY - y) * progress;
+                    }
+                }
+            }
+        }
+        return new com.badlogic.gdx.math.Vector2(x, y);
     }
 }
