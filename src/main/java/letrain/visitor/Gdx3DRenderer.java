@@ -52,6 +52,9 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model semaphoreOpenModel;
     private com.badlogic.gdx.graphics.g3d.Model semaphoreClosedModel;
     private com.badlogic.gdx.graphics.g3d.Model sensorModel;
+    private com.badlogic.gdx.graphics.g3d.Model stationModel;
+    private com.badlogic.gdx.graphics.g3d.Model stationSelectedModel;
+    private com.badlogic.gdx.graphics.g3d.Model platformModel;
 
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
@@ -203,6 +206,29 @@ public class Gdx3DRenderer implements Visitor {
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
+            // Estación (Plataforma azul a un lado o caja distintiva)
+            // Usamos una caja cyan un poco más alta que el sensor
+            stationModel = modelBuilder.createBox(0.6f, 0.15f, 0.6f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.CYAN)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            stationSelectedModel = modelBuilder.createBox(0.6f, 0.15f, 0.6f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+
+
+            // Plataforma de estación (Losa de hormigón)
+            platformModel = modelBuilder.createBox(1.0f, 0.2f, 0.9f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.LIGHT_GRAY)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
             // Modelo de indicador de desvío (Bloque Rojo pequeño)
             forkModel = modelBuilder.createBox(0.2f, 0.25f, 0.2f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -274,6 +300,7 @@ public class Gdx3DRenderer implements Visitor {
         model.getRailMap().accept(this);
         model.getSemaphores().forEach(s -> s.accept(this));
         model.getSensors().forEach(s -> s.accept(this));
+        model.getStations().forEach(s -> s.accept(this));
         model.getLocomotives().forEach(l -> l.accept(this));
         model.getWagons().forEach(w -> w.accept(this));
         visitCursor(model.getCursor());
@@ -287,6 +314,35 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
+        // Renderizar plataforma si es estación
+        if (track instanceof letrain.track.rail.StationRailTrack) {
+            float x = track.getPosition().getX();
+            float y = track.getPosition().getY();
+            
+            // Determinar orientación para poner la plataforma al lado
+            float angle = 0;
+            float offsetX = 0;
+            float offsetZ = 0;
+            
+            if (track.getNumRoutes() > 0) {
+                letrain.map.Dir d = track.getFirstOpenDir();
+                float dx = getDirX(d);
+                float dz = getDirZ(d);
+                
+                // Offset lateral (perpendicular a la dirección)
+                // Ancho del track visual ~0.6? Platform width 0.9. Center at 0.9.
+                offsetX = -dz * 0.9f; 
+                offsetZ = dx * 0.9f;
+                
+                angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+            }
+
+            ModelInstance platform = new ModelInstance(platformModel);
+            platform.transform.setToTranslation(x + 0.5f + offsetX, 0.1f, y + 0.5f + offsetZ);
+            platform.transform.rotate(0, 1, 0, angle);
+            instances.add(platform);
+        }
+
         // Renderizamos cada ruta del tramo como dos medios segmentos
         track.forEach(route -> {
             letrain.map.Dir d1 = route.getFirst();
@@ -906,8 +962,32 @@ public class Gdx3DRenderer implements Visitor {
         instances.add(instance);
     }
 
+
+
     @Override
     public void visitStation(Station station) {
+        if (station.getPosition() == null) return;
+        
+        float x = station.getPosition().getX();
+        float y = station.getPosition().getY();
+
+        // Marcador central (el cyan box o amarillo si está seleccionada)
+        com.badlogic.gdx.graphics.g3d.Model modelToUse = stationModel;
+        if (modelRef != null && modelRef.getSelectedStation() == station) {
+             modelToUse = stationSelectedModel;
+        }
+
+        ModelInstance instance = new ModelInstance(modelToUse);
+        instance.transform.setToTranslation(x + 0.5f, 0.15f, y + 0.5f); 
+        instances.add(instance);
+        
+        // Etiqueta de texto
+        // Pegada a la plancha (y=0.4f aprox) y solo el número
+        labels.add(new VehicleLabel(
+            new com.badlogic.gdx.math.Vector3(x + 0.5f, 0.4f, y + 0.5f), 
+            String.valueOf(station.getId()), 
+            new com.badlogic.gdx.math.Vector3(0, 1, 0)
+        ));
     }
 
     @Override

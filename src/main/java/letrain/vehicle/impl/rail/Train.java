@@ -45,6 +45,14 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     int railStationId = 0;
     public boolean isLoading = false;
     int id;
+
+    public int getStationId() {
+        return railStationId;
+    }
+
+    public void setStationId(int railStationId) {
+        this.railStationId = railStationId;
+    }
     Itinerary itinerary;
 
     enum LinkersSense {
@@ -613,9 +621,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         return "Train " + getId();
     }
 
-    public void setStationId(int railStationId) {
-        this.railStationId = railStationId;
-    }
+
 
     public void startLoadUnloadProcess() {
         if (railStationId != 0 && getDirectorLinker().getSpeed() == 0) {

@@ -128,7 +128,7 @@ public class Gdx3DView extends ApplicationAdapter
         }
         gridModel = modelBuilder.end();
         
-        
+
         decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam));
 
         boxModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
@@ -280,11 +280,29 @@ public class Gdx3DView extends ApplicationAdapter
                 }
                 return true;
             }
+
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS) {
+             if (character == '-') {
+                letrain.track.Station station = model.getSelectedStation();
+                if (station != null) {
+                    for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
+                        if (loco.getTrain() != null && loco.getTrain().getStationId() == station.getId()) {
+                            loco.getTrain().isLoading = !loco.getTrain().isLoading;
+                        }
+                    }
+                }
+                return true;
+            }
         }
 
         switch (character) {
             case 'r':
                 model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                return true;
+            case 'n':
+                if (!model.getStations().isEmpty()) {
+                    model.setMode(letrain.mvp.Model.GameMode.STATIONS);
+                }
                 return true;
             case 't':
                 if (model.getCursorRailTrack() != null) {
@@ -326,7 +344,16 @@ public class Gdx3DView extends ApplicationAdapter
                 cameraMode = (cameraMode == CameraMode.ORBIT) ? CameraMode.CAB : CameraMode.ORBIT;
                 return true;
         }
-        return false;
+
+        
+        // Pass any other character input to the presenter/trackmaker
+        boolean ctrlPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
+                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_RIGHT);
+        boolean altPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
+                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
+        
+        onChar(new com.googlecode.lanterna.input.KeyStroke(character, ctrlPressed, altPressed));
+        return true;
     }
 
     private void createVehicle(char c) {
@@ -405,9 +432,19 @@ public class Gdx3DView extends ApplicationAdapter
                 }
                 return true;
             }
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS) {
+            if (keycode == com.badlogic.gdx.Input.Keys.LEFT) {
+                model.selectPrevStation();
+                return true;
+            } else if (keycode == com.badlogic.gdx.Input.Keys.RIGHT) {
+                model.selectNextStation();
+                return true;
+            }
         }
         return false;
     }
+
+
 
     @Override
     public boolean keyUp(int keycode) {
@@ -504,6 +541,10 @@ public class Gdx3DView extends ApplicationAdapter
             targetZ = selected.getPosition().getY() + 0.5f;
         } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES && model.getSelectedSemaphore() != null) {
             letrain.track.RailSemaphore selected = model.getSelectedSemaphore();
+            targetX = selected.getPosition().getX() + 0.5f;
+            targetZ = selected.getPosition().getY() + 0.5f;
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS && model.getSelectedStation() != null) {
+            letrain.track.Station selected = model.getSelectedStation();
             targetX = selected.getPosition().getX() + 0.5f;
             targetZ = selected.getPosition().getY() + 0.5f;
         } else {
