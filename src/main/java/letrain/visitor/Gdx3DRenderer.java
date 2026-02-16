@@ -306,6 +306,36 @@ public class Gdx3DRenderer implements Visitor {
         visitCursor(model.getCursor());
     }
 
+    private com.badlogic.gdx.math.Vector3 getStationOffset(letrain.track.rail.RailTrack track) {
+        if (!(track instanceof letrain.track.rail.StationRailTrack)) return new com.badlogic.gdx.math.Vector3();
+        
+        letrain.map.Dir creationDir = ((letrain.track.rail.StationRailTrack) track).getCreationDir();
+        if (creationDir == null) {
+           creationDir = track.getFirstOpenDir();
+        }
+
+        // Queremos la plataforma a la DERECHA del sentido de avance (creationDir)
+        // Vector derecha respecto a creationDir
+        letrain.map.Dir rightDir = creationDir.turnRight();
+        
+        float dx = getDirX(rightDir);
+        float dz = getDirZ(rightDir);
+
+        // Offset de 1.6f (antes 1.2f) para asegurar que no se solapan
+        return new com.badlogic.gdx.math.Vector3(dx * 1.6f, 0, dz * 1.6f);
+    }
+
+    private float getStationAngle(letrain.track.rail.RailTrack track) {
+        if (!(track instanceof letrain.track.rail.StationRailTrack)) return 0;
+        letrain.map.Dir creationDir = ((letrain.track.rail.StationRailTrack) track).getCreationDir();
+        if (creationDir == null) {
+           creationDir = track.getFirstOpenDir();
+        }
+        float dirX = getDirX(creationDir);
+        float dirZ = getDirZ(creationDir);
+        return (float) Math.atan2(dirX, dirZ) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+    }
+
     @Override
     public void visitRailMap(RailMap map) {
         // this.railMap = (letrain.map.impl.RailMap) map; // Guardar referencia
@@ -325,16 +355,10 @@ public class Gdx3DRenderer implements Visitor {
             float offsetZ = 0;
             
             if (track.getNumRoutes() > 0) {
-                letrain.map.Dir d = track.getFirstOpenDir();
-                float dx = getDirX(d);
-                float dz = getDirZ(d);
-                
-                // Offset lateral (perpendicular a la dirección)
-                // Ancho del track visual ~0.6? Platform width 0.9. Center at 0.9.
-                offsetX = -dz * 0.9f; 
-                offsetZ = dx * 0.9f;
-                
-                angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+                com.badlogic.gdx.math.Vector3 offset = getStationOffset((letrain.track.rail.RailTrack)track);
+                offsetX = offset.x;
+                offsetZ = offset.z;
+                angle = getStationAngle((letrain.track.rail.RailTrack)track);
             }
 
             ModelInstance platform = new ModelInstance(platformModel);
@@ -971,6 +995,16 @@ public class Gdx3DRenderer implements Visitor {
         float x = station.getPosition().getX();
         float y = station.getPosition().getY();
 
+        // Obtener el track en esa posición para calcular el offset
+        letrain.track.rail.RailTrack track = modelRef.getRailMap().getTrackAt(station.getPosition());
+        com.badlogic.gdx.math.Vector3 offset = new com.badlogic.gdx.math.Vector3();
+        float angle = 0;
+        
+        if (track instanceof letrain.track.rail.StationRailTrack) {
+            offset = getStationOffset(track);
+            angle = getStationAngle(track);
+        }
+
         // Marcador central (el cyan box o amarillo si está seleccionada)
         com.badlogic.gdx.graphics.g3d.Model modelToUse = stationModel;
         if (modelRef != null && modelRef.getSelectedStation() == station) {
@@ -978,13 +1012,15 @@ public class Gdx3DRenderer implements Visitor {
         }
 
         ModelInstance instance = new ModelInstance(modelToUse);
-        instance.transform.setToTranslation(x + 0.5f, 0.15f, y + 0.5f); 
+        // Aplicar offset al marcador también
+        instance.transform.setToTranslation(x + 0.5f + offset.x, 0.15f, y + 0.5f + offset.z);
+        instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
         
         // Etiqueta de texto
         // Pegada a la plancha (y=0.4f aprox) y solo el número
         labels.add(new VehicleLabel(
-            new com.badlogic.gdx.math.Vector3(x + 0.5f, 0.4f, y + 0.5f), 
+            new com.badlogic.gdx.math.Vector3(x + 0.5f + offset.x, 0.4f, y + 0.5f + offset.z), 
             String.valueOf(station.getId()), 
             new com.badlogic.gdx.math.Vector3(0, 1, 0)
         ));

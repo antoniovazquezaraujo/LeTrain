@@ -438,6 +438,9 @@ public class RailTrackMaker {
         // la vieja dir y la nueva
         track.addRoute(oldDir, dir);
         track.setPosition(actualCursorPosition);
+        if (track instanceof letrain.track.rail.StationRailTrack) {
+            ((letrain.track.rail.StationRailTrack) track).setCreationDir(dir);
+        }
         presenter.getModel().getRailMap().addTrack(actualCursorPosition, track);
         presenter.getModel().getEconomyManager().onRailTrackConstructed(newTrackType);
         if (canBeAFork(track, oldDir, dir)) {
