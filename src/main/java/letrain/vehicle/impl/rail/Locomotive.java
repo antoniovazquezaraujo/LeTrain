@@ -15,6 +15,7 @@ public class Locomotive extends Linker implements Tractor {
     int distanceTraveled = 0;
     int speed;
     int turns;
+    int totalTurns;
     private String aspect;
     int showingDirTurns;
     int id;
@@ -147,6 +148,15 @@ public class Locomotive extends Linker implements Tractor {
 
     public void resetTurns() {
         this.turns = speed == 0 ? -1 : 50 / speed;
+        this.totalTurns = this.turns;
+    }
+
+    public int getTotalTurns() {
+        return totalTurns;
+    }
+
+    public int getTurns() {
+        return turns;
     }
 
     public void consumeTurn() {

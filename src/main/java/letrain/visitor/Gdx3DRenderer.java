@@ -534,20 +534,39 @@ public class Gdx3DRenderer implements Visitor {
 
         ModelInstance instance = new ModelInstance(modelToUse);
 
+        // Interpolación continua (Predictiva)
+        // en lugar de usar previousPosition (que interpolaba el "salto" ya ocurrido),
+        // usamos la posición actual y la proyectamos hacia la siguiente celda
+        // basándonos en el tiempo de espera (turns).
+
         float x = locomotive.getPosition().getX();
         float y = locomotive.getPosition().getY();
 
-        // Interpolación
-        letrain.map.Point prevPos = locomotive.getPreviousPosition();
-        if (prevPos == null)
-            prevPos = locomotive.getPosition();
+        if (locomotive.getTotalTurns() >= 0) {
+            float totalDelay = (float) locomotive.getTotalTurns() + 1.0f;
+            float currentDelay = (float) locomotive.getTurns() + 1.0f - animationAlpha;
+            float progress = 1.0f - (currentDelay / totalDelay);
 
-        float prevX = prevPos.getX();
-        float prevY = prevPos.getY();
-        // Si la distancia es mayor a 1 (teletransporte/wrap), no interpolar
-        if (Math.abs(x - prevX) <= 1 && Math.abs(y - prevY) <= 1) {
-            x = prevX + (x - prevX) * animationAlpha;
-            y = prevY + (y - prevY) * animationAlpha;
+            // Clamp progress
+            if (progress < 0)
+                progress = 0;
+            if (progress > 1)
+                progress = 1;
+
+            letrain.track.Track currentTrack = locomotive.getTrack();
+            if (currentTrack != null) {
+                letrain.track.Track nextTrack = currentTrack.getConnected(locomotive.getDir());
+                if (nextTrack != null) {
+                    float nextX = nextTrack.getPosition().getX();
+                    float nextY = nextTrack.getPosition().getY();
+
+                    // Si la distancia es mayor a 1 (teletransporte/wrap), no interpolar
+                    if (Math.abs(nextX - x) <= 1 && Math.abs(nextY - y) <= 1) {
+                        x = x + (nextX - x) * progress;
+                        y = y + (nextY - y) * progress;
+                    }
+                }
+            }
         }
 
         instance.transform.setToTranslation(x + 0.5f, 0.6f, y + 0.5f);
@@ -601,16 +620,36 @@ public class Gdx3DRenderer implements Visitor {
         float x = wagon.getPosition().getX();
         float y = wagon.getPosition().getY();
 
-        // Interpolación
-        letrain.map.Point prevPos = wagon.getPreviousPosition();
-        if (prevPos == null)
-            prevPos = wagon.getPosition();
+        // Interpolación continua (Predictiva) basada en la locomotora directora
+        letrain.vehicle.impl.rail.Train train = wagon.getTrain();
+        if (train != null) {
+            letrain.vehicle.impl.Tractor director = train.getDirectorLinker();
+            if (director instanceof Locomotive) {
+                Locomotive loc = (Locomotive) director;
+                if (loc.getTotalTurns() >= 0) {
+                    float totalDelay = (float) loc.getTotalTurns() + 1.0f;
+                    float currentDelay = (float) loc.getTurns() + 1.0f - animationAlpha;
+                    float progress = 1.0f - (currentDelay / totalDelay);
 
-        float prevX = prevPos.getX();
-        float prevY = prevPos.getY();
-        if (Math.abs(x - prevX) <= 1 && Math.abs(y - prevY) <= 1) {
-            x = prevX + (x - prevX) * animationAlpha;
-            y = prevY + (y - prevY) * animationAlpha;
+                    if (progress < 0)
+                        progress = 0;
+                    if (progress > 1)
+                        progress = 1;
+
+                    letrain.track.Track currentTrack = wagon.getTrack();
+                    if (currentTrack != null) {
+                        letrain.track.Track nextTrack = currentTrack.getConnected(wagon.getDir());
+                        if (nextTrack != null) {
+                            float nextX = nextTrack.getPosition().getX();
+                            float nextY = nextTrack.getPosition().getY();
+                            if (Math.abs(nextX - x) <= 1 && Math.abs(nextY - y) <= 1) {
+                                x = x + (nextX - x) * progress;
+                                y = y + (nextY - y) * progress;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // Elevamos el centro de masa (0.6f) para que se sitúe sobre las vías
