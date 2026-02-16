@@ -210,7 +210,17 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
         setDirPushedLinkers(normalSense);
         setDirTowedLinkers(normalSense);
+        setDirTowedLinkers(normalSense);
         return moveLinkers(normalSense);
+    }
+
+    public void refreshLinkersDirection() {
+        boolean normalSense = true;
+        if (getDirectorLinker().isReversed()) {
+            normalSense = false;
+        }
+        setDirPushedLinkers(normalSense);
+        setDirTowedLinkers(normalSense);
     }
 
     private void setDirPushedLinkers(boolean isNormalSense) {

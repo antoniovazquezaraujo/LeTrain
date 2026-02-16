@@ -50,6 +50,9 @@ public class Locomotive extends Linker implements Tractor {
         setDir(nextTrack.getDir(pushDir));
         setReversed(!isReversed());
         showingDirTurns = 5;
+        if (getTrain() != null) {
+            getTrain().refreshLinkersDirection();
+        }
     }
 
     /***********************************************************
@@ -65,6 +68,13 @@ public class Locomotive extends Linker implements Tractor {
         return aspect;
     }
 
+    public boolean isTimeToMove() {
+        if (this.turns == 0) {
+            return true;
+        }
+        return false;
+    }
+
     public boolean update() {
         boolean moved = false;
         if (isDestroying()) {
@@ -76,10 +86,15 @@ public class Locomotive extends Linker implements Tractor {
                 getTrain().syncLinkersPosition();
             }
             if (isTimeToMove()) {
-                getTrain().advance();
-                moved = true;
-                incDistanceTraveled();
-                resetTurns();
+                if (getTrain().advance()) {
+                    moved = true;
+                    incDistanceTraveled();
+                    resetTurns();
+                    updateLimitedSpeed();
+                } else {
+                    // Blocked/Collision - Stop the train
+                    setSpeed(0);
+                }
             } else {
                 consumeTurn();
             }
@@ -116,15 +131,6 @@ public class Locomotive extends Linker implements Tractor {
 
     public int getSpeed() {
         return this.speed;
-    }
-
-    public boolean isTimeToMove() {
-        if (this.turns == 0) {
-            resetTurns();
-            updateLimitedSpeed();
-            return true;
-        }
-        return false;
     }
 
     public void updateLimitedSpeed() {
