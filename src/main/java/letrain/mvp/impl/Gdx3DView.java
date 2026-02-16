@@ -222,6 +222,9 @@ public class Gdx3DView extends ApplicationAdapter
                 createVehicle(character);
                 return true;
             }
+        // 's' key handler removed (moved to HOME key in keyDown)
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.RAILS) {
+             // No specific char input for RAILS mode anymore
         } else if (model.getMode() == letrain.mvp.Model.GameMode.DRIVE) {
             if (character == ' ') {
                 if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) {
@@ -346,6 +349,16 @@ public class Gdx3DView extends ApplicationAdapter
             if (model.getMode() != letrain.mvp.Model.GameMode.LINK
                     && model.getMode() != letrain.mvp.Model.GameMode.UNLINK) {
                 model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                return true;
+            }
+        }
+
+        if (model.getMode() == letrain.mvp.Model.GameMode.RAILS) {
+            if (keycode == com.badlogic.gdx.Input.Keys.HOME) {
+                trackMaker.manageSemaphore();
+                return true;
+            } else if (keycode == com.badlogic.gdx.Input.Keys.INSERT) {
+                trackMaker.manageSensor();
                 return true;
             }
         }

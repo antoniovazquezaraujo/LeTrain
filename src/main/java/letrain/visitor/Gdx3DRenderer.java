@@ -49,6 +49,9 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model ballastModel;
     private com.badlogic.gdx.graphics.g3d.Model bridgePillarModel;
     private com.badlogic.gdx.graphics.g3d.Model tunnelPortalModel;
+    private com.badlogic.gdx.graphics.g3d.Model semaphoreOpenModel;
+    private com.badlogic.gdx.graphics.g3d.Model semaphoreClosedModel;
+    private com.badlogic.gdx.graphics.g3d.Model sensorModel;
 
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
@@ -151,6 +154,53 @@ public class Gdx3DRenderer implements Visitor {
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
+            // Semáforo Abierto (Poste gris + Caja Verde)
+            com.badlogic.gdx.graphics.g3d.utils.ModelBuilder mb = new com.badlogic.gdx.graphics.g3d.utils.ModelBuilder();
+            mb.begin();
+            // Poste
+            com.badlogic.gdx.graphics.g3d.model.Node node1 = mb.node();
+            node1.id = "pole";
+            mb.part("pole", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.GRAY)))
+                    .cylinder(0.1f, 1.0f, 0.1f, 10);
+            // Luz
+            com.badlogic.gdx.graphics.g3d.model.Node node2 = mb.node();
+            node2.id = "light";
+            node2.translation.set(0, 0.5f, 0);
+            mb.part("light", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.GREEN)))
+                    .box(0.2f, 0.3f, 0.2f);
+            semaphoreOpenModel = mb.end();
+
+            // Semáforo Cerrado (Poste gris + Caja Roja)
+            mb = new com.badlogic.gdx.graphics.g3d.utils.ModelBuilder();
+            mb.begin();
+            // Poste
+            node1 = mb.node();
+            node1.id = "pole";
+            mb.part("pole", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.GRAY)))
+                    .cylinder(0.1f, 1.0f, 0.1f, 10);
+            // Luz
+            node2 = mb.node();
+            node2.id = "light";
+            node2.translation.set(0, 0.5f, 0);
+            mb.part("light", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.RED)))
+                    .box(0.2f, 0.3f, 0.2f);
+            semaphoreClosedModel = mb.end();
+
+            // Sensor (Caja pequeña amarilla en el suelo, entre los raíles)
+            sensorModel = modelBuilder.createBox(0.4f, 0.05f, 0.4f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
             // Modelo de indicador de desvío (Bloque Rojo pequeño)
             forkModel = modelBuilder.createBox(0.2f, 0.25f, 0.2f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -219,6 +269,8 @@ public class Gdx3DRenderer implements Visitor {
         // Ya no limpiamos instances aquí, lo hace la vista antes de empezar
         model.getGroundMap().accept(this);
         model.getRailMap().accept(this);
+        model.getSemaphores().forEach(s -> s.accept(this));
+        model.getSensors().forEach(s -> s.accept(this));
         model.getLocomotives().forEach(l -> l.accept(this));
         model.getWagons().forEach(w -> w.accept(this));
         visitCursor(model.getCursor());
@@ -515,6 +567,12 @@ public class Gdx3DRenderer implements Visitor {
             locomotiveUnlinkModel.dispose();
         if (wagonUnlinkModel != null)
             wagonUnlinkModel.dispose();
+        if (semaphoreOpenModel != null)
+            semaphoreOpenModel.dispose();
+        if (semaphoreClosedModel != null)
+            semaphoreClosedModel.dispose();
+        if (sensorModel != null)
+            sensorModel.dispose();
     }
 
     @Override
@@ -713,10 +771,53 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitSensor(Sensor sensor) {
+        if (sensor.getPosition() == null) return;
+        
+        float x = sensor.getPosition().getX();
+        float y = sensor.getPosition().getY();
+
+        ModelInstance instance = new ModelInstance(sensorModel);
+        instance.transform.setToTranslation(x + 0.5f, 0.1f, y + 0.5f); // Centrado y a ras de suelo
+        instances.add(instance);
     }
 
     @Override
     public void visitSemaphore(RailSemaphore semaphore) {
+        float x = semaphore.getPosition().getX();
+        float y = semaphore.getPosition().getY();
+        
+        com.badlogic.gdx.graphics.g3d.Model modelToUse = semaphore.isOpen() ? semaphoreOpenModel : semaphoreClosedModel;
+        ModelInstance instance = new ModelInstance(modelToUse);
+
+        // Calcular offset basado en la vía si existe
+        float offsetX = 0;
+        float offsetZ = 0;
+        float angle = 0;
+        
+        if (modelRef != null) {
+            letrain.track.Track track = modelRef.getRailMap().getTrackAt((int)x, (int)y);
+            if (track != null && track instanceof letrain.track.rail.RailTrack) {
+                letrain.track.rail.RailTrack railTrack = (letrain.track.rail.RailTrack) track;
+                if (railTrack.getNumRoutes() > 0) {
+                    // Usamos la primera ruta para determinar orientación
+                    letrain.map.Dir d = railTrack.getFirstOpenDir();
+                    float dx = getDirX(d);
+                    float dz = getDirZ(d);
+                    
+                    // Perpendicular (offset a la derecha de la dirección)
+                    // Dir(dx, dz) -> Perpendicular(dz, -dx)
+                    offsetX = dz * 1.0f; 
+                    offsetZ = -dx * 1.0f;
+                    
+                    // Rotar para mirar a la vía (opcional, pero queda mejor)
+                    angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+                }
+            }
+        }
+
+        instance.transform.setToTranslation(x + 0.5f + offsetX, 0.5f, y + 0.5f + offsetZ);
+        instance.transform.rotate(0, 1, 0, angle);
+        instances.add(instance);
     }
 
     @Override
