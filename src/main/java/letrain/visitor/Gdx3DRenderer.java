@@ -230,7 +230,8 @@ public class Gdx3DRenderer implements Visitor {
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
             // Balasto (piedras grises debajo de los raíles)
-            ballastModel = modelBuilder.createBox(0.5f, 0.1f, 0.7f,
+            // Alargado a 0.85f para cubrir huecos en curvas
+            ballastModel = modelBuilder.createBox(0.5f, 0.1f, 0.85f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(new com.badlogic.gdx.graphics.Color(0.5f, 0.5f, 0.5f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
