@@ -56,10 +56,12 @@ public class Gdx3DRenderer implements Visitor {
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
         public String text;
+        public com.badlogic.gdx.math.Vector3 normal;
 
-        public VehicleLabel(com.badlogic.gdx.math.Vector3 pos, String text) {
+        public VehicleLabel(com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal) {
             this.pos = pos;
             this.text = text;
+            this.normal = normal;
         }
     }
 
@@ -677,9 +679,55 @@ public class Gdx3DRenderer implements Visitor {
         frontFace.transform.translate(0.41f, 0, 0); // Mover hacia el frente (en X local)
         instances.add(frontFace);
 
-        // Añadir etiqueta
-        labels.add(new VehicleLabel(new com.badlogic.gdx.math.Vector3(x + 0.5f, 1.2f,
-                y + 0.5f), locomotive.getAspect()));
+        // Añadir etiquetas a los lados
+        float dx = getDirX(locomotive.getDir());
+        float dz = getDirZ(locomotive.getDir());
+        
+        // Normalizar vector de dirección
+        float len = (float) Math.sqrt(dx * dx + dz * dz);
+        if (len > 0) {
+            dx /= len;
+            dz /= len;
+        }
+
+        // Perpendicular: (dz, -dx)
+        // Offset ajustado a 0.42 (ancho del modelo 0.4 + 0.02 margen)
+        float perpX = dz * 0.42f;
+        float perpZ = -dx * 0.42f;
+        
+        // Lado Izquierdo (Normal hacia Z- local -> Angle + 180)
+        // El vector normal es la dirección de perp (perpX, 0, perpZ) normalizada?
+        // offsetX = dz * 0.42. perpX es el offset.
+        // La normal es simplemente (perpX, 0, perpZ) normalizada.
+        // Como perp ya tiene magnitud 0.42, podemos reusar (dz, 0, -dx) como normal base?
+        // dx, dz están normalizados.
+        // Perpendicular 1: (dz, 0, -dx). 
+        // Perpendicular 2: (-dz, 0, dx).
+        
+        // Lado 1: Offset (perpX, perpZ). Normal (dz, 0, -dx).
+        // Lado 2: Offset (-perpX, -perpZ). Normal (-dz, 0, dx).
+        
+        // Asumiendo perpX = dz*0.42, perpZ = -dx*0.42.
+        // Vector (perpX, perpZ) es paralelo a (dz, -dx).
+        
+        labels.add(new VehicleLabel(
+            new com.badlogic.gdx.math.Vector3(x + 0.5f + perpX, 0.6f, y + 0.5f + perpZ), 
+            locomotive.getAspect(), 
+            new com.badlogic.gdx.math.Vector3(dx == 0 ? 1 : dz, 0, dx == 0 ? 0 : -dx).nor() // Approximate normal
+        ));
+        
+        // Simplification: Use the offset direction as normal
+        labels.add(new VehicleLabel(
+            new com.badlogic.gdx.math.Vector3(x + 0.5f + perpX, 0.6f, y + 0.5f + perpZ),
+            locomotive.getAspect(),
+            new com.badlogic.gdx.math.Vector3(perpX, 0, perpZ).nor()
+        ));
+        
+        labels.add(new VehicleLabel(
+            new com.badlogic.gdx.math.Vector3(x + 0.5f - perpX, 0.6f, y + 0.5f - perpZ),
+            locomotive.getAspect(),
+            new com.badlogic.gdx.math.Vector3(-perpX, 0, -perpZ).nor()
+        ));
     }
 
     @Override
@@ -762,11 +810,30 @@ public class Gdx3DRenderer implements Visitor {
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
 
-        // Añadir etiqueta
+        // Añadir etiquetas a los lados
+        float dx = getDirX(wagon.getDir());
+        float dz = getDirZ(wagon.getDir());
+        
+        float len = (float) Math.sqrt(dx * dx + dz * dz);
+        if (len > 0) {
+            dx /= len;
+            dz /= len;
+        }
+
+        // Perpendicular: (dz, -dx)
+        float perpX = dz * 0.42f;
+        float perpZ = -dx * 0.42f;
+        
         labels.add(new VehicleLabel(
-                new com.badlogic.gdx.math.Vector3(x + 0.5f, 1.2f,
-                        y + 0.5f),
-                wagon.getAspect()));
+            new com.badlogic.gdx.math.Vector3(x + 0.5f + perpX, 0.6f, y + 0.5f + perpZ),
+            wagon.getAspect(),
+            new com.badlogic.gdx.math.Vector3(perpX, 0, perpZ).nor()
+        ));
+        labels.add(new VehicleLabel(
+            new com.badlogic.gdx.math.Vector3(x + 0.5f - perpX, 0.6f, y + 0.5f - perpZ),
+            wagon.getAspect(),
+            new com.badlogic.gdx.math.Vector3(-perpX, 0, -perpZ).nor()
+        ));
     }
 
     @Override

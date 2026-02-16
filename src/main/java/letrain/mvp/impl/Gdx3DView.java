@@ -41,13 +41,32 @@ public class Gdx3DView extends ApplicationAdapter
     private PerspectiveCamera cam;
     private ModelBatch modelBatch;
     private ModelBuilder modelBuilder;
-    private com.badlogic.gdx.graphics.g3d.Model boxModel;
+    private com.badlogic.gdx.graphics.g3d.decals.DecalBatch decalBatch;
+    private java.util.Map<Character, com.badlogic.gdx.graphics.g2d.TextureRegion> glyphRegions = new java.util.HashMap<>();
+    
+    private com.badlogic.gdx.graphics.g3d.decals.Decal getGlyphDecal(char c) {
+        if (!glyphRegions.containsKey(c)) {
+            com.badlogic.gdx.graphics.g2d.BitmapFont.Glyph glyph = font.getData().getGlyph(c);
+            if (glyph == null) return null;
+            
+            com.badlogic.gdx.graphics.g2d.TextureRegion region = new com.badlogic.gdx.graphics.g2d.TextureRegion(
+                    font.getRegion().getTexture(),
+                    glyph.u, glyph.v, glyph.u2, glyph.v2);
+            region.flip(false, true); // Corregir inversión vertical
+            glyphRegions.put(c, region);
+        }
+        
+        com.badlogic.gdx.graphics.g2d.TextureRegion region = glyphRegions.get(c);
+        // Force size to 0.5x0.5 world units
+        return com.badlogic.gdx.graphics.g3d.decals.Decal.newDecal(0.5f, 0.5f, region, true);
+    }
     private Environment environment;
 
     private final letrain.mvp.impl.Model model;
     private final Gdx3DRenderer renderer;
     private com.badlogic.gdx.graphics.g3d.Model groundModel;
     private com.badlogic.gdx.graphics.g3d.Model gridModel;
+    private com.badlogic.gdx.graphics.g3d.Model boxModel;
     private RailTrackMaker trackMaker;
 
     private SpriteBatch spriteBatch;
@@ -108,6 +127,9 @@ public class Gdx3DView extends ApplicationAdapter
             mpb.line(-100, 0.01f, i, 100, 0.01f, i);
         }
         gridModel = modelBuilder.end();
+        
+        
+        decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam));
 
         boxModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
                 new com.badlogic.gdx.graphics.g3d.Material(
@@ -504,14 +526,30 @@ public class Gdx3DView extends ApplicationAdapter
         modelBatch.render(renderer.getInstances(), environment);
         modelBatch.end();
 
-        // Renderizado de etiquetas (2D sobre 3D)
-        spriteBatch.begin();
-        for (VehicleLabel label : renderer.getLabels()) {
-            labelPos.set(label.pos);
-            cam.project(labelPos);
-            // Dibujamos el texto centrado sobre la posición proyectada
-            font.draw(spriteBatch, label.text, labelPos.x - 5, labelPos.y + 10);
+        
+        // Renderizado de Etiquetas 3D (Decals)
+        if (!renderer.getLabels().isEmpty()) {
+            for (letrain.visitor.Gdx3DRenderer.VehicleLabel label : renderer.getLabels()) {
+                if (label.text == null || label.text.isEmpty()) continue;
+                
+                char c = label.text.charAt(0);
+                com.badlogic.gdx.graphics.g3d.decals.Decal d = getGlyphDecal(c);
+                if (d != null) {
+                    d.setPosition(label.pos);
+                    // Orientar el decal para que mire hacia afuera de la superficie
+                    // (hacia donde apunta la normal)
+                    // lookAt hace que el frente del decal mire al target.
+                    // Queremos que el frente mire a pos + normal.
+                    d.lookAt(label.pos.cpy().add(label.normal), com.badlogic.gdx.math.Vector3.Y);
+                    
+                    decalBatch.add(d);
+                }
+            }
+            decalBatch.flush();
         }
+        
+        spriteBatch.begin();
+        // (Labels 2D removidos)
         spriteBatch.end();
 
         // Renderizado de UI (Menú)
