@@ -652,41 +652,28 @@ public class Gdx3DRenderer implements Visitor {
                         y = y + (nextY - y) * progress;
                         
                         // Interpolación de ángulo para curvas
-                        // Ángulo objetivo (hacia donde vamos)
-                        float targetAngle = locomotive.getDir().getValue() * 45f;
-                         // Ángulo inicial (de donde venimos)
-                        float startAngle = targetAngle; // Por defecto recto
+                        // Ángulo inicial: Dirección actual de movimiento
+                        float startAngle = locomotive.getDir().getValue() * 45f;
                         
-                        // Determinar si estamos en una curva
-                        // Check de la otra conexión del track actual
-                        // Si currentTrack conecta con A y B. Y vamos hacia nextTrack (Dir A).
-                        // Entonces venimos de Dir B.
-                        // Nuestra dirección de entrada fue inverse(B).
-                        letrain.map.Dir exitDir = locomotive.getDir();
-                        // Iteramos direcciones para encontrar la otra conexión
-                        for (letrain.map.Dir d : letrain.map.Dir.values()) {
-                            if (d != exitDir && currentTrack.getConnected(d) != null) {
-                                // Encontramos la otra conexión (entrada)
-                                // Si entramos por 'd', nuetra dirección de movimiento era 'd.inverse()' o 'd'?
-                                // 'getConnected(d)' devuelve el track conectado en el puerto 'd'.
-                                // Si el track es una curva (S, E). Conectado en S y en E.
-                                // Si salimos por E (exitDir=E).
-                                // La otra conexión es S.
-                                // Eso significa que entramos por el puerto S.
-                                // Para entrar por el puerto S, venimos del Sur, moviéndonos hacia el Norte.
-                                // Dirección de movimiento anterior: N.
-                                // N es S.inverse().
-                                startAngle = d.inverse().getValue() * 45f;
-                                break; 
-                            }
-                        }
+                        // Ángulo objetivo: Dirección que tomaremos en el siguiente track
+                        // nextTrack.getDir(entryDir) nos da la dirección de salida dado una entrada.
+                        // Nuestra dirección de entrada al nextTrack es locomotive.getDir().inverse() (Entramos desde el Lado Opuesto)
                         
+                        letrain.map.Dir nextDir = nextTrack.getDir(locomotive.getDir().inverse());
+                        float targetAngle = nextDir != null ? nextDir.getValue() * 45f : startAngle;
+
+                        // Corregir wrapping de ángulos (360 -> 0)
+                        // Si start=315 (NW), target=0 (E). Diff = -315. Shortest = +45.
+                        // MathUtils.lerpAngleDeg maneja esto internamente? Si.
                         
                         // Interpolar suavemente
-                        // Multiplicamos progress por 2 para que el giro termine al llegar al borde de la casilla (0.5)
-                        // "Tienen que terminar el giro al salir de la curva"
-                        float rotProgress = progress * 2.0f;
-                        if (rotProgress > 1.0f) rotProgress = 1.0f;
+                        // Usar la segunda mitad del progreso (0.5 -> 1.0) para girar DENTRO de la nueva celda
+                        // "Tienen que girar en la curva, no antes"
+                        // 0.0 -> 0.5: progress en celda anterior. rotProgress <= 0.
+                        // 0.5 -> 1.0: progress en nueva celda. rotProgress 0 -> 1.
+                        float rotProgress = (progress - 0.5f) * 2.0f;
+                        if (rotProgress < 0f) rotProgress = 0f;
+                        if (rotProgress > 1f) rotProgress = 1f;
                         
                         angle = com.badlogic.gdx.math.MathUtils.lerpAngleDeg(startAngle, targetAngle, rotProgress);
                     }
@@ -724,10 +711,10 @@ public class Gdx3DRenderer implements Visitor {
         float rad = angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
         
         // En nuestro sistema:
-        // Angle 0 (N) -> dx=0, dz=-1. sin(0)=0, -cos(0)=-1. Correcto.
-        // Angle 90 (E) -> dx=1, dz=0. sin(90)=1, -cos(90)=0. Correcto.
-        float dx = com.badlogic.gdx.math.MathUtils.sin(rad);
-        float dz = -com.badlogic.gdx.math.MathUtils.cos(rad);
+        // Angle 0 (E) -> dx=1, dz=0. cos(0)=1, -sin(0)=0. Correcto.
+        // Angle 90 (N) -> dx=0, dz=-1. cos(90)=0, -sin(90)=-1. Correcto.
+        float dx = com.badlogic.gdx.math.MathUtils.cos(rad);
+        float dz = -com.badlogic.gdx.math.MathUtils.sin(rad);
         
         // Perpendicular: (dz, -dx)
         float perpX = dz * 0.42f;
@@ -814,19 +801,16 @@ public class Gdx3DRenderer implements Visitor {
                                 x = x + (nextX - x) * progress;
                                 y = y + (nextY - y) * progress;
                                 
-                                float targetAngle = wagon.getDir().getValue() * 45f;
-                                float startAngle = targetAngle;
-                                letrain.map.Dir exitDir = wagon.getDir();
-                                for (letrain.map.Dir d : letrain.map.Dir.values()) {
-                                    if (d != exitDir && currentTrack.getConnected(d) != null) {
-                                        startAngle = d.inverse().getValue() * 45f;
-                                        break; 
-                                    }
-                                }
+                                // Interpolación de ángulo para curvas
+                                float startAngle = wagon.getDir().getValue() * 45f;
                                 
+                                letrain.map.Dir nextDir = nextTrack.getDir(wagon.getDir().inverse());
+                                float targetAngle = nextDir != null ? nextDir.getValue() * 45f : startAngle;
+
                                 // Multiplicamos progress por 2 para que el giro termine al llegar al borde de la casilla (0.5)
-                                float rotProgress = progress * 2.0f;
-                                if (rotProgress > 1.0f) rotProgress = 1.0f;
+                                float rotProgress = (progress - 0.5f) * 2.0f;
+                                if (rotProgress < 0f) rotProgress = 0f;
+                                if (rotProgress > 1f) rotProgress = 1f;
                                 
                                 angle = com.badlogic.gdx.math.MathUtils.lerpAngleDeg(startAngle, targetAngle, rotProgress);
                             }
@@ -846,8 +830,8 @@ public class Gdx3DRenderer implements Visitor {
         // Añadir etiquetas a los lados
         float rad = angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
         
-        float dx = com.badlogic.gdx.math.MathUtils.sin(rad);
-        float dz = -com.badlogic.gdx.math.MathUtils.cos(rad);
+        float dx = com.badlogic.gdx.math.MathUtils.cos(rad);
+        float dz = -com.badlogic.gdx.math.MathUtils.sin(rad);
         
         // Perpendicular: (dz, -dx)
         float perpX = dz * 0.42f;
