@@ -486,6 +486,7 @@ public class Gdx3DView extends ApplicationAdapter
     private float targetCameraAngle = 45f;
     private float cameraDistance = 8.5f; // Distancia horizontal de la cámara al punto focal
     private float targetCameraDistance = 8.5f;
+    private com.badlogic.gdx.math.Vector2 currentCabDirection = new com.badlogic.gdx.math.Vector2(0, 1);
     private float cameraHeight = 6f; // Altura fija de la cámara sobre el suelo
     
     private enum CameraMode { ORBIT, CAB }
@@ -569,23 +570,38 @@ public class Gdx3DView extends ApplicationAdapter
                 float z = interpPos.y + 0.5f;
                 
                 // Dirección de la locomotora para mirar hacia adelante
-                // Usamos la dirección interpolada si es posible, o la lógica básica.
-                // Para simplificar, usamos la dirección del modelo.
                 letrain.map.Dir d = loco.getDir();
                 float dx = letrain.visitor.Gdx3DRenderer.getDirX(d);
                 float dz = letrain.visitor.Gdx3DRenderer.getDirZ(d);
                 
+                com.badlogic.gdx.math.Vector2 targetDir = new com.badlogic.gdx.math.Vector2(dx, -dz); // Ojo con el signo de Z si es necesario
+                // Ajuste: getDirZ devuelve z positivo hacia "abajo" en pantalla 2D? Ojo con coords 3D.
+                // Gdx3DRenderer usa: x = col, z = row.
+                // dx, dz son (0, -1) para N?
+                // Revisemos Gdx3DRenderer.getDirX/Z.
+                
+                // Asumimos que (dx, dz) es el vector dirección correcto en el plano XZ.
+                targetDir.set(dx, dz);
+                
+                // Interpolamos currentCabDirection hacia targetDir
+                // Lerp de vectores: v1.lerp(v2, alpha)
+                // Usamos un factor bajo para suavidad, e.g. 0.1
+                 currentCabDirection.lerp(targetDir, 0.05f);
+                 // Normalizamos para mantener longitud 1
+                 currentCabDirection.nor();
+                 
+                 float smoothDx = currentCabDirection.x;
+                 float smoothDz = currentCabDirection.y;
+                
                 // Altura de cabina ajustada: "Chase Cam"
                 // Posición: (x, y, z) - dir * 1.2 + (0, 2.0, 0)
-                // Esto coloca la cámara detrás y arriba, viendo un trozo de la locomotora.
-                float camX = x - dx * 1.2f;
+                float camX = x - smoothDx * 1.2f;
                 float camY = 2.0f;
-                float camZ = z - dz * 1.2f;
+                float camZ = z - smoothDz * 1.2f;
                 
                 cam.position.set(camX, camY, camZ);
-                // Mirar hacia adelante (x + dx*5, 0.5, z + dz*5)
-                // Bajamos un poco el punto de mira para ver la vía y la locomotora
-                cam.lookAt(x + dx * 5f, 0.5f, z + dz * 5f);
+                // Mirar hacia adelante usando la dirección suavizada
+                cam.lookAt(x + smoothDx * 5f, 0.5f, z + smoothDz * 5f);
                 cam.up.set(0, 1, 0);
             } else {
                // Fallback a Orbita
