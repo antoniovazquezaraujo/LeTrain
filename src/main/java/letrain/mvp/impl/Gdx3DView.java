@@ -483,7 +483,9 @@ public class Gdx3DView extends ApplicationAdapter
 
     private com.badlogic.gdx.math.Vector3 camTarget = new com.badlogic.gdx.math.Vector3();
     private float cameraAngle = 45f; // Ángulo de rotación de la cámara alrededor del punto focal (en grados)
+    private float targetCameraAngle = 45f;
     private float cameraDistance = 8.5f; // Distancia horizontal de la cámara al punto focal
+    private float targetCameraDistance = 8.5f;
     private float cameraHeight = 6f; // Altura fija de la cámara sobre el suelo
     
     private enum CameraMode { ORBIT, CAB }
@@ -595,6 +597,10 @@ public class Gdx3DView extends ApplicationAdapter
             // Interpolación del punto de enfoque solo cuando el objetivo cambia
             camTarget.lerp(new com.badlogic.gdx.math.Vector3(targetX, 0, targetZ), 0.05f);
 
+            // Interpolación de ángulo y distancia para suavidad
+            cameraAngle = com.badlogic.gdx.math.MathUtils.lerp(cameraAngle, targetCameraAngle, 0.1f);
+            cameraDistance = com.badlogic.gdx.math.MathUtils.lerp(cameraDistance, targetCameraDistance, 0.1f);
+
             // Calcular posición de cámara usando ángulo y distancia horizontal
             float angleRad = cameraAngle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
             float camX = camTarget.x + cameraDistance * com.badlogic.gdx.math.MathUtils.sin(angleRad);
@@ -685,21 +691,21 @@ public class Gdx3DView extends ApplicationAdapter
         if (altPressed) {
             // Alt+izquierda/derecha: panear cámara alrededor del punto focal
             if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
-                cameraAngle -= 15f; // Rotar 15° a la izquierda
+                targetCameraAngle -= 15f; // Rotar 15° a la izquierda
                 return; // No procesar más input para evitar mover el cursor
             }
             if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
-                cameraAngle += 15f; // Rotar 15° a la derecha
+                targetCameraAngle += 15f; // Rotar 15° a la derecha
                 return; // No procesar más input para evitar mover el cursor
             }
 
             // Alt+arriba/abajo: ajustar zoom
             if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP)) {
-                cameraDistance = Math.max(3f, cameraDistance - 1f); // Acercar (mínimo 3)
+                targetCameraDistance = Math.max(3f, targetCameraDistance - 1f); // Acercar (mínimo 3)
                 return; // No procesar más input para evitar mover el cursor
             }
             if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN)) {
-                cameraDistance = Math.min(20f, cameraDistance + 1f); // Alejar (máximo 20)
+                targetCameraDistance = Math.min(20f, targetCameraDistance + 1f); // Alejar (máximo 20)
                 return; // No procesar más input para evitar mover el cursor
             }
         }
