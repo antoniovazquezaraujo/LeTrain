@@ -174,13 +174,8 @@ public class RailTrackMaker {
 
     private void createStation() {
         Point position = presenter.getModel().getCursor().getPosition();
-        int x = (position.getX() == this.stationStart.getX())
-                ? position.getX()
-                : (position.getX() - (position.getX() + 1 - this.stationStart.getX()) / 2);
-        int y = (position.getY() == this.stationStart
-                .getY())
-                        ? position.getY()
-                        : position.getY() - (position.getY() + 1 - this.stationStart.getY()) / 2;
+        int x = (position.getX() + this.stationStart.getX()) / 2;
+        int y = (position.getY() + this.stationStart.getY()) / 2;
         Point sensorPosition = new Point(x, y);
         Track track = presenter.getModel().getRailMap().getTrackAt(sensorPosition.getX(), sensorPosition.getY());
         if (track != null && track instanceof StationRailTrack) {
