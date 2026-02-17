@@ -723,6 +723,10 @@ public class Gdx3DView extends ApplicationAdapter
             handleUnlinkInput();
         } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES) {
             // Controlado por keyDown/keyUp
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES) {
+            // Controlado por keyDown/keyUp
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS) {
+            // Controlado por keyDown/keyUp
         } else {
             handleStandardInput(ctrlPressed, shiftPressed, altPressed);
         }
