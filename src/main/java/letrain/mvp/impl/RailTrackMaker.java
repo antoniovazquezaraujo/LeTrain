@@ -247,6 +247,13 @@ public class RailTrackMaker {
         Point position = presenter.getModel().getCursor().getPosition();
         RailTrack track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
+            if (track.getSensor() != null) {
+                if (track.getSensor() instanceof letrain.track.Station) {
+                    presenter.getModel().removeStation((letrain.track.Station) track.getSensor());
+                } else {
+                    presenter.getModel().removeSensor(track.getSensor());
+                }
+            }
             presenter.getModel().getRailMap().removeTrack(position);
         }
         if (presenter.getModel().getForks().contains(track)) {
