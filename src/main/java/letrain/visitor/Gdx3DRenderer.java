@@ -223,7 +223,8 @@ public class Gdx3DRenderer implements Visitor {
 
 
             // Plataforma de estación (Losa de hormigón)
-            platformModel = modelBuilder.createBox(1.0f, 0.2f, 0.9f,
+            // 1.2f de ancho (perpendicular), 0.2f alto, 1.1f largo (superposición suave)
+            platformModel = modelBuilder.createBox(1.2f, 0.2f, 1.1f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.LIGHT_GRAY)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
@@ -306,33 +307,55 @@ public class Gdx3DRenderer implements Visitor {
         visitCursor(model.getCursor());
     }
 
+    private letrain.map.Dir getValidOrientation(letrain.track.rail.RailTrack track) {
+        letrain.map.Dir dir = null;
+        if (track instanceof letrain.track.rail.StationRailTrack) {
+            dir = ((letrain.track.rail.StationRailTrack) track).getCreationDir();
+        }
+        
+        // Validar que dir sea coherente con la vía (que la vía tenga salida en dir o dir.inverse)
+        // O si dir es null/default N, pero la vía es E-W.
+        boolean aligned = false;
+        if (dir != null) {
+            // Check heuristic: does track allow exit in dir or inverse?
+            // This covers Straight and Curve (start/end).
+            // Use getRouter().getDir() instead of canExit() because canExit depends on Train state (flickering!)
+             if (track.getRouter().getDir(dir) != null || track.getRouter().getDir(dir.inverse()) != null) {
+                 aligned = true;
+             }
+        }
+
+        if (!aligned) {
+             // Fallback: usar cualquier dirección abierta de la vía
+             dir = track.getFirstOpenDir();
+        }
+        
+        if (dir == null) return letrain.map.Dir.N; // Fallback total
+        return dir;
+    }
+
     private com.badlogic.gdx.math.Vector3 getStationOffset(letrain.track.rail.RailTrack track) {
         if (!(track instanceof letrain.track.rail.StationRailTrack)) return new com.badlogic.gdx.math.Vector3();
         
-        letrain.map.Dir creationDir = ((letrain.track.rail.StationRailTrack) track).getCreationDir();
-        if (creationDir == null) {
-           creationDir = track.getFirstOpenDir();
-        }
+        letrain.map.Dir orientation = getValidOrientation(track);
 
-        // Queremos la plataforma a la DERECHA del sentido de avance (creationDir)
-        // Vector derecha respecto a creationDir
-        letrain.map.Dir rightDir = creationDir.turnRight();
+        // Queremos la plataforma a la DERECHA del sentido de avance (orientation)
+        // Vector derecha respecto a orientation
+        letrain.map.Dir rightDir = orientation.turnRight();
         
         float dx = getDirX(rightDir);
         float dz = getDirZ(rightDir);
 
-        // Offset de 1.6f (antes 1.2f) para asegurar que no se solapan
-        return new com.badlogic.gdx.math.Vector3(dx * 1.6f, 0, dz * 1.6f);
+        // Offset de 1.4f (antes 1.1f) para asegurar separación total visual
+        return new com.badlogic.gdx.math.Vector3(dx * 1.4f, 0, dz * 1.4f);
     }
 
     private float getStationAngle(letrain.track.rail.RailTrack track) {
         if (!(track instanceof letrain.track.rail.StationRailTrack)) return 0;
-        letrain.map.Dir creationDir = ((letrain.track.rail.StationRailTrack) track).getCreationDir();
-        if (creationDir == null) {
-           creationDir = track.getFirstOpenDir();
-        }
-        float dirX = getDirX(creationDir);
-        float dirZ = getDirZ(creationDir);
+        letrain.map.Dir orientation = getValidOrientation(track);
+        
+        float dirX = getDirX(orientation);
+        float dirZ = getDirZ(orientation);
         return (float) Math.atan2(dirX, dirZ) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
     }
 
