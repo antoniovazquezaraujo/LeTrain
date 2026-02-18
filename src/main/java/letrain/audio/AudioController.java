@@ -6,9 +6,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import com.antigravity.train.synth.AudioSample;
-import com.antigravity.train.synth.TrainSynthesizer;
 import javax.sound.sampled.UnsupportedAudioFileException;
+import letrain.audio.synth.AudioSample;
+import letrain.audio.synth.TrainSynthesizer;
 import letrain.mvp.impl.Model;
 import letrain.vehicle.impl.rail.Locomotive;
 import org.slf4j.Logger;

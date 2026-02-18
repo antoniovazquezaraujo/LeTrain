@@ -197,11 +197,7 @@
             <version>1.12.1</version>
             <classifier>natives-desktop</classifier>
         </dependency>
-        <dependency>
-            <groupId>com.antigravity</groupId>
-            <artifactId>letrain-sound</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
+
     </dependencies>
 
 </project>
