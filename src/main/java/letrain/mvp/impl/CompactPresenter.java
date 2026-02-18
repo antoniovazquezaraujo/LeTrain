@@ -62,6 +62,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     int StationId;
 
     RailTrackMaker railTrackMaker;
+    letrain.audio.AudioController audioController;
 
     public CompactPresenter() {
         this(null);
@@ -73,6 +74,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
         renderer = new RenderVisitor(view);
         informer = new InfoVisitor(view);
         railTrackMaker = new RailTrackMaker(this);
+        audioController = new letrain.audio.AudioController(this.model);
     }
 
     void setModel(Model model) {
@@ -85,6 +87,9 @@ public class CompactPresenter implements letrain.mvp.Presenter {
 
     public void stop() {
         running = false;
+        if (audioController != null) {
+            audioController.stop();
+        }
     }
 
     public void start() {
@@ -120,6 +125,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 }
                 model.loadAndUnloadTrains();
                 model.removeDestroyedTrains();
+                audioController.update();
                 Thread.sleep(50);
                 view.clear();
             }
@@ -450,6 +456,8 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 break;
             case ArrowRight:
                 selectNextSemaphore();
+                break;
+            default:
                 break;
         }
     }

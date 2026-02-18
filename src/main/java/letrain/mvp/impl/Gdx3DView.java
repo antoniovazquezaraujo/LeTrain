@@ -34,7 +34,6 @@ import com.googlecode.lanterna.screen.Screen;
 import letrain.map.Point;
 import letrain.mvp.impl.Model.GameModeMenuOption;
 import letrain.visitor.Gdx3DRenderer;
-import letrain.visitor.Gdx3DRenderer.VehicleLabel;
 
 public class Gdx3DView extends ApplicationAdapter
         implements letrain.mvp.View, letrain.mvp.Presenter, com.badlogic.gdx.InputProcessor {
@@ -43,23 +42,25 @@ public class Gdx3DView extends ApplicationAdapter
     private ModelBuilder modelBuilder;
     private com.badlogic.gdx.graphics.g3d.decals.DecalBatch decalBatch;
     private java.util.Map<Character, com.badlogic.gdx.graphics.g2d.TextureRegion> glyphRegions = new java.util.HashMap<>();
-    
+
     private com.badlogic.gdx.graphics.g3d.decals.Decal getGlyphDecal(char c) {
         if (!glyphRegions.containsKey(c)) {
             com.badlogic.gdx.graphics.g2d.BitmapFont.Glyph glyph = font.getData().getGlyph(c);
-            if (glyph == null) return null;
-            
+            if (glyph == null)
+                return null;
+
             com.badlogic.gdx.graphics.g2d.TextureRegion region = new com.badlogic.gdx.graphics.g2d.TextureRegion(
                     font.getRegion().getTexture(),
                     glyph.u, glyph.v, glyph.u2, glyph.v2);
             region.flip(false, true); // Corregir inversión vertical
             glyphRegions.put(c, region);
         }
-        
+
         com.badlogic.gdx.graphics.g2d.TextureRegion region = glyphRegions.get(c);
         // Force size to 0.5x0.5 world units
         return com.badlogic.gdx.graphics.g3d.decals.Decal.newDecal(0.5f, 0.5f, region, true);
     }
+
     private Environment environment;
 
     private final letrain.mvp.impl.Model model;
@@ -78,10 +79,14 @@ public class Gdx3DView extends ApplicationAdapter
     private Table menuTable;
     private Label descLabel;
 
+    // Audio
+    private letrain.audio.AudioController audioController;
+
     public Gdx3DView(letrain.mvp.impl.Model model) {
         this.model = model;
         this.renderer = new Gdx3DRenderer();
         this.trackMaker = new RailTrackMaker(this);
+        this.audioController = new letrain.audio.AudioController(model);
 
         // Inicializar el GroundMap con un bloque de terreno para que RailTrackMaker
         // pueda detectar GROUND (0)
@@ -127,9 +132,9 @@ public class Gdx3DView extends ApplicationAdapter
             mpb.line(-100, 0.01f, i, 100, 0.01f, i);
         }
         gridModel = modelBuilder.end();
-        
 
-        decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam));
+        decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(
+                new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam));
 
         boxModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
                 new com.badlogic.gdx.graphics.g3d.Material(
@@ -244,9 +249,9 @@ public class Gdx3DView extends ApplicationAdapter
                 createVehicle(character);
                 return true;
             }
-        // 's' key handler removed (moved to HOME key in keyDown)
+            // 's' key handler removed (moved to HOME key in keyDown)
         } else if (model.getMode() == letrain.mvp.Model.GameMode.RAILS) {
-             // No specific char input for RAILS mode anymore
+            // No specific char input for RAILS mode anymore
         } else if (model.getMode() == letrain.mvp.Model.GameMode.DRIVE) {
             if (character == ' ') {
                 if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) {
@@ -282,7 +287,7 @@ public class Gdx3DView extends ApplicationAdapter
             }
 
         } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS) {
-             if (character == '-') {
+            if (character == '-') {
                 letrain.track.Station station = model.getSelectedStation();
                 if (station != null) {
                     for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
@@ -345,13 +350,12 @@ public class Gdx3DView extends ApplicationAdapter
                 return true;
         }
 
-        
         // Pass any other character input to the presenter/trackmaker
         boolean ctrlPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
                 || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_RIGHT);
         boolean altPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
                 || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
-        
+
         onChar(new com.googlecode.lanterna.input.KeyStroke(character, ctrlPressed, altPressed));
         return true;
     }
@@ -419,7 +423,7 @@ public class Gdx3DView extends ApplicationAdapter
                 return true;
             }
         } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES) {
-             if (keycode == com.badlogic.gdx.Input.Keys.LEFT) {
+            if (keycode == com.badlogic.gdx.Input.Keys.LEFT) {
                 model.selectPrevSemaphore();
                 return true;
             } else if (keycode == com.badlogic.gdx.Input.Keys.RIGHT) {
@@ -443,8 +447,6 @@ public class Gdx3DView extends ApplicationAdapter
         }
         return false;
     }
-
-
 
     @Override
     public boolean keyUp(int keycode) {
@@ -488,8 +490,11 @@ public class Gdx3DView extends ApplicationAdapter
     private float targetCameraDistance = 8.5f;
     private com.badlogic.gdx.math.Vector2 currentCabDirection = new com.badlogic.gdx.math.Vector2(0, 1);
     private float cameraHeight = 6f; // Altura fija de la cámara sobre el suelo
-    
-    private enum CameraMode { ORBIT, CAB }
+
+    private enum CameraMode {
+        ORBIT, CAB
+    }
+
     private CameraMode cameraMode = CameraMode.ORBIT;
 
     private float stateTime = 0f;
@@ -510,6 +515,7 @@ public class Gdx3DView extends ApplicationAdapter
             model.moveLocomotives();
             model.loadAndUnloadTrains();
             model.removeDestroyedTrains();
+            audioController.update();
             stateTime -= 0.05f;
             if (stateTime > 0.05f)
                 stateTime = 0.05f; // Evitar espiral de la muerte si hay mucho lag
@@ -560,55 +566,58 @@ public class Gdx3DView extends ApplicationAdapter
         if (cameraMode == CameraMode.CAB) {
             letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
             if (loco == null && !model.getLocomotives().isEmpty()) {
-               loco = model.getLocomotives().get(0);
+                loco = model.getLocomotives().get(0);
             }
-            
+
             if (loco != null) {
                 // Posición interpolada de la locomotora (visual)
                 com.badlogic.gdx.math.Vector2 interpPos = getInterpolatedPosition(loco, alpha);
                 float x = interpPos.x + 0.5f;
                 float z = interpPos.y + 0.5f;
-                
+
                 // Dirección de la locomotora para mirar hacia adelante
                 letrain.map.Dir d = loco.getDir();
                 float dx = letrain.visitor.Gdx3DRenderer.getDirX(d);
                 float dz = letrain.visitor.Gdx3DRenderer.getDirZ(d);
-                
-                com.badlogic.gdx.math.Vector2 targetDir = new com.badlogic.gdx.math.Vector2(dx, -dz); // Ojo con el signo de Z si es necesario
-                // Ajuste: getDirZ devuelve z positivo hacia "abajo" en pantalla 2D? Ojo con coords 3D.
+
+                com.badlogic.gdx.math.Vector2 targetDir = new com.badlogic.gdx.math.Vector2(dx, -dz); // Ojo con el
+                                                                                                      // signo de Z si
+                                                                                                      // es necesario
+                // Ajuste: getDirZ devuelve z positivo hacia "abajo" en pantalla 2D? Ojo con
+                // coords 3D.
                 // Gdx3DRenderer usa: x = col, z = row.
                 // dx, dz son (0, -1) para N?
                 // Revisemos Gdx3DRenderer.getDirX/Z.
-                
+
                 // Asumimos que (dx, dz) es el vector dirección correcto en el plano XZ.
                 targetDir.set(dx, dz);
-                
+
                 // Interpolamos currentCabDirection hacia targetDir
                 // Lerp de vectores: v1.lerp(v2, alpha)
                 // Usamos un factor bajo para suavidad, e.g. 0.1
-                 currentCabDirection.lerp(targetDir, 0.05f);
-                 // Normalizamos para mantener longitud 1
-                 currentCabDirection.nor();
-                 
-                 float smoothDx = currentCabDirection.x;
-                 float smoothDz = currentCabDirection.y;
-                
+                currentCabDirection.lerp(targetDir, 0.05f);
+                // Normalizamos para mantener longitud 1
+                currentCabDirection.nor();
+
+                float smoothDx = currentCabDirection.x;
+                float smoothDz = currentCabDirection.y;
+
                 // Altura de cabina ajustada: "Chase Cam"
                 // Posición: (x, y, z) - dir * 1.2 + (0, 2.0, 0)
                 float camX = x - smoothDx * 1.2f;
                 float camY = 2.0f;
                 float camZ = z - smoothDz * 1.2f;
-                
+
                 cam.position.set(camX, camY, camZ);
                 // Mirar hacia adelante usando la dirección suavizada
                 cam.lookAt(x + smoothDx * 5f, 0.5f, z + smoothDz * 5f);
                 cam.up.set(0, 1, 0);
             } else {
-               // Fallback a Orbita
-               cameraMode = CameraMode.ORBIT;
+                // Fallback a Orbita
+                cameraMode = CameraMode.ORBIT;
             }
-        } 
-        
+        }
+
         if (cameraMode == CameraMode.ORBIT) {
             // Interpolación del punto de enfoque solo cuando el objetivo cambia
             camTarget.lerp(new com.badlogic.gdx.math.Vector3(targetX, 0, targetZ), 0.05f);
@@ -635,12 +644,12 @@ public class Gdx3DView extends ApplicationAdapter
         modelBatch.render(renderer.getInstances(), environment);
         modelBatch.end();
 
-        
         // Renderizado de Etiquetas 3D (Decals)
         if (!renderer.getLabels().isEmpty()) {
             for (letrain.visitor.Gdx3DRenderer.VehicleLabel label : renderer.getLabels()) {
-                if (label.text == null || label.text.isEmpty()) continue;
-                
+                if (label.text == null || label.text.isEmpty())
+                    continue;
+
                 char c = label.text.charAt(0);
                 com.badlogic.gdx.graphics.g3d.decals.Decal d = getGlyphDecal(c);
                 if (d != null) {
@@ -650,13 +659,13 @@ public class Gdx3DView extends ApplicationAdapter
                     // lookAt hace que el frente del decal mire al target.
                     // Queremos que el frente mire a pos + normal.
                     d.lookAt(label.pos.cpy().add(label.normal), com.badlogic.gdx.math.Vector3.Y);
-                    
+
                     decalBatch.add(d);
                 }
             }
             decalBatch.flush();
         }
-        
+
         spriteBatch.begin();
         // (Labels 2D removidos)
         spriteBatch.end();
@@ -864,6 +873,10 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void dispose() {
+        if (audioController != null)
+            audioController.stop();
+        if (decalBatch != null)
+            decalBatch.dispose();
         modelBatch.dispose();
         groundModel.dispose();
         gridModel.dispose();
