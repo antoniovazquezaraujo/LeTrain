@@ -67,23 +67,16 @@ public class TrainSynthesizer implements AudioSource {
             setSample(sample);
 
             // Load Labels
-            java.net.URL labelsUrl = getClass().getResource("/sound/train-sound-labels.txt");
-            if (labelsUrl == null) {
+            java.io.InputStream labelsStream = getClass().getResourceAsStream("/sound/train-sound-labels.txt");
+            if (labelsStream == null) {
                 System.err.println("TrainSynthesizer: train-sound-labels.txt not found! Using defaults.");
                 initDefaultNotches(); // Fallback
                 return;
             }
 
             // Parse Labels
-            // We need a File object for the parser, but resource might be in a JAR.
-            // For now, let's assume filesystem for dev/MVP or read via stream.
-            // Check if AudacityLabelParser supports streams? No, it takes File.
-            // Let's modify Parser or read to temp file?
-            // Actually, for now let's try to convert URL to file if possible (works in
-            // IDE/file system)
-            java.io.File labelFile = new java.io.File(labelsUrl.toURI());
             List<letrain.audio.util.AudacityLabelParser.Label> labels = letrain.audio.util.AudacityLabelParser
-                    .parse(labelFile);
+                    .parse(labelsStream);
 
             initNotchesFromLabels(labels, sample);
 
@@ -244,13 +237,16 @@ public class TrainSynthesizer implements AudioSource {
         if (sample != null) {
             SpeedNotch current = notches[currentNotchIndex];
 
-            float lStart = convertMsToNorm(current.loopStart, sample);
-            float lEnd = convertMsToNorm(current.loopEnd, sample);
-            float cStart = convertMsToNorm(current.coachLoopStart, sample);
-            float cEnd = convertMsToNorm(current.coachLoopEnd, sample);
+            // If notches are not yet initialized (e.g. during construction), skip
+            if (current != null) {
+                float lStart = convertMsToNorm(current.loopStart, sample);
+                float lEnd = convertMsToNorm(current.loopEnd, sample);
+                float cStart = convertMsToNorm(current.coachLoopStart, sample);
+                float cEnd = convertMsToNorm(current.coachLoopEnd, sample);
 
-            locoEngine.setLoopPoints(lStart, lEnd);
-            coachEngine.setLoopPoints(cStart, cEnd);
+                locoEngine.setLoopPoints(lStart, lEnd);
+                coachEngine.setLoopPoints(cStart, cEnd);
+            }
 
             // Set sample rate to match sample or mixer?
             // Ideally Mixer tells us. For now assume 44100.

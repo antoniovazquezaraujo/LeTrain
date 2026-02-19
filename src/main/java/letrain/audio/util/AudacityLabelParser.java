@@ -2,7 +2,6 @@ package letrain.audio.util;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,9 +21,13 @@ public class AudacityLabelParser {
     }
 
     public static List<Label> parse(File file) throws IOException {
+        return parse(new java.io.FileInputStream(file));
+    }
+
+    public static List<Label> parse(java.io.InputStream stream) throws IOException {
         List<Label> labels = new ArrayList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+        try (BufferedReader br = new BufferedReader(new java.io.InputStreamReader(stream))) {
             String line;
             while ((line = br.readLine()) != null) {
                 line = line.trim();
@@ -43,9 +46,8 @@ public class AudacityLabelParser {
                     try {
                         double start = Double.parseDouble(parts[0]);
                         double end = Double.parseDouble(parts[1]);
-                        // Reassemble name if it had spaces (though split(\\t) handles that)
+                        // Reassemble name if it had spaces
                         String name = parts[2];
-                        // If split by space, name might be split
                         if (parts.length > 3) {
                             for (int i = 3; i < parts.length; i++)
                                 name += " " + parts[i];

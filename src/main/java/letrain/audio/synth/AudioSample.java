@@ -1,8 +1,12 @@
 package letrain.audio.synth;
 
-import javax.sound.sampled.*;
 import java.io.File;
 import java.io.IOException;
+
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
 
 public class AudioSample {
     private float[] samples;
@@ -48,8 +52,28 @@ public class AudioSample {
                 }
                 int val = (hb << 8) | (lb & 0xFF);
                 sample = val / 32768.0f;
+            } else if (format.getSampleSizeInBits() == 24) {
+                int baseIndex = i * format.getFrameSize();
+                int b0, b1, b2;
+                if (isBigEndian) {
+                    b2 = bytes[baseIndex];
+                    b1 = bytes[baseIndex + 1];
+                    b0 = bytes[baseIndex + 2];
+                } else {
+                    b0 = bytes[baseIndex];
+                    b1 = bytes[baseIndex + 1];
+                    b2 = bytes[baseIndex + 2];
+                }
+                // 24-bit signed: (b2 << 16) | (b1 << 8) | b0
+                int val = (b2 << 16) | ((b1 & 0xFF) << 8) | (b0 & 0xFF);
+                sample = val / 8388608.0f;
+            } else if (format.getSampleSizeInBits() == 8) {
+                int baseIndex = i * format.getFrameSize();
+                int val = bytes[baseIndex] & 0xFF; // Treat as unsigned
+                // 8-bit WAV is usually unsigned 0..255, center 128
+                sample = (val - 128) / 128.0f;
             } else {
-                // 8-bit support? skip for now, assumed 16bit wav
+                System.err.println("Unsupported bit depth: " + format.getSampleSizeInBits());
             }
 
             this.samples[i] = sample;

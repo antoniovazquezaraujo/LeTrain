@@ -180,7 +180,6 @@ public class AudioLab extends ApplicationAdapter {
             AudioSample sample = new AudioSample(file);
             AmbientSource source = new AmbientSource(sample);
             source.setVolume(0.5f);
-            source.setStartDelay(0);
             mixer.addSource(source);
 
             String name = file.getName();
