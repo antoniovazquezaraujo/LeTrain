@@ -1,55 +1,36 @@
 package letrain.audio;
 
-import java.io.IOException;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
 import letrain.audio.core.AudioMixer;
-import letrain.audio.synth.AudioSample;
 import letrain.audio.synth.TrainSynthesizer;
 import letrain.map.Point;
 import letrain.mvp.impl.Model;
 import letrain.vehicle.impl.rail.Locomotive;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AudioController {
-    private static final Logger log = LoggerFactory.getLogger(AudioController.class);
+    // Logger removed as unused
     private final Model model;
     private final Map<Integer, TrainSynthesizer> synthesizers = new HashMap<>();
     private final AudioMixer mixer;
-    private AudioSample defaultSample;
     private boolean enabled = true;
+
+    // 1 Game Unit = 20 Real Meters (Approx length of a train car)
+    private static final float SCALE_FACTOR = 20.0f;
 
     public AudioController(Model model) {
         this.model = model;
         this.mixer = new AudioMixer();
-        loadResources();
+        // TrainSynthesizer handles its own resources now
         if (enabled) {
             mixer.start();
         }
     }
 
-    private void loadResources() {
-        try {
-            URL url = getClass().getResource("/sound/freesound_community-train-17869.wav");
-            if (url == null) {
-                log.error("Could not find default train sound resource");
-                enabled = false;
-                return;
-            }
-            defaultSample = new AudioSample(url);
-        } catch (UnsupportedAudioFileException | IOException e) {
-            log.error("Failed to load audio sample", e);
-            enabled = false;
-        }
-    }
-
     public void setListenerPosition(float x, float y, float z, float angle) {
-        mixer.setListenerPosition(x, y, z);
+        mixer.setListenerPosition(x * SCALE_FACTOR, y * SCALE_FACTOR, z * SCALE_FACTOR);
         mixer.setListenerAngle(angle);
     }
 
@@ -82,12 +63,15 @@ public class AudioController {
             TrainSynthesizer synth = synthesizers.get(loco.getId());
             if (synth == null) {
                 synth = new TrainSynthesizer();
-                if (defaultSample != null) {
-                    synth.setSample(defaultSample);
-                    synth.setLocoVolume(0.8f);
-                    synth.setCoachVolume(0.6f);
-                    synth.startAudio(); // Sets running flag
-                }
+                // Audio Physics Defaults
+                // 50m Ref Distance, 2000m Max Distance (Silence)
+                // 1.0x Filter Sensitivity (Logarithmic Falloff)
+                synth.setAudioRange(50.0f, 2000.0f);
+                synth.setFilterSensitivity(1.0f);
+                synth.setLocoVolume(0.8f);
+                synth.setCoachVolume(0.6f);
+
+                synth.startAudio();
 
                 // Add to mixer
                 mixer.addSource(synth);
@@ -101,21 +85,16 @@ public class AudioController {
             synth.setThrottle(notch);
 
             // Sync Position
-            // Assuming LeTrain coordinates are "blocks" or "meters".
-            // AudioMixer expects generic units.
-            // Let's assume 1 map unit = 10 meters for audio scale? Or 1:1?
-            // LeTrain view might be 3D.
             Point pos = loco.getPosition();
-            // Point is integer 2D?
-            // We need to check if Locomotive has more precise position.
-            // For now use Point.
             if (pos != null) {
-                // If the game is 2D/3D, Z might be height or depth.
-                // Let's map Map X/Y to Audio X/Z (horizontal plane) and Y is height?
-                // Or Audio X/Y is map, Z is height.
-                // Usually 3D audio: X=Right, Y=Up, Z=Forward/Back (-Z for OpenGL).
-                // Let's use X=MapX, Y=0, Z=MapY.
-                synth.setPosition((float) pos.getX(), 0, (float) pos.getY());
+                // Map Game Coordinates: X->X, Z->Y (Audio Depth), Y->Z (Audio Height/Elevation)
+                // LeTrain is 2D grid (X, Y) -> Audio (X, Z)
+                // We assume Y=0 (Gound) for trains
+                // Apply Scale Factor
+                synth.setPosition(
+                        (float) pos.getX() * SCALE_FACTOR,
+                        0,
+                        (float) pos.getY() * SCALE_FACTOR);
             }
         }
     }

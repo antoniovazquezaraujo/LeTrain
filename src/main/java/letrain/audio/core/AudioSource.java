@@ -31,4 +31,11 @@ public interface AudioSource {
      * @return The distance at which the sound stops being heard (or is minimal).
      */
     float getMaxDistance();
+
+    /**
+     * Sets the amount of low-pass filtering due to distance.
+     * 
+     * @param amount 0.0 (no filter, close) to 1.0 (max filter, far)
+     */
+    void setDistanceFilter(float amount);
 }

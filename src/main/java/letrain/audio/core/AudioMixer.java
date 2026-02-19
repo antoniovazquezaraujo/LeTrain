@@ -122,11 +122,34 @@ public class AudioMixer {
                         volume = 0.0f;
 
                     // Pan (Simple approximation)
-                    // Calculate angle to source relative to listener angle
+                    // Calculate angle to source relative to leadtener angle
                     // For now, let's keep it centered (1.0, 1.0) until Phase 2 implementation
                     // details
                     float panLeft = 1.0f;
                     float panRight = 1.0f;
+
+                    // Distance Filtering (Atmospheric Absorption imitation)
+                    // We want a "Logarithmic" fade because pitch perception is logarithmic.
+                    // We want Frequency to go from 20000Hz down to ~200Hz.
+                    // This creates a smooth "Linear Pitch Drop".
+
+                    float filterAmount = 0.0f;
+                    if (distance > refDist) {
+                        float distFactor = (distance - refDist) / (maxDist - refDist);
+                        distFactor = Math.min(1.0f, Math.max(0.0f, distFactor));
+
+                        // Logarithmic mapping:
+                        // Top freq (alpha=1.0), Bottom freq (alpha=0.01)
+                        // Alpha = Start * (End/Start)^Factor
+                        // Alpha = 1.0 * (0.01)^distFactor
+                        float alpha = (float) Math.pow(0.01, distFactor);
+
+                        filterAmount = 1.0f - alpha;
+
+                        // Limit max filtering
+                        filterAmount = Math.min(0.99f, filterAmount);
+                    }
+                    source.setDistanceFilter(filterAmount);
 
                     // Apply to Mix
                     // sourceBuffer is MONO? NO, existing GrainEngine produces MONO usually,

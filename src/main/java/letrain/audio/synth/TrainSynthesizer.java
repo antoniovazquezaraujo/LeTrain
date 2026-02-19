@@ -239,10 +239,10 @@ public class TrainSynthesizer implements AudioSource {
 
             // If notches are not yet initialized (e.g. during construction), skip
             if (current != null) {
-                float lStart = convertMsToNorm(current.loopStart, sample);
-                float lEnd = convertMsToNorm(current.loopEnd, sample);
-                float cStart = convertMsToNorm(current.coachLoopStart, sample);
-                float cEnd = convertMsToNorm(current.coachLoopEnd, sample);
+                float lStart = convertSamplesToNorm(current.loopStart, sample);
+                float lEnd = convertSamplesToNorm(current.loopEnd, sample);
+                float cStart = convertSamplesToNorm(current.coachLoopStart, sample);
+                float cEnd = convertSamplesToNorm(current.coachLoopEnd, sample);
 
                 locoEngine.setLoopPoints(lStart, lEnd);
                 coachEngine.setLoopPoints(cStart, cEnd);
@@ -264,13 +264,10 @@ public class TrainSynthesizer implements AudioSource {
         audioRunning = false;
     }
 
-    private float convertMsToNorm(float ms, AudioSample sample) {
+    private float convertSamplesToNorm(float samples, AudioSample sample) {
         if (sample == null || sample.getLength() == 0)
             return 0.0f;
-        float rate = sample.getSampleRate();
         float length = sample.getLength();
-        // samples = ms * (rate / 1000)
-        float samples = ms * (rate / 1000.0f);
         return samples / length;
     }
 
@@ -293,6 +290,19 @@ public class TrainSynthesizer implements AudioSource {
         }
 
         coachEngine.setVolume(baseCoachVolume * dynamicFactor);
+    }
+
+    private float filterSensitivity = 1.0f;
+
+    public void setFilterSensitivity(float sensitivity) {
+        this.filterSensitivity = sensitivity;
+    }
+
+    @Override
+    public void setDistanceFilter(float amount) {
+        float effective = Math.min(0.99f, amount * filterSensitivity);
+        locoEngine.setDistanceFilter(effective);
+        coachEngine.setDistanceFilter(effective);
     }
 
     public void setLocoRandomness(float prob, float duration) {
@@ -379,10 +389,10 @@ public class TrainSynthesizer implements AudioSource {
             // Switch Loops
             // Normalize loop points
             AudioSample s = locoEngine.getSample();
-            float lStart = convertMsToNorm(target.loopStart, s);
-            float lEnd = convertMsToNorm(target.loopEnd, s);
-            float cStart = convertMsToNorm(target.coachLoopStart, s);
-            float cEnd = convertMsToNorm(target.coachLoopEnd, s);
+            float lStart = convertSamplesToNorm(target.loopStart, s);
+            float lEnd = convertSamplesToNorm(target.loopEnd, s);
+            float cStart = convertSamplesToNorm(target.coachLoopStart, s);
+            float cEnd = convertSamplesToNorm(target.coachLoopEnd, s);
 
             locoEngine.setLoopPoints(lStart, lEnd);
             coachEngine.setLoopPoints(cStart, cEnd);

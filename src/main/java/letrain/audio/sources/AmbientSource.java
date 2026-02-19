@@ -28,6 +28,9 @@ public class AmbientSource implements AudioSource {
         this.volume = volume;
     }
 
+    private float filterAmount = 0.0f;
+    private float lastVal = 0.0f;
+
     @Override
     public boolean read(float[] buffer) {
         if (!active || sample == null)
@@ -47,7 +50,15 @@ public class AmbientSource implements AudioSource {
                 }
             }
 
-            buffer[i] = sample.getSample((int) cursor) * volume;
+            float raw = sample.getSample((int) cursor);
+
+            // Apply Simple LPF
+            // output = last + alpha * (input - last)
+            float alpha = 1.0f - filterAmount;
+            float smoothed = lastVal + (raw - lastVal) * alpha;
+            lastVal = smoothed;
+
+            buffer[i] = smoothed * volume;
 
             // Advance cursor
             // Assuming sample rate matches Mixer (44100)
@@ -56,6 +67,18 @@ public class AmbientSource implements AudioSource {
             cursor += rateRatio;
         }
         return true;
+    }
+
+    private float filterSensitivity = 1.0f;
+
+    @Override
+    public void setDistanceFilter(float amount) {
+        // Apply sensitivity and cap at 0.99f (almost silence)
+        this.filterAmount = Math.min(0.99f, amount * filterSensitivity);
+    }
+
+    public void setFilterSensitivity(float sensitivity) {
+        this.filterSensitivity = sensitivity;
     }
 
     @Override

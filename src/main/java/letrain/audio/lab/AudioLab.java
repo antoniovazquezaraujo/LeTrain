@@ -233,6 +233,42 @@ public class AudioLab extends ApplicationAdapter {
             add(distanceSlider).growX().padRight(10);
             add(distanceLabel).width(50).row();
 
+            // Row 1b: Max Distance
+            add(new Label("Max Dist:", skin)).left();
+            Slider maxDistSlider = new Slider(100, 5000, 100, false, skin);
+            maxDistSlider.setValue(1000); // Default
+            final Label maxDistLabel = new Label("1000 m", skin);
+
+            maxDistSlider.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    float val = maxDistSlider.getValue();
+                    maxDistLabel.setText((int) val + " m");
+                    synth.setAudioRange(50f, val);
+                }
+            });
+
+            add(maxDistSlider).growX().padRight(10);
+            add(maxDistLabel).width(50).row();
+
+            // Row 1c: Absorption (Filter Sensitivity)
+            add(new Label("Absorb:", skin)).left();
+            Slider absorbSlider = new Slider(0.0f, 5.0f, 0.1f, false, skin); // Up to 5x boost
+            absorbSlider.setValue(1.0f);
+            final Label absorbLabel = new Label("1.0x", skin);
+
+            absorbSlider.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    float val = absorbSlider.getValue();
+                    absorbLabel.setText(String.format("%.1fx", val));
+                    synth.setFilterSensitivity(val);
+                }
+            });
+
+            add(absorbSlider).growX().padRight(10);
+            add(absorbLabel).width(50).row();
+
             // Row 2: Throttle / Notch
             add(new Label("Notch:", skin)).left();
             Slider notchSlider = new Slider(0, 8, 1, false, skin); // 0-8 steps
@@ -348,7 +384,44 @@ public class AudioLab extends ApplicationAdapter {
             });
 
             add(distanceSlider).growX().pad(5);
-            add(distanceLabel).width(50);
+            add(distanceLabel).width(50).row();
+
+            // Start Delay / Max Distance
+            // Let's add Max Distance slider
+            add(new Label("Max Dist:", skin)).left();
+            Slider maxDistSlider = new Slider(100, 5000, 100, false, skin);
+            maxDistSlider.setValue(2000); // Default for ambience
+            final Label maxDistLabel = new Label("2000 m", skin);
+
+            maxDistSlider.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    float val = maxDistSlider.getValue();
+                    maxDistLabel.setText((int) val + " m");
+                    source.setRange(100f, val);
+                }
+            });
+
+            add(maxDistSlider).growX().pad(5);
+            add(maxDistLabel).width(50).row();
+
+            // Row 1c: Absorption
+            add(new Label("Absorb:", skin)).left();
+            Slider absorbSlider = new Slider(0.0f, 5.0f, 0.1f, false, skin);
+            absorbSlider.setValue(1.0f);
+            final Label absorbLabel = new Label("1.0x", skin);
+
+            absorbSlider.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    float val = absorbSlider.getValue();
+                    absorbLabel.setText(String.format("%.1fx", val));
+                    source.setFilterSensitivity(val);
+                }
+            });
+
+            add(absorbSlider).growX().pad(5);
+            add(absorbLabel).width(50).row();
 
             // Volume
             Slider volSlider = new Slider(0, 1, 0.01f, false, skin);

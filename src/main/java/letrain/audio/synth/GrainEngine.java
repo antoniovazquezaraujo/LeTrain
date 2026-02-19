@@ -13,6 +13,11 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
     // Parameters
     private float speed = 0.0f; // 0..1 input
     private float playbackRate = 1.0f;
+    private float distanceFilter = 0.0f; // 0..1 from Mixer
+
+    public void setDistanceFilter(float amount) {
+        this.distanceFilter = amount;
+    }
 
     // Loop Modes
     public enum LoopMode {
@@ -102,7 +107,11 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
 
         // Simple Low Pass Filter amount based on speed
         float rawFilter = 0.8f - (speed * 0.8f);
-        float filterAmount = Math.max(0.0f, Math.min(0.95f, rawFilter));
+        float speedFilter = Math.max(0.0f, Math.min(0.95f, rawFilter));
+
+        // Combine filters: keep the stronger one? or add?
+        // Let's take the Maximum filtering required.
+        float filterAmount = Math.max(speedFilter, distanceFilter);
 
         double len = sample.getLength();
         double startPos = len * loopStart;
@@ -188,7 +197,9 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
             }
 
             // 3. Simple Low Pass smoothing
-            float smoothed = raw + (lastVal - raw) * (1.0f - filterAmount);
+            // correct LPF: output = last + alpha * (input - last)
+            float alpha = 1.0f - filterAmount;
+            float smoothed = lastVal + (raw - lastVal) * alpha;
             lastVal = smoothed;
 
             buffer[i] += smoothed * volume;
