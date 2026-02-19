@@ -55,7 +55,22 @@ public class TrainSynthesizer implements AudioSource {
         loadResources();
     }
 
+    // Cache
+    private static AudioSample sharedSample;
+    private static boolean resourcesLoaded = false;
+    private static List<letrain.audio.util.AudacityLabelParser.Label> sharedLabels;
+
     private void loadResources() {
+        if (resourcesLoaded && sharedSample != null) {
+            setSample(sharedSample);
+            if (sharedLabels != null) {
+                initNotchesFromLabels(sharedLabels, sharedSample);
+            } else {
+                initDefaultNotches();
+            }
+            return;
+        }
+
         try {
             // Load WAV
             java.net.URL wavUrl = getClass().getResource("/sound/train-sound.wav");
@@ -63,22 +78,20 @@ public class TrainSynthesizer implements AudioSource {
                 System.err.println("TrainSynthesizer: train-sound.wav not found!");
                 return;
             }
-            AudioSample sample = new AudioSample(wavUrl);
-            setSample(sample);
+            sharedSample = new AudioSample(wavUrl);
+            setSample(sharedSample);
 
             // Load Labels
             java.io.InputStream labelsStream = getClass().getResourceAsStream("/sound/train-sound-labels.txt");
-            if (labelsStream == null) {
+            if (labelsStream != null) {
+                sharedLabels = letrain.audio.util.AudacityLabelParser.parse(labelsStream);
+                initNotchesFromLabels(sharedLabels, sharedSample);
+            } else {
                 System.err.println("TrainSynthesizer: train-sound-labels.txt not found! Using defaults.");
-                initDefaultNotches(); // Fallback
-                return;
+                initDefaultNotches();
             }
 
-            // Parse Labels
-            List<letrain.audio.util.AudacityLabelParser.Label> labels = letrain.audio.util.AudacityLabelParser
-                    .parse(labelsStream);
-
-            initNotchesFromLabels(labels, sample);
+            resourcesLoaded = true;
 
         } catch (Exception e) {
             e.printStackTrace();

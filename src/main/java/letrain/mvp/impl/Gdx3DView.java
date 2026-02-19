@@ -1,5 +1,6 @@
 package letrain.mvp.impl;
 
+import java.io.File;
 import java.util.List;
 
 import com.badlogic.gdx.ApplicationAdapter;
@@ -19,13 +20,18 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
-import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextArea;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.TextField;
+import com.badlogic.gdx.scenes.scene2d.ui.Window;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.googlecode.lanterna.TextColor;
@@ -72,7 +78,6 @@ public class Gdx3DView extends ApplicationAdapter
 
     private SpriteBatch spriteBatch;
     private BitmapFont font;
-    private Vector3 labelPos = new Vector3();
 
     private Stage stage;
     private Skin skin;
@@ -169,6 +174,7 @@ public class Gdx3DView extends ApplicationAdapter
         uiFont.getData().markupEnabled = true;
         skin.add("default", uiFont);
 
+        // TextButton Style
         TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle();
         textButtonStyle.up = skin.newDrawable("white", Color.DARK_GRAY);
         textButtonStyle.down = skin.newDrawable("white", Color.BLACK);
@@ -177,10 +183,34 @@ public class Gdx3DView extends ApplicationAdapter
         textButtonStyle.font = skin.getFont("default");
         skin.add("default", textButtonStyle);
 
+        // Label Style
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = uiFont;
         labelStyle.fontColor = Color.YELLOW;
         skin.add("default", labelStyle);
+
+        // Window Style
+        Window.WindowStyle windowStyle = new Window.WindowStyle();
+        windowStyle.titleFont = uiFont;
+        windowStyle.background = skin.newDrawable("white", Color.BLACK);
+        windowStyle.titleFontColor = Color.WHITE;
+        skin.add("default", windowStyle);
+
+        // TextField/TextArea Style
+        TextField.TextFieldStyle textFieldStyle = new TextField.TextFieldStyle();
+        textFieldStyle.font = uiFont;
+        textFieldStyle.fontColor = Color.WHITE;
+        textFieldStyle.background = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.2f, 1f));
+        textFieldStyle.cursor = skin.newDrawable("white", Color.WHITE);
+        textFieldStyle.selection = skin.newDrawable("white", Color.BLUE);
+        skin.add("default", textFieldStyle);
+
+        // ScrollPane Style
+        ScrollPane.ScrollPaneStyle scrollPaneStyle = new ScrollPane.ScrollPaneStyle();
+        scrollPaneStyle.background = skin.newDrawable("white", Color.DARK_GRAY);
+        scrollPaneStyle.vScroll = skin.newDrawable("white", Color.GRAY);
+        scrollPaneStyle.vScrollKnob = skin.newDrawable("white", Color.LIGHT_GRAY);
+        skin.add("default", scrollPaneStyle);
 
         menuTable = new Table();
         menuTable.setFillParent(true);
@@ -356,8 +386,12 @@ public class Gdx3DView extends ApplicationAdapter
         boolean altPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
                 || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
 
-        onChar(new com.googlecode.lanterna.input.KeyStroke(character, ctrlPressed, altPressed));
-        return true;
+        if (!Character.isISOControl(character)) {
+            ((letrain.mvp.GameViewListener) this)
+                    .onChar(new com.googlecode.lanterna.input.KeyStroke(character, ctrlPressed, altPressed));
+            return true;
+        }
+        return false;
     }
 
     private void createVehicle(char c) {
@@ -390,62 +424,77 @@ public class Gdx3DView extends ApplicationAdapter
     @Override
     public boolean keyDown(int keycode) {
         // Interceptar Alt+flechas para controles de cámara (consumir evento)
-        boolean altPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
-                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
+        // Alt check removed to allow processing in onChar
 
-        if (altPressed && (keycode == com.badlogic.gdx.Input.Keys.LEFT
-                || keycode == com.badlogic.gdx.Input.Keys.RIGHT
-                || keycode == com.badlogic.gdx.Input.Keys.UP
-                || keycode == com.badlogic.gdx.Input.Keys.DOWN)) {
-            // Consumir el evento para que no se procese en otros lugares
+        // Alt check removed to allow processing in onChar
+
+        KeyStroke keyStroke = null;
+        switch (keycode) {
+            case com.badlogic.gdx.Input.Keys.UP:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp);
+                break;
+            case com.badlogic.gdx.Input.Keys.DOWN:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowDown);
+                break;
+            case com.badlogic.gdx.Input.Keys.LEFT:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowLeft);
+                break;
+            case com.badlogic.gdx.Input.Keys.RIGHT:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowRight);
+                break;
+            case com.badlogic.gdx.Input.Keys.ENTER:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Enter);
+                break;
+            case com.badlogic.gdx.Input.Keys.ESCAPE:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Escape);
+                break;
+            case com.badlogic.gdx.Input.Keys.BACKSPACE:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Backspace);
+                break;
+            case com.badlogic.gdx.Input.Keys.FORWARD_DEL:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Delete);
+                break;
+            case com.badlogic.gdx.Input.Keys.HOME:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Home);
+                break;
+            case com.badlogic.gdx.Input.Keys.END:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.End);
+                break;
+            case com.badlogic.gdx.Input.Keys.PAGE_UP:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.PageUp);
+                break;
+            case com.badlogic.gdx.Input.Keys.PAGE_DOWN:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.PageDown);
+                break;
+            case com.badlogic.gdx.Input.Keys.INSERT:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Insert);
+                break;
+            case com.badlogic.gdx.Input.Keys.TAB:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Tab);
+                break;
+        }
+
+        if (keyStroke != null) {
+            boolean ctrlPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
+                    || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_RIGHT);
+            boolean altPressedKey = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
+                    || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
+            boolean shiftPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)
+                    || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
+
+            // Re-create keystroke with modifiers if needed
+            // Note: Lanterna KeyStroke constructor for KeyType doesn't take modifiers
+            // easily
+            // without using the other constructor, but for now we dispatch as is.
+            // Or we can construct it better if needed.
+            // For now, let's dispatch.
+            ((letrain.mvp.GameViewListener) this)
+                    .onChar(new KeyStroke(keyStroke.getKeyType(), ctrlPressed, altPressedKey, shiftPressed));
             return true;
         }
 
-        if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE) {
-            model.setMode(letrain.mvp.Model.GameMode.RAILS);
-            return true;
-        }
-
-        if (keycode == com.badlogic.gdx.Input.Keys.ENTER) {
-            if (model.getMode() != letrain.mvp.Model.GameMode.LINK
-                    && model.getMode() != letrain.mvp.Model.GameMode.UNLINK) {
-                model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                return true;
-            }
-        }
-
-        if (model.getMode() == letrain.mvp.Model.GameMode.RAILS) {
-            if (keycode == com.badlogic.gdx.Input.Keys.HOME) {
-                trackMaker.manageSemaphore();
-                return true;
-            } else if (keycode == com.badlogic.gdx.Input.Keys.INSERT) {
-                trackMaker.manageSensor();
-                return true;
-            }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES) {
-            if (keycode == com.badlogic.gdx.Input.Keys.LEFT) {
-                model.selectPrevSemaphore();
-                return true;
-            } else if (keycode == com.badlogic.gdx.Input.Keys.RIGHT) {
-                model.selectNextSemaphore();
-                return true;
-            } else if (keycode == com.badlogic.gdx.Input.Keys.SPACE) {
-                letrain.track.RailSemaphore s = model.getSelectedSemaphore();
-                if (s != null) {
-                    s.setOpen(!s.isOpen());
-                }
-                return true;
-            }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS) {
-            if (keycode == com.badlogic.gdx.Input.Keys.LEFT) {
-                model.selectPrevStation();
-                return true;
-            } else if (keycode == com.badlogic.gdx.Input.Keys.RIGHT) {
-                model.selectNextStation();
-                return true;
-            }
-        }
         return false;
+
     }
 
     @Override
@@ -501,7 +550,6 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void render() {
-        handleInput();
 
         // Bucle de lógica del juego (aprox 20 tps como en el Presenter original)
         stateTime += Gdx.graphics.getDeltaTime();
@@ -701,197 +749,6 @@ public class Gdx3DView extends ApplicationAdapter
         }
     }
 
-    private float inputDelay = 0f;
-
-    private void handleInput() {
-        float deltaTime = Gdx.graphics.getDeltaTime();
-        if (inputDelay > 0)
-            inputDelay -= deltaTime;
-
-        // Cuantificador por defecto si no hay ninguno al usar Shift (dibujar)
-        boolean shiftPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)
-                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
-        boolean ctrlPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
-                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_RIGHT);
-        boolean altPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
-                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
-
-        // Controles de cámara con Alt+flechas (funcionan en TODOS los modos)
-        if (altPressed) {
-            // Alt+izquierda/derecha: panear cámara alrededor del punto focal
-            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
-                targetCameraAngle -= 15f; // Rotar 15° a la izquierda
-                return; // No procesar más input para evitar mover el cursor
-            }
-            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
-                targetCameraAngle += 15f; // Rotar 15° a la derecha
-                return; // No procesar más input para evitar mover el cursor
-            }
-
-            // Alt+arriba/abajo: ajustar zoom
-            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP)) {
-                targetCameraDistance = Math.max(3f, targetCameraDistance - 1f); // Acercar (mínimo 3)
-                return; // No procesar más input para evitar mover el cursor
-            }
-            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN)) {
-                targetCameraDistance = Math.min(20f, targetCameraDistance + 1f); // Alejar (máximo 20)
-                return; // No procesar más input para evitar mover el cursor
-            }
-        }
-
-        if (stateTime == 0) {
-            if (shiftPressed || ctrlPressed) {
-                if (model.getQuantifier() == 0) {
-                    model.setQuantifier(1);
-                }
-            }
-        }
-
-        // Modo Conducción / Link vs Otros Modos
-        if (model.getMode() == letrain.mvp.Model.GameMode.DRIVE) {
-            handleDriveInput();
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.LINK) {
-            handleLinkInput();
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS) {
-            handleForkInput();
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.UNLINK) {
-            handleUnlinkInput();
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES) {
-            // Controlado por keyDown/keyUp
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES) {
-            // Controlado por keyDown/keyUp
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS) {
-            // Controlado por keyDown/keyUp
-        } else {
-            handleStandardInput(ctrlPressed, shiftPressed, altPressed);
-        }
-    }
-
-    private void handleDriveInput() {
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP)) {
-            if (model.getSelectedLocomotive() != null) {
-                model.getSelectedLocomotive().incSpeed();
-            }
-        }
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN)) {
-            if (model.getSelectedLocomotive() != null) {
-                model.getSelectedLocomotive().decSpeed();
-            }
-        }
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
-            model.selectPrevLocomotive();
-        }
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
-            model.selectNextLocomotive();
-        }
-    }
-
-    private void handleLinkInput() {
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP)) {
-            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().setLinkersToJoin(true);
-            }
-        }
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN)) {
-            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().setLinkersToJoin(false);
-            }
-        }
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
-            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().removeLinkerToJoin();
-            }
-        }
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
-            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().addLinkerToJoin();
-            }
-        }
-    }
-
-    private void handleForkInput() {
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
-            model.selectPrevFork();
-        }
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
-            model.selectNextFork();
-        }
-    }
-
-    private void handleUnlinkInput() {
-        if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-            letrain.vehicle.impl.rail.Train train = model.getSelectedLocomotive().getTrain();
-            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP)) {
-                train.selectNextDivisionLink();
-            }
-            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN)) {
-                train.selectPrevDivisionLink();
-            }
-            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
-                train.setFrontDivisionSense();
-            }
-            if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
-                train.setBackDivisionSense();
-            }
-        }
-    }
-
-    private void handleStandardInput(boolean ctrlPressed, boolean shiftPressed, boolean altPressed) {
-        // Movimiento Longitudinal (Repetible con retardo controlado)
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.UP) && !altPressed) {
-            trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp,
-                    ctrlPressed, false, shiftPressed));
-            inputDelay = 0.5f;
-        } else if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.UP) && inputDelay <= 0 && !altPressed) {
-            trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp,
-                    ctrlPressed, false, shiftPressed));
-            inputDelay = 0.5f;
-        }
-
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.DOWN) && !altPressed) {
-            trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(
-                    com.googlecode.lanterna.input.KeyType.ArrowDown, false, false, false));
-            inputDelay = 0.5f;
-        } else if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.DOWN) && inputDelay <= 0 && !altPressed) {
-            trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(
-                    com.googlecode.lanterna.input.KeyType.ArrowDown, false, false, false));
-            inputDelay = 0.5f;
-        }
-
-        // Giro (Solo un paso por pulsación para evitar "girar de más")
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.LEFT) && !altPressed) {
-            trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(
-                    com.googlecode.lanterna.input.KeyType.ArrowLeft, false, false, false));
-        }
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.RIGHT) && !altPressed) {
-            trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(
-                    com.googlecode.lanterna.input.KeyType.ArrowRight, false, false, false));
-        }
-
-        // 'Space' discreto
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.SPACE)) {
-            trackMaker.onChar(new com.googlecode.lanterna.input.KeyStroke(' ', false, false));
-        }
-
-    }
-
-    @Override
-    public void dispose() {
-        if (audioController != null)
-            audioController.stop();
-        if (decalBatch != null)
-            decalBatch.dispose();
-        modelBatch.dispose();
-        groundModel.dispose();
-        gridModel.dispose();
-        boxModel.dispose();
-        renderer.dispose();
-        spriteBatch.dispose();
-        font.dispose();
-        stage.dispose();
-        skin.dispose();
-    }
-
     // Presenter implementation
     @Override
     public letrain.mvp.View getView() {
@@ -909,7 +766,232 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void onChar(com.googlecode.lanterna.input.KeyStroke stroke) {
-        trackMaker.onChar(stroke);
+        // Global Camera Controls (Alt + Arrows)
+        if (stroke.isAltDown()) {
+            if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
+                targetCameraAngle -= 15f;
+                return;
+            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
+                targetCameraAngle += 15f;
+                return;
+            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
+                targetCameraDistance = Math.max(3f, targetCameraDistance - 1f);
+                return;
+            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
+                targetCameraDistance = Math.min(20f, targetCameraDistance + 1f);
+                return;
+            }
+        }
+
+        // Global Enter to Menu (matches CompactPresenter)
+        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Enter) {
+            model.setMode(letrain.mvp.Model.GameMode.MENU);
+            return;
+        }
+
+        // Mode Switching Shortcuts (from CompactPresenter)
+        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character && stroke.getCharacter() != ' ') {
+            // Exceptions: TRAINS mode uses characters for vehicle types
+            if (model.getMode() != letrain.mvp.Model.GameMode.TRAINS) {
+                switch (stroke.getCharacter()) {
+                    case 'r':
+                        model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                        return;
+                    case 'd':
+                        if (!model.getLocomotives().isEmpty())
+                            model.setMode(letrain.mvp.Model.GameMode.DRIVE);
+                        return;
+                    case 'f':
+                        if (!model.getForks().isEmpty())
+                            model.setMode(letrain.mvp.Model.GameMode.FORKS);
+                        return;
+                    case 's':
+                        if (!model.getSemaphores().isEmpty())
+                            model.setMode(letrain.mvp.Model.GameMode.SEMAPHORES);
+                        return;
+                    case 't':
+                        if (model.getCursorRailTrack() != null)
+                            model.setMode(letrain.mvp.Model.GameMode.TRAINS);
+                        return;
+                    case 'l':
+                        if (!model.getLocomotives().isEmpty())
+                            model.setMode(letrain.mvp.Model.GameMode.LINK);
+                        return;
+                    case 'u':
+                        if (!model.getLocomotives().isEmpty())
+                            model.setMode(letrain.mvp.Model.GameMode.UNLINK);
+                        return;
+                    case 'n':
+                        if (!model.getStations().isEmpty())
+                            model.setMode(letrain.mvp.Model.GameMode.STATIONS);
+                        return;
+                    case 'p':
+                        model.setMode(letrain.mvp.Model.GameMode.PERSIST);
+                        return;
+                }
+            }
+        }
+
+        switch (model.getMode()) {
+            case RAILS:
+                trackMaker.onChar(stroke);
+                break;
+            case DRIVE:
+                handleDriveInput(stroke);
+                break;
+            case PERSIST:
+                handlePersistInput(stroke);
+                break;
+            case LINK:
+                handleLinkInput(stroke);
+                break;
+            case UNLINK:
+                handleUnlinkInput(stroke);
+                break;
+            case FORKS:
+                handleForkInput(stroke);
+                break;
+            case SEMAPHORES:
+                handleSemaphoreInput(stroke);
+                break;
+            case STATIONS:
+                handleStationInput(stroke);
+                break;
+            case TRAINS:
+                if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character) {
+                    createVehicle(stroke.getCharacter());
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void handleDriveInput(KeyStroke stroke) {
+        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
+            if (model.getSelectedLocomotive() != null) {
+                model.getSelectedLocomotive().incSpeed();
+            }
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
+            if (model.getSelectedLocomotive() != null) {
+                model.getSelectedLocomotive().decSpeed();
+            }
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
+            model.selectPrevLocomotive();
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
+            model.selectNextLocomotive();
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
+                && stroke.getCharacter() == ' ') {
+            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) {
+                if (model.getSelectedLocomotive().getTrack() != null) {
+                    model.getSelectedLocomotive().toggleReversed();
+                }
+            }
+        }
+    }
+
+    private void handlePersistInput(KeyStroke stroke) {
+        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
+            showLoadDialog();
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
+            showSaveDialog();
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
+                && stroke.getCharacter() == ' ') {
+            showEditDialog();
+        }
+    }
+
+    private void handleLinkInput(KeyStroke stroke) {
+        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
+            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+                model.getSelectedLocomotive().getTrain().setLinkersToJoin(true);
+            }
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
+            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+                model.getSelectedLocomotive().getTrain().setLinkersToJoin(false);
+            }
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
+            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+                model.getSelectedLocomotive().getTrain().removeLinkerToJoin();
+            }
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
+            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+                model.getSelectedLocomotive().getTrain().addLinkerToJoin();
+            }
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
+                && stroke.getCharacter() == ' ') {
+            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+                model.getSelectedLocomotive().getTrain().joinLinkers();
+                model.setMode(letrain.mvp.Model.GameMode.MENU);
+            }
+        }
+    }
+
+    private void handleUnlinkInput(KeyStroke stroke) {
+        if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
+            letrain.vehicle.impl.rail.Train train = model.getSelectedLocomotive().getTrain();
+            if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
+                train.selectNextDivisionLink();
+            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
+                train.selectPrevDivisionLink();
+            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
+                train.setFrontDivisionSense();
+            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
+                train.setBackDivisionSense();
+            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
+                    && stroke.getCharacter() == ' ') {
+                train.divideTrain(() -> model.nextTrainId());
+                model.setMode(letrain.mvp.Model.GameMode.MENU);
+            }
+        }
+    }
+
+    private void handleForkInput(KeyStroke stroke) {
+        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
+            model.selectPrevFork();
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
+            model.selectNextFork();
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
+                && stroke.getCharacter() == ' ') {
+            if (model.getSelectedFork() != null) {
+                model.getSelectedFork().flipRoute();
+            }
+        }
+    }
+
+    private void handleSemaphoreInput(KeyStroke stroke) {
+        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
+            model.selectPrevSemaphore();
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
+            model.selectNextSemaphore();
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
+                && stroke.getCharacter() == ' ') {
+            letrain.track.RailSemaphore s = model.getSelectedSemaphore();
+            if (s != null) {
+                s.setOpen(!s.isOpen());
+            }
+        }
+    }
+
+    private void handleStationInput(KeyStroke stroke) {
+        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
+            model.selectPrevStation();
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
+            model.selectNextStation();
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
+                && stroke.getCharacter() == '-') {
+            letrain.track.Station selectedStation = model.getSelectedStation();
+            if (selectedStation != null) {
+                letrain.vehicle.impl.Linker linker = selectedStation.getTrack().getLinker();
+                if (linker != null) {
+                    letrain.vehicle.impl.rail.Train train = linker.getTrain();
+                    if (train != null) {
+                        train.startLoadUnloadProcess();
+                        train.recordStopAtStation();
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -922,14 +1004,6 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     @Override
-    public void onLoadGame(java.io.File file) {
-    }
-
-    @Override
-    public void onSaveGame(java.io.File file) {
-    }
-
-    @Override
     public void onGameModeSelected(letrain.mvp.Model.GameMode mode) {
     }
 
@@ -939,11 +1013,6 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void onPlay() {
-    }
-
-    @Override
-    public void onExitGame() {
-        Gdx.app.exit();
     }
 
     @Override
@@ -1040,15 +1109,166 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     @Override
+    public void onSaveGame(File file) {
+        try (java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(new java.io.FileOutputStream(file))) {
+            oos.writeObject(model);
+            System.out.println("Gdx3DView: Game saved successfully to " + file.getAbsolutePath());
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+            System.err.println("Gdx3DView: Error saving game: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void onLoadGame(File file) {
+        try (java.io.ObjectInputStream ois = new java.io.ObjectInputStream(new java.io.FileInputStream(file))) {
+            letrain.mvp.impl.Model loadedModel = (letrain.mvp.impl.Model) ois.readObject();
+
+            // Hack to update final model field using Reflection
+            try {
+                java.lang.reflect.Field modelField = Gdx3DView.class.getDeclaredField("model");
+                modelField.setAccessible(true);
+                modelField.set(this, loadedModel);
+                System.out.println("Gdx3DView: Game loaded successfully from " + file.getAbsolutePath());
+
+                // Refresh references
+                trackMaker = new RailTrackMaker(this);
+                audioController = new letrain.audio.AudioController(model);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.err.println("Gdx3DView: Critical error updating model reference: " + e.getMessage());
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Gdx3DView: Error loading game: " + e.getMessage());
+        }
+    }
+
+    @Override
     public void showSaveDialog() {
+        showFileDialog("Save Game", "savegame.dat", (text) -> {
+            if (text != null && !text.trim().isEmpty()) {
+                File file = new File(text);
+                System.out.println("Saving game to: " + file.getAbsolutePath());
+                onSaveGame(file);
+            }
+        });
     }
 
     @Override
     public void showLoadDialog() {
+        showFileDialog("Load Game", "savegame.dat", (text) -> {
+            if (text != null && !text.trim().isEmpty()) {
+                File file = new File(text);
+                System.out.println("Loading game from: " + file.getAbsolutePath());
+                if (file.exists()) {
+                    onLoadGame(file);
+                } else {
+                    System.err.println("File not found: " + text);
+                }
+            }
+        });
+    }
+
+    private void showFileDialog(String title, String defaultText, java.util.function.Consumer<String> onResult) {
+        Gdx.app.postRunnable(() -> {
+            Window window = new Window(title, skin);
+            window.getTitleTable().pad(10);
+            window.pad(20);
+
+            com.badlogic.gdx.scenes.scene2d.ui.Label label = new com.badlogic.gdx.scenes.scene2d.ui.Label("Filename:",
+                    skin);
+            com.badlogic.gdx.scenes.scene2d.ui.TextField textField = new com.badlogic.gdx.scenes.scene2d.ui.TextField(
+                    defaultText, skin);
+
+            TextButton okBtn = new TextButton("OK", skin);
+            TextButton cancelBtn = new TextButton("Cancel", skin);
+
+            okBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeListener.ChangeEvent event, Actor actor) {
+                    onResult.accept(textField.getText());
+                    window.remove();
+                }
+            });
+
+            cancelBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeListener.ChangeEvent event, Actor actor) {
+                    window.remove();
+                }
+            });
+
+            // Allow Enter to verify
+            textField.setTextFieldListener((textField1, c) -> {
+                if (c == '\r' || c == '\n') {
+                    onResult.accept(textField1.getText());
+                    window.remove();
+                }
+            });
+
+            window.add(label).padRight(10);
+            window.add(textField).width(200).row();
+            window.add(okBtn).pad(10);
+            window.add(cancelBtn).pad(10);
+
+            window.pack();
+
+            // Center on stage
+            window.setPosition(
+                    (stage.getWidth() - window.getWidth()) / 2,
+                    (stage.getHeight() - window.getHeight()) / 2);
+
+            stage.addActor(window);
+            stage.setKeyboardFocus(textField);
+        });
     }
 
     @Override
     public void showEditDialog() {
+        Gdx.app.postRunnable(() -> {
+            Window window = new Window("Program Editor", skin);
+            window.getTitleTable().pad(10);
+
+            TextArea textArea = new TextArea(Gdx3DView.this.getProgram(), skin);
+            ScrollPane scrollPane = new ScrollPane(textArea, skin);
+            scrollPane.setFadeScrollBars(false);
+
+            TextButton saveBtn = new TextButton("Save & Run", skin);
+            TextButton cancelBtn = new TextButton("Cancel", skin);
+
+            saveBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeListener.ChangeEvent event, Actor actor) {
+                    ((letrain.mvp.GameViewListener) Gdx3DView.this).onEditCommands(textArea.getText());
+                    window.remove();
+                }
+            });
+
+            cancelBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeListener.ChangeEvent event, Actor actor) {
+                    window.remove();
+                }
+            });
+
+            window.add(scrollPane).width(600).height(400).colspan(2).pad(10);
+            window.row();
+            window.add(saveBtn).pad(10);
+            window.add(cancelBtn).pad(10);
+
+            window.pack();
+
+            // Center on stage
+            window.setPosition(
+                    (stage.getWidth() - window.getWidth()) / 2,
+                    (stage.getHeight() - window.getHeight()) / 2);
+
+            stage.addActor(window);
+            stage.setKeyboardFocus(textArea);
+        });
     }
 
     @Override
@@ -1104,5 +1324,40 @@ public class Gdx3DView extends ApplicationAdapter
             }
         }
         return new com.badlogic.gdx.math.Vector2(x, y);
+    }
+
+    @Override
+    public void dispose() {
+        if (audioController != null) {
+            audioController.stop();
+        }
+        if (modelBatch != null)
+            modelBatch.dispose();
+        if (decalBatch != null)
+            decalBatch.dispose();
+        if (spriteBatch != null)
+            spriteBatch.dispose();
+        if (font != null)
+            font.dispose();
+        if (stage != null)
+            stage.dispose();
+        if (skin != null)
+            skin.dispose();
+        if (groundModel != null)
+            groundModel.dispose();
+        if (gridModel != null)
+            gridModel.dispose();
+        if (boxModel != null)
+            boxModel.dispose();
+
+        // Force exit to ensure no lingering threads (e.g. console input) keep JVM alive
+        System.exit(0);
+    }
+
+    @Override
+    public void onExitGame() {
+        dispose();
+        Gdx.app.exit();
+        System.exit(0);
     }
 }

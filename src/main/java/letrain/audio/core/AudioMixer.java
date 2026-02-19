@@ -37,6 +37,7 @@ public class AudioMixer {
             return;
         running = true;
         audioThread = new Thread(this::audioLoop, "AudioMixerThread");
+        audioThread.setDaemon(true);
         audioThread.start();
     }
 
