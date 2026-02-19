@@ -30,7 +30,11 @@ public class AudioController {
     }
 
     public void setListenerPosition(float x, float y, float z, float angle) {
-        mixer.setListenerPosition(x * SCALE_FACTOR, y * SCALE_FACTOR, z * SCALE_FACTOR);
+        float lx = x * SCALE_FACTOR;
+        float ly = y * SCALE_FACTOR;
+        float lz = z * SCALE_FACTOR;
+
+        mixer.setListenerPosition(lx, ly, lz);
         mixer.setListenerAngle(angle);
     }
 
