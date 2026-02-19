@@ -1,10 +1,11 @@
 package letrain.audio.synth;
 
-import javax.sound.sampled.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TrainSynthesizer {
+import letrain.audio.core.AudioSource;
+
+public class TrainSynthesizer implements AudioSource {
 
     private GrainEngine locoEngine;
     private GrainEngine coachEngine;
@@ -12,11 +13,18 @@ public class TrainSynthesizer {
     // Configuration
     private SpeedNotch[] notches = new SpeedNotch[10];
     private int currentNotchIndex = 0;
-    private int targetNotchIndex = 0; // Track desired notch to avoid restarting transition repeatedly
+    private int targetNotchIndex = 0;
 
     // State
     private boolean isTransitioning = false;
     private Thread transitionThread;
+
+    // Position
+    private float x, y, z;
+    private float refDistance = 50.0f;
+    private float maxDistance = 1000.0f;
+
+    // Active flag for Mixer
     private boolean audioRunning = false;
 
     // Listeners
@@ -44,7 +52,110 @@ public class TrainSynthesizer {
         locoEngine.setTurnProbability(0.2f);
         coachEngine.setTurnProbability(0.2f);
 
-        // Init default notches
+        loadResources();
+    }
+
+    private void loadResources() {
+        try {
+            // Load WAV
+            java.net.URL wavUrl = getClass().getResource("/sound/train-sound.wav");
+            if (wavUrl == null) {
+                System.err.println("TrainSynthesizer: train-sound.wav not found!");
+                return;
+            }
+            AudioSample sample = new AudioSample(wavUrl);
+            setSample(sample);
+
+            // Load Labels
+            java.net.URL labelsUrl = getClass().getResource("/sound/train-sound-labels.txt");
+            if (labelsUrl == null) {
+                System.err.println("TrainSynthesizer: train-sound-labels.txt not found! Using defaults.");
+                initDefaultNotches(); // Fallback
+                return;
+            }
+
+            // Parse Labels
+            // We need a File object for the parser, but resource might be in a JAR.
+            // For now, let's assume filesystem for dev/MVP or read via stream.
+            // Check if AudacityLabelParser supports streams? No, it takes File.
+            // Let's modify Parser or read to temp file?
+            // Actually, for now let's try to convert URL to file if possible (works in
+            // IDE/file system)
+            java.io.File labelFile = new java.io.File(labelsUrl.toURI());
+            List<letrain.audio.util.AudacityLabelParser.Label> labels = letrain.audio.util.AudacityLabelParser
+                    .parse(labelFile);
+
+            initNotchesFromLabels(labels, sample);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            initDefaultNotches();
+        }
+    }
+
+    private void initNotchesFromLabels(List<letrain.audio.util.AudacityLabelParser.Label> labels, AudioSample sample) {
+        // Find regions
+        double ralentiStart = 0, ralentiEnd = 0;
+        double cruiseStart = 0, cruiseEnd = 0;
+        double wagonsStart = 0, wagonsEnd = 0;
+
+        for (letrain.audio.util.AudacityLabelParser.Label l : labels) {
+            if (l.name.equalsIgnoreCase("ralenti")) {
+                ralentiStart = l.startTime;
+                ralentiEnd = l.endTime;
+            } else if (l.name.equalsIgnoreCase("cruise")) {
+                cruiseStart = l.startTime;
+                cruiseEnd = l.endTime;
+            } else if (l.name.equalsIgnoreCase("wagons")) {
+                wagonsStart = l.startTime;
+                wagonsEnd = l.endTime;
+            }
+        }
+
+        // Convert seconds to samples
+        float rate = sample.getSampleRate(); // defaults to 44100 usually, but getSample has it?
+        // AudioSample doesn't expose rate easily? It does: sampleRate field.
+        // But usually we assume 44100 if not specified. GrainEngine assumes 44100.
+        // Let's assume the sample rate of the file matches system (44100).
+        // Labels are in seconds.
+
+        // Setup Notches
+        for (int i = 0; i < 10; i++) {
+            float start, cruise, end;
+
+            if (i == 0) { // Idle (Ralenti)
+                start = 0.0f;
+                cruise = 0.0f;
+                end = 0.0f;
+            } else if (i == 1) { // First velocity
+                start = 0.0f;
+                cruise = 0.05f;
+                end = 0.05f;
+            } else {
+                float center = 0.10f * (i - 1);
+                start = center - 0.05f;
+                cruise = center;
+                end = center + 0.05f;
+            }
+
+            // Map loop points
+            // Notch 0 uses Ralenti loop
+            // Notches 1-9 use Cruise loop (pitched)
+            float lStart = (float) (i == 0 ? ralentiStart : cruiseStart) * 44100f;
+            float lEnd = (float) (i == 0 ? ralentiEnd : cruiseEnd) * 44100f;
+
+            // Wagons alway same loop
+            float cStart = (float) wagonsStart * 44100f;
+            float cEnd = (float) wagonsEnd * 44100f;
+
+            notches[i] = new SpeedNotch("Notch " + i, start, cruise, end,
+                    lStart, lEnd, cStart, cEnd, 2.0f);
+        }
+        notches[0].name = "Idle";
+    }
+
+    private void initDefaultNotches() {
+        // ... (Original logic as fallback)
         // Loop points (samples): Loco 7302-21125, Coach 95715-204992
         float locoStart = 7302f;
         float locoEnd = 21125f;
@@ -60,12 +171,9 @@ public class TrainSynthesizer {
                 end = 0.0f;
             } else if (i == 1) { // First velocity
                 start = 0.0f;
-                cruise = 0.05f; // Was 0.0f, which caused it to sound like Idle
+                cruise = 0.05f;
                 end = 0.05f;
             } else {
-                // i >= 2
-                // Notch 2: 5, 10, 15 -> 0.05, 0.10, 0.15
-                // Notch 3: 15, 20, 25 -> 0.15, 0.20, 0.25
                 float center = 0.10f * (i - 1);
                 start = center - 0.05f;
                 cruise = center;
@@ -78,16 +186,55 @@ public class TrainSynthesizer {
         notches[0].name = "Idle";
     }
 
-    // --- Audio Control ---
-    public void startAudio() {
-        if (audioRunning)
-            return;
-        audioRunning = true;
-        new Thread(this::audioLoop).start();
+    // --- Audio Source Impl ---
+    @Override
+    public boolean read(float[] buffer) {
+        if (!audioRunning)
+            return false;
+
+        // GrainEngine.read() accumulates (+=), so we just pass the buffer
+        // which was cleared by the Mixer. or sourceBuffer provided by Mixer.
+
+        locoEngine.read(buffer);
+        coachEngine.read(buffer);
+        return true;
     }
 
-    public void stopAudio() {
-        audioRunning = false;
+    @Override
+    public void setPosition(float x, float y, float z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    @Override
+    public float getX() {
+        return x;
+    }
+
+    @Override
+    public float getY() {
+        return y;
+    }
+
+    @Override
+    public float getZ() {
+        return z;
+    }
+
+    @Override
+    public float getReferenceDistance() {
+        return refDistance;
+    }
+
+    @Override
+    public float getMaxDistance() {
+        return maxDistance;
+    }
+
+    public void setAudioRange(float ref, float max) {
+        this.refDistance = ref;
+        this.maxDistance = max;
     }
 
     public void setSample(AudioSample sample) {
@@ -104,7 +251,21 @@ public class TrainSynthesizer {
 
             locoEngine.setLoopPoints(lStart, lEnd);
             coachEngine.setLoopPoints(cStart, cEnd);
+
+            // Set sample rate to match sample or mixer?
+            // Ideally Mixer tells us. For now assume 44100.
+            locoEngine.setSampleRate(44100.0f);
+            coachEngine.setSampleRate(44100.0f);
         }
+    }
+
+    // Kept for compatibility but now just flags
+    public void startAudio() {
+        audioRunning = true;
+    }
+
+    public void stopAudio() {
+        audioRunning = false;
     }
 
     private float convertMsToNorm(float ms, AudioSample sample) {
@@ -120,7 +281,7 @@ public class TrainSynthesizer {
     // --- volume & Randomness ---
     public void setLocoVolume(float vol) {
         this.baseLocoVolume = vol;
-        locoEngine.setVolume(vol); // Loco volume is constant relative to speed for now
+        locoEngine.setVolume(vol);
     }
 
     public void setCoachVolume(float vol) {
@@ -193,8 +354,6 @@ public class TrainSynthesizer {
         if (index == currentNotchIndex && !isTransitioning)
             return;
 
-        System.err.println("TrainSynthesizer: setThrottle " + currentNotchIndex + " -> " + index);
-
         targetNotchIndex = index;
 
         if (isTransitioning && transitionThread != null && transitionThread.isAlive()) {
@@ -210,7 +369,6 @@ public class TrainSynthesizer {
 
         // PHASE 1: EXIT CURRENT NOTCH
         float startSpeed1 = locoEngine.getSpeed();
-        // If interrupting, startSpeed1 is whatever speed we are at.
 
         float targetSpeed1 = isUpshift ? current.endSpeed : current.startSpeed;
 
@@ -220,7 +378,7 @@ public class TrainSynthesizer {
 
             // PHASE 2: ENTER NEW NOTCH
             currentNotchIndex = index;
-            notifyNotch(index); // Update Table selection etc
+            notifyNotch(index);
 
             // Switch Loops
             // Normalize loop points
@@ -230,15 +388,11 @@ public class TrainSynthesizer {
             float cStart = convertMsToNorm(target.coachLoopStart, s);
             float cEnd = convertMsToNorm(target.coachLoopEnd, s);
 
-            System.err.println("TrainSynthesizer: Notch " + index + " Loops Norm: " + lStart + "-" + lEnd);
-
             locoEngine.setLoopPoints(lStart, lEnd);
             coachEngine.setLoopPoints(cStart, cEnd);
 
             float startSpeed2 = isUpshift ? target.startSpeed : target.endSpeed;
             float targetSpeed2 = target.cruiseSpeed;
-
-            System.err.println("TrainSynthesizer: Phase 2 Target Speed: " + targetSpeed2);
 
             // Jump
             locoEngine.setSpeed(startSpeed2);
@@ -259,15 +413,11 @@ public class TrainSynthesizer {
     }
 
     private void runRamp(float startSpeed, float targetSpeed, float durationSec, Runnable onComplete) {
-        // Handle interruption of PREVIOUS thread if it is not the current one
-        // (chaining)
         if (transitionThread != null && transitionThread.isAlive() && transitionThread != Thread.currentThread()) {
             transitionThread.interrupt();
             try {
-                // Optional: wait for it to die?
                 transitionThread.join(100);
             } catch (InterruptedException e) {
-                // ignore
             }
         }
 
@@ -319,51 +469,5 @@ public class TrainSynthesizer {
 
     public GrainEngine getCoachEngine() {
         return coachEngine;
-    }
-
-    // --- Audio Thread ---
-    private void audioLoop() {
-        try {
-            float sampleRate = 44100.0f;
-            AudioFormat format = new AudioFormat(sampleRate, 16, 1, true, true);
-            SourceDataLine line = AudioSystem.getSourceDataLine(format);
-            line.open(format);
-            line.start();
-
-            locoEngine.setSampleRate(sampleRate);
-            coachEngine.setSampleRate(sampleRate);
-
-            int bufferSize = 4096;
-            float[] tempBuffer1 = new float[bufferSize];
-            float[] tempBuffer2 = new float[bufferSize];
-            byte[] byteBuffer = new byte[bufferSize * 2];
-
-            while (audioRunning) {
-                for (int i = 0; i < bufferSize; i++) {
-                    tempBuffer1[i] = 0;
-                    tempBuffer2[i] = 0;
-                }
-
-                locoEngine.read(tempBuffer1);
-                coachEngine.read(tempBuffer2);
-
-                for (int i = 0; i < bufferSize; i++) {
-                    float mixed = tempBuffer1[i] + tempBuffer2[i];
-                    if (mixed > 1.0f)
-                        mixed = 1.0f;
-                    if (mixed < -1.0f)
-                        mixed = -1.0f;
-
-                    short s = (short) (mixed * 32767.0f);
-                    byteBuffer[i * 2] = (byte) ((s >> 8) & 0xFF);
-                    byteBuffer[i * 2 + 1] = (byte) (s & 0xFF);
-                }
-                line.write(byteBuffer, 0, byteBuffer.length);
-            }
-            line.drain();
-            line.close();
-        } catch (LineUnavailableException e) {
-            e.printStackTrace();
-        }
     }
 }

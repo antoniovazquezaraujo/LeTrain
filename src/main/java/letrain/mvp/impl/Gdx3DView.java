@@ -515,6 +515,10 @@ public class Gdx3DView extends ApplicationAdapter
             model.moveLocomotives();
             model.loadAndUnloadTrains();
             model.removeDestroyedTrains();
+            float camAngle = (float) Math.atan2(cam.direction.z, cam.direction.x);
+            // Map Game Coordinates: X->X, Z->Y (Audio Depth), Y->Z (Audio Height/Elevation)
+            audioController.setListenerPosition(cam.position.x, cam.position.z, cam.position.y, camAngle);
+
             audioController.update();
             stateTime -= 0.05f;
             if (stateTime > 0.05f)

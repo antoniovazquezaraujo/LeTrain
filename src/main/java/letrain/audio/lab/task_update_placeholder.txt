@@ -1,0 +1,4 @@
+- [x] **Source Implementations** <!-- id: 8 -->
+    - [x] Refactor `TrainSynthesizer` to implement `AudioSource`
+    - [x] Create `AmbientSource` (Simple WAV looper) for static sounds (birds, station)
+    - [x] Create `AudacityLabelParser` (to support labelled clips)
