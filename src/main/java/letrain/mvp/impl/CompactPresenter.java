@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 import com.googlecode.lanterna.input.KeyStroke;
@@ -34,9 +33,7 @@ import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.rail.Itinerary;
 import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Stop;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 import letrain.visitor.InfoVisitor;
@@ -157,103 +154,6 @@ public class CompactPresenter implements letrain.mvp.Presenter {
         // Avisamos al anterior y al nuevo
     }
     // [r:Rails d:Drive f:Forks t:Trains l:Link u:Unlink
-
-    public void OldonChar(KeyStroke keyEvent) {
-        boolean isAMenuKey = true;
-        if (keyEvent.getKeyType() == KeyType.Enter) {
-            model.setMode(MENU);
-            return;
-        } else if (keyEvent.getKeyType() == KeyType.Escape) {
-            view.showExitDialog();
-        } else if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != ' ') {
-            if (model.getMode() == TRAINS) {
-                trainManagerOnChar(keyEvent);
-            } else {
-                switch (keyEvent.getCharacter()) {
-                    case 'r':
-                        model.setMode(RAILS);
-                        break;
-                    case 'd':
-                        if (!model.getLocomotives().isEmpty()) {
-                            model.setMode(DRIVE);
-                        }
-                        break;
-                    case 'f':
-                        if (!model.getForks().isEmpty()) {
-                            model.setMode(FORKS);
-                        }
-                        break;
-                    case 's':
-                        if (!model.getSemaphores().isEmpty()) {
-                            model.setMode(SEMAPHORES);
-                        }
-                        break;
-                    case 't':
-                        if (model.getCursorRailTrack() != null) {
-                            model.setMode(TRAINS);
-                        }
-                        newTrain = null;
-                        break;
-                    case 'l':
-                        if (!model.getLocomotives().isEmpty()) {
-                            model.setMode(LINK);
-                        }
-                        break;
-                    case 'u':
-                        if (!model.getLocomotives().isEmpty()) {
-                            model.setMode(UNLINK);
-                        }
-                        break;
-                    case 'n':
-                        if (!model.getStations().isEmpty()) {
-                            model.setMode(STATIONS);
-                        }
-                        break;
-                    case 'p':
-                        model.setMode(PERSIST);
-                        break;
-                    default:
-                        isAMenuKey = false;
-                        break;
-
-                }
-                if (isAMenuKey) {
-                    return;
-                }
-            }
-        }
-
-        switch (model.getMode()) {
-            case RAILS:
-                railTrackMaker.onChar(keyEvent);
-                break;
-            case DRIVE:
-                trainDriverOnChar(keyEvent);
-                break;
-            case FORKS:
-                forkManagerOnChar(keyEvent);
-                break;
-            case SEMAPHORES:
-                semaphoreManagerOnChar(keyEvent);
-                break;
-            case TRAINS:
-                // Not managed here!!
-                // trainManagerOnChar(keyEvent);
-                break;
-            case LINK:
-                linkerOnChar(keyEvent);
-                break;
-            case UNLINK:
-                unlinkerOnChar(keyEvent);
-                break;
-            case STATIONS:
-                stationManagerOnChar(keyEvent);
-                break;
-            case PERSIST:
-                persistManagerOnChar(keyEvent);
-                break;
-        }
-    }
 
     @Override
     public void onChar(KeyStroke keyEvent) {
@@ -386,31 +286,18 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 break;
             case Character:
                 if (keyEvent.getCharacter() == '-') {
-                    Station selectedStation = model.getSelectedStation();
-                    if (selectedStation != null) {
-                        Linker linker = selectedStation.getTrack().getLinker();
-                        if (linker != null) {
-                            Train train = linker.getTrain();
-                            train.startLoadUnloadProcess();
-                            Stop actualStop = train.recordStopAtStation();
-                            Itinerary.ItineraryState state = train.getItinerary().getState();
-                            if (!state.equals(Itinerary.ItineraryState.STARTING)) {
-                                int startStationId = train.getItinerary().getFirstStop().stationId();
-                                int firstStopDistanceTraveled = train.getItinerary().getFirstStop().distanceTraveled();
-                                int totalDistanceTraveled = actualStop.distanceTraveled() - firstStopDistanceTraveled;
-                                LocalDateTime startTime = train.getItinerary().getFirstStop().stopTime();
-                                LocalDateTime elapsedTime = actualStop.stopTime()
-                                        .minusMinutes(startTime.toEpochSecond(ZoneOffset.UTC));
-                                double linearDistanceToStart = model.getLinearDistanceBetweenStations(startStationId,
-                                        actualStop.stationId());
-                                model.getEconomyManager().onLoadPassengers(train, elapsedTime, totalDistanceTraveled,
-                                        linearDistanceToStart);
-                            }
-                            if (state.equals(Itinerary.ItineraryState.AT_END)) {
-                                train.getItinerary().restart(actualStop);
-                            }
-                        }
-                    }
+                    // Legacy manual load
+                    /*
+                     * Station selectedStation = model.getSelectedStation();
+                     * if (selectedStation != null) {
+                     * Linker linker = selectedStation.getTrack().getLinker();
+                     * if (linker != null) {
+                     * Train train = linker.getTrain();
+                     * train.getItinerary().restart(actualStop);
+                     * }
+                     * }
+                     * }
+                     */
                 } else if (keyEvent.getCharacter() == ' ') {
                     StationId = 0;
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
@@ -423,6 +310,36 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 break;
             case ArrowRight:
                 selectNextStation();
+                break;
+            case ArrowUp:
+            // LOAD (Station -> Train)
+            {
+                Station selectedStation = model.getSelectedStation();
+                if (selectedStation != null) {
+                    // Find train at this station
+                    letrain.vehicle.impl.Linker linker = selectedStation.getTrack().getLinker();
+                    if (linker != null && linker.getTrain() != null) {
+                        if (linker.getTrain().getDirectorLinker().getSpeed() == 0) {
+                            linker.getTrain().startLoadProcess();
+                        }
+                    }
+                }
+            }
+                break;
+            case ArrowDown:
+            // UNLOAD (Train -> Station)
+            {
+                Station selectedStation = model.getSelectedStation();
+                if (selectedStation != null) {
+                    // Find train at this station
+                    letrain.vehicle.impl.Linker linker = selectedStation.getTrack().getLinker();
+                    if (linker != null && linker.getTrain() != null) {
+                        if (linker.getTrain().getDirectorLinker().getSpeed() == 0) {
+                            linker.getTrain().startUnloadProcess();
+                        }
+                    }
+                }
+            }
                 break;
         }
 

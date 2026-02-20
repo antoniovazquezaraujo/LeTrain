@@ -53,6 +53,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     public void setStationId(int railStationId) {
         this.railStationId = railStationId;
     }
+
     Itinerary itinerary;
 
     enum LinkersSense {
@@ -621,13 +622,18 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         return "Train " + getId();
     }
 
+    private boolean isUnloadingDirection = false; // True = Unload (Down), False = Load (Up)
 
+    public void startLoadProcess() {
+        setLoading(true);
+        this.isUnloadingDirection = false;
+        setLoadingCount(100); // Fail-safe timer
+    }
 
-    public void startLoadUnloadProcess() {
-        if (railStationId != 0 && getDirectorLinker().getSpeed() == 0) {
-            setLoadingCount(MAX_LOADING_COUNT);
-            setLoading(true);
-        }
+    public void startUnloadProcess() {
+        setLoading(true);
+        this.isUnloadingDirection = true;
+        setLoadingCount(100); // Fail-safe timer
     }
 
     public void endLoadUnloadProcess() {
@@ -636,13 +642,62 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         }
     }
 
-    public void load() {
+    public void processCargo(letrain.track.Station station) {
         if (isLoading()) {
-            if (getLoadingCount() > 0) {
-                setLoadingCount(getLoadingCount() - 1);
-            } else {
-                endLoadUnloadProcess();
+            // Slow down the process
+            if (loadingCount % 10 != 0) {
+                loadingCount++; // Use loadingCount as a tick counter
+                return;
             }
+            loadingCount++;
+
+            boolean anyActionTaken = false;
+            boolean processFinished = true;
+
+            for (letrain.vehicle.impl.Linker linker : getLinkers()) {
+                if (linker instanceof Wagon) {
+                    Wagon wagon = (Wagon) linker;
+
+                    if (isUnloadingDirection) {
+                        // UNLOADING: Wagon -> Station (Import Pile)
+                        if (wagon.getCargoAmount() > 0) {
+                            processFinished = false; // Still has cargo to unload
+                            wagon.unload(1);
+                            station.receiveImportCargo(1);
+                            anyActionTaken = true;
+                        }
+                    } else {
+                        // LOADING: Station (Export Pile) -> Wagon
+                        if (!wagon.isFull()) {
+                            processFinished = false; // Still has space to load
+                            if (station.getExportCargoAmount() > 0) {
+                                int taken = station.takeExportCargo(1);
+                                wagon.load(taken);
+                                anyActionTaken = true;
+                            } else {
+                                // Station empty, can't continue loading this tick
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Stop if done (full or empty depending on direction) OR if source is depleted
+            if (isUnloadingDirection) {
+                if (processFinished)
+                    endLoadUnloadProcess(); // All wagons empty
+            } else {
+                if (processFinished || station.getExportCargoAmount() == 0)
+                    endLoadUnloadProcess(); // All wagons full OR station empty
+            }
+
+            // Allow some time before auto-cancel if no action taken
+            // Since we only check every 10 ticks, we don't want to cancel immediately if
+            // one check fails?
+            // Actually the logic above covers "processFinished".
+            // The fail-safe below was for "stuck" states.
+            // With slower ticks, we might need a separate meaningful timer.
+            // But let's trust the processFinished logic for now.
         }
     }
 
@@ -656,6 +711,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     public boolean isLoading() {
         return isLoading;
+    }
+
+    public int getRailStationId() {
+        return railStationId;
     }
 
     public void setLoading(boolean isLoading) {

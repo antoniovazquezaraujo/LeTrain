@@ -64,7 +64,7 @@ public class Gdx3DView extends ApplicationAdapter
 
         com.badlogic.gdx.graphics.g2d.TextureRegion region = glyphRegions.get(c);
         // Force size to 0.5x0.5 world units
-        return com.badlogic.gdx.graphics.g3d.decals.Decal.newDecal(0.5f, 0.5f, region, true);
+        return com.badlogic.gdx.graphics.g3d.decals.Decal.newDecal(0.3f, 0.3f, region, true);
     }
 
     private Environment environment;
@@ -702,17 +702,30 @@ public class Gdx3DView extends ApplicationAdapter
                 if (label.text == null || label.text.isEmpty())
                     continue;
 
-                char c = label.text.charAt(0);
-                com.badlogic.gdx.graphics.g3d.decals.Decal d = getGlyphDecal(c);
-                if (d != null) {
-                    d.setPosition(label.pos);
-                    // Orientar el decal para que mire hacia afuera de la superficie
-                    // (hacia donde apunta la normal)
-                    // lookAt hace que el frente del decal mire al target.
-                    // Queremos que el frente mire a pos + normal.
-                    d.lookAt(label.pos.cpy().add(label.normal), com.badlogic.gdx.math.Vector3.Y);
+                float charSpacing = 0.25f; // Espaciado entre caracteres en unidades de mundo
+                float totalWidth = label.text.length() * charSpacing;
+                float startOffset = -totalWidth / 2f + charSpacing / 2f;
 
-                    decalBatch.add(d);
+                // Vector horizontal paralelo a la cara (perpendicular a la normal y a Y)
+                com.badlogic.gdx.math.Vector3 horizontal = new com.badlogic.gdx.math.Vector3(label.normal.z, 0,
+                        -label.normal.x).nor();
+
+                for (int i = 0; i < label.text.length(); i++) {
+                    char c = label.text.charAt(i);
+                    com.badlogic.gdx.graphics.g3d.decals.Decal d = getGlyphDecal(c);
+                    if (d != null) {
+                        d.setColor(label.color != null ? label.color : com.badlogic.gdx.graphics.Color.WHITE);
+
+                        // Posición con desplazamiento horizontal para centrar el texto
+                        float offset = startOffset + i * charSpacing;
+                        com.badlogic.gdx.math.Vector3 charPos = label.pos.cpy()
+                                .add(horizontal.x * offset, horizontal.y * offset, horizontal.z * offset);
+                        d.setPosition(charPos);
+
+                        // Orientar el decal para que mire hacia afuera de la superficie
+                        d.lookAt(charPos.cpy().add(label.normal), com.badlogic.gdx.math.Vector3.Y);
+                        decalBatch.add(d);
+                    }
                 }
             }
             decalBatch.flush();
@@ -978,15 +991,26 @@ public class Gdx3DView extends ApplicationAdapter
             model.selectPrevStation();
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
             model.selectNextStation();
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
-                && stroke.getCharacter() == '-') {
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
             letrain.track.Station selectedStation = model.getSelectedStation();
             if (selectedStation != null) {
                 letrain.vehicle.impl.Linker linker = selectedStation.getTrack().getLinker();
                 if (linker != null) {
                     letrain.vehicle.impl.rail.Train train = linker.getTrain();
                     if (train != null) {
-                        train.startLoadUnloadProcess();
+                        train.startLoadProcess();
+                        train.recordStopAtStation();
+                    }
+                }
+            }
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
+            letrain.track.Station selectedStation = model.getSelectedStation();
+            if (selectedStation != null) {
+                letrain.vehicle.impl.Linker linker = selectedStation.getTrack().getLinker();
+                if (linker != null) {
+                    letrain.vehicle.impl.rail.Train train = linker.getTrain();
+                    if (train != null) {
+                        train.startUnloadProcess();
                         train.recordStopAtStation();
                     }
                 }

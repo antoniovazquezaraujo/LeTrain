@@ -517,10 +517,26 @@ public class Model implements Serializable, letrain.mvp.Model {
             Train train = locomotive.getTrain();
             if (train != null) {
                 if (train.isLoading()) {
-                    train.load();
+                    Station station = getStation(train.getRailStationId());
+                    if (station != null) {
+                        // Cargo Loading/Unloading/Processing
+                        train.processCargo(station);
+
+                        // Regenerate/Consume cargo at station
+                        if (Math.random() < 0.01) { // Slow regeneration
+                            station.regenerateCargo();
+                        }
+                    } else {
+                        train.endLoadUnloadProcess();
+                    }
                 }
             }
         });
+
+        // Regenerate cargo in stations slowly
+        if (Math.random() < 0.05) { // Slow regeneration
+            getStations().forEach(Station::regenerateCargo);
+        }
 
     }
 

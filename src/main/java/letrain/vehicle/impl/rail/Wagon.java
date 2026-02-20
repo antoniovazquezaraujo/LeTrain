@@ -56,4 +56,33 @@ public class Wagon extends Linker {
         }
         return false;
     }
+
+    private int cargoAmount = 0;
+    private int maxCapacity = 50;
+
+    public int getCargoAmount() {
+        return cargoAmount;
+    }
+
+    public int getMaxCapacity() {
+        return maxCapacity;
+    }
+
+    public void load(int amount) {
+        this.cargoAmount += amount;
+        if (this.cargoAmount > this.maxCapacity) {
+            this.cargoAmount = this.maxCapacity;
+        }
+    }
+
+    public void unload(int amount) {
+        this.cargoAmount -= amount;
+        if (this.cargoAmount < 0) {
+            this.cargoAmount = 0;
+        }
+    }
+
+    public boolean isFull() {
+        return cargoAmount >= maxCapacity;
+    }
 }
