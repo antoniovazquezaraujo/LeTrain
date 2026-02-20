@@ -1,7 +1,9 @@
 package letrain.visitor;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.math.MathUtils;
@@ -52,9 +54,11 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model semaphoreOpenModel;
     private com.badlogic.gdx.graphics.g3d.Model semaphoreClosedModel;
     private com.badlogic.gdx.graphics.g3d.Model sensorModel;
+    private Set<letrain.track.rail.RailTrack> selectedStationTracks = new HashSet<>();
     private com.badlogic.gdx.graphics.g3d.Model stationSignModel;
     private com.badlogic.gdx.graphics.g3d.Model stationSignSelectedModel;
     private com.badlogic.gdx.graphics.g3d.Model platformModel;
+    private com.badlogic.gdx.graphics.g3d.Model platformSelectedModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonCargoModel;
 
     // NEW MODELS
@@ -295,16 +299,20 @@ public class Gdx3DRenderer implements Visitor {
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(com.badlogic.gdx.graphics.Color.WHITE)))
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.GREEN)))
                     .box(0.6f, 0.6f, 0.6f);
             stationSignSelectedModel = mbStation.end();
 
-            // Plataforma de estación (Losa de hormigón)
-            // 1.2f de ancho (perpendicular) para no cubrir las vías
-            // 2.4f de largo (paralelo) para acomodar los dos contenedores
             platformModel = modelBuilder.createBox(1.2f, 0.2f, 2.4f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.LIGHT_GRAY)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Resaltado de estación (La propia superficie en verde cuando se selecciona)
+            platformSelectedModel = modelBuilder.createBox(1.2f, 0.2f, 2.4f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.GREEN)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
@@ -422,8 +430,8 @@ public class Gdx3DRenderer implements Visitor {
         letrain.map.Dir orientation = getValidOrientation(track);
 
         // Queremos la plataforma a la DERECHA del sentido de avance (orientation)
-        // Vector derecha respecto a orientation
-        letrain.map.Dir rightDir = orientation.turnRight();
+        // Vector derecha respecto a orientation (90 grados = 2 giros de 45)
+        letrain.map.Dir rightDir = orientation.turnRight().turnRight();
 
         float dx = getDirX(rightDir);
         float dz = getDirZ(rightDir);
@@ -444,7 +452,29 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitRailMap(RailMap map) {
-        // this.railMap = (letrain.map.impl.RailMap) map; // Guardar referencia
+        // Pre-calcular tracks de la estación seleccionada para iluminar el andén
+        // completo
+        selectedStationTracks.clear();
+        if (modelRef != null && modelRef.getSelectedStation() != null) {
+            letrain.track.Track startTrack = modelRef.getSelectedStation().getTrack();
+            if (startTrack instanceof letrain.track.rail.StationRailTrack) {
+                java.util.Queue<letrain.track.rail.RailTrack> queue = new java.util.LinkedList<>();
+                queue.add((letrain.track.rail.RailTrack) startTrack);
+                selectedStationTracks.add((letrain.track.rail.RailTrack) startTrack);
+
+                while (!queue.isEmpty()) {
+                    letrain.track.rail.RailTrack current = queue.poll();
+                    for (letrain.map.Dir d : letrain.map.Dir.values()) {
+                        letrain.track.Track neighbor = current.getConnected(d);
+                        if (neighbor instanceof letrain.track.rail.StationRailTrack
+                                && !selectedStationTracks.contains(neighbor)) {
+                            selectedStationTracks.add((letrain.track.rail.RailTrack) neighbor);
+                            queue.add((letrain.track.rail.RailTrack) neighbor);
+                        }
+                    }
+                }
+            }
+        }
         map.forEach(track -> track.accept(this));
     }
 
@@ -467,7 +497,14 @@ public class Gdx3DRenderer implements Visitor {
                 angle = getStationAngle((letrain.track.rail.RailTrack) track);
             }
 
-            ModelInstance platform = new ModelInstance(platformModel);
+            // Seleccionamos modelo: Verde si el track pertenece a la estación seleccionada
+            // (BFS)
+            com.badlogic.gdx.graphics.g3d.Model platformToUse = platformModel;
+            if (selectedStationTracks.contains(track)) {
+                platformToUse = platformSelectedModel;
+            }
+
+            ModelInstance platform = new ModelInstance(platformToUse);
             platform.transform.setToTranslation(x + 0.5f + offsetX, 0.1f, y + 0.5f + offsetZ);
             platform.transform.rotate(0, 1, 0, angle);
             instances.add(platform);
@@ -762,6 +799,8 @@ public class Gdx3DRenderer implements Visitor {
             semaphoreClosedModel.dispose();
         if (sensorModel != null)
             sensorModel.dispose();
+        if (platformSelectedModel != null)
+            platformSelectedModel.dispose();
     }
 
     @Override
@@ -1045,7 +1084,7 @@ public class Gdx3DRenderer implements Visitor {
             ModelInstance cargoInstance = new ModelInstance(wagonCargoModel);
 
             // Posicionar sobre el chasis
-            // Wagon center Y = 0.45. Height = 0.6. Bottom of inside (suelo) = 0.25.
+            // Wagon center Y = 0.45. Height = 0.6. Center of cargo is 0.5.
             // Cargo height inside (inner) is 0.5.
             float scaleY = fullness;
             float cargoHeight = 0.5f * scaleY;
@@ -1194,9 +1233,8 @@ public class Gdx3DRenderer implements Visitor {
         }
 
         ModelInstance mastInstance = new ModelInstance(modelToUse);
-        // Base del mastil en la superficie de la plataforma (0.2f)
-        // El cilindro tiene altura 1.6f, centro en 0.8 relativo a base -> translacion Y
-        // = 0.2 + 0.8 = 1.0f
+        // Base sobre el andén (0.2f de altura del andén -> base en 0.2f)
+        // Cilindro 1.6f -> centro en base + 0.8f = 0.2 + 0.8 = 1.0f
         mastInstance.transform.setToTranslation(centerX, 1.0f, centerZ);
         mastInstance.transform.rotate(0, 1, 0, angle);
         instances.add(mastInstance);
@@ -1204,7 +1242,7 @@ public class Gdx3DRenderer implements Visitor {
         // ----------------------------------------------------------------------------------
         // 2. CONTENEDORES LATERALES
         // ----------------------------------------------------------------------------------
-        float containerY = 0.5f;
+        float containerY = 0.5f; // Elevado sobre el andén (0.2 + 0.3)
         float cargoFloorY = 0.3f;
 
         // EXPORT CONTAINER (White Box - Desplazamiento adelante)
