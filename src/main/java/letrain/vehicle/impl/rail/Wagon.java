@@ -1,5 +1,6 @@
 package letrain.vehicle.impl.rail;
 
+import letrain.track.CargoTypes;
 import letrain.vehicle.impl.Linker;
 import letrain.visitor.Visitor;
 
@@ -59,6 +60,24 @@ public class Wagon extends Linker {
 
     private int cargoAmount = 0;
     private int maxCapacity = 50;
+    private CargoTypes cargoType = CargoTypes.NONE;
+    private letrain.map.Point loadingPoint = null;
+
+    public CargoTypes getCargoType() {
+        return cargoType;
+    }
+
+    public void setCargoType(CargoTypes cargoType) {
+        this.cargoType = cargoType;
+    }
+
+    public letrain.map.Point getLoadingPoint() {
+        return loadingPoint;
+    }
+
+    public void setLoadingPoint(letrain.map.Point loadingPoint) {
+        this.loadingPoint = loadingPoint;
+    }
 
     public int getCargoAmount() {
         return cargoAmount;

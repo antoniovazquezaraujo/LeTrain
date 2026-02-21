@@ -10,6 +10,16 @@ public interface GroundMap extends Renderable {
     public static final int WATER = 1;
     public static final int ROCK = 2;
 
+    // Producers (10-19)
+    public static final int FOREST = 10;
+    public static final int MINE = 11;
+    public static final int PORT = 12;
+
+    // Consumers (20-29)
+    public static final int SAWMILL = 20;
+    public static final int POWER_PLANT = 21;
+    public static final int MARKET = 22;
+
     void renderBlock(int startx, int starty, int width, int height);
 
     Integer getValueAt(int x, int y);
@@ -26,4 +36,7 @@ public interface GroundMap extends Renderable {
 
     public void forEach(Consumer<Ground> c);
 
+    Integer findClosestIndustry(Point center, int radius);
+
+    int countIndustryDensity(Point center, int radius, int industryType);
 }

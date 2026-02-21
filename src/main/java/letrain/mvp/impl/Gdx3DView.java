@@ -38,7 +38,7 @@ import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
 import letrain.map.Point;
-import letrain.mvp.impl.Model.GameModeMenuOption;
+import letrain.mvp.Model.GameModeMenuOption;
 import letrain.visitor.Gdx3DRenderer;
 
 public class Gdx3DView extends ApplicationAdapter
@@ -281,17 +281,6 @@ public class Gdx3DView extends ApplicationAdapter
             }
             // 's' key handler removed (moved to HOME key in keyDown)
         } else if (model.getMode() == letrain.mvp.Model.GameMode.RAILS) {
-            // No specific char input for RAILS mode anymore
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.DRIVE) {
-            if (character == ' ') {
-                if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) {
-                    // Validamos que el linker esté en una vía antes de girarlo para evitar NPE
-                    if (model.getSelectedLocomotive().getTrack() != null) {
-                        model.getSelectedLocomotive().toggleReversed();
-                    }
-                }
-                return true;
-            }
         } else if (model.getMode() == letrain.mvp.Model.GameMode.LINK) {
             if (character == ' ') {
                 if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
@@ -798,8 +787,12 @@ public class Gdx3DView extends ApplicationAdapter
 
         // Global Enter to Menu (matches CompactPresenter)
         if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Enter) {
-            model.setMode(letrain.mvp.Model.GameMode.MENU);
-            return;
+            // In DRIVE mode, Enter is for loading/unloading, not for switching to MENU.
+            // The logic is handled inside handleDriveInput.
+            if (model.getMode() != letrain.mvp.Model.GameMode.DRIVE) {
+                model.setMode(letrain.mvp.Model.GameMode.MENU);
+                return;
+            }
         }
 
         // Mode Switching Shortcuts (from CompactPresenter)
@@ -882,11 +875,13 @@ public class Gdx3DView extends ApplicationAdapter
 
     private void handleDriveInput(KeyStroke stroke) {
         if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
-            if (model.getSelectedLocomotive() != null) {
+            if (model.getSelectedLocomotive() != null && !model.getSelectedLocomotive().getTrain().isLoading()) {
+                // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
                 model.getSelectedLocomotive().incSpeed();
             }
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
-            if (model.getSelectedLocomotive() != null) {
+            if (model.getSelectedLocomotive() != null && !model.getSelectedLocomotive().getTrain().isLoading()) {
+                // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
                 model.getSelectedLocomotive().decSpeed();
             }
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
@@ -895,11 +890,40 @@ public class Gdx3DView extends ApplicationAdapter
             model.selectNextLocomotive();
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
                 && stroke.getCharacter() == ' ') {
+            // Space bar now only toggles reverse when stopped
             if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) {
                 if (model.getSelectedLocomotive().getTrack() != null) {
                     model.getSelectedLocomotive().toggleReversed();
                 }
             }
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Enter) {
+            // Enter key now handles loading/unloading at a station, or switches to menu
+            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) {
+                letrain.vehicle.impl.rail.Train selectedTrain = model.getSelectedLocomotive().getTrain();
+                if (selectedTrain != null) {
+                    letrain.track.Sensor sensor = model.getSelectedLocomotive().getTrack().getSensor();
+                    if (sensor instanceof letrain.track.Station) {
+                        letrain.track.Station station = (letrain.track.Station) sensor;
+                        if (selectedTrain.isLoading()) {
+                            selectedTrain.endLoadUnloadProcess();
+                        } else {
+                            letrain.track.CargoTypes trainCargoType = selectedTrain.getTrainCargoType();
+                            if (trainCargoType != null && trainCargoType != letrain.track.CargoTypes.NONE
+                                    && station.getRole() == letrain.track.CargoTypes.StationRole.CONSUMER) {
+                                selectedTrain.startUnloadProcess(station);
+                                selectedTrain.recordStopAtStation();
+                            } else if (trainCargoType == letrain.track.CargoTypes.NONE // Handles empty train
+                                    && station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER) {
+                                selectedTrain.startLoadProcess(station);
+                                selectedTrain.recordStopAtStation();
+                            }
+                        }
+                        return; // Consume the event
+                    }
+                }
+            }
+            // If not on a station or not stopped, Enter should switch to menu
+            model.setMode(letrain.mvp.Model.GameMode.MENU);
         }
     }
 
@@ -994,27 +1018,12 @@ public class Gdx3DView extends ApplicationAdapter
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
             letrain.track.Station selectedStation = model.getSelectedStation();
             if (selectedStation != null) {
-                letrain.vehicle.impl.Linker linker = selectedStation.getTrack().getLinker();
-                if (linker != null) {
-                    letrain.vehicle.impl.rail.Train train = linker.getTrain();
-                    if (train != null) {
-                        train.startLoadProcess();
-                        train.recordStopAtStation();
-                    }
-                }
+                // Se ha eliminado la lógica de carga/descarga con flechas en modo STATIONS,
+                // ya que el punto 14 del plan especifica la barra espaciadora en modo DRIVE.
+
             }
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
-            letrain.track.Station selectedStation = model.getSelectedStation();
-            if (selectedStation != null) {
-                letrain.vehicle.impl.Linker linker = selectedStation.getTrack().getLinker();
-                if (linker != null) {
-                    letrain.vehicle.impl.rail.Train train = linker.getTrain();
-                    if (train != null) {
-                        train.startUnloadProcess();
-                        train.recordStopAtStation();
-                    }
-                }
-            }
+            // Se ha eliminado la lógica de carga/descarga con flechas en modo STATIONS.
         }
     }
 

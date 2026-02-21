@@ -24,48 +24,109 @@ public class Station extends Sensor {
         return "Station [id=" + getId() + "]";
     }
 
-    private int exportCargo = 100;
-    private int importCargo = 0;
-    private int maxCargo = 500;
+    private String name;
+    private int storage = 0;
+    private int maxStorage = 500;
+    private int industryCount = 0;
+    private CargoTypes cargoType = CargoTypes.NONE;
+    private CargoTypes.StationRole role = CargoTypes.StationRole.GENERIC;
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public CargoTypes getCargoType() {
+        return cargoType;
+    }
+
+    public void setCargoType(CargoTypes cargoType) {
+        this.cargoType = cargoType;
+    }
+
+    public CargoTypes.StationRole getRole() {
+        return role;
+    }
+
+    public void setRole(CargoTypes.StationRole role) {
+        this.role = role;
+    }
+
+    public int getIndustryCount() {
+        return industryCount;
+    }
+
+    public void setIndustryCount(int industryCount) {
+        this.industryCount = industryCount;
+        // Base max storage 500 + 100 per additional industry block
+        this.maxStorage = 500 + (industryCount * 100);
+    }
+
+    public int getStorage() {
+        return storage;
+    }
+
+    public void setStorage(int storage) {
+        this.storage = storage;
+    }
+
+    // Compatibility methods redirected to storage
     public int getExportCargoAmount() {
-        return exportCargo;
+        return (role == CargoTypes.StationRole.PRODUCER) ? storage : 0;
     }
 
     public int getImportCargoAmount() {
-        return importCargo;
+        return (role == CargoTypes.StationRole.CONSUMER) ? storage : 0;
     }
 
-    // Legacy support for renderer, mapped to export for now?
-    // Or renderer uses new methods. Let's redirect getCargoAmount to exportCargo
-    // just in case.
     public int getCargoAmount() {
-        return exportCargo;
+        return storage;
     }
 
     public void regenerateCargo() {
-        if (exportCargo < maxCargo) {
-            exportCargo++;
+        if (role == CargoTypes.StationRole.PRODUCER && storage < maxStorage) {
+            // Regeneration scales with density: Base + bonus per block
+            int increment = 1 + (industryCount / 2);
+            storage += increment;
+            if (storage > maxStorage)
+                storage = maxStorage;
         }
-        // Import cargo is consumed (processed) by the station/city over time
-        if (importCargo > 0) {
-            if (Math.random() < 0.25) { // 25% chance per tick to consume (previously 10%)
-                importCargo--;
+        // Consumers might "consume" their delivery over time to create more demand
+        // space,
+        // but for now let's keep it simple: they just receive.
+        // If we want they to "need" more, we could decrease storage (demand) over time?
+        // Wait, storage for consumer = current STOCK received.
+        // If storage is high, they are "full".
+        if (role == CargoTypes.StationRole.CONSUMER && storage > 0) {
+            if (Math.random() < 0.1) {
+                storage--;
             }
         }
     }
 
     public int takeExportCargo(int amount) {
-        int taken = Math.min(amount, exportCargo);
-        exportCargo -= taken;
+        int taken = Math.min(amount, storage);
+        storage -= taken;
         return taken;
     }
 
     public void receiveImportCargo(int amount) {
-        importCargo += amount;
-        if (importCargo > maxCargo) {
-            importCargo = maxCargo;
+        storage += amount;
+        if (storage > maxStorage) {
+            storage = maxStorage;
         }
+    }
+
+    /**
+     * Returns the number of cargo units that can be transferred per tick.
+     * Scales with surrounding industry density.
+     */
+    public int getTransferRate() {
+        // Base transfer rate of 1, plus 1 for every 3 industry blocks
+        return 1 + (industryCount / 3);
     }
 
     @Override

@@ -2,12 +2,13 @@ package letrain.mvp;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.Supplier;
 
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
-import letrain.mvp.impl.Model.GameModeMenuOption;
+import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
@@ -170,6 +171,14 @@ public interface Model {
 
     public RailTrack getCursorRailTrack();
 
+    public record GameModeMenuOption(
+            String gameModeName,
+            String gameModeDescription,
+            Supplier<Boolean> enabledIf,
+            Supplier<Boolean> selectedIf,
+            Supplier<GameMode> doWhenSelected) {
+    }
+
     public List<GameModeMenuOption> getMenuModel();
 
     public int getQuantifier();
@@ -183,4 +192,8 @@ public interface Model {
     public void setLastSaveTime(LocalDateTime now);
 
     public LocalDateTime getLastSaveTime();
+
+    CargoTypes getStationGhostCargoType();
+
+    CargoTypes.StationRole getStationGhostRole();
 }

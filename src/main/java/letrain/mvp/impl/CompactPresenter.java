@@ -28,7 +28,7 @@ import letrain.command.LeTrainProgramParser;
 import letrain.map.Dir;
 import letrain.map.Page;
 import letrain.map.Point;
-import letrain.mvp.Model.GameMode;
+import letrain.track.CargoTypes;
 import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.RailTrack;
@@ -159,8 +159,12 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     public void onChar(KeyStroke keyEvent) {
         boolean isAMenuKey = true;
         if (keyEvent.getKeyType() == KeyType.Enter) {
-            model.setMode(MENU);
-            return;
+            // In DRIVE mode, Enter is for loading/unloading, not for switching to MENU.
+            // The logic is handled inside trainDriverOnChar.
+            if (model.getMode() != DRIVE) {
+                model.setMode(MENU);
+                return;
+            }
         } else if (keyEvent.getKeyType() == KeyType.Escape) {
             view.showExitDialog();
         } else if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != ' ') {
@@ -300,6 +304,14 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                      */
                 } else if (keyEvent.getCharacter() == ' ') {
                     StationId = 0;
+                    // Unified Industrial Action (Space bar)
+                    Station selectedStation = model.getSelectedStation();
+                    if (selectedStation != null) {
+                        letrain.vehicle.impl.Linker linker = selectedStation.getTrack().getLinker();
+                        if (linker != null && linker.getTrain() != null) {
+                            linker.getTrain().performIndustrialAction(selectedStation);
+                        }
+                    }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     StationId = StationId * 10 + (keyEvent.getCharacter() - '0');
                     selectStation(StationId);
@@ -311,38 +323,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             case ArrowRight:
                 selectNextStation();
                 break;
-            case ArrowUp:
-            // LOAD (Station -> Train)
-            {
-                Station selectedStation = model.getSelectedStation();
-                if (selectedStation != null) {
-                    // Find train at this station
-                    letrain.vehicle.impl.Linker linker = selectedStation.getTrack().getLinker();
-                    if (linker != null && linker.getTrain() != null) {
-                        if (linker.getTrain().getDirectorLinker().getSpeed() == 0) {
-                            linker.getTrain().startLoadProcess();
-                        }
-                    }
-                }
-            }
-                break;
-            case ArrowDown:
-            // UNLOAD (Train -> Station)
-            {
-                Station selectedStation = model.getSelectedStation();
-                if (selectedStation != null) {
-                    // Find train at this station
-                    letrain.vehicle.impl.Linker linker = selectedStation.getTrack().getLinker();
-                    if (linker != null && linker.getTrain() != null) {
-                        if (linker.getTrain().getDirectorLinker().getSpeed() == 0) {
-                            linker.getTrain().startUnloadProcess();
-                        }
-                    }
-                }
-            }
-                break;
         }
-
     }
 
     private void semaphoreManagerOnChar(KeyStroke keyEvent) {
@@ -397,16 +378,16 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
                     divideTrain();
-                    model.setMode(GameMode.MENU);
+                    model.setMode(MENU);
                 }
                 break;
             case Enter:
                 divideTrain();
-                model.setMode(GameMode.MENU);
+                model.setMode(MENU);
                 break;
             case Delete:
                 destroyLinkers();
-                model.setMode(GameMode.MENU);
+                model.setMode(MENU);
                 break;
 
         }
@@ -438,12 +419,12 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
                     linkSelectedVehicles();
-                    model.setMode(GameMode.MENU);
+                    model.setMode(MENU);
                 }
                 break;
             case Enter:
                 linkSelectedVehicles();
-                model.setMode(GameMode.MENU);
+                model.setMode(MENU);
                 break;
         }
     }
@@ -527,30 +508,37 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 locomotiveId = locomotiveId / 10;
                 selectLocomotive(locomotiveId);
                 break;
-            case Character:
-                if (keyEvent.getCharacter() == ' ') {
-                    toggleReversed();
-                    locomotiveId = 0;
-                } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
-                    if (keyEvent.getCharacter() == '0' && locomotiveId == 0) {
-                        model.setShowId(true);
-                    } else {
-                        locomotiveId = locomotiveId * 10 + (keyEvent.getCharacter() - '0');
-                        selectLocomotive(locomotiveId);
-                    }
-                }
-                break;
+            // case Character:
+            // if (keyEvent.getCharacter() == ' ') {
+            // toggleReversed();
+            // locomotiveId = 0;
+            // } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9')
+            // {
+            // if (keyEvent.getCharacter() == '0' && locomotiveId == 0) {
+            // model.setShowId(true);
+            // } else {
+            // locomotiveId = locomotiveId * 10 + (keyEvent.getCharacter() - '0');
+            // selectLocomotive(locomotiveId);
+            // }
+            // }
+            // break;
             case ArrowUp:
                 if (model.getSelectedLocomotive() != null) {
                     if (!model.getSelectedLocomotive().getTrain().isLoading) {
+                        // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
                         accelerateLocomotive();
                         locomotiveId = 0;
                     }
                 }
                 break;
             case ArrowDown:
-                decelerateLocomotive();
-                locomotiveId = 0;
+                if (model.getSelectedLocomotive() != null) {
+                    if (!model.getSelectedLocomotive().getTrain().isLoading) {
+                        // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
+                        decelerateLocomotive();
+                        locomotiveId = 0;
+                    }
+                }
                 break;
             case ArrowLeft:
                 selectPrevLocomotive();
@@ -573,6 +561,50 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 } else {
                     mapPageDown();
                 }
+                break;
+            case Character:
+                if (keyEvent.getCharacter() == ' ') {
+                    // Space bar now only toggles reverse when stopped
+                    toggleReversed();
+                    locomotiveId = 0;
+                } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
+                    if (keyEvent.getCharacter() == '0' && locomotiveId == 0) {
+                        model.setShowId(true);
+                    } else {
+                        locomotiveId = locomotiveId * 10 + (keyEvent.getCharacter() - '0');
+                        selectLocomotive(locomotiveId);
+                    }
+                }
+                break;
+            case Enter:
+                // Enter key now handles loading/unloading at a station, or switches to menu
+                if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) { // Solo si
+                                                                                                              // el tren
+                                                                                                              // está
+                                                                                                              // detenido
+                    letrain.track.Sensor sensor = model.getSelectedLocomotive().getTrack().getSensor();
+                    if (sensor instanceof Station) {
+                        Station station = (Station) sensor;
+                        Train train = model.getSelectedLocomotive().getTrain();
+                        if (train.isLoading()) { // Si ya está cargando/descargando, lo termina
+                            train.endLoadUnloadProcess();
+                        } else {
+                            CargoTypes trainCargoType = train.getTrainCargoType();
+                            if (trainCargoType != CargoTypes.NONE
+                                    && station.getRole() == CargoTypes.StationRole.CONSUMER) {
+                                train.startUnloadProcess(station);
+                                train.recordStopAtStation();
+                            } else if (trainCargoType == CargoTypes.NONE
+                                    && station.getRole() == CargoTypes.StationRole.PRODUCER) {
+                                train.startLoadProcess(station);
+                                train.recordStopAtStation();
+                            }
+                        }
+                        return; // Consume the event
+                    }
+                }
+                // If not on a station or not stopped, Enter should switch to menu
+                model.setMode(MENU);
         }
     }
 

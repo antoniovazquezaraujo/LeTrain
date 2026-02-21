@@ -31,7 +31,7 @@ import com.googlecode.lanterna.terminal.Terminal;
 import letrain.map.Page;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
-import letrain.mvp.impl.Model.GameModeMenuOption;
+import letrain.mvp.Model.GameModeMenuOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

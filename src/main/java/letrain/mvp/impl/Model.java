@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 
 import letrain.command.CommandManager;
 import letrain.command.LeTrainProgramLexer;
@@ -16,6 +15,7 @@ import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
+import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
@@ -33,14 +33,6 @@ import org.slf4j.LoggerFactory;
 
 public class Model implements Serializable, letrain.mvp.Model {
     static Logger log = LoggerFactory.getLogger(Model.class);
-
-    public record GameModeMenuOption(
-            String gameModeName,
-            String gameModeDescription,
-            Supplier<Boolean> enabledIf,
-            Supplier<Boolean> selectedIf,
-            Supplier<GameMode> doWhenSelected) {
-    }
 
     EconomyManager economyManager;
     Locomotive selectedLocomotive;
@@ -512,32 +504,27 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     @Override
     public void loadAndUnloadTrains() {
-        AtomicBoolean removed = new AtomicBoolean(false);
-        getLocomotives().forEach(locomotive -> {
-            Train train = locomotive.getTrain();
-            if (train != null) {
-                if (train.isLoading()) {
-                    Station station = getStation(train.getRailStationId());
-                    if (station != null) {
-                        // Cargo Loading/Unloading/Processing
-                        train.processCargo(station);
-
-                        // Regenerate/Consume cargo at station
-                        if (Math.random() < 0.01) { // Slow regeneration
-                            station.regenerateCargo();
-                        }
-                    } else {
-                        train.endLoadUnloadProcess();
-                    }
-                }
-            }
-        });
-
-        // Regenerate cargo in stations slowly
+        // Regenerate cargo at all stations
         if (Math.random() < 0.05) { // Slow regeneration
             getStations().forEach(Station::regenerateCargo);
         }
 
+        getLocomotives().forEach(locomotive -> {
+            Train train = locomotive.getTrain();
+            if (train != null && train.isLoading()) {
+                int count = train.getLoadingCount();
+                if (count > 0) {
+                    train.setLoadingCount(count - 1);
+                } else {
+                    // Timer finished. Perform the action and stop loading.
+                    Sensor sensor = locomotive.getTrack().getSensor();
+                    if (sensor instanceof Station) {
+                        train.performIndustrialAction((Station) sensor);
+                    }
+                    train.endLoadUnloadProcess();
+                }
+            }
+        });
     }
 
     @Override
@@ -715,4 +702,21 @@ public class Model implements Serializable, letrain.mvp.Model {
         return this.lastSaveTime;
     }
 
+    @Override
+    public CargoTypes getStationGhostCargoType() {
+        Integer terrain = groundMap.findClosestIndustry(cursor.getPosition(), 5);
+        if (terrain != null) {
+            return CargoTypes.IndustryMapper.getCargoForTerrain(terrain);
+        }
+        return CargoTypes.NONE;
+    }
+
+    @Override
+    public CargoTypes.StationRole getStationGhostRole() {
+        Integer terrain = groundMap.findClosestIndustry(cursor.getPosition(), 5);
+        if (terrain != null) {
+            return CargoTypes.IndustryMapper.getRoleForTerrain(terrain);
+        }
+        return CargoTypes.StationRole.GENERIC;
+    }
 }

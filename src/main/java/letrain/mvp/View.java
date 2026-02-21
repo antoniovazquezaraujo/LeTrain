@@ -6,7 +6,7 @@ import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
 import letrain.map.Point;
-import letrain.mvp.impl.Model.GameModeMenuOption;
+import letrain.mvp.Model.GameModeMenuOption;
 
 public interface View {
     Point getMapScrollPage();

@@ -108,16 +108,52 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
             for (int col = 0; col < width; col++) {
                 int colIndex = ((startX) + col);
                 int rowIndex = ((startY) + row);
-                float rand = (noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 0,
-                        OCTAVES));
-                rand = scaleAndShift(rand, -0.7F, 0.7F, 0F, 255F);
-                int intColor = (int) rand;
-                if (rand < WATER) {
+
+                // LAYER 0: Base Terrain
+                float baseNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 0, OCTAVES);
+                float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
+
+                if (scaledBase < 130) { // Increased from 113 to have more water
                     setValueAt(colIndex, rowIndex, 1);
-                } else if (intColor < GROUND) {
-                    setValueAt(colIndex, rowIndex, 0);
-                } else {
+                } else if (scaledBase > 180) { // Decreased from 200 to have more rock
                     setValueAt(colIndex, rowIndex, 2);
+                } else {
+                    // GROUND - check for industries
+                    int terrain = 0; // Default Ground
+                    float threshold = 0.28F; // Lowered from 0.4F to increase density
+
+                    // LAYER 1: Wood Industry (z=1)
+                    float woodNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 1,
+                            OCTAVES);
+                    if (woodNoise > threshold) {
+                        terrain = FOREST;
+                    } else if (woodNoise < -threshold) {
+                        terrain = SAWMILL;
+                    }
+
+                    // LAYER 2: Coal Industry (z=2) - Only if no wood
+                    if (terrain == 0) {
+                        float coalNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 2,
+                                OCTAVES);
+                        if (coalNoise > threshold) {
+                            terrain = MINE;
+                        } else if (coalNoise < -threshold) {
+                            terrain = POWER_PLANT;
+                        }
+                    }
+
+                    // LAYER 3: Fish Industry (z=3) - Only if no wood or coal
+                    if (terrain == 0) {
+                        float fishNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 3,
+                                OCTAVES);
+                        if (fishNoise > threshold) {
+                            terrain = PORT;
+                        } else if (fishNoise < -threshold) {
+                            terrain = MARKET;
+                        }
+                    }
+
+                    setValueAt(colIndex, rowIndex, terrain);
                 }
             }
         }
@@ -125,6 +161,42 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
 
     float scaleAndShift(float value, float inMin, float inMax, float outMin, float outMax) {
         return ((value - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin;
+    }
+
+    @Override
+    public Integer findClosestIndustry(Point center, int radius) {
+        Integer foundTerrain = null;
+        double minDistance = Double.MAX_VALUE;
+
+        for (int dy = -radius; dy <= radius; dy++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                int cx = center.getX() + dx;
+                int cy = center.getY() + dy;
+                Integer terrain = getValueAt(cx, cy);
+                if (terrain != null && terrain >= 10 && terrain <= 29) {
+                    double dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        foundTerrain = terrain;
+                    }
+                }
+            }
+        }
+        return foundTerrain;
+    }
+
+    @Override
+    public int countIndustryDensity(Point center, int radius, int industryType) {
+        int count = 0;
+        for (int dy = -radius; dy <= radius; dy++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                Integer terrain = getValueAt(center.getX() + dx, center.getY() + dy);
+                if (terrain != null && terrain == industryType) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     @Override

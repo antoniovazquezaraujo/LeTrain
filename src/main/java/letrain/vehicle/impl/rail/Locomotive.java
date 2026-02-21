@@ -79,11 +79,12 @@ public class Locomotive extends Linker implements Tractor {
         boolean moved = false;
         if (isDestroying()) {
             return moved;
-        }
+        }        
 
         if (isDirectorLinker()) {
-            if (getTrain() != null) {
-                getTrain().syncLinkersPosition();
+            // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
+            if (getTrain() != null && getTrain().isLoading()) {
+                return moved;
             }
             if (isTimeToMove()) {
                 if (getTrain().advance()) {

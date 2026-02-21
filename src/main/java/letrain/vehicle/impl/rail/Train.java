@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import letrain.map.Dir;
+import letrain.track.CargoTypes;
 import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
@@ -59,6 +60,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     enum LinkersSense {
         FRONT, BACK
     };
+
+    private CargoTypes currentTrainCargoType = CargoTypes.NONE;
 
     LinkersSense linkerJoinSense;
     LinkersSense linkerDivisionSense;
@@ -212,6 +215,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     @Override
     public boolean advance() {
+        // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
+        if (isLoading) {
+            return false;
+        }
         boolean normalSense = true;
         if (getDirectorLinker().isReversed()) {
             normalSense = false;
@@ -624,80 +631,127 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     private boolean isUnloadingDirection = false; // True = Unload (Down), False = Load (Up)
 
-    public void startLoadProcess() {
+    // Punto 6: El tiempo de carga depende de la cantidad de vagones cargados.
+    public void startLoadProcess(letrain.track.Station station) {
         setLoading(true);
         this.isUnloadingDirection = false;
-        setLoadingCount(100); // Fail-safe timer
-    }
+        int wagonsToLoad = 0;
+        CargoTypes trainCurrentCargoType = getTrainCargoType();
 
-    public void startUnloadProcess() {
-        setLoading(true);
-        this.isUnloadingDirection = true;
-        setLoadingCount(100); // Fail-safe timer
-    }
-
-    public void endLoadUnloadProcess() {
-        if (railStationId != 0 && getDirectorLinker().getSpeed() == 0) {
+        for (letrain.vehicle.impl.Linker linker : getLinkers()) {
+            if (linker instanceof Wagon) {
+                Wagon wagon = (Wagon) linker;
+                // Punto 10: Si un tren lleva carga no se puede volver a cargar hasta que se
+                // descargue.
+                // Punto 11: No se permiten trenes que carguen distintos tipos de mercancía
+                // simultáneamente.
+                if (wagon.getCargoAmount() == 0 &&
+                        (trainCurrentCargoType == CargoTypes.NONE || trainCurrentCargoType == station.getCargoType())) {
+                    wagonsToLoad++;
+                }
+            }
+        }
+        setLoadingCount(MAX_LOADING_COUNT * wagonsToLoad);
+        if (loadingCount == 0) { // Si no hay vagones que puedan cargar, finaliza el proceso inmediatamente
             setLoading(false);
         }
     }
 
-    public void processCargo(letrain.track.Station station) {
-        if (isLoading()) {
-            // Slow down the process
-            if (loadingCount % 10 != 0) {
-                loadingCount++; // Use loadingCount as a tick counter
-                return;
+    // Punto 9: El tiempo de descarga depende de la cantidad de vagones descargados.
+    public void startUnloadProcess(letrain.track.Station station) {
+        setLoading(true);
+        this.isUnloadingDirection = true;
+        int wagonsToUnload = 0;
+        for (letrain.vehicle.impl.Linker linker : getLinkers()) {
+            if (linker instanceof Wagon) {
+                Wagon wagon = (Wagon) linker;
+                if (wagon.getCargoAmount() > 0 && wagon.getCargoType() == station.getCargoType()) {
+                    wagonsToUnload++;
+                }
             }
-            loadingCount++;
+        }
+        setLoadingCount(MAX_LOADING_COUNT * wagonsToUnload);
+        if (loadingCount == 0) { // Si no hay vagones que puedan descargar, finaliza el proceso inmediatamente
+            setLoading(false);
+        }
+    }
 
-            boolean anyActionTaken = false;
-            boolean processFinished = true;
+    public void endLoadUnloadProcess() {
+        setLoading(false);
+        setLoadingCount(0);
+    }
 
-            for (letrain.vehicle.impl.Linker linker : getLinkers()) {
-                if (linker instanceof Wagon) {
-                    Wagon wagon = (Wagon) linker;
+    public void performIndustrialAction(letrain.track.Station station) {
+        if (getDirectorLinker().getSpeed() != 0)
+            return;
 
-                    if (isUnloadingDirection) {
-                        // UNLOADING: Wagon -> Station (Import Pile)
-                        if (wagon.getCargoAmount() > 0) {
-                            processFinished = false; // Still has cargo to unload
-                            wagon.unload(1);
-                            station.receiveImportCargo(1);
+        // Interaction ONLY if the locomotive is exactly on the station tile
+        if (((Locomotive) getDirectorLinker()).getTrack().getSensor() != station)
+            return;
+
+        // Punto 10: Si un tren lleva carga no se puede volver a cargar hasta que se descargue.
+        // Punto 11: No se permiten trenes que carguen distintos tipos de mercancía simultáneamente.
+        CargoTypes trainCurrentCargoType = getTrainCargoType();
+
+        boolean anyActionTaken = false;
+        double totalDistance = 0;
+        int deliveryCount = 0;
+
+        for (letrain.vehicle.impl.Linker linker : getLinkers()) {
+            if (linker instanceof Wagon) {
+                Wagon wagon = (Wagon) linker;
+                
+                if (station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER) {
+                    // LOADING
+                    // Punto 11: No se permiten trenes que carguen distintos tipos de mercancía simultáneamente.
+                    if (trainCurrentCargoType != CargoTypes.NONE && trainCurrentCargoType != station.getCargoType()) {
+                        // El tren ya tiene carga de un tipo diferente, no puede cargar esto.
+                        continue;
+                    }
+
+                    // Punto 10: Si un tren lleva carga no se puede volver a cargar hasta que se descargue.
+                    // Solo carga si el vagón está vacío.
+                    if (wagon.getCargoAmount() == 0) {
+
+                        int toLoad = Math.min(wagon.getMaxCapacity() - wagon.getCargoAmount(),
+                                station.getTransferRate());
+                        int taken = station.takeExportCargo(toLoad);
+                        if (taken > 0) {
+                            wagon.load(taken);
+                            wagon.setCargoType(station.getCargoType());
+                            wagon.setLoadingPoint(station.getTrack().getPosition());
+                            this.currentTrainCargoType = station.getCargoType(); // Actualiza el tipo de carga del tren
                             anyActionTaken = true;
                         }
-                    } else {
-                        // LOADING: Station (Export Pile) -> Wagon
-                        if (!wagon.isFull()) {
-                            processFinished = false; // Still has space to load
-                            if (station.getExportCargoAmount() > 0) {
-                                int taken = station.takeExportCargo(1);
-                                wagon.load(taken);
-                                anyActionTaken = true;
-                            } else {
-                                // Station empty, can't continue loading this tick
-                            }
+                    }
+                } else if (station.getRole() == letrain.track.CargoTypes.StationRole.CONSUMER) {
+                    // UNLOADING
+                    if (wagon.getCargoAmount() > 0 && wagon.getCargoType() == station.getCargoType()) {
+                        int toUnload = Math.min(wagon.getCargoAmount(), station.getTransferRate());
+                        wagon.unload(toUnload);
+                        station.receiveImportCargo(toUnload);
+
+                        // Track distance for rewards
+                        if (wagon.getLoadingPoint() != null) {
+                            totalDistance += letrain.map.Point.distance(wagon.getLoadingPoint(),
+                                    station.getTrack().getPosition());
+                            deliveryCount++;
                         }
+
+                        wagon.setCargoType(letrain.track.CargoTypes.NONE);
+                        wagon.setLoadingPoint(null);
+                        anyActionTaken = true;
+
+                        // Trigger economy (simplified: total distance / deliveryCount)
+                        // Actually, let's do it per wagon or per total
                     }
                 }
             }
+        }
 
-            // Stop if done (full or empty depending on direction) OR if source is depleted
-            if (isUnloadingDirection) {
-                if (processFinished)
-                    endLoadUnloadProcess(); // All wagons empty
-            } else {
-                if (processFinished || station.getExportCargoAmount() == 0)
-                    endLoadUnloadProcess(); // All wagons full OR station empty
-            }
-
-            // Allow some time before auto-cancel if no action taken
-            // Since we only check every 10 ticks, we don't want to cancel immediately if
-            // one check fails?
-            // Actually the logic above covers "processFinished".
-            // The fail-safe below was for "stuck" states.
-            // With slower ticks, we might need a separate meaningful timer.
-            // But let's trust the processFinished logic for now.
+        if (anyActionTaken && deliveryCount > 0) {
+            // Pay reward (placeholder for EconomyManager update)
+            // economyManager.onCargoDelivered(totalAmount, totalDistance)
         }
     }
 
@@ -742,5 +796,23 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         if (linkers != null) {
             linkers.forEach(linker -> linker.syncPosition());
         }
+    }
+
+    // Método auxiliar para determinar el tipo de carga general del tren
+    public CargoTypes getTrainCargoType() {
+        CargoTypes firstCargoType = CargoTypes.NONE;
+        for (Linker linker : linkers) {
+            if (linker instanceof Wagon) {
+                Wagon wagon = (Wagon) linker;
+                if (wagon.getCargoAmount() > 0) {
+                    if (firstCargoType == CargoTypes.NONE) {
+                        firstCargoType = wagon.getCargoType();
+                    } else if (firstCargoType != wagon.getCargoType()) {
+                        return null; // Indica carga mixta
+                    }
+                }
+            }
+        }
+        return firstCargoType;
     }
 }
