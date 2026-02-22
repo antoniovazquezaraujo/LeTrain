@@ -73,6 +73,10 @@ public class Station extends Sensor {
         this.storage = storage;
     }
 
+    public int getMaxStorage() {
+        return maxStorage;
+    }
+
     // Compatibility methods redirected to storage
     public int getExportCargoAmount() {
         return (role == CargoTypes.StationRole.PRODUCER) ? storage : 0;

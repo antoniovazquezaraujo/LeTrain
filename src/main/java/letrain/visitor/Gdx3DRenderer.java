@@ -62,6 +62,7 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model platformModel;
     private com.badlogic.gdx.graphics.g3d.Model platformSelectedModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonCargoModel;
+    private com.badlogic.gdx.graphics.g3d.Model wagonJewelModel;
 
     // Industrial Zone Models
     private com.badlogic.gdx.graphics.g3d.Model forestModel;
@@ -176,10 +177,20 @@ public class Gdx3DRenderer implements Visitor {
             // FIN NUEVOS MODELOS DISPONIBLES
             // ----------------------------------------------------------------------------------
 
-            // Bloque de carga del vagón (Cubo Naranja - Escala ajustada para caber dentro)
             wagonCargoModel = modelBuilder.createBox(0.6f, 0.5f, 0.6f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.ORANGE)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // SOLID CARGO BLOCK (Unit cube 1x1x1, shiny, opaque)
+            wagonJewelModel = modelBuilder.createBox(1.0f, 1.0f, 1.0f,
+                    new com.badlogic.gdx.graphics.g3d.Material(
+                            com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                                    .createDiffuse(com.badlogic.gdx.graphics.Color.WHITE),
+                            com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                                    .createSpecular(com.badlogic.gdx.graphics.Color.WHITE),
+                            com.badlogic.gdx.graphics.g3d.attributes.FloatAttribute.createShininess(16f)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
@@ -1079,29 +1090,32 @@ public class Gdx3DRenderer implements Visitor {
         // Si hay blink, a veces ocultamos todo.
         // Si hay highlight/unlink, ocultamos la carga para ser claros con la selección.
         if (wagon.getCargoAmount() > 0 && !highlight && !unlinkHighlight && chassisModel != highlightModel) {
-            float fullness = (float) wagon.getCargoAmount() / (float) wagon.getMaxCapacity();
-            float overfillFactor = 1.2f; // Subtle protrusion when full
-
-            // Use wagonCargoModel as template and override color dynamically
-            ModelInstance cargoInstance = new ModelInstance(wagonCargoModel);
+            int cargoAmount = wagon.getCargoAmount();
+            int maxCapacity = wagon.getMaxCapacity();
             com.badlogic.gdx.graphics.Color cargoColor = (wagon.getCargoType() != null)
-                    ? wagon.getCargoType().getColor()
-                    : com.badlogic.gdx.graphics.Color.YELLOW;
+                    ? wagon.getCargoType().getColor().cpy()
+                    : com.badlogic.gdx.graphics.Color.YELLOW.cpy();
 
-            cargoInstance.materials.get(0)
-                    .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(cargoColor));
+            float fullness = (float) cargoAmount / (float) maxCapacity;
 
-            // Posicionar sobre el chasis (wagon floor y=0.15 + small margin)
-            // scaleY = 1.0 reaches exactly the top of the walls.
-            float scaleY = (fullness * overfillFactor) + 0.1f;
-            float cargoHeight = 0.5f * scaleY;
-            float cargoY = 0.25f + (cargoHeight / 2f); // Base sits on the floor
+            // Single Block Jewels
+            // Base width/depth to fit walls: 0.6f (same as wagonCargoModel footprint)
+            // Max height: 0.5f (same as wagon height)
+            float maxHeight = 0.5f;
+            float currentHeight = fullness * maxHeight;
 
-            cargoInstance.transform.setToTranslation(x + 0.5f, cargoY, y + 0.5f);
-            cargoInstance.transform.rotate(0, 1, 0, angle);
-            cargoInstance.transform.scale(1f, scaleY, 1f);
+            ModelInstance jewelBlock = new ModelInstance(wagonJewelModel);
+            jewelBlock.materials.get(0).set(
+                    com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(cargoColor));
 
-            instances.add(cargoInstance);
+            // Position: y=0.25 (floor level) + half height
+            float jewelY = 0.25f + (currentHeight / 2f);
+
+            jewelBlock.transform.setToTranslation(x + 0.5f, jewelY, y + 0.5f);
+            jewelBlock.transform.rotate(0, 1, 0, angle);
+            jewelBlock.transform.scale(0.6f, currentHeight, 0.6f);
+
+            instances.add(jewelBlock);
         }
 
         // Añadir etiquetas a los lados
@@ -1346,6 +1360,36 @@ public class Gdx3DRenderer implements Visitor {
             siren.transform.rotate(0, 1, 0, rotation);
             instances.add(siren);
         }
+
+        // 4. Render Station Storage Jewels (PRODUCERS ONLY)
+        if (role == CargoTypes.StationRole.PRODUCER && cargo != null && station != null) {
+            int storage = station.getStorage();
+            int maxStorage = station.getMaxStorage();
+            if (storage > 0) {
+                com.badlogic.gdx.graphics.Color jewelColor = cargo.getColor().cpy();
+                jewelColor.a = alpha;
+
+                float fullness = (float) storage / (float) maxStorage;
+                float currentHeight = fullness * 0.5f; // Max height 0.5f
+
+                ModelInstance jewelBlock = new ModelInstance(wagonJewelModel);
+                jewelBlock.materials.get(0).set(
+                        com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(jewelColor));
+                if (alpha < 1.0f) {
+                    jewelBlock.materials.get(0)
+                            .set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
+                }
+
+                // Center on the plate
+                float jewelY = 0.015f + (currentHeight / 2f);
+
+                jewelBlock.transform.setToTranslation(plateMidX, jewelY, plateMidZ);
+                jewelBlock.transform.rotate(0, 1, 0, plateAngle);
+                jewelBlock.transform.scale(plateLengthPerp * 0.8f, currentHeight, plateWidth * 0.8f);
+
+                instances.add(jewelBlock);
+            }
+        }
     }
 
     @Override
@@ -1364,17 +1408,29 @@ public class Gdx3DRenderer implements Visitor {
         com.badlogic.gdx.graphics.Color colorOverride = null;
 
         if (type >= 10 && type <= 19) {
-            // PRODUCER - Solid Block
+            // PRODUCER - Solid Crystal Jewel Block
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            colorOverride = cargo.getColor();
-            yPosition = 0.3f;
-            scaleY = 0.6f;
-            scaleX = 0.9f;
-            scaleZ = 0.9f;
+            com.badlogic.gdx.graphics.Color jewelColor = (cargo != null) ? cargo.getColor().cpy()
+                    : com.badlogic.gdx.graphics.Color.WHITE.cpy();
+
+            float x = ground.getPosition().getX() + 0.5f;
+            float z = ground.getPosition().getY() + 0.5f;
+
+            ModelInstance jewelBlock = new ModelInstance(wagonJewelModel);
+            jewelBlock.materials.get(0).set(
+                    com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(jewelColor));
+
+            // Single large block (footprint 0.9x0.9, height 0.5)
+            float h = 0.5f;
+            jewelBlock.transform.setToTranslation(x, h / 2f, z);
+            jewelBlock.transform.scale(0.9f, h, 0.9f);
+
+            instances.add(jewelBlock);
+            return;
         } else if (type >= 20 && type <= 29) {
-            // CONSUMER - Flat Carpet
+            // CONSUMER - Flat Carpet (Keep it simple, as it was before)
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            colorOverride = cargo.getColor();
+            colorOverride = (cargo != null) ? cargo.getColor() : com.badlogic.gdx.graphics.Color.WHITE;
             yPosition = 0.02f;
             scaleY = 0.04f;
             scaleX = 0.95f;
