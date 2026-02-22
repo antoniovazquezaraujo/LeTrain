@@ -68,9 +68,9 @@ public class AudioController {
             if (synth == null) {
                 synth = new TrainSynthesizer();
                 // Audio Physics Defaults
-                // 50m Ref Distance, 2000m Max Distance (Silence)
+                // 3m Ref Distance (Full volume), 1000m Max Distance (Silence)
                 // 1.0x Filter Sensitivity (Logarithmic Falloff)
-                synth.setAudioRange(50.0f, 2000.0f);
+                synth.setAudioRange(3.0f * SCALE_FACTOR, 1000.0f * SCALE_FACTOR);
                 synth.setFilterSensitivity(1.0f);
                 synth.setLocoVolume(0.8f);
                 synth.setCoachVolume(0.6f);

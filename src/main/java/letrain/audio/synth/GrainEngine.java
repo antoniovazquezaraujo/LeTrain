@@ -204,7 +204,7 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
 
             buffer[i] += smoothed * volume;
 
-            // 4. Advance Position
+            // 5. Advance Position
             position += reverse ? -playbackRate : playbackRate;
 
             // 5. Loop

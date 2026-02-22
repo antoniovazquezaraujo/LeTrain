@@ -539,7 +539,6 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void render() {
-
         // Bucle de lógica del juego (aprox 20 tps como en el Presenter original)
         stateTime += Gdx.graphics.getDeltaTime();
         if (stateTime > 0.05f) {
@@ -552,21 +551,25 @@ public class Gdx3DView extends ApplicationAdapter
             model.moveLocomotives();
             model.loadAndUnloadTrains();
             model.removeDestroyedTrains();
-            float camAngle = (float) Math.atan2(cam.direction.z, cam.direction.x);
-            // Map Game Coordinates: X->X, Z->Y (Audio Depth), Y->Z (Audio Height/Elevation)
-            audioController.setListenerPosition(cam.position.x, cam.position.z, cam.position.y, camAngle);
 
-            audioController.update();
             stateTime -= 0.05f;
             if (stateTime > 0.05f)
-                stateTime = 0.05f; // Evitar espiral de la muerte si hay mucho lag
+                stateTime = 0.05f; // Evitar espiral de la muerte
         }
 
-        // Calcular factor de interpolación
+        // 1. Calculate factor de interpolación
         float alpha = stateTime / 0.05f;
         if (alpha > 1f)
             alpha = 1f;
         renderer.setAnimationAlpha(alpha);
+
+        // 2. ACTUALIZAR CÁMARA ANTES QUE EL AUDIO
+        updateCamera(alpha);
+
+        // 3. Sincronizar Audio con la posición REAL de la cámara de este frame
+        float camAngle = (float) Math.atan2(cam.direction.z, cam.direction.x);
+        audioController.setListenerPosition(cam.position.x, cam.position.z, cam.position.y, camAngle);
+        audioController.update();
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
@@ -576,110 +579,6 @@ public class Gdx3DView extends ApplicationAdapter
         renderer.visitModel(model);
         renderer.getInstances().add(new ModelInstance(groundModel));
         // renderer.getInstances().add(new ModelInstance(gridModel)); // Grid oculto
-
-        // Centrar cámara en el cursor o en la locomotora seleccionada
-        float targetX, targetZ;
-        if ((model.getMode() == letrain.mvp.Model.GameMode.DRIVE || model.getMode() == letrain.mvp.Model.GameMode.LINK)
-                && model.getSelectedLocomotive() != null) {
-            letrain.vehicle.impl.rail.Locomotive selected = model.getSelectedLocomotive();
-            com.badlogic.gdx.math.Vector2 interpPos = getInterpolatedPosition(selected, alpha);
-            targetX = interpPos.x + 0.5f;
-            targetZ = interpPos.y + 0.5f;
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS && model.getSelectedFork() != null) {
-            letrain.track.rail.ForkRailTrack selected = model.getSelectedFork();
-            targetX = selected.getPosition().getX() + 0.5f;
-            targetZ = selected.getPosition().getY() + 0.5f;
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES && model.getSelectedSemaphore() != null) {
-            letrain.track.RailSemaphore selected = model.getSelectedSemaphore();
-            targetX = selected.getPosition().getX() + 0.5f;
-            targetZ = selected.getPosition().getY() + 0.5f;
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS && model.getSelectedStation() != null) {
-            letrain.track.Station selected = model.getSelectedStation();
-            targetX = selected.getPosition().getX() + 0.5f;
-            targetZ = selected.getPosition().getY() + 0.5f;
-        } else {
-            letrain.map.Point cursorState = model.getCursor().getPosition();
-            targetX = cursorState.getX() + 0.5f;
-            targetZ = cursorState.getY() + 0.5f;
-        }
-
-        // Calcular posición de cámara
-        if (cameraMode == CameraMode.CAB) {
-            letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
-            if (loco == null && !model.getLocomotives().isEmpty()) {
-                loco = model.getLocomotives().get(0);
-            }
-
-            if (loco != null) {
-                // Posición interpolada de la locomotora (visual)
-                com.badlogic.gdx.math.Vector2 interpPos = getInterpolatedPosition(loco, alpha);
-                float x = interpPos.x + 0.5f;
-                float z = interpPos.y + 0.5f;
-
-                // Dirección de la locomotora para mirar hacia adelante
-                letrain.map.Dir d = loco.getDir();
-                float dx = letrain.visitor.Gdx3DRenderer.getDirX(d);
-                float dz = letrain.visitor.Gdx3DRenderer.getDirZ(d);
-
-                com.badlogic.gdx.math.Vector2 targetDir = new com.badlogic.gdx.math.Vector2(dx, -dz); // Ojo con el
-                                                                                                      // signo de Z si
-                                                                                                      // es necesario
-                // Ajuste: getDirZ devuelve z positivo hacia "abajo" en pantalla 2D? Ojo con
-                // coords 3D.
-                // Gdx3DRenderer usa: x = col, z = row.
-                // dx, dz son (0, -1) para N?
-                // Revisemos Gdx3DRenderer.getDirX/Z.
-
-                // Asumimos que (dx, dz) es el vector dirección correcto en el plano XZ.
-                targetDir.set(dx, dz);
-
-                // Interpolamos currentCabDirection hacia targetDir
-                // Lerp de vectores: v1.lerp(v2, alpha)
-                // Usamos un factor bajo para suavidad, e.g. 0.1
-                currentCabDirection.lerp(targetDir, 0.05f);
-                // Normalizamos para mantener longitud 1
-                currentCabDirection.nor();
-
-                float smoothDx = currentCabDirection.x;
-                float smoothDz = currentCabDirection.y;
-
-                // Altura de cabina ajustada: "Chase Cam"
-                // Posición: (x, y, z) - dir * 1.2 + (0, 2.0, 0)
-                float camX = x - smoothDx * 1.2f;
-                float camY = 2.0f;
-                float camZ = z - smoothDz * 1.2f;
-
-                cam.position.set(camX, camY, camZ);
-                // Mirar hacia adelante usando la dirección suavizada
-                cam.lookAt(x + smoothDx * 5f, 0.5f, z + smoothDz * 5f);
-                cam.up.set(0, 1, 0);
-            } else {
-                // Fallback a Orbita
-                cameraMode = CameraMode.ORBIT;
-            }
-        }
-
-        if (cameraMode == CameraMode.ORBIT) {
-            // Interpolación del punto de enfoque solo cuando el objetivo cambia
-            camTarget.lerp(new com.badlogic.gdx.math.Vector3(targetX, 0, targetZ), 0.05f);
-
-            // Interpolación de ángulo y distancia para suavidad
-            cameraAngle = com.badlogic.gdx.math.MathUtils.lerp(cameraAngle, targetCameraAngle, 0.1f);
-            cameraDistance = com.badlogic.gdx.math.MathUtils.lerp(cameraDistance, targetCameraDistance, 0.1f);
-
-            // Calcular posición de cámara usando ángulo y distancia horizontal
-            float angleRad = cameraAngle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
-            float camX = camTarget.x + cameraDistance * com.badlogic.gdx.math.MathUtils.sin(angleRad);
-            float camZ = camTarget.z + cameraDistance * com.badlogic.gdx.math.MathUtils.cos(angleRad);
-            // Altura fija para mantener inclinación constante
-            float camY = cameraHeight;
-
-            // Actualizar posición de cámara sin interpolación para respuesta inmediata
-            cam.position.set(camX, camY, camZ);
-            cam.lookAt(camTarget);
-            cam.up.set(0, 1, 0); // Mantener vector up fijo para evitar volteo
-        }
-        cam.update();
 
         modelBatch.begin(cam);
         modelBatch.render(renderer.getInstances(), environment);
@@ -728,6 +627,94 @@ public class Gdx3DView extends ApplicationAdapter
         updateUIData();
         stage.act(Gdx.graphics.getDeltaTime());
         stage.draw();
+    }
+
+    private void updateCamera(float alpha) {
+        // Centrar cámara en el cursor o en la locomotora seleccionada
+        float targetX, targetZ;
+        if ((model.getMode() == letrain.mvp.Model.GameMode.DRIVE || model.getMode() == letrain.mvp.Model.GameMode.LINK)
+                && model.getSelectedLocomotive() != null) {
+            letrain.vehicle.impl.rail.Locomotive selected = model.getSelectedLocomotive();
+            com.badlogic.gdx.math.Vector2 interpPos = getInterpolatedPosition(selected, alpha);
+            targetX = interpPos.x + 0.5f;
+            targetZ = interpPos.y + 0.5f;
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS && model.getSelectedFork() != null) {
+            letrain.track.rail.ForkRailTrack selected = model.getSelectedFork();
+            targetX = selected.getPosition().getX() + 0.5f;
+            targetZ = selected.getPosition().getY() + 0.5f;
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES && model.getSelectedSemaphore() != null) {
+            letrain.track.RailSemaphore selected = model.getSelectedSemaphore();
+            targetX = selected.getPosition().getX() + 0.5f;
+            targetZ = selected.getPosition().getY() + 0.5f;
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS && model.getSelectedStation() != null) {
+            letrain.track.Station selected = model.getSelectedStation();
+            targetX = selected.getPosition().getX() + 0.5f;
+            targetZ = selected.getPosition().getY() + 0.5f;
+        } else {
+            letrain.map.Point cursorState = model.getCursor().getPosition();
+            targetX = cursorState.getX() + 0.5f;
+            targetZ = cursorState.getY() + 0.5f;
+        }
+
+        // Calcular posición de cámara
+        if (cameraMode == CameraMode.CAB) {
+            letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
+            if (loco == null && !model.getLocomotives().isEmpty()) {
+                loco = model.getLocomotives().get(0);
+            }
+
+            if (loco != null) {
+                // Posición interpolada de la locomotora (visual)
+                com.badlogic.gdx.math.Vector2 interpPos = getInterpolatedPosition(loco, alpha);
+                float x = interpPos.x + 0.5f;
+                float z = interpPos.y + 0.5f;
+
+                // Dirección de la locomotora para mirar hacia adelante
+                letrain.map.Dir d = loco.getDir();
+                float dx = letrain.visitor.Gdx3DRenderer.getDirX(d);
+                float dz = letrain.visitor.Gdx3DRenderer.getDirZ(d);
+
+                com.badlogic.gdx.math.Vector2 targetDir = new com.badlogic.gdx.math.Vector2(dx, dz);
+
+                // Interpolamos currentCabDirection hacia targetDir
+                currentCabDirection.lerp(targetDir, 0.05f);
+                currentCabDirection.nor();
+
+                float smoothDx = currentCabDirection.x;
+                float smoothDz = currentCabDirection.y;
+
+                // Altura de cabina ajustada: "Chase Cam"
+                float camX = x - smoothDx * 1.2f;
+                float camY = 2.0f;
+                float camZ = z - smoothDz * 1.2f;
+
+                cam.position.set(camX, camY, camZ);
+                cam.lookAt(x + smoothDx * 5f, 0.5f, z + smoothDz * 5f);
+                cam.up.set(0, 1, 0);
+            } else {
+                cameraMode = CameraMode.ORBIT;
+            }
+        }
+
+        if (cameraMode == CameraMode.ORBIT) {
+            // Interpolación del punto de enfoque solo cuando el objetivo cambia
+            camTarget.lerp(new com.badlogic.gdx.math.Vector3(targetX, 0, targetZ), 0.05f);
+
+            // Interpolación de ángulo y distancia para suavidad
+            cameraAngle = com.badlogic.gdx.math.MathUtils.lerp(cameraAngle, targetCameraAngle, 0.1f);
+            cameraDistance = com.badlogic.gdx.math.MathUtils.lerp(cameraDistance, targetCameraDistance, 0.1f);
+
+            // Calcular posición de cámara usando ángulo y distancia horizontal
+            float angleRad = cameraAngle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
+            float camX = camTarget.x + cameraDistance * com.badlogic.gdx.math.MathUtils.sin(angleRad);
+            float camZ = camTarget.z + cameraDistance * com.badlogic.gdx.math.MathUtils.cos(angleRad);
+            float camY = cameraHeight;
+
+            cam.position.set(camX, camY, camZ);
+            cam.lookAt(camTarget);
+            cam.up.set(0, 1, 0);
+        }
+        cam.update();
     }
 
     private void updateUIData() {

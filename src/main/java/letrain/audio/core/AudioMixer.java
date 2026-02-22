@@ -111,67 +111,47 @@ public class AudioMixer {
 
                     float distance = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-                    // Simple Linear Attenuation for now
-                    // Ref Dist = 100, Max Dist = 2000?
+                    // Improved Logarithmic/Inverse-Square-like Attenuation
                     float refDist = source.getReferenceDistance();
                     float maxDist = source.getMaxDistance();
 
-                    float volume = 1.0f - ((distance - refDist) / (maxDist - refDist));
+                    float volume = 1.0f;
+                    if (distance > refDist) {
+                        // Volume = Ref / (Ref + (Dist - Ref)) = Ref / Dist
+                        // This creates a more natural sounding falloff than linear.
+                        volume = refDist / distance;
+
+                        // Apply max distance cutoff
+                        if (distance > maxDist) {
+                            float fadeFactor = 1.0f - ((distance - maxDist) / (maxDist * 0.2f));
+                            volume *= Math.max(0.0f, fadeFactor);
+                        }
+                    }
                     if (volume > 1.0f)
                         volume = 1.0f;
                     if (volume < 0.0f)
                         volume = 0.0f;
 
-                    // Pan (Simple approximation)
-                    // Calculate angle to source relative to leadtener angle
-                    // For now, let's keep it centered (1.0, 1.0) until Phase 2 implementation
-                    // details
+                    // 3. Pan (Stereo Positioning) - Reverted as per user request
                     float panLeft = 1.0f;
                     float panRight = 1.0f;
 
-                    // Distance Filtering (Atmospheric Absorption imitation)
-                    // We want a "Logarithmic" fade because pitch perception is logarithmic.
-                    // We want Frequency to go from 20000Hz down to ~200Hz.
-                    // This creates a smooth "Linear Pitch Drop".
-
+                    // 4. Distance Filtering (Atmospheric Absorption)
                     float filterAmount = 0.0f;
                     if (distance > refDist) {
                         float distFactor = (distance - refDist) / (maxDist - refDist);
                         distFactor = Math.min(1.0f, Math.max(0.0f, distFactor));
-
-                        // Logarithmic mapping:
-                        // Top freq (alpha=1.0), Bottom freq (alpha=0.01)
-                        // Alpha = Start * (End/Start)^Factor
-                        // Alpha = 1.0 * (0.01)^distFactor
                         float alpha = (float) Math.pow(0.01, distFactor);
-
                         filterAmount = 1.0f - alpha;
-
-                        // Limit max filtering
                         filterAmount = Math.min(0.99f, filterAmount);
                     }
                     source.setDistanceFilter(filterAmount);
 
-                    // Apply to Mix
-                    // sourceBuffer is MONO? NO, existing GrainEngine produces MONO usually,
-                    // but we defined AudioSource as "fills buffer".
-                    // If GrainEngine fills a stereo buffer, we are doubling work.
-                    // Let's assume GrainEngine produces MONO for now.
-                    // Wait, GrainEngine.read() takes float[].
-                    // TrainSynthesizer.audioLoop() was creating stereo? No, "new
-                    // AudioFormat(sampleRate, 16, 1, true, true);" -> MONO.
-
-                    // OUR MIXER IS STEREO.
-                    // We need to read MONO from source, and distribute to L/R in MixBuffer.
-
-                    // REFACTOR: We need to know if AudioSource is Mono or Stereo.
-                    // Let's assume AudioSource is MONO for 3D positioning.
-
-                    for (int i = 0; i < BUFFER_SIZE; i++) { // BUFFER_SIZE frames
-                        float sample = sourceBuffer[i]; // Mono sample
-
-                        mixBuffer[i * 2] += sample * volume * panLeft; // Left
-                        mixBuffer[i * 2 + 1] += sample * volume * panRight; // Right
+                    // 5. Apply to Mix (Mono to Stereo)
+                    for (int i = 0; i < BUFFER_SIZE; i++) {
+                        float sample = sourceBuffer[i];
+                        mixBuffer[i * 2] += sample * volume * panLeft;
+                        mixBuffer[i * 2 + 1] += sample * volume * panRight;
                     }
                 }
 
