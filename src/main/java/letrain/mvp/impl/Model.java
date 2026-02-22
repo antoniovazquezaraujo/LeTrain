@@ -509,18 +509,22 @@ public class Model implements Serializable, letrain.mvp.Model {
             getStations().forEach(Station::regenerateCargo);
         }
 
+        java.util.Set<Train> processedTrains = new java.util.HashSet<>();
         getLocomotives().forEach(locomotive -> {
             Train train = locomotive.getTrain();
-            if (train != null && train.isLoading()) {
+            if (train != null && train.isLoading() && !processedTrains.contains(train)) {
+                processedTrains.add(train);
                 int count = train.getLoadingCount();
                 if (count > 0) {
                     train.setLoadingCount(count - 1);
-                } else {
-                    // Timer finished. Perform the action and stop loading.
+                    // PRECISION SYNC: Each wagon gets 80 ticks (4.0s).
+                    // Now we only call this ONCE per tick per train.
                     Sensor sensor = locomotive.getTrack().getSensor();
                     if (sensor instanceof Station) {
                         train.performIndustrialAction((Station) sensor);
                     }
+                } else {
+                    // Timer finished.
                     train.endLoadUnloadProcess();
                 }
             }

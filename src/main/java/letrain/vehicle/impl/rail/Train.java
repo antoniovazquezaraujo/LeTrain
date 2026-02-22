@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Train implements Serializable, Trailer<RailTrack>, Renderable, Transportable {
-    private static final int MAX_LOADING_COUNT = 200;
+    private static final int MAX_LOADING_COUNT = 80; // 4.0 seconds at 20fps per wagon
     Logger log = LoggerFactory.getLogger(Train.class);
     protected final Deque<Linker> linkers;
     protected final List<Tractor> tractors;
@@ -651,7 +651,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 }
             }
         }
-        setLoadingCount(MAX_LOADING_COUNT * wagonsToLoad);
+        setLoadingCount(MAX_LOADING_COUNT * wagonsToLoad); // SEQUENTIAL: Total time is sum of all wagons
         if (loadingCount == 0) { // Si no hay vagones que puedan cargar, finaliza el proceso inmediatamente
             setLoading(false);
         }
@@ -670,7 +670,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 }
             }
         }
-        setLoadingCount(MAX_LOADING_COUNT * wagonsToUnload);
+        setLoadingCount(MAX_LOADING_COUNT * wagonsToUnload); // SEQUENTIAL: Total time is sum of all wagons
         if (loadingCount == 0) { // Si no hay vagones que puedan descargar, finaliza el proceso inmediatamente
             setLoading(false);
         }
@@ -681,71 +681,90 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         setLoadingCount(0);
     }
 
-    public void performIndustrialAction(letrain.track.Station station) {
+    public boolean performIndustrialAction(letrain.track.Station station) {
         if (getDirectorLinker().getSpeed() != 0)
-            return;
+            return false;
 
         // Interaction ONLY if the locomotive is exactly on the station tile
         if (((Locomotive) getDirectorLinker()).getTrack().getSensor() != station)
-            return;
+            return false;
 
-        // Punto 10: Si un tren lleva carga no se puede volver a cargar hasta que se descargue.
-        // Punto 11: No se permiten trenes que carguen distintos tipos de mercancía simultáneamente.
+        // Punto 10: Si un tren lleva carga no se puede volver a cargar hasta que se
+        // descargue.
+        // Punto 11: No se permiten trenes que carguen distintos tipos de mercancía
+        // simultáneamente.
         CargoTypes trainCurrentCargoType = getTrainCargoType();
 
         boolean anyActionTaken = false;
         double totalDistance = 0;
         int deliveryCount = 0;
 
-        for (letrain.vehicle.impl.Linker linker : getLinkers()) {
-            if (linker instanceof Wagon) {
-                Wagon wagon = (Wagon) linker;
-                
-                if (station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER) {
-                    // LOADING
-                    // Punto 11: No se permiten trenes que carguen distintos tipos de mercancía simultáneamente.
-                    if (trainCurrentCargoType != CargoTypes.NONE && trainCurrentCargoType != station.getCargoType()) {
-                        // El tren ya tiene carga de un tipo diferente, no puede cargar esto.
-                        continue;
-                    }
+        if (getLinkers().isEmpty())
+            return false;
+        List<letrain.vehicle.impl.Linker> wagons = getLinkers().stream()
+                .filter(l -> l instanceof Wagon)
+                .collect(java.util.stream.Collectors.toList());
 
-                    // Punto 10: Si un tren lleva carga no se puede volver a cargar hasta que se descargue.
-                    // Solo carga si el vagón está vacío.
-                    if (wagon.getCargoAmount() == 0) {
+        if (wagons.isEmpty())
+            return false;
 
-                        int toLoad = Math.min(wagon.getMaxCapacity() - wagon.getCargoAmount(),
-                                station.getTransferRate());
-                        int taken = station.takeExportCargo(toLoad);
-                        if (taken > 0) {
-                            wagon.load(taken);
-                            wagon.setCargoType(station.getCargoType());
-                            wagon.setLoadingPoint(station.getTrack().getPosition());
-                            this.currentTrainCargoType = station.getCargoType(); // Actualiza el tipo de carga del tren
-                            anyActionTaken = true;
-                        }
-                    }
-                } else if (station.getRole() == letrain.track.CargoTypes.StationRole.CONSUMER) {
-                    // UNLOADING
-                    if (wagon.getCargoAmount() > 0 && wagon.getCargoType() == station.getCargoType()) {
-                        int toUnload = Math.min(wagon.getCargoAmount(), station.getTransferRate());
-                        wagon.unload(toUnload);
-                        station.receiveImportCargo(toUnload);
+        // CALCULATE CURRENT WAGON INDEX
+        // loadingCount goes from (MAX_LOADING_COUNT * numWagons) down to 1.
+        // Index 0 is the first wagon in the list, Index (N-1) is the last.
+        // We process them in order: first wagon, then second, etc.
+        // For numWagons = 2:
+        // ticks 160...81 -> wagonIndex 0
+        // ticks 80...1 -> wagonIndex 1
+        int numWagons = wagons.size();
+        int totalTicks = MAX_LOADING_COUNT * numWagons;
+        int currentTickInTotal = totalTicks - (loadingCount - 1); // 1 to totalTicks
+        int wagonIndex = (currentTickInTotal - 1) / MAX_LOADING_COUNT;
 
-                        // Track distance for rewards
-                        if (wagon.getLoadingPoint() != null) {
-                            totalDistance += letrain.map.Point.distance(wagon.getLoadingPoint(),
-                                    station.getTrack().getPosition());
-                            deliveryCount++;
-                        }
+        if (wagonIndex >= numWagons)
+            return false;
 
-                        wagon.setCargoType(letrain.track.CargoTypes.NONE);
-                        wagon.setLoadingPoint(null);
-                        anyActionTaken = true;
+        Wagon wagon = (Wagon) wagons.get(wagonIndex);
+        int wagonTick = (currentTickInTotal - 1) % MAX_LOADING_COUNT; // 0 to 79
 
-                        // Trigger economy (simplified: total distance / deliveryCount)
-                        // Actually, let's do it per wagon or per total
-                    }
+        if (station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER) {
+            // LOADING
+            if (trainCurrentCargoType != CargoTypes.NONE && trainCurrentCargoType != station.getCargoType()) {
+                return false;
+            }
+
+            // PRECISION SYNC: Reach exactly 50 at tick 80
+            int targetCargo = ((wagonTick + 1) * 50) / MAX_LOADING_COUNT;
+
+            if (wagon.getCargoAmount() < targetCargo && !wagon.isFull()) {
+                int toLoad = targetCargo - wagon.getCargoAmount();
+                int taken = station.takeExportCargo(toLoad);
+                if (taken > 0) {
+                    wagon.load(taken);
+                    wagon.setCargoType(station.getCargoType());
+                    wagon.setLoadingPoint(station.getTrack().getPosition());
+                    this.currentTrainCargoType = station.getCargoType();
+                    anyActionTaken = true;
                 }
+            }
+        } else if (station.getRole() == letrain.track.CargoTypes.StationRole.CONSUMER) {
+            // UNLOADING: Reach exactly 0 at tick 80
+            int targetRemaining = 50 - ((wagonTick + 1) * 50) / MAX_LOADING_COUNT;
+
+            if (wagon.getCargoAmount() > targetRemaining && wagon.getCargoType() == station.getCargoType()) {
+                int toUnload = wagon.getCargoAmount() - targetRemaining;
+                wagon.unload(toUnload);
+                station.receiveImportCargo(toUnload);
+
+                if (wagon.getLoadingPoint() != null) {
+                    totalDistance += letrain.map.Point.distance(wagon.getLoadingPoint(),
+                            station.getTrack().getPosition());
+                    deliveryCount++;
+                }
+                if (wagon.getCargoAmount() == 0) {
+                    wagon.setCargoType(letrain.track.CargoTypes.NONE);
+                    wagon.setLoadingPoint(null);
+                }
+                anyActionTaken = true;
             }
         }
 
@@ -753,6 +772,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             // Pay reward (placeholder for EconomyManager update)
             // economyManager.onCargoDelivered(totalAmount, totalDistance)
         }
+
+        return anyActionTaken;
     }
 
     public int getLoadingCount() {
