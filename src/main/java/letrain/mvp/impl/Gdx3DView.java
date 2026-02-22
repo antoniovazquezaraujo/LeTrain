@@ -821,6 +821,9 @@ public class Gdx3DView extends ApplicationAdapter
                     case 'p':
                         model.setMode(letrain.mvp.Model.GameMode.PERSIST);
                         return;
+                    case 'o':
+                        handleSnapCursor();
+                        return;
                 }
             }
         }
@@ -857,6 +860,40 @@ public class Gdx3DView extends ApplicationAdapter
                 break;
             default:
                 break;
+        }
+    }
+
+    private void handleSnapCursor() {
+        letrain.map.Point targetPos = null;
+        switch (model.getMode()) {
+            case DRIVE:
+            case LINK:
+            case UNLINK:
+                if (model.getSelectedLocomotive() != null) {
+                    targetPos = model.getSelectedLocomotive().getPosition();
+                }
+                break;
+            case FORKS:
+                if (model.getSelectedFork() != null) {
+                    targetPos = model.getSelectedFork().getPosition();
+                }
+                break;
+            case SEMAPHORES:
+                if (model.getSelectedSemaphore() != null) {
+                    targetPos = model.getSelectedSemaphore().getPosition();
+                }
+                break;
+            case STATIONS:
+                if (model.getSelectedStation() != null) {
+                    targetPos = model.getSelectedStation().getPosition();
+                }
+                break;
+            default:
+                break;
+        }
+
+        if (targetPos != null) {
+            model.getCursor().setPosition(targetPos);
         }
     }
 
