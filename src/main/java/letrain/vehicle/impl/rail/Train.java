@@ -7,6 +7,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -68,6 +69,39 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     boolean joined = false;
     protected Tractor directorLinker;
     private int loadingCount;
+    private List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
+
+    public void addTrainEventListener(TrainEventListener listener) {
+        trainListeners.add(listener);
+    }
+
+    public void removeTrainEventListener(TrainEventListener listener) {
+        trainListeners.remove(listener);
+    }
+
+    public void notifySpeedChanged(int speed) {
+        for (TrainEventListener l : trainListeners) {
+            l.onSpeedChanged(speed);
+        }
+    }
+
+    public void notifySenseChanged(boolean forward) {
+        for (TrainEventListener l : trainListeners) {
+            l.onSenseChanged(forward);
+        }
+    }
+
+    public void notifyLink() {
+        for (TrainEventListener l : trainListeners) {
+            l.onLink();
+        }
+    }
+
+    public void notifyContact() {
+        for (TrainEventListener l : trainListeners) {
+            l.onContact();
+        }
+    }
 
     public Train(int id) {
         setId(id);
@@ -330,6 +364,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                         crash(nextTrack.getLinker());
                         return false;
                     }
+                    notifyContact();
+                    if (crashedTrain != null) {
+                        crashedTrain.notifyContact();
+                    }
                 }
             } else {
                 // System.out.println("Ojo, no hay track en " + track.getPosition() + " -> " +
@@ -341,10 +379,15 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     private void crash(Linker linker) {
+        for (TrainEventListener l : trainListeners) {
+            l.onCrash();
+        }
         getLinkers().forEach(Linker::destroy);
         if (linker.getTrain() != null) {
+            for (TrainEventListener l : linker.getTrain().trainListeners) {
+                l.onCrash();
+            }
             linker.getTrain().getLinkers().forEach(Linker::destroy);
-            ;
         } else {
             linker.destroy();
         }
@@ -452,6 +495,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             }
             linkersToJoin.clear();
             joined = true;
+            notifyLink();
         }
     }
 
@@ -651,8 +695,11 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 }
             }
         }
+        log.info("Train {} starting LOAD at Station {}. Wagons to load: {}. Station cargo: {}. Station role: {}",
+                getId(), station.getId(), wagonsToLoad, station.getCargoType(), station.getRole());
         setLoadingCount(MAX_LOADING_COUNT * wagonsToLoad); // SEQUENTIAL: Total time is sum of all wagons
         if (loadingCount == 0) { // Si no hay vagones que puedan cargar, finaliza el proceso inmediatamente
+            log.info("LOAD aborted: 0 functional wagons for this cargo type/station.");
             setLoading(false);
         }
     }
@@ -670,8 +717,11 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 }
             }
         }
+        log.info("Train {} starting UNLOAD at Station {}. Wagons to unload: {}. Station cargo: {}. Station role: {}",
+                getId(), station.getId(), wagonsToUnload, station.getCargoType(), station.getRole());
         setLoadingCount(MAX_LOADING_COUNT * wagonsToUnload); // SEQUENTIAL: Total time is sum of all wagons
         if (loadingCount == 0) { // Si no hay vagones que puedan descargar, finaliza el proceso inmediatamente
+            log.info("UNLOAD aborted: 0 functional wagons for this cargo type/station.");
             setLoading(false);
         }
     }
@@ -686,8 +736,11 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             return false;
 
         // Interaction ONLY if the locomotive is exactly on the station tile
-        if (((Locomotive) getDirectorLinker()).getTrack().getSensor() != station)
+        if (((Locomotive) getDirectorLinker()).getTrack().getSensor() != station) {
+            log.warn("Industrial Action Skip: Train {} (Loco on {}) is NOT on Station {} sensor.", getId(),
+                    ((Locomotive) getDirectorLinker()).getTrack().getSensor(), station.getId());
             return false;
+        }
 
         // Punto 10: Si un tren lleva carga no se puede volver a cargar hasta que se
         // descargue.

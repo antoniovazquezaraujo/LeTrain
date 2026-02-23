@@ -1053,11 +1053,20 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void onEditCommands(String program) {
+        List<String> errors = model.setProgram(program);
+        handleScriptErrors(errors);
+    }
+
+    private void handleScriptErrors(List<String> errors) {
+        if (errors != null && !errors.isEmpty()) {
+            String combinedErrors = String.join("\n", errors);
+            showMessage("Script Errors", combinedErrors);
+        }
     }
 
     @Override
     public String getProgram() {
-        return "";
+        return model.getProgram();
     }
 
     @Override
@@ -1078,10 +1087,33 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void onSaveCommands(java.io.File file) {
+        if (file != null) {
+            try (java.io.FileWriter writer = new java.io.FileWriter(file)) {
+                writer.write(model.getProgram());
+                System.out.println("Gdx3DView: Commands saved successfully to " + file.getAbsolutePath());
+            } catch (java.io.IOException e) {
+                e.printStackTrace();
+                System.err.println("Gdx3DView: Error saving commands: " + e.getMessage());
+            }
+        }
     }
 
     @Override
     public void onLoadCommands(java.io.File file) {
+        if (file != null && file.exists()) {
+            try (java.util.Scanner scanner = new java.util.Scanner(file)) {
+                StringBuilder sb = new StringBuilder();
+                while (scanner.hasNextLine()) {
+                    sb.append(scanner.nextLine()).append("\n");
+                }
+                List<String> errors = model.setProgram(sb.toString());
+                handleScriptErrors(errors);
+                System.out.println("Gdx3DView: Commands loaded successfully from " + file.getAbsolutePath());
+            } catch (java.io.FileNotFoundException e) {
+                e.printStackTrace();
+                System.err.println("Gdx3DView: Error loading commands: " + e.getMessage());
+            }
+        }
     }
 
     // View implementation
@@ -1191,6 +1223,11 @@ public class Gdx3DView extends ApplicationAdapter
                 // Refresh references
                 trackMaker = new RailTrackMaker(this);
                 audioController = new letrain.audio.AudioController(model);
+
+                // Re-establish script listeners
+                if (model.getProgram() != null && !model.getProgram().isEmpty()) {
+                    model.setProgram(model.getProgram());
+                }
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1416,5 +1453,25 @@ public class Gdx3DView extends ApplicationAdapter
         dispose();
         Gdx.app.exit();
         System.exit(0);
+    }
+
+    @Override
+    public void showMessage(String title, String message) {
+        Gdx.app.postRunnable(() -> {
+            com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog = new com.badlogic.gdx.scenes.scene2d.ui.Dialog(title,
+                    skin) {
+                @Override
+                protected void result(Object object) {
+                    this.remove();
+                }
+            };
+            dialog.text(message);
+            dialog.button("OK");
+            dialog.pack();
+            dialog.setPosition(
+                    (stage.getWidth() - dialog.getWidth()) / 2,
+                    (stage.getHeight() - dialog.getHeight()) / 2);
+            stage.addActor(dialog);
+        });
     }
 }

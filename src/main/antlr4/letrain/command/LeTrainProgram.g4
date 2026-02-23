@@ -1,21 +1,50 @@
 grammar LeTrainProgram;
 
-start : command+;
-command : 
-    'sensor' NUMBER 'on' 'train' (NUMBER)? (trainAction)? (dir)? 
-    commandBlock
+start : statement+;
+
+statement : trigger commandBlock;
+
+trigger : 
+      sensorSelector    'on' trainSelector trainEvent  
+    | forkSelector      'on' trainSelector trainEvent 
+    | semaphoreSelector 'on' trainSelector trainEvent 
+    | stationSelector   'on' (trainSelector trainEvent | trainEvent trainSelector | stationEvent) 
     ;
-trainAction : 'enter' | 'exit' ;
+
+sensorSelector    : 'sensor' NUMBER;
+forkSelector      : 'fork' NUMBER;
+semaphoreSelector : 'semaphore' NUMBER;
+stationSelector   : 'station' NUMBER;
+trainSelector     : 'train' (NUMBER)?;
+
+trainEvent   : 'enter' | 'exit' (sense)?;
+stationEvent : 'load' | 'unload';
+
 commandBlock : '{' commandItem* '}';
+
 commandItem : (
-    'semaphore' NUMBER semaphoreAction
-    | 'fork' NUMBER dir 
-    | 'train' (speedLimit)? 'speed' NUMBER     
+      semaphoreSelector  semaphoreAction
+    | forkSelector       forkAction 
+    | (trainSelector|trainExtractor) trainAction     
+    | stationSelector    stationAction
     )
     ';'
     ;
-semaphoreAction: 'open' | 'closed'; 
-speedLimit: 'max' | 'min';   
-dir: 'E'| 'NE' | 'N' | 'NW' | 'W' | 'SW' | 'S' | 'SE'; 
+
+trainExtractor : 'train at' placeSelector;
+placeSelector  : forkSelector | semaphoreSelector | stationSelector | sensorSelector;
+
+semaphoreAction : 'set' semaphoreStatus;
+forkAction      : 'set' forkDirection;
+trainAction     : 'set' trainSense | 'accelerate' | 'decelerate' | 'set' 'speed'? trainSpeed | 'stop';
+stationAction   : 'load' | 'unload';
+
+semaphoreStatus : 'open' | 'closed';
+forkDirection   : dir | 'straight' | 'curved' | 'flip';
+trainSense      : 'forward' | 'backward';
+trainSpeed      : NUMBER;
+
+sense : 'forward' | 'backward';
+dir   : 'E'| 'NE' | 'N' | 'NW' | 'W' | 'SW' | 'S' | 'SE'; 
 NUMBER : [0-9]+;
 WS : [ \t\r\n]+ -> skip;

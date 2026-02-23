@@ -1,237 +1,261 @@
 package letrain.command;
 
 import java.io.Serializable;
-import java.util.function.Consumer;
+import java.util.ArrayList;
+import java.util.List;
 
-import letrain.map.Dir;
 import letrain.mvp.Model;
+import letrain.track.ForkEventListener;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.SensorEventListener;
+import letrain.track.StationEventListener;
 import letrain.track.rail.ForkRailTrack;
-import letrain.utils.Pair;
 import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Locomotive.SpeedLimitType;
 import letrain.vehicle.impl.rail.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CommandManager extends LeTrainProgramBaseVisitor<Void> implements Serializable {
+public class CommandManager extends LeTrainProgramBaseVisitor<Object> implements Serializable {
     private static final long serialVersionUID = 1L;
     static Logger log = LoggerFactory.getLogger(CommandManager.class);
-    String sensorId;
-    String trainId;
-    String trainAction;
-    String trainDir;
     Model model;
 
     public CommandManager(Model model) {
         this.model = model;
     }
 
-    @Override
-    public Void visitCommand(LeTrainProgramParser.CommandContext ctx) {
-        sensorId = ctx.NUMBER(0).getText();
-        trainId = ctx.NUMBER().size() > 1 ? ctx.NUMBER(1).getText() : "";
-        trainAction = ctx.trainAction() != null ? ctx.trainAction().getText() : "";
-        trainDir = ctx.dir() != null ? ctx.dir().getText() : "";
-        return super.visitCommand(ctx);
+    interface ExecutableCommand extends Serializable {
+        void execute(Train contextTrain);
     }
 
     @Override
-    public Void visitCommandItem(LeTrainProgramParser.CommandItemContext ctx) {
-        final String semaphoreId;
-        final String semaphoreActionText;
-        final SemaphoreAction semaphoreAction;
+    public Object visitStatement(LeTrainProgramParser.StatementContext ctx) {
+        List<ExecutableCommand> commands = (List<ExecutableCommand>) visit(ctx.commandBlock());
+        setupTrigger(ctx.trigger(), commands);
+        return null;
+    }
 
-        final String forkId;
-        final String forkDirectionText;
-        final ForkDirAction forkDirAction;
+    @Override
+    public Object visitCommandBlock(LeTrainProgramParser.CommandBlockContext ctx) {
+        List<ExecutableCommand> commands = new ArrayList<>();
+        for (LeTrainProgramParser.CommandItemContext itemCtx : ctx.commandItem()) {
+            commands.add((ExecutableCommand) visit(itemCtx));
+        }
+        return commands;
+    }
 
-        final String speedLimitType;
-        final String speedLimitText;
-        final TrainSpeedAction trainSpeedAction;
+    private void setupTrigger(LeTrainProgramParser.TriggerContext ctx, List<ExecutableCommand> commands) {
+        if (ctx.sensorSelector() != null) {
+            int id = Integer.parseInt(ctx.sensorSelector().NUMBER().getText());
+            Sensor sensor = model.getSensor(id);
+            if (sensor != null) {
+                Integer filterTrainId = (ctx.trainSelector() != null && ctx.trainSelector().NUMBER() != null)
+                        ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
+                        : null;
+                String event = ctx.trainEvent().getChild(0).getText();
+                sensor.addSensorEventListener(new SensorEventListener() {
+                    @Override
+                    public void onEnterTrain(Train train) {
+                        if ("enter".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                            commands.forEach(c -> c.execute(train));
+                        }
+                    }
 
+                    @Override
+                    public void onExitTrain(Train train) {
+                        if ("exit".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                            commands.forEach(c -> c.execute(train));
+                        }
+                    }
+                });
+            }
+        } else if (ctx.stationSelector() != null) {
+            int id = Integer.parseInt(ctx.stationSelector().NUMBER().getText());
+            letrain.track.Station station = model.getStation(id);
+            if (station != null) {
+                if (ctx.stationEvent() != null) {
+                    String event = ctx.stationEvent().getText();
+                    station.addStationEventListener(new StationEventListener() {
+                        @Override
+                        public void onLoad(Train train) {
+                            if ("load".equals(event))
+                                commands.forEach(c -> c.execute(train));
+                        }
+
+                        @Override
+                        public void onUnload(Train train) {
+                            if ("unload".equals(event))
+                                commands.forEach(c -> c.execute(train));
+                        }
+                    });
+                } else if (ctx.trainEvent() != null) {
+                    Integer filterTrainId = (ctx.trainSelector() != null && ctx.trainSelector().NUMBER() != null)
+                            ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
+                            : null;
+                    String event = ctx.trainEvent().getChild(0).getText();
+                    station.addStationEventListener(new StationEventListener() {
+                        @Override
+                        public void onEnterTrain(Train train) {
+                            if ("enter".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                                commands.forEach(c -> c.execute(train));
+                            }
+                        }
+
+                        @Override
+                        public void onExitTrain(Train train) {
+                            if ("exit".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                                commands.forEach(c -> c.execute(train));
+                            }
+                        }
+                    });
+                }
+            }
+        } else if (ctx.forkSelector() != null) {
+            int id = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
+            ForkRailTrack fork = model.getFork(id);
+            if (fork != null) {
+                if (ctx.trainEvent() != null) {
+                    Integer filterTrainId = (ctx.trainSelector() != null && ctx.trainSelector().NUMBER() != null)
+                            ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
+                            : null;
+                    String event = ctx.trainEvent().getChild(0).getText();
+                    fork.addForkEventListener(new ForkEventListener() {
+                        @Override
+                        public void onEnterTrain(Train train) {
+                            if ("enter".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                                commands.forEach(c -> c.execute(train));
+                            }
+                        }
+
+                        @Override
+                        public void onExitTrain(Train train) {
+                            if ("exit".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                                commands.forEach(c -> c.execute(train));
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    @Override
+    public Object visitCommandItem(LeTrainProgramParser.CommandItemContext ctx) {
         if (ctx.semaphoreAction() != null) {
-            semaphoreId = ctx.NUMBER().getText();
-            semaphoreActionText = ctx.semaphoreAction().getText();
-            semaphoreAction = new SemaphoreAction();
-
-            forkDirAction = null;
-            forkId = null;
-            forkDirectionText = null;
-
-            trainSpeedAction = null;
-            speedLimitType = null;
-            speedLimitText = null;
-        } else if (ctx.dir() != null) {
-            semaphoreId = null;
-            semaphoreActionText = null;
-            semaphoreAction = null;
-
-            forkId = ctx.NUMBER().getText();
-            forkDirectionText = ctx.dir().getText();
-            forkDirAction = new ForkDirAction();
-
-            trainSpeedAction = null;
-            speedLimitType = null;
-            speedLimitText = null;
-        } else if (ctx.speedLimit() != null) {
-            semaphoreId = null;
-            semaphoreActionText = null;
-            semaphoreAction = null;
-
-            forkDirAction = null;
-            forkId = null;
-            forkDirectionText = null;
-
-            trainSpeedAction = new TrainSpeedAction();
-            speedLimitType = ctx.speedLimit().getText();
-            speedLimitText = ctx.NUMBER().getText();
-        } else {
-            semaphoreAction = null;
-            semaphoreId = null;
-            semaphoreActionText = null;
-
-            forkDirAction = null;
-            forkId = null;
-            forkDirectionText = null;
-
-            trainSpeedAction = null;
-            speedLimitType = null;
-            speedLimitText = null;
-        }
-
-        Sensor sensor = model.getSensor(Integer.parseInt(sensorId));
-        if (sensor == null) {
-            return null;
-        }
-        if ("enter".equals(trainAction)) {
-            sensor.addSensorEventListener(new SensorEventListener() {
-                @Override
-                public void onEnterTrain(Train train) {
-                    if (forkDirAction != null) {
-                        doForkAction(forkId, forkDirectionText, forkDirAction, train);
-                    }
-                    if (semaphoreAction != null) {
-                        doSemaphoreAction(semaphoreId, semaphoreActionText, semaphoreAction);
-                    }
-                    if (trainSpeedAction != null) {
-                        doTrainSpeedAction(speedLimitType, speedLimitText, trainSpeedAction, train);
-                    }
+            int id = Integer.parseInt(ctx.semaphoreSelector().NUMBER().getText());
+            String status = ctx.semaphoreAction().semaphoreStatus().getText();
+            return (ExecutableCommand) (contextTrain) -> {
+                RailSemaphore s = model.getSemaphore(id);
+                if (s != null)
+                    s.setOpen("open".equals(status));
+            };
+        } else if (ctx.forkAction() != null) {
+            int id = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
+            String dirText = ctx.forkAction().forkDirection() != null ? ctx.forkAction().forkDirection().getText()
+                    : null;
+            return (ExecutableCommand) (contextTrain) -> {
+                ForkRailTrack f = model.getFork(id);
+                if (f != null) {
+                    if ("straight".equals(dirText) || "normal".equals(dirText))
+                        f.setNormalRoute();
+                    else if ("curved".equals(dirText) || "alt".equals(dirText))
+                        f.setAlternativeRoute();
+                    else
+                        f.flipRoute();
                 }
-            });
-        } else if ("exit".equals(trainAction)) {
-            sensor.addSensorEventListener(new SensorEventListener() {
-                @Override
-                public void onExitTrain(Train train) {
-                    if (forkDirAction != null) {
-                        doForkAction(forkId, forkDirectionText, forkDirAction, train);
-                    }
-                    if (semaphoreAction != null) {
-                        doSemaphoreAction(semaphoreId, semaphoreActionText, semaphoreAction);
-                    }
-                }
-            });
-        } else {
-            sensor.addSensorEventListener(new SensorEventListener() {
-                @Override
-                public void onEnterTrain(Train train) {
-                    if (forkDirAction != null) {
-                        doForkAction(forkId, forkDirectionText, forkDirAction, train);
-                    }
-                    if (semaphoreAction != null) {
-                        doSemaphoreAction(semaphoreId, semaphoreActionText, semaphoreAction);
-                    }
-                }
-            });
-            sensor.addSensorEventListener(new SensorEventListener() {
-                @Override
-                public void onExitTrain(Train train) {
-                    if (forkDirAction != null) {
-                        doForkAction(forkId, forkDirectionText, forkDirAction, train);
-                    }
-                    if (semaphoreAction != null) {
-                        doSemaphoreAction(semaphoreId, semaphoreActionText, semaphoreAction);
-                    }
-                }
-            });
-        }
-        return super.visitCommandItem(ctx);
-    }
+            };
+        } else if (ctx.trainAction() != null) {
+            String actionText = ctx.trainAction().getText();
+            ExecutableCommand baseAction;
 
-    void doForkAction(final String forkId, final String forkDirection,
-            final ForkDirAction forkDirConsumer, Train train) {
-        if (trainId != null && !trainId.isEmpty()) {
-            if (Integer.parseInt(trainId) != train.getId()) {
-                return;
-            }
-        }
-        ForkRailTrack fork = model.getFork(Integer.parseInt(forkId));
-        forkDirConsumer.accept(new Pair<ForkRailTrack, Dir>(fork, Dir.valueOf(forkDirection)));
-    }
-
-    void doSemaphoreAction(final String semaphoreId, final String semaphoreState,
-            final SemaphoreAction semaphoreStateConsumer) {
-        RailSemaphore semaphore = model.getSemaphore(Integer.parseInt(semaphoreId));
-        Boolean state = semaphoreState.toUpperCase().equals("OPEN") ? true : false;
-        semaphoreStateConsumer.accept(new Pair<RailSemaphore, Boolean>(semaphore,
-                state));
-    }
-
-    void doTrainSpeedAction(final String speedLimitType, final String speedLimit,
-            final TrainSpeedAction trainSpeedConsumer, Train train) {
-        if (trainId != null && !trainId.isEmpty()) {
-            if (Integer.parseInt(trainId) != train.getId()) {
-                return;
-            }
-        }
-        SpeedLimitType type;
-        if (speedLimitType.toUpperCase().equals("MAX")) {
-            type = SpeedLimitType.MAX_SPEED;
-        } else {
-            type = SpeedLimitType.MIN_SPEED;
-        }
-        trainSpeedConsumer.accept(new Pair<Train, Pair<SpeedLimitType, Integer>>(
-                train,
-                new Pair<SpeedLimitType, Integer>(type, Integer.parseInt(speedLimit))));
-    }
-
-    class SemaphoreAction implements Serializable, Consumer<Pair<RailSemaphore, Boolean>> {
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public void accept(Pair<RailSemaphore, Boolean> input) {
-            input.getFirst().setOpen(input.getSecond());
-        }
-    }
-
-    class ForkDirAction implements Serializable, Consumer<Pair<ForkRailTrack, Dir>> {
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public void accept(Pair<ForkRailTrack, Dir> input) {
-            if (input.getFirst().getAlternativeRoute().getSecond().equals(input.getSecond())) {
-                input.getFirst().setAlternativeRoute();
+            if (ctx.trainAction().trainSpeed() != null) {
+                int speed = Integer.parseInt(ctx.trainAction().trainSpeed().getText());
+                baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).setSpeed(speed);
+            } else if (actionText.contains("accelerate")) {
+                baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).incSpeed();
+            } else if (actionText.contains("decelerate")) {
+                baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).decSpeed();
+            } else if (ctx.trainAction().trainSense() != null) {
+                boolean forward = "forward".equals(ctx.trainAction().trainSense().getText());
+                baseAction = (t) -> {
+                    Locomotive l = (Locomotive) t.getDirectorLinker();
+                    if (l.isReversed() == forward)
+                        l.toggleReversed();
+                };
+            } else if (actionText.contains("stop")) {
+                baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).setSpeed(0);
             } else {
-                input.getFirst().setNormalRoute();
+                baseAction = (t) -> {
+                };
             }
+
+            if (ctx.trainSelector() != null) {
+                if (ctx.trainSelector().NUMBER() != null) {
+                    int id = Integer.parseInt(ctx.trainSelector().NUMBER().getText());
+                    return (ExecutableCommand) (contextTrain) -> {
+                        Train target = model.getTrainFromLocomotiveId(id);
+                        if (target != null)
+                            baseAction.execute(target);
+                    };
+                } else {
+                    return (ExecutableCommand) (contextTrain) -> {
+                        if (contextTrain != null)
+                            baseAction.execute(contextTrain);
+                    };
+                }
+            } else if (ctx.trainExtractor() != null) {
+                LeTrainProgramParser.PlaceSelectorContext pCtx = ctx.trainExtractor().placeSelector();
+                return (ExecutableCommand) (contextTrain) -> {
+                    Train target = findTrainAtPlace(pCtx);
+                    if (target != null)
+                        baseAction.execute(target);
+                };
+            }
+        } else if (ctx.stationAction() != null) {
+            int id = Integer.parseInt(ctx.stationSelector().NUMBER().getText());
+            String act = ctx.stationAction().getText();
+            log.info("Station command visit: station {} action {}", id, act);
+            return (ExecutableCommand) (contextTrain) -> {
+                letrain.track.Station s = model.getStation(id);
+                if (s != null && contextTrain != null) {
+                    if ("load".equals(act)) {
+                        log.info("Triggering LOAD for train {} at station {}", contextTrain.getId(), id);
+                        contextTrain.startLoadProcess(s);
+                    } else if ("unload".equals(act)) {
+                        log.info("Triggering UNLOAD for train {} at station {}", contextTrain.getId(), id);
+                        contextTrain.startUnloadProcess(s);
+                    }
+                } else {
+                    log.warn("Station action skip: station {} exists: {}, train exists: {}", id, s != null,
+                            contextTrain != null);
+                }
+            };
         }
+        return (ExecutableCommand) (ct) -> {
+        };
     }
 
-    class TrainSpeedAction implements Serializable, Consumer<Pair<Train, Pair<SpeedLimitType, Integer>>> {
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public void accept(Pair<Train, Pair<SpeedLimitType, Integer>> input) {
-            Locomotive locomotive = (Locomotive) (input.getFirst().getDirectorLinker());
-            Integer speed = input.getSecond().getSecond();
-            if (input.getSecond().getFirst() == SpeedLimitType.MAX_SPEED) {
-                locomotive.setMaxSpeed(speed);
-            } else {
-                locomotive.setMinSpeed(speed);
+    private Train findTrainAtPlace(LeTrainProgramParser.PlaceSelectorContext ctx) {
+        if (ctx.stationSelector() != null) {
+            int id = Integer.parseInt(ctx.stationSelector().NUMBER().getText());
+            letrain.track.Station s = model.getStation(id);
+            if (s != null) {
+                for (Locomotive l : model.getLocomotives()) {
+                    if (l.getTrack() != null && l.getTrack().getSensor() == s)
+                        return l.getTrain();
+                }
+            }
+        } else if (ctx.sensorSelector() != null) {
+            int id = Integer.parseInt(ctx.sensorSelector().NUMBER().getText());
+            Sensor s = model.getSensor(id);
+            if (s != null) {
+                for (Locomotive l : model.getLocomotives()) {
+                    if (l.getTrack() != null && l.getTrack().getSensor() == s)
+                        return l.getTrain();
+                }
             }
         }
+        return null;
     }
-
 }

@@ -27,12 +27,20 @@
         <appender-ref ref="FILE" />
     </appender>
 
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <root level="debug">
         <appender-ref ref="ASYNC_FILE" />
+        <appender-ref ref="STDOUT" />
     </root>
 
     <logger name="letrain" level="DEBUG" additivity="false">
         <appender-ref ref="ASYNC_FILE" />
+        <appender-ref ref="STDOUT" />
     </logger>
 
     <logger name="ErrorFileLogger" level="DEBUG">

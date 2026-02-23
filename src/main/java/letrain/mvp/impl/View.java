@@ -366,6 +366,13 @@ public class View implements letrain.mvp.View {
     }
 
     protected void setEndOfGame(boolean endOfGame) {
+        this.screen.doResizeIfNecessary();
         this.endOfGame = endOfGame;
+    }
+
+    @Override
+    public void showMessage(String title, String message) {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui, title, message);
     }
 }

@@ -52,6 +52,7 @@ public class Locomotive extends Linker implements Tractor {
         showingDirTurns = 5;
         if (getTrain() != null) {
             getTrain().refreshLinkersDirection();
+            getTrain().notifySenseChanged(!isReversed());
         }
     }
 
@@ -79,7 +80,7 @@ public class Locomotive extends Linker implements Tractor {
         boolean moved = false;
         if (isDestroying()) {
             return moved;
-        }        
+        }
 
         if (isDirectorLinker()) {
             // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
@@ -107,18 +108,28 @@ public class Locomotive extends Linker implements Tractor {
         this.speed++;
         limitSpeed();
         resetTurnsIfNeeded();
+        if (getTrain() != null) {
+            getTrain().notifySpeedChanged(this.speed);
+        }
     }
 
     public void decSpeed() {
         this.speed--;
         limitSpeed();
         resetTurnsIfNeeded();
+        if (getTrain() != null) {
+            getTrain().notifySpeedChanged(this.speed);
+        }
     }
 
     public void setSpeed(int speed) {
+        int oldSpeed = this.speed;
         this.speed = speed;
         limitSpeed();
         resetTurnsIfNeeded();
+        if (getTrain() != null && oldSpeed != this.speed) {
+            getTrain().notifySpeedChanged(this.speed);
+        }
     }
 
     private void limitSpeed() {

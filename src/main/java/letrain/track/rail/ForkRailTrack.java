@@ -1,16 +1,32 @@
 package letrain.track.rail;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.map.impl.ForkRouter;
+import letrain.track.ForkEventListener;
 import letrain.utils.Pair;
 import letrain.visitor.Visitor;
 
 public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     int id;
+    private List<ForkEventListener> listeners = new ArrayList<>();
+
+    public void addForkEventListener(ForkEventListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeForkEventListener(ForkEventListener listener) {
+        listeners.remove(listener);
+    }
+
+    public void removeAllForkEventListeners() {
+        listeners.clear();
+    }
 
     public ForkRailTrack(int id) {
         setId(id);
@@ -48,17 +64,33 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     @Override
     public void setAlternativeRoute() {
+        boolean changed = !getRouter().isUsingAlternativeRoute();
         getRouter().setAlternativeRoute();
+        if (changed) {
+            for (ForkEventListener listener : listeners) {
+                listener.onDirectionChanged(false);
+            }
+        }
     }
 
     @Override
     public void setNormalRoute() {
+        boolean changed = getRouter().isUsingAlternativeRoute();
         getRouter().setNormalRoute();
+        if (changed) {
+            for (ForkEventListener listener : listeners) {
+                listener.onDirectionChanged(true);
+            }
+        }
     }
 
     @Override
     public boolean flipRoute() {
-        return getRouter().flipRoute();
+        boolean ret = getRouter().flipRoute();
+        for (ForkEventListener listener : listeners) {
+            listener.onDirectionChanged(!getRouter().isUsingAlternativeRoute());
+        }
+        return ret;
     }
 
     @Override

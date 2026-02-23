@@ -58,4 +58,6 @@ public interface View {
     public int getCols();
 
     public int getRows();
+
+    void showMessage(String title, String message);
 }

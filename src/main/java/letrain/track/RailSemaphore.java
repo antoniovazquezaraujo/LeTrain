@@ -16,8 +16,31 @@ public class RailSemaphore implements Renderable, Serializable {
         return open;
     }
 
+    private java.util.List<SemaphoreEventListener> listeners = new java.util.ArrayList<>();
+
+    public void addSemaphoreEventListener(SemaphoreEventListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeSemaphoreEventListener(SemaphoreEventListener listener) {
+        listeners.remove(listener);
+    }
+
+    public void removeAllSemaphoreEventListeners() {
+        listeners.clear();
+    }
+
     public void setOpen(boolean open) {
-        this.open = open;
+        if (this.open != open) {
+            this.open = open;
+            for (SemaphoreEventListener listener : listeners) {
+                if (open) {
+                    listener.onOpen();
+                } else {
+                    listener.onClosed();
+                }
+            }
+        }
     }
 
     public Point getPosition() {

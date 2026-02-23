@@ -485,16 +485,55 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
-    public void setProgram(String program) {
-        CharStream input = CharStreams.fromString(program);
-        LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
-
-        LeTrainProgramParser.StartContext sintaxTree = parser.start();
-        CommandManager manager = new CommandManager(this);
-        manager.visit(sintaxTree);
+    public List<String> setProgram(String program) {
         this.program = program;
+        clearAllAutomationListeners();
+        log.info("Setting new automation program. Available stations:");
+        getStations()
+                .forEach(s -> log.info(" - Station {}: Role={}, Cargo={}", s.getId(), s.getRole(), s.getCargoType()));
+        List<String> errors = new java.util.ArrayList<>();
+
+        try {
+            CharStream input = CharStreams.fromString(program);
+            LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
+
+            parser.removeErrorListeners();
+            parser.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
+                @Override
+                public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer, Object offendingSymbol,
+                        int line,
+                        int charPositionInLine, String msg, org.antlr.v4.runtime.RecognitionException e) {
+                    String errorMsg = "Syntax error at line " + line + ":" + charPositionInLine + " " + msg;
+                    log.error(errorMsg);
+                    errors.add(errorMsg);
+                }
+            });
+
+            LeTrainProgramParser.StartContext sintaxTree = parser.start();
+            CommandManager manager = new CommandManager(this);
+            manager.visit(sintaxTree);
+        } catch (Exception e) {
+            log.error("Error parsing or executing automation program", e);
+            errors.add("Critical error: " + e.getMessage());
+        }
+        return errors;
+    }
+
+    private void clearAllAutomationListeners() {
+        for (Sensor sensor : sensors) {
+            sensor.removeAllSensorEventListeners();
+        }
+        for (Station station : stations) {
+            station.removeAllStationEventListeners();
+        }
+        for (ForkRailTrack fork : forks) {
+            fork.removeAllForkEventListeners();
+        }
+        for (RailSemaphore semaphore : semaphores) {
+            semaphore.removeAllSemaphoreEventListeners();
+        }
     }
 
     @Override

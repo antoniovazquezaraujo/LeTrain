@@ -163,7 +163,7 @@ public interface Model {
 
     public void removeDestroyedTrains();
 
-    public void setProgram(String program);
+    public List<String> setProgram(String program);
 
     public String getProgram();
 

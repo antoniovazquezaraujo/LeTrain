@@ -22,14 +22,10 @@ import java.util.List;
 
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
-import letrain.command.CommandManager;
-import letrain.command.LeTrainProgramLexer;
-import letrain.command.LeTrainProgramParser;
 import letrain.map.Dir;
 import letrain.map.Page;
 import letrain.map.Point;
 import letrain.track.CargoTypes;
-import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Linker;
@@ -40,7 +36,6 @@ import letrain.visitor.InfoVisitor;
 import letrain.visitor.RenderVisitor;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -907,34 +902,21 @@ public class CompactPresenter implements letrain.mvp.Presenter {
         if (input == null) {
             return;
         }
-        for (Sensor sensor : model.getSensors()) {
-            sensor.removeAllSensorEventListeners();
-        }
-        LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
-
-        LeTrainProgramParser.StartContext sintaxTree = parser.start();
-        CommandManager manager = new CommandManager(model);
-        manager.visit(sintaxTree);
-        model.setProgram(input.toString());
+        List<String> errors = model.setProgram(input.toString());
+        handleScriptErrors(errors);
     }
 
     @Override
     public void onEditCommands(String content) {
-        // CharStream input = CharStreams.fromString(content);
-        for (Sensor sensor : model.getSensors()) {
-            sensor.removeAllSensorEventListeners();
+        List<String> errors = model.setProgram(content);
+        handleScriptErrors(errors);
+    }
+
+    private void handleScriptErrors(List<String> errors) {
+        if (errors != null && !errors.isEmpty()) {
+            String combinedErrors = String.join("\n", errors);
+            view.showMessage("Script Errors", combinedErrors);
         }
-        // LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
-        // CommonTokenStream tokens = new CommonTokenStream(lexer);
-        // LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
-
-        // LeTrainProgramParser.StartContext sintaxTree = parser.start();
-        // CommandManager manager = new CommandManager(model);
-        // manager.visit(sintaxTree);
-        model.setProgram(content);
-
     }
 
     @Override

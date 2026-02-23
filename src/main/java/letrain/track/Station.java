@@ -1,9 +1,38 @@
 package letrain.track;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import letrain.vehicle.impl.rail.Train;
 import letrain.visitor.Visitor;
 
 public class Station extends Sensor {
+
+    private List<StationEventListener> stationListeners = new ArrayList<>();
+
+    public void addStationEventListener(StationEventListener listener) {
+        stationListeners.add(listener);
+    }
+
+    public void removeStationEventListener(StationEventListener listener) {
+        stationListeners.remove(listener);
+    }
+
+    public void removeAllStationEventListeners() {
+        stationListeners.clear();
+    }
+
+    public void notifyLoad(Train train) {
+        for (StationEventListener l : stationListeners) {
+            l.onLoad(train);
+        }
+    }
+
+    public void notifyUnload(Train train) {
+        for (StationEventListener l : stationListeners) {
+            l.onUnload(train);
+        }
+    }
 
     public Station(int id) {
         super(id);
@@ -12,11 +41,17 @@ public class Station extends Sensor {
     public void onEnterTrain(Train train) {
         super.onEnterTrain(train);
         train.setStationId(getId());
+        for (StationEventListener l : stationListeners) {
+            l.onEnterTrain(train);
+        }
     }
 
     public void onExitTrain(Train train) {
-        super.onEnterTrain(train);
+        super.onExitTrain(train);
         train.setStationId(0);
+        for (StationEventListener l : stationListeners) {
+            l.onExitTrain(train);
+        }
     }
 
     @Override
