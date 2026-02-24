@@ -52,6 +52,7 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model ballastModel;
     private com.badlogic.gdx.graphics.g3d.Model bridgePillarModel;
     private com.badlogic.gdx.graphics.g3d.Model tunnelPortalModel;
+    private com.badlogic.gdx.graphics.g3d.Model terrainWallModel;
     private com.badlogic.gdx.graphics.g3d.Model semaphoreOpenModel;
     private com.badlogic.gdx.graphics.g3d.Model semaphoreClosedModel;
     private com.badlogic.gdx.graphics.g3d.Model sensorModel;
@@ -296,9 +297,10 @@ public class Gdx3DRenderer implements Visitor {
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
             // Pilar de puente (columna vertical)
-            bridgePillarModel = modelBuilder.createBox(0.3f, 0.5f, 0.3f,
+            // Altura base 1.0 para escalar fácilmente
+            bridgePillarModel = modelBuilder.createBox(0.4f, 1.0f, 0.4f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.4f, 0.35f, 0.3f, 1f))),
+                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.5f, 0.5f, 0.5f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
@@ -306,6 +308,14 @@ public class Gdx3DRenderer implements Visitor {
             tunnelPortalModel = modelBuilder.createBox(1.0f, 1.2f, 1.0f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(new com.badlogic.gdx.graphics.Color(0.15f, 0.15f, 0.15f, 1f))),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Pared de terreno (para bordes con agua)
+            // 1.0 de ancho, 2.1 de alto (para solapar un poco), 0.05 de grosor
+            terrainWallModel = modelBuilder.createBox(1.0f, 2.1f, 0.05f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.GRAY)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
         }
@@ -410,6 +420,22 @@ public class Gdx3DRenderer implements Visitor {
             drawHalfTrack(track.getPosition(), d1, true, shortenL1, shortenR1);
             drawHalfTrack(track.getPosition(), d2, true, shortenL2, shortenR2);
         });
+
+        // Si la vía está sobre agua, ponemos un pilar
+        if (modelRef != null && modelRef.getGroundMap() != null) {
+            Integer terrain = modelRef.getGroundMap().getValueAt(track.getPosition());
+            if (terrain != null && terrain == GroundMap.WATER) {
+                ModelInstance pillar = new ModelInstance(bridgePillarModel);
+                // El agua está en y=-2.0. La vía en y=0.0.
+                // Altura del pilar = 1.9. Centro en y=-1.05 (desde -2.0 a -0.1).
+                pillar.transform.setToTranslation(
+                        track.getPosition().getX() + 0.5f,
+                        -1.05f,
+                        track.getPosition().getY() + 0.5f);
+                pillar.transform.scale(1f, 1.9f, 1f);
+                instances.add(pillar);
+            }
+        }
 
         // Fallback: si no hay rutas, usamos la dirección abierta
         if (track.getNumRoutes() == 0) {
@@ -635,6 +661,22 @@ public class Gdx3DRenderer implements Visitor {
                     track.getPosition().getY() + 0.5f + oz * 0.4f);
             instances.add(indicator);
         }
+
+        // Si el desvío está sobre agua, ponemos un pilar
+        if (modelRef != null && modelRef.getGroundMap() != null) {
+            Integer terrain = modelRef.getGroundMap().getValueAt(track.getPosition());
+            if (terrain != null && terrain == GroundMap.WATER) {
+                ModelInstance pillar = new ModelInstance(bridgePillarModel);
+                // El agua está en y=-2.0. Altura del pilar = 1.9. Centro en y=-1.05 (hasta
+                // y=-0.1).
+                pillar.transform.setToTranslation(
+                        track.getPosition().getX() + 0.5f,
+                        -1.05f,
+                        track.getPosition().getY() + 0.5f);
+                pillar.transform.scale(1f, 1.9f, 1f);
+                instances.add(pillar);
+            }
+        }
     }
 
     @Override
@@ -679,6 +721,8 @@ public class Gdx3DRenderer implements Visitor {
             semaphoreClosedModel.dispose();
         if (sensorModel != null)
             sensorModel.dispose();
+        if (terrainWallModel != null)
+            terrainWallModel.dispose();
     }
 
     @Override
@@ -1311,7 +1355,7 @@ public class Gdx3DRenderer implements Visitor {
                     break;
                 case GroundMap.WATER:
                     model = waterModel;
-                    yPosition = -0.05f;
+                    yPosition = -2.0f;
                     break;
                 case GroundMap.ROCK:
                     model = mountainModel;
@@ -1340,41 +1384,61 @@ public class Gdx3DRenderer implements Visitor {
                     instance.transform.setToTranslation(x, yPosition, z);
                     instance.transform.scale(scaleX, scaleY, scaleZ);
                     transparentInstances.add(instance);
-                    return;
+                } else {
+                    instance.transform.setToTranslation(x, yPosition, z);
+                    instance.transform.scale(scaleX, scaleY, scaleZ);
+                    instances.add(instance);
                 }
+            } else {
+                instance.transform.setToTranslation(x, yPosition, z);
+                instance.transform.scale(scaleX, scaleY, scaleZ);
+                instances.add(instance);
             }
 
-            instance.transform.setToTranslation(x, yPosition, z);
-            instance.transform.scale(scaleX, scaleY, scaleZ);
-            instances.add(instance);
+            // Si no es agua, comprobamos vecinos para poner "paredes" hacia el agua
+            if (type != GroundMap.WATER && modelRef != null && modelRef.getGroundMap() != null) {
+                int gx = ground.getPosition().getX();
+                int gy = ground.getPosition().getY();
+
+                // Color de la pared: si es roca, color montaña. Si no, color tierra.
+                com.badlogic.gdx.graphics.Color wallColor = (type == GroundMap.ROCK)
+                        ? new com.badlogic.gdx.graphics.Color(0.5f, 0.4f, 0.3f, 1f)
+                        : new com.badlogic.gdx.graphics.Color(0.4f, 0.6f, 0.3f, 1f);
+
+                checkAndAddWall(gx, gy - 1, x, -1.05f, z - 0.5f, 0, wallColor); // Norte
+                checkAndAddWall(gx, gy + 1, x, -1.05f, z + 0.5f, 0, wallColor); // Sur
+                checkAndAddWall(gx - 1, gy, x - 0.5f, -1.05f, z, 90, wallColor); // Oeste
+                checkAndAddWall(gx + 1, gy, x + 0.5f, -1.05f, z, 90, wallColor); // Este
+            }
+        }
+    }
+
+    private void checkAndAddWall(int gx, int gy, float x, float y, float z, float rotationY,
+            com.badlogic.gdx.graphics.Color color) {
+        Integer neighborType = modelRef.getGroundMap().getValueAt(gx, gy);
+        if (neighborType != null && neighborType == GroundMap.WATER) {
+            ModelInstance wall = new ModelInstance(terrainWallModel);
+            wall.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
+            wall.transform.setToTranslation(x, y, z);
+            if (rotationY != 0) {
+                wall.transform.rotate(0, 1, 0, rotationY);
+            }
+            instances.add(wall);
         }
     }
 
     @Override
     public void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack) {
-        // Renderizar pilares del puente que bajan hasta el agua
-        ModelInstance pillar = new ModelInstance(bridgePillarModel);
-        pillar.transform.setToTranslation(
-                bridgeGateRailTrack.getPosition().getX() + 0.5f,
-                -0.05f, // Posición para que el pilar baje hasta el agua (y=-0.2)
-                bridgeGateRailTrack.getPosition().getY() + 0.5f);
-        instances.add(pillar);
-
-        // Renderizar vías a nivel normal
+        // El pilar ahora se gestiona automáticamente en visitRailTrack si detecta agua.
+        // Pero por si acaso no hay agua (puente sobre tierra?), mantenemos la lógica
+        // o la unificamos.
+        // visitRailTrack ya se llama al final.
         visitRailTrack(bridgeGateRailTrack);
     }
 
     @Override
     public void visitBridgeRailTrack(BridgeRailTrack bridgeRailTrack) {
-        // Renderizar pilares del puente que bajan hasta el agua
-        ModelInstance pillar = new ModelInstance(bridgePillarModel);
-        pillar.transform.setToTranslation(
-                bridgeRailTrack.getPosition().getX() + 0.5f,
-                -0.05f, // Posición para que el pilar baje hasta el agua (y=-0.2)
-                bridgeRailTrack.getPosition().getY() + 0.5f);
-        instances.add(pillar);
-
-        // Renderizar vías a nivel normal
+        // El pilar ahora se gestiona automáticamente en visitRailTrack si detecta agua.
         visitRailTrack(bridgeRailTrack);
     }
 
