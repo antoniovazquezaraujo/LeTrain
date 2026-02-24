@@ -654,7 +654,37 @@ public class Gdx3DView extends ApplicationAdapter
                     }
                 }
             }
+            Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
+            Gdx.gl.glDepthFunc(GL20.GL_LEQUAL);
+            Gdx.gl.glDepthMask(false);
             decalBatch.flush();
+            Gdx.gl.glDepthMask(true); // Restore depth writing
+        }
+
+        // 2-PASS SHELL RENDERING for Transparent World (Mountains/Tunnels)
+        if (!renderer.getTransparentInstances().isEmpty()) {
+            // PASS 1: Depth only (Fill Z-buffer with the closest surface)
+            Gdx.gl.glColorMask(false, false, false, false);
+            Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
+            Gdx.gl.glDepthFunc(GL20.GL_LESS);
+            Gdx.gl.glDepthMask(true);
+
+            modelBatch.begin(cam);
+            modelBatch.render(renderer.getTransparentInstances(), environment);
+            modelBatch.end();
+
+            // PASS 2: Color only (Draw the closest surface only)
+            Gdx.gl.glColorMask(true, true, true, true);
+            Gdx.gl.glDepthMask(false); // No more depth writing
+            Gdx.gl.glDepthFunc(GL20.GL_LEQUAL); // Only draw what matches the Z-buffer
+
+            modelBatch.begin(cam);
+            modelBatch.render(renderer.getTransparentInstances(), environment);
+            modelBatch.end();
+
+            // Reset states
+            Gdx.gl.glDepthMask(true);
+            Gdx.gl.glDepthFunc(GL20.GL_LESS);
         }
 
         spriteBatch.begin();

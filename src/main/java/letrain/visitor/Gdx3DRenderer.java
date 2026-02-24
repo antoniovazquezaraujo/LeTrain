@@ -27,9 +27,10 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Wagon;
 
 public class Gdx3DRenderer implements Visitor {
-    private List<ModelInstance> instances = new ArrayList<>();
+    private final java.util.List<com.badlogic.gdx.graphics.g3d.ModelInstance> instances = new java.util.ArrayList<>();
+    private final java.util.List<com.badlogic.gdx.graphics.g3d.ModelInstance> transparentInstances = new java.util.ArrayList<>();
 
-    public List<ModelInstance> getInstances() {
+    public java.util.List<com.badlogic.gdx.graphics.g3d.ModelInstance> getInstances() {
         return instances;
     }
 
@@ -41,7 +42,6 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model wagonModel;
     private com.badlogic.gdx.graphics.g3d.Model highlightModel;
     private com.badlogic.gdx.graphics.g3d.Model locomotiveHighlightModel;
-    private com.badlogic.gdx.graphics.g3d.Model locomotiveSelectedModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonHighlightModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonUnlinkModel;
     private com.badlogic.gdx.graphics.g3d.Model locomotiveUnlinkModel;
@@ -58,6 +58,7 @@ public class Gdx3DRenderer implements Visitor {
     private Set<letrain.track.rail.RailTrack> selectedStationTracks = new HashSet<>();
     private com.badlogic.gdx.graphics.g3d.Model wagonJewelModel;
     private com.badlogic.gdx.graphics.g3d.Model cylinderModel;
+    private com.badlogic.gdx.graphics.g3d.Model selectionTriangleModel;
 
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
@@ -108,7 +109,7 @@ public class Gdx3DRenderer implements Visitor {
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
             // Cursor en forma de bloque triangular (prisma triangular plano)
-            cursorModel = modelBuilder.createCylinder(0.8f, 0.2f, 0.8f, 3,
+            cursorModel = modelBuilder.createCylinder(0.8f, 0.02f, 0.8f, 3,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
@@ -138,8 +139,8 @@ public class Gdx3DRenderer implements Visitor {
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
-            // Locomotora verde para seleccionada
-            locomotiveSelectedModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
+            // Triángulo de selección (Prisma triangular verde PLANO)
+            selectionTriangleModel = modelBuilder.createCylinder(0.4f, 0.02f, 0.4f, 3,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.GREEN)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
@@ -160,8 +161,8 @@ public class Gdx3DRenderer implements Visitor {
 
             // deleted unused container initializers
 
-            // Indicador de ruta en desvíos (Caja pequeña roja)
-            forkModel = modelBuilder.createBox(0.2f, 0.2f, 0.2f,
+            // Indicador de ruta en desvíos (Placa pequeña roja)
+            forkModel = modelBuilder.createBox(0.4f, 0.02f, 0.4f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.RED)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
@@ -304,6 +305,12 @@ public class Gdx3DRenderer implements Visitor {
 
     public void clear() {
         instances.clear();
+        transparentInstances.clear();
+        labels.clear();
+    }
+
+    public java.util.List<com.badlogic.gdx.graphics.g3d.ModelInstance> getTransparentInstances() {
+        return transparentInstances;
     }
 
     public void visitGroundPlane(com.badlogic.gdx.graphics.g3d.Model ground) {
@@ -509,12 +516,20 @@ public class Gdx3DRenderer implements Visitor {
 
         // El prisma triangular ya está "tumbado" (caras planas Ry), solo rotamos yaw
         // Aplicamos un desfase de -90 para que el vértice apunte a 'angle'
-        instance.transform.setToTranslation(pos.getX() + 0.5f, 0.25f, pos.getY() + 0.5f);
+        float cursorY = 0.10f;
+        instance.transform.setToTranslation(pos.getX() + 0.5f, cursorY, pos.getY() + 0.5f);
         instance.transform.rotate(0, 1, 0, angle - 90f);
         // Escalamos para afilar el cursor: más largo en X (dirección) y más estrecho en
         // Z
         instance.transform.scale(1.6f, 1f, 0.6f);
         instances.add(instance);
+
+        // X-RAY GHOST: Rendered through depth with transparency
+        ModelInstance ghost = new ModelInstance(instance);
+        ghost.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
+        ghost.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.DepthTestAttribute(
+                com.badlogic.gdx.graphics.GL20.GL_GREATER, false));
+        instances.add(ghost);
 
     }
 
@@ -608,7 +623,7 @@ public class Gdx3DRenderer implements Visitor {
             letrain.map.Dir d = route.getFirst(); // Tomamos una de las direcciones de la ruta para posicionar
             float ox = getDirX(d);
             float oz = getDirZ(d);
-            indicator.transform.setToTranslation(track.getPosition().getX() + 0.5f + ox * 0.4f, 0.25f,
+            indicator.transform.setToTranslation(track.getPosition().getX() + 0.5f + ox * 0.4f, 0.10f,
                     track.getPosition().getY() + 0.5f + oz * 0.4f);
             instances.add(indicator);
         }
@@ -695,9 +710,8 @@ public class Gdx3DRenderer implements Visitor {
             modelToUse = locomotiveUnlinkModel; // Rojo (Unlink)
         } else if (highlight) {
             modelToUse = locomotiveHighlightModel; // Amarillo (Link)
-        } else if (isSelected) {
-            modelToUse = locomotiveSelectedModel; // Verde (Seleccionada)
         }
+        // Selection color removed as requested by user
 
         ModelInstance instance = new ModelInstance(modelToUse);
 
@@ -768,54 +782,40 @@ public class Gdx3DRenderer implements Visitor {
         }
 
         instance.transform.setToTranslation(x + 0.5f, 0.6f, y + 0.5f);
-        // float angle = locomotive.getDir().getValue() * 45f; // Ya calculado arriba o
-        // default
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
 
-        // Añadir indicador de dirección: cara amarilla en el frente de la locomotora
-        com.badlogic.gdx.graphics.g3d.Material yellowFaceMaterial = new com.badlogic.gdx.graphics.g3d.Material(
-                com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                        .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW));
-
-        ModelInstance frontFace = new ModelInstance(
-                modelBuilder.createBox(0.02f, 0.82f, 0.82f, yellowFaceMaterial,
-                        com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                                | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal));
-
-        // Posicionar la cara en el frente de la locomotora (usando las mismas
-        // coordenadas interpoladas)
-        frontFace.transform.setToTranslation(
-                x + 0.5f,
-                0.6f,
-                y + 0.5f);
-        frontFace.transform.rotate(0, 1, 0, angle); // Rotar según dirección de locomotora
-        frontFace.transform.translate(0.41f, 0, 0); // Mover hacia el frente (en X local)
-        instances.add(frontFace);
+        // Añadir indicador de dirección para locomotora seleccionada (Triángulo verde
+        // PLANO encima)
+        if (isSelected) {
+            ModelInstance selectionTriangle = new ModelInstance(selectionTriangleModel);
+            selectionTriangle.transform.setToTranslation(x + 0.5f, 1.1f, y + 0.5f); // Flotando arriba
+            selectionTriangle.transform.rotate(0, 1, 0, angle);
+            // El prisma triangular (eje Y) ya es plano en el plano XZ y apunta a +X.
+            instances.add(selectionTriangle);
+        }
 
         // Añadir etiquetas a los lados
-        // Calcular vectores dirección dinámicos basados en el ángulo interpolado
-        float rad = angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
+        {
+            // Calcular vectores dirección dinámicos basados en el ángulo interpolado
+            float radL = angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
 
-        // En nuestro sistema:
-        // Angle 0 (E) -> dx=1, dz=0. cos(0)=1, -sin(0)=0. Correcto.
-        // Angle 90 (N) -> dx=0, dz=-1. cos(90)=0, -sin(90)=-1. Correcto.
-        float dx = com.badlogic.gdx.math.MathUtils.cos(rad);
-        float dz = -com.badlogic.gdx.math.MathUtils.sin(rad);
+            float dxL = com.badlogic.gdx.math.MathUtils.cos(radL);
+            float dzL = -com.badlogic.gdx.math.MathUtils.sin(radL);
 
-        // Perpendicular: (dz, -dx)
-        float perpX = dz * 0.42f;
-        float perpZ = -dx * 0.42f;
+            // Perpendicular: (dz, -dx)
+            float perpXL = dzL * 0.48f;
+            float perpZL = -dxL * 0.48f;
 
-        labels.add(new VehicleLabel(
-                new com.badlogic.gdx.math.Vector3(x + 0.5f + perpX, 0.6f, y + 0.5f + perpZ),
-                locomotive.getAspect(),
-                new com.badlogic.gdx.math.Vector3(perpX, 0, perpZ).nor()));
-
-        labels.add(new VehicleLabel(
-                new com.badlogic.gdx.math.Vector3(x + 0.5f - perpX, 0.6f, y + 0.5f - perpZ),
-                locomotive.getAspect(),
-                new com.badlogic.gdx.math.Vector3(-perpX, 0, -perpZ).nor()));
+            labels.add(new VehicleLabel(
+                    new com.badlogic.gdx.math.Vector3(x + 0.5f + perpXL, 0.4f, y + 0.5f + perpZL),
+                    locomotive.getAspect(),
+                    new com.badlogic.gdx.math.Vector3(perpXL, 0, perpZL).nor()));
+            labels.add(new VehicleLabel(
+                    new com.badlogic.gdx.math.Vector3(x + 0.5f - perpXL, 0.4f, y + 0.5f - perpZL),
+                    locomotive.getAspect(),
+                    new com.badlogic.gdx.math.Vector3(-perpXL, 0, -perpZL).nor()));
+        }
     }
 
     @Override
@@ -963,23 +963,25 @@ public class Gdx3DRenderer implements Visitor {
         }
 
         // Añadir etiquetas a los lados
-        float rad = angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
+        {
+            float radW = angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
 
-        float dx = com.badlogic.gdx.math.MathUtils.cos(rad);
-        float dz = -com.badlogic.gdx.math.MathUtils.sin(rad);
+            float dxW = com.badlogic.gdx.math.MathUtils.cos(radW);
+            float dzW = -com.badlogic.gdx.math.MathUtils.sin(radW);
 
-        // Perpendicular: (dz, -dx)
-        float perpX = dz * 0.42f;
-        float perpZ = -dx * 0.42f;
+            // Perpendicular: (dz, -dx)
+            float perpXW = dzW * 0.48f;
+            float perpZW = -dxW * 0.48f;
 
-        labels.add(new VehicleLabel(
-                new com.badlogic.gdx.math.Vector3(x + 0.5f + perpX, 0.6f, y + 0.5f + perpZ),
-                wagon.getAspect(),
-                new com.badlogic.gdx.math.Vector3(perpX, 0, perpZ).nor()));
-        labels.add(new VehicleLabel(
-                new com.badlogic.gdx.math.Vector3(x + 0.5f - perpX, 0.6f, y + 0.5f - perpZ),
-                wagon.getAspect(),
-                new com.badlogic.gdx.math.Vector3(-perpX, 0, -perpZ).nor()));
+            labels.add(new VehicleLabel(
+                    new com.badlogic.gdx.math.Vector3(x + 0.5f + perpXW, 0.4f, y + 0.5f + perpZW),
+                    wagon.getAspect(),
+                    new com.badlogic.gdx.math.Vector3(perpXW, 0, perpZW).nor()));
+            labels.add(new VehicleLabel(
+                    new com.badlogic.gdx.math.Vector3(x + 0.5f - perpXW, 0.4f, y + 0.5f - perpZW),
+                    wagon.getAspect(),
+                    new com.badlogic.gdx.math.Vector3(-perpXW, 0, -perpZW).nor()));
+        }
     }
 
     @Override
@@ -1300,6 +1302,20 @@ public class Gdx3DRenderer implements Visitor {
                 instance.materials.get(0)
                         .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(colorOverride));
             }
+
+            // Mode-based transparency for Rocks/Tunnels
+            if (type == GroundMap.ROCK || model == tunnelPortalModel) {
+                if (modelRef != null && modelRef.getMode() == letrain.mvp.Model.GameMode.RAILS) {
+                    instance.materials.get(0)
+                            .set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
+                    // No DepthTestAttribute here, we manage it globally in the Two-Pass loop
+                    instance.transform.setToTranslation(x, yPosition, z);
+                    instance.transform.scale(scaleX, scaleY, scaleZ);
+                    transparentInstances.add(instance);
+                    return;
+                }
+            }
+
             instance.transform.setToTranslation(x, yPosition, z);
             instance.transform.scale(scaleX, scaleY, scaleZ);
             instances.add(instance);
@@ -1338,11 +1354,20 @@ public class Gdx3DRenderer implements Visitor {
     public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
         // Renderizar portal del túnel como bloque negro simple
         ModelInstance portal = new ModelInstance(tunnelPortalModel);
-        portal.transform.setToTranslation(
-                tunnelGateRailTrack.getPosition().getX() + 0.5f,
-                0.6f, // Mismo nivel que montañas
-                tunnelGateRailTrack.getPosition().getY() + 0.5f);
-        instances.add(portal);
+        if (modelRef != null && modelRef.getMode() == letrain.mvp.Model.GameMode.RAILS) {
+            portal.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
+            portal.transform.setToTranslation(
+                    tunnelGateRailTrack.getPosition().getX() + 0.5f,
+                    0.6f, // Mismo nivel que montañas
+                    tunnelGateRailTrack.getPosition().getY() + 0.5f);
+            transparentInstances.add(portal);
+        } else {
+            portal.transform.setToTranslation(
+                    tunnelGateRailTrack.getPosition().getX() + 0.5f,
+                    0.6f, // Mismo nivel que montañas
+                    tunnelGateRailTrack.getPosition().getY() + 0.5f);
+            instances.add(portal);
+        }
 
         // Renderizar vías normales
         visitRailTrack(tunnelGateRailTrack);
