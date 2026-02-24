@@ -116,6 +116,10 @@ public class Locomotive extends Linker implements Tractor {
                     updateInertia();
                     resetTurns();
                     updateLimitedSpeed();
+                    // Sincronizar resets de animación en otras locomotoras
+                    getTrain().getTractors().stream()
+                            .filter(t -> t instanceof Locomotive && t != this)
+                            .forEach(t -> ((Locomotive) t).resetTurns());
                 } else {
                     // Blocked/Collision - Stop the train
                     setCurrentSpeed(0);
@@ -124,6 +128,9 @@ public class Locomotive extends Linker implements Tractor {
             } else {
                 consumeTurn();
             }
+        } else {
+            // No somos el director, pero consumimos turnos para animación suave
+            consumeTurn();
         }
         return moved;
     }
@@ -143,15 +150,11 @@ public class Locomotive extends Linker implements Tractor {
 
         if (railsSinceLastSpeedChange >= neededRails) {
             if (currentSpeed < targetSpeed) {
-                currentSpeed++;
+                setCurrentSpeed(currentSpeed + 1);
             } else {
-                currentSpeed--;
+                setCurrentSpeed(currentSpeed - 1);
             }
             railsSinceLastSpeedChange = 0;
-
-            if (getTrain() != null) {
-                getTrain().notifySpeedChanged(this.currentSpeed);
-            }
         }
     }
 
@@ -176,8 +179,20 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void setTargetSpeed(int speed) {
+        if (this.targetSpeed == speed) {
+            return;
+        }
         this.targetSpeed = speed;
         limitTargetSpeed();
+
+        // Sincronizar con el resto de locomotoras del tren
+        if (getTrain() != null) {
+            for (Tractor tractor : getTrain().getTractors()) {
+                if (tractor instanceof Locomotive && tractor != this) {
+                    ((Locomotive) tractor).setTargetSpeed(this.targetSpeed);
+                }
+            }
+        }
     }
 
     @Override
@@ -186,11 +201,20 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void setCurrentSpeed(int speed) {
+        if (this.currentSpeed == speed) {
+            return;
+        }
         this.currentSpeed = speed;
         limitCurrentSpeed();
         resetTurnsIfNeeded();
         if (getTrain() != null) {
             getTrain().notifySpeedChanged(this.currentSpeed);
+            // Sincronizar con el resto de locomotoras del tren
+            for (Tractor tractor : getTrain().getTractors()) {
+                if (tractor instanceof Locomotive && tractor != this) {
+                    ((Locomotive) tractor).setCurrentSpeed(this.currentSpeed);
+                }
+            }
         }
     }
 

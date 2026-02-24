@@ -366,6 +366,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                     if (crashedTrain != null) {
                         crashedTrain.notifyContact();
                     }
+                    return false;
                 }
             } else {
                 // System.out.println("Ojo, no hay track en " + track.getPosition() + " -> " +

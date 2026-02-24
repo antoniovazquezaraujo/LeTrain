@@ -732,9 +732,20 @@ public class Gdx3DRenderer implements Visitor {
         float y = locomotive.getPosition().getY();
         float angle = locomotive.getDir().getValue() * 45f; // Default angle
 
-        if (locomotive.getTotalTurns() >= 0) {
-            float totalDelay = (float) locomotive.getTotalTurns() + 1.0f;
-            float currentDelay = (float) locomotive.getTurns() + 1.0f - animationAlpha;
+        // Interpolación continua (Predictiva) basada en la locomotora directora (o sí
+        // mismo si es director)
+        Locomotive interpolationRef = locomotive;
+        letrain.vehicle.impl.rail.Train train = locomotive.getTrain();
+        if (train != null) {
+            letrain.vehicle.impl.Tractor director = train.getDirectorLinker();
+            if (director instanceof Locomotive) {
+                interpolationRef = (Locomotive) director;
+            }
+        }
+
+        if (interpolationRef.getTotalTurns() >= 0) {
+            float totalDelay = (float) interpolationRef.getTotalTurns() + 1.0f;
+            float currentDelay = (float) interpolationRef.getTurns() + 1.0f - animationAlpha;
             float progress = 1.0f - (currentDelay / totalDelay);
 
             // Clamp progress
@@ -759,24 +770,19 @@ public class Gdx3DRenderer implements Visitor {
                         // Ángulo inicial: Dirección actual de movimiento
                         float startAngle = locomotive.getDir().getValue() * 45f;
 
-                        // Ángulo objetivo: Dirección que tomaremos en el siguiente track
-                        // nextTrack.getDir(entryDir) nos da la dirección de salida dado una entrada.
-                        // Nuestra dirección de entrada al nextTrack es locomotive.getDir().inverse()
-                        // (Entramos desde el Lado Opuesto)
-
                         letrain.map.Dir nextDir = nextTrack.getDir(locomotive.getDir().inverse());
                         float targetAngle = nextDir != null ? nextDir.getValue() * 45f : startAngle;
 
-                        // Corregir wrapping de ángulos (360 -> 0)
-                        // Si start=315 (NW), target=0 (E). Diff = -315. Shortest = +45.
-                        // MathUtils.lerpAngleDeg maneja esto internamente? Si.
+                        // Corregir wrapping de ángulos
+                        float diff = targetAngle - startAngle;
+                        if (diff > 180)
+                            targetAngle -= 360;
+                        if (diff < -180)
+                            targetAngle += 360;
 
                         // Interpolar suavemente
                         // Usar la segunda mitad del progreso (0.5 -> 1.0) para girar DENTRO de la nueva
                         // celda
-                        // "Tienen que girar en la curva, no antes"
-                        // 0.0 -> 0.5: progress en celda anterior. rotProgress <= 0.
-                        // 0.5 -> 1.0: progress en nueva celda. rotProgress 0 -> 1.
                         float rotProgress = (progress - 0.5f) * 2.0f;
                         if (rotProgress < 0f)
                             rotProgress = 0f;
