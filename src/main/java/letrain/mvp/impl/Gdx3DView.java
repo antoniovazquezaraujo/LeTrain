@@ -82,7 +82,12 @@ public class Gdx3DView extends ApplicationAdapter
     private Stage stage;
     private Skin skin;
     private Table menuTable;
+    private Table hudTable;
     private Label descLabel;
+    private Label modeLabel;
+    private Label balanceLabel;
+    private Label trainInfoLabel;
+    private Label cargoInfoLabel;
 
     // Audio
     private letrain.audio.AudioController audioController;
@@ -186,8 +191,18 @@ public class Gdx3DView extends ApplicationAdapter
         // Label Style
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = uiFont;
-        labelStyle.fontColor = Color.YELLOW;
+        labelStyle.fontColor = Color.WHITE;
         skin.add("default", labelStyle);
+
+        Label.LabelStyle hudLabelStyle = new Label.LabelStyle();
+        hudLabelStyle.font = uiFont;
+        hudLabelStyle.fontColor = Color.CYAN;
+        skin.add("hud", hudLabelStyle);
+
+        Label.LabelStyle titleLabelStyle = new Label.LabelStyle();
+        titleLabelStyle.font = uiFont;
+        titleLabelStyle.fontColor = Color.GOLDENROD;
+        skin.add("title", titleLabelStyle);
 
         // Window Style
         Window.WindowStyle windowStyle = new Window.WindowStyle();
@@ -216,6 +231,27 @@ public class Gdx3DView extends ApplicationAdapter
         menuTable.setFillParent(true);
         menuTable.bottom();
         stage.addActor(menuTable);
+
+        // HUD Table
+        hudTable = new Table();
+        hudTable.setFillParent(true);
+        hudTable.top().left();
+        hudTable.pad(10);
+
+        // Background for HUD
+        hudTable.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.6f)));
+
+        modeLabel = new Label("MODE: -", skin, "title");
+        balanceLabel = new Label("BALANCE: $0", skin, "hud");
+        trainInfoLabel = new Label("", skin);
+        cargoInfoLabel = new Label("", skin);
+
+        hudTable.add(modeLabel).left().padBottom(5).row();
+        hudTable.add(balanceLabel).left().padBottom(10).row();
+        hudTable.add(trainInfoLabel).left().row();
+        hudTable.add(cargoInfoLabel).left().row();
+
+        stage.addActor(hudTable);
 
         descLabel = new Label("", skin);
         Table descTable = new Table();
@@ -718,6 +754,40 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     private void updateUIData() {
+        // Update HUD
+        modeLabel.setText("[GOLDENROD]MODE:[] " + model.getMode().getName().toUpperCase());
+        if (model.getEconomyManager() != null) {
+            balanceLabel.setText("[CYAN]BALANCE:[] $" + (int) model.getEconomyManager().getBalance());
+        }
+
+        letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
+        if (loco != null) {
+            int speedKmh = loco.getSpeed() * 12; // Approx conversion for visual variety
+            trainInfoLabel.setText(String.format(
+                    "[LIGHT_GRAY]TRAIN #%d[] | [WHITE]SPEED: %d km/h[] | [WHITE]NOTCH: %d[] | [GRAY]POS: (%d, %d)[]",
+                    loco.getId(), speedKmh, loco.getSpeed(),
+                    (int) loco.getPosition().getX(), (int) loco.getPosition().getY()));
+
+            letrain.vehicle.impl.rail.Train train = loco.getTrain();
+            if (train != null) {
+                letrain.track.CargoTypes cargoType = train.getTrainCargoType();
+                if (cargoType != null && cargoType != letrain.track.CargoTypes.NONE) {
+                    int totalCargo = train.getLinkers().stream()
+                            .filter(l -> l instanceof letrain.vehicle.impl.rail.Wagon)
+                            .mapToInt(l -> ((letrain.vehicle.impl.rail.Wagon) l).getCargoAmount())
+                            .sum();
+                    cargoInfoLabel.setText("[GOLD]CARGO:[] " + cargoType.name() + " (" + totalCargo + ")");
+                } else {
+                    cargoInfoLabel.setText("[GRAY]CARGO: NONE[]");
+                }
+            } else {
+                cargoInfoLabel.setText("");
+            }
+        } else {
+            trainInfoLabel.setText("[GRAY]NO TRAIN SELECTED[]");
+            cargoInfoLabel.setText("");
+        }
+
         // Marcamos el botón seleccionado según el modo
         for (com.badlogic.gdx.scenes.scene2d.Actor actor : menuTable.getChildren()) {
             if (actor instanceof TextButton) {

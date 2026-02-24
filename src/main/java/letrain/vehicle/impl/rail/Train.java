@@ -62,8 +62,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         FRONT, BACK
     };
 
-    private CargoTypes currentTrainCargoType = CargoTypes.NONE;
-
     LinkersSense linkerJoinSense;
     LinkersSense linkerDivisionSense;
     boolean joined = false;
@@ -795,7 +793,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                     wagon.load(taken);
                     wagon.setCargoType(station.getCargoType());
                     wagon.setLoadingPoint(station.getTrack().getPosition());
-                    this.currentTrainCargoType = station.getCargoType();
                     anyActionTaken = true;
                 }
             }

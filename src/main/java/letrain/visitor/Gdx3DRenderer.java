@@ -160,6 +160,13 @@ public class Gdx3DRenderer implements Visitor {
 
             // deleted unused container initializers
 
+            // Indicador de ruta en desvíos (Caja pequeña roja)
+            forkModel = modelBuilder.createBox(0.2f, 0.2f, 0.2f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.RED)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
             // ----------------------------------------------------------------------------------
             // FIN NUEVOS MODELOS DISPONIBLES
             // ----------------------------------------------------------------------------------
