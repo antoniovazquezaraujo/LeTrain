@@ -202,8 +202,15 @@ public class RailTrackMaker {
                     return;
                 }
 
+                // Direction validation: cursor must be aligned with track
+                letrain.map.Dir cursorDir = presenter.getModel().getCursor().getDir();
+                if (track.getDir(cursorDir) == null && track.getDir(cursorDir.inverse()) == null) {
+                    return;
+                }
+
                 Station station = new Station(presenter.getModel().nextStationId());
                 station.setTrack(track);
+                station.setSideDir(presenter.getModel().getCursor().getDir().turnRight().turnRight());
                 Integer foundTerrain = presenter.getModel().getGroundMap().findClosestIndustry(position, 5);
 
                 // If found, count density for THAT type

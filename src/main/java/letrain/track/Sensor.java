@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.vehicle.impl.rail.Train;
 import letrain.visitor.Renderable;
@@ -14,6 +15,7 @@ public class Sensor implements Renderable, Serializable {
     private int id;
     Track track;
     List<SensorEventListener> listeners = new ArrayList<>();
+    private Dir sideDir;
 
     public Track getTrack() {
         return track;
@@ -40,6 +42,14 @@ public class Sensor implements Renderable, Serializable {
 
     public int getId() {
         return this.id;
+    }
+
+    public Dir getSideDir() {
+        return sideDir;
+    }
+
+    public void setSideDir(Dir sideDir) {
+        this.sideDir = sideDir;
     }
 
     @Override

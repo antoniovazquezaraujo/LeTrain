@@ -36,7 +36,6 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.utils.ModelBuilder modelBuilder;
     private com.badlogic.gdx.graphics.g3d.Model railModel;
     private com.badlogic.gdx.graphics.g3d.Model inactiveRailModel;
-    private com.badlogic.gdx.graphics.g3d.Model sirenModel;
     private com.badlogic.gdx.graphics.g3d.Model cursorModel;
     private com.badlogic.gdx.graphics.g3d.Model locomotiveModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonModel;
@@ -57,20 +56,8 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model semaphoreClosedModel;
     private com.badlogic.gdx.graphics.g3d.Model sensorModel;
     private Set<letrain.track.rail.RailTrack> selectedStationTracks = new HashSet<>();
-    private com.badlogic.gdx.graphics.g3d.Model stationSignModel;
-    private com.badlogic.gdx.graphics.g3d.Model stationSignSelectedModel;
-    private com.badlogic.gdx.graphics.g3d.Model platformModel;
-    private com.badlogic.gdx.graphics.g3d.Model platformSelectedModel;
-    private com.badlogic.gdx.graphics.g3d.Model wagonCargoModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonJewelModel;
-
-    // Industrial Zone Models
-    private com.badlogic.gdx.graphics.g3d.Model forestModel;
-    private com.badlogic.gdx.graphics.g3d.Model sawmillModel;
-    private com.badlogic.gdx.graphics.g3d.Model mineModel;
-    private com.badlogic.gdx.graphics.g3d.Model powerPlantModel;
-    private com.badlogic.gdx.graphics.g3d.Model portModel;
-    private com.badlogic.gdx.graphics.g3d.Model marketModel;
+    private com.badlogic.gdx.graphics.g3d.Model cylinderModel;
 
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
@@ -177,13 +164,6 @@ public class Gdx3DRenderer implements Visitor {
             // FIN NUEVOS MODELOS DISPONIBLES
             // ----------------------------------------------------------------------------------
 
-            wagonCargoModel = modelBuilder.createBox(0.6f, 0.5f, 0.6f,
-                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(com.badlogic.gdx.graphics.Color.ORANGE)),
-                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
-
-            // SOLID CARGO BLOCK (Unit cube 1x1x1, shiny, opaque)
             wagonJewelModel = modelBuilder.createBox(1.0f, 1.0f, 1.0f,
                     new com.badlogic.gdx.graphics.g3d.Material(
                             com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -191,6 +171,13 @@ public class Gdx3DRenderer implements Visitor {
                             com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                                     .createSpecular(com.badlogic.gdx.graphics.Color.WHITE),
                             com.badlogic.gdx.graphics.g3d.attributes.FloatAttribute.createShininess(16f)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            cylinderModel = modelBuilder.createCylinder(1f, 1f, 1f, 24,
+                    new com.badlogic.gdx.graphics.g3d.Material(
+                            com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                                    .createDiffuse(com.badlogic.gdx.graphics.Color.WHITE)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
@@ -265,78 +252,6 @@ public class Gdx3DRenderer implements Visitor {
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
-            // Estación (Mastil con letrero)
-            // 1. Modelo normal (Poste Gris, Cubo Blanco)
-            com.badlogic.gdx.graphics.g3d.utils.ModelBuilder mbStation = new com.badlogic.gdx.graphics.g3d.utils.ModelBuilder();
-            mbStation.begin();
-            // Poste (Gris) - 1.6f de alto
-            mbStation.node().id = "pole";
-            com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpbSign = mbStation.part("pole",
-                    com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
-                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
-                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(com.badlogic.gdx.graphics.Color.GRAY)));
-            com.badlogic.gdx.graphics.g3d.utils.shapebuilders.CylinderShapeBuilder.build(mpbSign, 0.05f, 1.6f, 0.05f,
-                    10);
-
-            // Letrero (Cubo Blanco)
-            com.badlogic.gdx.graphics.g3d.model.Node signNode = mbStation.node();
-            signNode.id = "sign";
-            signNode.translation.set(0, 0.8f, 0); // Arriba del poste (1.6/2)
-            mpbSign = mbStation.part("sign", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
-                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
-                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(com.badlogic.gdx.graphics.Color.WHITE)));
-            com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder.build(mpbSign, 0.6f, 0.6f, 0.6f);
-            stationSignModel = mbStation.end();
-
-            // 2. Modelo seleccionado (Poste Amarillo, Cubo Verde)
-            mbStation = new com.badlogic.gdx.graphics.g3d.utils.ModelBuilder();
-            mbStation.begin();
-            // Poste (Amarillo)
-            mbStation.node().id = "pole";
-            mpbSign = mbStation.part("pole", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
-                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
-                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)));
-            com.badlogic.gdx.graphics.g3d.utils.shapebuilders.CylinderShapeBuilder.build(mpbSign, 0.05f, 1.6f, 0.05f,
-                    10);
-
-            // Letrero (Cubo Verde)
-            signNode = mbStation.node();
-            signNode.id = "sign";
-            signNode.translation.set(0, 0.8f, 0);
-            mpbSign = mbStation.part("sign", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
-                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
-                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(com.badlogic.gdx.graphics.Color.GREEN)));
-            com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder.build(mpbSign, 0.6f, 0.6f, 0.6f);
-            stationSignSelectedModel = mbStation.end();
-
-            platformModel = modelBuilder.createBox(1.2f, 0.2f, 2.4f,
-                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(com.badlogic.gdx.graphics.Color.LIGHT_GRAY)),
-                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
-
-            // Resaltado de estación (La propia superficie en verde cuando se selecciona)
-            platformSelectedModel = modelBuilder.createBox(1.2f, 0.2f, 2.4f,
-                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(com.badlogic.gdx.graphics.Color.GREEN)),
-                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
-
-            // Modelo de indicador de desvío (Bloque Rojo pequeño)
-            forkModel = modelBuilder.createBox(0.2f, 0.25f, 0.2f,
-                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(com.badlogic.gdx.graphics.Color.RED)),
-                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
-
             // Modelos de terreno (planos de 1x1)
             groundModel = modelBuilder.createBox(1.0f, 0.01f, 1.0f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -377,56 +292,6 @@ public class Gdx3DRenderer implements Visitor {
                             .createDiffuse(new com.badlogic.gdx.graphics.Color(0.15f, 0.15f, 0.15f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
-
-            // INDUSTRIAL MODELS (Hollow boxes like wagons)
-            forestModel = createOpenBox(modelBuilder, 0.9f, 0.6f, 0.9f, letrain.track.CargoTypes.WOOD.getColor());
-            sawmillModel = createOpenBox(modelBuilder, 0.9f, 0.6f, 0.9f, letrain.track.CargoTypes.WOOD.getColor());
-
-            mineModel = createOpenBox(modelBuilder, 0.9f, 0.6f, 0.9f, letrain.track.CargoTypes.COAL.getColor());
-            powerPlantModel = createOpenBox(modelBuilder, 0.9f, 0.6f, 0.9f, letrain.track.CargoTypes.COAL.getColor());
-
-            portModel = createOpenBox(modelBuilder, 0.9f, 0.6f, 0.9f, letrain.track.CargoTypes.FISH.getColor());
-            marketModel = createOpenBox(modelBuilder, 0.9f, 0.6f, 0.9f, letrain.track.CargoTypes.FISH.getColor());
-
-            // ----------------------------------------------------------------------------------
-            // STATION SIREN (Red/White rotating block)
-            // ----------------------------------------------------------------------------------
-            com.badlogic.gdx.graphics.g3d.utils.ModelBuilder mbSiren = new com.badlogic.gdx.graphics.g3d.utils.ModelBuilder();
-            mbSiren.begin();
-
-            // Note: Larger solid boxes to ensure 100% visibility from all angles.
-            // Red half
-            com.badlogic.gdx.graphics.g3d.model.Node nodeR = mbSiren.node();
-            nodeR.id = "red";
-            nodeR.translation.set(0.101f, 0, 0); // Positioned so they join in the center
-            com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpbSR = mbSiren.part("red",
-                    com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
-                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
-                    new com.badlogic.gdx.graphics.g3d.Material(
-                            com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                                    .createDiffuse(com.badlogic.gdx.graphics.Color.RED),
-                            com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                                    .createEmissive(com.badlogic.gdx.graphics.Color.RED) // Glow for visibility
-                    ));
-            com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder.build(mpbSR, 0.2f, 0.4f, 0.2f);
-
-            // White half
-            com.badlogic.gdx.graphics.g3d.model.Node nodeW = mbSiren.node();
-            nodeW.id = "white";
-            nodeW.translation.set(-0.101f, 0, 0); // Join in center
-            com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpbSW = mbSiren.part("white",
-                    com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
-                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
-                    new com.badlogic.gdx.graphics.g3d.Material(
-                            com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                                    .createDiffuse(com.badlogic.gdx.graphics.Color.WHITE),
-                            com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                                    .createEmissive(com.badlogic.gdx.graphics.Color.WHITE)));
-            com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder.build(mpbSW, 0.2f, 0.4f, 0.2f);
-
-            sirenModel = mbSiren.end();
         }
     }
 
@@ -644,16 +509,6 @@ public class Gdx3DRenderer implements Visitor {
         instance.transform.scale(1.6f, 1f, 0.6f);
         instances.add(instance);
 
-        // STATION GHOST PREVIEW
-        if (modelRef != null
-                && (modelRef.getMode() == Model.GameMode.RAILS || modelRef.getMode() == Model.GameMode.STATIONS)) {
-            letrain.track.rail.RailTrack rt = modelRef.getCursorRailTrack();
-            if (rt != null && rt.getSensor() == null) {
-                CargoTypes cargo = modelRef.getStationGhostCargoType();
-                CargoTypes.StationRole role = modelRef.getStationGhostRole();
-                drawStation(null, pos, cargo, role, rt, -1, "NEW STATION", false, 0.5f);
-            }
-        }
     }
 
     public static float getDirX(letrain.map.Dir d) {
@@ -762,8 +617,6 @@ public class Gdx3DRenderer implements Visitor {
             railModel.dispose();
         if (inactiveRailModel != null)
             inactiveRailModel.dispose();
-        if (sirenModel != null)
-            sirenModel.dispose();
         if (cursorModel != null)
             cursorModel.dispose();
         if (locomotiveModel != null)
@@ -786,32 +639,16 @@ public class Gdx3DRenderer implements Visitor {
             bridgePillarModel.dispose();
         if (tunnelPortalModel != null)
             tunnelPortalModel.dispose();
-        if (locomotiveUnlinkModel != null)
-            locomotiveUnlinkModel.dispose();
-        if (wagonUnlinkModel != null)
-            wagonUnlinkModel.dispose();
-        if (wagonCargoModel != null)
-            wagonCargoModel.dispose();
+        if (wagonJewelModel != null)
+            wagonJewelModel.dispose();
+        if (cylinderModel != null)
+            cylinderModel.dispose();
         if (semaphoreOpenModel != null)
             semaphoreOpenModel.dispose();
         if (semaphoreClosedModel != null)
             semaphoreClosedModel.dispose();
         if (sensorModel != null)
             sensorModel.dispose();
-        if (platformSelectedModel != null)
-            platformSelectedModel.dispose();
-        if (forestModel != null)
-            forestModel.dispose();
-        if (sawmillModel != null)
-            sawmillModel.dispose();
-        if (mineModel != null)
-            mineModel.dispose();
-        if (powerPlantModel != null)
-            powerPlantModel.dispose();
-        if (portModel != null)
-            portModel.dispose();
-        if (marketModel != null)
-            marketModel.dispose();
     }
 
     @Override
@@ -1220,8 +1057,12 @@ public class Gdx3DRenderer implements Visitor {
         float xIndex = pos.getX();
         float zIndex = pos.getY();
 
-        letrain.map.Dir orientation = getValidOrientation(track);
-        letrain.map.Dir rightDir = orientation.turnRight().turnRight();
+        letrain.map.Dir rightDir = (station != null && station.getSideDir() != null)
+                ? station.getSideDir()
+                : getValidOrientation(track).turnRight().turnRight();
+        letrain.map.Dir orientation = (station != null && station.getSideDir() != null)
+                ? station.getSideDir().turnLeft().turnLeft()
+                : getValidOrientation(track);
 
         float perpX = getDirX(rightDir);
         float perpZ = getDirZ(rightDir);
@@ -1239,7 +1080,8 @@ public class Gdx3DRenderer implements Visitor {
             paraZ /= lenPara;
         }
 
-        float distPlatform = 0.8f;
+        // Proximity refinement: move structure closer to track
+        float distPlatform = 0.65f;
         float centerX = xIndex + 0.5f + perpX * distPlatform;
         float centerZ = zIndex + 0.5f + perpZ * distPlatform;
 
@@ -1252,39 +1094,65 @@ public class Gdx3DRenderer implements Visitor {
                 : com.badlogic.gdx.graphics.Color.WHITE.cpy();
         structureColor.a = alpha;
 
+        // Blinking logic (Action Active)
+        boolean isActionActive = false;
+        if (modelRef != null && station != null) {
+            for (letrain.vehicle.impl.rail.Locomotive loc : modelRef.getLocomotives()) {
+                letrain.vehicle.impl.rail.Train train = loc.getTrain();
+                if (train != null && train.isLoading()) {
+                    letrain.track.Track t = loc.getTrack();
+                    if (t != null && t.getSensor() == station) {
+                        isActionActive = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        com.badlogic.gdx.graphics.Color boardColor = structureColor.cpy();
+        if (isActionActive) {
+            // Blinking effect: swap between base color and highlight
+            if (System.currentTimeMillis() % 400 < 200) {
+                boardColor = com.badlogic.gdx.graphics.Color.WHITE.cpy();
+                boardColor.a = alpha;
+            }
+        }
+
         com.badlogic.gdx.graphics.Color mastColor = com.badlogic.gdx.graphics.Color.GRAY.cpy();
         mastColor.a = alpha;
 
-        // 0. Expansive plate: covers track tile + mast area in perpendicular direction
-        // Length: from tile center to mast center + some margin
-        float plateLengthPerp = distPlatform + 0.6f; // spans track -> mast
-        float plateWidth = 1.0f; // full tile width along para direction
+        // 0. Expansive plate: covers track tile + mast area
+        float plateLengthPerp = distPlatform + 0.5f;
+        float plateWidth = 1.0f;
         float plateMidX = xIndex + 0.5f + perpX * (distPlatform / 2f);
         float plateMidZ = zIndex + 0.5f + perpZ * (distPlatform / 2f);
-        // Angle so that the long side aligns with perpendicular direction
-        float plateAngle = (float) Math.atan2(perpX, perpZ) * MathUtils.radiansToDegrees;
+        float plateAngle = (float) Math.atan2(perpX, perpZ) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
 
-        ModelInstance plate = new ModelInstance(getBoxModel(structureColor));
-        plate.transform.setToTranslation(plateMidX, 0.015f, plateMidZ);
+        ModelInstance plate = new ModelInstance(wagonJewelModel);
+        plate.materials.get(0)
+                .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(structureColor));
+        plate.transform.setToTranslation(plateMidX, 0.01f, plateMidZ); // Lowered
         plate.transform.rotate(0, 1, 0, plateAngle);
-        plate.transform.scale(plateLengthPerp, 0.02f, plateWidth);
+        plate.transform.scale(plateLengthPerp, 0.01f, plateWidth); // Thinner
         if (alpha < 1.0f) {
             plate.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
         }
         instances.add(plate);
 
-        // 1. Mástil
-        ModelInstance mast = new ModelInstance(getCylinderModel(mastColor));
+        // 1. Mástil (Sturdier)
+        ModelInstance mast = new ModelInstance(cylinderModel);
+        mast.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(mastColor));
         mast.transform.setToTranslation(centerX, mastHeight / 2f, centerZ);
-        mast.transform.scale(0.05f, mastHeight, 0.05f);
+        mast.transform.scale(0.15f, mastHeight, 0.15f); // Thicker
         if (alpha < 1.0f) {
             mast.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
         }
         instances.add(mast);
 
-        // 2. Cartel (Cubo de color de mercancía)
+        // 2. Cartel (Cube Sign)
         float boardSize = 0.6f;
-        ModelInstance board = new ModelInstance(getBoxModel(structureColor));
+        ModelInstance board = new ModelInstance(wagonJewelModel);
+        board.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(boardColor));
         board.transform.setToTranslation(centerX, mastHeight + (boardSize / 2f), centerZ);
         board.transform.scale(boardSize, boardSize, boardSize);
         if (alpha < 1.0f) {
@@ -1324,44 +1192,7 @@ public class Gdx3DRenderer implements Visitor {
                         centerZ - paraZ * labelOffset),
                 idText, new com.badlogic.gdx.math.Vector3(-paraX, 0, -paraZ), labelColor));
 
-        // Role indicator (Keep it slightly above for clarity)
-        String roleStr = (role == CargoTypes.StationRole.PRODUCER) ? "PROD" : "CONS";
-        com.badlogic.gdx.graphics.Color roleColor = (role == CargoTypes.StationRole.PRODUCER)
-                ? com.badlogic.gdx.graphics.Color.YELLOW.cpy()
-                : com.badlogic.gdx.graphics.Color.CYAN.cpy();
-        roleColor.a = alpha;
-
-        labels.add(new VehicleLabel(
-                new com.badlogic.gdx.math.Vector3(centerX, mastHeight + boardSize + 0.2f, centerZ),
-                roleStr, new com.badlogic.gdx.math.Vector3(perpX, 0, perpZ), roleColor));
-
-        // 3. Siren (Optional: only if a train is loading here)
-        boolean showSiren = false;
-        if (modelRef != null && station != null) {
-            for (letrain.vehicle.impl.rail.Locomotive loc : modelRef.getLocomotives()) {
-                letrain.vehicle.impl.rail.Train train = loc.getTrain();
-                if (train != null && train.isLoading()) {
-                    letrain.track.Track t = loc.getTrack();
-                    if (t != null && t.getSensor() == station) {
-                        showSiren = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (showSiren) {
-            ModelInstance siren = new ModelInstance(sirenModel);
-            float sirenY = mastHeight + boardSize + 0.1f; // On top of the board
-            siren.transform.setToTranslation(centerX, sirenY, centerZ);
-
-            // Rotating effect using system time for smoothness
-            float rotation = (System.currentTimeMillis() % 1000) / 1000f * 360f * 2f; // 2 rotations per second
-            siren.transform.rotate(0, 1, 0, rotation);
-            instances.add(siren);
-        }
-
-        // 4. Render Station Storage Jewels (PRODUCERS ONLY)
+        // 3. Render Station Storage Jewels (PRODUCERS ONLY)
         if (role == CargoTypes.StationRole.PRODUCER && cargo != null && station != null) {
             int storage = station.getStorage();
             int maxStorage = station.getMaxStorage();
@@ -1568,19 +1399,4 @@ public class Gdx3DRenderer implements Visitor {
         return modelBuilder.end();
     }
 
-    private com.badlogic.gdx.graphics.g3d.Model getBoxModel(com.badlogic.gdx.graphics.Color color) {
-        return modelBuilder.createBox(1f, 1f, 1f,
-                new com.badlogic.gdx.graphics.g3d.Material(
-                        com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color)),
-                com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                        | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
-    }
-
-    private com.badlogic.gdx.graphics.g3d.Model getCylinderModel(com.badlogic.gdx.graphics.Color color) {
-        return modelBuilder.createCylinder(1f, 1f, 1f, 24,
-                new com.badlogic.gdx.graphics.g3d.Material(
-                        com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color)),
-                com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
-                        | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
-    }
 }
