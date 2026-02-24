@@ -39,24 +39,30 @@ public class AudioController {
     }
 
     private void loadSamples() {
+        loadSample("link", "train-link.wav");
+        loadSample("fork", "fork.wav");
+    }
+
+    private void loadSample(String name, String filename) {
         try {
             // Relative to classpath
-            java.net.URL url = getClass().getResource("/sound/train-link.wav");
+            java.net.URL url = getClass().getResource("/sound/" + filename);
             if (url != null) {
-                System.out.println("Loading train-link.wav from resources: " + url);
-                samples.put("link", new AudioSample(url));
+                System.out.println("Loading " + filename + " from resources: " + url);
+                samples.put(name, new AudioSample(url));
             } else {
                 // Try direct file if not in resources (for dev environment)
-                File file = new File("src/main/resources/sound/train-link.wav");
+                File file = new File("src/main/resources/sound/" + filename);
                 if (file.exists()) {
-                    System.out.println("Loading train-link.wav from file: " + file.getAbsolutePath());
-                    samples.put("link", new AudioSample(file));
+                    System.out.println("Loading " + filename + " from file: " + file.getAbsolutePath());
+                    samples.put(name, new AudioSample(file));
                 } else {
-                    System.err.println("CRITICAL: train-link.wav not found in resources or src/main/resources/sound/");
+                    System.err
+                            .println("CRITICAL: " + filename + " not found in resources or src/main/resources/sound/");
                 }
             }
         } catch (Exception e) {
-            System.err.println("Failed to load train-link.wav: " + e.getMessage());
+            System.err.println("Failed to load " + filename + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -169,6 +175,11 @@ public class AudioController {
                         + ", Target: " + loco.getTargetSpeed() + ")");
             }
             synth.setBraking(braking);
+
+            // Sync Loading State
+            if (loco.getTrain() != null) {
+                synth.setLoading(loco.getTrain().isLoading());
+            }
         }
     }
 

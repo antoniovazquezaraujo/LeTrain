@@ -338,6 +338,9 @@ public class Gdx3DView extends ApplicationAdapter
             if (character == ' ') {
                 if (model.getSelectedFork() != null) {
                     model.getSelectedFork().flipRoute();
+                    audioController.playOneShot("fork",
+                            (float) model.getSelectedFork().getPosition().getX(),
+                            (float) model.getSelectedFork().getPosition().getY());
                 }
                 return true;
             }
@@ -1145,6 +1148,9 @@ public class Gdx3DView extends ApplicationAdapter
                 && stroke.getCharacter() == ' ') {
             if (model.getSelectedFork() != null) {
                 model.getSelectedFork().flipRoute();
+                audioController.playOneShot("fork",
+                        (float) model.getSelectedFork().getPosition().getX(),
+                        (float) model.getSelectedFork().getPosition().getY());
             }
         }
     }

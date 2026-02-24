@@ -10,6 +10,7 @@ public class TrainSynthesizer implements AudioSource {
     private GrainEngine locoEngine;
     private GrainEngine coachEngine;
     private GrainEngine brakeEngine;
+    private GrainEngine loadEngine;
     private float filterSensitivity = 1.0f;
 
     // Configuration
@@ -22,6 +23,8 @@ public class TrainSynthesizer implements AudioSource {
     private Thread transitionThread;
     private boolean engineStarting = false;
     private boolean brakingRequested = false;
+    private boolean loading = false;
+    private float targetLoadVolume = 0.0f;
 
     // Position
     private float x, y, z;
@@ -60,12 +63,17 @@ public class TrainSynthesizer implements AudioSource {
         brakeEngine.setLoopMode(GrainEngine.LoopMode.WRAP);
         brakeEngine.setTurnProbability(0f);
 
+        loadEngine = new GrainEngine();
+        loadEngine.setLoopMode(GrainEngine.LoopMode.WRAP);
+        loadEngine.setTurnProbability(0f);
+
         loadResources();
     }
 
     // Cache
     private static AudioSample sharedSample;
     private static AudioSample sharedBrakeSample;
+    private static AudioSample sharedLoadSample;
     private static boolean resourcesLoaded = false;
     private static List<letrain.audio.util.AudacityLabelParser.Label> sharedLabels;
 
@@ -101,6 +109,19 @@ public class TrainSynthesizer implements AudioSource {
                 brakeEngine.setSampleRate(44100.0f);
             } else {
                 System.err.println("TrainSynthesizer: train-brakes.wav not found!");
+            }
+
+            // Load Load/Unload WAV
+            java.net.URL loadUrl = getClass().getResource("/sound/load-unload.wav");
+            if (loadUrl != null) {
+                sharedLoadSample = new AudioSample(loadUrl);
+                loadEngine.setSample(sharedLoadSample);
+                loadEngine.setLoopMode(GrainEngine.LoopMode.WRAP);
+                loadEngine.setSpeed(1.0f);
+                loadEngine.setVolume(0.0f);
+                loadEngine.setSampleRate(44100.0f);
+            } else {
+                System.err.println("TrainSynthesizer: load-unload.wav not found!");
             }
 
             // Load Labels
@@ -227,6 +248,10 @@ public class TrainSynthesizer implements AudioSource {
         if (brakeEngine != null) {
             brakeEngine.read(buffer);
         }
+        updateLoadVolume();
+        if (loadEngine != null) {
+            loadEngine.read(buffer);
+        }
         return true;
     }
 
@@ -343,6 +368,15 @@ public class TrainSynthesizer implements AudioSource {
         }
     }
 
+    public void setLoading(boolean loading) {
+        this.loading = loading;
+        this.targetLoadVolume = loading ? 0.7f : 0.0f;
+    }
+
+    public boolean isLoading() {
+        return loading;
+    }
+
     private void updateBrakeVolume() {
         if (brakeEngine == null)
             return;
@@ -354,6 +388,20 @@ public class TrainSynthesizer implements AudioSource {
             float step = (targetBrakeVolume > current) ? 0.02f : 0.01f;
             float nextVolume = current + (targetBrakeVolume > current ? step : -step);
             brakeEngine.setVolume(nextVolume);
+        }
+    }
+
+    private void updateLoadVolume() {
+        if (loadEngine == null)
+            return;
+        float current = loadEngine.getVolume();
+        if (Math.abs(current - targetLoadVolume) < 0.01f) {
+            loadEngine.setVolume(targetLoadVolume);
+        } else {
+            // Smoothly ramp load volume
+            float step = (targetLoadVolume > current) ? 0.05f : 0.02f;
+            float nextVolume = current + (targetLoadVolume > current ? step : -step);
+            loadEngine.setVolume(nextVolume);
         }
     }
 

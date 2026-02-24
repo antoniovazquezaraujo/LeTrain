@@ -738,6 +738,9 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     private void toggleFork() {
         if (model.getSelectedFork() != null) {
             model.getSelectedFork().flipRoute();
+            audioController.playOneShot("fork",
+                    (float) model.getSelectedFork().getPosition().getX(),
+                    (float) model.getSelectedFork().getPosition().getY());
         }
     }
 
