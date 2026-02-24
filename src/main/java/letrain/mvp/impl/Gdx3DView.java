@@ -181,10 +181,10 @@ public class Gdx3DView extends ApplicationAdapter
 
         // TextButton Style
         TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle();
-        textButtonStyle.up = skin.newDrawable("white", Color.DARK_GRAY);
-        textButtonStyle.down = skin.newDrawable("white", Color.BLACK);
-        textButtonStyle.checked = skin.newDrawable("white", Color.BLUE);
-        textButtonStyle.over = skin.newDrawable("white", Color.LIGHT_GRAY);
+        textButtonStyle.up = skin.newDrawable("white", new Color(0.15f, 0.15f, 0.15f, 1f));
+        textButtonStyle.down = skin.newDrawable("white", Color.CYAN);
+        textButtonStyle.checked = skin.newDrawable("white", new Color(0f, 0.5f, 0.7f, 1f));
+        textButtonStyle.over = skin.newDrawable("white", new Color(0.25f, 0.25f, 0.25f, 1f));
         textButtonStyle.font = skin.getFont("default");
         skin.add("default", textButtonStyle);
 
@@ -272,12 +272,14 @@ public class Gdx3DView extends ApplicationAdapter
                 int index = rawName.indexOf("&");
                 if (index + 1 < rawName.length()) {
                     char mnemonic = rawName.charAt(index + 1);
-                    formattedName = rawName.substring(0, index) + "[YELLOW]" + mnemonic + "[]"
+                    formattedName = rawName.substring(0, index) + "[CYAN](" + String.valueOf(mnemonic).toUpperCase()
+                            + ")[] "
                             + rawName.substring(index + 2);
                 }
             }
 
             TextButton button = new TextButton(formattedName, skin);
+            button.setName(option.gameModeName().replace("&", "").toLowerCase());
             button.setChecked(option.selectedIf().get());
             button.setDisabled(!option.enabledIf().get());
 
@@ -792,11 +794,10 @@ public class Gdx3DView extends ApplicationAdapter
         for (com.badlogic.gdx.scenes.scene2d.Actor actor : menuTable.getChildren()) {
             if (actor instanceof TextButton) {
                 TextButton btn = (TextButton) actor;
-                String btnText = btn.getText().toString().toLowerCase()
-                        .replace("[yellow]", "").replace("[]", "");
+                String btnName = btn.getName();
                 for (GameModeMenuOption option : model.getMenuModel()) {
                     String optionName = option.gameModeName().replace("&", "").toLowerCase();
-                    if (optionName.equals(btnText)) {
+                    if (optionName.equals(btnName)) {
                         btn.setChecked(option.selectedIf().get());
                         btn.setDisabled(!option.enabledIf().get());
                         if (btn.isChecked()) {
