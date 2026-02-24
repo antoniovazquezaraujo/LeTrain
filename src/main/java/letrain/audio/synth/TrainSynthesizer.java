@@ -25,8 +25,8 @@ public class TrainSynthesizer implements AudioSource {
 
     // Position
     private float x, y, z;
-    private float refDistance = 50.0f;
-    private float maxDistance = 1000.0f;
+    private float refDistance = 100.0f;
+    private float maxDistance = 2000.0f;
 
     // Active flag for Mixer
     private boolean audioRunning = false;
@@ -336,19 +336,24 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     public void setBraking(boolean braking) {
-        this.targetBrakeVolume = braking ? 0.7f : 0.0f;
-        // The volume ramp for brakes is handled in updateCoachVolume or similar
-        // For simplicity, let's just do it directly here for now or in read()
+        float newTarget = braking ? 0.8f : 0.0f;
+        if (newTarget != this.targetBrakeVolume) {
+            System.out.println("TrainSynth: Braking target volume changed to " + newTarget);
+            this.targetBrakeVolume = newTarget;
+        }
     }
 
     private void updateBrakeVolume() {
+        if (brakeEngine == null)
+            return;
         float current = brakeEngine.getVolume();
         if (Math.abs(current - targetBrakeVolume) < 0.01f) {
             brakeEngine.setVolume(targetBrakeVolume);
         } else {
             // Smoothly ramp brake volume
-            float step = (targetBrakeVolume > current) ? 0.05f : 0.02f;
-            brakeEngine.setVolume(current + (targetBrakeVolume > current ? step : -step));
+            float step = (targetBrakeVolume > current) ? 0.02f : 0.01f;
+            float nextVolume = current + (targetBrakeVolume > current ? step : -step);
+            brakeEngine.setVolume(nextVolume);
         }
     }
 

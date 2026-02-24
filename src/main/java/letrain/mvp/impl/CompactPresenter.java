@@ -628,8 +628,15 @@ public class CompactPresenter implements letrain.mvp.Presenter {
 
     private void linkSelectedVehicles() {
         if (model.getSelectedLocomotive() != null) {
-            if (model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().joinLinkers();
+            Locomotive loco = model.getSelectedLocomotive();
+            if (loco.getTrain() != null) {
+                Train train = loco.getTrain();
+                if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
+                    train.joinLinkers();
+                    audioController.playOneShot("link",
+                            (float) loco.getPosition().getX(),
+                            (float) loco.getPosition().getY());
+                }
             }
         }
     }
@@ -670,7 +677,13 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     }
 
     private void divideTrain() {
-        model.getSelectedLocomotive().getTrain().divideTrain(() -> model.nextTrainId());
+        Locomotive loco = model.getSelectedLocomotive();
+        if (loco != null && loco.getTrain() != null) {
+            loco.getTrain().divideTrain(() -> model.nextTrainId());
+            audioController.playOneShot("link",
+                    (float) loco.getPosition().getX(),
+                    (float) loco.getPosition().getY());
+        }
     }
 
     public void selectLocomotive(int id) {

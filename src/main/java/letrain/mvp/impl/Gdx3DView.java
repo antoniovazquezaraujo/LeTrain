@@ -321,9 +321,16 @@ public class Gdx3DView extends ApplicationAdapter
         } else if (model.getMode() == letrain.mvp.Model.GameMode.RAILS) {
         } else if (model.getMode() == letrain.mvp.Model.GameMode.LINK) {
             if (character == ' ') {
-                if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                    model.getSelectedLocomotive().getTrain().joinLinkers();
-                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
+                if (loco != null && loco.getTrain() != null) {
+                    letrain.vehicle.impl.rail.Train train = loco.getTrain();
+                    if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
+                        train.joinLinkers();
+                        audioController.playOneShot("link",
+                                (float) loco.getPosition().getX(),
+                                (float) loco.getPosition().getY());
+                    }
+                    model.setMode(letrain.mvp.Model.GameMode.MENU);
                 }
                 return true;
             }
@@ -336,9 +343,13 @@ public class Gdx3DView extends ApplicationAdapter
             }
         } else if (model.getMode() == letrain.mvp.Model.GameMode.UNLINK) {
             if (character == ' ') {
-                if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                    model.getSelectedLocomotive().getTrain().divideTrain(model::nextTrainId);
-                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
+                if (loco != null && loco.getTrain() != null) {
+                    loco.getTrain().divideTrain(model::nextTrainId);
+                    audioController.playOneShot("link",
+                            (float) loco.getPosition().getX(),
+                            (float) loco.getPosition().getY());
+                    model.setMode(letrain.mvp.Model.GameMode.MENU);
                 }
                 return true;
             }
@@ -1089,8 +1100,15 @@ public class Gdx3DView extends ApplicationAdapter
             }
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
                 && stroke.getCharacter() == ' ') {
-            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().joinLinkers();
+            letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
+            if (loco != null && loco.getTrain() != null) {
+                letrain.vehicle.impl.rail.Train train = loco.getTrain();
+                if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
+                    train.joinLinkers();
+                    audioController.playOneShot("link",
+                            (float) loco.getPosition().getX(),
+                            (float) loco.getPosition().getY());
+                }
                 model.setMode(letrain.mvp.Model.GameMode.MENU);
             }
         }
@@ -1110,6 +1128,9 @@ public class Gdx3DView extends ApplicationAdapter
             } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
                     && stroke.getCharacter() == ' ') {
                 train.divideTrain(() -> model.nextTrainId());
+                audioController.playOneShot("link",
+                        (float) model.getSelectedLocomotive().getPosition().getX(),
+                        (float) model.getSelectedLocomotive().getPosition().getY());
                 model.setMode(letrain.mvp.Model.GameMode.MENU);
             }
         }
