@@ -9,6 +9,8 @@ public class TrainSynthesizer implements AudioSource {
 
     private GrainEngine locoEngine;
     private GrainEngine coachEngine;
+    private GrainEngine brakeEngine;
+    private float filterSensitivity = 1.0f;
 
     // Configuration
     private SpeedNotch[] notches = new SpeedNotch[10];
@@ -18,6 +20,8 @@ public class TrainSynthesizer implements AudioSource {
     // State
     private boolean isTransitioning = false;
     private Thread transitionThread;
+    private boolean engineStarting = false;
+    private boolean brakingRequested = false;
 
     // Position
     private float x, y, z;
@@ -52,11 +56,16 @@ public class TrainSynthesizer implements AudioSource {
         locoEngine.setTurnProbability(0.2f);
         coachEngine.setTurnProbability(0.2f);
 
+        brakeEngine = new GrainEngine();
+        brakeEngine.setLoopMode(GrainEngine.LoopMode.WRAP);
+        brakeEngine.setTurnProbability(0f);
+
         loadResources();
     }
 
     // Cache
     private static AudioSample sharedSample;
+    private static AudioSample sharedBrakeSample;
     private static boolean resourcesLoaded = false;
     private static List<letrain.audio.util.AudacityLabelParser.Label> sharedLabels;
 
@@ -80,6 +89,19 @@ public class TrainSynthesizer implements AudioSource {
             }
             sharedSample = new AudioSample(wavUrl);
             setSample(sharedSample);
+
+            // Load Brakes WAV
+            java.net.URL brakeUrl = getClass().getResource("/sound/train-brakes.wav");
+            if (brakeUrl != null) {
+                sharedBrakeSample = new AudioSample(brakeUrl);
+                brakeEngine.setSample(sharedBrakeSample);
+                brakeEngine.setLoopPoints(0, 1.0f); // Loop entire braking sample
+                brakeEngine.setSpeed(1.0f);
+                brakeEngine.setVolume(0.0f);
+                brakeEngine.setSampleRate(44100.0f);
+            } else {
+                System.err.println("TrainSynthesizer: train-brakes.wav not found!");
+            }
 
             // Load Labels
             java.io.InputStream labelsStream = getClass().getResourceAsStream("/sound/train-sound-labels.txt");
@@ -198,11 +220,13 @@ public class TrainSynthesizer implements AudioSource {
         if (!audioRunning)
             return false;
 
-        // GrainEngine.read() accumulates (+=), so we just pass the buffer
-        // which was cleared by the Mixer. or sourceBuffer provided by Mixer.
+        updateBrakeVolume();
 
         locoEngine.read(buffer);
         coachEngine.read(buffer);
+        if (brakeEngine != null) {
+            brakeEngine.read(buffer);
+        }
         return true;
     }
 
@@ -305,7 +329,28 @@ public class TrainSynthesizer implements AudioSource {
         coachEngine.setVolume(baseCoachVolume * dynamicFactor);
     }
 
-    private float filterSensitivity = 1.0f;
+    private float targetBrakeVolume = 0.0f;
+
+    public boolean isEngineStarting() {
+        return engineStarting;
+    }
+
+    public void setBraking(boolean braking) {
+        this.targetBrakeVolume = braking ? 0.7f : 0.0f;
+        // The volume ramp for brakes is handled in updateCoachVolume or similar
+        // For simplicity, let's just do it directly here for now or in read()
+    }
+
+    private void updateBrakeVolume() {
+        float current = brakeEngine.getVolume();
+        if (Math.abs(current - targetBrakeVolume) < 0.01f) {
+            brakeEngine.setVolume(targetBrakeVolume);
+        } else {
+            // Smoothly ramp brake volume
+            float step = (targetBrakeVolume > current) ? 0.05f : 0.02f;
+            brakeEngine.setVolume(current + (targetBrakeVolume > current ? step : -step));
+        }
+    }
 
     public void setFilterSensitivity(float sensitivity) {
         this.filterSensitivity = sensitivity;
@@ -316,6 +361,9 @@ public class TrainSynthesizer implements AudioSource {
         float effective = Math.min(0.99f, amount * filterSensitivity);
         locoEngine.setDistanceFilter(effective);
         coachEngine.setDistanceFilter(effective);
+        if (brakeEngine != null) {
+            brakeEngine.setDistanceFilter(effective);
+        }
     }
 
     public void setLocoRandomness(float prob, float duration) {
@@ -361,74 +409,120 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     // --- Driving ---
-    public void setThrottle(int index) {
+    public synchronized void setThrottle(int index) {
         if (index < 0 || index >= notches.length)
             return;
 
-        // If we are already heading to this index, do nothing
-        if (index == targetNotchIndex)
-            return;
-
-        // If we essentially reached it and not transitioning
-        if (index == currentNotchIndex && !isTransitioning)
-            return;
+        // Detect rapid reduction to trigger braking
+        if (isTransitioning && index < targetNotchIndex && index < currentNotchIndex) {
+            brakingRequested = true;
+            setBraking(true);
+        } else if (index >= currentNotchIndex) {
+            brakingRequested = false;
+        }
 
         targetNotchIndex = index;
 
-        if (isTransitioning && transitionThread != null && transitionThread.isAlive()) {
-            transitionThread.interrupt();
+        if (!isTransitioning) {
+            startTransitionLoop();
         }
+    }
 
+    private void startTransitionLoop() {
         isTransitioning = true;
+        transitionThread = new Thread(() -> {
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    int next;
+                    synchronized (this) {
+                        if (currentNotchIndex == targetNotchIndex)
+                            break;
+                        next = currentNotchIndex + (targetNotchIndex > currentNotchIndex ? 1 : -1);
+                    }
 
-        SpeedNotch current = notches[currentNotchIndex];
-        SpeedNotch target = notches[index];
+                    boolean isUpshift = next > currentNotchIndex;
+                    SpeedNotch current = notches[currentNotchIndex];
+                    SpeedNotch target = notches[next];
 
-        boolean isUpshift = index > currentNotchIndex;
+                    // Startup delay: Notch 0 -> 1
+                    if (currentNotchIndex == 0 && next == 1) {
+                        engineStarting = true;
+                    }
 
-        // PHASE 1: EXIT CURRENT NOTCH
-        float startSpeed1 = locoEngine.getSpeed();
+                    // PHASE 1: EXIT CURRENT
+                    float startSpeed1 = locoEngine.getSpeed();
+                    float targetSpeed1 = isUpshift ? current.endSpeed : current.startSpeed;
+                    float duration1 = current.rampTime / 2.0f;
+                    performRampSync(startSpeed1, targetSpeed1, duration1);
 
-        float targetSpeed1 = isUpshift ? current.endSpeed : current.startSpeed;
+                    // Switch Notch
+                    currentNotchIndex = next;
+                    notifyNotch(next);
 
-        float duration1 = current.rampTime / 2.0f;
+                    // Switch Loops
+                    AudioSample s = locoEngine.getSample();
+                    float lStart = convertSamplesToNorm(target.loopStart, s);
+                    float lEnd = convertSamplesToNorm(target.loopEnd, s);
+                    locoEngine.setLoopPoints(lStart, lEnd);
 
-        runRamp(startSpeed1, targetSpeed1, duration1, () -> {
+                    // PHASE 2: ENTER NEXT
+                    float startSpeed2 = isUpshift ? target.startSpeed : target.endSpeed;
+                    float targetSpeed2 = target.cruiseSpeed;
+                    locoEngine.setSpeed(startSpeed2);
 
-            // PHASE 2: ENTER NEW NOTCH
-            currentNotchIndex = index;
-            notifyNotch(index);
+                    float duration2 = target.rampTime / 2.0f;
 
-            // Switch Loops
-            // Normalize loop points
-            AudioSample s = locoEngine.getSample();
-            float lStart = convertSamplesToNorm(target.loopStart, s);
-            float lEnd = convertSamplesToNorm(target.loopEnd, s);
-            float cStart = convertSamplesToNorm(target.coachLoopStart, s);
-            float cEnd = convertSamplesToNorm(target.coachLoopEnd, s);
+                    // Deceleration Shortcut: "sin pasar por la velocidad de crucero"
+                    if (!isUpshift && brakingRequested && currentNotchIndex != targetNotchIndex) {
+                        locoEngine.setSpeed(targetSpeed2);
+                    } else {
+                        performRampSync(startSpeed2, targetSpeed2, duration2);
+                    }
 
-            locoEngine.setLoopPoints(lStart, lEnd);
-            coachEngine.setLoopPoints(cStart, cEnd);
-
-            float startSpeed2 = isUpshift ? target.startSpeed : target.endSpeed;
-            float targetSpeed2 = target.cruiseSpeed;
-
-            // Jump
-            locoEngine.setSpeed(startSpeed2);
-            coachEngine.setSpeed(startSpeed2);
-            updateCoachVolume(startSpeed2);
-
-            float duration2 = target.rampTime / 2.0f;
-
-            runRamp(startSpeed2, targetSpeed2, duration2, () -> {
-                isTransitioning = false;
-                // Final snap
-                locoEngine.setSpeed(targetSpeed2);
-                coachEngine.setSpeed(targetSpeed2);
-                updateCoachVolume(targetSpeed2);
-                notifySpeed(targetSpeed2);
-            });
+                    if (currentNotchIndex == 1) {
+                        engineStarting = false;
+                    }
+                }
+            } finally {
+                synchronized (this) {
+                    isTransitioning = false;
+                    engineStarting = false;
+                    setBraking(false);
+                    brakingRequested = false;
+                }
+            }
         });
+        transitionThread.setDaemon(true);
+        transitionThread.start();
+    }
+
+    private void performRampSync(float startSpeed, float targetSpeed, float durationSec) {
+        int interval = 33;
+        int steps = (int) ((durationSec * 1000) / interval);
+        if (steps < 1)
+            steps = 1;
+
+        float speedStep = (targetSpeed - startSpeed) / steps;
+
+        for (int i = 1; i <= steps; i++) {
+            if (Thread.currentThread().isInterrupted())
+                return;
+
+            try {
+                Thread.sleep(interval);
+            } catch (InterruptedException e) {
+                return;
+            }
+
+            float newSpeed = startSpeed + (speedStep * i);
+            if (speedStep > 0 && newSpeed > targetSpeed)
+                newSpeed = targetSpeed;
+            if (speedStep < 0 && newSpeed < targetSpeed)
+                newSpeed = targetSpeed;
+
+            locoEngine.setSpeed(newSpeed);
+            notifySpeed(newSpeed);
+        }
     }
 
     private void runRamp(float startSpeed, float targetSpeed, float durationSec, Runnable onComplete) {
@@ -467,8 +561,6 @@ public class TrainSynthesizer implements AudioSource {
                     newSpeed = targetSpeed;
 
                 locoEngine.setSpeed(newSpeed);
-                coachEngine.setSpeed(newSpeed);
-                updateCoachVolume(newSpeed);
                 notifySpeed(newSpeed);
             }
 
@@ -479,6 +571,24 @@ public class TrainSynthesizer implements AudioSource {
 
         transitionThread = newThread;
         newThread.start();
+    }
+
+    public void setMotionSpeed(int speed) {
+        int index = Math.min(Math.max(0, speed), notches.length - 1);
+        SpeedNotch notch = notches[index];
+        if (notch == null)
+            return;
+
+        AudioSample s = coachEngine.getSample();
+        if (s != null) {
+            float cStart = convertSamplesToNorm(notch.coachLoopStart, s);
+            float cEnd = convertSamplesToNorm(notch.coachLoopEnd, s);
+            coachEngine.setLoopPoints(cStart, cEnd);
+        }
+
+        float pitch = notch.cruiseSpeed;
+        coachEngine.setSpeed(pitch);
+        updateCoachVolume(pitch);
     }
 
     // --- Internal Engine Access ---

@@ -169,7 +169,11 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        infoBarText += "Train " + locomotive.getId() + " Speed " + locomotive.getSpeed() + " Wagons "
+        String speedStr = String.valueOf(locomotive.getSpeed());
+        if (locomotive.getSpeed() != locomotive.getTargetSpeed()) {
+            speedStr += "->" + locomotive.getTargetSpeed();
+        }
+        infoBarText += "Train " + locomotive.getId() + " Speed " + speedStr + " Wagons "
                 + (locomotive.getTrain().getLinkers().size() - 1) + (locomotive.isReversed() ? " Reversed" : "");
     }
 

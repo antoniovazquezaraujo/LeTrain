@@ -11,9 +11,11 @@ public class Locomotive extends Linker implements Tractor {
     private static final long serialVersionUID = 1L;
     final static int MAX_SPEED = 10;
     final static int SPEED_CHANGE_MAX_RELUCTANCE = 2;
-    int speedChangeReluctance = SPEED_CHANGE_MAX_RELUCTANCE;
+    int currentSpeed;
+    int targetSpeed;
+    int railsSinceLastSpeedChange = 0;
     int distanceTraveled = 0;
-    int speed;
+    boolean engineStarting = false;
     int turns;
     int totalTurns;
     private String aspect;
@@ -32,6 +34,8 @@ public class Locomotive extends Linker implements Tractor {
     public Locomotive(int id, String aspect) {
         this.id = id;
         this.aspect = aspect;
+        this.currentSpeed = 0;
+        this.targetSpeed = 0;
         resetTurns();
     }
 
@@ -45,6 +49,12 @@ public class Locomotive extends Linker implements Tractor {
 
     @Override
     public void toggleReversed() {
+        if (currentSpeed > 0) {
+            // No permitir invertir marcha en movimiento (opcional, pero realista)
+            // Por ahora solo ponemos targetSpeed a 0
+            setTargetSpeed(0);
+            return;
+        }
         Dir pushDir = getDir();
         Track nextTrack = getTrack();
         setDir(nextTrack.getDir(pushDir));
@@ -87,15 +97,29 @@ public class Locomotive extends Linker implements Tractor {
             if (getTrain() != null && getTrain().isLoading()) {
                 return moved;
             }
+
+            // Inhibit movement if the engine is just starting sound-wise
+            if (engineStarting) {
+                return moved;
+            }
+
+            // Handle acceleration from 0 - allows getting unstuck from speed 0
+            if (currentSpeed == 0 && targetSpeed > 0) {
+                updateInertia();
+                resetTurns();
+            }
+
             if (isTimeToMove()) {
                 if (getTrain().advance()) {
                     moved = true;
                     incDistanceTraveled();
+                    updateInertia();
                     resetTurns();
                     updateLimitedSpeed();
                 } else {
                     // Blocked/Collision - Stop the train
-                    setSpeed(0);
+                    setCurrentSpeed(0);
+                    setTargetSpeed(0);
                 }
             } else {
                 consumeTurn();
@@ -104,57 +128,106 @@ public class Locomotive extends Linker implements Tractor {
         return moved;
     }
 
-    public void incSpeed() {
-        this.speed++;
-        limitSpeed();
-        resetTurnsIfNeeded();
-        if (getTrain() != null) {
-            getTrain().notifySpeedChanged(this.speed);
+    private void updateInertia() {
+        if (currentSpeed == targetSpeed) {
+            railsSinceLastSpeedChange = 0;
+            return;
         }
+
+        railsSinceLastSpeedChange++;
+
+        // Factor de inercia: 2 raíles por cada punto de velocidad actual (acelerando)
+        // O 1 raíl por cada punto si está frenando (frena más rápido).
+        int factor = isBraking() ? 1 : 2;
+        int neededRails = Math.max(1, currentSpeed * factor);
+
+        if (railsSinceLastSpeedChange >= neededRails) {
+            if (currentSpeed < targetSpeed) {
+                currentSpeed++;
+            } else {
+                currentSpeed--;
+            }
+            railsSinceLastSpeedChange = 0;
+
+            if (getTrain() != null) {
+                getTrain().notifySpeedChanged(this.currentSpeed);
+            }
+        }
+    }
+
+    public boolean isBraking() {
+        return currentSpeed > targetSpeed && currentSpeed > 0;
+    }
+
+    public void setEngineStarting(boolean starting) {
+        this.engineStarting = starting;
+    }
+
+    public boolean isEngineStarting() {
+        return engineStarting;
+    }
+
+    public void incSpeed() {
+        setTargetSpeed(this.targetSpeed + 1);
     }
 
     public void decSpeed() {
-        this.speed--;
-        limitSpeed();
+        setTargetSpeed(this.targetSpeed - 1);
+    }
+
+    public void setTargetSpeed(int speed) {
+        this.targetSpeed = speed;
+        limitTargetSpeed();
+    }
+
+    @Override
+    public void setSpeed(int speed) {
+        setTargetSpeed(speed);
+    }
+
+    public void setCurrentSpeed(int speed) {
+        this.currentSpeed = speed;
+        limitCurrentSpeed();
         resetTurnsIfNeeded();
         if (getTrain() != null) {
-            getTrain().notifySpeedChanged(this.speed);
+            getTrain().notifySpeedChanged(this.currentSpeed);
         }
     }
 
-    public void setSpeed(int speed) {
-        int oldSpeed = this.speed;
-        this.speed = speed;
-        limitSpeed();
-        resetTurnsIfNeeded();
-        if (getTrain() != null && oldSpeed != this.speed) {
-            getTrain().notifySpeedChanged(this.speed);
-        }
-    }
-
-    private void limitSpeed() {
-        if (this.speed > MAX_SPEED) {
-            this.speed = MAX_SPEED;
-        }
-        if (this.speed < 0) {
-            this.speed = 0;
-        }
-    }
-
+    // Mantener getSpeed para compatibilidad con el resto del sistema
     public int getSpeed() {
-        return this.speed;
+        return this.currentSpeed;
+    }
+
+    public int getTargetSpeed() {
+        return this.targetSpeed;
+    }
+
+    private void limitTargetSpeed() {
+        if (this.targetSpeed > MAX_SPEED) {
+            this.targetSpeed = MAX_SPEED;
+        }
+        if (this.targetSpeed < 0) {
+            this.targetSpeed = 0;
+        }
+    }
+
+    private void limitCurrentSpeed() {
+        if (this.currentSpeed > MAX_SPEED) {
+            this.currentSpeed = MAX_SPEED;
+        }
+        if (this.currentSpeed < 0) {
+            this.currentSpeed = 0;
+        }
     }
 
     public void updateLimitedSpeed() {
-        if (speedChangeReluctance > 0) {
-            speedChangeReluctance--;
-            return;
-        }
-        speedChangeReluctance = SPEED_CHANGE_MAX_RELUCTANCE;
-        if (getSpeed() > getMaxSpeed()) {
-            decSpeed();
-        } else if (getSpeed() < getMinSpeed()) {
-            incSpeed();
+        // speedChangeReluctance ya no es tan necesario con la inercia por raíles,
+        // pero lo mantenemos si queremos limitar el target.
+        if (targetSpeed > getMaxSpeed()) {
+            setTargetSpeed(getMaxSpeed());
+        } else if (targetSpeed < getMinSpeed()) {
+            setTargetSpeed(getMinSpeed());
         }
     }
 
@@ -165,7 +238,7 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void resetTurns() {
-        this.turns = speed == 0 ? -1 : 50 / speed;
+        this.turns = currentSpeed == 0 ? -1 : 50 / currentSpeed;
         this.totalTurns = this.turns;
     }
 

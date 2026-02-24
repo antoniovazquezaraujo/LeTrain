@@ -82,11 +82,13 @@ public class AudioController {
                 synthesizers.put(loco.getId(), synth);
             }
 
-            // Sync Throttle
-            // Map speed 0-10 to throttle notches 0-9
-            int speed = loco.getSpeed();
-            int notch = Math.min(speed, 9);
-            synth.setThrottle(notch);
+            // Sync Throttle (Engine Sound)
+            int targetNotch = Math.min(loco.getTargetSpeed(), 9);
+            synth.setThrottle(targetNotch);
+
+            // Sync Motion (Rolling Sound)
+            int currentSpeed = loco.getSpeed();
+            synth.setMotionSpeed(currentSpeed);
 
             // Sync Position
             Point pos = loco.getPosition();
@@ -100,6 +102,10 @@ public class AudioController {
                         0,
                         (float) pos.getY() * SCALE_FACTOR);
             }
+
+            // Sync States
+            loco.setEngineStarting(synth.isEngineStarting());
+            synth.setBraking(loco.isBraking());
         }
     }
 
