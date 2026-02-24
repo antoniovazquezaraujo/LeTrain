@@ -63,8 +63,8 @@ public class Gdx3DView extends ApplicationAdapter
         }
 
         com.badlogic.gdx.graphics.g2d.TextureRegion region = glyphRegions.get(c);
-        // Force size to 0.5x0.5 world units
-        return com.badlogic.gdx.graphics.g3d.decals.Decal.newDecal(0.3f, 0.3f, region, true);
+        // Force size to 0.5x0.5 world units for readability
+        return com.badlogic.gdx.graphics.g3d.decals.Decal.newDecal(0.5f, 0.5f, region, true);
     }
 
     private Environment environment;
@@ -649,7 +649,14 @@ public class Gdx3DView extends ApplicationAdapter
                         d.setPosition(charPos);
 
                         // Orientar el decal para que mire hacia afuera de la superficie
-                        d.lookAt(charPos.cpy().add(label.normal), com.badlogic.gdx.math.Vector3.Y);
+                        com.badlogic.gdx.math.Vector3 up = label.up != null ? label.up
+                                : com.badlogic.gdx.math.Vector3.Y;
+
+                        // Si la normal es vertical (0,1,0) y el up también es Y o paralelo, lookAt
+                        // fallará.
+                        // En ese caso, necesitamos un 'up' que esté en el plano horizontal si estamos
+                        // mirando arriba.
+                        d.lookAt(charPos.cpy().add(label.normal), up);
                         decalBatch.add(d);
                     }
                 }

@@ -58,12 +58,13 @@ public class Gdx3DRenderer implements Visitor {
     private Set<letrain.track.rail.RailTrack> selectedStationTracks = new HashSet<>();
     private com.badlogic.gdx.graphics.g3d.Model wagonJewelModel;
     private com.badlogic.gdx.graphics.g3d.Model cylinderModel;
-    private com.badlogic.gdx.graphics.g3d.Model selectionTriangleModel;
+    private com.badlogic.gdx.graphics.g3d.Model selectionLineModel;
 
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
         public String text;
         public com.badlogic.gdx.math.Vector3 normal;
+        public com.badlogic.gdx.math.Vector3 up;
         public com.badlogic.gdx.graphics.Color color;
 
         public VehicleLabel(com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal) {
@@ -72,9 +73,16 @@ public class Gdx3DRenderer implements Visitor {
 
         public VehicleLabel(com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal,
                 com.badlogic.gdx.graphics.Color color) {
+            this(pos, text, normal, null, color);
+        }
+
+        public VehicleLabel(com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal,
+                com.badlogic.gdx.math.Vector3 up,
+                com.badlogic.gdx.graphics.Color color) {
             this.pos = pos;
             this.text = text;
             this.normal = normal;
+            this.up = up;
             this.color = color;
         }
     }
@@ -115,10 +123,10 @@ public class Gdx3DRenderer implements Visitor {
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
-            // Locomotora simple (Bloque Negro)
+            // Locomotora simple (Bloque Gris Claro)
             locomotiveModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                            .createDiffuse(com.badlogic.gdx.graphics.Color.BLACK)),
+                            .createDiffuse(new com.badlogic.gdx.graphics.Color(0.6f, 0.6f, 0.6f, 1f))),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
@@ -139,8 +147,8 @@ public class Gdx3DRenderer implements Visitor {
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
-            // Triángulo de selección (Prisma triangular verde PLANO)
-            selectionTriangleModel = modelBuilder.createCylinder(0.4f, 0.02f, 0.4f, 3,
+            // Línea de selección (Rectángulo verde fino, orientado con el texto)
+            selectionLineModel = modelBuilder.createBox(0.12f, 0.02f, 0.5f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.GREEN)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
@@ -785,14 +793,28 @@ public class Gdx3DRenderer implements Visitor {
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
 
-        // Añadir indicador de dirección para locomotora seleccionada (Triángulo verde
-        // PLANO encima)
+        // Añadir indicador de selección para locomotora seleccionada (Número ID + Línea
+        // verde)
+        // Pegado a la cara superior (flat on top)
         if (isSelected) {
-            ModelInstance selectionTriangle = new ModelInstance(selectionTriangleModel);
-            selectionTriangle.transform.setToTranslation(x + 0.5f, 1.1f, y + 0.5f); // Flotando arriba
-            selectionTriangle.transform.rotate(0, 1, 0, angle);
-            // El prisma triangular (eje Y) ya es plano en el plano XZ y apunta a +X.
-            instances.add(selectionTriangle);
+            float radL = angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
+            float dxL = com.badlogic.gdx.math.MathUtils.cos(radL);
+            float dzL = -com.badlogic.gdx.math.MathUtils.sin(radL);
+
+            // Número ID de la locomotora (En blanco y más grande)
+            labels.add(new VehicleLabel(
+                    new com.badlogic.gdx.math.Vector3(x + 0.5f, 1.01f, y + 0.5f),
+                    "" + locomotive.getId(),
+                    new com.badlogic.gdx.math.Vector3(0, 1, 0), // Normal up
+                    new com.badlogic.gdx.math.Vector3(dxL, 0, dzL).nor(), // Up vector
+                    com.badlogic.gdx.graphics.Color.WHITE));
+
+            // Línea verde pegada al techo, delante del número
+            ModelInstance selectionLine = new ModelInstance(selectionLineModel);
+            float lineOffset = 0.25f;
+            selectionLine.transform.setToTranslation(x + 0.5f + dxL * lineOffset, 1.01f, y + 0.5f + dzL * lineOffset);
+            selectionLine.transform.rotate(0, 1, 0, angle);
+            instances.add(selectionLine);
         }
 
         // Añadir etiquetas a los lados
