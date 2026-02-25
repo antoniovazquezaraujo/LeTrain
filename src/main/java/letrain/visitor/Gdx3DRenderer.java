@@ -1309,35 +1309,6 @@ public class Gdx3DRenderer implements Visitor {
                         centerZ - paraZ * labelOffset),
                 idText, new com.badlogic.gdx.math.Vector3(-paraX, 0, -paraZ), labelColor));
 
-        // 3. Render Station Storage Jewels (PRODUCERS ONLY)
-        if (role == CargoTypes.StationRole.PRODUCER && cargo != null && station != null) {
-            int storage = station.getStorage();
-            int maxStorage = station.getMaxStorage();
-            if (storage > 0) {
-                com.badlogic.gdx.graphics.Color jewelColor = cargo.getColor().cpy();
-                jewelColor.a = alpha;
-
-                float fullness = (float) storage / (float) maxStorage;
-                float currentHeight = fullness * 0.5f; // Max height 0.5f
-
-                ModelInstance jewelBlock = new ModelInstance(wagonJewelModel);
-                jewelBlock.materials.get(0).set(
-                        com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(jewelColor));
-                if (alpha < 1.0f) {
-                    jewelBlock.materials.get(0)
-                            .set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
-                }
-
-                // Center on the plate
-                float jewelY = 0.015f + (currentHeight / 2f);
-
-                jewelBlock.transform.setToTranslation(plateMidX, jewelY, plateMidZ);
-                jewelBlock.transform.rotate(0, 1, 0, plateAngle);
-                jewelBlock.transform.scale(plateLengthPerp * 0.8f, currentHeight, plateWidth * 0.8f);
-
-                instances.add(jewelBlock);
-            }
-        }
     }
 
     @Override
