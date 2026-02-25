@@ -37,6 +37,7 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.utils.ModelBuilder modelBuilder;
     private com.badlogic.gdx.graphics.g3d.Model railModel;
     private com.badlogic.gdx.graphics.g3d.Model inactiveRailModel;
+    private com.badlogic.gdx.graphics.g3d.Model invalidRailModel;
     private com.badlogic.gdx.graphics.g3d.Model cursorModel;
     private com.badlogic.gdx.graphics.g3d.Model locomotiveModel;
     private com.badlogic.gdx.graphics.g3d.Model wagonModel;
@@ -114,6 +115,13 @@ public class Gdx3DRenderer implements Visitor {
             inactiveRailModel = modelBuilder.createBox(0.06f, 0.2f, 0.7f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(new com.badlogic.gdx.graphics.Color(0.1f, 0.1f, 0.12f, 1f))),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Raíl mal conectado (Ahora un cubo amarillo: Motoniveladora)
+            invalidRailModel = modelBuilder.createBox(0.4f, 0.4f, 0.4f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
@@ -417,8 +425,11 @@ public class Gdx3DRenderer implements Visitor {
                     shortenL2 = 0.9f; // Exterior
                 }
             }
-            drawHalfTrack(track.getPosition(), d1, true, shortenL1, shortenR1);
-            drawHalfTrack(track.getPosition(), d2, true, shortenL2, shortenR2);
+            boolean d1Connected = isConnected(track, d1);
+            boolean d2Connected = isConnected(track, d2);
+
+            drawHalfTrack(track.getPosition(), d1, d1Connected, shortenL1, shortenR1);
+            drawHalfTrack(track.getPosition(), d2, d2Connected, shortenL2, shortenR2);
         });
 
         // Si la vía está sobre agua, ponemos un pilar
@@ -450,12 +461,12 @@ public class Gdx3DRenderer implements Visitor {
         drawHalfTrackElevated(pos, d, active, 0.0f, 1.0f, 1.0f);
     }
 
-    private void drawHalfTrack(letrain.map.Point pos, letrain.map.Dir d, boolean active, float shortenL,
+    private void drawHalfTrack(letrain.map.Point pos, letrain.map.Dir d, boolean connected, float shortenL,
             float shortenR) {
-        drawHalfTrackElevated(pos, d, active, 0.0f, shortenL, shortenR);
+        drawHalfTrackElevated(pos, d, connected, 0.0f, shortenL, shortenR);
     }
 
-    private void drawHalfTrackElevated(letrain.map.Point pos, letrain.map.Dir d, boolean active, float elevation,
+    private void drawHalfTrackElevated(letrain.map.Point pos, letrain.map.Dir d, boolean connected, float elevation,
             float shortenL, float shortenR) {
         float dx = getDirX(d);
         float dz = getDirZ(d);
@@ -467,55 +478,75 @@ public class Gdx3DRenderer implements Visitor {
         // Primero dibujamos el balasto (piedras grises)
         // Usamos el promedio de acortamiento para el balasto
         float shortenB = (shortenL + shortenR) / 2f;
-        float scaleB = (magnitude * shortenB) / 0.5f;
+        float shortenBallast = connected ? shortenB : 0.95f; // Mostramos más balasto si está mal para que se vea
+        float scaleB = (magnitude * shortenBallast) / 0.5f;
         ModelInstance ballast = new ModelInstance(ballastModel);
         ballast.transform.setToTranslation(
-                pos.getX() + 0.5f + (dx * (1f - shortenB / 2f)),
+                pos.getX() + 0.5f + (dx * (1f - shortenBallast / 2f)),
                 0.03f + elevation,
-                pos.getY() + 0.5f + (dz * (1f - shortenB / 2f)));
+                pos.getY() + 0.5f + (dz * (1f - shortenBallast / 2f)));
         ballast.transform.rotate(0, 1, 0, angle);
         ballast.transform.scale(1, 1, scaleB);
         instances.add(ballast);
 
         // Calculamos el vector perpendicular para el desplazamiento lateral de los
         // raíles
-        // Normalizado es (dx/magnitude, dz/magnitude)
-        // Perpendicular es (-dz/magnitude, dx/magnitude)
         float offX = (-dz / magnitude) * 0.15f;
         float offZ = (dx / magnitude) * 0.15f;
 
-        com.badlogic.gdx.graphics.g3d.Model activeModel = active ? railModel : inactiveRailModel;
+        if (connected) {
+            com.badlogic.gdx.graphics.g3d.Model activeModel = railModel;
 
-        // Raíl izquierdo
-        float scale = magnitude / 0.5f; // Base scale for a full half-track
-        ModelInstance railL = new ModelInstance(activeModel);
-        // Ajuste de desplazamiento para mantener el extremo exterior fijo si se acorta
-        // Si shorten < 1, el raíl se encoge hacia su centro. Para que solo se encoja
-        // desde el centro del tile,
-        // debemos desplazarlo hacia afuera por la mitad de la longitud perdida.
-        float shiftX_L = dx * (1 - shortenL) / 2f;
-        float shiftZ_L = dz * (1 - shortenL) / 2f;
+            // Raíl izquierdo
+            float scale = magnitude / 0.5f; // Base scale for a full half-track
+            ModelInstance railL = new ModelInstance(activeModel);
+            // Ajuste de desplazamiento para mantener el extremo exterior fijo si se acorta
+            // Si shorten < 1, el raíl se encoge hacia su centro. Para que solo se encoja
+            // desde el centro del tile,
+            // debemos desplazarlo hacia afuera por la mitad de la longitud perdida.
+            float finalShortenL = shortenL;
+            float shiftX_L = dx * (1 - finalShortenL) / 2f;
+            float shiftZ_L = dz * (1 - finalShortenL) / 2f;
 
-        railL.transform.setToTranslation(
-                pos.getX() + 0.5f + (dx / 2f) + offX + shiftX_L,
-                0.08f + elevation,
-                pos.getY() + 0.5f + (dz / 2f) + offZ + shiftZ_L);
-        railL.transform.rotate(0, 1, 0, angle);
-        railL.transform.scale(1, 1, scale * shortenL);
-        instances.add(railL);
+            railL.transform.setToTranslation(
+                    pos.getX() + 0.5f + (dx / 2f) + offX + shiftX_L,
+                    0.08f + elevation,
+                    pos.getY() + 0.5f + (dz / 2f) + offZ + shiftZ_L);
+            railL.transform.rotate(0, 1, 0, angle);
+            railL.transform.scale(1, 1, scale * finalShortenL);
+            instances.add(railL);
 
-        // Raíl derecho
-        float shiftX_R = dx * (1 - shortenR) / 2f;
-        float shiftZ_R = dz * (1 - shortenR) / 2f;
+            // Raíl derecho
+            float finalShortenR = shortenR;
+            float shiftX_R = dx * (1 - finalShortenR) / 2f;
+            float shiftZ_R = dz * (1 - finalShortenR) / 2f;
 
-        ModelInstance railR = new ModelInstance(activeModel);
-        railR.transform.setToTranslation(
-                pos.getX() + 0.5f + (dx / 2f) - offX + shiftX_R,
-                0.08f + elevation,
-                pos.getY() + 0.5f + (dz / 2f) - offZ + shiftZ_R);
-        railR.transform.rotate(0, 1, 0, angle);
-        railR.transform.scale(1, 1, scale * shortenR);
-        instances.add(railR);
+            ModelInstance railR = new ModelInstance(activeModel);
+            railR.transform.setToTranslation(
+                    pos.getX() + 0.5f + (dx / 2f) - offX + shiftX_R,
+                    0.08f + elevation,
+                    pos.getY() + 0.5f + (dz / 2f) - offZ + shiftZ_R);
+            railR.transform.rotate(0, 1, 0, angle);
+            railR.transform.scale(1, 1, scale * finalShortenR);
+            instances.add(railR);
+        } else {
+            // "Motoniveladora": Cubo amarillo en el centro del tramo
+            ModelInstance grader = new ModelInstance(invalidRailModel);
+            grader.transform.setToTranslation(
+                    pos.getX() + 0.5f + (dx * 0.7f),
+                    0.2f + elevation,
+                    pos.getY() + 0.5f + (dz * 0.7f));
+            grader.transform.rotate(0, 1, 0, angle);
+            instances.add(grader);
+        }
+    }
+
+    private boolean isConnected(letrain.track.Track track, letrain.map.Dir dir) {
+        letrain.track.Track neighbor = track.getConnected(dir);
+        if (neighbor == null)
+            return false;
+        // El vecino debe tener una ruta que empiece desde nuestra dirección inversa
+        return neighbor.getRouter().getDir(dir.inverse()) != null;
     }
 
     @Override
@@ -642,8 +673,11 @@ public class Gdx3DRenderer implements Visitor {
                     shortenL2 = 0.9f; // Exterior
                 }
             }
-            drawHalfTrack(track.getPosition(), d1, true, shortenL1, shortenR1);
-            drawHalfTrack(track.getPosition(), d2, true, shortenL2, shortenR2);
+            boolean d1Connected = isConnected(track, d1);
+            boolean d2Connected = isConnected(track, d2);
+
+            drawHalfTrack(track.getPosition(), d1, d1Connected, shortenL1, shortenR1);
+            drawHalfTrack(track.getPosition(), d2, d2Connected, shortenL2, shortenR2);
         }
 
         // Si la vía está ocupada destacamos el vehículo
@@ -689,6 +723,8 @@ public class Gdx3DRenderer implements Visitor {
             railModel.dispose();
         if (inactiveRailModel != null)
             inactiveRailModel.dispose();
+        if (invalidRailModel != null)
+            invalidRailModel.dispose();
         if (cursorModel != null)
             cursorModel.dispose();
         if (locomotiveModel != null)

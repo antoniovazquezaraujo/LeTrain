@@ -34,6 +34,7 @@ public class RailTrackMaker {
     Dir oldDir;
     boolean reversed = false;
     boolean makingTracks = false;
+    private boolean wasRemoving = false;
     Presenter presenter;
     Point lastCursorPosition = null;
     Integer oldGroundType = null;
@@ -75,6 +76,10 @@ public class RailTrackMaker {
             case ArrowUp:
                 if (keyEvent.isShiftDown()) {
                     if (!makingTracks) {
+                        if (wasRemoving) {
+                            cursorBackward();
+                            wasRemoving = false;
+                        }
                         reset();
                         TrackType type = detectTrackType();
                         resetTrackConstructionTime(type);
@@ -85,10 +90,12 @@ public class RailTrackMaker {
 
                 } else if (keyEvent.isCtrlDown()) {
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.ERASING);
-                    removeTrack();
+                    removeTrack(true);
                     makingTracks = false;
+                    wasRemoving = false;
                 } else {
                     makingTracks = false;
+                    wasRemoving = false;
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
                     if (presenter.getModel().getQuantifier() > 0) {
                         resetQuantifierSteps();
@@ -132,15 +139,32 @@ public class RailTrackMaker {
                 }
                 break;
             case ArrowDown:
-                presenter.getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
-                cursorBackward();
-                makingTracks = false;
+                if (keyEvent.isCtrlDown() || keyEvent.isShiftDown()) {
+                    presenter.getModel().getCursor().setMode(Cursor.CursorMode.ERASING);
+                    cursorBackward();
+                    removeTrack(false);
+                    makingTracks = false;
+                    wasRemoving = true;
+                } else {
+                    presenter.getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
+                    cursorBackward();
+                    makingTracks = false;
+                    wasRemoving = false;
+                }
                 break;
             case ArrowLeft:
+                if (keyEvent.isCtrlDown()) {
+                    presenter.getModel().getCursor().setMode(Cursor.CursorMode.ERASING);
+                }
                 cursorTurnLeft();
+                wasRemoving = false;
                 break;
             case ArrowRight:
+                if (keyEvent.isCtrlDown()) {
+                    presenter.getModel().getCursor().setMode(Cursor.CursorMode.ERASING);
+                }
                 cursorTurnRight();
+                wasRemoving = false;
                 break;
             case Insert:
                 manageSensor();
@@ -243,7 +267,7 @@ public class RailTrackMaker {
         oldGroundType = null;
     }
 
-    void removeTrack() {
+    void removeTrack(boolean moveCursor) {
         Point position = presenter.getModel().getCursor().getPosition();
         RailTrack track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
@@ -259,16 +283,18 @@ public class RailTrackMaker {
         if (presenter.getModel().getForks().contains(track)) {
             presenter.getModel().getForks().remove(track);
         }
-        Point newPos = new Point(presenter.getModel().getCursor().getPosition());
-        if (!reversed) {
-            newPos.move(presenter.getModel().getCursor().getDir(), 1);
-        } else {
-            newPos.move(presenter.getModel().getCursor().getDir().inverse());
-        }
-        updateCursorPosition(newPos);
-        Point p = presenter.getModel().getCursor().getPosition();
-        presenter.getView().setPageOfPos(p.getX(), p.getY());
 
+        if (moveCursor) {
+            Point newPos = new Point(presenter.getModel().getCursor().getPosition());
+            if (!reversed) {
+                newPos.move(presenter.getModel().getCursor().getDir(), 1);
+            } else {
+                newPos.move(presenter.getModel().getCursor().getDir().inverse());
+            }
+            updateCursorPosition(newPos);
+            Point p = presenter.getModel().getCursor().getPosition();
+            presenter.getView().setPageOfPos(p.getX(), p.getY());
+        }
     }
 
     void makeTracks() {
