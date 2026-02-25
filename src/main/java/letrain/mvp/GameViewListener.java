@@ -26,6 +26,8 @@ public interface GameViewListener {
 
     void onChar(KeyStroke c);
 
+    void onKeyUp(KeyStroke c);
+
     String getProgram();
 
     void setProgram(String program);

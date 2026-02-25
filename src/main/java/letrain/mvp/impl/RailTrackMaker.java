@@ -35,6 +35,7 @@ public class RailTrackMaker {
     boolean reversed = false;
     boolean makingTracks = false;
     private boolean wasRemoving = false;
+    private int caterpillarCounter = 0;
     Presenter presenter;
     Point lastCursorPosition = null;
     Integer oldGroundType = null;
@@ -71,6 +72,13 @@ public class RailTrackMaker {
         }
     }
 
+    public void onKeyUp(KeyStroke keyEvent) {
+        if (!keyEvent.isShiftDown() && !keyEvent.isCtrlDown()) {
+            caterpillarCounter = 0;
+            makingTracks = false;
+        }
+    }
+
     public void onChar(KeyStroke keyEvent) {
         switch (keyEvent.getKeyType()) {
             case ArrowUp:
@@ -87,6 +95,7 @@ public class RailTrackMaker {
                     resetQuantifierSteps();
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.DRAWING);
                     makingTracks = true;
+                    caterpillarCounter = 5;
 
                 } else if (keyEvent.isCtrlDown()) {
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.ERASING);
@@ -145,6 +154,7 @@ public class RailTrackMaker {
                     removeTrack(false);
                     makingTracks = false;
                     wasRemoving = true;
+                    caterpillarCounter = 5;
                 } else {
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
                     cursorBackward();
@@ -299,6 +309,7 @@ public class RailTrackMaker {
 
     void makeTracks() {
         if (makingTracks) {
+            caterpillarCounter = 5;
             if (isQuantifierPending()) {
                 if (isTrackConstructionPending()) {
                     showAnimation();
@@ -317,6 +328,17 @@ public class RailTrackMaker {
             }
         }
 
+        if (caterpillarCounter > 0) {
+            Point p = presenter.getModel().getCursor().getPosition();
+            if (presenter.getAudioController() != null) {
+                presenter.getAudioController().setJackhammerActive(true, p.getX(), p.getY());
+            }
+            caterpillarCounter--;
+        } else {
+            if (presenter.getAudioController() != null) {
+                presenter.getAudioController().setJackhammerActive(false, 0, 0);
+            }
+        }
     }
 
     private void resetTrackConstructionTime(TrackType type) {

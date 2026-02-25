@@ -139,6 +139,11 @@ public class CompactPresenter implements letrain.mvp.Presenter {
         return model;
     }
 
+    @Override
+    public letrain.audio.AudioController getAudioController() {
+        return audioController;
+    }
+
     /***********************************************************
      * GameViewListener implementation
      *********************************************************
@@ -257,6 +262,13 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             case PERSIST:
                 persistManagerOnChar(keyEvent);
                 break;
+        }
+    }
+
+    @Override
+    public void onKeyUp(KeyStroke keyEvent) {
+        if (model.getMode() == RAILS) {
+            railTrackMaker.onKeyUp(keyEvent);
         }
     }
 

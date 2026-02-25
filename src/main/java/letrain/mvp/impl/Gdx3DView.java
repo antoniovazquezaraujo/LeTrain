@@ -540,6 +540,41 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public boolean keyUp(int keycode) {
+        KeyStroke keyStroke = null;
+        switch (keycode) {
+            case com.badlogic.gdx.Input.Keys.UP:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp);
+                break;
+            case com.badlogic.gdx.Input.Keys.DOWN:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowDown);
+                break;
+            case com.badlogic.gdx.Input.Keys.LEFT:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowLeft);
+                break;
+            case com.badlogic.gdx.Input.Keys.RIGHT:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowRight);
+                break;
+            case com.badlogic.gdx.Input.Keys.CONTROL_LEFT:
+            case com.badlogic.gdx.Input.Keys.CONTROL_RIGHT:
+                // We pass a dummy character or just type for modifiers if we can
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Unknown, true, false, false);
+                break;
+            case com.badlogic.gdx.Input.Keys.SHIFT_LEFT:
+            case com.badlogic.gdx.Input.Keys.SHIFT_RIGHT:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Unknown, false, false, true);
+                break;
+        }
+
+        if (keyStroke != null) {
+            boolean ctrlPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
+                    || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_RIGHT);
+            boolean shiftPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)
+                    || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
+
+            ((letrain.mvp.GameViewListener) this)
+                    .onKeyUp(new KeyStroke(keyStroke.getKeyType(), ctrlPressed, false, shiftPressed));
+            return true;
+        }
         return false;
     }
 
@@ -588,6 +623,11 @@ public class Gdx3DView extends ApplicationAdapter
     private CameraMode cameraMode = CameraMode.ORBIT;
 
     private float stateTime = 0f;
+
+    @Override
+    public letrain.audio.AudioController getAudioController() {
+        return audioController;
+    }
 
     @Override
     public void render() {
@@ -982,6 +1022,13 @@ public class Gdx3DView extends ApplicationAdapter
                 break;
             default:
                 break;
+        }
+    }
+
+    @Override
+    public void onKeyUp(KeyStroke stroke) {
+        if (model.getMode() == letrain.mvp.Model.GameMode.RAILS) {
+            trackMaker.onKeyUp(stroke);
         }
     }
 

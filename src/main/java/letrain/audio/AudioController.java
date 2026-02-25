@@ -21,6 +21,7 @@ public class AudioController {
     private final Map<Integer, TrainSynthesizer> synthesizers = new HashMap<>();
     private final AudioMixer mixer;
     private boolean enabled = true;
+    private letrain.audio.sources.SequencedAmbientSource jackhammerSource;
 
     // 1 Game Unit = 20 Real Meters (Approx length of a train car)
     private static final float SCALE_FACTOR = 20.0f;
@@ -41,6 +42,7 @@ public class AudioController {
     private void loadSamples() {
         loadSample("link", "train-link.wav");
         loadSample("fork", "fork.wav");
+        loadSample("hammer", "hammer.wav");
     }
 
     private void loadSample(String name, String filename) {
@@ -64,6 +66,30 @@ public class AudioController {
         } catch (Exception e) {
             System.err.println("Failed to load " + filename + ": " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    public void setJackhammerActive(boolean active, float x, float y) {
+        if (!enabled)
+            return;
+        if (active) {
+            if (jackhammerSource == null) {
+                AudioSample sample = samples.get("hammer");
+                if (sample != null) {
+                    jackhammerSource = new letrain.audio.sources.SequencedAmbientSource(sample);
+                    jackhammerSource.setVolume(0.5f);
+                    jackhammerSource.setRange(2.0f * SCALE_FACTOR, 50.0f * SCALE_FACTOR);
+                    mixer.addSource(jackhammerSource);
+                }
+            }
+            if (jackhammerSource != null) {
+                jackhammerSource.setActive(true);
+                jackhammerSource.setPosition(x * SCALE_FACTOR, y * SCALE_FACTOR, 0);
+            }
+        } else {
+            if (jackhammerSource != null) {
+                jackhammerSource.setActive(false);
+            }
         }
     }
 
@@ -185,6 +211,10 @@ public class AudioController {
 
     public void stop() {
         mixer.stop();
+        if (jackhammerSource != null) {
+            mixer.removeSource(jackhammerSource);
+            jackhammerSource = null;
+        }
         for (TrainSynthesizer synth : synthesizers.values()) {
             synth.stopAudio();
         }

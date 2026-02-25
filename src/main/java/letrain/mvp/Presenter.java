@@ -2,7 +2,6 @@ package letrain.mvp;
 
 public interface Presenter extends GameViewListener {
 
-
     enum TrackType {
         NORMAL_TRACK,
         STATION_TRACK,
@@ -15,4 +14,6 @@ public interface Presenter extends GameViewListener {
     View getView();
 
     Model getModel();
+
+    letrain.audio.AudioController getAudioController();
 }
