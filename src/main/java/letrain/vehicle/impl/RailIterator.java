@@ -24,16 +24,25 @@ public class RailIterator implements Transportable, Trackeable, Rotable, Mapeabl
 
     @Override
     public boolean advance() {
-        Track track = getTrack();
-        Dir nextDir = getDir();
-        Track nextTrack = track.getConnected(nextDir);
-        if (nextTrack == null) {
-            log.error("No track connected to " + track + " in direction " + nextDir);
+        Track currentTrack = getTrack();
+        Dir entryDir = getDir();
+        Dir exitDir = currentTrack.getDir(entryDir.inverse());
+
+        if (exitDir == null) {
+            log.error("No exit direction found for track at {} with entry dir {}", currentTrack.getPosition(),
+                    entryDir);
             return false;
         }
+
+        Track nextTrack = currentTrack.getConnected(exitDir);
+        if (nextTrack == null) {
+            log.error("No track connected to {} in direction {}", currentTrack, exitDir);
+            return false;
+        }
+
         setTrack(nextTrack);
         setPosition(nextTrack.getPosition());
-        setDir(nextTrack.getDir(nextDir.inverse()));
+        setDir(exitDir); // We exited in exitDir, so we entered the next track from exitDir
         return true;
     }
 

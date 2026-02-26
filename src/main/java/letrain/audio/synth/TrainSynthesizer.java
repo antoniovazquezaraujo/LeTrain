@@ -80,6 +80,21 @@ public class TrainSynthesizer implements AudioSource {
     private void loadResources() {
         if (resourcesLoaded && sharedSample != null) {
             setSample(sharedSample);
+            if (sharedBrakeSample != null) {
+                brakeEngine.setSample(sharedBrakeSample);
+                brakeEngine.setLoopPoints(0, 1.0f);
+                brakeEngine.setSpeed((1.0f - 0.8f) / 1.2f); // 1.0x playback
+                brakeEngine.setVolume(0.0f);
+                brakeEngine.setSampleRate(44100.0f);
+            }
+            if (sharedLoadSample != null) {
+                loadEngine.setSample(sharedLoadSample);
+                loadEngine.setLoopMode(GrainEngine.LoopMode.WRAP);
+                loadEngine.setSpeed((1.0f - 0.8f) / 1.2f); // 1.0x playback
+                loadEngine.setVolume(0.0f);
+                loadEngine.setSampleRate(44100.0f);
+            }
+
             if (sharedLabels != null) {
                 initNotchesFromLabels(sharedLabels, sharedSample);
             } else {
@@ -104,7 +119,7 @@ public class TrainSynthesizer implements AudioSource {
                 sharedBrakeSample = new AudioSample(brakeUrl);
                 brakeEngine.setSample(sharedBrakeSample);
                 brakeEngine.setLoopPoints(0, 1.0f); // Loop entire braking sample
-                brakeEngine.setSpeed(1.0f);
+                brakeEngine.setSpeed((1.0f - 0.8f) / 1.2f); // 1.0x playback
                 brakeEngine.setVolume(0.0f);
                 brakeEngine.setSampleRate(44100.0f);
             } else {
@@ -117,7 +132,7 @@ public class TrainSynthesizer implements AudioSource {
                 sharedLoadSample = new AudioSample(loadUrl);
                 loadEngine.setSample(sharedLoadSample);
                 loadEngine.setLoopMode(GrainEngine.LoopMode.WRAP);
-                loadEngine.setSpeed(1.0f);
+                loadEngine.setSpeed((1.0f - 0.8f) / 1.2f); // Results in 1.0x playback rate
                 loadEngine.setVolume(0.0f);
                 loadEngine.setSampleRate(44100.0f);
             } else {

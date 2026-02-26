@@ -452,17 +452,22 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             }
         }
         if (lastLinker != null && dir != null) {
-            Track track = lastLinker.getTrack();
-            Track nextTrack = track.getConnected(dir);
-            RailIterator iterator = new RailIterator(nextTrack, dir);
-            Linker nextLinker = iterator.getTrack().getLinker();
-            if (nextLinker != null && this != nextLinker.getTrain()) {
-                while (nextLinker != null) {
-                    if (nextLinker.getTrain() != this) {
-                        linkersToJoin.add(nextLinker);
+            Track nextTrack = lastLinker.getTrack().getConnected(dir);
+            if (nextTrack != null) {
+                // We enter nextTrack from direction 'dir'
+                // RailIterator expects: current track and entry direction
+                RailIterator iterator = new RailIterator(nextTrack, dir);
+                Linker nextLinker = iterator.getTrack().getLinker();
+                if (nextLinker != null && this != nextLinker.getTrain()) {
+                    while (nextLinker != null) {
+                        if (nextLinker.getTrain() != this) {
+                            linkersToJoin.add(nextLinker);
+                        }
+                        if (!iterator.advance()) {
+                            break; // Stop if we reach a dead end or error
+                        }
+                        nextLinker = iterator.getTrack().getLinker();
                     }
-                    iterator.advance();
-                    nextLinker = iterator.getTrack().getLinker();
                 }
             }
         }

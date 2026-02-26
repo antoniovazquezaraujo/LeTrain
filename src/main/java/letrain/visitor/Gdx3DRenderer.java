@@ -1266,8 +1266,7 @@ public class Gdx3DRenderer implements Visitor {
             for (letrain.vehicle.impl.rail.Locomotive loc : modelRef.getLocomotives()) {
                 letrain.vehicle.impl.rail.Train train = loc.getTrain();
                 if (train != null && train.isLoading()) {
-                    letrain.track.Track t = loc.getTrack();
-                    if (t != null && t.getSensor() == station) {
+                    if (train.getStationAtTrain() == station) {
                         isActionActive = true;
                         break;
                     }

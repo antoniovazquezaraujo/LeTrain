@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 import letrain.map.Dir;
 import letrain.vehicle.impl.Linker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TrackDirector<T extends Track> implements Serializable {
     private static TrackDirector instance;
@@ -19,10 +21,18 @@ public class TrackDirector<T extends Track> implements Serializable {
         return instance;
     }
 
+    private static final Logger log = LoggerFactory.getLogger(TrackDirector.class);
+
     public void enterLinkerFromDir(T track, Dir d, Linker vehicle) {
         vehicle.setTrack(track);
         vehicle.setPosition(track.getPosition());
-        vehicle.setDir(track.getRouter().getDir(d));
+        Dir exitDir = track.getRouter().getDir(d);
+        if (exitDir != null) {
+            vehicle.setDir(exitDir);
+        } else {
+            log.error("No exit direction found for track at {} entering from {}. Keeping current vehicle dir: {}.",
+                    track.getPosition(), d, vehicle.getDir());
+        }
         track.setLinker(vehicle);
     }
 

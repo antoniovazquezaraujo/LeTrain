@@ -82,6 +82,14 @@ public class SimpleRouter implements Serializable, Router {
 
     @Override
     public void addRoute(Dir from, Dir to) {
+        if (from == null || to == null) {
+            // Null directions cause NullPointerExceptions later in Map.get or equals
+            return;
+        }
+        if (from == to) {
+            // Self-loops cause immediate 180-degree flips and infinite loops in some logic
+            return;
+        }
         // ruta repetida
         if (dirMap.containsKey(from) && dirMap.get(from).equals(to)) {
             return;

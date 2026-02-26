@@ -286,8 +286,18 @@ public class RailTrackMaker {
 
         if (canResume) {
             oldDir = actualCursorPosition.locate(oldTrack.getPosition());
-            oldGroundType = presenter.getModel().getGroundMap().getValueAt(oldTrack.getPosition());
-        } else {
+            if (oldDir == null) {
+                // If locate returns null, it means we are on the same tile.
+                // We cannot resume drawing a new track piece on the same tile.
+                oldTrack = null;
+                oldDir = dir;
+                canResume = false;
+            } else {
+                oldGroundType = presenter.getModel().getGroundMap().getValueAt(oldTrack.getPosition());
+            }
+        }
+
+        if (!canResume) {
             oldTrack = null;
             oldDir = dir;
             oldGroundType = null;
@@ -515,7 +525,9 @@ public class RailTrackMaker {
         }
         // al track que había (o al que hemos creado normal) le agregamos la ruta entre
         // la vieja dir y la nueva
-        track.addRoute(oldDir, dir);
+        if (oldDir != null && dir != null) {
+            track.addRoute(oldDir, dir);
+        }
         track.setPosition(actualCursorPosition);
         presenter.getModel().getRailMap().addTrack(actualCursorPosition, track);
         presenter.getModel().getEconomyManager().onRailTrackConstructed(newTrackType);
