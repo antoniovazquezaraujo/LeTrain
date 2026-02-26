@@ -272,6 +272,7 @@ public class Model implements Serializable, letrain.mvp.Model {
         for (ForkRailTrack fork : getForks()) {
             if (fork.getId() == id) {
                 selectedFork = fork;
+                selectedForkIndex = forks.indexOf(fork);
                 return true;
             }
         }
@@ -358,9 +359,10 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     @Override
     public boolean selectLocomotive(int id) {
-        for (Locomotive Locomotive : getLocomotives()) {
-            if (Locomotive.getId() == id) {
-                selectedLocomotive = Locomotive;
+        for (Locomotive loco : locomotives) {
+            if (loco.getId() == id) {
+                selectedLocomotive = loco;
+                selectedLocomotiveIndex = locomotives.indexOf(loco);
                 return true;
             }
         }
@@ -370,16 +372,6 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public List<RailSemaphore> getSemaphores() {
         return this.semaphores;
-    }
-
-    @Override
-    public RailSemaphore getSemaphore(int id) {
-        for (RailSemaphore semaphore : getSemaphores()) {
-            if (semaphore.getId() == id) {
-                return semaphore;
-            }
-        }
-        return null;
     }
 
     @Override
@@ -435,14 +427,30 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
+    public void setSelectedSemaphore(RailSemaphore selectedSemaphore) {
+        this.selectedSemaphore = selectedSemaphore;
+    }
+
+    @Override
     public boolean selectSemaphore(int id) {
         for (RailSemaphore semaphore : getSemaphores()) {
             if (semaphore.getId() == id) {
                 selectedSemaphore = semaphore;
+                selectedSemaphoreIndex = semaphores.indexOf(semaphore);
                 return true;
             }
         }
         return false;
+    }
+
+    @Override
+    public RailSemaphore getSemaphore(int id) {
+        for (RailSemaphore semaphore : getSemaphores()) {
+            if (semaphore.getId() == id) {
+                return semaphore;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -633,9 +641,10 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     @Override
     public boolean selectStation(int id) {
-        for (Station Station : getStations()) {
-            if (Station.getId() == id) {
-                selectedStation = Station;
+        for (Station station : getStations()) {
+            if (station.getId() == id) {
+                selectedStation = station;
+                selectedStationIndex = stations.indexOf(station);
                 return true;
             }
         }

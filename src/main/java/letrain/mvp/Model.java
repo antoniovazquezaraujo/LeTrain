@@ -107,6 +107,8 @@ public interface Model {
 
     RailSemaphore getSelectedSemaphore();
 
+    void setSelectedSemaphore(RailSemaphore selectedSemaphore);
+
     void moveLocomotives();
 
     GameMode getMode();

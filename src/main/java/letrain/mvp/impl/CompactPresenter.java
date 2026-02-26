@@ -53,6 +53,11 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     int locomotiveId;
     int StationId;
 
+    private long forkInputTimeout = 0;
+    private long semaphoreInputTimeout = 0;
+    private long stationInputTimeout = 0;
+    private long locomotiveInputTimeout = 0;
+
     RailTrackMaker railTrackMaker;
     letrain.audio.AudioController audioController;
 
@@ -118,6 +123,9 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 model.loadAndUnloadTrains();
                 model.removeDestroyedTrains();
                 audioController.update();
+
+                updateTimeouts();
+
                 Thread.sleep(50);
                 view.clear();
             }
@@ -310,7 +318,11 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                      * }
                      */
                 } else if (keyEvent.getCharacter() == ' ') {
-                    StationId = 0;
+                    if (StationId > 0) {
+                        selectStation(StationId);
+                        StationId = 0;
+                        stationInputTimeout = 0;
+                    }
                     // Unified Industrial Action (Space bar)
                     Station selectedStation = model.getSelectedStation();
                     if (selectedStation != null) {
@@ -341,11 +353,16 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 break;
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
+                    if (semaphoreId > 0) {
+                        selectSemaphore(semaphoreId);
+                        semaphoreId = 0;
+                        semaphoreInputTimeout = 0;
+                    }
                     toggleSemaphore();
                     semaphoreId = 0;
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     semaphoreId = semaphoreId * 10 + (keyEvent.getCharacter() - '0');
-                    selectSemaphore(semaphoreId);
+                    semaphoreInputTimeout = System.currentTimeMillis() + 1000;
                 }
                 break;
             case ArrowUp:
@@ -483,11 +500,17 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 break;
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
+                    if (forkId > 0) {
+                        selectFork(forkId);
+                        forkId = 0;
+                        forkInputTimeout = 0;
+                    }
                     toggleFork();
                     forkId = 0;
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     forkId = forkId * 10 + (keyEvent.getCharacter() - '0');
                     selectFork(forkId);
+                    forkInputTimeout = System.currentTimeMillis() + 1000;
                 }
                 break;
             case ArrowUp:
@@ -571,6 +594,11 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 break;
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
+                    if (locomotiveId > 0) {
+                        selectLocomotive(locomotiveId);
+                        locomotiveId = 0;
+                        locomotiveInputTimeout = 0;
+                    }
                     // Space bar now only toggles reverse when stopped
                     toggleReversed();
                     locomotiveId = 0;
@@ -1016,5 +1044,29 @@ public class CompactPresenter implements letrain.mvp.Presenter {
     public void onMapPageChanged(Point mapScrollPage, int columns, int rows) {
         model.updateGroundMap(mapScrollPage, columns, rows);
 
+    }
+
+    private void updateTimeouts() {
+        long now = System.currentTimeMillis();
+        if (forkInputTimeout > 0 && now > forkInputTimeout) {
+            model.selectFork(forkId);
+            forkId = 0;
+            forkInputTimeout = 0;
+        }
+        if (semaphoreInputTimeout > 0 && now > semaphoreInputTimeout) {
+            model.selectSemaphore(semaphoreId);
+            semaphoreId = 0;
+            semaphoreInputTimeout = 0;
+        }
+        if (stationInputTimeout > 0 && now > stationInputTimeout) {
+            model.selectStation(StationId);
+            StationId = 0;
+            stationInputTimeout = 0;
+        }
+        if (locomotiveInputTimeout > 0 && now > locomotiveInputTimeout) {
+            model.selectLocomotive(locomotiveId);
+            locomotiveId = 0;
+            locomotiveInputTimeout = 0;
+        }
     }
 }

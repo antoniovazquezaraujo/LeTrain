@@ -52,6 +52,10 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model mountainModel;
     private com.badlogic.gdx.graphics.g3d.Model ballastModel;
     private com.badlogic.gdx.graphics.g3d.Model bridgePillarModel;
+    private com.badlogic.gdx.graphics.g3d.Model forkBaseModel;
+    private com.badlogic.gdx.graphics.g3d.Model selectedForkBaseModel;
+    private com.badlogic.gdx.graphics.g3d.Model forkBoxModel;
+    private com.badlogic.gdx.graphics.g3d.Model selectedForkBoxModel;
     private com.badlogic.gdx.graphics.g3d.Model tunnelPortalModel;
     private com.badlogic.gdx.graphics.g3d.Model terrainWallModel;
     private com.badlogic.gdx.graphics.g3d.Model semaphoreOpenModel;
@@ -68,6 +72,7 @@ public class Gdx3DRenderer implements Visitor {
         public com.badlogic.gdx.math.Vector3 normal;
         public com.badlogic.gdx.math.Vector3 up;
         public com.badlogic.gdx.graphics.Color color;
+        public float scale = 1.0f;
 
         public VehicleLabel(com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal) {
             this(pos, text, normal, com.badlogic.gdx.graphics.Color.WHITE);
@@ -81,11 +86,19 @@ public class Gdx3DRenderer implements Visitor {
         public VehicleLabel(com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal,
                 com.badlogic.gdx.math.Vector3 up,
                 com.badlogic.gdx.graphics.Color color) {
+            this(pos, text, normal, up, color, 1.0f);
+        }
+
+        public VehicleLabel(com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal,
+                com.badlogic.gdx.math.Vector3 up,
+                com.badlogic.gdx.graphics.Color color,
+                float scale) {
             this.pos = pos;
             this.text = text;
             this.normal = normal;
             this.up = up;
             this.color = color;
+            this.scale = scale;
         }
     }
 
@@ -149,6 +162,20 @@ public class Gdx3DRenderer implements Visitor {
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
+            // Grey Fork Base (Point 20 refinement)
+            forkBaseModel = modelBuilder.createBox(1.0f, 0.06f, 1.0f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.GRAY)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // White Selected Fork Base (Point 20 refinement)
+            selectedForkBaseModel = modelBuilder.createBox(1.0f, 0.06f, 1.0f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.WHITE)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
             // Locomotora amarilla para modo LINK
             locomotiveHighlightModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -182,6 +209,20 @@ public class Gdx3DRenderer implements Visitor {
             forkModel = modelBuilder.createBox(0.4f, 0.02f, 0.4f,
                     new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                             .createDiffuse(com.badlogic.gdx.graphics.Color.RED)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Thin Fork Plate (User request: plate instead of block)
+            forkBoxModel = modelBuilder.createBox(0.3f, 0.02f, 0.3f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.GRAY)),
+                    com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                            | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // White Selected Fork Plate
+            selectedForkBoxModel = modelBuilder.createBox(0.3f, 0.02f, 0.3f,
+                    new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                            .createDiffuse(com.badlogic.gdx.graphics.Color.WHITE)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
@@ -463,11 +504,16 @@ public class Gdx3DRenderer implements Visitor {
 
     private void drawHalfTrack(letrain.map.Point pos, letrain.map.Dir d, boolean connected, float shortenL,
             float shortenR) {
-        drawHalfTrackElevated(pos, d, connected, 0.0f, shortenL, shortenR);
+        drawHalfTrackElevated(pos, d, connected, 0.0f, shortenL, shortenR, railModel);
     }
 
     private void drawHalfTrackElevated(letrain.map.Point pos, letrain.map.Dir d, boolean connected, float elevation,
             float shortenL, float shortenR) {
+        drawHalfTrackElevated(pos, d, connected, elevation, shortenL, shortenR, railModel);
+    }
+
+    private void drawHalfTrackElevated(letrain.map.Point pos, letrain.map.Dir d, boolean connected, float elevation,
+            float shortenL, float shortenR, com.badlogic.gdx.graphics.g3d.Model railModelToUse) {
         float dx = getDirX(d);
         float dz = getDirZ(d);
         float magnitude = (float) Math.sqrt(dx * dx + dz * dz);
@@ -495,7 +541,7 @@ public class Gdx3DRenderer implements Visitor {
         float offZ = (dx / magnitude) * 0.15f;
 
         if (connected) {
-            com.badlogic.gdx.graphics.g3d.Model activeModel = railModel;
+            com.badlogic.gdx.graphics.g3d.Model activeModel = railModelToUse;
 
             // Raíl izquierdo
             float scale = magnitude / 0.5f; // Base scale for a full half-track
@@ -630,20 +676,36 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        // Resaltado si es el desvío seleccionado
+        boolean isSelected = false;
+        // Check if selected
         if (modelRef != null && modelRef.getMode() == Model.GameMode.FORKS) {
             if (modelRef.getSelectedFork() != null
                     && modelRef.getSelectedFork().getPosition().equals(track.getPosition())) {
-                ModelInstance highlight = new ModelInstance(highlightModel);
-                // Situamos el resaltado en la base, un poco más alto para evitar z-fighting con
-                // el suelo
-                highlight.transform.setToTranslation(track.getPosition().getX() + 0.5f, 0.04f,
-                        track.getPosition().getY() + 0.5f);
-                instances.add(highlight);
+                isSelected = true;
             }
         }
 
-        // Determinamos la ruta activa
+        // Base plate (Always visible: Gray by default, White if selected)
+        ModelInstance base = new ModelInstance(isSelected ? selectedForkBaseModel : forkBaseModel);
+        base.transform.setToTranslation(track.getPosition().getX() + 0.5f, 0.03f,
+                track.getPosition().getY() + 0.5f);
+        instances.add(base);
+
+        // SMALL BOX ON THE SIDE (Point 20 refinement)
+        float bx = track.getPosition().getX() + 0.5f;
+        float bz = track.getPosition().getY() + 0.5f;
+        float boxOffset = 0.8f; // More separated as requested
+
+        letrain.map.Dir trackAxis = track.getOriginalRoute().getFirst();
+        letrain.map.Dir sideDir = trackAxis.turnRight().turnRight();
+        bx += getDirX(sideDir) * boxOffset;
+        bz += getDirZ(sideDir) * boxOffset;
+
+        ModelInstance box = new ModelInstance(isSelected ? selectedForkBoxModel : forkBoxModel);
+        box.transform.setToTranslation(bx, 0.06f + 0.01f, bz); // On top of the base plate (height 0.06)
+        instances.add(box);
+
+        // Active route rails
         letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> route = track.isUsingAlternativeRoute()
                 ? track.getAlternativeRoute()
                 : track.getOriginalRoute();
@@ -659,18 +721,16 @@ public class Gdx3DRenderer implements Visitor {
             int dist = d1.angularDistance(d2);
             int absDist = Math.abs(dist);
             if (absDist >= 1 && absDist <= 3) {
-                if (dist > 0) { // Giro a la izquierda -> Raíl interior es el izquierdo de d1 (railR) y derecho
-                                // de d2 (railL)
-                    shortenR1 = 0.75f; // Interior
-                    shortenL2 = 0.75f; // Interior
-                    shortenL1 = 0.9f; // Exterior
-                    shortenR2 = 0.9f; // Exterior
-                } else if (dist < 0) { // Giro a la derecha -> Raíl interior es el derecho de d1 (railL) y izquierdo de
-                                       // d2 (railR)
-                    shortenL1 = 0.75f; // Interior
-                    shortenR2 = 0.75f; // Interior
-                    shortenR1 = 0.9f; // Exterior
-                    shortenL2 = 0.9f; // Exterior
+                if (dist > 0) {
+                    shortenR1 = 0.75f;
+                    shortenL2 = 0.75f;
+                    shortenL1 = 0.9f;
+                    shortenR2 = 0.9f;
+                } else if (dist < 0) {
+                    shortenL1 = 0.75f;
+                    shortenR2 = 0.75f;
+                    shortenR1 = 0.9f;
+                    shortenL2 = 0.9f;
                 }
             }
             boolean d1Connected = isConnected(track, d1);
@@ -680,32 +740,21 @@ public class Gdx3DRenderer implements Visitor {
             drawHalfTrack(track.getPosition(), d2, d2Connected, shortenL2, shortenR2);
         }
 
-        // Si la vía está ocupada destacamos el vehículo
-        if (track.getLinker() != null) {
-            // TODO: Implementar resaltado de vehículo en desvío
-        }
+        // Labels (Point 20 refinement)
+        String idText = String.valueOf(track.getId());
+        float labelScale = 0.4f; // Smaller labels as requested
 
-        // Indicador de ruta activa (bloque rojo)
-        if (route != null) {
-            ModelInstance indicator = new ModelInstance(forkModel);
-            letrain.map.Dir d = route.getFirst(); // Tomamos una de las direcciones de la ruta para posicionar
-            float ox = getDirX(d);
-            float oz = getDirZ(d);
-            indicator.transform.setToTranslation(track.getPosition().getX() + 0.5f + ox * 0.4f, 0.10f,
-                    track.getPosition().getY() + 0.5f + oz * 0.4f);
-            instances.add(indicator);
-        }
-
-        // Si el desvío está sobre agua, ponemos un pilar
+        // Labels on top of the plate
+        float labelHeight = 0.06f + 0.02f + 0.01f; // base + plate + slight offset
+        labels.add(new VehicleLabel(new com.badlogic.gdx.math.Vector3(bx, labelHeight, bz), idText,
+                new com.badlogic.gdx.math.Vector3(0, 1, 0), new com.badlogic.gdx.math.Vector3(0, 0, -1),
+                com.badlogic.gdx.graphics.Color.BLACK, labelScale));
+        // Bridge pillars logic
         if (modelRef != null && modelRef.getGroundMap() != null) {
             Integer terrain = modelRef.getGroundMap().getValueAt(track.getPosition());
             if (terrain != null && terrain == GroundMap.WATER) {
                 ModelInstance pillar = new ModelInstance(bridgePillarModel);
-                // El agua está en y=-2.0. Altura del pilar = 1.9. Centro en y=-1.05 (hasta
-                // y=-0.1).
-                pillar.transform.setToTranslation(
-                        track.getPosition().getX() + 0.5f,
-                        -1.05f,
+                pillar.transform.setToTranslation(track.getPosition().getX() + 0.5f, -1.05f,
                         track.getPosition().getY() + 0.5f);
                 pillar.transform.scale(1f, 1.9f, 1f);
                 instances.add(pillar);

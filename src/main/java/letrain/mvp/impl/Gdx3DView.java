@@ -92,6 +92,16 @@ public class Gdx3DView extends ApplicationAdapter
     // Audio
     private letrain.audio.AudioController audioController;
 
+    // Multi-digit selection state (Point 20)
+    private int forkIdAccumulator = 0;
+    private int semaphoreIdAccumulator = 0;
+    private int stationIdAccumulator = 0;
+    private int locomotiveIdAccumulator = 0;
+    private long forkInputTimeout = 0;
+    private long semaphoreInputTimeout = 0;
+    private long stationInputTimeout = 0;
+    private long locomotiveInputTimeout = 0;
+
     public Gdx3DView(letrain.mvp.impl.Model model) {
         this.model = model;
         this.renderer = new Gdx3DRenderer();
@@ -319,44 +329,6 @@ public class Gdx3DView extends ApplicationAdapter
             }
             // 's' key handler removed (moved to HOME key in keyDown)
         } else if (model.getMode() == letrain.mvp.Model.GameMode.RAILS) {
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.LINK) {
-            if (character == ' ') {
-                letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
-                if (loco != null && loco.getTrain() != null) {
-                    letrain.vehicle.impl.rail.Train train = loco.getTrain();
-                    if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
-                        train.joinLinkers();
-                        audioController.playOneShot("link",
-                                (float) loco.getPosition().getX(),
-                                (float) loco.getPosition().getY());
-                    }
-                    model.setMode(letrain.mvp.Model.GameMode.MENU);
-                }
-                return true;
-            }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS) {
-            if (character == ' ') {
-                if (model.getSelectedFork() != null) {
-                    model.getSelectedFork().flipRoute();
-                    audioController.playOneShot("fork",
-                            (float) model.getSelectedFork().getPosition().getX(),
-                            (float) model.getSelectedFork().getPosition().getY());
-                }
-                return true;
-            }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.UNLINK) {
-            if (character == ' ') {
-                letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
-                if (loco != null && loco.getTrain() != null) {
-                    loco.getTrain().divideTrain(model::nextTrainId);
-                    audioController.playOneShot("link",
-                            (float) loco.getPosition().getX(),
-                            (float) loco.getPosition().getY());
-                    model.setMode(letrain.mvp.Model.GameMode.MENU);
-                }
-                return true;
-            }
-
         } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS) {
             if (character == '-') {
                 letrain.track.Station station = model.getSelectedStation();
@@ -643,6 +615,7 @@ public class Gdx3DView extends ApplicationAdapter
             model.moveLocomotives();
             model.loadAndUnloadTrains();
             model.removeDestroyedTrains();
+            updateSelectionTimeouts();
 
             stateTime -= 0.05f;
             if (stateTime > 0.05f)
@@ -682,19 +655,26 @@ public class Gdx3DView extends ApplicationAdapter
                 if (label.text == null || label.text.isEmpty())
                     continue;
 
-                float charSpacing = 0.25f; // Espaciado entre caracteres en unidades de mundo
+                float baseCharSpacing = 0.25f; // Espaciado base
+                float charSpacing = baseCharSpacing * label.scale;
                 float totalWidth = label.text.length() * charSpacing;
                 float startOffset = -totalWidth / 2f + charSpacing / 2f;
 
                 // Vector horizontal paralelo a la cara (perpendicular a la normal y a Y)
                 com.badlogic.gdx.math.Vector3 horizontal = new com.badlogic.gdx.math.Vector3(label.normal.z, 0,
                         -label.normal.x).nor();
+                // Si la normal es vertical, el producto vectorial anterior es cero.
+                // Usamos un vector por defecto en ese caso.
+                if (horizontal.len() < 0.1f) {
+                    horizontal.set(1, 0, 0);
+                }
 
                 for (int i = 0; i < label.text.length(); i++) {
                     char c = label.text.charAt(i);
                     com.badlogic.gdx.graphics.g3d.decals.Decal d = getGlyphDecal(c);
                     if (d != null) {
                         d.setColor(label.color != null ? label.color : com.badlogic.gdx.graphics.Color.WHITE);
+                        d.setScale(label.scale);
 
                         // Posición con desplazamiento horizontal para centrar el texto
                         float offset = startOffset + i * charSpacing;
@@ -1083,12 +1063,26 @@ public class Gdx3DView extends ApplicationAdapter
             model.selectNextLocomotive();
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
                 && stroke.getCharacter() == ' ') {
+            if (locomotiveIdAccumulator > 0) {
+                model.selectLocomotive(locomotiveIdAccumulator);
+                locomotiveIdAccumulator = 0;
+                locomotiveInputTimeout = 0;
+            }
             // Space bar now only toggles reverse when stopped
             if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) {
                 if (model.getSelectedLocomotive().getTrack() != null) {
                     model.getSelectedLocomotive().toggleReversed();
                 }
             }
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character &&
+                Character.isDigit(stroke.getCharacter())) {
+            locomotiveIdAccumulator = locomotiveIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
+            model.selectLocomotive(locomotiveIdAccumulator);
+            locomotiveInputTimeout = System.currentTimeMillis() + 1000;
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Backspace) {
+            locomotiveIdAccumulator = locomotiveIdAccumulator / 10;
+            model.selectLocomotive(locomotiveIdAccumulator);
+            locomotiveInputTimeout = System.currentTimeMillis() + 1000;
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Enter) {
             // Enter key now handles loading/unloading at a station, or switches to menu
             if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) {
@@ -1192,12 +1186,26 @@ public class Gdx3DView extends ApplicationAdapter
             model.selectNextFork();
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
                 && stroke.getCharacter() == ' ') {
+            if (forkIdAccumulator > 0) {
+                model.selectFork(forkIdAccumulator);
+                forkIdAccumulator = 0;
+                forkInputTimeout = 0;
+            }
             if (model.getSelectedFork() != null) {
                 model.getSelectedFork().flipRoute();
                 audioController.playOneShot("fork",
                         (float) model.getSelectedFork().getPosition().getX(),
                         (float) model.getSelectedFork().getPosition().getY());
             }
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character &&
+                Character.isDigit(stroke.getCharacter())) {
+            forkIdAccumulator = forkIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
+            model.selectFork(forkIdAccumulator);
+            forkInputTimeout = System.currentTimeMillis() + 1000;
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Backspace) {
+            forkIdAccumulator = forkIdAccumulator / 10;
+            model.selectFork(forkIdAccumulator);
+            forkInputTimeout = System.currentTimeMillis() + 1000;
         }
     }
 
@@ -1208,10 +1216,27 @@ public class Gdx3DView extends ApplicationAdapter
             model.selectNextSemaphore();
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
                 && stroke.getCharacter() == ' ') {
+            if (semaphoreIdAccumulator > 0) {
+                model.selectSemaphore(semaphoreIdAccumulator);
+                semaphoreIdAccumulator = 0;
+                semaphoreInputTimeout = 0;
+            }
             letrain.track.RailSemaphore s = model.getSelectedSemaphore();
             if (s != null) {
                 s.setOpen(!s.isOpen());
+                audioController.playOneShot("construction",
+                        (float) s.getPosition().getX(),
+                        (float) s.getPosition().getY());
             }
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character &&
+                Character.isDigit(stroke.getCharacter())) {
+            semaphoreIdAccumulator = semaphoreIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
+            model.selectSemaphore(semaphoreIdAccumulator);
+            semaphoreInputTimeout = System.currentTimeMillis() + 1000;
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Backspace) {
+            semaphoreIdAccumulator = semaphoreIdAccumulator / 10;
+            model.selectSemaphore(semaphoreIdAccumulator);
+            semaphoreInputTimeout = System.currentTimeMillis() + 1000;
         }
     }
 
@@ -1220,15 +1245,51 @@ public class Gdx3DView extends ApplicationAdapter
             model.selectPrevStation();
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
             model.selectNextStation();
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
-            letrain.track.Station selectedStation = model.getSelectedStation();
-            if (selectedStation != null) {
-                // Se ha eliminado la lógica de carga/descarga con flechas en modo STATIONS,
-                // ya que el punto 14 del plan especifica la barra espaciadora en modo DRIVE.
-
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
+                && stroke.getCharacter() == ' ') {
+            if (stationIdAccumulator > 0) {
+                model.selectStation(stationIdAccumulator);
+                stationIdAccumulator = 0;
+                stationInputTimeout = 0;
             }
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
-            // Se ha eliminado la lógica de carga/descarga con flechas en modo STATIONS.
+            if (model.getSelectedStation() != null && model.getSelectedStation().getTrack() != null) {
+                letrain.vehicle.impl.Linker linker = model.getSelectedStation().getTrack().getLinker();
+                if (linker != null && linker.getTrain() != null) {
+                    linker.getTrain().performIndustrialAction(model.getSelectedStation());
+                }
+            }
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character &&
+                Character.isDigit(stroke.getCharacter())) {
+            stationIdAccumulator = stationIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
+            model.selectStation(stationIdAccumulator);
+            stationInputTimeout = System.currentTimeMillis() + 1000;
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Backspace) {
+            stationIdAccumulator = stationIdAccumulator / 10;
+            model.selectStation(stationIdAccumulator);
+            stationInputTimeout = System.currentTimeMillis() + 1000;
+        }
+    }
+
+    private void updateSelectionTimeouts() {
+        if (forkInputTimeout > 0 && System.currentTimeMillis() > forkInputTimeout) {
+            model.selectFork(forkIdAccumulator);
+            forkIdAccumulator = 0;
+            forkInputTimeout = 0;
+        }
+        if (semaphoreInputTimeout > 0 && System.currentTimeMillis() > semaphoreInputTimeout) {
+            model.selectSemaphore(semaphoreIdAccumulator);
+            semaphoreIdAccumulator = 0;
+            semaphoreInputTimeout = 0;
+        }
+        if (stationInputTimeout > 0 && System.currentTimeMillis() > stationInputTimeout) {
+            model.selectStation(stationIdAccumulator);
+            stationIdAccumulator = 0;
+            stationInputTimeout = 0;
+        }
+        if (locomotiveInputTimeout > 0 && System.currentTimeMillis() > locomotiveInputTimeout) {
+            model.selectLocomotive(locomotiveIdAccumulator);
+            locomotiveIdAccumulator = 0;
+            locomotiveInputTimeout = 0;
         }
     }
 
