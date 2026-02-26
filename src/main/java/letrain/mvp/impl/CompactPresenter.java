@@ -589,10 +589,9 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                                                                                                               // el tren
                                                                                                               // está
                                                                                                               // detenido
-                    letrain.track.Sensor sensor = model.getSelectedLocomotive().getTrack().getSensor();
-                    if (sensor instanceof Station) {
-                        Station station = (Station) sensor;
-                        Train train = model.getSelectedLocomotive().getTrain();
+                    Train train = model.getSelectedLocomotive().getTrain();
+                    Station station = train.getStationAtTrain();
+                    if (station != null) {
                         if (train.isLoading()) { // Si ya está cargando/descargando, lo termina
                             train.endLoadUnloadProcess();
                         } else {

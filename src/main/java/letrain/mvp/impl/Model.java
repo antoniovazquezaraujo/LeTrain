@@ -558,9 +558,9 @@ public class Model implements Serializable, letrain.mvp.Model {
                     train.setLoadingCount(count - 1);
                     // PRECISION SYNC: Each wagon gets 80 ticks (4.0s).
                     // Now we only call this ONCE per tick per train.
-                    Sensor sensor = locomotive.getTrack().getSensor();
-                    if (sensor instanceof Station) {
-                        train.performIndustrialAction((Station) sensor);
+                    Station station = train.getStationAtTrain();
+                    if (station != null) {
+                        train.performIndustrialAction(station);
                     }
                 } else {
                     // Timer finished.

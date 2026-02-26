@@ -1094,9 +1094,8 @@ public class Gdx3DView extends ApplicationAdapter
             if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) {
                 letrain.vehicle.impl.rail.Train selectedTrain = model.getSelectedLocomotive().getTrain();
                 if (selectedTrain != null) {
-                    letrain.track.Sensor sensor = model.getSelectedLocomotive().getTrack().getSensor();
-                    if (sensor instanceof letrain.track.Station) {
-                        letrain.track.Station station = (letrain.track.Station) sensor;
+                    letrain.track.Station station = selectedTrain.getStationAtTrain();
+                    if (station != null) {
                         if (selectedTrain.isLoading()) {
                             selectedTrain.endLoadUnloadProcess();
                         } else {

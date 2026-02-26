@@ -642,10 +642,15 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         if (adjacentLinker != null && adjacentLinker.getTrain() != this) {
             return linkerDir;
         }
-        linkerDir = linker.getTrack().getDir(linkerDir);
-        adjacentLinker = getAdjacentLinker(linker, linkerDir);
-        if (adjacentLinker != null && adjacentLinker.getTrain() != this) {
-            return linkerDir;
+        return null;
+    }
+
+    public letrain.track.Station getStationAtTrain() {
+        for (letrain.vehicle.impl.Linker linker : getLinkers()) {
+            letrain.track.Track track = linker.getTrack();
+            if (track != null && track.getSensor() instanceof letrain.track.Station) {
+                return (letrain.track.Station) track.getSensor();
+            }
         }
         return null;
     }
@@ -689,7 +694,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 // Punto 11: No se permiten trenes que carguen distintos tipos de mercancía
                 // simultáneamente.
                 if (wagon.getCargoAmount() == 0 &&
-                        (trainCurrentCargoType == CargoTypes.NONE || trainCurrentCargoType == station.getCargoType())) {
+                        (trainCurrentCargoType == CargoTypes.NONE
+                                || trainCurrentCargoType == station.getCargoType())) {
                     wagonsToLoad++;
                 }
             }
@@ -733,13 +739,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     public boolean performIndustrialAction(letrain.track.Station station) {
         if (getDirectorLinker().getSpeed() != 0)
             return false;
-
-        // Interaction ONLY if the locomotive is exactly on the station tile
-        if (((Locomotive) getDirectorLinker()).getTrack().getSensor() != station) {
-            log.warn("Industrial Action Skip: Train {} (Loco on {}) is NOT on Station {} sensor.", getId(),
-                    ((Locomotive) getDirectorLinker()).getTrack().getSensor(), station.getId());
-            return false;
-        }
 
         // Punto 10: Si un tren lleva carga no se puede volver a cargar hasta que se
         // descargue.
