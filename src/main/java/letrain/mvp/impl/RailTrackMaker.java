@@ -185,6 +185,8 @@ public class RailTrackMaker {
             case End:
                 manageStationSensor();
                 break;
+            default:
+                break;
         }
 
     }
@@ -271,10 +273,27 @@ public class RailTrackMaker {
     private void reset() {
         degreesOfRotation = 0;
         dir = presenter.getModel().getCursor().getDir();
-        oldTrack = null;
-        oldDir = dir;
+        Point actualCursorPosition = presenter.getModel().getCursor().getPosition();
+
+        // Check if we can resume from oldTrack
+        boolean canResume = false;
+        if (oldTrack != null && oldTrack.getPosition() != null) {
+            double dist = Point.distance(oldTrack.getPosition(), actualCursorPosition);
+            if (dist <= 1.5) { // Adjacent (ortho or diag)
+                canResume = true;
+            }
+        }
+
+        if (canResume) {
+            oldDir = actualCursorPosition.locate(oldTrack.getPosition());
+            oldGroundType = presenter.getModel().getGroundMap().getValueAt(oldTrack.getPosition());
+        } else {
+            oldTrack = null;
+            oldDir = dir;
+            oldGroundType = null;
+        }
+
         reversed = false;
-        oldGroundType = null;
     }
 
     void removeTrack(boolean moveCursor) {
