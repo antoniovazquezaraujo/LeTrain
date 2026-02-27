@@ -36,7 +36,6 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
-import com.googlecode.lanterna.screen.Screen;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.visitor.Gdx3DRenderer;
@@ -88,6 +87,10 @@ public class Gdx3DView extends ApplicationAdapter
     private Label balanceLabel;
     private Label trainInfoLabel;
     private Label cargoInfoLabel;
+    private Table speedometerTable;
+    private SpeedometerGauge speedGauge;
+    private NotchLever notchLever;
+    private com.badlogic.gdx.graphics.glutils.ShapeRenderer shapeRenderer;
 
     // Audio
     private letrain.audio.AudioController audioController;
@@ -168,6 +171,7 @@ public class Gdx3DView extends ApplicationAdapter
         font.getData().markupEnabled = true;
 
         initUI();
+        shapeRenderer = new com.badlogic.gdx.graphics.glutils.ShapeRenderer();
 
         InputMultiplexer multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(stage);
@@ -237,6 +241,12 @@ public class Gdx3DView extends ApplicationAdapter
         scrollPaneStyle.vScrollKnob = skin.newDrawable("white", Color.LIGHT_GRAY);
         skin.add("default", scrollPaneStyle);
 
+        // ProgressBar Style
+        com.badlogic.gdx.scenes.scene2d.ui.ProgressBar.ProgressBarStyle progressBarStyle = new com.badlogic.gdx.scenes.scene2d.ui.ProgressBar.ProgressBarStyle();
+        progressBarStyle.background = skin.newDrawable("white", Color.DARK_GRAY);
+        progressBarStyle.knobBefore = skin.newDrawable("white", Color.CYAN);
+        skin.add("default-horizontal", progressBarStyle);
+
         menuTable = new Table();
         menuTable.setFillParent(true);
         menuTable.bottom();
@@ -246,21 +256,23 @@ public class Gdx3DView extends ApplicationAdapter
         hudTable = new Table();
         hudTable.setFillParent(true);
         hudTable.top().left();
-        hudTable.pad(10);
+        // REMOVED: hudTable.setBackground(...) - This stretched the background to fill
+        // parent
 
-        // Background for HUD
-        hudTable.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.6f)));
+        Table hudContent = new Table();
+        hudContent.pad(10);
 
         modeLabel = new Label("MODE: -", skin, "title");
         balanceLabel = new Label("BALANCE: $0", skin, "hud");
         trainInfoLabel = new Label("", skin);
         cargoInfoLabel = new Label("", skin);
 
-        hudTable.add(modeLabel).left().padBottom(5).row();
-        hudTable.add(balanceLabel).left().padBottom(10).row();
-        hudTable.add(trainInfoLabel).left().row();
-        hudTable.add(cargoInfoLabel).left().row();
+        hudContent.add(modeLabel).left().padBottom(5).row();
+        hudContent.add(balanceLabel).left().padBottom(10).row();
+        hudContent.add(trainInfoLabel).left().row();
+        hudContent.add(cargoInfoLabel).left().row();
 
+        hudTable.add(hudContent).top().left();
         stage.addActor(hudTable);
 
         descLabel = new Label("", skin);
@@ -269,6 +281,26 @@ public class Gdx3DView extends ApplicationAdapter
         descTable.bottom();
         descTable.add(descLabel).padBottom(50);
         stage.addActor(descTable);
+
+        // Speedometer Table (Top Right)
+        speedometerTable = new Table();
+        speedometerTable.setFillParent(true);
+        speedometerTable.top().right();
+        // REMOVED: speedometerTable.setBackground(...) - This stretched the background
+        // to fill parent
+
+        Table speedoContent = new Table();
+        speedoContent.pad(20);
+
+        speedGauge = new SpeedometerGauge();
+        notchLever = new NotchLever();
+
+        speedoContent.add(speedGauge).size(200, 100).right().padTop(10).row();
+        speedoContent.add(notchLever).size(80, 150).right().padTop(20).row();
+
+        speedometerTable.add(speedoContent).top().right();
+        speedometerTable.setVisible(false);
+        stage.addActor(speedometerTable);
 
         updateMenuButtons();
     }
@@ -837,9 +869,16 @@ public class Gdx3DView extends ApplicationAdapter
         if (loco != null) {
             int speedKmh = loco.getSpeed() * 12; // Approx conversion for visual variety
             trainInfoLabel.setText(String.format(
-                    "[LIGHT_GRAY]TRAIN #%d[] | [WHITE]SPEED: %d km/h[] | [WHITE]NOTCH: %d[] | [GRAY]POS: (%d, %d)[]",
-                    loco.getId(), speedKmh, loco.getSpeed(),
+                    "[LIGHT_GRAY]TRAIN #%d[] | [GRAY]POS: (%d, %d)[]",
+                    loco.getId(),
                     (int) loco.getPosition().getX(), (int) loco.getPosition().getY()));
+
+            // Update Speedometer
+            // speedValueLabel.setText(speedKmh + " km/h"); // Removed redundant text
+            speedGauge.setSpeed(speedKmh);
+            notchLever.setNotch(loco.getSpeed());
+            notchLever.setTargetNotch(loco.getTargetSpeed());
+            speedometerTable.setVisible(true);
 
             letrain.vehicle.impl.rail.Train train = loco.getTrain();
             if (train != null) {
@@ -859,6 +898,7 @@ public class Gdx3DView extends ApplicationAdapter
         } else {
             trainInfoLabel.setText("[GRAY]NO TRAIN SELECTED[]");
             cargoInfoLabel.setText("");
+            speedometerTable.setVisible(false);
         }
 
         // Marcamos el botón seleccionado según el modo
@@ -1431,7 +1471,7 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     @Override
-    public void setScreen(Screen screen) {
+    public void setScreen(com.googlecode.lanterna.screen.Screen screen) {
     }
 
     @Override
@@ -1679,6 +1719,8 @@ public class Gdx3DView extends ApplicationAdapter
             stage.dispose();
         if (skin != null)
             skin.dispose();
+        if (shapeRenderer != null)
+            shapeRenderer.dispose();
         if (groundModel != null)
             groundModel.dispose();
         if (gridModel != null)
@@ -1715,5 +1757,189 @@ public class Gdx3DView extends ApplicationAdapter
                     (stage.getHeight() - dialog.getHeight()) / 2);
             stage.addActor(dialog);
         });
+    }
+
+    private class SpeedometerGauge extends com.badlogic.gdx.scenes.scene2d.Actor {
+        private float speed = 0;
+        private float visualSpeed = 0;
+
+        public void setSpeed(float speed) {
+            this.speed = speed;
+        }
+
+        @Override
+        public void draw(com.badlogic.gdx.graphics.g2d.Batch batch, float parentAlpha) {
+            batch.end();
+
+            // Smooth needle movement
+            visualSpeed = com.badlogic.gdx.math.MathUtils.lerp(visualSpeed, speed, 0.1f);
+
+            shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
+            shapeRenderer.setTransformMatrix(batch.getTransformMatrix());
+
+            com.badlogic.gdx.graphics.GL20 gl = com.badlogic.gdx.Gdx.gl;
+            gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
+            gl.glBlendFunc(com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
+                    com.badlogic.gdx.graphics.GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
+
+            float x = getX() + getWidth() / 2;
+            float y = getY();
+            float radius = getWidth() / 2;
+
+            // Background arc (180 degrees)
+            shapeRenderer.setColor(0.1f, 0.1f, 0.1f, 0.4f * parentAlpha);
+            shapeRenderer.arc(x, y, radius, 0, 180, 40);
+
+            // Ticks
+            shapeRenderer.end();
+            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Line);
+            Gdx.gl.glLineWidth(2);
+            shapeRenderer.setColor(com.badlogic.gdx.graphics.Color.WHITE);
+            for (int i = 0; i <= 120; i += 10) {
+                float tickAngle = (180f - (i / 120f) * 180f) * com.badlogic.gdx.math.MathUtils.degreesToRadians;
+                float cos = com.badlogic.gdx.math.MathUtils.cos(tickAngle);
+                float sin = com.badlogic.gdx.math.MathUtils.sin(tickAngle);
+                shapeRenderer.line(x + (radius - 15) * cos, y + (radius - 15) * sin,
+                        x + radius * cos, y + radius * sin);
+            }
+            Gdx.gl.glLineWidth(1);
+            shapeRenderer.end();
+
+            batch.begin();
+            float oldScaleX = font.getScaleX();
+            float oldScaleY = font.getScaleY();
+            font.getData().setScale(0.8f);
+
+            com.badlogic.gdx.math.Matrix4 oldMatrix = batch.getTransformMatrix().cpy();
+            for (int i = 0; i <= 120; i += 20) {
+                float angleDeg = 180f - (i / 120f) * 180f;
+                float labelAngle = angleDeg * com.badlogic.gdx.math.MathUtils.degreesToRadians;
+                float cos = com.badlogic.gdx.math.MathUtils.cos(labelAngle);
+                float sin = com.badlogic.gdx.math.MathUtils.sin(labelAngle);
+
+                String txt = String.valueOf(i);
+                com.badlogic.gdx.graphics.g2d.GlyphLayout layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout(font,
+                        txt);
+
+                float lx = x + (radius - 45) * cos;
+                float ly = y + (radius - 45) * sin;
+
+                com.badlogic.gdx.math.Matrix4 matrix = new com.badlogic.gdx.math.Matrix4(oldMatrix);
+                matrix.translate(lx, ly, 0);
+                matrix.rotate(0, 0, 1, angleDeg - 90);
+                batch.setTransformMatrix(matrix);
+
+                font.draw(batch, txt, -layout.width / 2, layout.height / 2);
+            }
+            batch.setTransformMatrix(oldMatrix);
+
+            font.getData().setScale(oldScaleX, oldScaleY);
+            batch.end();
+
+            // Needle (drawn last)
+            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(com.badlogic.gdx.graphics.Color.RED);
+            float needleAngle = 180f - (visualSpeed / 120f) * 180f;
+            float needleRad = needleAngle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
+
+            float needleWidth = 6f; // Total width of 12 pixels at the base
+            float nx = com.badlogic.gdx.math.MathUtils.cos(needleRad);
+            float ny = com.badlogic.gdx.math.MathUtils.sin(needleRad);
+            float px = com.badlogic.gdx.math.MathUtils.cos(needleRad + com.badlogic.gdx.math.MathUtils.PI / 2);
+            float py = com.badlogic.gdx.math.MathUtils.sin(needleRad + com.badlogic.gdx.math.MathUtils.PI / 2);
+
+            shapeRenderer.triangle(
+                    x + px * needleWidth, y + py * needleWidth,
+                    x - px * needleWidth, y - py * needleWidth,
+                    x + (radius - 5) * nx, y + (radius - 5) * ny);
+            shapeRenderer.end();
+
+            com.badlogic.gdx.Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
+
+            batch.begin();
+        }
+    }
+
+    private class NotchLever extends com.badlogic.gdx.scenes.scene2d.Actor {
+        private int notch = 0;
+        private int targetNotch = 0;
+        private float visualNotch = 0;
+
+        public void setNotch(int notch) {
+            this.notch = notch;
+        }
+
+        public void setTargetNotch(int targetNotch) {
+            this.targetNotch = targetNotch;
+        }
+
+        @Override
+        public void draw(com.badlogic.gdx.graphics.g2d.Batch batch, float parentAlpha) {
+            batch.end();
+
+            // Smooth handle movement
+            visualNotch = com.badlogic.gdx.math.MathUtils.lerp(visualNotch, (float) notch, 0.1f);
+
+            shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
+            shapeRenderer.setTransformMatrix(batch.getTransformMatrix());
+
+            com.badlogic.gdx.graphics.GL20 gl = com.badlogic.gdx.Gdx.gl;
+            gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
+            gl.glBlendFunc(com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
+                    com.badlogic.gdx.graphics.GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
+
+            float x = getX() + getWidth() / 2;
+            float y = getY();
+            float h = getHeight();
+
+            // Background slot
+            shapeRenderer.setColor(0.2f, 0.2f, 0.2f, 0.4f * parentAlpha); // Translucent gray
+            shapeRenderer.rect(x - 40, y, 65, h); // Wider to cover numbers
+
+            // Tick marks
+            shapeRenderer.end();
+            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Line);
+            shapeRenderer.setColor(Color.WHITE);
+            for (int i = 0; i <= 10; i++) {
+                float ty = y + (i / 10f) * h;
+                shapeRenderer.line(x - 10, ty, x + 10, ty);
+            }
+            shapeRenderer.end();
+
+            // Labels
+            batch.begin();
+            float oldScaleX = font.getScaleX();
+            float oldScaleY = font.getScaleY();
+            font.getData().setScale(0.7f);
+            for (int i = 0; i <= 10; i++) {
+                float ty = y + (i / 10f) * h;
+                String txt = String.valueOf(i);
+                com.badlogic.gdx.graphics.g2d.GlyphLayout layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout(font,
+                        txt);
+                font.draw(batch, txt, x - 25 - layout.width, ty + layout.height / 2);
+            }
+            font.getData().setScale(oldScaleX, oldScaleY);
+            batch.end();
+
+            // Target Notch Indicator (Transparent Square)
+            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(1, 1, 1, 0.4f * parentAlpha); // Semi-transparent white
+            float tyNode = y + (targetNotch / 10f) * h;
+            shapeRenderer.rect(x - 18, tyNode - 8, 36, 16);
+
+            // Handle (Actual Speed)
+            shapeRenderer.setColor(Color.RED);
+            float hy = y + (visualNotch / 10f) * h;
+            shapeRenderer.rect(x - 15, hy - 5, 30, 10);
+            shapeRenderer.end();
+
+            com.badlogic.gdx.Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
+
+            batch.begin();
+        }
     }
 }
