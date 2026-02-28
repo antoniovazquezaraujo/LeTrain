@@ -18,6 +18,7 @@ import letrain.track.CargoTypes;
 import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
+import letrain.vehicle.Destructible;
 import letrain.vehicle.Transportable;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.RailIterator;
@@ -97,9 +98,9 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         }
     }
 
-    public void notifyContact() {
+    public void notifyContact(letrain.map.Point pos) {
         for (TrainEventListener l : trainListeners) {
-            l.onContact();
+            l.onContact(pos);
         }
     }
 
@@ -318,123 +319,104 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         }
     }
 
-    private boolean moveLinkers(boolean isNormalSense) {
-        List<Linker> movingOrder = new ArrayList<>();
-        Linker firstLinker;
-        Linker lastLinker;
+    public boolean moveLinkers(boolean isNormalSense) {
+        if (linkers.isEmpty()) {
+            return false;
+        }
 
-        if (isNormalSense && !getDirectorLinker().isReversed()) {
-            movingOrder.addAll(getLinkers());
+        // Pass 1: Verify all linkers can move to their next tracks
+        List<Track> targetTracks = new ArrayList<>();
+        Map<Linker, Track> currentTracks = new HashMap<>(); // next -> currentTrack
+        Map<Linker, Dir> entryDirsMap = new HashMap<>();
+        Map<Linker, Linker> occupyingLinkerMap = new HashMap<>();
+
+        List<Linker> movingOrder = new ArrayList<>();
+        if (isNormalSense) {
+            movingOrder.addAll(linkers);
         } else {
-            Iterator<Linker> it = getLinkers().descendingIterator();
+            Iterator<Linker> it = linkers.descendingIterator();
             while (it.hasNext()) {
                 movingOrder.add(it.next());
             }
         }
 
-        if (movingOrder.isEmpty()) {
-            return false;
-        }
+        Linker firstLinker = movingOrder.get(0);
+        Linker lastLinker = movingOrder.get(movingOrder.size() - 1);
 
-        firstLinker = movingOrder.get(0);
-        lastLinker = movingOrder.get(movingOrder.size() - 1);
+        for (Linker linkerToMove : movingOrder) {
+            Track currentTrack = linkerToMove.getTrack();
+            if (currentTrack == null) {
+                return false;
+            }
 
-        // Verification Pass: Check if all linkers can move
-        List<Track> targetTracks = new ArrayList<>();
-        Map<Linker, Track> currentTracks = new HashMap<>();
-        Map<Linker, Dir> entryDirsMap = new HashMap<>();
-        Map<Linker, Linker> occupyingLinkerMap = new HashMap<>();
+            Dir exitDir = linkerToMove.getDir();
+            Track nextTrackOfLinker = currentTrack.getConnected(exitDir);
 
-        for (Linker next : movingOrder) {
-            Track track = next.getTrack();
-            Dir nextDir = next.getDir();
-            Track nextTrack = track.getConnected(nextDir);
-
-            log.info("Pass 1: Linker {} moving from {} to {} dir {}", next, track.getPosition(),
-                    (nextTrack != null ? nextTrack.getPosition() : "null"), nextDir);
-
-            if (nextTrack == null) {
-                log.info("Pass 1: Blocked by null nextTrack");
+            if (nextTrackOfLinker == null) {
+                log.info("Pass 1: nextTrack is null for {}", linkerToMove);
                 clearReservations(targetTracks);
                 return false;
             }
 
-            Linker occupyingLinker = nextTrack.getLinker();
-            if (occupyingLinker != null) {
-                log.info("Pass 1: nextTrack occupied by linker {}. OccupyingTrain: {}, ThisTrain: {}",
-                        occupyingLinker, occupyingLinker.getTrain(), this);
+            Linker occupyingL = nextTrackOfLinker.getLinker();
+            if (occupyingL != null) {
 
-                if (occupyingLinker.getTrain() != this) {
-                    log.info("Pass 1: Collision detected with another train or loose wagon");
-                    if (getDirectorLinker().getSpeed() > 1) {
-                        crash(occupyingLinker);
-                        clearReservations(targetTracks);
-                        return false;
-                    }
-                    Train crashedTrain = occupyingLinker.getTrain();
-                    if (crashedTrain != null && crashedTrain.getDirectorLinker().getSpeed() > 1) {
-                        crash(occupyingLinker);
-                        clearReservations(targetTracks);
-                        return false;
-                    }
-                    notifyContact();
-                    if (crashedTrain != null) {
-                        crashedTrain.notifyContact();
+                if (occupyingL.getTrain() != this) {
+                    int speed = (getDirectorLinker() instanceof Locomotive)
+                            ? ((Locomotive) getDirectorLinker()).getSpeed()
+                            : 0;
+
+                    if (Math.abs(speed) >= 5) {
+                        crash(occupyingL);
+                    } else {
+                        letrain.map.Point collisionPos = occupyingL.getPosition();
+                        notifyContact(collisionPos);
+                        Train otherTrain = occupyingL.getTrain();
+                        if (otherTrain != null) {
+                            otherTrain.notifyContact(collisionPos);
+                        }
                     }
                     clearReservations(targetTracks);
                     return false;
-                } else {
-                    log.info("Pass 1: nextTrack occupied by our own linker. Proceeding.");
                 }
             }
 
-            Dir entryDir = next.getDir().inverse();
-            // We only call canEnter if it's NOT our own linker, OR if we want to be strict.
-            // Actually, TrackDirector.canEnter checks if track.getLinker() is null.
-            // If it's our own linker, we KNOW it's not null, so canEnter will say false.
-            // We should bypass canEnter's linker check if we know it's moving.
-            if (occupyingLinker == null || occupyingLinker.getTrain() != this) {
-                if (!nextTrack.canEnter(entryDir, next)) {
-                    log.info("Pass 1: nextTrack.canEnter failed for {}", next);
-                    clearReservations(targetTracks); // Clear any reservations made so far
+            Dir entryDirOfLinker = linkerToMove.getDir().inverse();
+            if (occupyingL == null || occupyingL.getTrain() != this) {
+                if (!nextTrackOfLinker.canEnter(entryDirOfLinker, linkerToMove)) {
+                    clearReservations(targetTracks);
                     return false;
                 }
             }
 
-            // Store info for later use
-            currentTracks.put(next, track);
-            entryDirsMap.put(next, entryDir);
-            occupyingLinkerMap.put(next, occupyingLinker);
+            currentTracks.put(linkerToMove, currentTrack);
+            entryDirsMap.put(linkerToMove, entryDirOfLinker);
+            occupyingLinkerMap.put(linkerToMove, occupyingL);
 
-            // Reserve the track for this linker
-            nextTrack.setReservation(next);
-            targetTracks.add(nextTrack); // Add to list of reserved tracks for potential clearing
+            nextTrackOfLinker.setReservation(linkerToMove);
+            targetTracks.add(nextTrackOfLinker);
         }
 
-        log.info("Pass 1: All linkers verified and reserved. Executing Pass 2.");
 
-        // Execution Pass: Actually move the linkers
+        // Pass 2: Actually move the linkers
         for (int i = 0; i < movingOrder.size(); i++) {
-            Linker next = movingOrder.get(i);
-            Track currentTrack = currentTracks.get(next); // Use stored current track
-            Track nextTrack = targetTracks.get(i);
-            Dir entryDir = entryDirsMap.get(next); // Use stored entry direction
+            Linker linkerToMove = movingOrder.get(i);
+            Track currentTrack = currentTracks.get(linkerToMove);
+            Track nextTrackOfLinker = targetTracks.get(i);
+            Dir entryDirOfLinker = entryDirsMap.get(linkerToMove);
 
-            // Trigger Sensor Exit
             Sensor sensorExit = currentTrack.getSensor();
-            if (sensorExit != null && next == lastLinker) { // Only trigger for the last linker exiting its track
+            if (sensorExit != null && linkerToMove == lastLinker) {
                 sensorExit.onExitTrain(this);
             }
 
             currentTrack.removeLinker();
-            nextTrack.enterLinkerFromDir(entryDir, next);
+            nextTrackOfLinker.enterLinkerFromDir(entryDirOfLinker, linkerToMove);
 
-            // Important: clear the reservation as we are now physically occupying it
-            nextTrack.setReservation(null);
+            nextTrackOfLinker.setReservation(null);
 
-            // Trigger Sensor Enter
-            Sensor sensorEnter = nextTrack.getSensor();
-            if (sensorEnter != null && next == firstLinker) { // Only trigger for the first linker entering its track
+            Sensor sensorEnter = nextTrackOfLinker.getSensor();
+            if (sensorEnter != null && linkerToMove == firstLinker) {
                 sensorEnter.onEnterTrain(this);
             }
         }
@@ -449,16 +431,50 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     private void crash(Linker linker) {
-        for (TrainEventListener l : trainListeners) {
-            l.onCrash();
-        }
-        getLinkers().forEach(Linker::destroy);
-        if (linker.getTrain() != null) {
-            for (TrainEventListener l : linker.getTrain().trainListeners) {
-                l.onCrash();
+        letrain.map.Point crashPos = linker.getPosition();
+        // Only trigger crash logic if this train isn't already destroying
+        boolean alreadyDestroying = false;
+        for (Linker l : getLinkers()) {
+            if (l instanceof Destructible && ((Destructible) l).isDestroying()) {
+                alreadyDestroying = true;
+                break;
             }
-            linker.getTrain().getLinkers().forEach(Linker::destroy);
+        }
+
+        if (!alreadyDestroying) {
+            for (TrainEventListener l : trainListeners) {
+                l.onCrash(crashPos);
+            }
+            getLinkers().forEach(l -> {
+                if (l instanceof Locomotive) {
+                    ((Locomotive) l).setTargetSpeed(0);
+                }
+                l.destroy();
+            });
+        }
+
+        // Also handle the other linker/train
+        if (linker.getTrain() != null) {
+            boolean otherAlreadyDestroying = false;
+            for (Linker l : linker.getTrain().getLinkers()) {
+                if (l instanceof Destructible && ((Destructible) l).isDestroying()) {
+                    otherAlreadyDestroying = true;
+                    break;
+                }
+            }
+            if (!otherAlreadyDestroying) {
+                for (TrainEventListener l : linker.getTrain().trainListeners) {
+                    l.onCrash(crashPos);
+                }
+                linker.getTrain().getLinkers().forEach(l -> {
+                    if (l instanceof Locomotive) {
+                        ((Locomotive) l).setTargetSpeed(0);
+                    }
+                    l.destroy();
+                });
+            }
         } else {
+            log.info("crash: Destroying loose linker {} at crash position {}", linker, crashPos);
             linker.destroy();
         }
     }
@@ -657,6 +673,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 linkerToRemove.setTrain(train);
                 train.getLinkers().add(linkerToRemove);
                 train.assignDefaultDirectorLinker();
+                // Inherit listeners so the Presenter keeps receiving events
+                for (TrainEventListener listener : trainListeners) {
+                    train.addTrainEventListener(listener);
+                }
             }
         }
         linkersToRemove.clear();
@@ -678,6 +698,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 linkerToRemove.setTrain(train);
                 train.getLinkers().add(linkerToRemove);
                 train.assignDefaultDirectorLinker();
+                // Inherit listeners so the Presenter keeps receiving events
+                for (TrainEventListener listener : trainListeners) {
+                    train.addTrainEventListener(listener);
+                }
             }
             linkersToDestroy.add(linkerToRemove);
         }

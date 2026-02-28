@@ -17,9 +17,12 @@ import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.impl.rail.TrainEventListener;
 import letrain.vehicle.impl.rail.Wagon;
 
 public interface Model {
+
+    public void addTrainEventListener(TrainEventListener listener);
 
     public void setShowId(boolean b);
 

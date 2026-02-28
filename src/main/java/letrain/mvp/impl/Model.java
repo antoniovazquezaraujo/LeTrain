@@ -58,6 +58,20 @@ public class Model implements Serializable, letrain.mvp.Model {
     List<Station> stations;
     int nextLocomotiveId;
     int nextForkId;
+
+    private final List<letrain.vehicle.impl.rail.TrainEventListener> trainEventListeners = new ArrayList<>();
+
+    @Override
+    public void addTrainEventListener(letrain.vehicle.impl.rail.TrainEventListener listener) {
+        this.trainEventListeners.add(listener);
+        // Apply to existing trains
+        for (Locomotive loco : locomotives) {
+            if (loco.getTrain() != null) {
+                loco.getTrain().addTrainEventListener(listener);
+            }
+        }
+    }
+
     int nextSensorId;
     int nextSemaphoreId;
     int nextTrainId;
@@ -227,6 +241,11 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public void addLocomotive(Locomotive locomotive) {
         this.locomotives.add(locomotive);
+        if (locomotive.getTrain() != null) {
+            for (letrain.vehicle.impl.rail.TrainEventListener l : trainEventListeners) {
+                locomotive.getTrain().addTrainEventListener(l);
+            }
+        }
     }
 
     @Override
@@ -466,7 +485,9 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public void removeDestroyedTrains() {
         AtomicBoolean removed = new AtomicBoolean(false);
+
         getLocomotives().forEach(locomotive -> {
+            locomotive.updateDestroyTimer();
             if (locomotive.isDestroyed()) {
                 removed.set(true);
             }
@@ -474,17 +495,19 @@ public class Model implements Serializable, letrain.mvp.Model {
 
         getLocomotives().removeIf(locomotive -> {
             if (locomotive.isDestroyed()) {
-                removed.set(true);
                 locomotive.getTrack().removeLinker();
+                return true;
             }
-            return locomotive.isDestroyed();
+            return false;
         });
 
         getWagons().removeIf(wagon -> {
+            wagon.updateDestroyTimer();
             if (wagon.isDestroyed()) {
                 wagon.getTrack().removeLinker();
+                return true;
             }
-            return wagon.isDestroyed();
+            return false;
         });
 
         if (removed.get()) {

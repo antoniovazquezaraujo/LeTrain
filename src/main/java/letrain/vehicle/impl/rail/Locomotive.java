@@ -7,7 +7,7 @@ import letrain.vehicle.impl.Tractor;
 import letrain.visitor.Visitor;
 
 public class Locomotive extends Linker implements Tractor {
-    private static final int MAX_DESTROY_TURNS = 400;
+    private static final int MAX_DESTROY_TURNS = 200;
     private static final long serialVersionUID = 1L;
     final static int MAX_SPEED = 10;
     final static int SPEED_CHANGE_MAX_RELUCTANCE = 2;
@@ -323,10 +323,13 @@ public class Locomotive extends Linker implements Tractor {
 
     @Override
     public boolean isDestroyed() {
-        if (isDestroying() && destroyingTurns-- <= 0) {
-            return true;
+        return isDestroying() && destroyingTurns <= 0;
+    }
+
+    public void updateDestroyTimer() {
+        if (isDestroying() && destroyingTurns > 0) {
+            destroyingTurns--;
         }
-        return false;
     }
 
     @Override

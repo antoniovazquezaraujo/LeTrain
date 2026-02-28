@@ -39,7 +39,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CompactPresenter implements letrain.mvp.Presenter {
+public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.impl.rail.TrainEventListener {
     Logger log = LoggerFactory.getLogger(CompactPresenter.class);
 
     Model model;
@@ -80,13 +80,12 @@ public class CompactPresenter implements letrain.mvp.Presenter {
         } else {
             this.model = new Model();
         }
+        // Register this as global listener for all present and future trains
+        this.model.addTrainEventListener(this);
     }
 
     public void stop() {
         running = false;
-        if (audioController != null) {
-            audioController.stop();
-        }
     }
 
     public void start() {
@@ -113,6 +112,11 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 informer.visitModel(model);
                 view.paint();
                 model.moveLocomotives();
+                for (Locomotive loco : model.getLocomotives()) {
+                    if (loco.isDestroying()) {
+                        audioController.stopSynthesizer(loco.getId());
+                    }
+                }
                 if (model.getMode() == DRIVE) {
                     Locomotive selectedLocomotive = model.getSelectedLocomotive();
                     if (selectedLocomotive != null) {
@@ -474,6 +478,7 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             Locomotive locomotive = new Locomotive(model.nextLocomotiveId(), c);
             Train train = new Train(model.nextTrainId());
             train.pushBack(locomotive);
+            train.addTrainEventListener(this);
             train.setDirectorLinker(locomotive);
             model.addLocomotive(locomotive);
             model.getEconomyManager().onLocomotiveConstructed(locomotive);
@@ -672,10 +677,8 @@ public class CompactPresenter implements letrain.mvp.Presenter {
                 Train train = loco.getTrain();
                 if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
                     train.joinLinkers();
-                    audioController.playOneShot("link",
-                            (float) loco.getPosition().getX(),
-                            (float) loco.getPosition().getY());
                 }
+                model.setMode(letrain.mvp.Model.GameMode.MENU);
             }
         }
     }
@@ -741,11 +744,15 @@ public class CompactPresenter implements letrain.mvp.Presenter {
         Wagon wagon = new Wagon(c);
         model.addWagon(wagon);
         track.enterLinkerFromDir(d, wagon);
+        if (wagon.getTrain() != null) {
+            wagon.getTrain().addTrainEventListener(this);
+        }
     }
 
     private void createLocomotive(Dir d, String c, RailTrack track) {
         Locomotive locomotive = new Locomotive(model.nextLocomotiveId(), c);
         Train train = new Train(model.nextTrainId());
+        train.addTrainEventListener(this);
         train.pushBack(locomotive);
         train.setDirectorLinker(locomotive);
         model.addLocomotive(locomotive);
@@ -939,6 +946,12 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             if (model != null) {
                 stop();
                 setModel(model);
+                // Register this as listener for all trains in the loaded model
+                for (Locomotive loco : model.getLocomotives()) {
+                    if (loco.getTrain() != null) {
+                        loco.getTrain().addTrainEventListener(this);
+                    }
+                }
                 start();
             }
         }
@@ -1067,6 +1080,33 @@ public class CompactPresenter implements letrain.mvp.Presenter {
             model.selectLocomotive(locomotiveId);
             locomotiveId = 0;
             locomotiveInputTimeout = 0;
+        }
+    }
+
+    @Override
+    public void onContact(letrain.map.Point pos) {
+        if (audioController != null && pos != null) {
+            audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
+        }
+    }
+
+    @Override
+    public void onLink() {
+        if (audioController != null) {
+            audioController.playOneShot("link", 0, 0); // Position is less critical for link
+        }
+    }
+
+    @Override
+    public void onCrash(letrain.map.Point pos) {
+        if (audioController != null && pos != null) {
+            audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
+            // Immediately stop audio for all locomotives involved in the crash
+            for (Locomotive loco : model.getLocomotives()) {
+                if (loco.isDestroying()) {
+                    audioController.stopSynthesizer(loco.getId());
+                }
+            }
         }
     }
 }

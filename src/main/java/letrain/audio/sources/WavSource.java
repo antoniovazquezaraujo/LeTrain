@@ -15,8 +15,8 @@ public class WavSource implements AudioSource {
     private boolean active = true;
     private float filterAmount = 0.0f;
     private float lastVal = 0.0f;
-    private float refDistance = 200.0f;
-    private float maxDistance = 2000.0f;
+    private float refDistance = 1000.0f;
+    private float maxDistance = 5000.0f;
 
     public WavSource(AudioSample sample) {
         this.sample = sample;

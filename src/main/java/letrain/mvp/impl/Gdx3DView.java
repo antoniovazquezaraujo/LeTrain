@@ -41,7 +41,8 @@ import letrain.mvp.Model.GameModeMenuOption;
 import letrain.visitor.Gdx3DRenderer;
 
 public class Gdx3DView extends ApplicationAdapter
-        implements letrain.mvp.View, letrain.mvp.Presenter, com.badlogic.gdx.InputProcessor {
+        implements letrain.mvp.View, letrain.mvp.Presenter, com.badlogic.gdx.InputProcessor,
+        letrain.vehicle.impl.rail.TrainEventListener {
     private PerspectiveCamera cam;
     private ModelBatch modelBatch;
     private ModelBuilder modelBuilder;
@@ -111,10 +112,11 @@ public class Gdx3DView extends ApplicationAdapter
         this.trackMaker = new RailTrackMaker(this);
         this.audioController = new letrain.audio.AudioController(model);
 
-        // Inicializar el GroundMap con un bloque de terreno para que RailTrackMaker
-        // pueda detectar GROUND (0)
         // Usamos el área central o el área total permitida
         model.getGroundMap().renderBlock(0, 0, getCols(), getRows());
+
+        // Register as listener for audio events
+        model.addTrainEventListener(this);
     }
 
     @Override
@@ -1188,9 +1190,6 @@ public class Gdx3DView extends ApplicationAdapter
                 letrain.vehicle.impl.rail.Train train = loco.getTrain();
                 if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
                     train.joinLinkers();
-                    audioController.playOneShot("link",
-                            (float) loco.getPosition().getX(),
-                            (float) loco.getPosition().getY());
                 }
                 model.setMode(letrain.mvp.Model.GameMode.MENU);
             }
@@ -1941,5 +1940,29 @@ public class Gdx3DView extends ApplicationAdapter
 
             batch.begin();
         }
+    }
+    @Override
+    public void onSpeedChanged(int speed) {
+        // Gdx3DView handles speed changes via polling/sync in render loop
+    }
+
+    @Override
+    public void onSenseChanged(boolean forward) {
+        // Gdx3DView handles sense changes via polling/sync in render loop
+    }
+
+    @Override
+    public void onCrash(Point pos) {
+        audioController.playOneShot("link", pos.getX(), pos.getY());
+    }
+
+    @Override
+    public void onContact(Point pos) {
+        audioController.playOneShot("link", pos.getX(), pos.getY());
+    }
+
+    @Override
+    public void onLink() {
+        audioController.playOneShot("link", model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY());
     }
 }

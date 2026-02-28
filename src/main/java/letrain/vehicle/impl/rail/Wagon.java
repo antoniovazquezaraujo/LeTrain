@@ -42,7 +42,7 @@ public class Wagon extends Linker {
     @Override
     public void destroy() {
         this.destroying = true;
-        this.destroyingTurns = 1000;
+        this.destroyingTurns = 200;
     }
 
     @Override
@@ -52,10 +52,13 @@ public class Wagon extends Linker {
 
     @Override
     public boolean isDestroyed() {
-        if (isDestroying() && destroyingTurns-- <= 0) {
-            return true;
+        return isDestroying() && destroyingTurns <= 0;
+    }
+
+    public void updateDestroyTimer() {
+        if (isDestroying() && destroyingTurns > 0) {
+            destroyingTurns--;
         }
-        return false;
     }
 
     private int cargoAmount = 0;

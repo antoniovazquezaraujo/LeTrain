@@ -929,8 +929,24 @@ public class Gdx3DRenderer implements Visitor {
             }
         }
 
-        instance.transform.setToTranslation(x + 0.5f, 0.6f, y + 0.5f);
-        instance.transform.rotate(0, 1, 0, angle);
+        if (locomotive.isDestroying()) {
+            // Derailed effect: deterministic random based on id
+            long seed = locomotive.getId();
+            java.util.Random rnd = new java.util.Random(seed);
+            float offsetX = (rnd.nextFloat() - 0.5f) * 0.4f;
+            float offsetZ = (rnd.nextFloat() - 0.5f) * 0.4f;
+            float rotX = (rnd.nextFloat() - 0.5f) * 45f;
+            float rotY = (rnd.nextFloat() - 0.5f) * 45f;
+            float rotZ = (rnd.nextFloat() - 0.5f) * 45f;
+
+            instance.transform.setToTranslation(x + 0.5f + offsetX, 0.6f, y + 0.5f + offsetZ);
+            instance.transform.rotate(1, 0, 0, rotX);
+            instance.transform.rotate(0, 1, 0, angle + rotY);
+            instance.transform.rotate(0, 0, 1, rotZ);
+        } else {
+            instance.transform.setToTranslation(x + 0.5f, 0.6f, y + 0.5f);
+            instance.transform.rotate(0, 1, 0, angle);
+        }
         instances.add(instance);
 
         // Añadir indicador de selección para locomotora seleccionada (Número ID + Línea
@@ -1092,8 +1108,24 @@ public class Gdx3DRenderer implements Visitor {
         // Wagon height is now 0.6. Center needs to be at 0.08 + 0.3 = 0.38?
         // Let's try 0.45f to be safe and clearly on top.
         float wagonY = 0.45f;
-        instance.transform.setToTranslation(x + 0.5f, wagonY, y + 0.5f);
-        instance.transform.rotate(0, 1, 0, angle);
+        if (wagon.isDestroying()) {
+            // Derailed effect: deterministic random based on hash
+            long seed = wagon.hashCode();
+            java.util.Random rnd = new java.util.Random(seed);
+            float offsetX = (rnd.nextFloat() - 0.5f) * 0.4f;
+            float offsetZ = (rnd.nextFloat() - 0.5f) * 0.4f;
+            float rotX = (rnd.nextFloat() - 0.5f) * 45f;
+            float rotY = (rnd.nextFloat() - 0.5f) * 45f;
+            float rotZ = (rnd.nextFloat() - 0.5f) * 45f;
+
+            instance.transform.setToTranslation(x + 0.5f + offsetX, wagonY, y + 0.5f + offsetZ);
+            instance.transform.rotate(1, 0, 0, rotX);
+            instance.transform.rotate(0, 1, 0, angle + rotY);
+            instance.transform.rotate(0, 0, 1, rotZ);
+        } else {
+            instance.transform.setToTranslation(x + 0.5f, wagonY, y + 0.5f);
+            instance.transform.rotate(0, 1, 0, angle);
+        }
         instances.add(instance);
 
         // 2. Renderizar Bloque de Carga (Si hay carga y no estamos en modo highlight

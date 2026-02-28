@@ -29,6 +29,14 @@ public class AudioController {
     private final Map<String, AudioSample> samples = new HashMap<>();
     private final List<WavSource> oneShotSources = new CopyOnWriteArrayList<>();
 
+    public void stopSynthesizer(int id) {
+        TrainSynthesizer synth = synthesizers.get(id);
+        if (synth != null) {
+            synth.stopAudio();
+            synthesizers.remove(id);
+        }
+    }
+
     public AudioController(Model model) {
         this.model = model;
         this.mixer = new AudioMixer();
@@ -96,12 +104,21 @@ public class AudioController {
     public void playOneShot(String name, float x, float y) {
         AudioSample sample = samples.get(name);
         if (sample != null) {
-            System.out.println("Playing one-shot: " + name + " at game coords (" + x + ", " + y + ")");
             WavSource source = new WavSource(sample);
-            // Map Game Coordinates (X, Y) to Audio Coordinates (X, Y, Z=0)
             // Z is height in our AudioMixer/Gdx3DView mapping
             source.setPosition(x * SCALE_FACTOR, y * SCALE_FACTOR, 0);
-            source.setVolume(0.9f); // Slightly louder for Link/Unlink
+
+            // Make one-shots much more audible
+            // Coordinates are in game units * SCALE_FACTOR (20)
+            // So distance 50 -> 1000 meters.
+            // Setting refDistance to 1000 means full volume up to distance 50.
+            source.setVolume(1.0f);
+            // We don't have direct access to set distances easily in current source,
+            // but we can modify the default in constructor or here if we had methods.
+            // Since WavSource is ours, I'll add methods or just modify the defaults.
+
+            System.out.println("DEBUG: Playing one-shot '" + name + "' at game pos (" + x + "," + y + ")");
+
             oneShotSources.add(source);
             mixer.addSource(source);
         } else {
@@ -141,7 +158,9 @@ public class AudioController {
             boolean exists = false;
             for (Locomotive loco : model.getLocomotives()) {
                 if (loco.getId() == locoId) {
-                    exists = true;
+                    if (!loco.isDestroying()) {
+                        exists = true;
+                    }
                     break;
                 }
             }
@@ -155,6 +174,9 @@ public class AudioController {
 
         // 2. Add/Update synthesizers
         for (Locomotive loco : model.getLocomotives()) {
+            if (loco.isDestroying()) {
+                continue;
+            }
             TrainSynthesizer synth = synthesizers.get(loco.getId());
             if (synth == null) {
                 synth = new TrainSynthesizer();

@@ -87,15 +87,6 @@ public class AudioMixer {
 
                 // Mix sources
                 for (AudioSource source : sources) {
-                    // 1. Read source raw audio (simulating mono source for now, or source handles
-                    // its own generation)
-                    // Let's assume AudioSource generates MONO and we pan it here?
-                    // OR AudioSource generates STEREO?
-                    // The interface "read(float[] buffer)" implies it fills it.
-                    // Let's assume AudioSource fills the buffer with its own content.
-                    // Ideally, GRANULAR SYNTHESIS is mono, which we then position in 3D.
-                    // So let's change AudioSource to provide MONO, and we mix it into STEREO here.
-
                     // Reset source buffer
                     for (int i = 0; i < sourceBuffer.length; i++)
                         sourceBuffer[i] = 0;
@@ -117,11 +108,7 @@ public class AudioMixer {
 
                     float volume = 1.0f;
                     if (distance > refDist) {
-                        // Volume = Ref / (Ref + (Dist - Ref)) = Ref / Dist
-                        // This creates a more natural sounding falloff than linear.
                         volume = refDist / distance;
-
-                        // Apply max distance cutoff
                         if (distance > maxDist) {
                             float fadeFactor = 1.0f - ((distance - maxDist) / (maxDist * 0.2f));
                             volume *= Math.max(0.0f, fadeFactor);
@@ -132,26 +119,12 @@ public class AudioMixer {
                     if (volume < 0.0f)
                         volume = 0.0f;
 
-                    // 3. Pan (Stereo Positioning) - Reverted as per user request
-                    float panLeft = 1.0f;
-                    float panRight = 1.0f;
-
-                    // 4. Distance Filtering (Atmospheric Absorption)
-                    float filterAmount = 0.0f;
-                    if (distance > refDist) {
-                        float distFactor = (distance - refDist) / (maxDist - refDist);
-                        distFactor = Math.min(1.0f, Math.max(0.0f, distFactor));
-                        float alpha = (float) Math.pow(0.01, distFactor);
-                        filterAmount = 1.0f - alpha;
-                        filterAmount = Math.min(0.99f, filterAmount);
-                    }
-                    source.setDistanceFilter(filterAmount);
 
                     // 5. Apply to Mix (Mono to Stereo)
                     for (int i = 0; i < BUFFER_SIZE; i++) {
                         float sample = sourceBuffer[i];
-                        mixBuffer[i * 2] += sample * volume * panLeft;
-                        mixBuffer[i * 2 + 1] += sample * volume * panRight;
+                        mixBuffer[i * 2] += sample * volume;
+                        mixBuffer[i * 2 + 1] += sample * volume;
                     }
                 }
 
