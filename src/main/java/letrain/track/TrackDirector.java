@@ -45,8 +45,20 @@ public class TrackDirector<T extends Track> implements Serializable {
         return ret;
     }
 
-    public boolean canEnter(T track, Dir d, Trackeable v) {
-        return (v == null || track.getLinker() == null);
+    public boolean canEnter(T track, Dir d, Linker v) {
+        // Points 5 & 10: One vehicle per track
+        if (track.getLinker() != null) {
+            return false;
+        }
+
+        // Reservation check to prevent race conditions in multi-train ticks
+        if (track.getReservation() != null && track.getReservation() != v) {
+            return false;
+        }
+
+        // If the track is empty and not reserved by another vehicle, it can be entered.
+        // Further checks might be needed based on router logic or specific track types.
+        return true;
     }
 
     public boolean canExit(T track, Dir d) {

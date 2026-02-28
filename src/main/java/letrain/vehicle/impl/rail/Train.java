@@ -4,9 +4,11 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -28,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class Train implements Serializable, Trailer<RailTrack>, Renderable, Transportable {
     private static final int MAX_LOADING_COUNT = 80; // 4.0 seconds at 20fps per wagon
-    Logger log = LoggerFactory.getLogger(Train.class);
+    private static final Logger log = LoggerFactory.getLogger(Train.class);
     protected final Deque<Linker> linkers;
     protected final List<Tractor> tractors;
     protected final Deque<Linker> linkersToJoin;
@@ -165,7 +167,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     @Override
     public Linker popFront() {
-        Linker linker = linkers.removeLast();
+        Linker linker = linkers.removeFirst();
         assignDefaultDirectorLinker();
         return linker;
     }
@@ -258,7 +260,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
         setDirPushedLinkers(normalSense);
         setDirTowedLinkers(normalSense);
-        setDirTowedLinkers(normalSense);
         return moveLinkers(normalSense);
     }
 
@@ -318,63 +319,133 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     private boolean moveLinkers(boolean isNormalSense) {
-        Linker firstLinker = getLinkers().getFirst();
-        Linker lastLinker = getLinkers().getLast();
-        Iterator<Linker> iterator;
+        List<Linker> movingOrder = new ArrayList<>();
+        Linker firstLinker;
+        Linker lastLinker;
+
         if (isNormalSense && !getDirectorLinker().isReversed()) {
-            iterator = getLinkers().iterator();
-            firstLinker = getLinkers().getFirst();
-            lastLinker = getLinkers().getLast();
+            movingOrder.addAll(getLinkers());
         } else {
-            iterator = getLinkers().descendingIterator();
-            firstLinker = getLinkers().getLast();
-            lastLinker = getLinkers().getFirst();
+            Iterator<Linker> it = getLinkers().descendingIterator();
+            while (it.hasNext()) {
+                movingOrder.add(it.next());
+            }
         }
-        while (iterator.hasNext()) {
-            Linker next = iterator.next();
+
+        if (movingOrder.isEmpty()) {
+            return false;
+        }
+
+        firstLinker = movingOrder.get(0);
+        lastLinker = movingOrder.get(movingOrder.size() - 1);
+
+        // Verification Pass: Check if all linkers can move
+        List<Track> targetTracks = new ArrayList<>();
+        Map<Linker, Track> currentTracks = new HashMap<>();
+        Map<Linker, Dir> entryDirsMap = new HashMap<>();
+        Map<Linker, Linker> occupyingLinkerMap = new HashMap<>();
+
+        for (Linker next : movingOrder) {
             Track track = next.getTrack();
             Dir nextDir = next.getDir();
             Track nextTrack = track.getConnected(nextDir);
-            if (nextTrack != null) {
-                if (nextTrack.getLinker() == null) {
-                    Sensor sensor = nextTrack.getSensor();
-                    if (sensor != null && next == lastLinker) {
-                        sensor.onExitTrain(next.getTrain());
-                    }
-                    next.getTrack().removeLinker();
-                    if (nextTrack.canEnter(next.getDir().inverse(), next)) {
-                        nextTrack.enterLinkerFromDir(next.getDir().inverse(), next);
-                        sensor = nextTrack.getSensor();
-                        if (sensor != null && next == firstLinker) {
-                            sensor.onEnterTrain(next.getTrain());
-                        }
-                    } else {
-                        // System.out.println("NO PUEDO ENTRAR AQUÍ !!!");
-                        return false;
-                    }
-                } else {
+
+            log.info("Pass 1: Linker {} moving from {} to {} dir {}", next, track.getPosition(),
+                    (nextTrack != null ? nextTrack.getPosition() : "null"), nextDir);
+
+            if (nextTrack == null) {
+                log.info("Pass 1: Blocked by null nextTrack");
+                clearReservations(targetTracks);
+                return false;
+            }
+
+            Linker occupyingLinker = nextTrack.getLinker();
+            if (occupyingLinker != null) {
+                log.info("Pass 1: nextTrack occupied by linker {}. OccupyingTrain: {}, ThisTrain: {}",
+                        occupyingLinker, occupyingLinker.getTrain(), this);
+
+                if (occupyingLinker.getTrain() != this) {
+                    log.info("Pass 1: Collision detected with another train or loose wagon");
                     if (getDirectorLinker().getSpeed() > 1) {
-                        crash(nextTrack.getLinker());
+                        crash(occupyingLinker);
+                        clearReservations(targetTracks);
                         return false;
                     }
-                    Train crashedTrain = nextTrack.getLinker().getTrain();
+                    Train crashedTrain = occupyingLinker.getTrain();
                     if (crashedTrain != null && crashedTrain.getDirectorLinker().getSpeed() > 1) {
-                        crash(nextTrack.getLinker());
+                        crash(occupyingLinker);
+                        clearReservations(targetTracks);
                         return false;
                     }
                     notifyContact();
                     if (crashedTrain != null) {
                         crashedTrain.notifyContact();
                     }
+                    clearReservations(targetTracks);
+                    return false;
+                } else {
+                    log.info("Pass 1: nextTrack occupied by our own linker. Proceeding.");
+                }
+            }
+
+            Dir entryDir = next.getDir().inverse();
+            // We only call canEnter if it's NOT our own linker, OR if we want to be strict.
+            // Actually, TrackDirector.canEnter checks if track.getLinker() is null.
+            // If it's our own linker, we KNOW it's not null, so canEnter will say false.
+            // We should bypass canEnter's linker check if we know it's moving.
+            if (occupyingLinker == null || occupyingLinker.getTrain() != this) {
+                if (!nextTrack.canEnter(entryDir, next)) {
+                    log.info("Pass 1: nextTrack.canEnter failed for {}", next);
+                    clearReservations(targetTracks); // Clear any reservations made so far
                     return false;
                 }
-            } else {
-                // System.out.println("Ojo, no hay track en " + track.getPosition() + " -> " +
-                // next.getDir());
-                return false;
+            }
+
+            // Store info for later use
+            currentTracks.put(next, track);
+            entryDirsMap.put(next, entryDir);
+            occupyingLinkerMap.put(next, occupyingLinker);
+
+            // Reserve the track for this linker
+            nextTrack.setReservation(next);
+            targetTracks.add(nextTrack); // Add to list of reserved tracks for potential clearing
+        }
+
+        log.info("Pass 1: All linkers verified and reserved. Executing Pass 2.");
+
+        // Execution Pass: Actually move the linkers
+        for (int i = 0; i < movingOrder.size(); i++) {
+            Linker next = movingOrder.get(i);
+            Track currentTrack = currentTracks.get(next); // Use stored current track
+            Track nextTrack = targetTracks.get(i);
+            Dir entryDir = entryDirsMap.get(next); // Use stored entry direction
+
+            // Trigger Sensor Exit
+            Sensor sensorExit = currentTrack.getSensor();
+            if (sensorExit != null && next == lastLinker) { // Only trigger for the last linker exiting its track
+                sensorExit.onExitTrain(this);
+            }
+
+            currentTrack.removeLinker();
+            nextTrack.enterLinkerFromDir(entryDir, next);
+
+            // Important: clear the reservation as we are now physically occupying it
+            nextTrack.setReservation(null);
+
+            // Trigger Sensor Enter
+            Sensor sensorEnter = nextTrack.getSensor();
+            if (sensorEnter != null && next == firstLinker) { // Only trigger for the first linker entering its track
+                sensorEnter.onEnterTrain(this);
             }
         }
+
         return true;
+    }
+
+    private void clearReservations(List<Track> reservedTracks) {
+        for (Track t : reservedTracks) {
+            t.setReservation(null);
+        }
     }
 
     private void crash(Linker linker) {

@@ -24,6 +24,7 @@ public abstract class Track implements
     private static final long serialVersionUID = 1L;
     private TrackDirector trackDirector;
     private Linker linker = null;
+    private Linker reservation = null; // NEW: Track reservation to prevent race conditions during multi-train ticks
     private Sensor sensor = null;
     private Point pos = new Point(0, 0);
     protected Track[] connections;
@@ -200,6 +201,14 @@ public abstract class Track implements
     @Override
     public Linker removeLinker() {
         return getTrackDirector().removeLinker(this);
+    }
+
+    public void setReservation(Linker reservation) {
+        this.reservation = reservation;
+    }
+
+    public Linker getReservation() {
+        return reservation;
     }
 
     @Override

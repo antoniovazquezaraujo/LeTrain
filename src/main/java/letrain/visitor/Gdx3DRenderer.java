@@ -887,6 +887,11 @@ public class Gdx3DRenderer implements Visitor {
             if (currentTrack != null) {
                 letrain.track.Track nextTrack = currentTrack.getConnected(locomotive.getDir());
                 if (nextTrack != null) {
+                    // Prevent visual "mixing": check if next track is blocked recursively
+                    if (isPredictiveMoveBlocked(locomotive, new HashSet<>())) {
+                        progress = 0;
+                    }
+
                     float nextX = nextTrack.getPosition().getX();
                     float nextY = nextTrack.getPosition().getY();
 
@@ -1044,6 +1049,11 @@ public class Gdx3DRenderer implements Visitor {
                     if (currentTrack != null) {
                         letrain.track.Track nextTrack = currentTrack.getConnected(wagon.getDir());
                         if (nextTrack != null) {
+                            // Prevent visual "mixing": check if next track is blocked recursively
+                            if (isPredictiveMoveBlocked(wagon, new HashSet<>())) {
+                                progress = 0;
+                            }
+
                             float nextX = nextTrack.getPosition().getX();
                             float nextY = nextTrack.getPosition().getY();
                             if (Math.abs(nextX - x) <= 1 && Math.abs(nextY - y) <= 1) {
@@ -1578,4 +1588,41 @@ public class Gdx3DRenderer implements Visitor {
         return modelBuilder.end();
     }
 
+    private boolean isPredictiveMoveBlocked(letrain.vehicle.impl.Linker linker,
+            java.util.Set<letrain.vehicle.impl.Linker> visited) {
+        if (!visited.add(linker))
+            return false;
+
+        letrain.track.Track currentTrack = linker.getTrack();
+        if (currentTrack == null)
+            return true;
+
+        letrain.track.Track nextTrack = currentTrack.getConnected(linker.getDir());
+        if (nextTrack == null)
+            return true;
+
+        // Check if we can enter (includes linker and reservation checks)
+        // Dir is inversion of current move direction
+        if (!nextTrack.canEnter(linker.getDir().inverse(), linker)) {
+            letrain.vehicle.impl.Linker occupying = nextTrack.getLinker();
+            letrain.vehicle.impl.Linker reservation = nextTrack.getReservation();
+
+            boolean blockedByOther = (occupying != null && occupying.getTrain() != linker.getTrain())
+                    || (reservation != null && reservation.getTrain() != linker.getTrain());
+
+            if (blockedByOther)
+                return true;
+
+            // If it's blocked by OUR train, we need to check if THAT linker is also
+            // blocked.
+            if (occupying != null && occupying.getTrain() == linker.getTrain()) {
+                return isPredictiveMoveBlocked(occupying, visited);
+            }
+
+            // If it's blocked by something else in canEnter (router/sensor), it's blocked.
+            return true;
+        }
+
+        return false;
+    }
 }

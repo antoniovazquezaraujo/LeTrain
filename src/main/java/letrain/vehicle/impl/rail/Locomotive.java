@@ -206,7 +206,7 @@ public class Locomotive extends Linker implements Tractor {
         }
         this.currentSpeed = speed;
         limitCurrentSpeed();
-        resetTurnsIfNeeded();
+        resetTurns(); // Force reset to ensure turns are synchronized with speed 0 immediately
         if (getTrain() != null) {
             getTrain().notifySpeedChanged(this.currentSpeed);
             // Sincronizar con el resto de locomotoras del tren
