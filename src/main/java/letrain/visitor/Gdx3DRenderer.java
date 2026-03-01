@@ -117,6 +117,7 @@ public class Gdx3DRenderer implements Visitor {
     private List<VehicleLabel> labels = new ArrayList<>();
     private Model modelRef;
     private float animationAlpha = 1.0f;
+    private boolean isXRayActive = false;
 
     public void setAnimationAlpha(float alpha) {
         this.animationAlpha = alpha;
@@ -455,6 +456,25 @@ public class Gdx3DRenderer implements Visitor {
     public void visitModel(Model model) {
         this.modelRef = model;
         labels.clear();
+
+        // ----------------------------------------------------------------------------------
+        // X-RAY Detection: Are we inside any mountain or tunnel?
+        // ----------------------------------------------------------------------------------
+        isXRayActive = false;
+        if (model.getMode() == letrain.mvp.Model.GameMode.RAILS) {
+            letrain.map.Point cp = model.getCursor().getPosition();
+            Integer terrain = model.getGroundMap().getValueAt(cp);
+            if (terrain != null && terrain == GroundMap.ROCK) {
+                isXRayActive = true;
+            } else {
+                // Also check if cursor is over a tunnel gate
+                letrain.track.rail.RailTrack rt = model.getCursorRailTrack();
+                if (rt instanceof letrain.track.rail.TunnelGateRailTrack) {
+                    isXRayActive = true;
+                }
+            }
+        }
+
         // Ya no limpiamos instances aquí, lo hace la vista antes de empezar
         model.getGroundMap().accept(this);
         model.getRailMap().accept(this);
@@ -1602,7 +1622,7 @@ public class Gdx3DRenderer implements Visitor {
 
             // Mode-based transparency for Rocks/Tunnels
             if (type == GroundMap.ROCK || model == tunnelPortalModel) {
-                if (modelRef != null && modelRef.getMode() == letrain.mvp.Model.GameMode.RAILS) {
+                if (isXRayActive) {
                     instance.materials.get(0)
                             .set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
                     // No DepthTestAttribute here, we manage it globally in the Two-Pass loop
@@ -1671,7 +1691,7 @@ public class Gdx3DRenderer implements Visitor {
     public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
         // Renderizar portal del túnel como bloque negro simple
         ModelInstance portal = new ModelInstance(tunnelPortalModel);
-        if (modelRef != null && modelRef.getMode() == letrain.mvp.Model.GameMode.RAILS) {
+        if (isXRayActive) {
             portal.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
             portal.transform.setToTranslation(
                     tunnelGateRailTrack.getPosition().getX() + 0.5f,
