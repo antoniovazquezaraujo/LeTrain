@@ -71,6 +71,12 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model yellowFireModel1;
     private com.badlogic.gdx.graphics.g3d.Model yellowFireModel2;
     private com.badlogic.gdx.graphics.g3d.Model yellowFireModel3;
+    private com.badlogic.gdx.graphics.g3d.Model redSphereModel1;
+    private com.badlogic.gdx.graphics.g3d.Model redSphereModel2;
+    private com.badlogic.gdx.graphics.g3d.Model redSphereModel3;
+    private com.badlogic.gdx.graphics.g3d.Model yellowSphereModel1;
+    private com.badlogic.gdx.graphics.g3d.Model yellowSphereModel2;
+    private com.badlogic.gdx.graphics.g3d.Model yellowSphereModel3;
 
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
@@ -382,7 +388,24 @@ public class Gdx3DRenderer implements Visitor {
             yellowFireModel1 = createPyramidModel(0.3f, 0.45f, 0.3f, new com.badlogic.gdx.graphics.Color(1f, 0.5f, 0f, 1f)); // Orange
             yellowFireModel2 = createPyramidModel(0.3f, 0.45f, 0.3f, com.badlogic.gdx.graphics.Color.ORANGE); // Orange (standard)
             yellowFireModel3 = createPyramidModel(0.3f, 0.45f, 0.3f, com.badlogic.gdx.graphics.Color.YELLOW); // Yellow
+
+            // Pre-create sphere models (embers) - Similar size
+            redSphereModel1 = createSphereModel(0.25f, new com.badlogic.gdx.graphics.Color(0.6f, 0f, 0f, 1f));
+            redSphereModel2 = createSphereModel(0.25f, com.badlogic.gdx.graphics.Color.RED);
+            redSphereModel3 = createSphereModel(0.25f, new com.badlogic.gdx.graphics.Color(1f, 0.3f, 0.3f, 1f));
+            yellowSphereModel1 = createSphereModel(0.25f, new com.badlogic.gdx.graphics.Color(1f, 0.5f, 0f, 1f));
+            yellowSphereModel2 = createSphereModel(0.25f, com.badlogic.gdx.graphics.Color.ORANGE);
+            yellowSphereModel3 = createSphereModel(0.25f, com.badlogic.gdx.graphics.Color.YELLOW);
         }
+    }
+
+    private com.badlogic.gdx.graphics.g3d.Model createSphereModel(float size, com.badlogic.gdx.graphics.Color color) {
+        com.badlogic.gdx.graphics.g3d.utils.ModelBuilder mb = new com.badlogic.gdx.graphics.g3d.utils.ModelBuilder();
+        return mb.createSphere(size, size, size, 12, 12,
+                new com.badlogic.gdx.graphics.g3d.Material(
+                        com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color)),
+                (long) (com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                        | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal));
     }
 
     private com.badlogic.gdx.graphics.g3d.Model createPyramidModel(float w, float h, float d,
@@ -853,6 +876,12 @@ public class Gdx3DRenderer implements Visitor {
         if (yellowFireModel1 != null) yellowFireModel1.dispose();
         if (yellowFireModel2 != null) yellowFireModel2.dispose();
         if (yellowFireModel3 != null) yellowFireModel3.dispose();
+        if (redSphereModel1 != null) redSphereModel1.dispose();
+        if (redSphereModel2 != null) redSphereModel2.dispose();
+        if (redSphereModel3 != null) redSphereModel3.dispose();
+        if (yellowSphereModel1 != null) yellowSphereModel1.dispose();
+        if (yellowSphereModel2 != null) yellowSphereModel2.dispose();
+        if (yellowSphereModel3 != null) yellowSphereModel3.dispose();
         modelBuilder = null;
     }
 
@@ -1260,12 +1289,14 @@ public class Gdx3DRenderer implements Visitor {
 
             com.badlogic.gdx.graphics.g3d.Model fireModel;
             int colorPick = (int) (seed * 10f + realTime * 5f) % 6;
-            if (colorPick == 0) fireModel = redFireModel1;
-            else if (colorPick == 1) fireModel = redFireModel2;
-            else if (colorPick == 2) fireModel = redFireModel3;
-            else if (colorPick == 3) fireModel = yellowFireModel1;
-            else if (colorPick == 4) fireModel = yellowFireModel2;
-            else fireModel = yellowFireModel3;
+            boolean isSphere = (i % 2 == 0); // Alternate shapes
+
+            if (colorPick == 0) fireModel = isSphere ? redSphereModel1 : redFireModel1;
+            else if (colorPick == 1) fireModel = isSphere ? redSphereModel2 : redFireModel2;
+            else if (colorPick == 2) fireModel = isSphere ? redSphereModel3 : redFireModel3;
+            else if (colorPick == 3) fireModel = isSphere ? yellowSphereModel1 : yellowFireModel1;
+            else if (colorPick == 4) fireModel = isSphere ? yellowSphereModel2 : yellowFireModel2;
+            else fireModel = isSphere ? yellowSphereModel3 : yellowFireModel3;
 
             if (fireModel == null) continue;
 
