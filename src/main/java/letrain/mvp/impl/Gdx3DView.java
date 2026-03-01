@@ -34,9 +34,12 @@ import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import letrain.map.Point;
+import letrain.vehicle.impl.rail.Train;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.visitor.Gdx3DRenderer;
@@ -87,6 +90,8 @@ public class Gdx3DView extends ApplicationAdapter
     private Label descLabel;
     private Label modeLabel;
     private Label balanceLabel;
+    private Label incomeLabel;
+    private Label expensesLabel;
     private Label trainInfoLabel;
     private Label cargoInfoLabel;
     private Table speedometerTable;
@@ -196,6 +201,40 @@ public class Gdx3DView extends ApplicationAdapter
         uiFont.getData().markupEnabled = true;
         skin.add("default", uiFont);
 
+        // High-resolution fonts for HUD
+        BitmapFont smallFont, mediumFont, largeFont;
+        File fontFile = new File("C:/Windows/Fonts/arial.ttf");
+        if (fontFile.exists()) {
+            FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.absolute(fontFile.getAbsolutePath()));
+            FreeTypeFontParameter parameter = new FreeTypeFontParameter();
+            parameter.size = 18;
+            parameter.magFilter = Texture.TextureFilter.Linear;
+            parameter.minFilter = Texture.TextureFilter.Linear;
+            smallFont = generator.generateFont(parameter);
+            
+            parameter.size = 26; // For income/expenses
+            mediumFont = generator.generateFont(parameter);
+            
+            parameter.size = 52; // For balance (approx double)
+            largeFont = generator.generateFont(parameter);
+            generator.dispose();
+        } else {
+            // Fallback to default if font not found
+            smallFont = new BitmapFont();
+            mediumFont = new BitmapFont();
+            mediumFont.getData().setScale(1.5f);
+            largeFont = new BitmapFont();
+            largeFont.getData().setScale(3.0f);
+        }
+        
+        smallFont.getData().markupEnabled = true;
+        mediumFont.getData().markupEnabled = true;
+        largeFont.getData().markupEnabled = true;
+        
+        skin.add("small-font", smallFont);
+        skin.add("medium-font", mediumFont);
+        skin.add("large-font", largeFont);
+
         // TextButton Style
         TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle();
         textButtonStyle.up = skin.newDrawable("white", new Color(0.15f, 0.15f, 0.15f, 1f));
@@ -212,9 +251,14 @@ public class Gdx3DView extends ApplicationAdapter
         skin.add("default", labelStyle);
 
         Label.LabelStyle hudLabelStyle = new Label.LabelStyle();
-        hudLabelStyle.font = uiFont;
+        hudLabelStyle.font = skin.getFont("large-font");
         hudLabelStyle.fontColor = Color.CYAN;
         skin.add("hud", hudLabelStyle);
+
+        Label.LabelStyle mediumLabelStyle = new Label.LabelStyle();
+        mediumLabelStyle.font = skin.getFont("medium-font");
+        mediumLabelStyle.fontColor = Color.WHITE;
+        skin.add("medium", mediumLabelStyle);
 
         Label.LabelStyle titleLabelStyle = new Label.LabelStyle();
         titleLabelStyle.font = uiFont;
@@ -266,12 +310,10 @@ public class Gdx3DView extends ApplicationAdapter
         hudContent.pad(10);
 
         modeLabel = new Label("MODE: -", skin, "title");
-        balanceLabel = new Label("BALANCE: $0", skin, "hud");
         trainInfoLabel = new Label("", skin);
         cargoInfoLabel = new Label("", skin);
 
         hudContent.add(modeLabel).left().padBottom(5).row();
-        hudContent.add(balanceLabel).left().padBottom(10).row();
         hudContent.add(trainInfoLabel).left().row();
         hudContent.add(cargoInfoLabel).left().row();
 
@@ -298,11 +340,26 @@ public class Gdx3DView extends ApplicationAdapter
         speedGauge = new SpeedometerGauge();
         notchLever = new NotchLever();
 
-        speedoContent.add(speedGauge).size(200, 100).right().padTop(10).row();
-        speedoContent.add(notchLever).size(80, 150).right().padTop(20).row();
+        incomeLabel = new Label("+ $0", skin, "medium");
+        incomeLabel.getStyle().fontColor = Color.GREEN;
+        expensesLabel = new Label("- $0", skin, "medium");
+        expensesLabel.getStyle().fontColor = Color.RED;
+        balanceLabel = new Label("$ 1,000,000", skin, "hud");
+
+        speedoContent.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.45f)));
+
+        speedoContent.add(speedGauge).size(200, 100).right().padTop(10).colspan(2).row();
+        speedoContent.add(notchLever).size(80, 150).right().padTop(20).colspan(2).row();
+        
+        Table financeRow = new Table();
+        financeRow.add(incomeLabel).padRight(15).left();
+        financeRow.add(expensesLabel).right();
+        speedoContent.add(financeRow).expandX().right().padTop(10).row();
+        
+        speedoContent.add(balanceLabel).right().padTop(5).row();
 
         speedometerTable.add(speedoContent).top().right();
-        speedometerTable.setVisible(false);
+        speedometerTable.setVisible(true);
         stage.addActor(speedometerTable);
 
         updateMenuButtons();
@@ -865,7 +922,11 @@ public class Gdx3DView extends ApplicationAdapter
         // Update HUD
         modeLabel.setText("[GOLDENROD]MODE:[] " + model.getMode().getName().toUpperCase());
         if (model.getEconomyManager() != null) {
-            balanceLabel.setText("[CYAN]BALANCE:[] $" + (int) model.getEconomyManager().getBalance());
+            float balance = model.getEconomyManager().getBalance();
+            incomeLabel.setText("[GREEN]+ $ " + (int) model.getEconomyManager().getTotalIncome() + "[]");
+            expensesLabel.setText("[RED]- $ " + (int) model.getEconomyManager().getTotalExpenses() + "[]");
+            String balanceColor = balance >= 0 ? "[GREEN]" : "[RED]";
+            balanceLabel.setText(balanceColor + "$ " + (int) balance + "[]");
         }
 
         letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
@@ -877,7 +938,8 @@ public class Gdx3DView extends ApplicationAdapter
                     (int) loco.getPosition().getX(), (int) loco.getPosition().getY()));
 
             // Update Speedometer
-            // speedValueLabel.setText(speedKmh + " km/h"); // Removed redundant text
+            speedGauge.setVisible(true);
+            notchLever.setVisible(true);
             speedGauge.setSpeed(speedKmh);
             notchLever.setNotch(loco.getSpeed());
             notchLever.setTargetNotch(loco.getTargetSpeed());
@@ -901,7 +963,8 @@ public class Gdx3DView extends ApplicationAdapter
         } else {
             trainInfoLabel.setText("[GRAY]NO TRAIN SELECTED[]");
             cargoInfoLabel.setText("");
-            speedometerTable.setVisible(false);
+            speedGauge.setVisible(false);
+            notchLever.setVisible(false);
         }
 
         // Marcamos el botón seleccionado según el modo
@@ -1953,7 +2016,7 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     @Override
-    public void onCrash(Point pos) {
+    public void onCrash(Train train, Point pos) {
         audioController.playOneShot("link", pos.getX(), pos.getY());
     }
 

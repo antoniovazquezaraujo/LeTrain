@@ -4,7 +4,8 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
+import letrain.track.RailSemaphore;
+import letrain.track.CargoTypes;
 
 import letrain.mvp.Presenter;
 import letrain.track.Sensor;
@@ -15,11 +16,14 @@ import letrain.vehicle.impl.rail.Wagon;
 
 public class EconomyManager implements letrain.economy.EconomyManager, Serializable {
     private static final long serialVersionUID = 1L;
-    float totalIncome;
-    float totalExpenses;
-    float balance;
+    float totalIncome = 0;
+    float totalExpenses = 0;
+    float balance = 1000000f; // Initial balance as requested
 
     Map<ExpenseType, Float> prices = new HashMap<>();
+    Map<CargoTypes, Float> cargoBaseValues = new HashMap<>();
+    private static final float FUEL_COST_PER_METER = 0.5f;
+    private static final float CARGO_LOADING_FEE = 100f;
 
     int constructedNormalRailTracks = 0;
     int constructedBridgeRailTracks = 0;
@@ -61,8 +65,14 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
         prices.put(ExpenseType.DESTROYED_WAGON, 5000f);
         prices.put(ExpenseType.LOAD_PASSENGERS, 1000f);
         prices.put(ExpenseType.UNLOAD_PASSENGERS, 1000f);
-        prices.put(ExpenseType.TRAIN_MOVED, 1f);
+        prices.put(ExpenseType.TRAIN_MOVED, 0f);
         prices.put(ExpenseType.TRAIN_CRASHED, 100000f);
+        
+        // Cargo values
+        cargoBaseValues.put(CargoTypes.COAL, 10f);
+        cargoBaseValues.put(CargoTypes.WOOD, 30f);
+        cargoBaseValues.put(CargoTypes.FISH, 80f);
+        cargoBaseValues.put(CargoTypes.NONE, 0f);
     }
 
     @Override
@@ -126,115 +136,124 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
     @Override
     public void onForkConstructed(ForkRailTrack fork) {
         this.constructedForks++;
+        spend(ExpenseType.CONSTRUCTED_FORK);
     }
-
+    
     @Override
     public void onStationConstructed() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onStationConstructed'");
+        this.constructedStations++;
+        spend(ExpenseType.CONSTRUCTED_STATION);
     }
-
+    
     @Override
     public void onSensorConstructed(Sensor sensor) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onSensorConstructed'");
+        this.constructedSensors++;
+        spend(ExpenseType.CONSTRUCTED_SENSOR);
     }
-
+    
     @Override
-    public void onSemaphoreConstructed(Semaphore semaphore) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onSemaphoreConstructed'");
+    public void onSemaphoreConstructed(RailSemaphore semaphore) {
+        this.constructedSemaphores++;
+        spend(ExpenseType.CONSTRUCTED_SEMAPHORE);
     }
-
+    
     @Override
     public void onLocomotiveConstructed(Locomotive locomotive) {
         this.constructedLocomotives++;
+        spend(ExpenseType.CONSTRUCTED_LOCOMOTIVE);
     }
-
+    
     @Override
     public void onWagonConstructed(Wagon wagon) {
         this.constructedWagons++;
+        spend(ExpenseType.CONSTRUCTED_WAGON);
     }
-
+    
     @Override
-    public void onRailTrackDestroyed(Presenter.TrackType rail) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onRailDestroyed'");
+    public void onRailTrackDestroyed(Presenter.TrackType type) {
+        switch (type) {
+            case NORMAL_TRACK:
+                destroyedNormalRailTracks++;
+                spend(ExpenseType.DESTROYED_NORMAL_RAIL_TRACK);
+                break;
+            case BRIDGE_GATE_TRACK:
+            case BRIDGE_TRACK:
+                destroyedBridgeRailTracks++;
+                spend(ExpenseType.DESTROYED_BRIDGE_RAIL_TRACK);
+                break;
+            case TUNNEL_GATE_TRACK:
+            case TUNNEL_TRACK:
+                destroyedTunnelRailTracks++;
+                spend(ExpenseType.DESTROYED_TUNNEL_RAIL_TRACK);
+                break;
+            case STATION_TRACK:
+                // Station destruction is handled by onStationDestroyed
+                break;
+        }
     }
-
+    
     @Override
     public void onForkDestroyed(ForkRailTrack fork) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onForkDestroyed'");
+        destroyedForks++;
+        spend(ExpenseType.DESTROYED_FORK);
     }
-
+    
     @Override
     public void onStationDestroyed() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onStationDestroyed'");
+        destroyedStations++;
+        spend(ExpenseType.DESTROYED_STATION);
     }
-
+    
     @Override
     public void onSensorDestroyed(Sensor sensor) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onSensorDestroyed'");
+        destroyedSensors++;
+        spend(ExpenseType.DESTROYED_SENSOR);
     }
-
+    
     @Override
-    public void onSemaphoreDestroyed(Semaphore semaphore) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onSemaphoreDestroyed'");
+    public void onSemaphoreDestroyed(RailSemaphore semaphore) {
+        destroyedSemaphores++;
+        spend(ExpenseType.DESTROYED_SEMAPHORE);
     }
-
+    
     @Override
     public void onLocomotiveDestroyed(Locomotive locomotive) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onLocomotiveDestroyed'");
+        destroyedLocomotives++;
+        spend(ExpenseType.DESTROYED_LOCOMOTIVE);
     }
-
+    
     @Override
     public void onWagonDestroyed(Wagon wagon) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onWagonDestroyed'");
+        destroyedWagons++;
+        spend(ExpenseType.DESTROYED_WAGON);
     }
 
     @Override
     public void onLoadPassengers(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled,
             double linearDistanceToStart) {
-        int amount = calculateMoneyAmount(train, elapsedTime, totalDistanceTraveled, linearDistanceToStart);
-        earn(ExpenseType.LOAD_PASSENGERS, amount);
+        // We keep this for compatibility if needed, but logic moves to cargo
+    }
+    
+    @Override
+    public void chargeFuel(Train train) {
+        float cost = Math.abs(FUEL_COST_PER_METER * train.getLinkers().size());
+        totalExpenses += cost;
+        balance -= cost;
     }
 
-    /**
-     * Calculates the money amount earned by loading passengers.
-     * 
-     * @param train
-     * @param elapsedTime
-     * @param totalDistanceTraveled
-     * @param linearDistanceToStart
-     * @return the calculated money amount
-     *
-     */
-    private int calculateMoneyAmount(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled,
-            double linearDistanceToStart) {
-        final int TICKET_PRICE = 10;
-        final double LINEAR_DISTANCE_PRICE = 0.2;
-        final double DISTANCE_PRICE = 0.05;
-        final double TIME_FACTOR = 1;
-        final double MIN_AVERAGE_SPEED = 8;
+    @Override
+    public void onLoadCargo(Wagon wagon) {
+        totalExpenses += CARGO_LOADING_FEE;
+        balance -= CARGO_LOADING_FEE;
+    }
 
-        int moneyAmount = 0;
-        moneyAmount += train.getLinkers().size() * TICKET_PRICE;
-        ;
-        moneyAmount += LINEAR_DISTANCE_PRICE * linearDistanceToStart;
-        moneyAmount += DISTANCE_PRICE * totalDistanceTraveled;
-        if (elapsedTime.getMinute() > 0) {
-            double averageSpeed = totalDistanceTraveled / elapsedTime.getMinute();
-            if (averageSpeed < MIN_AVERAGE_SPEED) {
-                moneyAmount -= TIME_FACTOR * elapsedTime.getMinute();
-            }
-        }
-        return moneyAmount;
+    @Override
+    public void onUnloadCargo(Wagon wagon, CargoTypes type, int amount, int distance) {
+        float baseValue = cargoBaseValues.getOrDefault(type, 0f);
+        // Payment = (Quantity * BaseValue) * (1 + TravelDistance / 100)
+        float payment = ((float) amount * baseValue) * (1f + (float) distance / 100f);
+        totalIncome += payment;
+        balance += payment;
     }
 
     @Override
@@ -244,8 +263,7 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
 
     @Override
     public void onTrainCrashed(Train train) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onTrainCrashed'");
+        spend(ExpenseType.TRAIN_CRASHED);
     }
 
     public int getConstructedNormalRailTracks() {

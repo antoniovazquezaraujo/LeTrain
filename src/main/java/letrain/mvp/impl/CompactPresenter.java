@@ -1106,7 +1106,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     }
 
     @Override
-    public void onCrash(letrain.map.Point pos) {
+    public void onCrash(Train train, letrain.map.Point pos) {
         if (audioController != null && pos != null) {
             audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
             // Immediately stop audio for all locomotives involved in the crash

@@ -251,7 +251,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     public void notifyCrash(letrain.map.Point pos) {
         this.stalled = true;
         for (TrainEventListener l : trainListeners) {
-            l.onCrash(pos);
+            l.onCrash(this, pos);
         }
     }
 
@@ -813,11 +813,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 }
             }
         }
-        log.info("Train {} starting LOAD at Station {}. Wagons to load: {}. Station cargo: {}. Station role: {}",
-                getId(), station.getId(), wagonsToLoad, station.getCargoType(), station.getRole());
         setLoadingCount(MAX_LOADING_COUNT * wagonsToLoad); // SEQUENTIAL: Total time is sum of all wagons
         if (loadingCount == 0) { // Si no hay vagones que puedan cargar, finaliza el proceso inmediatamente
-            log.info("LOAD aborted: 0 functional wagons for this cargo type/station.");
             setLoading(false);
         }
     }
@@ -835,11 +832,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 }
             }
         }
-        log.info("Train {} starting UNLOAD at Station {}. Wagons to unload: {}. Station cargo: {}. Station role: {}",
-                getId(), station.getId(), wagonsToUnload, station.getCargoType(), station.getRole());
         setLoadingCount(MAX_LOADING_COUNT * wagonsToUnload); // SEQUENTIAL: Total time is sum of all wagons
         if (loadingCount == 0) { // Si no hay vagones que puedan descargar, finaliza el proceso inmediatamente
-            log.info("UNLOAD aborted: 0 functional wagons for this cargo type/station.");
             setLoading(false);
         }
     }

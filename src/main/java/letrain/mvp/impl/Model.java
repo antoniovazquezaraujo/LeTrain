@@ -25,6 +25,8 @@ import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.impl.Linker;
+import letrain.vehicle.impl.rail.Stop;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -98,6 +100,14 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.semaphores = new ArrayList<>();
         this.stations = new ArrayList<>();
         this.map = new RailMap();
+
+        // Economy: Handle train crashes
+        this.addTrainEventListener(new letrain.vehicle.impl.rail.TrainEventListener() {
+            @Override
+            public void onCrash(Train train, letrain.map.Point pos) {
+                getEconomyManager().onTrainCrashed(train);
+            }
+        });
         this.program = "";
         selectedLocomotiveIndex = 0;
         if (!getLocomotives().isEmpty()) {
@@ -181,11 +191,14 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public void addSensor(Sensor sensor) {
         sensors.add(sensor);
+        getEconomyManager().onSensorConstructed(sensor);
     }
 
     @Override
     public void removeSensor(Sensor sensor) {
-        sensors.remove(sensor);
+        if (sensors.remove(sensor)) {
+            getEconomyManager().onSensorDestroyed(sensor);
+        }
     }
 
     @Override
@@ -210,12 +223,15 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     @Override
     public void removeWagon(Wagon wagon) {
-        this.wagons.remove(wagon);
+        if (this.wagons.remove(wagon)) {
+            getEconomyManager().onWagonDestroyed(wagon);
+        }
     }
 
     @Override
     public void addWagon(Wagon wagon) {
         this.wagons.add(wagon);
+        getEconomyManager().onWagonConstructed(wagon);
     }
 
     @Override
@@ -231,11 +247,14 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public void addFork(ForkRailTrack fork) {
         this.forks.add(fork);
+        getEconomyManager().onForkConstructed(fork);
     }
 
     @Override
     public void removeFork(ForkRailTrack fork) {
-        this.forks.remove(fork);
+        if (this.forks.remove(fork)) {
+            getEconomyManager().onForkDestroyed(fork);
+        }
     }
 
     @Override
@@ -246,18 +265,25 @@ public class Model implements Serializable, letrain.mvp.Model {
                 locomotive.getTrain().addTrainEventListener(l);
             }
         }
+        getEconomyManager().onLocomotiveConstructed(locomotive);
     }
 
     @Override
     public void removeLocomotive(Locomotive locomotive) {
-        this.locomotives.remove(locomotive);
+        if (this.locomotives.remove(locomotive)) {
+            getEconomyManager().onLocomotiveDestroyed(locomotive);
+        }
     }
 
     @Override
     public void moveLocomotives() {
         locomotives.forEach(locomotive -> {
             if (locomotive.update()) {
-                getEconomyManager().onTrainMoved(locomotive.getTrain());
+                // Only charge fuel and notify movement for the director to avoid multiple charges per train
+                if (locomotive.isDirectorLinker()) {
+                    getEconomyManager().onTrainMoved(locomotive.getTrain());
+                    getEconomyManager().chargeFuel(locomotive.getTrain()); // Fuel cost per meter
+                }
             }
         });
     }
@@ -396,11 +422,14 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public void addSemaphore(RailSemaphore semaphore) {
         this.semaphores.add(semaphore);
+        getEconomyManager().onSemaphoreConstructed(semaphore);
     }
 
     @Override
     public void removeSemaphore(RailSemaphore semaphore) {
-        this.semaphores.remove(semaphore);
+        if (this.semaphores.remove(semaphore)) {
+            getEconomyManager().onSemaphoreDestroyed(semaphore);
+        }
     }
 
     @Override
@@ -579,23 +608,61 @@ public class Model implements Serializable, letrain.mvp.Model {
             getStations().forEach(Station::regenerateCargo);
         }
 
+        // We will detect wagon cargo state changes to trigger economy events
+        class CargoState { 
+            CargoTypes type; 
+            int amount; 
+            CargoState(CargoTypes t, int a) { type = t; amount = a; }
+        }
+        java.util.Map<Wagon, CargoState> wagonsPrevState = new java.util.HashMap<>();
+        getWagons().forEach(w -> {
+            wagonsPrevState.put(w, new CargoState(w.getCargoType(), w.getCargoAmount()));
+        });
+
         java.util.Set<Train> processedTrains = new java.util.HashSet<>();
         getLocomotives().forEach(locomotive -> {
             Train train = locomotive.getTrain();
-            if (train != null && train.isLoading() && !processedTrains.contains(train)) {
+            if (train != null && !processedTrains.contains(train)) {
                 processedTrains.add(train);
-                int count = train.getLoadingCount();
-                if (count > 0) {
-                    train.setLoadingCount(count - 1);
-                    // PRECISION SYNC: Each wagon gets 80 ticks (4.0s).
-                    // Now we only call this ONCE per tick per train.
-                    Station station = train.getStationAtTrain();
-                    if (station != null) {
-                        train.performIndustrialAction(station);
+                
+                if (train.isLoading()) {
+                    int count = train.getLoadingCount();
+                    if (count > 0) {
+                        train.setLoadingCount(count - 1);
+                        Station station = train.getStationAtTrain();
+                        if (station != null) {
+                            train.performIndustrialAction(station);
+                        }
+                    } else {
+                        train.endLoadUnloadProcess();
                     }
-                } else {
-                    // Timer finished.
-                    train.endLoadUnloadProcess();
+                }
+                
+                // Track changes for EACH wagon in THIS train
+                for (Linker linker : train.getLinkers()) {
+                    if (linker instanceof Wagon) {
+                        Wagon wagon = (Wagon) linker;
+                        CargoState prevState = wagonsPrevState.get(wagon);
+                        if (prevState == null) continue;
+
+                        int currentAmount = wagon.getCargoAmount();
+                        if (currentAmount > prevState.amount) {
+                            // LOADING: flat fee on FIRST load only
+                            if (prevState.amount == 0) {
+                                getEconomyManager().onLoadCargo(wagon);
+                            }
+                        } else if (currentAmount < prevState.amount) {
+                            // UNLOADING: PAY PER UNIT!
+                            int unitsUnloaded = prevState.amount - currentAmount;
+                            int distance = 0;
+                            if (train.getItinerary() != null && train.getItinerary().getFirstStop() != null) {
+                                Stop startStop = train.getItinerary().getFirstStop();
+                                distance = train.getDistanceTraveled() - startStop.distanceTraveled();
+                            }
+                            // Important: use previous state's type for the payment
+                            getEconomyManager().onUnloadCargo(wagon, prevState.type, unitsUnloaded, Math.max(0, distance));
+                        }
+                    }
                 }
             }
         });
@@ -608,12 +675,15 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     @Override
     public void addStation(Station Station) {
-        this.stations.add(Station);
+        stations.add(Station);
+        getEconomyManager().onStationConstructed();
     }
 
     @Override
     public void removeStation(Station Station) {
-        this.stations.remove(Station);
+        if (stations.remove(Station)) {
+            getEconomyManager().onStationDestroyed();
+        }
     }
 
     @Override

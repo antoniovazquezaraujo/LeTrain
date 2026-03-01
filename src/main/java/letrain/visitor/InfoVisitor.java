@@ -109,7 +109,6 @@ public class InfoVisitor implements Visitor {
         return "| Pag " + view.getMapScrollPage() +
                 "| Cursor " + model.getCursor().getPosition() +
                 "| Steps " + model.getQuantifierSteps() + "/" + model.getQuantifier() +
-                "| Balance " + model.getEconomyManager().getBalance() +
                 "|";
     }
 

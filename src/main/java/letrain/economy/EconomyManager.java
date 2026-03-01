@@ -1,7 +1,7 @@
 package letrain.economy;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.Semaphore;
+import letrain.track.RailSemaphore;
 
 import letrain.mvp.Presenter;
 import letrain.track.Sensor;
@@ -60,7 +60,7 @@ public interface EconomyManager {
 
     void onSensorConstructed(Sensor sensor);
 
-    void onSemaphoreConstructed(Semaphore semaphore);
+    void onSemaphoreConstructed(RailSemaphore semaphore);
 
     void onLocomotiveConstructed(Locomotive locomotive);
 
@@ -74,7 +74,7 @@ public interface EconomyManager {
 
     void onSensorDestroyed(Sensor sensor);
 
-    void onSemaphoreDestroyed(Semaphore semaphore);
+    void onSemaphoreDestroyed(RailSemaphore semaphore);
 
     void onLocomotiveDestroyed(Locomotive locomotive);
 
@@ -86,6 +86,12 @@ public interface EconomyManager {
     void onTrainMoved(Train train);
 
     void onTrainCrashed(Train train);
+    
+    void chargeFuel(Train train);
+    
+    void onLoadCargo(Wagon wagon);
+    
+    void onUnloadCargo(Wagon wagon, letrain.track.CargoTypes type, int amount, int distance);
 
     public int getConstructedNormalRailTracks();
 
