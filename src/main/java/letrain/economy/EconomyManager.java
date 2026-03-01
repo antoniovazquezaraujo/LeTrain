@@ -140,4 +140,6 @@ public interface EconomyManager {
     public float getWaterThreshold();
 
     public float getRockThreshold();
+
+    public int getViewRadius();
 }

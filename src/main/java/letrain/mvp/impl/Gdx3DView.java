@@ -701,7 +701,8 @@ public class Gdx3DView extends ApplicationAdapter
             // Aseguramos que el terreno bajo el cursor esté renderizado conforme nos
             // movemos
             letrain.map.Point cp = model.getCursor().getPosition();
-            model.getGroundMap().renderBlock(cp.getX() - 5, cp.getY() - 5, 11, 11);
+            int radius = model.getEconomyManager().getViewRadius();
+            model.getGroundMap().renderBlock(cp.getX() - radius, cp.getY() - radius, radius * 2 + 1, radius * 2 + 1);
 
             trackMaker.makeTracks();
             model.moveLocomotives();

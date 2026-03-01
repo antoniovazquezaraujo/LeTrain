@@ -36,6 +36,7 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
     private float rubyThreshold = 0.28f;
     private float waterThreshold = 130f;
     private float rockThreshold = 180f;
+    private int viewRadius = 5;
     private static final Logger log = LoggerFactory.getLogger(EconomyManager.class);
 
     int constructedNormalRailTracks = 0;
@@ -395,6 +396,7 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
             rubyThreshold = Float.parseFloat(props.getProperty("threshold.RUBY", "0.28"));
             waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER", "130"));
             rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK", "180"));
+            viewRadius = Integer.parseInt(props.getProperty("map.VIEW_RADIUS", "5"));
 
             // Load ExpenseType prices
             for (ExpenseType type : ExpenseType.values()) {
@@ -439,6 +441,11 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
     @Override
     public float getRockThreshold() {
         return rockThreshold;
+    }
+
+    @Override
+    public int getViewRadius() {
+        return viewRadius;
     }
 
 }
