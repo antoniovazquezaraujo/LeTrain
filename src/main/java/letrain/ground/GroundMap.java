@@ -11,14 +11,14 @@ public interface GroundMap extends Renderable {
     public static final int ROCK = 2;
 
     // Producers (10-19)
-    public static final int FOREST = 10;
+    public static final int GOLD_MINE = 10;
     public static final int MINE = 11;
-    public static final int PORT = 12;
+    public static final int RUBY_MINE = 12;
 
     // Consumers (20-29)
-    public static final int SAWMILL = 20;
+    public static final int JEWELRY_STORE = 20;
     public static final int POWER_PLANT = 21;
-    public static final int MARKET = 22;
+    public static final int RUBY_STORE = 22;
 
     void renderBlock(int startx, int starty, int width, int height);
 

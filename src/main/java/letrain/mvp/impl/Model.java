@@ -83,13 +83,15 @@ public class Model implements Serializable, letrain.mvp.Model {
     int quantifier = 1;
     int quantifierSteps = 0;
     LocalDateTime lastSaveTime = null;
+    private int economyReloadCounter = 0;
 
     public Model() {
         this.economyManager = new EconomyManager();
+        this.economyManager.reloadConfig(); // Initial load
         if (seed == 0) {
             seed = 1 + (int) (Math.random() * 255);
         }
-        this.groundMap = new letrain.ground.impl.GroundMap(seed);
+        this.groundMap = new letrain.ground.impl.GroundMap(seed, this.economyManager);
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
         this.cursor.setPosition(new Point(10, 10));
@@ -277,6 +279,10 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     @Override
     public void moveLocomotives() {
+        if (++economyReloadCounter >= 600) { // Reload every ~10 seconds at 60fps
+            economyReloadCounter = 0;
+            getEconomyManager().reloadConfig();
+        }
         locomotives.forEach(locomotive -> {
             if (locomotive.update()) {
                 // Only charge fuel and notify movement for the director to avoid multiple charges per train

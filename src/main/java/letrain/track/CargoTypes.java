@@ -4,9 +4,9 @@ import com.badlogic.gdx.graphics.Color;
 
 public enum CargoTypes {
     NONE(new Color(0.9f, 0.9f, 0.8f, 1f)), // Ivory/Off-white
-    WOOD(new Color(0.2f, 0.5f, 0.2f, 1f)), // Natural Forest Green
-    COAL(new Color(0.25f, 0.25f, 0.25f, 1f)), // Charcoal
-    FISH(new Color(0.3f, 0.5f, 0.9f, 1f)); // Deep Sky Blue
+    GOLD(new Color(1f, 0.85f, 0f, 1f)), // Bright Gold/Yellow
+    COAL(new Color(0.1f, 0.1f, 0.1f, 1f)), // Shiny Black (Charcoal)
+    RUBY(new Color(1f, 0f, 0.3f, 1f)); // Bright Ruby Red
 
     private final Color color;
 
@@ -30,15 +30,15 @@ public enum CargoTypes {
     public static class IndustryMapper {
         public static CargoTypes getCargoForTerrain(int terrainType) {
             switch (terrainType) {
-                case 10: // FOREST
-                case 20: // SAWMILL
-                    return WOOD;
+                case 10: // GOLD_MINE
+                case 20: // JEWELRY_STORE
+                    return GOLD;
                 case 11: // MINE
                 case 21: // POWER_PLANT
                     return COAL;
-                case 12: // PORT
-                case 22: // MARKET
-                    return FISH;
+                case 12: // RUBY_MINE
+                case 22: // RUBY_STORE
+                    return RUBY;
                 default:
                     return NONE;
             }

@@ -4,6 +4,12 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import letrain.track.RailSemaphore;
 import letrain.track.CargoTypes;
 
@@ -22,8 +28,15 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
 
     Map<ExpenseType, Float> prices = new HashMap<>();
     Map<CargoTypes, Float> cargoBaseValues = new HashMap<>();
-    private static final float FUEL_COST_PER_METER = 0.5f;
-    private static final float CARGO_LOADING_FEE = 100f;
+    private float fuelCostPerMeter = 0.5f;
+    private float cargoLoadingFee = 100f;
+    private float startingBalance = 1000000f;
+    private float goldThreshold = 0.28f;
+    private float coalThreshold = 0.28f;
+    private float rubyThreshold = 0.28f;
+    private float waterThreshold = 130f;
+    private float rockThreshold = 180f;
+    private static final Logger log = LoggerFactory.getLogger(EconomyManager.class);
 
     int constructedNormalRailTracks = 0;
     int constructedBridgeRailTracks = 0;
@@ -69,9 +82,9 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
         prices.put(ExpenseType.TRAIN_CRASHED, 100000f);
         
         // Cargo values
-        cargoBaseValues.put(CargoTypes.COAL, 10f);
-        cargoBaseValues.put(CargoTypes.WOOD, 30f);
-        cargoBaseValues.put(CargoTypes.FISH, 80f);
+        cargoBaseValues.put(CargoTypes.GOLD, 10f);
+        cargoBaseValues.put(CargoTypes.COAL, 30f);
+        cargoBaseValues.put(CargoTypes.RUBY, 80f);
         cargoBaseValues.put(CargoTypes.NONE, 0f);
     }
 
@@ -236,15 +249,15 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
     
     @Override
     public void chargeFuel(Train train) {
-        float cost = Math.abs(FUEL_COST_PER_METER * train.getLinkers().size());
+        float cost = Math.abs(fuelCostPerMeter * train.getLinkers().size());
         totalExpenses += cost;
         balance -= cost;
     }
 
     @Override
     public void onLoadCargo(Wagon wagon) {
-        totalExpenses += CARGO_LOADING_FEE;
-        balance -= CARGO_LOADING_FEE;
+        totalExpenses += cargoLoadingFee;
+        balance -= cargoLoadingFee;
     }
 
     @Override
@@ -351,6 +364,81 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
     @Override
     public float getTotalExpenses() {
         return totalExpenses;
+    }
+
+    @Override
+    public void reloadConfig() {
+        File configFile = new File("economy.properties");
+        if (!configFile.exists()) {
+            return;
+        }
+
+        Properties props = new Properties();
+        try (FileInputStream fis = new FileInputStream(configFile)) {
+            props.load(fis);
+            log.info("Loading economy configuration from {}", configFile.getAbsolutePath());
+
+            // Load general costs
+            fuelCostPerMeter = Float.parseFloat(props.getProperty("fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
+            cargoLoadingFee = Float.parseFloat(props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
+            float newStartingBalance = Float.parseFloat(props.getProperty("startingBalance", String.valueOf(startingBalance)));
+            
+            // Only update current balance if it's the very beginning of the game (total income/expenses are zero)
+            if (totalIncome == 0 && totalExpenses == 0) {
+                balance = newStartingBalance;
+            }
+            startingBalance = newStartingBalance;
+
+            // Load thresholds
+            goldThreshold = Float.parseFloat(props.getProperty("threshold.GOLD", "0.28"));
+            coalThreshold = Float.parseFloat(props.getProperty("threshold.COAL", "0.28"));
+            rubyThreshold = Float.parseFloat(props.getProperty("threshold.RUBY", "0.28"));
+            waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER", "130"));
+            rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK", "180"));
+
+            // Load ExpenseType prices
+            for (ExpenseType type : ExpenseType.values()) {
+                String key = "price." + type.name();
+                if (props.containsKey(key)) {
+                    prices.put(type, Float.parseFloat(props.getProperty(key)));
+                }
+            }
+
+            // Load CargoTypes values
+            for (CargoTypes type : CargoTypes.values()) {
+                String key = "cargo." + type.name();
+                if (props.containsKey(key)) {
+                    cargoBaseValues.put(type, Float.parseFloat(props.getProperty(key)));
+                }
+            }
+        } catch (IOException | NumberFormatException e) {
+            log.error("Error loading economy configuration: {}", e.getMessage());
+        }
+    }
+
+    @Override
+    public float getGoldThreshold() {
+        return goldThreshold;
+    }
+
+    @Override
+    public float getCoalThreshold() {
+        return coalThreshold;
+    }
+
+    @Override
+    public float getRubyThreshold() {
+        return rubyThreshold;
+    }
+
+    @Override
+    public float getWaterThreshold() {
+        return waterThreshold;
+    }
+
+    @Override
+    public float getRockThreshold() {
+        return rockThreshold;
     }
 
 }

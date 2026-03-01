@@ -129,4 +129,15 @@ public interface EconomyManager {
 
     public int getDestroyedWagons();
 
+    public void reloadConfig();
+
+    public float getGoldThreshold();
+
+    public float getCoalThreshold();
+
+    public float getRubyThreshold();
+
+    public float getWaterThreshold();
+
+    public float getRockThreshold();
 }

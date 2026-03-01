@@ -11,6 +11,7 @@ import letrain.ground.Ground;
 import letrain.ground.PerlinNoise;
 import letrain.map.Point;
 import letrain.visitor.Visitor;
+import letrain.economy.EconomyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +21,7 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
     final Map<Integer, Map<Integer, Integer>> cells;
     PerlinNoise noise = null;
     Set<Block> blocks;
+    private EconomyManager economyManager;
 
     int OCTAVES = 5;
     int col = 1000;
@@ -29,10 +31,11 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
     int ROCK = 200;
 
     // Constructor
-    public GroundMap(int seed) {
+    public GroundMap(int seed, EconomyManager economyManager) {
         noise = new PerlinNoise(seed);
         cells = new HashMap<>();
         blocks = new HashSet<>();
+        this.economyManager = economyManager;
     }
 
     record CellEnv(int ground, int rock, int water) {
@@ -113,43 +116,49 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                 float baseNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 0, OCTAVES);
                 float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
 
-                if (scaledBase < 130) { // Increased from 113 to have more water
+                float waterThreshold = (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
+                float rockThreshold = (economyManager != null) ? economyManager.getRockThreshold() : 180f;
+
+                if (scaledBase < waterThreshold) {
                     setValueAt(colIndex, rowIndex, 1);
-                } else if (scaledBase > 180) { // Decreased from 200 to have more rock
+                } else if (scaledBase > rockThreshold) {
                     setValueAt(colIndex, rowIndex, 2);
                 } else {
                     // GROUND - check for industries
                     int terrain = 0; // Default Ground
-                    float threshold = 0.28F; // Lowered from 0.4F to increase density
+                    
+                    float goldThreshold = (economyManager != null) ? economyManager.getGoldThreshold() : 0.28f;
+                    float coalThreshold = (economyManager != null) ? economyManager.getCoalThreshold() : 0.28f;
+                    float rubyThreshold = (economyManager != null) ? economyManager.getRubyThreshold() : 0.28f;
 
-                    // LAYER 1: Wood Industry (z=1)
+                    // LAYER 1: Gold Industry (z=1)
                     float woodNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 1,
                             OCTAVES);
-                    if (woodNoise > threshold) {
-                        terrain = FOREST;
-                    } else if (woodNoise < -threshold) {
-                        terrain = SAWMILL;
+                    if (woodNoise > goldThreshold) {
+                        terrain = GOLD_MINE;
+                    } else if (woodNoise < -goldThreshold) {
+                        terrain = JEWELRY_STORE;
                     }
 
-                    // LAYER 2: Coal Industry (z=2) - Only if no wood
+                    // LAYER 2: Coal Industry (z=2) - Only if no gold
                     if (terrain == 0) {
                         float coalNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 2,
                                 OCTAVES);
-                        if (coalNoise > threshold) {
+                        if (coalNoise > coalThreshold) {
                             terrain = MINE;
-                        } else if (coalNoise < -threshold) {
+                        } else if (coalNoise < -coalThreshold) {
                             terrain = POWER_PLANT;
                         }
                     }
 
-                    // LAYER 3: Fish Industry (z=3) - Only if no wood or coal
+                    // LAYER 3: Ruby Industry (z=3) - Only if no gold or coal
                     if (terrain == 0) {
                         float fishNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 3,
                                 OCTAVES);
-                        if (fishNoise > threshold) {
-                            terrain = PORT;
-                        } else if (fishNoise < -threshold) {
-                            terrain = MARKET;
+                        if (fishNoise > rubyThreshold) {
+                            terrain = RUBY_MINE;
+                        } else if (fishNoise < -rubyThreshold) {
+                            terrain = RUBY_STORE;
                         }
                     }
 
