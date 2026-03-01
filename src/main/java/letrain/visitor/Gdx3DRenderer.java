@@ -65,6 +65,12 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model wagonJewelModel;
     private com.badlogic.gdx.graphics.g3d.Model cylinderModel;
     private com.badlogic.gdx.graphics.g3d.Model selectionLineModel;
+    private com.badlogic.gdx.graphics.g3d.Model redFireModel1;
+    private com.badlogic.gdx.graphics.g3d.Model redFireModel2;
+    private com.badlogic.gdx.graphics.g3d.Model redFireModel3;
+    private com.badlogic.gdx.graphics.g3d.Model yellowFireModel1;
+    private com.badlogic.gdx.graphics.g3d.Model yellowFireModel2;
+    private com.badlogic.gdx.graphics.g3d.Model yellowFireModel3;
 
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
@@ -367,7 +373,41 @@ public class Gdx3DRenderer implements Visitor {
                             .createDiffuse(com.badlogic.gdx.graphics.Color.GRAY)),
                     com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
+
+            // Pre-create fire models (pyramids) - Larger size (approx double: 0.3w x 0.45h)
+            redFireModel1 = createPyramidModel(0.3f, 0.45f, 0.3f, new com.badlogic.gdx.graphics.Color(0.6f, 0f, 0f, 1f)); // Dark Red
+            redFireModel2 = createPyramidModel(0.3f, 0.45f, 0.3f, com.badlogic.gdx.graphics.Color.RED); // Red
+            redFireModel3 = createPyramidModel(0.3f, 0.45f, 0.3f, new com.badlogic.gdx.graphics.Color(1f, 0.3f, 0.3f, 1f)); // Light Red
+            
+            yellowFireModel1 = createPyramidModel(0.3f, 0.45f, 0.3f, new com.badlogic.gdx.graphics.Color(1f, 0.5f, 0f, 1f)); // Orange
+            yellowFireModel2 = createPyramidModel(0.3f, 0.45f, 0.3f, com.badlogic.gdx.graphics.Color.ORANGE); // Orange (standard)
+            yellowFireModel3 = createPyramidModel(0.3f, 0.45f, 0.3f, com.badlogic.gdx.graphics.Color.YELLOW); // Yellow
         }
+    }
+
+    private com.badlogic.gdx.graphics.g3d.Model createPyramidModel(float w, float h, float d,
+            com.badlogic.gdx.graphics.Color color) {
+        com.badlogic.gdx.graphics.g3d.utils.ModelBuilder mb = new com.badlogic.gdx.graphics.g3d.utils.ModelBuilder();
+        mb.begin();
+        com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder meshBuilder = mb.part("pyramid",
+                com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
+                (long) (com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                        | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal),
+                new com.badlogic.gdx.graphics.g3d.Material(
+                        com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color)));
+
+        com.badlogic.gdx.math.Vector3 p0 = new com.badlogic.gdx.math.Vector3(-w / 2, 0, -d / 2);
+        com.badlogic.gdx.math.Vector3 p1 = new com.badlogic.gdx.math.Vector3(w / 2, 0, -d / 2);
+        com.badlogic.gdx.math.Vector3 p2 = new com.badlogic.gdx.math.Vector3(w / 2, 0, d / 2);
+        com.badlogic.gdx.math.Vector3 p3 = new com.badlogic.gdx.math.Vector3(-w / 2, 0, d / 2);
+        com.badlogic.gdx.math.Vector3 top = new com.badlogic.gdx.math.Vector3(0, h, 0);
+
+        meshBuilder.triangle(p0, p1, top);
+        meshBuilder.triangle(p1, p2, top);
+        meshBuilder.triangle(p2, p3, top);
+        meshBuilder.triangle(p3, p0, top);
+
+        return mb.end();
     }
 
     public void clear() {
@@ -806,8 +846,14 @@ public class Gdx3DRenderer implements Visitor {
             semaphoreClosedModel.dispose();
         if (sensorModel != null)
             sensorModel.dispose();
-        if (terrainWallModel != null)
-            terrainWallModel.dispose();
+        if (terrainWallModel != null) terrainWallModel.dispose();
+        if (redFireModel1 != null) redFireModel1.dispose();
+        if (redFireModel2 != null) redFireModel2.dispose();
+        if (redFireModel3 != null) redFireModel3.dispose();
+        if (yellowFireModel1 != null) yellowFireModel1.dispose();
+        if (yellowFireModel2 != null) yellowFireModel2.dispose();
+        if (yellowFireModel3 != null) yellowFireModel3.dispose();
+        modelBuilder = null;
     }
 
     @Override
@@ -952,6 +998,10 @@ public class Gdx3DRenderer implements Visitor {
             instance.transform.rotate(0, 1, 0, angle);
         }
         instances.add(instance);
+
+        if (locomotive.isDestroying()) {
+            drawFire(x + 0.5f, 0.6f, y + 0.5f, animationAlpha + locomotive.getId());
+        }
 
         // Añadir indicador de selección para locomotora seleccionada (Número ID + Línea
         // verde)
@@ -1136,6 +1186,10 @@ public class Gdx3DRenderer implements Visitor {
         }
         instances.add(instance);
 
+        if (wagon.isDestroying()) {
+            drawFire(x + 0.5f, 0.5f, y + 0.5f, animationAlpha + wagon.hashCode());
+        }
+
         // 2. Renderizar Bloque de Carga (Si hay carga y no estamos en modo highlight
         // que lo oculte)
         // Si hay blink, a veces ocultamos todo.
@@ -1191,7 +1245,42 @@ public class Gdx3DRenderer implements Visitor {
         }
     }
 
-    @Override
+    private void drawFire(float x, float y, float z, float stateTime) {
+        // Use real-time for animation so it doesn't pause when game logic stalls
+        // Slower movement: decreased frame multiplier
+        float realTime = (float) (com.badlogic.gdx.Gdx.graphics.getFrameId()) * 0.025f;
+        float timeScale = 2.5f; // Slower swaying
+        int numParticles = 12;
+        for (int i = 0; i < numParticles; i++) {
+            float seed = i * 123.456f; // Seed independent of stateTime for consistent speed
+            float offsetX = (float) Math.sin(seed * 0.7f + realTime * timeScale) * 0.4f;
+            float offsetZ = (float) Math.cos(seed * 0.8f + realTime * timeScale * 1.1f) * 0.4f;
+            // Slower upward drift: reduced constant in realTime multiplier
+            float offsetY = (float) ((realTime * 1.5f + seed) % 1.5f);
+
+            com.badlogic.gdx.graphics.g3d.Model fireModel;
+            int colorPick = (int) (seed * 10f + realTime * 5f) % 6;
+            if (colorPick == 0) fireModel = redFireModel1;
+            else if (colorPick == 1) fireModel = redFireModel2;
+            else if (colorPick == 2) fireModel = redFireModel3;
+            else if (colorPick == 3) fireModel = yellowFireModel1;
+            else if (colorPick == 4) fireModel = yellowFireModel2;
+            else fireModel = yellowFireModel3;
+
+            if (fireModel == null) continue;
+
+            float sizeScale = 1.0f - offsetY / 1.5f;
+            if (sizeScale <= 0) continue;
+
+            ModelInstance firePart = new ModelInstance(fireModel);
+            firePart.transform.setToTranslation(x + offsetX, y + offsetY, z + offsetZ);
+            firePart.transform.scale(sizeScale, sizeScale, sizeScale);
+            // Slower rotation
+            firePart.transform.rotate(com.badlogic.gdx.math.Vector3.Y, realTime * 150f + seed * 100f);
+            instances.add(firePart);
+        }
+    }
+
     public void visitSensor(Sensor sensor) {
         if (sensor.getPosition() == null)
             return;
