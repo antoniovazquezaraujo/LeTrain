@@ -30,7 +30,6 @@ public class AudioSample {
         int frames = bytes.length / format.getFrameSize();
         this.samples = new float[frames];
         this.sampleRate = format.getSampleRate();
-        System.out.println("AudioSample loaded. Frames: " + frames + ", Rate: " + sampleRate);
 
         boolean isBigEndian = format.isBigEndian();
         int channels = format.getChannels();

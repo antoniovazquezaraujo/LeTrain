@@ -58,13 +58,11 @@ public class AudioController {
             // Relative to classpath
             java.net.URL url = getClass().getResource("/sound/" + filename);
             if (url != null) {
-                System.out.println("Loading " + filename + " from resources: " + url);
                 samples.put(name, new AudioSample(url));
             } else {
                 // Try direct file if not in resources (for dev environment)
                 File file = new File("src/main/resources/sound/" + filename);
                 if (file.exists()) {
-                    System.out.println("Loading " + filename + " from file: " + file.getAbsolutePath());
                     samples.put(name, new AudioSample(file));
                 } else {
                     System.err
@@ -117,7 +115,6 @@ public class AudioController {
             // but we can modify the default in constructor or here if we had methods.
             // Since WavSource is ours, I'll add methods or just modify the defaults.
 
-            System.out.println("DEBUG: Playing one-shot '" + name + "' at game pos (" + x + "," + y + ")");
 
             oneShotSources.add(source);
             mixer.addSource(source);
@@ -158,7 +155,7 @@ public class AudioController {
             boolean exists = false;
             for (Locomotive loco : model.getLocomotives()) {
                 if (loco.getId() == locoId) {
-                    if (!loco.isDestroying()) {
+                    if (!loco.isDestroying() && !loco.isStalled()) { // Also remove if stalled
                         exists = true;
                     }
                     break;
@@ -174,9 +171,12 @@ public class AudioController {
 
         // 2. Add/Update synthesizers
         for (Locomotive loco : model.getLocomotives()) {
-            if (loco.isDestroying()) {
+            // Stop sound if stalled or destroying
+            if (loco.isStalled() || loco.isDestroying()) {
+                stopSynthesizer(loco.getId());
                 continue;
             }
+
             TrainSynthesizer synth = synthesizers.get(loco.getId());
             if (synth == null) {
                 synth = new TrainSynthesizer();
@@ -219,8 +219,6 @@ public class AudioController {
             loco.setEngineStarting(synth.isEngineStarting());
             boolean braking = loco.isBraking();
             if (braking) {
-                System.out.println("DEBUG: Loco " + loco.getId() + " is BRAKING (Current: " + loco.getSpeed()
-                        + ", Target: " + loco.getTargetSpeed() + ")");
             }
             synth.setBraking(braking);
 

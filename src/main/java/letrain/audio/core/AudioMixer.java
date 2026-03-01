@@ -16,7 +16,7 @@ public class AudioMixer {
 
     // Audio Format Constants
     public static final float SAMPLE_RATE = 44100.0f;
-    public static final int BUFFER_SIZE = 4096;
+    public static final int BUFFER_SIZE = 1024;
 
     // Listener Position (The Camera)
     private float listenerX = 0;
@@ -37,6 +37,7 @@ public class AudioMixer {
             return;
         running = true;
         audioThread = new Thread(this::audioLoop, "AudioMixerThread");
+        audioThread.setPriority(Thread.MAX_PRIORITY);
         audioThread.setDaemon(true);
         audioThread.start();
     }
@@ -65,7 +66,7 @@ public class AudioMixer {
         try {
             AudioFormat format = new AudioFormat(SAMPLE_RATE, 16, 2, true, true); // Stereo
             SourceDataLine line = AudioSystem.getSourceDataLine(format);
-            line.open(format, BUFFER_SIZE * 4); // 4 bytes per frame (16bit * 2 channels)
+            line.open(format, BUFFER_SIZE * 4); // 4096 frames
             line.start();
 
             // Buffers
@@ -81,67 +82,82 @@ public class AudioMixer {
             byte[] outputBuffer = new byte[BUFFER_SIZE * 4];
 
             while (running) {
-                // Clear mix buffer
-                for (int i = 0; i < mixBuffer.length; i++)
-                    mixBuffer[i] = 0;
+                try {
+                    // Clear mix buffer
+                    for (int i = 0; i < mixBuffer.length; i++)
+                        mixBuffer[i] = 0;
 
-                // Mix sources
-                for (AudioSource source : sources) {
-                    // Reset source buffer
-                    for (int i = 0; i < sourceBuffer.length; i++)
-                        sourceBuffer[i] = 0;
+                    // Mix sources
+                    for (AudioSource source : sources) {
+                        // Reset source buffer
+                        for (int i = 0; i < sourceBuffer.length; i++)
+                            sourceBuffer[i] = 0;
 
-                    boolean active = source.read(sourceBuffer);
-                    if (!active)
-                        continue;
+                        boolean active = source.read(sourceBuffer);
+                        if (!active)
+                            continue;
 
-                    // 2. Calculate Distance & Pan
-                    float dx = source.getX() - listenerX;
-                    float dy = source.getY() - listenerY;
-                    float dz = source.getZ() - listenerZ;
+                        // 2. Calculate Distance & Pan
+                        float dx = source.getX() - listenerX;
+                        float dy = source.getY() - listenerY;
+                        float dz = source.getZ() - listenerZ;
 
-                    float distance = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+                        float distance = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-                    // Improved Logarithmic/Inverse-Square-like Attenuation
-                    float refDist = source.getReferenceDistance();
-                    float maxDist = source.getMaxDistance();
+                        // Improved Logarithmic/Inverse-Square-like Attenuation
+                        float refDist = source.getReferenceDistance();
+                        float maxDist = source.getMaxDistance();
 
-                    float volume = 1.0f;
-                    if (distance > refDist) {
-                        volume = refDist / distance;
-                        if (distance > maxDist) {
-                            float fadeFactor = 1.0f - ((distance - maxDist) / (maxDist * 0.2f));
-                            volume *= Math.max(0.0f, fadeFactor);
+                        float volume = 1.0f;
+                        if (distance > refDist) {
+                            volume = refDist / distance;
+                            if (distance > maxDist) {
+                                float fadeFactor = 1.0f - ((distance - maxDist) / (maxDist * 0.2f));
+                                volume *= Math.max(0.0f, fadeFactor);
+                            }
+                        }
+                        if (volume > 1.0f)
+                            volume = 1.0f;
+                        if (volume < 0.0f)
+                            volume = 0.0f;
+
+                        // NaN protection for volume
+                        if (Float.isNaN(volume) || Float.isInfinite(volume))
+                            volume = 0;
+
+                        // 5. Apply to Mix (Mono to Stereo)
+                        for (int i = 0; i < BUFFER_SIZE; i++) {
+                            float sample = sourceBuffer[i];
+                            // NaN protection for sample
+                            if (Float.isNaN(sample) || Float.isInfinite(sample))
+                                sample = 0;
+
+                            mixBuffer[i * 2] += sample * volume;
+                            mixBuffer[i * 2 + 1] += sample * volume;
                         }
                     }
-                    if (volume > 1.0f)
-                        volume = 1.0f;
-                    if (volume < 0.0f)
-                        volume = 0.0f;
 
+                    // Limit/Clip and Convert to Bytes
+                    for (int i = 0; i < BUFFER_SIZE * 2; i++) {
+                        float val = mixBuffer[i];
+                        if (Float.isNaN(val) || Float.isInfinite(val))
+                            val = 0;
+                        if (val > 1.0f)
+                            val = 1.0f;
+                        if (val < -1.0f)
+                            val = -1.0f;
 
-                    // 5. Apply to Mix (Mono to Stereo)
-                    for (int i = 0; i < BUFFER_SIZE; i++) {
-                        float sample = sourceBuffer[i];
-                        mixBuffer[i * 2] += sample * volume;
-                        mixBuffer[i * 2 + 1] += sample * volume;
+                        short s = (short) (val * 32767.0f);
+                        outputBuffer[i * 2] = (byte) ((s >> 8) & 0xFF);
+                        outputBuffer[i * 2 + 1] = (byte) (s & 0xFF);
                     }
+
+                    line.write(outputBuffer, 0, outputBuffer.length);
+                } catch (Exception e) {
+                    // Prevent thread death on single source error
+                    System.err.println("AudioMixer Error: " + e.getMessage());
+                    try { Thread.sleep(10); } catch (InterruptedException ie) {}
                 }
-
-                // Limit/Clip and Convert to Bytes
-                for (int i = 0; i < BUFFER_SIZE * 2; i++) {
-                    float val = mixBuffer[i];
-                    if (val > 1.0f)
-                        val = 1.0f;
-                    if (val < -1.0f)
-                        val = -1.0f;
-
-                    short s = (short) (val * 32767.0f);
-                    outputBuffer[i * 2] = (byte) ((s >> 8) & 0xFF); // Big Endian as per format?
-                    outputBuffer[i * 2 + 1] = (byte) (s & 0xFF);
-                }
-
-                line.write(outputBuffer, 0, outputBuffer.length);
             }
 
             line.drain();

@@ -95,7 +95,7 @@ public class RailTrackMaker {
                     resetQuantifierSteps();
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.DRAWING);
                     makingTracks = true;
-                    caterpillarCounter = 5;
+                    caterpillarCounter = 20;
 
                 } else if (keyEvent.isCtrlDown()) {
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.ERASING);
@@ -154,7 +154,7 @@ public class RailTrackMaker {
                     removeTrack(false);
                     makingTracks = false;
                     wasRemoving = true;
-                    caterpillarCounter = 5;
+                    caterpillarCounter = 20;
                 } else {
                     presenter.getModel().getCursor().setMode(Cursor.CursorMode.MOVING);
                     cursorBackward();
@@ -338,7 +338,7 @@ public class RailTrackMaker {
 
     void makeTracks() {
         if (makingTracks) {
-            caterpillarCounter = 5;
+            caterpillarCounter = 20;
             if (isQuantifierPending()) {
                 if (isTrackConstructionPending()) {
                     showAnimation();

@@ -49,6 +49,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     protected final Deque<Linker> linkersToRemove;
     int railStationId = 0;
     public boolean isLoading = false;
+    private boolean stalled = false;
     int id;
 
     public int getStationId() {
@@ -98,12 +99,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         }
     }
 
-    public void notifyContact(letrain.map.Point pos) {
-        for (TrainEventListener l : trainListeners) {
-            l.onContact(pos);
-        }
-    }
-
     public Train(int id) {
         setId(id);
         this.linkers = new LinkedList<>();
@@ -119,14 +114,12 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     public void addLinkerToJoin() {
         if (numLinkersToJoin < linkersToJoin.size()) {
             numLinkersToJoin++;
-            System.out.println("Train.addLinkerToJoin: num=" + numLinkersToJoin); // DEBUG
         }
     }
 
     public void removeLinkerToJoin() {
         if (numLinkersToJoin > 0) {
             numLinkersToJoin--;
-            System.out.println("Train.removeLinkerToJoin: num=" + numLinkersToJoin); // DEBUG
         }
     }
 
@@ -248,7 +241,28 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 .collect(Collectors.toList());
     }
 
-    @Override
+    public void notifyContact(letrain.map.Point pos) {
+        this.stalled = true;
+        for (TrainEventListener l : trainListeners) {
+            l.onContact(pos);
+        }
+    }
+
+    public void notifyCrash(letrain.map.Point pos) {
+        this.stalled = true;
+        for (TrainEventListener l : trainListeners) {
+            l.onCrash(pos);
+        }
+    }
+
+    public boolean isStalled() {
+        return stalled;
+    }
+
+    public void setStalled(boolean stalled) {
+        this.stalled = stalled;
+    }
+
     public boolean advance() {
         // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
         if (isLoading) {
@@ -371,6 +385,12 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                     } else {
                         letrain.map.Point collisionPos = occupyingL.getPosition();
                         notifyContact(collisionPos);
+                        getLinkers().forEach(l -> {
+                            if (l instanceof Locomotive) {
+                                ((Locomotive) l).setTargetSpeed(0);
+                            }
+                        });
+                        this.setStalled(true);
                         Train otherTrain = occupyingL.getTrain();
                         if (otherTrain != null) {
                             otherTrain.notifyContact(collisionPos);
@@ -442,9 +462,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         }
 
         if (!alreadyDestroying) {
-            for (TrainEventListener l : trainListeners) {
-                l.onCrash(crashPos);
-            }
+            notifyCrash(crashPos);
             getLinkers().forEach(l -> {
                 if (l instanceof Locomotive) {
                     ((Locomotive) l).setTargetSpeed(0);
@@ -463,9 +481,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 }
             }
             if (!otherAlreadyDestroying) {
-                for (TrainEventListener l : linker.getTrain().trainListeners) {
-                    l.onCrash(crashPos);
-                }
+                linker.getTrain().notifyCrash(crashPos);
                 linker.getTrain().getLinkers().forEach(l -> {
                     if (l instanceof Locomotive) {
                         ((Locomotive) l).setTargetSpeed(0);
@@ -601,7 +617,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public void resetUnlinkState() {
-        System.out.println("Train.resetUnlinkState: Resetting state"); // DEBUG
         if (!linkers.isEmpty() && linkers.peekLast() == getDirectorLinker()) {
             linkerDivisionSense = LinkersSense.FRONT;
         } else {
@@ -612,7 +627,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public void resetLinkState() {
-        System.out.println("Train.resetLinkState: Resetting state"); // DEBUG
         numLinkersToJoin = 0;
         linkersToJoin.clear();
     }
@@ -659,7 +673,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public void divideTrain(Supplier<Integer> nextTrainIdSupplier) {
-        System.out.println("Train.divideTrain: numToRemove=" + numLinkersToRemove); // DEBUG
         Linker linkerToRemove = null;
         for (int n = 0; n < numLinkersToRemove; n++) {
             if (linkerDivisionSense == LinkersSense.BACK) {

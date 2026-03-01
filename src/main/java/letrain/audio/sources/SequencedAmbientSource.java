@@ -62,9 +62,7 @@ public class SequencedAmbientSource implements AudioSource {
     @Override
     public boolean read(float[] buffer) {
         if (state == State.IDLE || sample == null) {
-            for (int i = 0; i < buffer.length; i++)
-                buffer[i] = 0;
-            return true;
+            return false;
         }
 
         int len = buffer.length;
@@ -95,7 +93,7 @@ public class SequencedAmbientSource implements AudioSource {
                 return true;
             }
 
-            float raw = sample.getSample((int) cursor);
+            float raw = sample.getSampleLinear(cursor);
 
             // Apply Simple LPF
             float alpha = 1.0f - filterAmount;

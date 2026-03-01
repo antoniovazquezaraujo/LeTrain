@@ -378,7 +378,6 @@ public class TrainSynthesizer implements AudioSource {
     public void setBraking(boolean braking) {
         float newTarget = braking ? 0.8f : 0.0f;
         if (newTarget != this.targetBrakeVolume) {
-            System.out.println("TrainSynth: Braking target volume changed to " + newTarget);
             this.targetBrakeVolume = newTarget;
         }
     }

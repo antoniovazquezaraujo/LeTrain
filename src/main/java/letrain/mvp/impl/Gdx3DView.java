@@ -38,6 +38,7 @@ import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
+import letrain.vehicle.impl.rail.Locomotive;
 import letrain.visitor.Gdx3DRenderer;
 
 public class Gdx3DView extends ApplicationAdapter
@@ -1958,9 +1959,25 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void onContact(Point pos) {
-        audioController.playOneShot("link", pos.getX(), pos.getY());
+        if (audioController != null && pos != null) {
+            audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
+            // Immediately stop audio for all locomotives in the train that hit something
+            // This forces them to 'stall' and stop moving sounds instantly.
+            for (Locomotive loco : model.getLocomotives()) {
+                if (loco.getTrain() != null && (loco.getSpeed() > 0 || loco.getTargetSpeed() > 0)) {
+                    // Check if this loco's train is at the collision position
+                    // Actually, a simpler way is to check all trains involved.
+                    // But usually, the contact event implies the moving train hits something.
+                    // For now, let's stop synthesizers for any loco that is "involved" or just all of them 
+                    // if they are at speed and we just had a contact nearby? 
+                    // No, let's be more specific.
+                    if (Point.distance(loco.getPosition(), pos) < 2.0) {
+                        audioController.stopSynthesizer(loco.getId());
+                    }
+                }
+            }
+        }
     }
-
     @Override
     public void onLink() {
         audioController.playOneShot("link", model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY());

@@ -1087,6 +1087,14 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     public void onContact(letrain.map.Point pos) {
         if (audioController != null && pos != null) {
             audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
+            // Immediately stop audio for locomotives involved in the contact
+            for (Locomotive loco : model.getLocomotives()) {
+                if (loco.getTrain() != null && (loco.getSpeed() > 0 || loco.getTargetSpeed() > 0)) {
+                    if (Point.distance(loco.getPosition(), pos) < 2.0) {
+                        audioController.stopSynthesizer(loco.getId());
+                    }
+                }
+            }
         }
     }
 

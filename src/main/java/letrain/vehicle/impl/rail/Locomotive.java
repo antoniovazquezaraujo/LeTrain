@@ -59,6 +59,9 @@ public class Locomotive extends Linker implements Tractor {
         Track nextTrack = getTrack();
         setDir(nextTrack.getDir(pushDir));
         setReversed(!isReversed());
+        if (getTrain() != null) {
+            getTrain().setStalled(false);
+        }
         showingDirTurns = 5;
         if (getTrain() != null) {
             getTrain().refreshLinkersDirection();
@@ -183,6 +186,9 @@ public class Locomotive extends Linker implements Tractor {
             return;
         }
         this.targetSpeed = speed;
+        if (this.targetSpeed > 0 && getTrain() != null) {
+            getTrain().setStalled(false);
+        }
         limitTargetSpeed();
 
         // Sincronizar con el resto de locomotoras del tren
@@ -342,4 +348,13 @@ public class Locomotive extends Linker implements Tractor {
         distanceTraveled++;
     }
 
+    public void setStalled(boolean stalled) {
+        if (getTrain() != null) {
+            getTrain().setStalled(stalled);
+        }
+    }
+
+    public boolean isStalled() {
+        return getTrain() != null && getTrain().isStalled();
+    }
 }

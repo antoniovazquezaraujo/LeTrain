@@ -888,8 +888,12 @@ public class Gdx3DRenderer implements Visitor {
                 letrain.track.Track nextTrack = currentTrack.getConnected(locomotive.getDir());
                 if (nextTrack != null) {
                     // Prevent visual "mixing": check if next track is blocked recursively
-                    if (isPredictiveMoveBlocked(locomotive, new HashSet<>())) {
-                        progress = 0;
+                    boolean blocked = isPredictiveMoveBlocked(locomotive, new HashSet<>());
+                    if (blocked) {
+                        progress *= 0.25f; // Slow down to touch exactly at end of tick
+                    }
+                    if (locomotive.getTrain() != null && locomotive.getTrain().isStalled()) {
+                        progress = 0.25f; // Stay touching
                     }
 
                     float nextX = nextTrack.getPosition().getX();
@@ -1066,8 +1070,12 @@ public class Gdx3DRenderer implements Visitor {
                         letrain.track.Track nextTrack = currentTrack.getConnected(wagon.getDir());
                         if (nextTrack != null) {
                             // Prevent visual "mixing": check if next track is blocked recursively
-                            if (isPredictiveMoveBlocked(wagon, new HashSet<>())) {
-                                progress = 0;
+                            boolean blocked = isPredictiveMoveBlocked(wagon, new HashSet<>());
+                            if (blocked) {
+                                progress *= 0.25f; // Slow down to touch exactly at end of tick
+                            }
+                            if (wagon.getTrain() != null && wagon.getTrain().isStalled()) {
+                                progress = 0.25f; // Stay touching
                             }
 
                             float nextX = nextTrack.getPosition().getX();

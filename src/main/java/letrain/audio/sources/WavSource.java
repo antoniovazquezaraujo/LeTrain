@@ -41,7 +41,7 @@ public class WavSource implements AudioSource {
                 return true; // We filled what we could and we are done
             }
 
-            float raw = sample.getSample((int) cursor);
+            float raw = sample.getSampleLinear(cursor);
 
             // Simple LPF (matches AmbientSource logic)
             float alpha = 1.0f - filterAmount;
