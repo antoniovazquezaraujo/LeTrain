@@ -61,6 +61,9 @@ public class Gdx3DRenderer implements Visitor {
     private com.badlogic.gdx.graphics.g3d.Model semaphoreOpenModel;
     private com.badlogic.gdx.graphics.g3d.Model semaphoreClosedModel;
     private com.badlogic.gdx.graphics.g3d.Model sensorModel;
+    private com.badlogic.gdx.graphics.g3d.Model goldConsumerModel;
+    private com.badlogic.gdx.graphics.g3d.Model coalConsumerModel;
+    private com.badlogic.gdx.graphics.g3d.Model rubyConsumerModel;
     private Set<letrain.track.rail.RailTrack> selectedStationTracks = new HashSet<>();
     private com.badlogic.gdx.graphics.g3d.Model wagonJewelModel;
     private com.badlogic.gdx.graphics.g3d.Model cylinderModel;
@@ -116,6 +119,7 @@ public class Gdx3DRenderer implements Visitor {
 
     private List<VehicleLabel> labels = new ArrayList<>();
     private Model modelRef;
+    private com.badlogic.gdx.graphics.Camera camera;
     private float animationAlpha = 1.0f;
     private boolean isXRayActive = false;
 
@@ -397,7 +401,62 @@ public class Gdx3DRenderer implements Visitor {
             yellowSphereModel1 = createSphereModel(0.25f, new com.badlogic.gdx.graphics.Color(1f, 0.5f, 0f, 1f));
             yellowSphereModel2 = createSphereModel(0.25f, com.badlogic.gdx.graphics.Color.ORANGE);
             yellowSphereModel3 = createSphereModel(0.25f, com.badlogic.gdx.graphics.Color.YELLOW);
+
+            // Pre-create Consumer Models (Performance Optimization: 1 instance instead of 7)
+            goldConsumerModel = createConsumerModel(letrain.track.CargoTypes.GOLD.getColor());
+            coalConsumerModel = createConsumerModel(letrain.track.CargoTypes.COAL.getColor());
+            rubyConsumerModel = createConsumerModel(letrain.track.CargoTypes.RUBY.getColor());
         }
+    }
+
+    private com.badlogic.gdx.graphics.g3d.Model createConsumerModel(com.badlogic.gdx.graphics.Color color) {
+        com.badlogic.gdx.graphics.g3d.utils.ModelBuilder mb = new com.badlogic.gdx.graphics.g3d.utils.ModelBuilder();
+        mb.begin();
+        float thickness = 0.06f;
+        float h = 0.04f;
+        
+        // Calculate contrast color for the bars
+        // Luminance = 0.299*R + 0.587*G + 0.114*B
+        float luminance = 0.299f * color.r + 0.587f * color.g + 0.114f * color.b;
+        com.badlogic.gdx.graphics.Color barColor = color.cpy();
+        if (luminance > 0.5f) {
+            barColor.lerp(com.badlogic.gdx.graphics.Color.BLACK, 0.5f); // Darker for bright backgrounds
+        } else {
+            barColor.lerp(com.badlogic.gdx.graphics.Color.WHITE, 0.6f); // Much lighter for dark backgrounds (like coal)
+        }
+
+        com.badlogic.gdx.graphics.g3d.Material iconMat = new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(barColor));
+        com.badlogic.gdx.graphics.g3d.Material bgMat = new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
+
+        // Background Plate
+        com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpb = mb.part("bg", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES, 
+            com.badlogic.gdx.graphics.VertexAttributes.Usage.Position | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal, bgMat);
+        com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder.build(mpb, 0.95f, 0.01f, 0.95f);
+        
+        // Diagonal X
+        mpb = mb.part("x", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES, 
+            com.badlogic.gdx.graphics.VertexAttributes.Usage.Position | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal, iconMat);
+        
+        com.badlogic.gdx.math.Matrix4 m = new com.badlogic.gdx.math.Matrix4();
+        m.setToRotation(0, 1, 0, 45).trn(0, 0.02f, 0);
+        mpb.setVertexTransform(m);
+        com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder.build(mpb, thickness, h, 1.35f);
+        m.setToRotation(0, 1, 0, -45).trn(0, 0.02f, 0);
+        mpb.setVertexTransform(m);
+        com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder.build(mpb, thickness, h, 1.35f);
+
+        // Frame
+        for (int i = 0; i < 4; i++) {
+            float angle = i * 90f;
+            float offset = 0.47f;
+            float bx = (float)Math.cos(Math.toRadians(angle)) * offset;
+            float bz = (float)Math.sin(Math.toRadians(angle)) * offset;
+            m.setToRotation(0, 1, 0, angle).trn(bx, 0.02f, bz);
+            mpb.setVertexTransform(m);
+            com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder.build(mpb, thickness, h, 1.0f);
+        }
+
+        return mb.end();
     }
 
     private com.badlogic.gdx.graphics.g3d.Model createSphereModel(float size, com.badlogic.gdx.graphics.Color color) {
@@ -454,7 +513,12 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitModel(Model model) {
+        visitModel(model, null);
+    }
+
+    public void visitModel(Model model, com.badlogic.gdx.graphics.Camera camera) {
         this.modelRef = model;
+        this.camera = camera;
         labels.clear();
 
         // ----------------------------------------------------------------------------------
@@ -484,6 +548,14 @@ public class Gdx3DRenderer implements Visitor {
         model.getLocomotives().forEach(l -> l.accept(this));
         model.getWagons().forEach(w -> w.accept(this));
         visitCursor(model.getCursor());
+    }
+
+
+
+    private boolean isVisible(letrain.map.Point pos) {
+        if (camera == null) return true;
+        // Check if the tile bounds are within the camera frustum (performance optimization)
+        return camera.frustum.boundsInFrustum(pos.getX() + 0.5f, 0.5f, pos.getY() + 0.5f, 0.5f, 0.5f, 0.5f);
     }
 
     private letrain.map.Dir getValidOrientation(letrain.track.rail.RailTrack track) {
@@ -523,6 +595,7 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
+        if (!isVisible(track.getPosition())) return;
         // Renderizamos cada ruta del tramo como dos medios segmentos
         track.forEach(route -> {
             letrain.map.Dir d1 = route.getFirst();
@@ -1556,6 +1629,7 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitGround(Ground ground) {
+        if (!isVisible(ground.getPosition())) return;
         int type = ground.getType();
         com.badlogic.gdx.graphics.g3d.Model model = groundModel;
         float yPosition = 0.0f;
@@ -1585,48 +1659,18 @@ public class Gdx3DRenderer implements Visitor {
             instances.add(jewelBlock);
             return;
         } else if (type >= 20 && type <= 29) {
-            // CONSUMER - Refined "X" with frame and white background
+            // CONSUMER - Optimized Pre-built Icon Model
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            com.badlogic.gdx.graphics.Color color = (cargo != null) ? cargo.getColor() : com.badlogic.gdx.graphics.Color.WHITE;
+            com.badlogic.gdx.graphics.g3d.Model consumerModelToUse = coalConsumerModel;
+            if (cargo == CargoTypes.GOLD) consumerModelToUse = goldConsumerModel;
+            else if (cargo == CargoTypes.RUBY) consumerModelToUse = rubyConsumerModel;
 
             float x = ground.getPosition().getX() + 0.5f;
             float z = ground.getPosition().getY() + 0.5f;
-            float thickness = 0.06f; // User request: half of previous 0.12
-            float height = 0.04f;
 
-            // 1. White Background Plate
-            ModelInstance bg = new ModelInstance(groundModel);
-            bg.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.WHITE));
-            bg.transform.setToTranslation(x, 0.015f, z);
-            bg.transform.scale(0.95f, 1.0f, 0.95f); // Slightly smaller than tile
-            instances.add(bg);
-
-            // 2. Diagonal "X"
-            for (float angle : new float[] { 45f, -45f }) {
-                ModelInstance bar = new ModelInstance(wagonJewelModel);
-                bar.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
-                bar.transform.setToTranslation(x, 0.02f, z);
-                bar.transform.rotate(0, 1, 0, angle);
-                bar.transform.scale(thickness, height, 1.35f); 
-                instances.add(bar);
-            }
-
-            // 3. Square Frame
-            for (int i = 0; i < 4; i++) {
-                float angle = i * 90f;
-                ModelInstance frameBar = new ModelInstance(wagonJewelModel);
-                frameBar.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
-                
-                // Position each bar at the edge
-                float offset = 0.47f;
-                float bx = x + (float)Math.cos(Math.toRadians(angle)) * offset;
-                float bz = z + (float)Math.sin(Math.toRadians(angle)) * offset;
-                
-                frameBar.transform.setToTranslation(bx, 0.02f, bz);
-                frameBar.transform.rotate(0, 1, 0, angle);
-                frameBar.transform.scale(thickness, height, 1.0f);
-                instances.add(frameBar);
-            }
+            ModelInstance instance = new ModelInstance(consumerModelToUse);
+            instance.transform.setToTranslation(x, 0.01f, z);
+            instances.add(instance);
             return;
         } else {
             switch (type) {

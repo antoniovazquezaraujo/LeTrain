@@ -83,7 +83,6 @@ public class Model implements Serializable, letrain.mvp.Model {
     int quantifier = 1;
     int quantifierSteps = 0;
     LocalDateTime lastSaveTime = null;
-    private int economyReloadCounter = 0;
 
     public Model() {
         this.economyManager = new EconomyManager();
@@ -279,10 +278,6 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     @Override
     public void moveLocomotives() {
-        if (++economyReloadCounter >= 600) { // Reload every ~10 seconds at 60fps
-            economyReloadCounter = 0;
-            getEconomyManager().reloadConfig();
-        }
         locomotives.forEach(locomotive -> {
             if (locomotive.update()) {
                 // Only charge fuel and notify movement for the director to avoid multiple charges per train

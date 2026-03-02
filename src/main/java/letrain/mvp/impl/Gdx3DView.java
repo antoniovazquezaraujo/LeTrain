@@ -710,7 +710,7 @@ public class Gdx3DView extends ApplicationAdapter
 
         // Actualizar instancias desde el modelo
         renderer.clear();
-        renderer.visitModel(model);
+        renderer.visitModel(model, cam);
         renderer.getInstances().add(new ModelInstance(groundModel));
         // renderer.getInstances().add(new ModelInstance(gridModel)); // Grid oculto
 
