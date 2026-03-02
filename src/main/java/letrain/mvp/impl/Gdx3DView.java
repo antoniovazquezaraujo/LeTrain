@@ -118,8 +118,9 @@ public class Gdx3DView extends ApplicationAdapter
         this.trackMaker = new RailTrackMaker(this);
         this.audioController = new letrain.audio.AudioController(model);
 
-        // Usamos el área central o el área total permitida
-        model.getGroundMap().renderBlock(0, 0, getCols(), getRows());
+        // Use the initial cursor position as the center for initial ground loading
+        letrain.map.Point startPos = model.getCursor().getPosition();
+        model.getGroundMap().renderBlock(startPos.getX() - getCols()/2, startPos.getY() - getRows()/2, getCols(), getRows());
 
         // Register as listener for audio events
         model.addTrainEventListener(this);
@@ -134,8 +135,9 @@ public class Gdx3DView extends ApplicationAdapter
         environment.add(new DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f));
 
         cam = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        cam.position.set(20f, 20f, 20f);
-        cam.lookAt(0, 0, 0);
+        letrain.map.Point startPos = model.getCursor().getPosition();
+        cam.position.set(startPos.getX() + 20f, 20f, startPos.getY() + 20f);
+        cam.lookAt(startPos.getX() + 0.5f, 0, startPos.getY() + 0.5f);
         cam.near = 1f;
         cam.far = 1000f;
         cam.update();

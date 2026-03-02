@@ -94,7 +94,8 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
 
             KeyStroke stroke = null;
             model.setMode(RAILS);
-            model.updateGroundMap(new Point(0, 0), view.getCols(), view.getRows());
+            letrain.map.Point startPos = model.getCursor().getPosition();
+            model.updateGroundMap(startPos, view.getCols(), view.getRows());
             while (running) {
                 stroke = null;
                 stroke = view.readKey();

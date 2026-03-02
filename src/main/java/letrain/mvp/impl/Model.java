@@ -93,7 +93,13 @@ public class Model implements Serializable, letrain.mvp.Model {
         this.groundMap = new letrain.ground.impl.GroundMap(seed, this.economyManager);
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
-        this.cursor.setPosition(new Point(10, 10));
+
+        // Randomize starting position far from (0,0) to avoid symmetry artifacts
+        int minOffset = 10000;
+        int maxOffset = 100000;
+        int offsetX = (minOffset + (int)(Math.random() * (maxOffset - minOffset))) * (Math.random() > 0.5 ? 1 : -1);
+        int offsetY = (minOffset + (int)(Math.random() * (maxOffset - minOffset))) * (Math.random() > 0.5 ? 1 : -1);
+        this.cursor.setPosition(new Point(offsetX, offsetY));
         this.locomotives = new ArrayList<>();
         this.wagons = new ArrayList<>();
         this.forks = new ArrayList<>();
