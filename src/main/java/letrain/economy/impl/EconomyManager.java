@@ -30,13 +30,13 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
     Map<CargoTypes, Float> cargoBaseValues = new HashMap<>();
     private float fuelCostPerMeter = 0.5f;
     private float cargoLoadingFee = 100f;
-    private float startingBalance = 1000000f;
-    private float goldThreshold = 0.28f;
-    private float coalThreshold = 0.28f;
-    private float rubyThreshold = 0.28f;
-    private float waterThreshold = 130f;
-    private float rockThreshold = 180f;
-    private int viewRadius = 5;
+    private float startingBalance = 0f;
+    private float goldThreshold = 0.30f;
+    private float coalThreshold = 0.25f;
+    private float rubyThreshold = 0.35f;
+    private float waterThreshold = 110f;
+    private float rockThreshold = 130f;
+    private int viewRadius = 15;
     private static final Logger log = LoggerFactory.getLogger(EconomyManager.class);
 
     int constructedNormalRailTracks = 0;
@@ -63,29 +63,29 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
         prices.put(ExpenseType.CONSTRUCTED_BRIDGE_RAIL_TRACK, 20000f);
         prices.put(ExpenseType.CONSTRUCTED_TUNNEL_RAIL_TRACK, 70000f);
         prices.put(ExpenseType.CONSTRUCTED_FORK, 1000f);
-        prices.put(ExpenseType.CONSTRUCTED_STATION, 1000f);
+        prices.put(ExpenseType.CONSTRUCTED_STATION, 100000f);
         prices.put(ExpenseType.CONSTRUCTED_SENSOR, 100f);
         prices.put(ExpenseType.CONSTRUCTED_SEMAPHORE, 100f);
-        prices.put(ExpenseType.CONSTRUCTED_LOCOMOTIVE, 10000f);
-        prices.put(ExpenseType.CONSTRUCTED_WAGON, 1000f);
+        prices.put(ExpenseType.CONSTRUCTED_LOCOMOTIVE, 50000f);
+        prices.put(ExpenseType.CONSTRUCTED_WAGON, 30000f);
         prices.put(ExpenseType.DESTROYED_NORMAL_RAIL_TRACK, 500f);
-        prices.put(ExpenseType.DESTROYED_BRIDGE_RAIL_TRACK, 1000f);
-        prices.put(ExpenseType.DESTROYED_TUNNEL_RAIL_TRACK, 1500f);
+        prices.put(ExpenseType.DESTROYED_BRIDGE_RAIL_TRACK, 10000f);
+        prices.put(ExpenseType.DESTROYED_TUNNEL_RAIL_TRACK, 30000f);
         prices.put(ExpenseType.DESTROYED_FORK, 500f);
         prices.put(ExpenseType.DESTROYED_STATION, 50000f);
         prices.put(ExpenseType.DESTROYED_SENSOR, 500f);
         prices.put(ExpenseType.DESTROYED_SEMAPHORE, 500f);
-        prices.put(ExpenseType.DESTROYED_LOCOMOTIVE, 50000f);
-        prices.put(ExpenseType.DESTROYED_WAGON, 5000f);
+        prices.put(ExpenseType.DESTROYED_LOCOMOTIVE, 30000f);
+        prices.put(ExpenseType.DESTROYED_WAGON, 10000f);
         prices.put(ExpenseType.LOAD_PASSENGERS, 1000f);
         prices.put(ExpenseType.UNLOAD_PASSENGERS, 1000f);
         prices.put(ExpenseType.TRAIN_MOVED, 0f);
-        prices.put(ExpenseType.TRAIN_CRASHED, 100000f);
+        prices.put(ExpenseType.TRAIN_CRASHED, 1000000f);
         
         // Cargo values
-        cargoBaseValues.put(CargoTypes.GOLD, 10f);
-        cargoBaseValues.put(CargoTypes.COAL, 30f);
-        cargoBaseValues.put(CargoTypes.RUBY, 80f);
+        cargoBaseValues.put(CargoTypes.GOLD, 2000f);
+        cargoBaseValues.put(CargoTypes.COAL, 200f);
+        cargoBaseValues.put(CargoTypes.RUBY, 20000f);
         cargoBaseValues.put(CargoTypes.NONE, 0f);
     }
 

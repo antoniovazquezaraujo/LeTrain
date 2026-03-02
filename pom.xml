@@ -94,6 +94,75 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>jpackage</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>jpackage</executable>
+                            <arguments>
+                                <argument>--input</argument>
+                                <argument>${project.build.directory}</argument>
+                                <argument>--name</argument>
+                                <argument>LeTrain</argument>
+                                <argument>--main-jar</argument>
+                                <argument>${project.build.finalName}-jar-with-dependencies.jar</argument>
+                                <argument>--main-class</argument>
+                                <argument>letrain.LeTrain</argument>
+                                <argument>--type</argument>
+                                <argument>app-image</argument>
+                                <argument>--dest</argument>
+                                <argument>${project.basedir}/output</argument>
+                                <argument>--arguments</argument>
+                                <argument>--3d</argument>
+                                <argument>--add-launcher</argument>
+                                <argument>LeTrain2D=${project.build.directory}/2d_launcher.properties</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>clean-output</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <delete dir="${project.basedir}/output/LeTrain"/>
+                                <delete file="${project.basedir}/output/LeTrain-Windows-x64.zip"/>
+                                <echo file="${project.build.directory}/2d_launcher.properties">arguments=</echo>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>zip-distribution</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <zip destfile="${project.basedir}/output/LeTrain-Windows-x64.zip" 
+                                     basedir="${project.basedir}/output/LeTrain"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
