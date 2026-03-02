@@ -414,6 +414,23 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public boolean keyTyped(char character) {
+        // --- 1. ABSOLUTE GLOBAL CAMERA TOGGLE ---
+        if (character == 'c' || character == 'C') {
+            if (cameraMode == CameraMode.ORBIT) {
+                // Skip CAB mode if there are no locomotives to follow
+                if (!model.getLocomotives().isEmpty()) {
+                    cameraMode = CameraMode.CAB;
+                } else {
+                    cameraMode = CameraMode.MAP;
+                }
+            } else if (cameraMode == CameraMode.CAB) {
+                cameraMode = CameraMode.MAP;
+            } else {
+                cameraMode = CameraMode.ORBIT;
+            }
+            return true;
+        }
+
         if (model.getMode() == letrain.mvp.Model.GameMode.TRAINS) {
             if (Character.isLetter(character)) {
                 createVehicle(character);
@@ -435,55 +452,8 @@ public class Gdx3DView extends ApplicationAdapter
             }
         }
 
-        switch (character) {
-            case 'r':
-                model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                return true;
-            case 'n':
-                if (!model.getStations().isEmpty()) {
-                    model.setMode(letrain.mvp.Model.GameMode.STATIONS);
-                }
-                return true;
-            case 't':
-                if (model.getCursorRailTrack() != null) {
-                    model.setMode(letrain.mvp.Model.GameMode.TRAINS);
-                }
-                return true;
-            case 'd':
-                if (!model.getLocomotives().isEmpty()) {
-                    model.setMode(letrain.mvp.Model.GameMode.DRIVE);
-                }
-                return true;
-            case 'l':
-                if (!model.getLocomotives().isEmpty()) {
-                    model.setMode(letrain.mvp.Model.GameMode.LINK);
-                    if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                        model.getSelectedLocomotive().getTrain().resetLinkState();
-                    }
-                }
-                return true;
-            case 'u':
-                if (!model.getLocomotives().isEmpty()) {
-                    model.setMode(letrain.mvp.Model.GameMode.UNLINK);
-                    if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                        model.getSelectedLocomotive().getTrain().resetUnlinkState();
-                    }
-                }
-                return true;
-            case 'f':
-                if (!model.getForks().isEmpty()) {
-                    model.setMode(letrain.mvp.Model.GameMode.FORKS);
-                }
-                return true;
-            case 's':
-                if (!model.getSemaphores().isEmpty()) {
-                    model.setMode(letrain.mvp.Model.GameMode.SEMAPHORES);
-                }
-                return true;
-            case 'c':
-                cameraMode = (cameraMode == CameraMode.ORBIT) ? CameraMode.CAB : CameraMode.ORBIT;
-                return true;
-        }
+        // All key shortcuts are now centralized in onChar() to allow case-insensitive handling
+        // and consistent behavior across inputs.
 
         // Pass any other character input to the presenter/trackmaker
         boolean ctrlPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
@@ -669,7 +639,12 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public boolean scrolled(float amountX, float amountY) {
-        return false;
+        if (cameraMode == CameraMode.MAP) {
+            mapCameraHeight = com.badlogic.gdx.math.MathUtils.clamp(mapCameraHeight + amountY * 2f, 3f, 100f);
+        } else if (cameraMode == CameraMode.ORBIT) {
+            targetCameraDistance = com.badlogic.gdx.math.MathUtils.clamp(targetCameraDistance + amountY, 3f, 40f);
+        }
+        return true;
     }
 
     private com.badlogic.gdx.math.Vector3 camTarget = new com.badlogic.gdx.math.Vector3();
@@ -678,10 +653,11 @@ public class Gdx3DView extends ApplicationAdapter
     private float cameraDistance = 8.5f; // Distancia horizontal de la cámara al punto focal
     private float targetCameraDistance = 8.5f;
     private com.badlogic.gdx.math.Vector2 currentCabDirection = new com.badlogic.gdx.math.Vector2(0, 1);
-    private float cameraHeight = 6f; // Altura fija de la cámara sobre el suelo
+    private float cameraHeight = 6f; // Altura fija de la cámara sobre el suelo (ORBIT)
+    private float mapCameraHeight = 15f; // Altura para la vista MAP
 
     private enum CameraMode {
-        ORBIT, CAB
+        ORBIT, CAB, MAP
     }
 
     private CameraMode cameraMode = CameraMode.ORBIT;
@@ -893,8 +869,6 @@ public class Gdx3DView extends ApplicationAdapter
                 cam.position.set(camX, camY, camZ);
                 cam.lookAt(x + smoothDx * 5f, 0.5f, z + smoothDz * 5f);
                 cam.up.set(0, 1, 0);
-            } else {
-                cameraMode = CameraMode.ORBIT;
             }
         }
 
@@ -910,11 +884,20 @@ public class Gdx3DView extends ApplicationAdapter
             float angleRad = cameraAngle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
             float camX = camTarget.x + cameraDistance * com.badlogic.gdx.math.MathUtils.sin(angleRad);
             float camZ = camTarget.z + cameraDistance * com.badlogic.gdx.math.MathUtils.cos(angleRad);
-            float camY = cameraHeight;
+            // ORBIT height now follows distance slightly for a more natural zoom (30% distance)
+            float camY = Math.max(2.0f, cameraDistance * 0.7f); 
 
             cam.position.set(camX, camY, camZ);
             cam.lookAt(camTarget);
             cam.up.set(0, 1, 0);
+        }
+
+        if (cameraMode == CameraMode.MAP) {
+            // Top-down view
+            camTarget.lerp(new com.badlogic.gdx.math.Vector3(targetX, 0, targetZ), 0.05f);
+            cam.position.set(camTarget.x, mapCameraHeight, camTarget.z);
+            cam.lookAt(camTarget.x, 0, camTarget.z);
+            cam.up.set(0, 0, -1); // "Up" is north in top-down view
         }
         cam.update();
     }
@@ -1004,7 +987,7 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void onChar(com.googlecode.lanterna.input.KeyStroke stroke) {
-        // Global Camera Controls (Alt + Arrows)
+        // Global Camera Zoom/Rotation (Alt + Arrows)
         if (stroke.isAltDown()) {
             if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
                 targetCameraAngle -= 15f;
@@ -1013,10 +996,18 @@ public class Gdx3DView extends ApplicationAdapter
                 targetCameraAngle += 15f;
                 return;
             } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
-                targetCameraDistance = Math.max(3f, targetCameraDistance - 1f);
+                if (cameraMode == CameraMode.MAP) {
+                    mapCameraHeight = Math.max(3f, mapCameraHeight - 1f);
+                } else {
+                    targetCameraDistance = Math.max(3f, targetCameraDistance - 1f);
+                }
                 return;
             } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
-                targetCameraDistance = Math.min(20f, targetCameraDistance + 1f);
+                if (cameraMode == CameraMode.MAP) {
+                    mapCameraHeight = Math.min(100f, mapCameraHeight + 1f);
+                } else {
+                    targetCameraDistance = Math.min(40f, targetCameraDistance + 1f);
+                }
                 return;
             }
         }

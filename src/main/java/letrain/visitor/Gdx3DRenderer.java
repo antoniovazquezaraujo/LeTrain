@@ -1585,13 +1585,49 @@ public class Gdx3DRenderer implements Visitor {
             instances.add(jewelBlock);
             return;
         } else if (type >= 20 && type <= 29) {
-            // CONSUMER - Flat Carpet (Keep it simple, as it was before)
+            // CONSUMER - Refined "X" with frame and white background
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            colorOverride = (cargo != null) ? cargo.getColor() : com.badlogic.gdx.graphics.Color.WHITE;
-            yPosition = 0.02f;
-            scaleY = 0.04f;
-            scaleX = 0.95f;
-            scaleZ = 0.95f;
+            com.badlogic.gdx.graphics.Color color = (cargo != null) ? cargo.getColor() : com.badlogic.gdx.graphics.Color.WHITE;
+
+            float x = ground.getPosition().getX() + 0.5f;
+            float z = ground.getPosition().getY() + 0.5f;
+            float thickness = 0.06f; // User request: half of previous 0.12
+            float height = 0.04f;
+
+            // 1. White Background Plate
+            ModelInstance bg = new ModelInstance(groundModel);
+            bg.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.WHITE));
+            bg.transform.setToTranslation(x, 0.015f, z);
+            bg.transform.scale(0.95f, 1.0f, 0.95f); // Slightly smaller than tile
+            instances.add(bg);
+
+            // 2. Diagonal "X"
+            for (float angle : new float[] { 45f, -45f }) {
+                ModelInstance bar = new ModelInstance(wagonJewelModel);
+                bar.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
+                bar.transform.setToTranslation(x, 0.02f, z);
+                bar.transform.rotate(0, 1, 0, angle);
+                bar.transform.scale(thickness, height, 1.35f); 
+                instances.add(bar);
+            }
+
+            // 3. Square Frame
+            for (int i = 0; i < 4; i++) {
+                float angle = i * 90f;
+                ModelInstance frameBar = new ModelInstance(wagonJewelModel);
+                frameBar.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
+                
+                // Position each bar at the edge
+                float offset = 0.47f;
+                float bx = x + (float)Math.cos(Math.toRadians(angle)) * offset;
+                float bz = z + (float)Math.sin(Math.toRadians(angle)) * offset;
+                
+                frameBar.transform.setToTranslation(bx, 0.02f, bz);
+                frameBar.transform.rotate(0, 1, 0, angle);
+                frameBar.transform.scale(thickness, height, 1.0f);
+                instances.add(frameBar);
+            }
+            return;
         } else {
             switch (type) {
                 case GroundMap.GROUND:
