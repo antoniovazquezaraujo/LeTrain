@@ -382,29 +382,30 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     private String getMenuButtonText(String rawName, boolean isEnabled) {
-        String formattedName = rawName;
-        if (rawName.contains("&")) {
-            int index = rawName.indexOf("&");
-            if (index + 1 < rawName.length()) {
-                char mnemonic = rawName.charAt(index + 1);
-                String prefix = rawName.substring(0, index);
-                String suffix = rawName.substring(index + 2);
-
-                if (isEnabled) {
-                    // Enabled: White text with Cyan hotkey
-                    String hotkey = "[CYAN]" + String.valueOf(mnemonic).toUpperCase() + "[]";
-                    formattedName = "[WHITE]" + prefix + "[]" + hotkey + "[WHITE]" + suffix + "[]";
-                } else {
-                    // When disabled, everything is gray, no blue hotkey
-                    formattedName = "[LIGHT_GRAY]" + rawName.replace("&", "") + "[]";
-                }
-            }
-        } else if (!isEnabled) {
-            formattedName = "[LIGHT_GRAY]" + rawName + "[]";
-        } else {
-            formattedName = "[WHITE]" + rawName + "[]";
+        String cleanName = rawName.replace("&", "");
+        if (cleanName.isEmpty()) {
+            return "";
         }
-        return formattedName;
+
+        // Always capitalize first letter
+        String capitalized = cleanName.substring(0, 1).toUpperCase() + cleanName.substring(1);
+
+        if (!rawName.contains("&")) {
+            return isEnabled ? "[WHITE]" + capitalized + "[]" : "[LIGHT_GRAY]" + capitalized + "[]";
+        }
+
+        int hotkeyIndex = rawName.indexOf("&");
+        String prefix = capitalized.substring(0, hotkeyIndex);
+        char hotkeyChar = capitalized.charAt(hotkeyIndex);
+        String suffix = capitalized.substring(hotkeyIndex + 1);
+
+        if (isEnabled) {
+            // Enabled: White text with Cyan hotkey
+            return "[WHITE]" + prefix + "[]" + "[CYAN]" + hotkeyChar + "[]" + "[WHITE]" + suffix + "[]";
+        } else {
+            // When disabled, everything is gray, no blue hotkey
+            return "[LIGHT_GRAY]" + capitalized + "[]";
+        }
     }
 
     private void updateMenuButtons() {
