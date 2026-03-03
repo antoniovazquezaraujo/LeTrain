@@ -813,7 +813,7 @@ public class Model implements Serializable, letrain.mvp.Model {
                         () -> GameMode.LINK),
                 new GameModeMenuOption(
                         "&unlink",
-                        "[Left/Right]:Front/Back [Up/Down]:Select/Unselect wagons [Space]:Unlink",
+                        "[Up/Down]:Front/Back [Left/Right]:Select/Unselect wagons [Space]:Unlink",
                         () -> !this.getLocomotives().isEmpty(),
                         () -> this.getMode() == GameMode.UNLINK,
                         () -> GameMode.UNLINK),

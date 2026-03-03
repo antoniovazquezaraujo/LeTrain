@@ -392,16 +392,16 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     private void unlinkerOnChar(KeyStroke keyEvent) {
         log.info("Unlinker key: " + keyEvent.getKeyType() + " char: " + keyEvent.getCharacter()); // DEBUG
         switch (keyEvent.getKeyType()) {
-            case ArrowLeft:
+            case ArrowUp:
                 selectFrontDivisionSense();
                 break;
-            case ArrowRight:
+            case ArrowDown:
                 selectBackDivisionSense();
                 break;
-            case ArrowUp:
+            case ArrowLeft:
                 selectNextLink();
                 break;
-            case ArrowDown:
+            case ArrowRight:
                 selectPrevLink();
                 break;
             case Character:
