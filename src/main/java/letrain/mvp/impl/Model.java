@@ -777,25 +777,25 @@ public class Model implements Serializable, letrain.mvp.Model {
         return Arrays.asList(
                 new GameModeMenuOption(
                         "&rails",
-                        "[L/R]: ROTATE | [U/D]: MOVE | [SHIFT+U]: ADD | [CTRL+U]: DELETE | [INS]: SENSOR | [HOME]: SEMAPHORE | [W]: STATION",
+                        "[Left/Right]:Rotate [Up/Down]:Move [Shift+Up]:Add rail [Ctrl+Up]:Remove rail [Ctrl/Shift+Down]:Remove rail [Ins]:Add sensor [Home]:Add semaphore [W]:Add station [#]:Steps [Space]:Reset steps",
                         () -> true,
                         () -> (this.getMode() == GameMode.RAILS),
                         () -> (GameMode.RAILS)),
                 new GameModeMenuOption(
                         "&drive",
-                        "[L/R]: SELECT | [U]: ACCELERATE | [D]: DECELERATE | [SPACE]: REVERSE | [ENTER]: LOGISTICS | [#]: SELECT BY ID",
+                        "[Left/Right]:Select [Up]:Accel [Down]:Decel [Space]:Reverse [Enter]:Load/Unload [#]:Select by ID",
                         () -> !this.getLocomotives().isEmpty(),
                         () -> this.getMode() == GameMode.DRIVE,
                         () -> GameMode.DRIVE),
                 new GameModeMenuOption(
                         "&forks",
-                        "[L/R]: SELECT | [SPACE]: TOGGLE | [#]: SELECT BY ID",
+                        "[Left/Right]:Select [Space]:Toggle [#]:Select by ID",
                         () -> !this.getForks().isEmpty(),
                         () -> this.getMode() == GameMode.FORKS,
                         () -> GameMode.FORKS),
                 new GameModeMenuOption(
                         "&semaphores",
-                        "[L/R]: SELECT | [SPACE]: TOGGLE | [#]: SELECT BY ID",
+                        "[Left/Right]:Select [Space]:Toggle [#]:Select by ID",
                         () -> !this.getSemaphores().isEmpty(),
                         () -> this.getMode() == GameMode.SEMAPHORES,
                         () -> GameMode.SEMAPHORES),
@@ -807,25 +807,25 @@ public class Model implements Serializable, letrain.mvp.Model {
                         () -> GameMode.TRAINS),
                 new GameModeMenuOption(
                         "&link",
-                        "[L/R]: WAGONS | [UP]: FRONT | [DOWN]: BACK | [SPACE]: LINK",
+                        "[Up/Down]:Front/Back [Left/Right]:Select/Unselect wagons [Space]:Link",
                         () -> !this.getLocomotives().isEmpty(),
                         () -> this.getMode() == GameMode.LINK,
                         () -> GameMode.LINK),
                 new GameModeMenuOption(
                         "&unlink",
-                        "[L/R]: SENSOR | [UP/DOWN]: LINK | [SPACE]: UNLINK",
+                        "[Left/Right]:Front/Back [Up/Down]:Select/Unselect wagons [Space]:Unlink",
                         () -> !this.getLocomotives().isEmpty(),
                         () -> this.getMode() == GameMode.UNLINK,
                         () -> GameMode.UNLINK),
                 new GameModeMenuOption(
                         "&persist",
-                        "[UP]: LOAD | [DOWN]: SAVE | [SPACE]: EDITOR",
+                        "[Up]:Load [Down]:Save [Space]:Edit",
                         () -> true,
                         () -> this.getMode() == GameMode.PERSIST,
                         () -> GameMode.PERSIST),
                 new GameModeMenuOption(
                         "statio&ns",
-                        "[L/R]: SELECT | [SPACE]: ACTION | [#]: SELECT BY ID",
+                        "[Left/Right]:Select [#]:Select by ID",
                         () -> !this.getStations().isEmpty(),
                         () -> this.getMode() == GameMode.STATIONS,
                         () -> GameMode.STATIONS));

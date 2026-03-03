@@ -91,8 +91,6 @@ public class Gdx3DView extends ApplicationAdapter
     private Label balanceLabel;
     private Label incomeLabel;
     private Label expensesLabel;
-    private Table speedometerTable;
-    private SpeedometerGauge speedGauge;
     private NotchLever notchLever;
     private com.badlogic.gdx.graphics.glutils.ShapeRenderer shapeRenderer;
 
@@ -266,6 +264,11 @@ public class Gdx3DView extends ApplicationAdapter
         hudLabelStyle.fontColor = Color.CYAN;
         skin.add("hud", hudLabelStyle);
 
+        Label.LabelStyle largeLabelStyle = new Label.LabelStyle();
+        largeLabelStyle.font = skin.getFont("large-font");
+        largeLabelStyle.fontColor = Color.WHITE;
+        skin.add("large", largeLabelStyle);
+
         Label.LabelStyle mediumLabelStyle = new Label.LabelStyle();
         mediumLabelStyle.font = skin.getFont("medium-font");
         mediumLabelStyle.fontColor = Color.WHITE;
@@ -325,54 +328,55 @@ public class Gdx3DView extends ApplicationAdapter
         // menuTable is populated in updateMenuButtons()
 
         descLabel = new Label("", skin);
+        descLabel.setWrap(true);
+        descLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
         globalHelpLabel = new Label(
                 "[LIGHT_GRAY][ALT+UP/DOWN / MOUSE WHEEL]: ZOOM | [ALT+LEFT/RIGHT]: ROTATE CAMERA | [C]: CHANGE CAMERA VIEW[]",
                 skin,
                 "tiny");
+        globalHelpLabel.setWrap(true);
+        globalHelpLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
 
         Table bottomContainer = new Table();
         bottomContainer.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.6f)));
         bottomContainer.pad(10);
-        bottomContainer.add(menuTable).padBottom(5).row();
-        bottomContainer.add(descLabel).padBottom(2).row();
-        bottomContainer.add(globalHelpLabel).padBottom(2).row();
+
+        // Notch Lever (Repositioned to bottom-left of menu area)
+        notchLever = new NotchLever();
+        bottomContainer.add(notchLever).size(100, 100).padLeft(10).padRight(10).top().bottom();
+
+        // Finances Area (Now between NotchLever and menu)
+        Table financeArea = new Table();
+
+        // Create separate styles to avoid sharing and overwriting skin styles
+        Label.LabelStyle incomeStyle = new Label.LabelStyle(skin.get("small", Label.LabelStyle.class));
+        incomeStyle.fontColor = com.badlogic.gdx.graphics.Color.GREEN;
+        incomeLabel = new Label("+ $0", incomeStyle);
+
+        Label.LabelStyle expensesStyle = new Label.LabelStyle(skin.get("small", Label.LabelStyle.class));
+        expensesStyle.fontColor = com.badlogic.gdx.graphics.Color.RED;
+        expensesLabel = new Label("- $0", expensesStyle);
+
+        Label.LabelStyle balanceStyle = new Label.LabelStyle(skin.get("medium", Label.LabelStyle.class));
+        balanceLabel = new Label("$ 0", balanceStyle);
+
+        Table subFinance = new Table();
+        subFinance.add(incomeLabel).padRight(15);
+        subFinance.add(expensesLabel);
+
+        financeArea.add(subFinance).right().row();
+        financeArea.add(balanceLabel).right().padTop(5);
+
+        bottomContainer.add(financeArea).width(200).left().bottom().padLeft(20).padRight(20);
+
+        Table labelArea = new Table();
+        labelArea.add(menuTable).padBottom(5).row();
+        labelArea.add(descLabel).fillX().expandX().padBottom(2).row();
+        labelArea.add(globalHelpLabel).fillX().expandX().padBottom(2).row();
+
+        bottomContainer.add(labelArea).expand().fill().padLeft(20).padRight(10);
 
         mainBottomTable.add(bottomContainer).expandX().fillX();
-
-        // Speedometer Table (Top Right)
-        speedometerTable = new Table();
-        speedometerTable.setFillParent(true);
-        speedometerTable.top().right();
-        // REMOVED: speedometerTable.setBackground(...) - This stretched the background
-        // to fill parent
-
-        Table speedoContent = new Table();
-        speedoContent.pad(20);
-
-        speedGauge = new SpeedometerGauge();
-        notchLever = new NotchLever();
-
-        incomeLabel = new Label("+ $0", skin, "medium");
-        incomeLabel.getStyle().fontColor = Color.GREEN;
-        expensesLabel = new Label("- $0", skin, "medium");
-        expensesLabel.getStyle().fontColor = Color.RED;
-        balanceLabel = new Label("$ 1,000,000", skin, "hud");
-
-        speedoContent.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.45f)));
-
-        speedoContent.add(speedGauge).size(200, 100).right().padTop(10).colspan(2).row();
-        speedoContent.add(notchLever).size(80, 150).right().padTop(20).colspan(2).row();
-
-        Table financeRow = new Table();
-        financeRow.add(incomeLabel).padRight(15).left();
-        financeRow.add(expensesLabel).right();
-        speedoContent.add(financeRow).expandX().right().padTop(10).row();
-
-        speedoContent.add(balanceLabel).right().padTop(5).row();
-
-        speedometerTable.add(speedoContent).top().right();
-        speedometerTable.setVisible(true);
-        stage.addActor(speedometerTable);
 
         updateMenuButtons();
     }
@@ -682,7 +686,6 @@ public class Gdx3DView extends ApplicationAdapter
     private float cameraDistance = 8.5f; // Distancia horizontal de la cámara al punto focal
     private float targetCameraDistance = 8.5f;
     private com.badlogic.gdx.math.Vector2 currentCabDirection = new com.badlogic.gdx.math.Vector2(0, 1);
-    private float cameraHeight = 6f; // Altura fija de la cámara sobre el suelo (ORBIT)
     private float mapCameraHeight = 15f; // Altura para la vista MAP
 
     private enum CameraMode {
@@ -935,26 +938,26 @@ public class Gdx3DView extends ApplicationAdapter
     private void updateUIData() {
         // Update HUD (Finances)
         if (model.getEconomyManager() != null) {
-            float balance = model.getEconomyManager().getBalance();
-            incomeLabel.setText("[GREEN]+ $ " + (int) model.getEconomyManager().getTotalIncome() + "[]");
-            expensesLabel.setText("[RED]- $ " + (int) model.getEconomyManager().getTotalExpenses() + "[]");
-            String balanceColor = balance >= 0 ? "[GREEN]" : "[RED]";
-            balanceLabel.setText(balanceColor + "$ " + (int) balance + "[]");
+            long balance = (long) model.getEconomyManager().getBalance();
+            long income = (long) model.getEconomyManager().getTotalIncome();
+            long expenses = (long) model.getEconomyManager().getTotalExpenses();
+
+            // Income and Expenses use their LabelStyle colors (Green and Red)
+            incomeLabel.setText(String.format("+ $ %,d", income));
+            expensesLabel.setText(String.format("- $ %,d", expenses));
+
+            // Balance uses markup to switch between Green and Red
+            String balanceColorMark = balance >= 0 ? "[#00FF00]" : "[#FF0000]";
+            balanceLabel.setText(String.format("%s$ %,d[]", balanceColorMark, balance));
         }
 
         letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
         if (loco != null) {
-            int speedKmh = loco.getSpeed() * 12; // Approx conversion for visual variety
-
-            // Update Speedometer
-            speedGauge.setVisible(true);
+            // Update Notch Lever
             notchLever.setVisible(true);
-            speedGauge.setSpeed(speedKmh);
             notchLever.setNotch(loco.getSpeed());
             notchLever.setTargetNotch(loco.getTargetSpeed());
-            speedometerTable.setVisible(true);
         } else {
-            speedGauge.setVisible(false);
             notchLever.setVisible(false);
         }
 
@@ -1829,109 +1832,6 @@ public class Gdx3DView extends ApplicationAdapter
         });
     }
 
-    private class SpeedometerGauge extends com.badlogic.gdx.scenes.scene2d.Actor {
-        private float speed = 0;
-        private float visualSpeed = 0;
-
-        public void setSpeed(float speed) {
-            this.speed = speed;
-        }
-
-        @Override
-        public void draw(com.badlogic.gdx.graphics.g2d.Batch batch, float parentAlpha) {
-            batch.end();
-
-            // Smooth needle movement
-            visualSpeed = com.badlogic.gdx.math.MathUtils.lerp(visualSpeed, speed, 0.1f);
-
-            shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
-            shapeRenderer.setTransformMatrix(batch.getTransformMatrix());
-
-            com.badlogic.gdx.graphics.GL20 gl = com.badlogic.gdx.Gdx.gl;
-            gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
-            gl.glBlendFunc(com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
-                    com.badlogic.gdx.graphics.GL20.GL_ONE_MINUS_SRC_ALPHA);
-
-            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
-
-            float x = getX() + getWidth() / 2;
-            float y = getY();
-            float radius = getWidth() / 2;
-
-            // Background arc (180 degrees)
-            shapeRenderer.setColor(0.1f, 0.1f, 0.1f, 0.4f * parentAlpha);
-            shapeRenderer.arc(x, y, radius, 0, 180, 40);
-
-            // Ticks
-            shapeRenderer.end();
-            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Line);
-            Gdx.gl.glLineWidth(2);
-            shapeRenderer.setColor(com.badlogic.gdx.graphics.Color.WHITE);
-            for (int i = 0; i <= 120; i += 10) {
-                float tickAngle = (180f - (i / 120f) * 180f) * com.badlogic.gdx.math.MathUtils.degreesToRadians;
-                float cos = com.badlogic.gdx.math.MathUtils.cos(tickAngle);
-                float sin = com.badlogic.gdx.math.MathUtils.sin(tickAngle);
-                shapeRenderer.line(x + (radius - 15) * cos, y + (radius - 15) * sin,
-                        x + radius * cos, y + radius * sin);
-            }
-            Gdx.gl.glLineWidth(1);
-            shapeRenderer.end();
-
-            batch.begin();
-            float oldScaleX = font.getScaleX();
-            float oldScaleY = font.getScaleY();
-            font.getData().setScale(0.8f);
-
-            com.badlogic.gdx.math.Matrix4 oldMatrix = batch.getTransformMatrix().cpy();
-            for (int i = 0; i <= 120; i += 20) {
-                float angleDeg = 180f - (i / 120f) * 180f;
-                float labelAngle = angleDeg * com.badlogic.gdx.math.MathUtils.degreesToRadians;
-                float cos = com.badlogic.gdx.math.MathUtils.cos(labelAngle);
-                float sin = com.badlogic.gdx.math.MathUtils.sin(labelAngle);
-
-                String txt = String.valueOf(i);
-                com.badlogic.gdx.graphics.g2d.GlyphLayout layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout(font,
-                        txt);
-
-                float lx = x + (radius - 45) * cos;
-                float ly = y + (radius - 45) * sin;
-
-                com.badlogic.gdx.math.Matrix4 matrix = new com.badlogic.gdx.math.Matrix4(oldMatrix);
-                matrix.translate(lx, ly, 0);
-                matrix.rotate(0, 0, 1, angleDeg - 90);
-                batch.setTransformMatrix(matrix);
-
-                font.draw(batch, txt, -layout.width / 2, layout.height / 2);
-            }
-            batch.setTransformMatrix(oldMatrix);
-
-            font.getData().setScale(oldScaleX, oldScaleY);
-            batch.end();
-
-            // Needle (drawn last)
-            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
-            shapeRenderer.setColor(com.badlogic.gdx.graphics.Color.RED);
-            float needleAngle = 180f - (visualSpeed / 120f) * 180f;
-            float needleRad = needleAngle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
-
-            float needleWidth = 6f; // Total width of 12 pixels at the base
-            float nx = com.badlogic.gdx.math.MathUtils.cos(needleRad);
-            float ny = com.badlogic.gdx.math.MathUtils.sin(needleRad);
-            float px = com.badlogic.gdx.math.MathUtils.cos(needleRad + com.badlogic.gdx.math.MathUtils.PI / 2);
-            float py = com.badlogic.gdx.math.MathUtils.sin(needleRad + com.badlogic.gdx.math.MathUtils.PI / 2);
-
-            shapeRenderer.triangle(
-                    x + px * needleWidth, y + py * needleWidth,
-                    x - px * needleWidth, y - py * needleWidth,
-                    x + (radius - 5) * nx, y + (radius - 5) * ny);
-            shapeRenderer.end();
-
-            com.badlogic.gdx.Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
-
-            batch.begin();
-        }
-    }
-
     private class NotchLever extends com.badlogic.gdx.scenes.scene2d.Actor {
         private int notch = 0;
         private int targetNotch = 0;
@@ -1962,13 +1862,13 @@ public class Gdx3DView extends ApplicationAdapter
 
             shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
 
-            float x = getX() + getWidth() / 2;
+            float x = getX() + 50; // Centered in the 100px width
             float y = getY();
             float h = getHeight();
 
             // Background slot
             shapeRenderer.setColor(0.2f, 0.2f, 0.2f, 0.4f * parentAlpha); // Translucent gray
-            shapeRenderer.rect(x - 40, y, 65, h); // Wider to cover numbers
+            shapeRenderer.rect(x - 40, y - 20, 65, h + 40); // Even taller to fully enclose labels 0 and 10
 
             // Tick marks
             shapeRenderer.end();
