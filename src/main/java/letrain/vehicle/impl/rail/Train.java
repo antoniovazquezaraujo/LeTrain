@@ -17,6 +17,7 @@ import letrain.map.Dir;
 import letrain.track.CargoTypes;
 import letrain.track.Sensor;
 import letrain.track.Track;
+import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Destructible;
 import letrain.vehicle.Transportable;
@@ -417,7 +418,6 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             targetTracks.add(nextTrackOfLinker);
         }
 
-
         // Pass 2: Actually move the linkers
         for (int i = 0; i < movingOrder.size(); i++) {
             Linker linkerToMove = movingOrder.get(i);
@@ -429,6 +429,12 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             if (sensorExit != null && linkerToMove == lastLinker) {
                 sensorExit.onExitTrain(this);
             }
+            if (currentTrack.getSemaphore() != null && linkerToMove == lastLinker) {
+                currentTrack.getSemaphore().onExitTrain(this);
+            }
+            if (currentTrack instanceof ForkRailTrack && linkerToMove == lastLinker) {
+                ((ForkRailTrack) currentTrack).onExitTrain(this);
+            }
 
             currentTrack.removeLinker();
             nextTrackOfLinker.enterLinkerFromDir(entryDirOfLinker, linkerToMove);
@@ -438,6 +444,12 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
             Sensor sensorEnter = nextTrackOfLinker.getSensor();
             if (sensorEnter != null && linkerToMove == firstLinker) {
                 sensorEnter.onEnterTrain(this);
+            }
+            if (nextTrackOfLinker.getSemaphore() != null && linkerToMove == firstLinker) {
+                nextTrackOfLinker.getSemaphore().onEnterTrain(this);
+            }
+            if (nextTrackOfLinker instanceof ForkRailTrack && linkerToMove == firstLinker) {
+                ((ForkRailTrack) nextTrackOfLinker).onEnterTrain(this);
             }
         }
 

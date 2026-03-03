@@ -206,6 +206,7 @@ public class RailTrackMaker {
             } else {
                 sensor = new Sensor(presenter.getModel().nextSensorId());
                 sensor.setTrack(track);
+                sensor.setCreationDir(presenter.getModel().getCursor().getDir());
                 track.setSensor(sensor);
                 presenter.getModel().addSensor(sensor);
             }
@@ -219,6 +220,7 @@ public class RailTrackMaker {
             presenter.getModel().removeSemaphore(semaphore);
         } else {
             semaphore = new RailSemaphore(presenter.getModel().nextSemaphoreId(), position);
+            semaphore.setCreationDir(presenter.getModel().getCursor().getDir());
             presenter.getModel().addSemaphore(semaphore);
         }
     }
@@ -246,6 +248,7 @@ public class RailTrackMaker {
 
                 Station station = new Station(presenter.getModel().nextStationId());
                 station.setTrack(track);
+                station.setCreationDir(presenter.getModel().getCursor().getDir());
                 station.setSideDir(presenter.getModel().getCursor().getDir().turnRight().turnRight());
                 Integer foundTerrain = presenter.getModel().getGroundMap().findClosestIndustry(position, 5);
 
@@ -569,6 +572,7 @@ public class RailTrackMaker {
     ForkRailTrack createForkRailTrack(Point cursorPosition, RailTrack track) {
         final ForkRailTrack fork = new ForkRailTrack(presenter.getModel().nextForkId());
         fork.setPosition(cursorPosition);
+        fork.setCreationDir(presenter.getModel().getCursor().getDir());
         return fork;
     }
 

@@ -11,6 +11,7 @@ public class RailSemaphore implements Renderable, Serializable {
     private int id;
     private Point position;
     private boolean open;
+    private letrain.map.Dir creationDir = letrain.map.Dir.E;
 
     public boolean isOpen() {
         return open;
@@ -62,6 +63,42 @@ public class RailSemaphore implements Renderable, Serializable {
 
     public int getId() {
         return this.id;
+    }
+
+    public void onEnterTrain(letrain.vehicle.impl.rail.Train train) {
+        onEnterTrain(train, calculateIsForward(train));
+    }
+
+    public void onEnterTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
+        for (SemaphoreEventListener listener : listeners) {
+            listener.onEnterTrain(train, isForward);
+        }
+    }
+
+    public void onExitTrain(letrain.vehicle.impl.rail.Train train) {
+        onExitTrain(train, calculateIsForward(train));
+    }
+
+    public void onExitTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
+        for (SemaphoreEventListener listener : listeners) {
+            listener.onExitTrain(train, isForward);
+        }
+    }
+
+    private boolean calculateIsForward(letrain.vehicle.impl.rail.Train train) {
+        boolean isForward = true;
+        if (creationDir != null && train.getDirectorLinker() != null) {
+            isForward = (train.getDirectorLinker().getRealDir() == creationDir);
+        }
+        return isForward;
+    }
+
+    public letrain.map.Dir getCreationDir() {
+        return creationDir;
+    }
+
+    public void setCreationDir(letrain.map.Dir creationDir) {
+        this.creationDir = creationDir;
     }
 
     @Override

@@ -14,6 +14,7 @@ import letrain.visitor.Visitor;
 public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     int id;
+    private letrain.map.Dir creationDir = letrain.map.Dir.E;
     private List<ForkEventListener> listeners = new ArrayList<>();
 
     public void addForkEventListener(ForkEventListener listener) {
@@ -38,6 +39,47 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public void onEnterTrain(letrain.vehicle.impl.rail.Train train) {
+        onEnterTrain(train, calculateIsForward(train));
+    }
+
+    public void onEnterTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
+        for (ForkEventListener listener : listeners) {
+            listener.onEnterTrain(train, isForward);
+        }
+    }
+
+    public void onExitTrain(letrain.vehicle.impl.rail.Train train) {
+        onExitTrain(train, calculateIsForward(train));
+    }
+
+    public void onExitTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
+        for (ForkEventListener listener : listeners) {
+            listener.onExitTrain(train, isForward);
+        }
+    }
+
+    private boolean calculateIsForward(letrain.vehicle.impl.rail.Train train) {
+        if (train.getDirectorLinker() == null) {
+            return true;
+        }
+        letrain.map.Dir realDir = train.getDirectorLinker().getRealDir();
+        if (getOriginalRoute() == null) {
+            return true;
+        }
+        letrain.map.Dir root = getOriginalRoute().getKey();
+        // Forward is divergent (moving AWAY from root)
+        return realDir != root;
+    }
+
+    public letrain.map.Dir getCreationDir() {
+        return creationDir;
+    }
+
+    public void setCreationDir(letrain.map.Dir creationDir) {
+        this.creationDir = creationDir;
     }
 
     @Override

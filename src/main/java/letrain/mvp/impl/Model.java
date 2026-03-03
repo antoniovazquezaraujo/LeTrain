@@ -431,12 +431,20 @@ public class Model implements Serializable, letrain.mvp.Model {
     public void addSemaphore(RailSemaphore semaphore) {
         this.semaphores.add(semaphore);
         getEconomyManager().onSemaphoreConstructed(semaphore);
+        RailTrack track = map.getTrackAt(semaphore.getPosition());
+        if (track != null) {
+            track.setSemaphore(semaphore);
+        }
     }
 
     @Override
     public void removeSemaphore(RailSemaphore semaphore) {
         if (this.semaphores.remove(semaphore)) {
             getEconomyManager().onSemaphoreDestroyed(semaphore);
+            RailTrack track = map.getTrackAt(semaphore.getPosition());
+            if (track != null) {
+                track.setSemaphore(null);
+            }
         }
     }
 

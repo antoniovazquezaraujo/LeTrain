@@ -17,7 +17,7 @@ semaphoreSelector : 'semaphore' NUMBER;
 stationSelector   : 'station' NUMBER;
 trainSelector     : 'train' (NUMBER)?;
 
-trainEvent   : 'enter' | 'exit' (sense)?;
+trainEvent   : ('enter' | 'exit') (sense)?;
 stationEvent : 'load' | 'unload';
 
 commandBlock : '{' commandItem* '}';

@@ -54,17 +54,24 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> implements
                         ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
                         : null;
                 String event = ctx.trainEvent().getChild(0).getText();
+                String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
                 sensor.addSensorEventListener(new SensorEventListener() {
                     @Override
-                    public void onEnterTrain(Train train) {
-                        if ("enter".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                    public void onEnterTrain(Train train, boolean isForward) {
+                        boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                                || (sense.equals("backward") && !isForward);
+                        if ("enter".equals(event) && senseMatch
+                                && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
                         }
                     }
 
                     @Override
-                    public void onExitTrain(Train train) {
-                        if ("exit".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                    public void onExitTrain(Train train, boolean isForward) {
+                        boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                                || (sense.equals("backward") && !isForward);
+                        if ("exit".equals(event) && senseMatch
+                                && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
                         }
                     }
@@ -94,17 +101,24 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> implements
                             ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
                             : null;
                     String event = ctx.trainEvent().getChild(0).getText();
+                    String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
                     station.addStationEventListener(new StationEventListener() {
                         @Override
-                        public void onEnterTrain(Train train) {
-                            if ("enter".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                        public void onEnterTrain(Train train, boolean isForward) {
+                            boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                                    || (sense.equals("backward") && !isForward);
+                            if ("enter".equals(event) && senseMatch
+                                    && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
                             }
                         }
 
                         @Override
-                        public void onExitTrain(Train train) {
-                            if ("exit".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                        public void onExitTrain(Train train, boolean isForward) {
+                            boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                                    || (sense.equals("backward") && !isForward);
+                            if ("exit".equals(event) && senseMatch
+                                    && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
                             }
                         }
@@ -120,17 +134,57 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> implements
                             ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
                             : null;
                     String event = ctx.trainEvent().getChild(0).getText();
+                    String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
                     fork.addForkEventListener(new ForkEventListener() {
                         @Override
-                        public void onEnterTrain(Train train) {
-                            if ("enter".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                        public void onEnterTrain(Train train, boolean isForward) {
+                            boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                                    || (sense.equals("backward") && !isForward);
+                            if ("enter".equals(event) && senseMatch
+                                    && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
                             }
                         }
 
                         @Override
-                        public void onExitTrain(Train train) {
-                            if ("exit".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                        public void onExitTrain(Train train, boolean isForward) {
+                            boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                                    || (sense.equals("backward") && !isForward);
+                            if ("exit".equals(event) && senseMatch
+                                    && (filterTrainId == null || filterTrainId == train.getId())) {
+                                commands.forEach(c -> c.execute(train));
+                            }
+                        }
+                    });
+                }
+            }
+        } else if (ctx.semaphoreSelector() != null) {
+            int id = Integer.parseInt(ctx.semaphoreSelector().NUMBER().getText());
+            RailSemaphore semaphore = model.getSemaphore(id);
+            if (semaphore != null) {
+                if (ctx.trainEvent() != null) {
+                    Integer filterTrainId = (ctx.trainSelector() != null && ctx.trainSelector().NUMBER() != null)
+                            ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
+                            : null;
+                    String event = ctx.trainEvent().getChild(0).getText();
+                    String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
+                    semaphore.addSemaphoreEventListener(new letrain.track.SemaphoreEventListener() {
+                        @Override
+                        public void onEnterTrain(Train train, boolean isForward) {
+                            boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                                    || (sense.equals("backward") && !isForward);
+                            if ("enter".equals(event) && senseMatch
+                                    && (filterTrainId == null || filterTrainId == train.getId())) {
+                                commands.forEach(c -> c.execute(train));
+                            }
+                        }
+
+                        @Override
+                        public void onExitTrain(Train train, boolean isForward) {
+                            boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                                    || (sense.equals("backward") && !isForward);
+                            if ("exit".equals(event) && senseMatch
+                                    && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
                             }
                         }

@@ -16,6 +16,7 @@ public class Sensor implements Renderable, Serializable {
     Track track;
     List<SensorEventListener> listeners = new ArrayList<>();
     private Dir sideDir;
+    private Dir creationDir = Dir.E;
 
     public Track getTrack() {
         return track;
@@ -58,15 +59,39 @@ public class Sensor implements Renderable, Serializable {
     }
 
     public void onEnterTrain(Train train) {
+        onEnterTrain(train, calculateIsForward(train));
+    }
+
+    public void onEnterTrain(Train train, boolean isForward) {
         for (SensorEventListener listener : listeners) {
-            listener.onEnterTrain(train);
+            listener.onEnterTrain(train, isForward);
         }
     }
 
     public void onExitTrain(Train train) {
+        onExitTrain(train, calculateIsForward(train));
+    }
+
+    public void onExitTrain(Train train, boolean isForward) {
         for (SensorEventListener listener : listeners) {
-            listener.onExitTrain(train);
+            listener.onExitTrain(train, isForward);
         }
+    }
+
+    private boolean calculateIsForward(Train train) {
+        boolean isForward = true;
+        if (creationDir != null && train.getDirectorLinker() != null) {
+            isForward = (train.getDirectorLinker().getRealDir() == creationDir);
+        }
+        return isForward;
+    }
+
+    public Dir getCreationDir() {
+        return creationDir;
+    }
+
+    public void setCreationDir(Dir creationDir) {
+        this.creationDir = creationDir;
     }
 
     public void addSensorEventListener(SensorEventListener listener) {

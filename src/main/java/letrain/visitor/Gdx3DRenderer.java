@@ -386,12 +386,16 @@ public class Gdx3DRenderer implements Visitor {
                             | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal);
 
             // Pre-create fire models (pyramids) - Larger size (approx double: 0.3w x 0.45h)
-            redFireModel1 = createPyramidModel(0.3f, 0.45f, 0.3f, new com.badlogic.gdx.graphics.Color(0.6f, 0f, 0f, 1f)); // Dark Red
+            redFireModel1 = createPyramidModel(0.3f, 0.45f, 0.3f,
+                    new com.badlogic.gdx.graphics.Color(0.6f, 0f, 0f, 1f)); // Dark Red
             redFireModel2 = createPyramidModel(0.3f, 0.45f, 0.3f, com.badlogic.gdx.graphics.Color.RED); // Red
-            redFireModel3 = createPyramidModel(0.3f, 0.45f, 0.3f, new com.badlogic.gdx.graphics.Color(1f, 0.3f, 0.3f, 1f)); // Light Red
-            
-            yellowFireModel1 = createPyramidModel(0.3f, 0.45f, 0.3f, new com.badlogic.gdx.graphics.Color(1f, 0.5f, 0f, 1f)); // Orange
-            yellowFireModel2 = createPyramidModel(0.3f, 0.45f, 0.3f, com.badlogic.gdx.graphics.Color.ORANGE); // Orange (standard)
+            redFireModel3 = createPyramidModel(0.3f, 0.45f, 0.3f,
+                    new com.badlogic.gdx.graphics.Color(1f, 0.3f, 0.3f, 1f)); // Light Red
+
+            yellowFireModel1 = createPyramidModel(0.3f, 0.45f, 0.3f,
+                    new com.badlogic.gdx.graphics.Color(1f, 0.5f, 0f, 1f)); // Orange
+            yellowFireModel2 = createPyramidModel(0.3f, 0.45f, 0.3f, com.badlogic.gdx.graphics.Color.ORANGE); // Orange
+                                                                                                              // (standard)
             yellowFireModel3 = createPyramidModel(0.3f, 0.45f, 0.3f, com.badlogic.gdx.graphics.Color.YELLOW); // Yellow
 
             // Pre-create sphere models (embers) - Similar size
@@ -402,7 +406,8 @@ public class Gdx3DRenderer implements Visitor {
             yellowSphereModel2 = createSphereModel(0.25f, com.badlogic.gdx.graphics.Color.ORANGE);
             yellowSphereModel3 = createSphereModel(0.25f, com.badlogic.gdx.graphics.Color.YELLOW);
 
-            // Pre-create Consumer Models (Performance Optimization: 1 instance instead of 7)
+            // Pre-create Consumer Models (Performance Optimization: 1 instance instead of
+            // 7)
             goldConsumerModel = createConsumerModel(letrain.track.CargoTypes.GOLD.getColor());
             coalConsumerModel = createConsumerModel(letrain.track.CargoTypes.COAL.getColor());
             rubyConsumerModel = createConsumerModel(letrain.track.CargoTypes.RUBY.getColor());
@@ -414,7 +419,7 @@ public class Gdx3DRenderer implements Visitor {
         mb.begin();
         float thickness = 0.06f;
         float h = 0.04f;
-        
+
         // Calculate contrast color for the bars
         // Luminance = 0.299*R + 0.587*G + 0.114*B
         float luminance = 0.299f * color.r + 0.587f * color.g + 0.114f * color.b;
@@ -425,18 +430,25 @@ public class Gdx3DRenderer implements Visitor {
             barColor.lerp(com.badlogic.gdx.graphics.Color.WHITE, 0.6f); // Much lighter for dark backgrounds (like coal)
         }
 
-        com.badlogic.gdx.graphics.g3d.Material iconMat = new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(barColor));
-        com.badlogic.gdx.graphics.g3d.Material bgMat = new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
+        com.badlogic.gdx.graphics.g3d.Material iconMat = new com.badlogic.gdx.graphics.g3d.Material(
+                com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(barColor));
+        com.badlogic.gdx.graphics.g3d.Material bgMat = new com.badlogic.gdx.graphics.g3d.Material(
+                com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
 
         // Background Plate
-        com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpb = mb.part("bg", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES, 
-            com.badlogic.gdx.graphics.VertexAttributes.Usage.Position | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal, bgMat);
+        com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpb = mb.part("bg",
+                com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
+                com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                        | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
+                bgMat);
         com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder.build(mpb, 0.95f, 0.01f, 0.95f);
-        
+
         // Diagonal X
-        mpb = mb.part("x", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES, 
-            com.badlogic.gdx.graphics.VertexAttributes.Usage.Position | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal, iconMat);
-        
+        mpb = mb.part("x", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
+                com.badlogic.gdx.graphics.VertexAttributes.Usage.Position
+                        | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
+                iconMat);
+
         com.badlogic.gdx.math.Matrix4 m = new com.badlogic.gdx.math.Matrix4();
         m.setToRotation(0, 1, 0, 45).trn(0, 0.02f, 0);
         mpb.setVertexTransform(m);
@@ -449,8 +461,8 @@ public class Gdx3DRenderer implements Visitor {
         for (int i = 0; i < 4; i++) {
             float angle = i * 90f;
             float offset = 0.47f;
-            float bx = (float)Math.cos(Math.toRadians(angle)) * offset;
-            float bz = (float)Math.sin(Math.toRadians(angle)) * offset;
+            float bx = (float) Math.cos(Math.toRadians(angle)) * offset;
+            float bz = (float) Math.sin(Math.toRadians(angle)) * offset;
             m.setToRotation(0, 1, 0, angle).trn(bx, 0.02f, bz);
             mpb.setVertexTransform(m);
             com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder.build(mpb, thickness, h, 1.0f);
@@ -550,11 +562,11 @@ public class Gdx3DRenderer implements Visitor {
         visitCursor(model.getCursor());
     }
 
-
-
     private boolean isVisible(letrain.map.Point pos) {
-        if (camera == null) return true;
-        // Check if the tile bounds are within the camera frustum (performance optimization)
+        if (camera == null)
+            return true;
+        // Check if the tile bounds are within the camera frustum (performance
+        // optimization)
         return camera.frustum.boundsInFrustum(pos.getX() + 0.5f, 0.5f, pos.getY() + 0.5f, 0.5f, 0.5f, 0.5f);
     }
 
@@ -595,7 +607,8 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        if (!isVisible(track.getPosition())) return;
+        if (!isVisible(track.getPosition()))
+            return;
         // Renderizamos cada ruta del tramo como dos medios segmentos
         track.forEach(route -> {
             letrain.map.Dir d1 = route.getFirst();
@@ -962,19 +975,32 @@ public class Gdx3DRenderer implements Visitor {
             semaphoreClosedModel.dispose();
         if (sensorModel != null)
             sensorModel.dispose();
-        if (terrainWallModel != null) terrainWallModel.dispose();
-        if (redFireModel1 != null) redFireModel1.dispose();
-        if (redFireModel2 != null) redFireModel2.dispose();
-        if (redFireModel3 != null) redFireModel3.dispose();
-        if (yellowFireModel1 != null) yellowFireModel1.dispose();
-        if (yellowFireModel2 != null) yellowFireModel2.dispose();
-        if (yellowFireModel3 != null) yellowFireModel3.dispose();
-        if (redSphereModel1 != null) redSphereModel1.dispose();
-        if (redSphereModel2 != null) redSphereModel2.dispose();
-        if (redSphereModel3 != null) redSphereModel3.dispose();
-        if (yellowSphereModel1 != null) yellowSphereModel1.dispose();
-        if (yellowSphereModel2 != null) yellowSphereModel2.dispose();
-        if (yellowSphereModel3 != null) yellowSphereModel3.dispose();
+        if (terrainWallModel != null)
+            terrainWallModel.dispose();
+        if (redFireModel1 != null)
+            redFireModel1.dispose();
+        if (redFireModel2 != null)
+            redFireModel2.dispose();
+        if (redFireModel3 != null)
+            redFireModel3.dispose();
+        if (yellowFireModel1 != null)
+            yellowFireModel1.dispose();
+        if (yellowFireModel2 != null)
+            yellowFireModel2.dispose();
+        if (yellowFireModel3 != null)
+            yellowFireModel3.dispose();
+        if (redSphereModel1 != null)
+            redSphereModel1.dispose();
+        if (redSphereModel2 != null)
+            redSphereModel2.dispose();
+        if (redSphereModel3 != null)
+            redSphereModel3.dispose();
+        if (yellowSphereModel1 != null)
+            yellowSphereModel1.dispose();
+        if (yellowSphereModel2 != null)
+            yellowSphereModel2.dispose();
+        if (yellowSphereModel3 != null)
+            yellowSphereModel3.dispose();
         modelBuilder = null;
     }
 
@@ -1384,17 +1410,25 @@ public class Gdx3DRenderer implements Visitor {
             int colorPick = (int) (seed * 10f + realTime * 5f) % 6;
             boolean isSphere = (i % 2 == 0); // Alternate shapes
 
-            if (colorPick == 0) fireModel = isSphere ? redSphereModel1 : redFireModel1;
-            else if (colorPick == 1) fireModel = isSphere ? redSphereModel2 : redFireModel2;
-            else if (colorPick == 2) fireModel = isSphere ? redSphereModel3 : redFireModel3;
-            else if (colorPick == 3) fireModel = isSphere ? yellowSphereModel1 : yellowFireModel1;
-            else if (colorPick == 4) fireModel = isSphere ? yellowSphereModel2 : yellowFireModel2;
-            else fireModel = isSphere ? yellowSphereModel3 : yellowFireModel3;
+            if (colorPick == 0)
+                fireModel = isSphere ? redSphereModel1 : redFireModel1;
+            else if (colorPick == 1)
+                fireModel = isSphere ? redSphereModel2 : redFireModel2;
+            else if (colorPick == 2)
+                fireModel = isSphere ? redSphereModel3 : redFireModel3;
+            else if (colorPick == 3)
+                fireModel = isSphere ? yellowSphereModel1 : yellowFireModel1;
+            else if (colorPick == 4)
+                fireModel = isSphere ? yellowSphereModel2 : yellowFireModel2;
+            else
+                fireModel = isSphere ? yellowSphereModel3 : yellowFireModel3;
 
-            if (fireModel == null) continue;
+            if (fireModel == null)
+                continue;
 
             float sizeScale = 1.0f - offsetY / 1.5f;
-            if (sizeScale <= 0) continue;
+            if (sizeScale <= 0)
+                continue;
 
             ModelInstance firePart = new ModelInstance(fireModel);
             firePart.transform.setToTranslation(x + offsetX, y + offsetY, z + offsetZ);
@@ -1411,9 +1445,21 @@ public class Gdx3DRenderer implements Visitor {
 
         float x = sensor.getPosition().getX();
         float y = sensor.getPosition().getY();
+        letrain.map.Dir d = sensor.getCreationDir();
+        if (d == null)
+            d = letrain.map.Dir.N;
 
-        ModelInstance instance = new ModelInstance(sensorModel);
-        instance.transform.setToTranslation(x + 0.5f, 0.1f, y + 0.5f); // Centrado y a ras de suelo
+        float dx = getDirX(d);
+        float dz = getDirZ(d);
+        float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+
+        ModelInstance instance = new ModelInstance(cursorModel);
+        instance.materials.get(0)
+                .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                        .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW));
+        instance.transform.setToTranslation(x + 0.5f, 0.09f, y + 0.5f);
+        instance.transform.rotate(0, 1, 0, angle - 90f);
+        instance.transform.scale(0.7f, 1f, 0.25f);
         instances.add(instance);
     }
 
@@ -1629,7 +1675,8 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitGround(Ground ground) {
-        if (!isVisible(ground.getPosition())) return;
+        if (!isVisible(ground.getPosition()))
+            return;
         int type = ground.getType();
         com.badlogic.gdx.graphics.g3d.Model model = groundModel;
         float yPosition = 0.0f;
@@ -1662,8 +1709,10 @@ public class Gdx3DRenderer implements Visitor {
             // CONSUMER - Optimized Pre-built Icon Model
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
             com.badlogic.gdx.graphics.g3d.Model consumerModelToUse = coalConsumerModel;
-            if (cargo == CargoTypes.GOLD) consumerModelToUse = goldConsumerModel;
-            else if (cargo == CargoTypes.RUBY) consumerModelToUse = rubyConsumerModel;
+            if (cargo == CargoTypes.GOLD)
+                consumerModelToUse = goldConsumerModel;
+            else if (cargo == CargoTypes.RUBY)
+                consumerModelToUse = rubyConsumerModel;
 
             float x = ground.getPosition().getX() + 0.5f;
             float z = ground.getPosition().getY() + 0.5f;

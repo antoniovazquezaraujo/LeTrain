@@ -26,6 +26,7 @@ public abstract class Track implements
     private Linker linker = null;
     private Linker reservation = null; // NEW: Track reservation to prevent race conditions during multi-train ticks
     private Sensor sensor = null;
+    private RailSemaphore semaphore = null;
     private Point pos = new Point(0, 0);
     protected Track[] connections;
     List<Pair<Dir, Point>> connectedPositions = new ArrayList<>();
@@ -245,6 +246,14 @@ public abstract class Track implements
 
     public void setSensor(Sensor sensor) {
         this.sensor = sensor;
+    }
+
+    public RailSemaphore getSemaphore() {
+        return semaphore;
+    }
+
+    public void setSemaphore(RailSemaphore semaphore) {
+        this.semaphore = semaphore;
     }
 
 }

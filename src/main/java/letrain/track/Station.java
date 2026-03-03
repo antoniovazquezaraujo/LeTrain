@@ -38,19 +38,21 @@ public class Station extends Sensor {
         super(id);
     }
 
-    public void onEnterTrain(Train train) {
-        super.onEnterTrain(train);
+    @Override
+    public void onEnterTrain(Train train, boolean isForward) {
+        super.onEnterTrain(train, isForward);
         train.setStationId(getId());
         for (StationEventListener l : stationListeners) {
-            l.onEnterTrain(train);
+            l.onEnterTrain(train, isForward);
         }
     }
 
-    public void onExitTrain(Train train) {
-        super.onExitTrain(train);
+    @Override
+    public void onExitTrain(Train train, boolean isForward) {
+        super.onExitTrain(train, isForward);
         train.setStationId(0);
         for (StationEventListener l : stationListeners) {
-            l.onExitTrain(train);
+            l.onExitTrain(train, isForward);
         }
     }
 
