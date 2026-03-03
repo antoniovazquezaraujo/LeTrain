@@ -22,11 +22,11 @@ import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.Cursor;
+import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
+import letrain.vehicle.impl.rail.Stop;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
-import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.rail.Stop;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -97,8 +97,8 @@ public class Model implements Serializable, letrain.mvp.Model {
         // Randomize starting position far from (0,0) to avoid symmetry artifacts
         int minOffset = 10000;
         int maxOffset = 100000;
-        int offsetX = (minOffset + (int)(Math.random() * (maxOffset - minOffset))) * (Math.random() > 0.5 ? 1 : -1);
-        int offsetY = (minOffset + (int)(Math.random() * (maxOffset - minOffset))) * (Math.random() > 0.5 ? 1 : -1);
+        int offsetX = (minOffset + (int) (Math.random() * (maxOffset - minOffset))) * (Math.random() > 0.5 ? 1 : -1);
+        int offsetY = (minOffset + (int) (Math.random() * (maxOffset - minOffset))) * (Math.random() > 0.5 ? 1 : -1);
         this.cursor.setPosition(new Point(offsetX, offsetY));
         this.locomotives = new ArrayList<>();
         this.wagons = new ArrayList<>();
@@ -286,7 +286,8 @@ public class Model implements Serializable, letrain.mvp.Model {
     public void moveLocomotives() {
         locomotives.forEach(locomotive -> {
             if (locomotive.update()) {
-                // Only charge fuel and notify movement for the director to avoid multiple charges per train
+                // Only charge fuel and notify movement for the director to avoid multiple
+                // charges per train
                 if (locomotive.isDirectorLinker()) {
                     getEconomyManager().onTrainMoved(locomotive.getTrain());
                     getEconomyManager().chargeFuel(locomotive.getTrain()); // Fuel cost per meter
@@ -616,10 +617,14 @@ public class Model implements Serializable, letrain.mvp.Model {
         }
 
         // We will detect wagon cargo state changes to trigger economy events
-        class CargoState { 
-            CargoTypes type; 
-            int amount; 
-            CargoState(CargoTypes t, int a) { type = t; amount = a; }
+        class CargoState {
+            CargoTypes type;
+            int amount;
+
+            CargoState(CargoTypes t, int a) {
+                type = t;
+                amount = a;
+            }
         }
         java.util.Map<Wagon, CargoState> wagonsPrevState = new java.util.HashMap<>();
         getWagons().forEach(w -> {
@@ -631,7 +636,7 @@ public class Model implements Serializable, letrain.mvp.Model {
             Train train = locomotive.getTrain();
             if (train != null && !processedTrains.contains(train)) {
                 processedTrains.add(train);
-                
+
                 if (train.isLoading()) {
                     int count = train.getLoadingCount();
                     if (count > 0) {
@@ -644,13 +649,14 @@ public class Model implements Serializable, letrain.mvp.Model {
                         train.endLoadUnloadProcess();
                     }
                 }
-                
+
                 // Track changes for EACH wagon in THIS train
                 for (Linker linker : train.getLinkers()) {
                     if (linker instanceof Wagon) {
                         Wagon wagon = (Wagon) linker;
                         CargoState prevState = wagonsPrevState.get(wagon);
-                        if (prevState == null) continue;
+                        if (prevState == null)
+                            continue;
 
                         int currentAmount = wagon.getCargoAmount();
                         if (currentAmount > prevState.amount) {
@@ -667,7 +673,8 @@ public class Model implements Serializable, letrain.mvp.Model {
                                 distance = train.getDistanceTraveled() - startStop.distanceTraveled();
                             }
                             // Important: use previous state's type for the payment
-                            getEconomyManager().onUnloadCargo(wagon, prevState.type, unitsUnloaded, Math.max(0, distance));
+                            getEconomyManager().onUnloadCargo(wagon, prevState.type, unitsUnloaded,
+                                    Math.max(0, distance));
                         }
                     }
                 }
@@ -770,55 +777,55 @@ public class Model implements Serializable, letrain.mvp.Model {
         return Arrays.asList(
                 new GameModeMenuOption(
                         "&rails",
-                        "[LEFT/RIGHT/UP/DOWN]:move [SHIFT+UP]:add rail [CTRL+UP]:del rail [INS]:sensor [HOME]:semaphore [W]:station",
+                        "[L/R]: ROTATE | [U/D]: MOVE | [SHIFT+U]: ADD | [CTRL+U]: DELETE | [INS]: SENSOR | [HOME]: SEMAPHORE | [W]: STATION",
                         () -> true,
                         () -> (this.getMode() == GameMode.RAILS),
                         () -> (GameMode.RAILS)),
                 new GameModeMenuOption(
                         "&drive",
-                        "[LEFT/RIGHT]:select [UP]:accel [DOWN]:decel [SPACE]:reverse [PGUP/PGDN]:zoom/move",
+                        "[L/R]: SELECT | [U]: ACCELERATE | [D]: DECELERATE | [SPACE]: REVERSE | [ENTER]: LOGISTICS | [#]: SELECT BY ID",
                         () -> !this.getLocomotives().isEmpty(),
                         () -> this.getMode() == GameMode.DRIVE,
                         () -> GameMode.DRIVE),
                 new GameModeMenuOption(
                         "&forks",
-                        "[LEFT/RIGHT]:select [SPACE]:toggle [#]:select by ID",
+                        "[L/R]: SELECT | [SPACE]: TOGGLE | [#]: SELECT BY ID",
                         () -> !this.getForks().isEmpty(),
                         () -> this.getMode() == GameMode.FORKS,
                         () -> GameMode.FORKS),
                 new GameModeMenuOption(
                         "&semaphores",
-                        "[LEFT/RIGHT]:select [SPACE]:toggle [#]:select by ID",
+                        "[L/R]: SELECT | [SPACE]: TOGGLE | [#]: SELECT BY ID",
                         () -> !this.getSemaphores().isEmpty(),
                         () -> this.getMode() == GameMode.SEMAPHORES,
                         () -> GameMode.SEMAPHORES),
                 new GameModeMenuOption(
                         "&trains",
-                        "[A-Z]:loco [a-z]:wagon [ENTER]:finish",
+                        "[A-Z]: LOCOMOTIVE | [a-z]: WAGON | [ENTER]: FINISH",
                         () -> this.getCursorRailTrack() != null,
                         () -> this.getMode() == GameMode.TRAINS,
                         () -> GameMode.TRAINS),
                 new GameModeMenuOption(
                         "&link",
-                        "[UP]:front [DOWN]:back [SPACE]:link",
+                        "[L/R]: WAGONS | [UP]: FRONT | [DOWN]: BACK | [SPACE]: LINK",
                         () -> !this.getLocomotives().isEmpty(),
                         () -> this.getMode() == GameMode.LINK,
                         () -> GameMode.LINK),
                 new GameModeMenuOption(
                         "&unlink",
-                        "[LEFT/RIGHT]:select [UP]:add [DOWN]:del [SPACE]:unlink",
+                        "[L/R]: SENSOR | [UP/DOWN]: LINK | [SPACE]: UNLINK",
                         () -> !this.getLocomotives().isEmpty(),
                         () -> this.getMode() == GameMode.UNLINK,
                         () -> GameMode.UNLINK),
                 new GameModeMenuOption(
                         "&persist",
-                        "[UP]:load [DOWN]:save [SPACE]:editor",
+                        "[UP]: LOAD | [DOWN]: SAVE | [SPACE]: EDITOR",
                         () -> true,
                         () -> this.getMode() == GameMode.PERSIST,
                         () -> GameMode.PERSIST),
                 new GameModeMenuOption(
                         "statio&ns",
-                        "[LEFT/RIGHT]:select [-]:passengers [SPACE]:clear [BACKSPACE]:del [#]:select by ID",
+                        "[L/R]: SELECT | [SPACE]: ACTION | [#]: SELECT BY ID",
                         () -> !this.getStations().isEmpty(),
                         () -> this.getMode() == GameMode.STATIONS,
                         () -> GameMode.STATIONS));

@@ -14,6 +14,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
@@ -34,14 +36,12 @@ import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import letrain.map.Point;
-import letrain.vehicle.impl.rail.Train;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.vehicle.impl.rail.Locomotive;
+import letrain.vehicle.impl.rail.Train;
 import letrain.visitor.Gdx3DRenderer;
 
 public class Gdx3DView extends ApplicationAdapter
@@ -86,14 +86,11 @@ public class Gdx3DView extends ApplicationAdapter
     private Stage stage;
     private Skin skin;
     private Table menuTable;
-    private Table hudTable;
     private Label descLabel;
-    private Label modeLabel;
+    private Label globalHelpLabel;
     private Label balanceLabel;
     private Label incomeLabel;
     private Label expensesLabel;
-    private Label trainInfoLabel;
-    private Label cargoInfoLabel;
     private Table speedometerTable;
     private SpeedometerGauge speedGauge;
     private NotchLever notchLever;
@@ -120,7 +117,8 @@ public class Gdx3DView extends ApplicationAdapter
 
         // Use the initial cursor position as the center for initial ground loading
         letrain.map.Point startPos = model.getCursor().getPosition();
-        model.getGroundMap().renderBlock(startPos.getX() - getCols()/2, startPos.getY() - getRows()/2, getCols(), getRows());
+        model.getGroundMap().renderBlock(startPos.getX() - getCols() / 2, startPos.getY() - getRows() / 2, getCols(),
+                getRows());
 
         // Register as listener for audio events
         model.addTrainEventListener(this);
@@ -204,7 +202,7 @@ public class Gdx3DView extends ApplicationAdapter
         skin.add("default", uiFont);
 
         // High-resolution fonts for HUD
-        BitmapFont smallFont, mediumFont, largeFont;
+        BitmapFont smallFont, mediumFont, largeFont, tinyFont;
         File fontFile = new File("C:/Windows/Fonts/arial.ttf");
         if (fontFile.exists()) {
             FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.absolute(fontFile.getAbsolutePath()));
@@ -213,37 +211,48 @@ public class Gdx3DView extends ApplicationAdapter
             parameter.magFilter = Texture.TextureFilter.Linear;
             parameter.minFilter = Texture.TextureFilter.Linear;
             smallFont = generator.generateFont(parameter);
-            
+
+            parameter.size = 12; // Even smaller for global help
+            tinyFont = generator.generateFont(parameter);
+
             parameter.size = 26; // For income/expenses
             mediumFont = generator.generateFont(parameter);
-            
+
             parameter.size = 52; // For balance (approx double)
             largeFont = generator.generateFont(parameter);
             generator.dispose();
         } else {
             // Fallback to default if font not found
             smallFont = new BitmapFont();
+            tinyFont = new BitmapFont();
+            tinyFont.getData().setScale(0.8f);
             mediumFont = new BitmapFont();
             mediumFont.getData().setScale(1.5f);
             largeFont = new BitmapFont();
             largeFont.getData().setScale(3.0f);
         }
-        
+
         smallFont.getData().markupEnabled = true;
+        tinyFont.getData().markupEnabled = true;
         mediumFont.getData().markupEnabled = true;
         largeFont.getData().markupEnabled = true;
-        
+
         skin.add("small-font", smallFont);
+        skin.add("tiny-font", tinyFont);
         skin.add("medium-font", mediumFont);
         skin.add("large-font", largeFont);
 
-        // TextButton Style
+        // TextButton Style (Menu Buttons)
         TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle();
-        textButtonStyle.up = skin.newDrawable("white", new Color(0.15f, 0.15f, 0.15f, 1f));
+        textButtonStyle.up = null; // Transparent by default
         textButtonStyle.down = skin.newDrawable("white", Color.CYAN);
-        textButtonStyle.checked = skin.newDrawable("white", new Color(0f, 0.5f, 0.7f, 1f));
-        textButtonStyle.over = skin.newDrawable("white", new Color(0.25f, 0.25f, 0.25f, 1f));
+        textButtonStyle.checked = skin.newDrawable("white", Color.BLACK); // Black background for selected
+        textButtonStyle.over = skin.newDrawable("white", new Color(0.15f, 0.15f, 0.15f, 1f));
         textButtonStyle.font = skin.getFont("default");
+        textButtonStyle.fontColor = Color.WHITE;
+        textButtonStyle.downFontColor = Color.WHITE;
+        textButtonStyle.overFontColor = Color.WHITE;
+        textButtonStyle.checkedFontColor = Color.WHITE;
         skin.add("default", textButtonStyle);
 
         // Label Style
@@ -266,6 +275,16 @@ public class Gdx3DView extends ApplicationAdapter
         titleLabelStyle.font = uiFont;
         titleLabelStyle.fontColor = Color.GOLDENROD;
         skin.add("title", titleLabelStyle);
+
+        Label.LabelStyle smallLabelStyle = new Label.LabelStyle();
+        smallLabelStyle.font = skin.getFont("small-font");
+        smallLabelStyle.fontColor = Color.WHITE;
+        skin.add("small", smallLabelStyle);
+
+        Label.LabelStyle tinyLabelStyle = new Label.LabelStyle();
+        tinyLabelStyle.font = skin.getFont("tiny-font");
+        tinyLabelStyle.fontColor = Color.LIGHT_GRAY;
+        skin.add("tiny", tinyLabelStyle);
 
         // Window Style
         Window.WindowStyle windowStyle = new Window.WindowStyle();
@@ -296,38 +315,29 @@ public class Gdx3DView extends ApplicationAdapter
         progressBarStyle.knobBefore = skin.newDrawable("white", Color.CYAN);
         skin.add("default-horizontal", progressBarStyle);
 
+        // Bottom UI Container
+        Table mainBottomTable = new Table();
+        mainBottomTable.setFillParent(true);
+        mainBottomTable.bottom();
+        stage.addActor(mainBottomTable);
+
         menuTable = new Table();
-        menuTable.setFillParent(true);
-        menuTable.bottom();
-        stage.addActor(menuTable);
-
-        // HUD Table
-        hudTable = new Table();
-        hudTable.setFillParent(true);
-        hudTable.top().left();
-        // REMOVED: hudTable.setBackground(...) - This stretched the background to fill
-        // parent
-
-        Table hudContent = new Table();
-        hudContent.pad(10);
-
-        modeLabel = new Label("MODE: -", skin, "title");
-        trainInfoLabel = new Label("", skin);
-        cargoInfoLabel = new Label("", skin);
-
-        hudContent.add(modeLabel).left().padBottom(5).row();
-        hudContent.add(trainInfoLabel).left().row();
-        hudContent.add(cargoInfoLabel).left().row();
-
-        hudTable.add(hudContent).top().left();
-        stage.addActor(hudTable);
+        // menuTable is populated in updateMenuButtons()
 
         descLabel = new Label("", skin);
-        Table descTable = new Table();
-        descTable.setFillParent(true);
-        descTable.bottom();
-        descTable.add(descLabel).padBottom(50);
-        stage.addActor(descTable);
+        globalHelpLabel = new Label(
+                "[LIGHT_GRAY][ALT+UP/DOWN / MOUSE WHEEL]: ZOOM | [ALT+LEFT/RIGHT]: ROTATE CAMERA | [C]: CHANGE CAMERA VIEW[]",
+                skin,
+                "tiny");
+
+        Table bottomContainer = new Table();
+        bottomContainer.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.6f)));
+        bottomContainer.pad(10);
+        bottomContainer.add(menuTable).padBottom(5).row();
+        bottomContainer.add(descLabel).padBottom(2).row();
+        bottomContainer.add(globalHelpLabel).padBottom(2).row();
+
+        mainBottomTable.add(bottomContainer).expandX().fillX();
 
         // Speedometer Table (Top Right)
         speedometerTable = new Table();
@@ -352,12 +362,12 @@ public class Gdx3DView extends ApplicationAdapter
 
         speedoContent.add(speedGauge).size(200, 100).right().padTop(10).colspan(2).row();
         speedoContent.add(notchLever).size(80, 150).right().padTop(20).colspan(2).row();
-        
+
         Table financeRow = new Table();
         financeRow.add(incomeLabel).padRight(15).left();
         financeRow.add(expensesLabel).right();
         speedoContent.add(financeRow).expandX().right().padTop(10).row();
-        
+
         speedoContent.add(balanceLabel).right().padTop(5).row();
 
         speedometerTable.add(speedoContent).top().right();
@@ -367,25 +377,41 @@ public class Gdx3DView extends ApplicationAdapter
         updateMenuButtons();
     }
 
+    private String getMenuButtonText(String rawName, boolean isEnabled) {
+        String formattedName = rawName;
+        if (rawName.contains("&")) {
+            int index = rawName.indexOf("&");
+            if (index + 1 < rawName.length()) {
+                char mnemonic = rawName.charAt(index + 1);
+                String prefix = rawName.substring(0, index);
+                String suffix = rawName.substring(index + 2);
+
+                if (isEnabled) {
+                    // Enabled: White text with Cyan hotkey
+                    String hotkey = "[CYAN]" + String.valueOf(mnemonic).toUpperCase() + "[]";
+                    formattedName = "[WHITE]" + prefix + "[]" + hotkey + "[WHITE]" + suffix + "[]";
+                } else {
+                    // When disabled, everything is gray, no blue hotkey
+                    formattedName = "[LIGHT_GRAY]" + rawName.replace("&", "") + "[]";
+                }
+            }
+        } else if (!isEnabled) {
+            formattedName = "[LIGHT_GRAY]" + rawName + "[]";
+        } else {
+            formattedName = "[WHITE]" + rawName + "[]";
+        }
+        return formattedName;
+    }
+
     private void updateMenuButtons() {
         menuTable.clearChildren();
         for (GameModeMenuOption option : model.getMenuModel()) {
-            String rawName = option.gameModeName();
-            String formattedName = rawName;
-            if (rawName.contains("&")) {
-                int index = rawName.indexOf("&");
-                if (index + 1 < rawName.length()) {
-                    char mnemonic = rawName.charAt(index + 1);
-                    formattedName = rawName.substring(0, index) + "[CYAN](" + String.valueOf(mnemonic).toUpperCase()
-                            + ")[] "
-                            + rawName.substring(index + 2);
-                }
-            }
+            boolean isEnabled = option.enabledIf().get();
+            String formattedName = getMenuButtonText(option.gameModeName(), isEnabled);
 
-            TextButton button = new TextButton(formattedName, skin);
+            TextButton button = new TextButton(formattedName, skin, "default");
             button.setName(option.gameModeName().replace("&", "").toLowerCase());
-            button.setChecked(option.selectedIf().get());
-            button.setDisabled(!option.enabledIf().get());
+            button.setDisabled(!isEnabled);
 
             button.addListener(new ClickListener() {
                 @Override
@@ -454,7 +480,8 @@ public class Gdx3DView extends ApplicationAdapter
             }
         }
 
-        // All key shortcuts are now centralized in onChar() to allow case-insensitive handling
+        // All key shortcuts are now centralized in onChar() to allow case-insensitive
+        // handling
         // and consistent behavior across inputs.
 
         // Pass any other character input to the presenter/trackmaker
@@ -886,8 +913,9 @@ public class Gdx3DView extends ApplicationAdapter
             float angleRad = cameraAngle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
             float camX = camTarget.x + cameraDistance * com.badlogic.gdx.math.MathUtils.sin(angleRad);
             float camZ = camTarget.z + cameraDistance * com.badlogic.gdx.math.MathUtils.cos(angleRad);
-            // ORBIT height now follows distance slightly for a more natural zoom (30% distance)
-            float camY = Math.max(2.0f, cameraDistance * 0.7f); 
+            // ORBIT height now follows distance slightly for a more natural zoom (30%
+            // distance)
+            float camY = Math.max(2.0f, cameraDistance * 0.7f);
 
             cam.position.set(camX, camY, camZ);
             cam.lookAt(camTarget);
@@ -905,8 +933,7 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     private void updateUIData() {
-        // Update HUD
-        modeLabel.setText("[GOLDENROD]MODE:[] " + model.getMode().getName().toUpperCase());
+        // Update HUD (Finances)
         if (model.getEconomyManager() != null) {
             float balance = model.getEconomyManager().getBalance();
             incomeLabel.setText("[GREEN]+ $ " + (int) model.getEconomyManager().getTotalIncome() + "[]");
@@ -918,10 +945,6 @@ public class Gdx3DView extends ApplicationAdapter
         letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
         if (loco != null) {
             int speedKmh = loco.getSpeed() * 12; // Approx conversion for visual variety
-            trainInfoLabel.setText(String.format(
-                    "[LIGHT_GRAY]TRAIN #%d[] | [GRAY]POS: (%d, %d)[]",
-                    loco.getId(),
-                    (int) loco.getPosition().getX(), (int) loco.getPosition().getY()));
 
             // Update Speedometer
             speedGauge.setVisible(true);
@@ -930,30 +953,13 @@ public class Gdx3DView extends ApplicationAdapter
             notchLever.setNotch(loco.getSpeed());
             notchLever.setTargetNotch(loco.getTargetSpeed());
             speedometerTable.setVisible(true);
-
-            letrain.vehicle.impl.rail.Train train = loco.getTrain();
-            if (train != null) {
-                letrain.track.CargoTypes cargoType = train.getTrainCargoType();
-                if (cargoType != null && cargoType != letrain.track.CargoTypes.NONE) {
-                    int totalCargo = train.getLinkers().stream()
-                            .filter(l -> l instanceof letrain.vehicle.impl.rail.Wagon)
-                            .mapToInt(l -> ((letrain.vehicle.impl.rail.Wagon) l).getCargoAmount())
-                            .sum();
-                    cargoInfoLabel.setText("[GOLD]CARGO:[] " + cargoType.name() + " (" + totalCargo + ")");
-                } else {
-                    cargoInfoLabel.setText("[GRAY]CARGO: NONE[]");
-                }
-            } else {
-                cargoInfoLabel.setText("");
-            }
         } else {
-            trainInfoLabel.setText("[GRAY]NO TRAIN SELECTED[]");
-            cargoInfoLabel.setText("");
             speedGauge.setVisible(false);
             notchLever.setVisible(false);
         }
 
-        // Marcamos el botón seleccionado según el modo
+        // Marcamos el botón seleccionado según el modo y actualizamos textos
+        // dinámicamente
         for (com.badlogic.gdx.scenes.scene2d.Actor actor : menuTable.getChildren()) {
             if (actor instanceof TextButton) {
                 TextButton btn = (TextButton) actor;
@@ -961,9 +967,16 @@ public class Gdx3DView extends ApplicationAdapter
                 for (GameModeMenuOption option : model.getMenuModel()) {
                     String optionName = option.gameModeName().replace("&", "").toLowerCase();
                     if (optionName.equals(btnName)) {
-                        btn.setChecked(option.selectedIf().get());
-                        btn.setDisabled(!option.enabledIf().get());
-                        if (btn.isChecked()) {
+                        boolean isSelected = option.selectedIf().get();
+                        boolean isEnabled = option.enabledIf().get();
+
+                        btn.setChecked(isSelected);
+                        btn.setDisabled(!isEnabled);
+                        // Update text dynamically to reflect enabled/disabled state (Gray vs
+                        // White/Blue)
+                        btn.setText(getMenuButtonText(option.gameModeName(), isEnabled));
+
+                        if (isSelected) {
                             descLabel.setText(option.gameModeDescription());
                         }
                     }
@@ -1999,6 +2012,7 @@ public class Gdx3DView extends ApplicationAdapter
             batch.begin();
         }
     }
+
     @Override
     public void onSpeedChanged(int speed) {
         // Gdx3DView handles speed changes via polling/sync in render loop
@@ -2025,8 +2039,9 @@ public class Gdx3DView extends ApplicationAdapter
                     // Check if this loco's train is at the collision position
                     // Actually, a simpler way is to check all trains involved.
                     // But usually, the contact event implies the moving train hits something.
-                    // For now, let's stop synthesizers for any loco that is "involved" or just all of them 
-                    // if they are at speed and we just had a contact nearby? 
+                    // For now, let's stop synthesizers for any loco that is "involved" or just all
+                    // of them
+                    // if they are at speed and we just had a contact nearby?
                     // No, let's be more specific.
                     if (Point.distance(loco.getPosition(), pos) < 2.0) {
                         audioController.stopSynthesizer(loco.getId());
@@ -2035,8 +2050,10 @@ public class Gdx3DView extends ApplicationAdapter
             }
         }
     }
+
     @Override
     public void onLink() {
-        audioController.playOneShot("link", model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY());
+        audioController.playOneShot("link", model.getCursor().getPosition().getX(),
+                model.getCursor().getPosition().getY());
     }
 }
