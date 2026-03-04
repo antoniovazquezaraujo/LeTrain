@@ -1314,13 +1314,13 @@ public class Gdx3DView extends ApplicationAdapter
         if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
             letrain.vehicle.impl.rail.Train train = model.getSelectedLocomotive().getTrain();
             if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
-                train.selectNextDivisionLink();
-            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
-                train.selectPrevDivisionLink();
-            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
                 train.setFrontDivisionSense();
-            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
+            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
                 train.setBackDivisionSense();
+            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
+                train.selectPrevDivisionLink();
+            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
+                train.selectNextDivisionLink();
             } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
                     && stroke.getCharacter() == ' ') {
                 train.divideTrain(() -> model.nextTrainId());
@@ -1964,12 +1964,12 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     @Override
-    public void onCrash(Train train, Point pos) {
+    public void onCrash(Train train, Point pos, int speed) {
         audioController.playOneShot("link", pos.getX(), pos.getY());
     }
 
     @Override
-    public void onContact(Point pos) {
+    public void onContact(Train train, Point pos, int speed) {
         if (audioController != null && pos != null) {
             audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
             // Immediately stop audio for all locomotives in the train that hit something
@@ -1992,7 +1992,13 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     @Override
-    public void onLink() {
+    public void onLink(Train train) {
+        audioController.playOneShot("link", model.getCursor().getPosition().getX(),
+                model.getCursor().getPosition().getY());
+    }
+
+    @Override
+    public void onUnlink(Train train) {
         audioController.playOneShot("link", model.getCursor().getPosition().getX(),
                 model.getCursor().getPosition().getY());
     }

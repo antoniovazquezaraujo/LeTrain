@@ -191,6 +191,41 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> implements
                     });
                 }
             }
+        } else if (ctx.trainSelector() != null && ctx.getChildCount() >= 3
+                && (ctx.getChild(2).getText().equals("crash") || ctx.getChild(2).getText().equals("contact"))) {
+            String event = ctx.getChild(2).getText();
+            Integer filterTrainId = (ctx.trainSelector().NUMBER() != null)
+                    ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
+                    : null;
+            model.addTrainEventListener(new letrain.vehicle.impl.rail.TrainEventListener() {
+                @Override
+                public void onCrash(Train train, letrain.map.Point pos, int speed) {
+                    if ("crash".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                        commands.forEach(c -> c.execute(train));
+                    }
+                }
+
+                @Override
+                public void onContact(Train train, letrain.map.Point pos, int speed) {
+                    if ("contact".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                        commands.forEach(c -> c.execute(train));
+                    }
+                }
+
+                @Override
+                public void onLink(Train train) {
+                    if ("link".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                        commands.forEach(c -> c.execute(train));
+                    }
+                }
+
+                @Override
+                public void onUnlink(Train train) {
+                    if ("unlink".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
+                        commands.forEach(c -> c.execute(train));
+                    }
+                }
+            });
         }
     }
 
@@ -225,7 +260,8 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> implements
 
             if (ctx.trainAction().trainSpeed() != null) {
                 int speed = Integer.parseInt(ctx.trainAction().trainSpeed().getText());
-                baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).setSpeed(speed);
+                int clampedSpeed = Math.max(1, Math.min(10, speed));
+                baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).setSpeed(clampedSpeed);
             } else if (actionText.contains("accelerate")) {
                 baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).incSpeed();
             } else if (actionText.contains("decelerate")) {
@@ -239,6 +275,36 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> implements
                 };
             } else if (actionText.contains("stop")) {
                 baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).setSpeed(0);
+            } else if (actionText.contains("invert")) {
+                baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).toggleReversed();
+            } else if (ctx.trainAction().linkAction() != null) {
+                LeTrainProgramParser.LinkActionContext lCtx = ctx.trainAction().linkAction();
+                boolean forward = "forward".equals(lCtx.sense().getText());
+                int count = lCtx.NUMBER() != null ? Integer.parseInt(lCtx.NUMBER().getText()) : 0;
+                baseAction = (t) -> {
+                    t.prepareLink(forward, count);
+                    t.joinLinkers();
+                };
+            } else if (ctx.trainAction().unlinkAction() != null) {
+                LeTrainProgramParser.UnlinkActionContext uCtx = ctx.trainAction().unlinkAction();
+                boolean forward = "forward".equals(uCtx.sense().getText());
+                int count = uCtx.NUMBER() != null ? Integer.parseInt(uCtx.NUMBER().getText()) : 1;
+                baseAction = (t) -> {
+                    t.prepareUnlink(forward, count);
+                    t.divideTrain(() -> model.nextTrainId());
+                };
+            } else if (actionText.contains("unload")) {
+                baseAction = (t) -> {
+                    letrain.track.Station s = t.getStationAtTrain();
+                    if (s != null)
+                        t.startUnloadProcess(s);
+                };
+            } else if (actionText.contains("load")) {
+                baseAction = (t) -> {
+                    letrain.track.Station s = t.getStationAtTrain();
+                    if (s != null)
+                        t.startLoadProcess(s);
+                };
             } else {
                 baseAction = (t) -> {
                 };
@@ -266,25 +332,6 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> implements
                         baseAction.execute(target);
                 };
             }
-        } else if (ctx.stationAction() != null) {
-            int id = Integer.parseInt(ctx.stationSelector().NUMBER().getText());
-            String act = ctx.stationAction().getText();
-            log.info("Station command visit: station {} action {}", id, act);
-            return (ExecutableCommand) (contextTrain) -> {
-                letrain.track.Station s = model.getStation(id);
-                if (s != null && contextTrain != null) {
-                    if ("load".equals(act)) {
-                        log.info("Triggering LOAD for train {} at station {}", contextTrain.getId(), id);
-                        contextTrain.startLoadProcess(s);
-                    } else if ("unload".equals(act)) {
-                        log.info("Triggering UNLOAD for train {} at station {}", contextTrain.getId(), id);
-                        contextTrain.startUnloadProcess(s);
-                    }
-                } else {
-                    log.warn("Station action skip: station {} exists: {}, train exists: {}", id, s != null,
-                            contextTrain != null);
-                }
-            };
         }
         return (ExecutableCommand) (ct) -> {
         };

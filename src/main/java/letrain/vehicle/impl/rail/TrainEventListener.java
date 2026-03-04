@@ -9,12 +9,15 @@ public interface TrainEventListener extends Serializable {
     default public void onSenseChanged(boolean forward) {
     }
 
-    default public void onCrash(Train train, letrain.map.Point pos) {
+    default void onLink(Train train) {
     }
 
-    default public void onContact(letrain.map.Point pos) {
+    default void onUnlink(Train train) {
     }
 
-    default public void onLink() {
+    default public void onCrash(Train train, letrain.map.Point pos, int speed) {
+    }
+
+    default public void onContact(Train train, letrain.map.Point pos, int speed) {
     }
 }

@@ -95,9 +95,11 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public void notifyLink() {
-        for (TrainEventListener l : trainListeners) {
-            l.onLink();
-        }
+        trainListeners.forEach(l -> l.onLink(this));
+    }
+
+    public void notifyUnlink() {
+        trainListeners.forEach(l -> l.onUnlink(this));
     }
 
     public Train(int id) {
@@ -242,17 +244,17 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 .collect(Collectors.toList());
     }
 
-    public void notifyContact(letrain.map.Point pos) {
+    public void notifyContact(letrain.map.Point pos, int speed) {
         this.stalled = true;
         for (TrainEventListener l : trainListeners) {
-            l.onContact(pos);
+            l.onContact(this, pos, speed);
         }
     }
 
-    public void notifyCrash(letrain.map.Point pos) {
+    public void notifyCrash(letrain.map.Point pos, int speed) {
         this.stalled = true;
         for (TrainEventListener l : trainListeners) {
-            l.onCrash(this, pos);
+            l.onCrash(this, pos, speed);
         }
     }
 
@@ -382,10 +384,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                             : 0;
 
                     if (Math.abs(speed) >= 5) {
-                        crash(occupyingL);
+                        crash(occupyingL, speed);
                     } else {
                         letrain.map.Point collisionPos = occupyingL.getPosition();
-                        notifyContact(collisionPos);
+                        notifyContact(collisionPos, speed);
                         getLinkers().forEach(l -> {
                             if (l instanceof Locomotive) {
                                 ((Locomotive) l).setTargetSpeed(0);
@@ -394,7 +396,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                         this.setStalled(true);
                         Train otherTrain = occupyingL.getTrain();
                         if (otherTrain != null) {
-                            otherTrain.notifyContact(collisionPos);
+                            otherTrain.notifyContact(collisionPos, speed);
                         }
                     }
                     clearReservations(targetTracks);
@@ -462,7 +464,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         }
     }
 
-    private void crash(Linker linker) {
+    private void crash(Linker linker, int speed) {
         letrain.map.Point crashPos = linker.getPosition();
         // Only trigger crash logic if this train isn't already destroying
         boolean alreadyDestroying = false;
@@ -474,7 +476,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         }
 
         if (!alreadyDestroying) {
-            notifyCrash(crashPos);
+            notifyCrash(crashPos, speed);
             getLinkers().forEach(l -> {
                 if (l instanceof Locomotive) {
                     ((Locomotive) l).setTargetSpeed(0);
@@ -493,7 +495,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                 }
             }
             if (!otherAlreadyDestroying) {
-                linker.getTrain().notifyCrash(crashPos);
+                linker.getTrain().notifyCrash(crashPos, speed);
                 linker.getTrain().getLinkers().forEach(l -> {
                     if (l instanceof Locomotive) {
                         ((Locomotive) l).setTargetSpeed(0);
@@ -592,6 +594,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     public void joinLinkers() {
         if (!joined) {
             int count = 0;
+            boolean linkersActuallyAdded = false;
             for (Linker linkerToJoin : linkersToJoin) {
                 if (count >= numLinkersToJoin)
                     break;
@@ -611,20 +614,44 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
                     }
                 }
                 count++;
+                linkersActuallyAdded = true;
             }
             linkersToJoin.clear();
             joined = true;
-            notifyLink();
+            if (linkersActuallyAdded) {
+                notifyLink();
+            }
         }
+    }
+
+    public void prepareLink(boolean forward, int count) {
+        setLinkersToJoin(forward);
+        if (count > 0 && count < linkersToJoin.size()) {
+            numLinkersToJoin = count;
+        } else {
+            numLinkersToJoin = linkersToJoin.size();
+        }
+    }
+
+    public void prepareUnlink(boolean forward, int count) {
+        if (forward) {
+            linkerDivisionSense = LinkersSense.FRONT;
+        } else {
+            linkerDivisionSense = LinkersSense.BACK;
+        }
+        numLinkersToRemove = Math.min(count, getLinkers().size() - 1);
+        updateLinkersToRemove();
     }
 
     public void setFrontDivisionSense() {
         linkerDivisionSense = LinkersSense.FRONT;
+        numLinkersToRemove = Math.max(0, getLinkers().size() - 1);
         updateLinkersToRemove();
     }
 
     public void setBackDivisionSense() {
         linkerDivisionSense = LinkersSense.BACK;
+        numLinkersToRemove = Math.max(0, getLinkers().size() - 1);
         updateLinkersToRemove();
     }
 
@@ -634,7 +661,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         } else {
             linkerDivisionSense = LinkersSense.BACK;
         }
-        numLinkersToRemove = 1;
+        numLinkersToRemove = Math.max(0, getLinkers().size() - 1);
         updateLinkersToRemove();
     }
 
@@ -706,6 +733,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         }
         linkersToRemove.clear();
         numLinkersToRemove = 0;
+        notifyUnlink();
     }
 
     public List<Linker> destroyLinkers(Supplier<Integer> nextTrainIdSupplier) {

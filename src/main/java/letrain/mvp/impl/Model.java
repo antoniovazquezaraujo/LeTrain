@@ -113,8 +113,24 @@ public class Model implements Serializable, letrain.mvp.Model {
         // Economy: Handle train crashes
         this.addTrainEventListener(new letrain.vehicle.impl.rail.TrainEventListener() {
             @Override
-            public void onCrash(Train train, letrain.map.Point pos) {
+            public void onCrash(Train train, letrain.map.Point pos, int speed) {
+                eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
                 getEconomyManager().onTrainCrashed(train);
+            }
+
+            @Override
+            public void onContact(Train train, letrain.map.Point pos, int speed) {
+                eventLogManager.addEntry("Train " + train.getId() + " contact (speed=" + speed + ")");
+            }
+
+            @Override
+            public void onLink(Train train) {
+                eventLogManager.addEntry("Train " + train.getId() + " linked");
+            }
+
+            @Override
+            public void onUnlink(Train train) {
+                eventLogManager.addEntry("Train " + train.getId() + " unlinked");
             }
         });
         this.program = "";

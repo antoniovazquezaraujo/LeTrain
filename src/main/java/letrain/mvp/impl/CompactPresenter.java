@@ -399,10 +399,10 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
                 selectBackDivisionSense();
                 break;
             case ArrowLeft:
-                selectNextLink();
+                selectPrevLink();
                 break;
             case ArrowRight:
-                selectPrevLink();
+                selectNextLink();
                 break;
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
@@ -1085,7 +1085,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     }
 
     @Override
-    public void onContact(letrain.map.Point pos) {
+    public void onContact(Train train, letrain.map.Point pos, int speed) {
         if (audioController != null && pos != null) {
             audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
             // Immediately stop audio for locomotives involved in the contact
@@ -1100,14 +1100,21 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     }
 
     @Override
-    public void onLink() {
+    public void onLink(Train train) {
         if (audioController != null) {
             audioController.playOneShot("link", 0, 0); // Position is less critical for link
         }
     }
 
     @Override
-    public void onCrash(Train train, letrain.map.Point pos) {
+    public void onUnlink(Train train) {
+        if (audioController != null) {
+            audioController.playOneShot("link", 0, 0);
+        }
+    }
+
+    @Override
+    public void onCrash(Train train, letrain.map.Point pos, int speed) {
         if (audioController != null && pos != null) {
             audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
             // Immediately stop audio for all locomotives involved in the crash
