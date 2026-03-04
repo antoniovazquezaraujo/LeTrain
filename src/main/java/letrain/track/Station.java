@@ -9,9 +9,14 @@ import letrain.visitor.Visitor;
 public class Station extends Sensor {
 
     private List<StationEventListener> stationListeners = new ArrayList<>();
+    private List<StationEventListener> systemStationListeners = new ArrayList<>();
 
     public void addStationEventListener(StationEventListener listener) {
         stationListeners.add(listener);
+    }
+
+    public void addSystemStationEventListener(StationEventListener listener) {
+        systemStationListeners.add(listener);
     }
 
     public void removeStationEventListener(StationEventListener listener) {
@@ -26,11 +31,53 @@ public class Station extends Sensor {
         for (StationEventListener l : stationListeners) {
             l.onLoad(train);
         }
+        for (StationEventListener l : systemStationListeners) {
+            l.onLoad(train);
+        }
     }
 
     public void notifyUnload(Train train) {
         for (StationEventListener l : stationListeners) {
             l.onUnload(train);
+        }
+        for (StationEventListener l : systemStationListeners) {
+            l.onUnload(train);
+        }
+    }
+
+    public void notifyStartLoad(Train train) {
+        for (StationEventListener l : stationListeners) {
+            l.onStartLoad(train);
+        }
+        for (StationEventListener l : systemStationListeners) {
+            l.onStartLoad(train);
+        }
+    }
+
+    public void notifyEndLoad(Train train) {
+        for (StationEventListener l : stationListeners) {
+            l.onEndLoad(train);
+        }
+        for (StationEventListener l : systemStationListeners) {
+            l.onEndLoad(train);
+        }
+    }
+
+    public void notifyStartUnload(Train train) {
+        for (StationEventListener l : stationListeners) {
+            l.onStartUnload(train);
+        }
+        for (StationEventListener l : systemStationListeners) {
+            l.onStartUnload(train);
+        }
+    }
+
+    public void notifyEndUnload(Train train) {
+        for (StationEventListener l : stationListeners) {
+            l.onEndUnload(train);
+        }
+        for (StationEventListener l : systemStationListeners) {
+            l.onEndUnload(train);
         }
     }
 
@@ -45,6 +92,9 @@ public class Station extends Sensor {
         for (StationEventListener l : stationListeners) {
             l.onEnterTrain(train, isForward);
         }
+        for (StationEventListener l : systemStationListeners) {
+            l.onEnterTrain(train, isForward);
+        }
     }
 
     @Override
@@ -52,6 +102,9 @@ public class Station extends Sensor {
         super.onExitTrain(train, isForward);
         train.setStationId(0);
         for (StationEventListener l : stationListeners) {
+            l.onExitTrain(train, isForward);
+        }
+        for (StationEventListener l : systemStationListeners) {
             l.onExitTrain(train, isForward);
         }
     }

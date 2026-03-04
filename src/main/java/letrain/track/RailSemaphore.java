@@ -18,9 +18,14 @@ public class RailSemaphore implements Renderable, Serializable {
     }
 
     private java.util.List<SemaphoreEventListener> listeners = new java.util.ArrayList<>();
+    private java.util.List<SemaphoreEventListener> systemListeners = new java.util.ArrayList<>();
 
     public void addSemaphoreEventListener(SemaphoreEventListener listener) {
         listeners.add(listener);
+    }
+
+    public void addSystemSemaphoreEventListener(SemaphoreEventListener listener) {
+        systemListeners.add(listener);
     }
 
     public void removeSemaphoreEventListener(SemaphoreEventListener listener) {
@@ -35,6 +40,13 @@ public class RailSemaphore implements Renderable, Serializable {
         if (this.open != open) {
             this.open = open;
             for (SemaphoreEventListener listener : listeners) {
+                if (open) {
+                    listener.onOpen();
+                } else {
+                    listener.onClosed();
+                }
+            }
+            for (SemaphoreEventListener listener : systemListeners) {
                 if (open) {
                     listener.onOpen();
                 } else {
@@ -73,6 +85,9 @@ public class RailSemaphore implements Renderable, Serializable {
         for (SemaphoreEventListener listener : listeners) {
             listener.onEnterTrain(train, isForward);
         }
+        for (SemaphoreEventListener listener : systemListeners) {
+            listener.onEnterTrain(train, isForward);
+        }
     }
 
     public void onExitTrain(letrain.vehicle.impl.rail.Train train) {
@@ -81,6 +96,9 @@ public class RailSemaphore implements Renderable, Serializable {
 
     public void onExitTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
         for (SemaphoreEventListener listener : listeners) {
+            listener.onExitTrain(train, isForward);
+        }
+        for (SemaphoreEventListener listener : systemListeners) {
             listener.onExitTrain(train, isForward);
         }
     }

@@ -828,6 +828,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         setLoadingCount(MAX_LOADING_COUNT * wagonsToLoad); // SEQUENTIAL: Total time is sum of all wagons
         if (loadingCount == 0) { // Si no hay vagones que puedan cargar, finaliza el proceso inmediatamente
             setLoading(false);
+        } else {
+            station.notifyStartLoad(this);
         }
     }
 
@@ -847,6 +849,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         setLoadingCount(MAX_LOADING_COUNT * wagonsToUnload); // SEQUENTIAL: Total time is sum of all wagons
         if (loadingCount == 0) { // Si no hay vagones que puedan descargar, finaliza el proceso inmediatamente
             setLoading(false);
+        } else {
+            station.notifyStartUnload(this);
         }
     }
 
@@ -963,6 +967,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     public void setLoading(boolean isLoading) {
         this.isLoading = isLoading;
+    }
+
+    public boolean isUnloadingDirection() {
+        return isUnloadingDirection;
     }
 
     public int getDistanceTraveled() {

@@ -92,6 +92,9 @@ public class Gdx3DView extends ApplicationAdapter
     private Label incomeLabel;
     private Label expensesLabel;
     private NotchLever notchLever;
+    private ScrollPane logScrollPane;
+    private Table logTable;
+    private boolean showLog = false;
     private com.badlogic.gdx.graphics.glutils.ShapeRenderer shapeRenderer;
 
     // Audio
@@ -379,6 +382,20 @@ public class Gdx3DView extends ApplicationAdapter
         mainBottomTable.add(bottomContainer).expandX().fillX();
 
         updateMenuButtons();
+
+        // Log Viewer UI
+        logTable = new Table();
+        logTable.top().left();
+        logScrollPane = new ScrollPane(logTable, skin);
+        logScrollPane.setFadeScrollBars(false);
+        logScrollPane.setVisible(false);
+        logScrollPane.setScrollingDisabled(true, false);
+
+        Table logContainer = new Table();
+        logContainer.setFillParent(true);
+        logContainer.top().left().pad(20);
+        logContainer.add(logScrollPane).width(500).height(400).top().left();
+        stage.addActor(logContainer);
     }
 
     private String getMenuButtonText(String rawName, boolean isEnabled) {
@@ -581,6 +598,10 @@ public class Gdx3DView extends ApplicationAdapter
             case com.badlogic.gdx.Input.Keys.TAB:
                 keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Tab);
                 break;
+            case com.badlogic.gdx.Input.Keys.L:
+                showLog = !showLog;
+                logScrollPane.setVisible(showLog);
+                return true;
         }
 
         if (keyStroke != null) {
@@ -987,6 +1008,24 @@ public class Gdx3DView extends ApplicationAdapter
                 }
             }
         }
+        updateLogView();
+    }
+
+    private void updateLogView() {
+        if (!showLog)
+            return;
+
+        List<String> entries = model.getEventLogManager().getEntries();
+        if (logTable.getChildren().size == entries.size())
+            return;
+
+        logTable.clear();
+        for (String entry : entries) {
+            Label label = new Label(entry, skin, "small");
+            logTable.add(label).left().row();
+        }
+        logScrollPane.layout();
+        logScrollPane.setScrollPercentY(100f);
     }
 
     // Presenter implementation

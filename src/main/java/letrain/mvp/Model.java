@@ -201,4 +201,6 @@ public interface Model {
     CargoTypes getStationGhostCargoType();
 
     CargoTypes.StationRole getStationGhostRole();
+
+    letrain.mvp.impl.EventLogManager getEventLogManager();
 }

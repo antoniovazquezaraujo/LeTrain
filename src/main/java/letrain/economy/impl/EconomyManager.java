@@ -1,24 +1,24 @@
 package letrain.economy.impl;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import letrain.track.RailSemaphore;
-import letrain.track.CargoTypes;
 
 import letrain.mvp.Presenter;
+import letrain.track.CargoTypes;
+import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EconomyManager implements letrain.economy.EconomyManager, Serializable {
     private static final long serialVersionUID = 1L;
@@ -38,6 +38,7 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
     private float rockThreshold = 130f;
     private int viewRadius = 15;
     private static final Logger log = LoggerFactory.getLogger(EconomyManager.class);
+    private letrain.mvp.impl.EventLogManager eventLogManager;
 
     int constructedNormalRailTracks = 0;
     int constructedBridgeRailTracks = 0;
@@ -58,7 +59,8 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
     int destroyedLocomotives = 0;
     int destroyedWagons = 0;
 
-    public EconomyManager() {
+    public EconomyManager(letrain.mvp.impl.EventLogManager eventLogManager) {
+        this.eventLogManager = eventLogManager;
         prices.put(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK, 100f);
         prices.put(ExpenseType.CONSTRUCTED_BRIDGE_RAIL_TRACK, 20000f);
         prices.put(ExpenseType.CONSTRUCTED_TUNNEL_RAIL_TRACK, 70000f);
@@ -81,7 +83,7 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
         prices.put(ExpenseType.UNLOAD_PASSENGERS, 1000f);
         prices.put(ExpenseType.TRAIN_MOVED, 0f);
         prices.put(ExpenseType.TRAIN_CRASHED, 1000000f);
-        
+
         // Cargo values
         cargoBaseValues.put(CargoTypes.GOLD, 2000f);
         cargoBaseValues.put(CargoTypes.COAL, 200f);
@@ -152,37 +154,37 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
         this.constructedForks++;
         spend(ExpenseType.CONSTRUCTED_FORK);
     }
-    
+
     @Override
     public void onStationConstructed() {
         this.constructedStations++;
         spend(ExpenseType.CONSTRUCTED_STATION);
     }
-    
+
     @Override
     public void onSensorConstructed(Sensor sensor) {
         this.constructedSensors++;
         spend(ExpenseType.CONSTRUCTED_SENSOR);
     }
-    
+
     @Override
     public void onSemaphoreConstructed(RailSemaphore semaphore) {
         this.constructedSemaphores++;
         spend(ExpenseType.CONSTRUCTED_SEMAPHORE);
     }
-    
+
     @Override
     public void onLocomotiveConstructed(Locomotive locomotive) {
         this.constructedLocomotives++;
         spend(ExpenseType.CONSTRUCTED_LOCOMOTIVE);
     }
-    
+
     @Override
     public void onWagonConstructed(Wagon wagon) {
         this.constructedWagons++;
         spend(ExpenseType.CONSTRUCTED_WAGON);
     }
-    
+
     @Override
     public void onRailTrackDestroyed(Presenter.TrackType type) {
         switch (type) {
@@ -205,37 +207,37 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
                 break;
         }
     }
-    
+
     @Override
     public void onForkDestroyed(ForkRailTrack fork) {
         destroyedForks++;
         spend(ExpenseType.DESTROYED_FORK);
     }
-    
+
     @Override
     public void onStationDestroyed() {
         destroyedStations++;
         spend(ExpenseType.DESTROYED_STATION);
     }
-    
+
     @Override
     public void onSensorDestroyed(Sensor sensor) {
         destroyedSensors++;
         spend(ExpenseType.DESTROYED_SENSOR);
     }
-    
+
     @Override
     public void onSemaphoreDestroyed(RailSemaphore semaphore) {
         destroyedSemaphores++;
         spend(ExpenseType.DESTROYED_SEMAPHORE);
     }
-    
+
     @Override
     public void onLocomotiveDestroyed(Locomotive locomotive) {
         destroyedLocomotives++;
         spend(ExpenseType.DESTROYED_LOCOMOTIVE);
     }
-    
+
     @Override
     public void onWagonDestroyed(Wagon wagon) {
         destroyedWagons++;
@@ -247,7 +249,7 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
             double linearDistanceToStart) {
         // We keep this for compatibility if needed, but logic moves to cargo
     }
-    
+
     @Override
     public void chargeFuel(Train train) {
         float cost = Math.abs(fuelCostPerMeter * train.getLinkers().size());
@@ -257,8 +259,9 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
 
     @Override
     public void onLoadCargo(Wagon wagon) {
-        totalExpenses += cargoLoadingFee;
-        balance -= cargoLoadingFee;
+        float fee = cargoLoadingFee;
+        totalExpenses += fee;
+        balance -= fee;
     }
 
     @Override
@@ -278,6 +281,7 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
     @Override
     public void onTrainCrashed(Train train) {
         spend(ExpenseType.TRAIN_CRASHED);
+        eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
     }
 
     public int getConstructedNormalRailTracks() {
@@ -380,11 +384,14 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
             log.info("Loading economy configuration from {}", configFile.getAbsolutePath());
 
             // Load general costs
-            fuelCostPerMeter = Float.parseFloat(props.getProperty("fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
+            fuelCostPerMeter = Float
+                    .parseFloat(props.getProperty("fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
             cargoLoadingFee = Float.parseFloat(props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
-            float newStartingBalance = Float.parseFloat(props.getProperty("startingBalance", String.valueOf(startingBalance)));
-            
-            // Only update current balance if it's the very beginning of the game (total income/expenses are zero)
+            float newStartingBalance = Float
+                    .parseFloat(props.getProperty("startingBalance", String.valueOf(startingBalance)));
+
+            // Only update current balance if it's the very beginning of the game (total
+            // income/expenses are zero)
             if (totalIncome == 0 && totalExpenses == 0) {
                 balance = newStartingBalance;
             }
