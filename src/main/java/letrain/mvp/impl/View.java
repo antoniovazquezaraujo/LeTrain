@@ -326,7 +326,8 @@ public class View implements letrain.mvp.View {
         View.this.gameViewListener.onLoadGame(result);
     }
 
-    public void showEditDialog() {
+    @Override
+    public void showIDE() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
         String result = new TextInputDialogBuilder()
                 .setTitle("LeTrain program editor")
@@ -374,5 +375,23 @@ public class View implements letrain.mvp.View {
     public void showMessage(String title, String message) {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
         com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui, title, message);
+    }
+
+    public void showReferenceGuide() {
+        String guide = "LeTrain Automation Reference:\n\n" +
+                "Triggers:\n" +
+                "  sensor [ID] on train (enter|exit) { actions }\n" +
+                "  station [ID] on train (enter|exit) { actions }\n" +
+                "  train [ID] on (enter|exit|link|unlink|crash|contact) { actions }\n\n" +
+                "Actions:\n" +
+                "  train set speed [0-100]\n" +
+                "  train invert\n" +
+                "  train load / train unload\n" +
+                "  train unlink (front|back) [count]\n" +
+                "  fork [ID] set (straight|curved|flip)\n\n" +
+                "Examples:\n" +
+                "  station 1 on train enter { train load; train unlink back 1; }\n" +
+                "  train 1 on crash { train set speed 0; }";
+        showMessage("Automation Cheat Sheet", guide);
     }
 }

@@ -17,40 +17,50 @@ public class RailSemaphore implements Renderable, Serializable {
         return open;
     }
 
-    private java.util.List<SemaphoreEventListener> listeners = new java.util.ArrayList<>();
-    private java.util.List<SemaphoreEventListener> systemListeners = new java.util.ArrayList<>();
+    private transient java.util.List<SemaphoreEventListener> listeners = new java.util.ArrayList<>();
+    private transient java.util.List<SemaphoreEventListener> systemListeners = new java.util.ArrayList<>();
 
     public void addSemaphoreEventListener(SemaphoreEventListener listener) {
+        if (listeners == null)
+            listeners = new java.util.ArrayList<>();
         listeners.add(listener);
     }
 
     public void addSystemSemaphoreEventListener(SemaphoreEventListener listener) {
+        if (systemListeners == null)
+            systemListeners = new java.util.ArrayList<>();
         systemListeners.add(listener);
     }
 
     public void removeSemaphoreEventListener(SemaphoreEventListener listener) {
-        listeners.remove(listener);
+        if (listeners != null)
+            listeners.remove(listener);
     }
 
     public void removeAllSemaphoreEventListeners() {
-        listeners.clear();
+        if (listeners != null)
+            listeners.clear();
     }
 
     public void setOpen(boolean open) {
         if (this.open != open) {
             this.open = open;
-            for (SemaphoreEventListener listener : listeners) {
-                if (open) {
-                    listener.onOpen();
-                } else {
-                    listener.onClosed();
+            if (listeners != null) {
+                for (SemaphoreEventListener listener : listeners) {
+                    if (open) {
+                        listener.onOpen();
+                    } else {
+                        listener.onClosed();
+                    }
                 }
             }
-            for (SemaphoreEventListener listener : systemListeners) {
-                if (open) {
-                    listener.onOpen();
-                } else {
-                    listener.onClosed();
+            if (systemListeners != null) {
+                for (SemaphoreEventListener listener : systemListeners) {
+                    if (open) {
+                        listener.onOpen();
+                    } else {
+                        listener.onClosed();
+                    }
                 }
             }
         }
@@ -82,11 +92,15 @@ public class RailSemaphore implements Renderable, Serializable {
     }
 
     public void onEnterTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
-        for (SemaphoreEventListener listener : listeners) {
-            listener.onEnterTrain(train, isForward);
+        if (listeners != null) {
+            for (SemaphoreEventListener listener : listeners) {
+                listener.onEnterTrain(train, isForward);
+            }
         }
-        for (SemaphoreEventListener listener : systemListeners) {
-            listener.onEnterTrain(train, isForward);
+        if (systemListeners != null) {
+            for (SemaphoreEventListener listener : systemListeners) {
+                listener.onEnterTrain(train, isForward);
+            }
         }
     }
 
@@ -95,11 +109,15 @@ public class RailSemaphore implements Renderable, Serializable {
     }
 
     public void onExitTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
-        for (SemaphoreEventListener listener : listeners) {
-            listener.onExitTrain(train, isForward);
+        if (listeners != null) {
+            for (SemaphoreEventListener listener : listeners) {
+                listener.onExitTrain(train, isForward);
+            }
         }
-        for (SemaphoreEventListener listener : systemListeners) {
-            listener.onExitTrain(train, isForward);
+        if (systemListeners != null) {
+            for (SemaphoreEventListener listener : systemListeners) {
+                listener.onExitTrain(train, isForward);
+            }
         }
     }
 

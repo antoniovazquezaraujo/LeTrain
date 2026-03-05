@@ -51,7 +51,7 @@ public interface View {
 
     void showLoadDialog();
 
-    void showEditDialog();
+    void showIDE();
 
     void showExitDialog();
 
@@ -60,4 +60,6 @@ public interface View {
     public int getRows();
 
     void showMessage(String title, String message);
+
+    void showReferenceGuide();
 }

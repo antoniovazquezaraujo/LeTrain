@@ -151,7 +151,7 @@ public interface Model {
         UNLINK("Divide trains"),
         STATIONS("Stations"),
         LOAD_TRAINS("Use load Stations"),
-        PERSIST("Save and load");
+        PROGRAM("Program");
 
         private String name;
 
@@ -203,4 +203,6 @@ public interface Model {
     CargoTypes.StationRole getStationGhostRole();
 
     letrain.mvp.impl.EventLogManager getEventLogManager();
+
+    String getGameObjectsReport();
 }

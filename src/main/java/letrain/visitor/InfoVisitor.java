@@ -60,6 +60,12 @@ public class InfoVisitor implements Visitor {
                     visitForkRailTrack(fork);
                 }
                 break;
+            case SEMAPHORES:
+                RailSemaphore semaphore = model.getSelectedSemaphore();
+                if (semaphore != null) {
+                    visitSemaphore(semaphore);
+                }
+                break;
             case STATIONS:
                 Station station = model.getSelectedStation();
                 if (station != null) {
@@ -89,8 +95,10 @@ public class InfoVisitor implements Visitor {
                 break;
             case TRAINS:
                 break;
-            case PERSIST:
-                visitPersistence(model);
+            case PROGRAM:
+                visitProgram(model);
+                break;
+            default:
                 break;
         }
 
@@ -101,7 +109,7 @@ public class InfoVisitor implements Visitor {
         view.setInfoBarText(infoBarText + commonText);
     }
 
-    private void visitPersistence(Model model) {
+    private void visitProgram(Model model) {
         infoBarText += model.getLastSaveTime() != null ? "Last save: " + model.getLastSaveTime() : "Not saved";
     }
 

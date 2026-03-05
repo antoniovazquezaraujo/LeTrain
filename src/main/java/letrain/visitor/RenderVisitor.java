@@ -27,6 +27,7 @@ import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
+import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -230,6 +231,25 @@ public class RenderVisitor implements Visitor {
         resetColors();
     }
 
+    private void highlightIfSelected(Linker linker) {
+        if (linker.getTrain() != null) {
+            Train train = linker.getTrain();
+            if (train.getLinkersToRemove().contains(linker)) {
+                view.setBgColor(SELECTED_LINKER_COLOR);
+            }
+            int count = 0;
+            for (Linker linkerToJoin : train.getLinkersToJoin()) {
+                if (count >= train.getNumLinkersToJoin())
+                    break;
+                if (linkerToJoin == linker) {
+                    view.setBgColor(SELECTED_LINKER_COLOR);
+                    break;
+                }
+                count++;
+            }
+        }
+    }
+
     @Override
     public void visitLocomotive(Locomotive locomotive) {
         if (locomotive.getTrack().getClass().equals(TunnelRailTrack.class) && this.mode != GameMode.RAILS) {
@@ -247,6 +267,7 @@ public class RenderVisitor implements Visitor {
         } else {
             view.setFgColor(LOCOMOTIVE_COLOR);
         }
+        highlightIfSelected(locomotive);
         if (locomotive.isShowingDir()) {
             view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(),
                     cursorGraphicAspect(locomotive.getDir()));
@@ -255,31 +276,7 @@ public class RenderVisitor implements Visitor {
             view.set(locomotive.getPosition().getX() + 1, locomotive.getPosition().getY(),
                     (isShowId() ? ("" + locomotive.getId()) : ""));
         }
-        view.setBgColor(SELECTED_LINKER_COLOR);
-        if (locomotive.getTrain() != null) {
-            String aspect = "";
-            for (Linker linkerToJoin : locomotive.getTrain().getLinkersToJoin()) {
-                if (linkerToJoin != null) {
-                    if (linkerToJoin instanceof Locomotive) {
-                        aspect = ((Locomotive) linkerToJoin).getAspect();
-                    } else {
-                        aspect = ((Wagon) linkerToJoin).getAspect();
-                    }
-                    view.set(linkerToJoin.getPosition().getX(), linkerToJoin.getPosition().getY(), aspect);
-                }
-            }
-            for (Linker linkerToPreserve : locomotive.getTrain().getLinkersToRemove()) {
-                if (linkerToPreserve != null) {
-                    if (linkerToPreserve instanceof Locomotive) {
-                        aspect = ((Locomotive) linkerToPreserve).getAspect();
-                    } else {
-                        aspect = ((Wagon) linkerToPreserve).getAspect();
-                    }
-                    view.set(linkerToPreserve.getPosition().getX(), linkerToPreserve.getPosition().getY(), aspect);
-                }
-            }
-            resetColors();
-        }
+        resetColors();
     }
 
     @Override
@@ -299,6 +296,7 @@ public class RenderVisitor implements Visitor {
         } else {
             view.setFgColor(WAGON_COLOR);
         }
+        highlightIfSelected(wagon);
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
         resetColors();
     }

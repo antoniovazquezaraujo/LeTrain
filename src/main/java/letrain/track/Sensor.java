@@ -14,8 +14,8 @@ public class Sensor implements Renderable, Serializable {
     private static final long serialVersionUID = 1L;
     private int id;
     Track track;
-    List<SensorEventListener> listeners = new ArrayList<>();
-    List<SensorEventListener> systemListeners = new ArrayList<>();
+    transient List<SensorEventListener> listeners = new ArrayList<>();
+    transient List<SensorEventListener> systemListeners = new ArrayList<>();
     private Dir sideDir;
     private Dir creationDir = Dir.E;
 
@@ -64,11 +64,16 @@ public class Sensor implements Renderable, Serializable {
     }
 
     public void onEnterTrain(Train train, boolean isForward) {
-        for (SensorEventListener listener : listeners) {
-            listener.onEnterTrain(train, isForward);
+        train.onEnterSensor(this, isForward);
+        if (listeners != null) {
+            for (SensorEventListener listener : listeners) {
+                listener.onEnterTrain(train, isForward);
+            }
         }
-        for (SensorEventListener listener : systemListeners) {
-            listener.onEnterTrain(train, isForward);
+        if (systemListeners != null) {
+            for (SensorEventListener listener : systemListeners) {
+                listener.onEnterTrain(train, isForward);
+            }
         }
     }
 
@@ -77,11 +82,16 @@ public class Sensor implements Renderable, Serializable {
     }
 
     public void onExitTrain(Train train, boolean isForward) {
-        for (SensorEventListener listener : listeners) {
-            listener.onExitTrain(train, isForward);
+        train.onExitSensor(this, isForward);
+        if (listeners != null) {
+            for (SensorEventListener listener : listeners) {
+                listener.onExitTrain(train, isForward);
+            }
         }
-        for (SensorEventListener listener : systemListeners) {
-            listener.onExitTrain(train, isForward);
+        if (systemListeners != null) {
+            for (SensorEventListener listener : systemListeners) {
+                listener.onExitTrain(train, isForward);
+            }
         }
     }
 
@@ -102,19 +112,25 @@ public class Sensor implements Renderable, Serializable {
     }
 
     public void addSensorEventListener(SensorEventListener listener) {
+        if (listeners == null)
+            listeners = new ArrayList<>();
         this.listeners.add(listener);
     }
 
     public void addSystemSensorEventListener(SensorEventListener listener) {
+        if (systemListeners == null)
+            systemListeners = new ArrayList<>();
         this.systemListeners.add(listener);
     }
 
     public void removeSensorEventListener(SensorEventListener listener) {
-        this.listeners.remove(listener);
+        if (listeners != null)
+            this.listeners.remove(listener);
     }
 
     public void removeAllSensorEventListeners() {
-        this.listeners.clear();
+        if (listeners != null)
+            this.listeners.clear();
     }
 
     // toString

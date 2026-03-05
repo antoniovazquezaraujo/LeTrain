@@ -1461,6 +1461,13 @@ public class Gdx3DRenderer implements Visitor {
         instance.transform.rotate(0, 1, 0, angle - 90f);
         instance.transform.scale(0.7f, 1f, 0.25f);
         instances.add(instance);
+
+        // Render ID label above the sensor
+        String idText = String.valueOf(sensor.getId());
+        float labelHeight = 0.25f;
+        labels.add(new VehicleLabel(new com.badlogic.gdx.math.Vector3(x + 0.5f, labelHeight, y + 0.5f), idText,
+                new com.badlogic.gdx.math.Vector3(0, 1, 0), new com.badlogic.gdx.math.Vector3(0, 0, -1),
+                com.badlogic.gdx.graphics.Color.YELLOW, 0.4f));
     }
 
     @Override

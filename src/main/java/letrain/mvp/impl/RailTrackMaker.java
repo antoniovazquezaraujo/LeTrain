@@ -320,10 +320,13 @@ public class RailTrackMaker {
                     presenter.getModel().removeSensor(track.getSensor());
                 }
             }
+            if (track.getSemaphore() != null) {
+                presenter.getModel().removeSemaphore(track.getSemaphore());
+            }
+            if (track instanceof letrain.track.rail.ForkRailTrack) {
+                presenter.getModel().removeFork((letrain.track.rail.ForkRailTrack) track);
+            }
             presenter.getModel().getRailMap().removeTrack(position);
-        }
-        if (presenter.getModel().getForks().contains(track)) {
-            presenter.getModel().getForks().remove(track);
         }
 
         if (moveCursor) {

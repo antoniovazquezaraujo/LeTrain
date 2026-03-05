@@ -4,7 +4,7 @@ import static letrain.mvp.Model.GameMode.DRIVE;
 import static letrain.mvp.Model.GameMode.FORKS;
 import static letrain.mvp.Model.GameMode.LINK;
 import static letrain.mvp.Model.GameMode.MENU;
-import static letrain.mvp.Model.GameMode.PERSIST;
+import static letrain.mvp.Model.GameMode.PROGRAM;
 import static letrain.mvp.Model.GameMode.RAILS;
 import static letrain.mvp.Model.GameMode.SEMAPHORES;
 import static letrain.mvp.Model.GameMode.STATIONS;
@@ -80,6 +80,12 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         } else {
             this.model = new Model();
         }
+        // Re-create audio controller for the new model
+        if (this.audioController != null) {
+            this.audioController.stop();
+        }
+        this.audioController = new letrain.audio.AudioController(this.model);
+
         // Register this as global listener for all present and future trains
         this.model.addTrainEventListener(this);
     }
@@ -233,7 +239,8 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
                         }
                         break;
                     case 'p':
-                        model.setMode(PERSIST);
+                        model.setMode(PROGRAM);
+                        view.showIDE();
                         break;
                     default:
                         isAMenuKey = false;
@@ -272,8 +279,11 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
             case STATIONS:
                 stationManagerOnChar(keyEvent);
                 break;
-            case PERSIST:
-                persistManagerOnChar(keyEvent);
+            case PROGRAM:
+                programManagerOnChar(keyEvent);
+                break;
+            case LOAD_TRAINS:
+            case MENU:
                 break;
         }
     }
@@ -285,21 +295,12 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         }
     }
 
-    void persistManagerOnChar(KeyStroke keyEvent) {
-        switch (keyEvent.getKeyType()) {
-            case Character:
-                if (keyEvent.getCharacter() == ' ') {
-                    view.showEditDialog();
-                }
-                break;
-            case ArrowUp:
-                view.showLoadDialog();
-                break;
-            case ArrowDown:
-                view.showSaveDialog();
-                break;
+    void programManagerOnChar(KeyStroke keyEvent) {
+        if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() == ' ') {
+            view.showIDE();
+        } else if (keyEvent.getKeyType() == KeyType.F12) {
+            view.showIDE();
         }
-
     }
 
     void stationManagerOnChar(KeyStroke keyEvent) {
@@ -346,6 +347,8 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
                 break;
             case ArrowRight:
                 selectNextStation();
+                break;
+            default:
                 break;
         }
     }
@@ -418,7 +421,8 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
                 destroyLinkers();
                 model.setMode(MENU);
                 break;
-
+            default:
+                break;
         }
     }
 
@@ -454,6 +458,8 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
             case Enter:
                 linkSelectedVehicles();
                 model.setMode(MENU);
+                break;
+            default:
                 break;
         }
     }
@@ -533,11 +539,12 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
             case ArrowRight:
                 selectNextFork();
                 break;
+            default:
+                break;
         }
     }
 
     private void trainDriverOnChar(KeyStroke keyEvent) {
-        this.newTrain = null;
         model.setShowId(false);
         switch (keyEvent.getKeyType()) {
             case Backspace:
@@ -645,6 +652,9 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
                 }
                 // If not on a station or not stopped, Enter should switch to menu
                 model.setMode(MENU);
+                break;
+            default:
+                break;
         }
     }
 
@@ -735,30 +745,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         }
     }
 
-    /***********************************************************
-     * FACTORIES
-     **********************************************************/
-
     Train newTrain;
-
-    private void createWagon(Dir d, String c, RailTrack track) {
-        Wagon wagon = new Wagon(c);
-        model.addWagon(wagon);
-        track.enterLinkerFromDir(d, wagon);
-        if (wagon.getTrain() != null) {
-            wagon.getTrain().addTrainEventListener(this);
-        }
-    }
-
-    private void createLocomotive(Dir d, String c, RailTrack track) {
-        Locomotive locomotive = new Locomotive(model.nextLocomotiveId(), c);
-        Train train = new Train(model.nextTrainId());
-        train.addTrainEventListener(this);
-        train.pushBack(locomotive);
-        train.setDirectorLinker(locomotive);
-        model.addLocomotive(locomotive);
-        track.enterLinkerFromDir(d, locomotive);
-    }
 
     /***********************************************************
      * FORKS
@@ -888,10 +875,6 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         railTrackMaker.setCursorPage(page);
     }
 
-    private void updateCursorPosition(Point newPos) {
-        getModel().getCursor().setPosition(newPos);
-    }
-
     /***********************************************************
      * StationS
      **********************************************************/
@@ -943,14 +926,30 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     public void onLoadGame(File file) {
         if (file != null && file.exists()) {
             File mapFile = changeExtension(file, "ltr");
-            Model model = loadModel(mapFile);
-            if (model != null) {
+            Model loadedModel = loadModel(mapFile);
+            if (loadedModel != null) {
                 stop();
-                setModel(model);
+                setModel(loadedModel);
                 // Register this as listener for all trains in the loaded model
-                for (Locomotive loco : model.getLocomotives()) {
+                for (Locomotive loco : loadedModel.getLocomotives()) {
                     if (loco.getTrain() != null) {
                         loco.getTrain().addTrainEventListener(this);
+                    }
+                }
+                // Re-establish script listeners
+                if (loadedModel.getProgram() != null && !loadedModel.getProgram().isEmpty()) {
+                    loadedModel.setProgram(loadedModel.getProgram());
+                }
+                // Re-attach stations as listeners to trains they are hosting
+                for (Locomotive loco : loadedModel.getLocomotives()) {
+                    Train train = loco.getTrain();
+                    if (train != null && train.getStationId() != 0) {
+                        for (Station station : loadedModel.getStations()) {
+                            if (station.getId() == train.getStationId()) {
+                                train.addTrainEventListener(station);
+                                break;
+                            }
+                        }
                     }
                 }
                 start();

@@ -72,25 +72,34 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     boolean joined = false;
     protected Tractor directorLinker;
     private int loadingCount;
-    private List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
+    private transient boolean isNotifying = false;
+    private transient List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
 
     public void addTrainEventListener(TrainEventListener listener) {
+        if (trainListeners == null)
+            trainListeners = new CopyOnWriteArrayList<>();
         trainListeners.add(listener);
     }
 
     public void removeTrainEventListener(TrainEventListener listener) {
+        if (trainListeners == null)
+            trainListeners = new CopyOnWriteArrayList<>();
         trainListeners.remove(listener);
     }
 
     public void notifySpeedChanged(int speed) {
-        for (TrainEventListener l : trainListeners) {
-            l.onSpeedChanged(speed);
+        if (trainListeners != null) {
+            for (TrainEventListener l : trainListeners) {
+                l.onSpeedChanged(speed);
+            }
         }
     }
 
     public void notifySenseChanged(boolean forward) {
-        for (TrainEventListener l : trainListeners) {
-            l.onSenseChanged(forward);
+        if (trainListeners != null) {
+            for (TrainEventListener l : trainListeners) {
+                l.onSenseChanged(forward);
+            }
         }
     }
 
@@ -100,6 +109,36 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     public void notifyUnlink() {
         trainListeners.forEach(l -> l.onUnlink(this));
+    }
+
+    public void onEnterSensor(letrain.track.Sensor sensor, boolean isForward) {
+        if (isNotifying)
+            return;
+        isNotifying = true;
+        try {
+            trainListeners.forEach(l -> {
+                if (l != sensor) {
+                    l.onEnterTrain(this, isForward);
+                }
+            });
+        } finally {
+            isNotifying = false;
+        }
+    }
+
+    public void onExitSensor(letrain.track.Sensor sensor, boolean isForward) {
+        if (isNotifying)
+            return;
+        isNotifying = true;
+        try {
+            trainListeners.forEach(l -> {
+                if (l != sensor) {
+                    l.onExitTrain(this, isForward);
+                }
+            });
+        } finally {
+            isNotifying = false;
+        }
     }
 
     public Train(int id) {

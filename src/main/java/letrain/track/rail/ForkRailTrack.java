@@ -15,23 +15,29 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     int id;
     private letrain.map.Dir creationDir = letrain.map.Dir.E;
-    private List<ForkEventListener> listeners = new ArrayList<>();
-    private List<ForkEventListener> systemListeners = new ArrayList<>();
+    private transient List<ForkEventListener> listeners = new ArrayList<>();
+    private transient List<ForkEventListener> systemListeners = new ArrayList<>();
 
     public void addForkEventListener(ForkEventListener listener) {
+        if (listeners == null)
+            listeners = new ArrayList<>();
         listeners.add(listener);
     }
 
     public void addSystemForkEventListener(ForkEventListener listener) {
+        if (systemListeners == null)
+            systemListeners = new ArrayList<>();
         systemListeners.add(listener);
     }
 
     public void removeForkEventListener(ForkEventListener listener) {
-        listeners.remove(listener);
+        if (listeners != null)
+            listeners.remove(listener);
     }
 
     public void removeAllForkEventListeners() {
-        listeners.clear();
+        if (listeners != null)
+            listeners.clear();
     }
 
     public ForkRailTrack(int id) {
@@ -51,11 +57,15 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     }
 
     public void onEnterTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
-        for (ForkEventListener listener : listeners) {
-            listener.onEnterTrain(train, isForward);
+        if (listeners != null) {
+            for (ForkEventListener listener : listeners) {
+                listener.onEnterTrain(train, isForward);
+            }
         }
-        for (ForkEventListener listener : systemListeners) {
-            listener.onEnterTrain(train, isForward);
+        if (systemListeners != null) {
+            for (ForkEventListener listener : systemListeners) {
+                listener.onEnterTrain(train, isForward);
+            }
         }
     }
 
@@ -64,11 +74,15 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     }
 
     public void onExitTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
-        for (ForkEventListener listener : listeners) {
-            listener.onExitTrain(train, isForward);
+        if (listeners != null) {
+            for (ForkEventListener listener : listeners) {
+                listener.onExitTrain(train, isForward);
+            }
         }
-        for (ForkEventListener listener : systemListeners) {
-            listener.onExitTrain(train, isForward);
+        if (systemListeners != null) {
+            for (ForkEventListener listener : systemListeners) {
+                listener.onExitTrain(train, isForward);
+            }
         }
     }
 
@@ -120,11 +134,15 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
         boolean changed = !getRouter().isUsingAlternativeRoute();
         getRouter().setAlternativeRoute();
         if (changed) {
-            for (ForkEventListener listener : listeners) {
-                listener.onDirectionChanged(false);
+            if (listeners != null) {
+                for (ForkEventListener listener : listeners) {
+                    listener.onDirectionChanged(false);
+                }
             }
-            for (ForkEventListener listener : systemListeners) {
-                listener.onDirectionChanged(false);
+            if (systemListeners != null) {
+                for (ForkEventListener listener : systemListeners) {
+                    listener.onDirectionChanged(false);
+                }
             }
         }
     }
@@ -134,11 +152,15 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
         boolean changed = getRouter().isUsingAlternativeRoute();
         getRouter().setNormalRoute();
         if (changed) {
-            for (ForkEventListener listener : listeners) {
-                listener.onDirectionChanged(true);
+            if (listeners != null) {
+                for (ForkEventListener listener : listeners) {
+                    listener.onDirectionChanged(true);
+                }
             }
-            for (ForkEventListener listener : systemListeners) {
-                listener.onDirectionChanged(true);
+            if (systemListeners != null) {
+                for (ForkEventListener listener : systemListeners) {
+                    listener.onDirectionChanged(true);
+                }
             }
         }
     }
@@ -146,11 +168,15 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     @Override
     public boolean flipRoute() {
         boolean ret = getRouter().flipRoute();
-        for (ForkEventListener listener : listeners) {
-            listener.onDirectionChanged(!getRouter().isUsingAlternativeRoute());
+        if (listeners != null) {
+            for (ForkEventListener listener : listeners) {
+                listener.onDirectionChanged(!getRouter().isUsingAlternativeRoute());
+            }
         }
-        for (ForkEventListener listener : systemListeners) {
-            listener.onDirectionChanged(!getRouter().isUsingAlternativeRoute());
+        if (systemListeners != null) {
+            for (ForkEventListener listener : systemListeners) {
+                listener.onDirectionChanged(!getRouter().isUsingAlternativeRoute());
+            }
         }
         return ret;
     }

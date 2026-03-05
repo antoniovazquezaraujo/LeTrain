@@ -8,8 +8,8 @@ trigger :
       sensorSelector    'on' trainSelector trainEvent  
     | forkSelector      'on' trainSelector trainEvent 
     | semaphoreSelector 'on' trainSelector trainEvent 
-    | stationSelector   'on' (trainSelector trainEvent | trainEvent trainSelector | stationEvent) 
-    | trainSelector     'on' ('crash' | 'contact')
+    | stationSelector   'on' (trainSelector trainEvent | trainEvent trainSelector) 
+    | trainSelector     ( 'on' ('crash' | 'contact') | trainEvent )
     ;
 
 sensorSelector    : 'sensor' NUMBER;
@@ -19,7 +19,6 @@ stationSelector   : 'station' NUMBER;
 trainSelector     : 'train' (NUMBER)?;
 
 trainEvent   : ('enter' | 'exit' | 'link' | 'unlink') (sense)?;
-stationEvent : 'load' | 'unload';
 
 commandBlock : '{' commandItem* '}';
 

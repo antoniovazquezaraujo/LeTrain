@@ -28,8 +28,8 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.SplitPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextArea;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.ui.Window;
@@ -40,8 +40,6 @@ import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
 import letrain.visitor.Gdx3DRenderer;
 
 public class Gdx3DView extends ApplicationAdapter
@@ -92,10 +90,10 @@ public class Gdx3DView extends ApplicationAdapter
     private Label incomeLabel;
     private Label expensesLabel;
     private NotchLever notchLever;
-    private ScrollPane logScrollPane;
-    private Table logTable;
-    private boolean showLog = false;
     private com.badlogic.gdx.graphics.glutils.ShapeRenderer shapeRenderer;
+    private Label ideLogContent;
+    private Label ideObjsContent;
+    private Window ideWindow;
 
     // Audio
     private letrain.audio.AudioController audioController;
@@ -123,6 +121,55 @@ public class Gdx3DView extends ApplicationAdapter
 
         // Register as listener for audio events
         model.addTrainEventListener(this);
+    }
+
+    @Override
+    public int getCols() {
+        return 80;
+    }
+
+    @Override
+    public int getRows() {
+        return 24;
+    }
+
+    @Override
+    public void showMessage(String title, String message) {
+        Gdx.app.postRunnable(() -> {
+            com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog = new com.badlogic.gdx.scenes.scene2d.ui.Dialog(title,
+                    skin) {
+                @Override
+                protected void result(Object object) {
+                    this.remove();
+                }
+            };
+            dialog.text(message);
+            dialog.button("OK");
+            dialog.pack();
+            dialog.setPosition(
+                    (stage.getWidth() - dialog.getWidth()) / 2,
+                    (stage.getHeight() - dialog.getHeight()) / 2);
+            stage.addActor(dialog);
+        });
+    }
+
+    @Override
+    public void showReferenceGuide() {
+        String guide = "LeTrain Automation Reference:\n\n" +
+                "Triggers:\n" +
+                "  sensor [ID] on train (enter|exit) { actions }\n" +
+                "  station [ID] on train (enter|exit) { actions }\n" +
+                "  train [ID] on (enter|exit|link|unlink|crash|contact) { actions }\n\n" +
+                "Actions:\n" +
+                "  train set speed [0-100]\n" +
+                "  train invert\n" +
+                "  train load / train unload\n" +
+                "  train unlink (front|back) [count]\n" +
+                "  fork [ID] set (straight|curved|flip)\n\n" +
+                "Examples:\n" +
+                "  station 1 on train enter { train load; train unlink back 1; }\n" +
+                "  train 1 on crash { train set speed 0; }";
+        showMessage("Automation Cheat Sheet", guide);
     }
 
     @Override
@@ -243,6 +290,38 @@ public class Gdx3DView extends ApplicationAdapter
         skin.add("medium-font", mediumFont);
         skin.add("large-font", largeFont);
 
+        // Consolas init for IDE
+        File consolaFile = new File("C:/Windows/Fonts/consola.ttf");
+        if (consolaFile.exists()) {
+            FreeTypeFontGenerator generatorLT = new FreeTypeFontGenerator(
+                    Gdx.files.absolute(consolaFile.getAbsolutePath()));
+            FreeTypeFontParameter parameterLT = new FreeTypeFontParameter();
+            parameterLT.size = 18;
+            BitmapFont monospaceFont = generatorLT.generateFont(parameterLT);
+            monospaceFont.setUseIntegerPositions(true); // Ensure crisp rendering
+            generatorLT.dispose();
+            skin.add("monospace-font", monospaceFont);
+
+            Label.LabelStyle monoLabelStyle = new Label.LabelStyle();
+            monoLabelStyle.font = monospaceFont;
+            monoLabelStyle.fontColor = Color.WHITE;
+            skin.add("monospace", monoLabelStyle);
+
+            TextField.TextFieldStyle textAreaStyle = new TextField.TextFieldStyle();
+            textAreaStyle.font = monospaceFont;
+            textAreaStyle.fontColor = Color.WHITE;
+            textAreaStyle.selection = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.8f, 0.5f));
+            textAreaStyle.cursor = skin.newDrawable("white", Color.WHITE);
+            textAreaStyle.background = skin.newDrawable("white", new Color(0.05f, 0.05f, 0.05f, 0.8f));
+            skin.add("monospace-textarea", textAreaStyle);
+        } else {
+            // Fallback
+            TextField.TextFieldStyle textAreaStyle = new TextField.TextFieldStyle();
+            textAreaStyle.font = skin.getFont("default");
+            textAreaStyle.fontColor = Color.WHITE;
+            skin.add("monospace-textarea", textAreaStyle);
+        }
+
         // TextButton Style (Menu Buttons)
         TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle();
         textButtonStyle.up = null; // Transparent by default
@@ -255,6 +334,28 @@ public class Gdx3DView extends ApplicationAdapter
         textButtonStyle.overFontColor = Color.WHITE;
         textButtonStyle.checkedFontColor = Color.WHITE;
         skin.add("default", textButtonStyle);
+
+        // Toggle Button Style (IDE Panels)
+        TextButton.TextButtonStyle toggleStyle = new TextButton.TextButtonStyle();
+        toggleStyle.up = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.2f, 1f));
+        toggleStyle.down = skin.newDrawable("white", Color.CYAN);
+        toggleStyle.checked = skin.newDrawable("white", new Color(0.4f, 0.4f, 0.4f, 1f));
+        toggleStyle.over = skin.newDrawable("white", new Color(0.3f, 0.3f, 0.3f, 1f));
+        toggleStyle.font = skin.getFont("default");
+        toggleStyle.fontColor = Color.WHITE;
+        toggleStyle.downFontColor = Color.WHITE;
+        toggleStyle.overFontColor = Color.WHITE;
+        toggleStyle.checkedFontColor = Color.CYAN;
+        skin.add("toggle", toggleStyle);
+
+        TextButton.TextButtonStyle monoToggleStyle = new TextButton.TextButtonStyle(toggleStyle);
+        monoToggleStyle.font = skin.getFont("monospace-font");
+        skin.add("monospace-toggle", monoToggleStyle);
+
+        TextButton.TextButtonStyle monoButtonStyle = new TextButton.TextButtonStyle(textButtonStyle);
+        monoButtonStyle.font = skin.getFont("monospace-font");
+        monoButtonStyle.up = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.2f, 1f));
+        skin.add("monospace-button", monoButtonStyle);
 
         // Label Style
         Label.LabelStyle labelStyle = new Label.LabelStyle();
@@ -295,7 +396,15 @@ public class Gdx3DView extends ApplicationAdapter
         // Window Style
         Window.WindowStyle windowStyle = new Window.WindowStyle();
         windowStyle.titleFont = uiFont;
-        windowStyle.background = skin.newDrawable("white", Color.BLACK);
+        // Create a background with a border (matching Cyan handles)
+        Pixmap pixmapWindow = new Pixmap(20, 20, Pixmap.Format.RGBA8888);
+        pixmapWindow.setColor(Color.CYAN); // Border color
+        pixmapWindow.fill();
+        pixmapWindow.setColor(Color.BLACK); // Background color
+        pixmapWindow.fillRectangle(6, 6, 8, 8); // 6px border
+        com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowBg = new com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable(
+                new com.badlogic.gdx.graphics.g2d.NinePatch(new Texture(pixmapWindow), 6, 6, 6, 6));
+        windowStyle.background = windowBg;
         windowStyle.titleFontColor = Color.WHITE;
         skin.add("default", windowStyle);
 
@@ -313,6 +422,25 @@ public class Gdx3DView extends ApplicationAdapter
         scrollPaneStyle.background = skin.newDrawable("white", Color.DARK_GRAY);
         scrollPaneStyle.vScroll = skin.newDrawable("white", Color.GRAY);
         scrollPaneStyle.vScrollKnob = skin.newDrawable("white", Color.LIGHT_GRAY);
+        // SplitPane Style
+        SplitPane.SplitPaneStyle splitPaneStyle = new SplitPane.SplitPaneStyle();
+        com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable handle = (com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable) skin
+                .newDrawable("white", Color.CYAN);
+        handle.setMinWidth(6f);
+        handle.setMinHeight(6f);
+        splitPaneStyle.handle = handle;
+        skin.add("default-horizontal", splitPaneStyle);
+        skin.add("default-vertical", splitPaneStyle);
+
+        SplitPane.SplitPaneStyle splitPaneStyleHover = new SplitPane.SplitPaneStyle(splitPaneStyle);
+        com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable handleHover = (com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable) skin
+                .newDrawable("white", Color.WHITE);
+        handleHover.setMinWidth(6f);
+        handleHover.setMinHeight(6f);
+        splitPaneStyleHover.handle = handleHover;
+        skin.add("default-horizontal-hover", splitPaneStyleHover);
+        skin.add("default-vertical-hover", splitPaneStyleHover);
+
         skin.add("default", scrollPaneStyle);
 
         // ProgressBar Style
@@ -320,6 +448,13 @@ public class Gdx3DView extends ApplicationAdapter
         progressBarStyle.background = skin.newDrawable("white", Color.DARK_GRAY);
         progressBarStyle.knobBefore = skin.newDrawable("white", Color.CYAN);
         skin.add("default-horizontal", progressBarStyle);
+
+        // Green Triangle for Insertion Buttons
+        Pixmap pixmapTriangle = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
+        pixmapTriangle.setColor(Color.GREEN);
+        // Triangle pointing left: (0, 8), (16, 0), (16, 16)
+        pixmapTriangle.fillTriangle(0, 8, 16, 0, 16, 16);
+        skin.add("green-triangle", new Texture(pixmapTriangle));
 
         // Bottom UI Container
         Table mainBottomTable = new Table();
@@ -382,20 +517,6 @@ public class Gdx3DView extends ApplicationAdapter
         mainBottomTable.add(bottomContainer).expandX().fillX();
 
         updateMenuButtons();
-
-        // Log Viewer UI
-        logTable = new Table();
-        logTable.top().left();
-        logScrollPane = new ScrollPane(logTable, skin);
-        logScrollPane.setFadeScrollBars(false);
-        logScrollPane.setVisible(false);
-        logScrollPane.setScrollingDisabled(true, false);
-
-        Table logContainer = new Table();
-        logContainer.setFillParent(true);
-        logContainer.top().left().pad(20);
-        logContainer.add(logScrollPane).width(500).height(400).top().left();
-        stage.addActor(logContainer);
     }
 
     private String getMenuButtonText(String rawName, boolean isEnabled) {
@@ -441,6 +562,7 @@ public class Gdx3DView extends ApplicationAdapter
                     if (!button.isDisabled()) {
                         letrain.mvp.Model.GameMode newMode = option.doWhenSelected().get();
                         model.setMode(newMode);
+                        onGameModeSelected(newMode);
 
                         // Inicialización de estados al cambiar de modo mediante botones
                         if (newMode == letrain.mvp.Model.GameMode.LINK) {
@@ -598,10 +720,9 @@ public class Gdx3DView extends ApplicationAdapter
             case com.badlogic.gdx.Input.Keys.TAB:
                 keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Tab);
                 break;
-            case com.badlogic.gdx.Input.Keys.L:
-                showLog = !showLog;
-                logScrollPane.setVisible(showLog);
-                return true;
+            case com.badlogic.gdx.Input.Keys.F12:
+                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.F12);
+                break;
         }
 
         if (keyStroke != null) {
@@ -739,6 +860,7 @@ public class Gdx3DView extends ApplicationAdapter
             model.loadAndUnloadTrains();
             model.removeDestroyedTrains();
             updateSelectionTimeouts();
+            updateIDE();
 
             stateTime -= 0.05f;
             if (stateTime > 0.05f)
@@ -1008,24 +1130,6 @@ public class Gdx3DView extends ApplicationAdapter
                 }
             }
         }
-        updateLogView();
-    }
-
-    private void updateLogView() {
-        if (!showLog)
-            return;
-
-        List<String> entries = model.getEventLogManager().getEntries();
-        if (logTable.getChildren().size == entries.size())
-            return;
-
-        logTable.clear();
-        for (String entry : entries) {
-            Label label = new Label(entry, skin, "small");
-            logTable.add(label).left().row();
-        }
-        logScrollPane.layout();
-        logScrollPane.setScrollPercentY(100f);
     }
 
     // Presenter implementation
@@ -1045,6 +1149,11 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void onChar(com.googlecode.lanterna.input.KeyStroke stroke) {
+        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.F12) {
+            showReferenceGuide();
+            return;
+        }
+
         // Global Camera Zoom/Rotation (Alt + Arrows)
         if (stroke.isAltDown()) {
             if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
@@ -1117,7 +1226,8 @@ public class Gdx3DView extends ApplicationAdapter
                             model.setMode(letrain.mvp.Model.GameMode.STATIONS);
                         return;
                     case 'p':
-                        model.setMode(letrain.mvp.Model.GameMode.PERSIST);
+                        model.setMode(letrain.mvp.Model.GameMode.PROGRAM);
+                        onGameModeSelected(letrain.mvp.Model.GameMode.PROGRAM);
                         return;
                     case 'o':
                         handleSnapCursor();
@@ -1133,8 +1243,8 @@ public class Gdx3DView extends ApplicationAdapter
             case DRIVE:
                 handleDriveInput(stroke);
                 break;
-            case PERSIST:
-                handlePersistInput(stroke);
+            case PROGRAM:
+                handleProgramInput(stroke);
                 break;
             case LINK:
                 handleLinkInput(stroke);
@@ -1269,14 +1379,9 @@ public class Gdx3DView extends ApplicationAdapter
         }
     }
 
-    private void handlePersistInput(KeyStroke stroke) {
-        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
-            showLoadDialog();
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
-            showSaveDialog();
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
-                && stroke.getCharacter() == ' ') {
-            showEditDialog();
+    private void handleProgramInput(KeyStroke stroke) {
+        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.F12) {
+            showReferenceGuide();
         }
     }
 
@@ -1466,6 +1571,9 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void onGameModeSelected(letrain.mvp.Model.GameMode mode) {
+        if (mode == letrain.mvp.Model.GameMode.PROGRAM) {
+            showIDE();
+        }
     }
 
     @Override
@@ -1619,9 +1727,28 @@ public class Gdx3DView extends ApplicationAdapter
                 trackMaker = new RailTrackMaker(this);
                 audioController = new letrain.audio.AudioController(model);
 
+                // RegisterPresenter as listener
+                model.addTrainEventListener(this);
+
                 // Re-establish script listeners
                 if (model.getProgram() != null && !model.getProgram().isEmpty()) {
                     model.setProgram(model.getProgram());
+                }
+
+                // Re-establish system listeners
+                ((letrain.mvp.impl.Model) model).reestablishSystemListeners();
+
+                // Re-attach stations as listeners to trains they are hosting
+                for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
+                    letrain.vehicle.impl.rail.Train train = loco.getTrain();
+                    if (train != null && train.getStationId() != 0) {
+                        for (letrain.track.Station station : model.getStations()) {
+                            if (station.getId() == train.getStationId()) {
+                                train.addTrainEventListener(station);
+                                break;
+                            }
+                        }
+                    }
                 }
 
             } catch (Exception e) {
@@ -1716,48 +1843,433 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     @Override
-    public void showEditDialog() {
+    public void showIDE() {
+        if (ideWindow != null) {
+            ideWindow.toFront();
+            stage.setKeyboardFocus(ideWindow.findActor("editorTextArea")); // Need to name the textArea
+            return;
+        }
         Gdx.app.postRunnable(() -> {
-            Window window = new Window("Program Editor", skin);
-            window.getTitleTable().pad(10);
+            if (ideWindow != null)
+                return; // double check inside runnable
+            final Window window = new Window("LT-IDE v1.1 - LeTrain Integrated Development Environment", skin);
+            window.setModal(true);
+            window.setMovable(true);
+            window.setResizable(true);
+            window.padTop(35);
 
-            TextArea textArea = new TextArea(Gdx3DView.this.getProgram(), skin);
-            ScrollPane scrollPane = new ScrollPane(textArea, skin);
-            scrollPane.setFadeScrollBars(false);
+            // Title bar buttons
+            Table titleTable = window.getTitleTable();
+            TextButton.TextButtonStyle titleBtnStyle = new TextButton.TextButtonStyle(
+                    skin.get(TextButton.TextButtonStyle.class));
+            titleBtnStyle.font = skin.getFont("monospace-font");
+            titleBtnStyle.up = skin.newDrawable("white", Color.DARK_GRAY);
+            TextButton closeBtnTitle = new TextButton(" X ", titleBtnStyle);
+            TextButton maxBtnTitle = new TextButton(" [ ] ", titleBtnStyle);
+            titleTable.add(maxBtnTitle).size(30, 22).right().padRight(5);
+            titleTable.add(closeBtnTitle).size(30, 22).right().padRight(10);
 
-            TextButton saveBtn = new TextButton("Save & Run", skin);
-            TextButton cancelBtn = new TextButton("Cancel", skin);
+            closeBtnTitle.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    ideWindow = null;
+                    ideLogContent = null;
+                    ideObjsContent = null;
+                    window.remove();
+                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                    onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
+                }
+            });
+
+            final boolean[] isMaximized = { false };
+            final float[] prevX = { 0 }, prevY = { 0 }, prevW = { 0 }, prevH = { 0 };
+            maxBtnTitle.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    if (!isMaximized[0]) {
+                        prevX[0] = window.getX();
+                        prevY[0] = window.getY();
+                        prevW[0] = window.getWidth();
+                        prevH[0] = window.getHeight();
+                        window.setBounds(0, 0, stage.getWidth(), stage.getHeight());
+                        window.setResizable(false);
+                        window.setMovable(false);
+                        isMaximized[0] = true;
+                    } else {
+                        window.setResizable(true);
+                        window.setMovable(true);
+                        window.setBounds(prevX[0], prevY[0], prevW[0], prevH[0]);
+                        isMaximized[0] = false;
+                    }
+                    window.invalidateHierarchy();
+                }
+            });
+
+            // Toggle Buttons Bar
+            Table toggleBar = new Table();
+            final TextButton toggleRef = new TextButton("Ref", skin, "monospace-toggle");
+            final TextButton toggleObjs = new TextButton("Objs", skin, "monospace-toggle");
+            final TextButton toggleEx = new TextButton("Ex", skin, "monospace-toggle");
+            final TextButton toggleLog = new TextButton("Logs", skin, "monospace-toggle");
+
+            // Toggles automatically managed by "toggle" style and its internal listeners
+
+            toggleRef.setChecked(true);
+            toggleObjs.setChecked(true);
+            toggleEx.setChecked(false);
+
+            toggleBar.add(new Label("Panels: ", skin, "monospace")).padRight(5);
+            toggleBar.add(toggleRef).padRight(5);
+            toggleBar.add(toggleObjs).padRight(5);
+            toggleBar.add(toggleEx).padRight(5);
+            toggleBar.add(toggleLog);
+
+            // Editor Area
+            final com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea = new com.badlogic.gdx.scenes.scene2d.ui.TextArea(
+                    Gdx3DView.this.getProgram(), skin, "monospace-textarea");
+            textArea.setName("editorTextArea");
+
+            // Line numbers in a separate table for perfect row-by-row alignment
+            final Table lineNumbersTable = new Table();
+            lineNumbersTable.top().right();
+
+            Table editorSubContainer = new Table();
+            editorSubContainer.top().left();
+
+            Runnable updateLineNumbers = () -> {
+                lineNumbersTable.clearChildren();
+                String text = textArea.getText();
+                int lines = text.split("\n", -1).length;
+                float lineHeight = textArea.getStyle().font.getLineHeight();
+                for (int i = 1; i <= lines; i++) {
+                    Label l = new Label(String.valueOf(i), skin, "monospace");
+                    l.setColor(com.badlogic.gdx.graphics.Color.GRAY);
+                    lineNumbersTable.add(l).height(lineHeight).top().right().padRight(10).row();
+                }
+            };
+            textArea.setTextFieldListener((textField, c) -> updateLineNumbers.run());
+            updateLineNumbers.run();
+
+            float topPad = textArea.getStyle().background != null ? textArea.getStyle().background.getTopHeight() : 0;
+            // Add a small manual adjustment (2px) often helps with multi-line alignment in
+            // Scene2D
+            editorSubContainer.add(lineNumbersTable).top().padTop(topPad + 2.5f);
+            editorSubContainer.add(textArea).grow().top();
+
+            ScrollPane editorScroll = new ScrollPane(editorSubContainer, skin);
+            editorScroll.setFadeScrollBars(false);
+
+            // Side Panels
+            final Table sideTable = new Table();
+
+            // 1. Reference
+            final Table refTable = new Table();
+            refTable.setBackground(skin.newDrawable("white", new Color(0.1f, 0.1f, 0.1f, 0.95f)));
+            Label refTitle = new Label("QUICK REFERENCE", skin, "monospace");
+            refTitle.setColor(Color.YELLOW);
+            refTable.add(refTitle).pad(5).row();
+
+            Table refScrollContent = new Table();
+            refScrollContent.top().left();
+
+            String[][] refs = {
+                    { "TRIGGERS", "" },
+                    { "  sensor on train enter", "sensor 1 on train enter {\n  \n}" },
+                    { "  sensor on train exit", "sensor 1 on train exit {\n  \n}" },
+                    { "  fork on train enter", "fork 1 on train enter {\n  \n}" },
+                    { "  fork on train exit", "fork 1 on train exit {\n  \n}" },
+                    { "  station on train enter", "station 1 on train enter {\n  \n}" },
+                    { "  station on train exit", "station 1 on train exit {\n  \n}" },
+                    { "  train on crash (fast)", "train 1 on crash {\n  \n}" },
+                    { "  train on contact (slow)", "train 1 on contact {\n  \n}" },
+                    { "  train enter (global)", "train 1 enter {\n  \n}" },
+                    { "", "" },
+                    { "ACTIONS", "" },
+                    { "  train set speed", "train 1 set speed 5;" },
+                    { "  train set forward", "train 1 set forward;" },
+                    { "  train set backward", "train 1 set backward;" },
+                    { "  train accelerate", "train 1 accelerate;" },
+                    { "  train decelerate", "train 1 decelerate;" },
+                    { "  train stop", "train 1 stop;" },
+                    { "  train invert", "train 1 invert;" },
+                    { "  train load", "train 1 load;" },
+                    { "  train unload", "train 1 unload;" },
+                    { "  train link back", "train 1 link backward 1;" },
+                    { "  train unlink back", "train 1 unlink backward 1;" },
+                    { "  train at station ...", "train at station 1 stop;" },
+                    { "  fork set straight", "fork 1 set straight;" },
+                    { "  fork set curved", "fork 1 set curved;" },
+                    { "  fork set flip", "fork 1 set flip;" },
+                    { "  semaphore set open", "semaphore 1 set open;" },
+                    { "  semaphore set closed", "semaphore 1 set closed;" }
+            };
+
+            for (String[] r : refs) {
+                if (r[0].isEmpty()) {
+                    refScrollContent.add(new Label("", skin)).row();
+                    continue;
+                }
+                if (r[1].isEmpty()) {
+                    Label l = new Label(r[0], skin, "monospace");
+                    l.setColor(Color.ORANGE);
+                    refScrollContent.add(l).left().pad(5).row();
+                } else {
+                    Table row = new Table();
+                    Label l = new Label(r[0], skin, "monospace");
+                    // Create a button with the green triangle
+                    com.badlogic.gdx.scenes.scene2d.ui.Button.ButtonStyle bs = new com.badlogic.gdx.scenes.scene2d.ui.Button.ButtonStyle();
+                    bs.up = skin.getDrawable("green-triangle");
+                    com.badlogic.gdx.scenes.scene2d.ui.Button addBtn = new com.badlogic.gdx.scenes.scene2d.ui.Button(
+                            bs);
+
+                    addBtn.addListener(new ChangeListener() {
+                        @Override
+                        public void changed(ChangeEvent event, Actor actor) {
+                            insertAtCursor(textArea, r[1]);
+                        }
+                    });
+                    row.add(addBtn).left().size(16, 16).padRight(10);
+                    row.add(l).left().expandX();
+                    refScrollContent.add(row).growX().padLeft(10).padRight(5).row();
+                }
+            }
+
+            ScrollPane refScroll = new ScrollPane(refScrollContent, skin);
+            refTable.add(refScroll).grow().pad(5);
+
+            // 2. Objects
+            final Table objsTable = new Table();
+            objsTable.setBackground(skin.newDrawable("white", new Color(0.12f, 0.12f, 0.12f, 0.95f)));
+            Label objsTitle = new Label("OBJECTS STATUS", skin, "monospace");
+            objsTitle.setColor(Color.CYAN);
+            final Label objsContent = new Label("", skin, "monospace");
+            objsContent.setFontScale(1.0f);
+            objsTable.add(objsTitle).pad(5).row();
+            ScrollPane objsScroll = new ScrollPane(objsContent, skin);
+            objsTable.add(objsScroll).grow().pad(5);
+
+            // 3. Examples
+            final Table examplesTable = new Table();
+            examplesTable.setBackground(skin.newDrawable("white", new Color(0.14f, 0.14f, 0.14f, 0.95f)));
+            Label examplesTitle = new Label("EXAMPLES", skin, "monospace");
+            examplesTitle.setColor(Color.GREEN);
+            Label examplesContent = new Label(
+                    "station 1 on load {\n" +
+                            "  train unlink back 1;\n" +
+                            "  train set speed 2;\n" +
+                            "}\n" +
+                            "sensor 5 on enter {\n" +
+                            "  train stop;\n" +
+                            "}",
+                    skin, "monospace");
+            examplesContent.setFontScale(1.0f);
+            examplesContent.setWrap(true);
+            examplesTable.add(examplesTitle).pad(5).row();
+            examplesTable.add(examplesContent).growX().pad(5);
+
+            // 4. Logs
+            final Table logTable = new Table();
+            logTable.setBackground(skin.newDrawable("white", new Color(0.08f, 0.08f, 0.08f, 0.95f)));
+            Label logTitle = new Label("LOGS", skin, "monospace");
+            logTitle.setColor(Color.ORANGE);
+            final Label logContent = new Label("", skin, "monospace");
+            logContent.setWrap(true);
+            logTable.add(logTitle).pad(5).row();
+            ScrollPane logScroll = new ScrollPane(logContent, skin);
+            logTable.add(logScroll).grow().pad(5);
+
+            sideTable.add(refTable).grow().row();
+            sideTable.add(objsTable).grow().row();
+            sideTable.add(examplesTable).grow().row();
+
+            // Error Table
+            final Table errorTable = new Table();
+            errorTable.setBackground(skin.newDrawable("white", Color.MAROON));
+            final Label errorLabel = new Label("", skin, "monospace");
+            errorTable.add(new Label("ERRORS:", skin, "monospace")).left().padLeft(5).row();
+            errorTable.add(errorLabel).left().padLeft(15).padBottom(5);
+            errorTable.setVisible(false);
+
+            // Footer
+            Table footer = new Table();
+            TextButton applyBtn = new TextButton(" APPLY ", skin, "monospace-button");
+            TextButton saveBtn = new TextButton(" SAVE ", skin, "monospace-button");
+            TextButton loadBtn = new TextButton(" LOAD ", skin, "monospace-button");
+            TextButton cancelBtn = new TextButton(" CANCEL ", skin, "monospace-button");
+            footer.add(applyBtn).pad(5);
+            footer.add(saveBtn).pad(5);
+            footer.add(loadBtn).pad(5);
+            footer.add(cancelBtn).pad(5);
+
+            // ASSEMBLY & VISIBILITY SYNC
+            Table mainContent = new Table();
+
+            ChangeListener visibilitySync = new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    mainContent.clear();
+
+                    refTable.setVisible(toggleRef.isChecked());
+                    objsTable.setVisible(toggleObjs.isChecked());
+                    examplesTable.setVisible(toggleEx.isChecked());
+                    logTable.setVisible(toggleLog.isChecked());
+
+                    if (toggleObjs.isChecked()) {
+                        objsContent.setText(model.getGameObjectsReport());
+                    }
+                    if (toggleLog.isChecked()) {
+                        logContent.setText(String.join("\n", model.getEventLogManager().getEntries()));
+                    }
+
+                    // Side panels stack logic
+                    java.util.List<Actor> visibleSidePanels = new java.util.ArrayList<>();
+                    if (toggleRef.isChecked())
+                        visibleSidePanels.add(refTable);
+                    if (toggleObjs.isChecked())
+                        visibleSidePanels.add(objsTable);
+                    if (toggleEx.isChecked())
+                        visibleSidePanels.add(examplesTable);
+                    if (toggleLog.isChecked())
+                        visibleSidePanels.add(logTable);
+
+                    if (visibleSidePanels.isEmpty()) {
+                        mainContent.add(editorScroll).grow();
+                    } else {
+                        // Create Side Component (Nested vertical split panes)
+                        Actor sideComponent = visibleSidePanels.get(visibleSidePanels.size() - 1);
+                        for (int i = visibleSidePanels.size() - 2; i >= 0; i--) {
+                            final SplitPane sp = new SplitPane(visibleSidePanels.get(i), sideComponent, true, skin,
+                                    "default-vertical");
+                            sp.setSplitAmount(0.5f);
+                            sp.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                                @Override
+                                public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
+                                    sp.setStyle(skin.get("default-vertical-hover", SplitPane.SplitPaneStyle.class));
+                                }
+
+                                @Override
+                                public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
+                                    sp.setStyle(skin.get("default-vertical", SplitPane.SplitPaneStyle.class));
+                                }
+                            });
+                            sideComponent = sp;
+                        }
+
+                        final SplitPane mainSplit = new SplitPane(editorScroll, sideComponent, false, skin,
+                                "default-horizontal");
+                        mainSplit.setSplitAmount(0.75f);
+                        mainSplit.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                            @Override
+                            public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
+                                mainSplit
+                                        .setStyle(skin.get("default-horizontal-hover", SplitPane.SplitPaneStyle.class));
+                            }
+
+                            @Override
+                            public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
+                                mainSplit.setStyle(skin.get("default-horizontal", SplitPane.SplitPaneStyle.class));
+                            }
+                        });
+                        mainContent.add(mainSplit).grow();
+                    }
+                    window.invalidateHierarchy();
+                }
+            };
+
+            toggleRef.addListener(visibilitySync);
+            toggleObjs.addListener(visibilitySync);
+            toggleEx.addListener(visibilitySync);
+            toggleLog.addListener(visibilitySync);
+            visibilitySync.changed(null, null);
+
+            window.add(toggleBar).right().padRight(10).padBottom(5).row();
+            window.add(mainContent).grow().row();
+            window.add(errorTable).growX().row();
+            window.add(footer).growX().pad(10);
+
+            // Actions
+            applyBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    List<String> errors = model.setProgram(textArea.getText());
+                    if (errors != null && !errors.isEmpty()) {
+                        errorLabel.setText(String.join("\n", errors));
+                        errorTable.setVisible(true);
+                    } else {
+                        errorTable.setVisible(false);
+                    }
+                }
+            });
 
             saveBtn.addListener(new ChangeListener() {
                 @Override
-                public void changed(ChangeListener.ChangeEvent event, Actor actor) {
-                    ((letrain.mvp.GameViewListener) Gdx3DView.this).onEditCommands(textArea.getText());
+                public void changed(ChangeEvent event, Actor actor) {
+                    showSaveDialog();
+                }
+            });
+
+            loadBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    showLoadDialog();
+                    ideWindow = null;
+                    ideLogContent = null;
+                    ideObjsContent = null;
                     window.remove();
+                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                    onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
                 }
             });
 
             cancelBtn.addListener(new ChangeListener() {
                 @Override
-                public void changed(ChangeListener.ChangeEvent event, Actor actor) {
+                public void changed(ChangeEvent event, Actor actor) {
+                    ideWindow = null;
+                    ideLogContent = null;
+                    ideObjsContent = null;
                     window.remove();
+                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                    onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
                 }
             });
 
-            window.add(scrollPane).width(600).height(400).colspan(2).pad(10);
-            window.row();
-            window.add(saveBtn).pad(10);
-            window.add(cancelBtn).pad(10);
+            ideWindow = window;
+            ideLogContent = logContent;
+            ideObjsContent = objsContent;
 
-            window.pack();
-
-            // Center on stage
-            window.setPosition(
-                    (stage.getWidth() - window.getWidth()) / 2,
+            window.setSize(1200, 800);
+            window.setPosition((stage.getWidth() - window.getWidth()) / 2,
                     (stage.getHeight() - window.getHeight()) / 2);
-
             stage.addActor(window);
             stage.setKeyboardFocus(textArea);
         });
+    }
+
+    private void updateIDE() {
+        if (ideWindow == null || !ideWindow.isVisible() || ideWindow.getStage() == null)
+            return;
+
+        if (ideObjsContent != null) {
+            ideObjsContent.setText(model.getGameObjectsReport());
+        }
+
+        if (ideLogContent != null) {
+            List<String> entries = model.getEventLogManager().getEntries();
+            int start = Math.max(0, entries.size() - 20);
+            List<String> last20 = entries.subList(start, entries.size());
+            ideLogContent.setText(String.join("\n", last20));
+        }
+    }
+
+    private void insertAtCursor(com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea, String insertion) {
+        int pos = textArea.getCursorPosition();
+        String text = textArea.getText();
+        String before = text.substring(0, pos);
+        String after = text.substring(pos);
+        textArea.setText(before + insertion + after);
+        textArea.setCursorPosition(pos + insertion.length());
+        if (stage != null)
+            stage.setKeyboardFocus(textArea);
     }
 
     @Override
@@ -1770,16 +2282,6 @@ public class Gdx3DView extends ApplicationAdapter
         cam.viewportWidth = width;
         cam.viewportHeight = height;
         cam.update();
-    }
-
-    @Override
-    public int getCols() {
-        return 80;
-    }
-
-    @Override
-    public int getRows() {
-        return 24;
     }
 
     private com.badlogic.gdx.math.Vector2 getInterpolatedPosition(letrain.vehicle.impl.rail.Locomotive locomotive,
@@ -1850,26 +2352,6 @@ public class Gdx3DView extends ApplicationAdapter
         dispose();
         Gdx.app.exit();
         System.exit(0);
-    }
-
-    @Override
-    public void showMessage(String title, String message) {
-        Gdx.app.postRunnable(() -> {
-            com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog = new com.badlogic.gdx.scenes.scene2d.ui.Dialog(title,
-                    skin) {
-                @Override
-                protected void result(Object object) {
-                    this.remove();
-                }
-            };
-            dialog.text(message);
-            dialog.button("OK");
-            dialog.pack();
-            dialog.setPosition(
-                    (stage.getWidth() - dialog.getWidth()) / 2,
-                    (stage.getHeight() - dialog.getHeight()) / 2);
-            stage.addActor(dialog);
-        });
     }
 
     private class NotchLever extends com.badlogic.gdx.scenes.scene2d.Actor {
@@ -1964,17 +2446,17 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     @Override
-    public void onCrash(Train train, Point pos, int speed) {
+    public void onCrash(letrain.vehicle.impl.rail.Train train, Point pos, int speed) {
         audioController.playOneShot("link", pos.getX(), pos.getY());
     }
 
     @Override
-    public void onContact(Train train, Point pos, int speed) {
+    public void onContact(letrain.vehicle.impl.rail.Train train, Point pos, int speed) {
         if (audioController != null && pos != null) {
             audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
             // Immediately stop audio for all locomotives in the train that hit something
             // This forces them to 'stall' and stop moving sounds instantly.
-            for (Locomotive loco : model.getLocomotives()) {
+            for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
                 if (loco.getTrain() != null && (loco.getSpeed() > 0 || loco.getTargetSpeed() > 0)) {
                     // Check if this loco's train is at the collision position
                     // Actually, a simpler way is to check all trains involved.
@@ -1992,13 +2474,13 @@ public class Gdx3DView extends ApplicationAdapter
     }
 
     @Override
-    public void onLink(Train train) {
+    public void onLink(letrain.vehicle.impl.rail.Train train) {
         audioController.playOneShot("link", model.getCursor().getPosition().getX(),
                 model.getCursor().getPosition().getY());
     }
 
     @Override
-    public void onUnlink(Train train) {
+    public void onUnlink(letrain.vehicle.impl.rail.Train train) {
         audioController.playOneShot("link", model.getCursor().getPosition().getX(),
                 model.getCursor().getPosition().getY());
     }

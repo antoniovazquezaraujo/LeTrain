@@ -4,80 +4,137 @@ import java.util.ArrayList;
 import java.util.List;
 
 import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.impl.rail.TrainEventListener;
 import letrain.visitor.Visitor;
 
-public class Station extends Sensor {
+public class Station extends Sensor implements TrainEventListener {
 
-    private List<StationEventListener> stationListeners = new ArrayList<>();
-    private List<StationEventListener> systemStationListeners = new ArrayList<>();
+    private transient List<StationEventListener> stationListeners = new ArrayList<>();
+    private transient List<StationEventListener> systemStationListeners = new ArrayList<>();
 
     public void addStationEventListener(StationEventListener listener) {
+        if (stationListeners == null)
+            stationListeners = new ArrayList<>();
         stationListeners.add(listener);
     }
 
     public void addSystemStationEventListener(StationEventListener listener) {
+        if (systemStationListeners == null)
+            systemStationListeners = new ArrayList<>();
         systemStationListeners.add(listener);
     }
 
     public void removeStationEventListener(StationEventListener listener) {
-        stationListeners.remove(listener);
+        if (stationListeners != null)
+            stationListeners.remove(listener);
     }
 
     public void removeAllStationEventListeners() {
-        stationListeners.clear();
+        if (stationListeners != null)
+            stationListeners.clear();
     }
 
     public void notifyLoad(Train train) {
-        for (StationEventListener l : stationListeners) {
-            l.onLoad(train);
+        if (stationListeners != null) {
+            for (StationEventListener l : stationListeners) {
+                l.onLoad(train);
+            }
         }
-        for (StationEventListener l : systemStationListeners) {
-            l.onLoad(train);
+        if (systemStationListeners != null) {
+            for (StationEventListener l : systemStationListeners) {
+                l.onLoad(train);
+            }
         }
     }
 
     public void notifyUnload(Train train) {
-        for (StationEventListener l : stationListeners) {
-            l.onUnload(train);
+        if (stationListeners != null) {
+            for (StationEventListener l : stationListeners) {
+                l.onUnload(train);
+            }
         }
-        for (StationEventListener l : systemStationListeners) {
-            l.onUnload(train);
+        if (systemStationListeners != null) {
+            for (StationEventListener l : systemStationListeners) {
+                l.onUnload(train);
+            }
         }
     }
 
     public void notifyStartLoad(Train train) {
-        for (StationEventListener l : stationListeners) {
-            l.onStartLoad(train);
+        if (stationListeners != null) {
+            for (StationEventListener l : stationListeners) {
+                l.onStartLoad(train);
+            }
         }
-        for (StationEventListener l : systemStationListeners) {
-            l.onStartLoad(train);
+        if (systemStationListeners != null) {
+            for (StationEventListener l : systemStationListeners) {
+                l.onStartLoad(train);
+            }
         }
     }
 
     public void notifyEndLoad(Train train) {
-        for (StationEventListener l : stationListeners) {
-            l.onEndLoad(train);
+        if (stationListeners != null) {
+            for (StationEventListener l : stationListeners) {
+                l.onEndLoad(train);
+            }
         }
-        for (StationEventListener l : systemStationListeners) {
-            l.onEndLoad(train);
+        if (systemStationListeners != null) {
+            for (StationEventListener l : systemStationListeners) {
+                l.onEndLoad(train);
+            }
         }
     }
 
     public void notifyStartUnload(Train train) {
-        for (StationEventListener l : stationListeners) {
-            l.onStartUnload(train);
+        if (stationListeners != null) {
+            for (StationEventListener l : stationListeners) {
+                l.onStartUnload(train);
+            }
         }
-        for (StationEventListener l : systemStationListeners) {
-            l.onStartUnload(train);
+        if (systemStationListeners != null) {
+            for (StationEventListener l : systemStationListeners) {
+                l.onStartUnload(train);
+            }
         }
     }
 
     public void notifyEndUnload(Train train) {
-        for (StationEventListener l : stationListeners) {
-            l.onEndUnload(train);
+        if (stationListeners != null) {
+            for (StationEventListener l : stationListeners) {
+                l.onEndUnload(train);
+            }
         }
-        for (StationEventListener l : systemStationListeners) {
-            l.onEndUnload(train);
+        if (systemStationListeners != null) {
+            for (StationEventListener l : systemStationListeners) {
+                l.onEndUnload(train);
+            }
+        }
+    }
+
+    public void notifyLink(Train train) {
+        if (stationListeners != null) {
+            for (StationEventListener l : stationListeners) {
+                l.onLink(train);
+            }
+        }
+        if (systemStationListeners != null) {
+            for (StationEventListener l : systemStationListeners) {
+                l.onLink(train);
+            }
+        }
+    }
+
+    public void notifyUnlink(Train train) {
+        if (stationListeners != null) {
+            for (StationEventListener l : stationListeners) {
+                l.onUnlink(train);
+            }
+        }
+        if (systemStationListeners != null) {
+            for (StationEventListener l : systemStationListeners) {
+                l.onUnlink(train);
+            }
         }
     }
 
@@ -89,24 +146,61 @@ public class Station extends Sensor {
     public void onEnterTrain(Train train, boolean isForward) {
         super.onEnterTrain(train, isForward);
         train.setStationId(getId());
-        for (StationEventListener l : stationListeners) {
-            l.onEnterTrain(train, isForward);
-        }
-        for (StationEventListener l : systemStationListeners) {
-            l.onEnterTrain(train, isForward);
-        }
+        train.addTrainEventListener(this);
+        notifyStationEvent(train, true, isForward);
     }
 
     @Override
     public void onExitTrain(Train train, boolean isForward) {
         super.onExitTrain(train, isForward);
         train.setStationId(0);
-        for (StationEventListener l : stationListeners) {
-            l.onExitTrain(train, isForward);
+        train.removeTrainEventListener(this);
+        notifyStationEvent(train, false, isForward);
+    }
+
+    public void notifyStationEvent(Train train, boolean isEnter, boolean isForward) {
+        if (stationListeners != null) {
+            for (StationEventListener l : stationListeners) {
+                if (isEnter)
+                    l.onEnterTrain(train, isForward);
+                else
+                    l.onExitTrain(train, isForward);
+            }
         }
-        for (StationEventListener l : systemStationListeners) {
-            l.onExitTrain(train, isForward);
+        if (systemStationListeners != null) {
+            for (StationEventListener l : systemStationListeners) {
+                if (isEnter)
+                    l.onEnterTrain(train, isForward);
+                else
+                    l.onExitTrain(train, isForward);
+            }
         }
+    }
+
+    @Override
+    public void onSpeedChanged(int speed) {
+    }
+
+    @Override
+    public void onSenseChanged(boolean forward) {
+    }
+
+    @Override
+    public void onLink(Train train) {
+        notifyLink(train);
+    }
+
+    @Override
+    public void onUnlink(Train train) {
+        notifyUnlink(train);
+    }
+
+    @Override
+    public void onCrash(Train train, letrain.map.Point pos, int speed) {
+    }
+
+    @Override
+    public void onContact(Train train, letrain.map.Point pos, int speed) {
     }
 
     @Override
