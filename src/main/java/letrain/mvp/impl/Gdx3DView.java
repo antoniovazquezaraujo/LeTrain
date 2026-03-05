@@ -396,15 +396,28 @@ public class Gdx3DView extends ApplicationAdapter
         // Window Style
         Window.WindowStyle windowStyle = new Window.WindowStyle();
         windowStyle.titleFont = uiFont;
-        // Create a background with a border (matching Cyan handles)
-        Pixmap pixmapWindow = new Pixmap(20, 20, Pixmap.Format.RGBA8888);
-        pixmapWindow.setColor(Color.CYAN); // Border color
-        pixmapWindow.fill();
-        pixmapWindow.setColor(Color.BLACK); // Background color
-        pixmapWindow.fillRectangle(6, 6, 8, 8); // 6px border
-        com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowBg = new com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable(
-                new com.badlogic.gdx.graphics.g2d.NinePatch(new Texture(pixmapWindow), 6, 6, 6, 6));
-        windowStyle.background = windowBg;
+
+        // Window Background - White Border (Default)
+        Pixmap pixWhite = new Pixmap(20, 20, Pixmap.Format.RGBA8888);
+        pixWhite.setColor(Color.WHITE);
+        pixWhite.fill();
+        pixWhite.setColor(Color.BLACK);
+        pixWhite.fillRectangle(6, 6, 8, 8);
+        com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowWhite = new com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable(
+                new com.badlogic.gdx.graphics.g2d.NinePatch(new Texture(pixWhite), 6, 6, 6, 6));
+        skin.add("window-white", windowWhite);
+
+        // Window Background - Cyan Border (Hover)
+        Pixmap pixCyan = new Pixmap(20, 20, Pixmap.Format.RGBA8888);
+        pixCyan.setColor(Color.CYAN);
+        pixCyan.fill();
+        pixCyan.setColor(Color.BLACK);
+        pixCyan.fillRectangle(6, 6, 8, 8);
+        com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowCyan = new com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable(
+                new com.badlogic.gdx.graphics.g2d.NinePatch(new Texture(pixCyan), 6, 6, 6, 6));
+        skin.add("window-cyan", windowCyan);
+
+        windowStyle.background = windowWhite;
         windowStyle.titleFontColor = Color.WHITE;
         skin.add("default", windowStyle);
 
@@ -425,7 +438,7 @@ public class Gdx3DView extends ApplicationAdapter
         // SplitPane Style
         SplitPane.SplitPaneStyle splitPaneStyle = new SplitPane.SplitPaneStyle();
         com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable handle = (com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable) skin
-                .newDrawable("white", Color.CYAN);
+                .newDrawable("white", Color.WHITE);
         handle.setMinWidth(6f);
         handle.setMinHeight(6f);
         splitPaneStyle.handle = handle;
@@ -434,7 +447,7 @@ public class Gdx3DView extends ApplicationAdapter
 
         SplitPane.SplitPaneStyle splitPaneStyleHover = new SplitPane.SplitPaneStyle(splitPaneStyle);
         com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable handleHover = (com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable) skin
-                .newDrawable("white", Color.WHITE);
+                .newDrawable("white", Color.CYAN);
         handleHover.setMinWidth(6f);
         handleHover.setMinHeight(6f);
         splitPaneStyleHover.handle = handleHover;
@@ -449,12 +462,16 @@ public class Gdx3DView extends ApplicationAdapter
         progressBarStyle.knobBefore = skin.newDrawable("white", Color.CYAN);
         skin.add("default-horizontal", progressBarStyle);
 
-        // Green Triangle for Insertion Buttons
-        Pixmap pixmapTriangle = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
-        pixmapTriangle.setColor(Color.GREEN);
-        // Triangle pointing left: (0, 8), (16, 0), (16, 16)
-        pixmapTriangle.fillTriangle(0, 8, 16, 0, 16, 16);
-        skin.add("green-triangle", new Texture(pixmapTriangle));
+        // Triangles for Insertion Buttons
+        Pixmap pixmapTriangleG = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
+        pixmapTriangleG.setColor(Color.GREEN);
+        pixmapTriangleG.fillTriangle(0, 8, 16, 0, 16, 16);
+        skin.add("green-triangle", new Texture(pixmapTriangleG));
+
+        Pixmap pixmapTriangleW = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
+        pixmapTriangleW.setColor(Color.WHITE);
+        pixmapTriangleW.fillTriangle(0, 8, 16, 0, 16, 16);
+        skin.add("white-triangle", new Texture(pixmapTriangleW));
 
         // Bottom UI Container
         Table mainBottomTable = new Table();
@@ -815,6 +832,12 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public boolean scrolled(float amountX, float amountY) {
+        com.badlogic.gdx.math.Vector2 stageCoords = stage.screenToStageCoordinates(
+                new com.badlogic.gdx.math.Vector2(Gdx.input.getX(), Gdx.input.getY()));
+        if (stage.hit(stageCoords.x, stageCoords.y, true) != null) {
+            return true; // Bloquear zoom si el ratón está sobre la UI
+        }
+
         if (cameraMode == CameraMode.MAP) {
             mapCameraHeight = com.badlogic.gdx.math.MathUtils.clamp(mapCameraHeight + amountY * 2f, 3f, 100f);
         } else if (cameraMode == CameraMode.ORBIT) {
@@ -1976,13 +1999,17 @@ public class Gdx3DView extends ApplicationAdapter
                     { "TRIGGERS", "" },
                     { "  sensor on train enter", "sensor 1 on train enter {\n  \n}" },
                     { "  sensor on train exit", "sensor 1 on train exit {\n  \n}" },
+                    { "  sensor on train ent fwd", "sensor 1 on train enter forward {\n  \n}" },
+                    { "  sensor on train ext bwd", "sensor 1 on train exit backward {\n  \n}" },
                     { "  fork on train enter", "fork 1 on train enter {\n  \n}" },
                     { "  fork on train exit", "fork 1 on train exit {\n  \n}" },
                     { "  station on train enter", "station 1 on train enter {\n  \n}" },
                     { "  station on train exit", "station 1 on train exit {\n  \n}" },
+                    { "  station on tr enter fwd", "station 1 on train enter forward {\n  \n}" },
                     { "  train on crash (fast)", "train 1 on crash {\n  \n}" },
                     { "  train on contact (slow)", "train 1 on contact {\n  \n}" },
-                    { "  train enter (global)", "train 1 enter {\n  \n}" },
+                    { "  train on contact fwd", "train 1 on contact forward {\n  \n}" },
+                    { "  train on crash bwd", "train 1 on crash backward {\n  \n}" },
                     { "", "" },
                     { "ACTIONS", "" },
                     { "  train set speed", "train 1 set speed 5;" },
@@ -2017,15 +2044,18 @@ public class Gdx3DView extends ApplicationAdapter
                     Table row = new Table();
                     Label l = new Label(r[0], skin, "monospace");
                     // Create a button with the green triangle
+                    // Create a button with white/green triangle hover behavior
                     com.badlogic.gdx.scenes.scene2d.ui.Button.ButtonStyle bs = new com.badlogic.gdx.scenes.scene2d.ui.Button.ButtonStyle();
-                    bs.up = skin.getDrawable("green-triangle");
+                    bs.up = skin.getDrawable("white-triangle");
+                    bs.over = skin.getDrawable("green-triangle");
+                    bs.down = skin.getDrawable("green-triangle");
                     com.badlogic.gdx.scenes.scene2d.ui.Button addBtn = new com.badlogic.gdx.scenes.scene2d.ui.Button(
                             bs);
 
                     addBtn.addListener(new ChangeListener() {
                         @Override
                         public void changed(ChangeEvent event, Actor actor) {
-                            insertAtCursor(textArea, r[1]);
+                            insertAtCursor(textArea, r[1] + "\n");
                         }
                     });
                     row.add(addBtn).left().size(16, 16).padRight(10);

@@ -9,7 +9,7 @@ trigger :
     | forkSelector      'on' trainSelector trainEvent 
     | semaphoreSelector 'on' trainSelector trainEvent 
     | stationSelector   'on' (trainSelector trainEvent | trainEvent trainSelector) 
-    | trainSelector     ( 'on' ('crash' | 'contact') | trainEvent )
+    | trainSelector     'on' ('crash' | 'contact') (sense)?
     ;
 
 sensorSelector    : 'sensor' NUMBER;
