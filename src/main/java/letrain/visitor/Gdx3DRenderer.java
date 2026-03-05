@@ -1457,17 +1457,19 @@ public class Gdx3DRenderer implements Visitor {
         instance.materials.get(0)
                 .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                         .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW));
-        instance.transform.setToTranslation(x + 0.5f, 0.09f, y + 0.5f);
+        // Raise to rail level (Y=0.08f) and scale Y by 10 to match rail height (0.2f
+        // total)
+        instance.transform.setToTranslation(x + 0.5f, 0.08f, y + 0.5f);
         instance.transform.rotate(0, 1, 0, angle - 90f);
-        instance.transform.scale(0.7f, 1f, 0.25f);
+        instance.transform.scale(0.7f, 10f, 0.25f);
         instances.add(instance);
 
-        // Render ID label above the sensor
+        // Render ID label flat on top of the sensor
         String idText = String.valueOf(sensor.getId());
-        float labelHeight = 0.25f;
+        float labelHeight = 0.19f; // Just above the new 0.20f top surface (0.08f + 0.10f) -> 0.18f + 0.01f margin
         labels.add(new VehicleLabel(new com.badlogic.gdx.math.Vector3(x + 0.5f, labelHeight, y + 0.5f), idText,
                 new com.badlogic.gdx.math.Vector3(0, 1, 0), new com.badlogic.gdx.math.Vector3(0, 0, -1),
-                com.badlogic.gdx.graphics.Color.YELLOW, 0.4f));
+                com.badlogic.gdx.graphics.Color.BLACK, 0.4f));
     }
 
     @Override
@@ -1624,6 +1626,7 @@ public class Gdx3DRenderer implements Visitor {
         ModelInstance mast = new ModelInstance(cylinderModel);
         mast.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(mastColor));
         mast.transform.setToTranslation(centerX, mastHeight / 2f, centerZ);
+        mast.transform.rotate(0, 1, 0, plateAngle); // Rotated to match angle
         mast.transform.scale(0.15f, mastHeight, 0.15f); // Thicker
         if (alpha < 1.0f) {
             mast.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
@@ -1635,6 +1638,7 @@ public class Gdx3DRenderer implements Visitor {
         ModelInstance board = new ModelInstance(wagonJewelModel);
         board.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(boardColor));
         board.transform.setToTranslation(centerX, mastHeight + (boardSize / 2f), centerZ);
+        board.transform.rotate(0, 1, 0, plateAngle); // Rotated to match angle
         board.transform.scale(boardSize, boardSize, boardSize);
         if (alpha < 1.0f) {
             board.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
