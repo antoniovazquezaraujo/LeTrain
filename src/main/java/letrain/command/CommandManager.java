@@ -271,12 +271,32 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> implements
             return (ExecutableCommand) (contextTrain) -> {
                 ForkRailTrack f = model.getFork(id);
                 if (f != null) {
-                    if ("straight".equals(dirText) || "normal".equals(dirText))
-                        f.setNormalRoute();
-                    else if ("curved".equals(dirText) || "alt".equals(dirText))
-                        f.setAlternativeRoute();
-                    else
+                    if ("straight".equals(dirText)) {
+                        if (f.getOriginalRoute() != null
+                                && f.getOriginalRoute().getFirst().isStraight(f.getOriginalRoute().getSecond())) {
+                            f.setNormalRoute();
+                        } else if (f.getAlternativeRoute() != null
+                                && f.getAlternativeRoute().getFirst().isStraight(f.getAlternativeRoute().getSecond())) {
+                            f.setAlternativeRoute();
+                        } else {
+                            f.setNormalRoute();
+                        }
+                    } else if ("curved".equals(dirText)) {
+                        boolean originalIsStraight = f.getOriginalRoute() != null
+                                && f.getOriginalRoute().getFirst().isStraight(f.getOriginalRoute().getSecond());
+                        boolean alternativeIsStraight = f.getAlternativeRoute() != null
+                                && f.getAlternativeRoute().getFirst().isStraight(f.getAlternativeRoute().getSecond());
+
+                        if (f.getOriginalRoute() != null && !originalIsStraight) {
+                            f.setNormalRoute();
+                        } else if (f.getAlternativeRoute() != null && !alternativeIsStraight) {
+                            f.setAlternativeRoute();
+                        } else {
+                            f.setAlternativeRoute();
+                        }
+                    } else {
                         f.flipRoute();
+                    }
                 }
             };
         } else if (ctx.trainAction() != null) {
