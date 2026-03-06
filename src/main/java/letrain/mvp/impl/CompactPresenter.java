@@ -267,8 +267,11 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
                 semaphoreManagerOnChar(keyEvent);
                 break;
             case TRAINS:
-                // Not managed here!!
-                // trainManagerOnChar(keyEvent);
+                if (keyEvent.getKeyType() == KeyType.Backspace) {
+                    deleteVehicle();
+                } else if (keyEvent.getKeyType() == KeyType.Character) {
+                    trainManagerOnChar(keyEvent);
+                }
                 break;
             case LINK:
                 linkerOnChar(keyEvent);
@@ -502,6 +505,32 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         newPos.move(cursorDir, 1);
         model.getCursor().setDir(cursorDir);
         model.getCursor().setPosition(newPos);
+    }
+
+    private void deleteVehicle() {
+        letrain.map.Dir cursorDir = model.getCursor().getDir();
+        // Move back to the previous track
+        model.getCursor().getPosition().move(cursorDir.inverse());
+
+        letrain.track.rail.RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition());
+        if (track != null && track.getLinker() != null) {
+            letrain.vehicle.impl.Linker linker = track.getLinker();
+            if (linker instanceof letrain.vehicle.impl.rail.Locomotive) {
+                model.removeLocomotive((letrain.vehicle.impl.rail.Locomotive) linker);
+            } else if (linker instanceof letrain.vehicle.impl.rail.Wagon) {
+                model.removeWagon((letrain.vehicle.impl.rail.Wagon) linker);
+            }
+            track.removeLinker();
+
+            // Restore proper cursor direction before curve
+            letrain.map.Dir entryDir = track.getRouter().getDir(cursorDir);
+            if (entryDir != null) {
+                model.getCursor().setDir(entryDir.inverse());
+            }
+        } else {
+            // Restore cursor if nothing was deleted
+            model.getCursor().getPosition().move(cursorDir);
+        }
     }
 
     private void forkManagerOnChar(KeyStroke keyEvent) {

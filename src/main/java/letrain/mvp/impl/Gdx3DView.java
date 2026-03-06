@@ -677,13 +677,42 @@ public class Gdx3DView extends ApplicationAdapter
             // Seleccionamos la locomotora recién creada para que el modelo la reconozca
             model.selectLocomotive(locoId);
             track.enterLinkerFromDir(cursorDir.inverse(), locomotive);
+            cursorDir = locomotive.getDir();
         } else {
             letrain.vehicle.impl.rail.Wagon wagon = new letrain.vehicle.impl.rail.Wagon("" + c);
             model.addWagon(wagon);
             track.enterLinkerFromDir(cursorDir.inverse(), wagon);
+            cursorDir = wagon.getDir();
         }
         // Avanzar el cursor automáticamente para facilitar la creación de trenes largos
+        model.getCursor().setDir(cursorDir);
         model.getCursor().getPosition().move(cursorDir);
+    }
+
+    private void deleteVehicle() {
+        letrain.map.Dir cursorDir = model.getCursor().getDir();
+        // Move back to the previous track
+        model.getCursor().getPosition().move(cursorDir.inverse());
+
+        letrain.track.rail.RailTrack track = model.getCursorRailTrack();
+        if (track != null && track.getLinker() != null) {
+            letrain.vehicle.impl.Linker linker = track.getLinker();
+            if (linker instanceof letrain.vehicle.impl.rail.Locomotive) {
+                model.removeLocomotive((letrain.vehicle.impl.rail.Locomotive) linker);
+            } else if (linker instanceof letrain.vehicle.impl.rail.Wagon) {
+                model.removeWagon((letrain.vehicle.impl.rail.Wagon) linker);
+            }
+            track.removeLinker();
+
+            // Restore proper cursor direction before curve
+            letrain.map.Dir entryDir = track.getRouter().getDir(cursorDir);
+            if (entryDir != null) {
+                model.getCursor().setDir(entryDir.inverse());
+            }
+        } else {
+            // Restore cursor if nothing was deleted
+            model.getCursor().getPosition().move(cursorDir);
+        }
     }
 
     @Override
@@ -1287,6 +1316,8 @@ public class Gdx3DView extends ApplicationAdapter
             case TRAINS:
                 if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character) {
                     createVehicle(stroke.getCharacter());
+                } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Backspace) {
+                    deleteVehicle();
                 }
                 break;
             default:
