@@ -49,10 +49,9 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
 
     public void setSpeed(float speed) {
         this.speed = speed;
-        // Map 0..1 speed to playback rate:
-        // 0% speed = 0.8x playback (Idle rumble)
-        // 100% speed = 2.0x playback (High revs)
-        this.playbackRate = 0.8f + (speed * 1.2f);
+        // The TrainSynthesizer now sends the exact calculated pitch multiplier
+        // directly.
+        this.playbackRate = speed;
     }
 
     public void setLoopPoints(float start, float end) {

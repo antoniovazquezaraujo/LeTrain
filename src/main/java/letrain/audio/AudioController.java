@@ -115,7 +115,6 @@ public class AudioController {
             // but we can modify the default in constructor or here if we had methods.
             // Since WavSource is ours, I'll add methods or just modify the defaults.
 
-
             oneShotSources.add(source);
             mixer.addSource(source);
         } else {
@@ -180,6 +179,19 @@ public class AudioController {
             TrainSynthesizer synth = synthesizers.get(loco.getId());
             if (synth == null) {
                 synth = new TrainSynthesizer();
+
+                final letrain.vehicle.impl.rail.Locomotive trackedLoco = loco;
+                synth.addListener(new TrainSynthesizer.SynthesizerListener() {
+                    @Override
+                    public void onNotchChanged(int notch) {
+                        trackedLoco.setAcousticSpeedSignal(notch);
+                    }
+
+                    @Override
+                    public void onSpeedUpdate(float acousticSpeed) {
+                    }
+                });
+
                 // Audio Physics Defaults
                 // 3m Ref Distance (Full volume), 1000m Max Distance (Silence)
                 // 1.0x Filter Sensitivity (Logarithmic Falloff)
@@ -196,7 +208,7 @@ public class AudioController {
             }
 
             // Sync Throttle (Engine Sound)
-            int targetNotch = Math.min(loco.getTargetSpeed(), 9);
+            int targetNotch = Math.min(loco.getTargetSpeed(), 10);
             synth.setThrottle(targetNotch);
 
             // Sync Motion (Rolling Sound)
@@ -217,6 +229,7 @@ public class AudioController {
 
             // Sync States
             loco.setEngineStarting(synth.isEngineStarting());
+            loco.setEngineTransitioning(synth.isTransitioning());
             boolean braking = loco.isBraking();
             if (braking) {
             }

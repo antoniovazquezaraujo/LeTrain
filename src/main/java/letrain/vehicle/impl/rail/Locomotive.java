@@ -106,6 +106,17 @@ public class Locomotive extends Linker implements Tractor {
                 return moved;
             }
 
+            // We apply sound-driven speed primarily on rail boundaries to avoid visual jump
+            // glitches.
+            // But if we are parked at 0, we can safely apply it immediately to jumpstart
+            // the motor.
+            if (currentSpeed == 0 && acousticSpeedSignal != -1) {
+                if (currentSpeed != acousticSpeedSignal) {
+                    setCurrentSpeed(acousticSpeedSignal);
+                }
+                acousticSpeedSignal = -1;
+            }
+
             // Handle acceleration from 0 - allows getting unstuck from speed 0
             if (currentSpeed == 0 && targetSpeed > 0) {
                 updateInertia();
@@ -116,6 +127,16 @@ public class Locomotive extends Linker implements Tractor {
                 if (getTrain().advance()) {
                     moved = true;
                     incDistanceTraveled();
+
+                    // Apply mid-movement acoustic gear shifts exactly on rail boundaries
+                    // to prevent visual interpolation snapping (jumping backwards)
+                    if (acousticSpeedSignal != -1) {
+                        if (currentSpeed != acousticSpeedSignal) {
+                            setCurrentSpeed(acousticSpeedSignal);
+                        }
+                        acousticSpeedSignal = -1;
+                    }
+
                     updateInertia();
                     resetTurns();
                     updateLimitedSpeed();
@@ -146,8 +167,14 @@ public class Locomotive extends Linker implements Tractor {
 
         railsSinceLastSpeedChange++;
 
-        // Factor de inercia: 2 raíles por cada punto de velocidad actual (acelerando)
-        // O 1 raíl por cada punto si está frenando (frena más rápido).
+        // When engine transitions are active, we relinquish speed control to the Audio
+        // Gear Syncer
+        if (engineTransitioning) {
+            railsSinceLastSpeedChange = 0;
+            return;
+        }
+
+        // Factor de inercia fallback only if audio is disabled
         int factor = isBraking() ? 1 : 2;
         int neededRails = Math.max(1, currentSpeed * factor);
 
@@ -171,6 +198,22 @@ public class Locomotive extends Linker implements Tractor {
 
     public boolean isEngineStarting() {
         return engineStarting;
+    }
+
+    private boolean engineTransitioning = false;
+
+    public void setEngineTransitioning(boolean transitioning) {
+        this.engineTransitioning = transitioning;
+    }
+
+    public boolean isEngineTransitioning() {
+        return engineTransitioning;
+    }
+
+    private volatile int acousticSpeedSignal = -1;
+
+    public void setAcousticSpeedSignal(int notch) {
+        this.acousticSpeedSignal = notch;
     }
 
     public void incSpeed() {
