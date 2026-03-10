@@ -1,11 +1,14 @@
 package letrain.track;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 import letrain.map.Dir;
 import letrain.map.Point;
+import letrain.utils.SerializationHelper;
 import letrain.vehicle.impl.rail.Train;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
@@ -29,6 +32,17 @@ public class Sensor implements Renderable, Serializable {
 
     public Sensor(int id) {
         setId(id);
+    }
+
+    /**
+     * Reinitializes transient fields after deserialization.
+     * Ensures listener collections are not null to prevent NPE.
+     */
+    private void readObject(ObjectInputStream ois)
+            throws IOException, ClassNotFoundException {
+        ois.defaultReadObject();
+        this.listeners = SerializationHelper.ensureListInitialized(listeners);
+        this.systemListeners = SerializationHelper.ensureListInitialized(systemListeners);
     }
 
     public void setId(int i) {

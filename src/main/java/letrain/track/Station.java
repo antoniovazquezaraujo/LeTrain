@@ -1,8 +1,11 @@
 package letrain.track;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import letrain.utils.SerializationHelper;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.TrainEventListener;
 import letrain.visitor.Visitor;
@@ -140,6 +143,17 @@ public class Station extends Sensor implements TrainEventListener {
 
     public Station(int id) {
         super(id);
+    }
+
+    /**
+     * Reinitializes transient fields after deserialization.
+     * Ensures listener collections are not null to prevent NPE.
+     */
+    private void readObject(ObjectInputStream ois)
+            throws IOException, ClassNotFoundException {
+        ois.defaultReadObject();
+        this.stationListeners = SerializationHelper.ensureListInitialized(stationListeners);
+        this.systemStationListeners = SerializationHelper.ensureListInitialized(systemStationListeners);
     }
 
     @Override

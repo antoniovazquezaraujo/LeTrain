@@ -40,6 +40,7 @@ import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
+import letrain.utils.ValidationUtils;
 import letrain.visitor.Gdx3DRenderer;
 
 public class Gdx3DView extends ApplicationAdapter
@@ -109,7 +110,7 @@ public class Gdx3DView extends ApplicationAdapter
     private long locomotiveInputTimeout = 0;
 
     public Gdx3DView(letrain.mvp.impl.Model model) {
-        this.model = model;
+        this.model = ValidationUtils.requireNonNull(model, "model");
         this.renderer = new Gdx3DRenderer();
         this.trackMaker = new RailTrackMaker(this);
         this.audioController = new letrain.audio.AudioController(model);

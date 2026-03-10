@@ -1,5 +1,7 @@
 package letrain.track.rail;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -9,6 +11,7 @@ import letrain.map.DynamicRouter;
 import letrain.map.impl.ForkRouter;
 import letrain.track.ForkEventListener;
 import letrain.utils.Pair;
+import letrain.utils.SerializationHelper;
 import letrain.visitor.Visitor;
 
 public class ForkRailTrack extends RailTrack implements DynamicRouter {
@@ -42,6 +45,17 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     public ForkRailTrack(int id) {
         setId(id);
+    }
+
+    /**
+     * Reinitializes transient fields after deserialization.
+     * Ensures listener collections are not null to prevent NPE.
+     */
+    private void readObject(ObjectInputStream ois)
+            throws IOException, ClassNotFoundException {
+        ois.defaultReadObject();
+        this.listeners = SerializationHelper.ensureListInitialized(listeners);
+        this.systemListeners = SerializationHelper.ensureListInitialized(systemListeners);
     }
 
     public int getId() {

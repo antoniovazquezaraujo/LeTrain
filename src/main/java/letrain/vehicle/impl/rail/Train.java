@@ -1,5 +1,7 @@
 package letrain.vehicle.impl.rail;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -19,6 +21,8 @@ import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
+import letrain.utils.SerializationHelper;
+import letrain.utils.ValidationUtils;
 import letrain.vehicle.Destructible;
 import letrain.vehicle.Transportable;
 import letrain.vehicle.impl.Linker;
@@ -104,45 +108,55 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public void notifyLink() {
-        trainListeners.forEach(l -> l.onLink(this));
+        if (trainListeners != null) {
+            trainListeners.forEach(l -> l.onLink(this));
+        }
     }
 
     public void notifyUnlink() {
-        trainListeners.forEach(l -> l.onUnlink(this));
+        if (trainListeners != null) {
+            trainListeners.forEach(l -> l.onUnlink(this));
+        }
     }
 
     public void onEnterSensor(letrain.track.Sensor sensor, boolean isForward) {
+        ValidationUtils.requireNonNull(sensor, "sensor");
         if (isNotifying)
             return;
         isNotifying = true;
         try {
-            trainListeners.forEach(l -> {
-                if (l != sensor) {
-                    l.onEnterTrain(this, isForward);
-                }
-            });
+            if (trainListeners != null) {
+                trainListeners.forEach(l -> {
+                    if (l != sensor) {
+                        l.onEnterTrain(this, isForward);
+                    }
+                });
+            }
         } finally {
             isNotifying = false;
         }
     }
 
     public void onExitSensor(letrain.track.Sensor sensor, boolean isForward) {
+        ValidationUtils.requireNonNull(sensor, "sensor");
         if (isNotifying)
             return;
         isNotifying = true;
         try {
-            trainListeners.forEach(l -> {
-                if (l != sensor) {
-                    l.onExitTrain(this, isForward);
-                }
-            });
+            if (trainListeners != null) {
+                trainListeners.forEach(l -> {
+                    if (l != sensor) {
+                        l.onExitTrain(this, isForward);
+                    }
+                });
+            }
         } finally {
             isNotifying = false;
         }
     }
 
     public Train(int id) {
-        setId(id);
+        this.id = ValidationUtils.requirePositive(id, "train id");
         this.linkers = new LinkedList<>();
         this.tractors = new ArrayList<>();
         this.linkersToJoin = new LinkedList<>();
@@ -151,6 +165,17 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
     public int getId() {
         return this.id;
+    }
+
+    /**
+     * Reinitializes transient fields after deserialization.
+     * Ensures listener collections are not null to prevent NPE.
+     */
+    private void readObject(ObjectInputStream ois)
+            throws IOException, ClassNotFoundException {
+        ois.defaultReadObject();
+        this.trainListeners = SerializationHelper.ensureListInitializedConcurrent(trainListeners);
+        this.isNotifying = false;
     }
 
     public void addLinkerToJoin() {

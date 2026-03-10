@@ -1,5 +1,7 @@
 package letrain.mvp.impl;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,6 +23,7 @@ import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
+import letrain.utils.SerializationHelper;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
@@ -153,6 +156,16 @@ public class Model implements Serializable, letrain.mvp.Model {
         if (!getStations().isEmpty()) {
             selectedStation = getStations().get(selectedStationIndex);
         }
+    }
+
+    /**
+     * Reinitializes transient fields after deserialization.
+     * Ensures listener collections are not null to prevent NPE.
+     */
+    private void readObject(ObjectInputStream ois)
+            throws IOException, ClassNotFoundException {
+        ois.defaultReadObject();
+        this.trainEventListeners = SerializationHelper.ensureListInitialized(trainEventListeners);
     }
 
     @Override
