@@ -9,7 +9,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
@@ -51,7 +50,7 @@ public class Gdx3DView extends ApplicationAdapter
         letrain.vehicle.impl.rail.TrainEventListener {
     private static final Logger log = LoggerFactory.getLogger(Gdx3DView.class);
     private static final String DEFAULT_SAVEGAME_FILENAME = "savegame.dat";
-    private PerspectiveCamera cam;
+    private com.badlogic.gdx.graphics.PerspectiveCamera cam;
     private ModelBatch modelBatch;
     private ModelBuilder modelBuilder;
     private com.badlogic.gdx.graphics.g3d.decals.DecalBatch decalBatch;
@@ -117,12 +116,15 @@ public class Gdx3DView extends ApplicationAdapter
     private long stationInputTimeout = 0;
     private long locomotiveInputTimeout = 0;
 
+    private final CameraController cameraController;
+
     public Gdx3DView(letrain.mvp.impl.Model model) {
         this.model = ValidationUtils.requireNonNull(model, "model");
         this.renderer = new Gdx3DRenderer();
         this.trackMaker = new RailTrackMaker(this);
         this.audioController = new letrain.audio.AudioController(model);
         this.gameSaveService = new GameSaveService();
+        this.cameraController = new CameraController(model);
 
         // Use the initial cursor position as the center for initial ground loading
         letrain.map.Point startPos = model.getCursor().getPosition();
@@ -190,13 +192,7 @@ public class Gdx3DView extends ApplicationAdapter
         environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.5f, 0.5f, 0.5f, 1f));
         environment.add(new DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f));
 
-        cam = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        letrain.map.Point startPos = model.getCursor().getPosition();
-        cam.position.set(startPos.getX() + 20f, 20f, startPos.getY() + 20f);
-        cam.lookAt(startPos.getX() + 0.5f, 0, startPos.getY() + 0.5f);
-        cam.near = 1f;
-        cam.far = 1000f;
-        cam.update();
+        cam = cameraController.init(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         modelBuilder = new ModelBuilder();
 
@@ -615,18 +611,7 @@ public class Gdx3DView extends ApplicationAdapter
     public boolean keyTyped(char character) {
         // --- 1. ABSOLUTE GLOBAL CAMERA TOGGLE ---
         if (character == 'c' || character == 'C') {
-            if (cameraMode == CameraMode.ORBIT) {
-                // Skip CAB mode if there are no locomotives to follow
-                if (!model.getLocomotives().isEmpty()) {
-                    cameraMode = CameraMode.CAB;
-                } else {
-                    cameraMode = CameraMode.MAP;
-                }
-            } else if (cameraMode == CameraMode.CAB) {
-                cameraMode = CameraMode.MAP;
-            } else {
-                cameraMode = CameraMode.ORBIT;
-            }
+            cameraController.cycleMode(!model.getLocomotives().isEmpty());
             return true;
         }
 
@@ -877,27 +862,9 @@ public class Gdx3DView extends ApplicationAdapter
             return true; // Bloquear zoom si el ratón está sobre la UI
         }
 
-        if (cameraMode == CameraMode.MAP) {
-            mapCameraHeight = com.badlogic.gdx.math.MathUtils.clamp(mapCameraHeight + amountY * 2f, 3f, 100f);
-        } else if (cameraMode == CameraMode.ORBIT) {
-            targetCameraDistance = com.badlogic.gdx.math.MathUtils.clamp(targetCameraDistance + amountY, 3f, 40f);
-        }
+        cameraController.zoom(amountY);
         return true;
     }
-
-    private com.badlogic.gdx.math.Vector3 camTarget = new com.badlogic.gdx.math.Vector3();
-    private float cameraAngle = 45f; // Ángulo de rotación de la cámara alrededor del punto focal (en grados)
-    private float targetCameraAngle = 45f;
-    private float cameraDistance = 8.5f; // Distancia horizontal de la cámara al punto focal
-    private float targetCameraDistance = 8.5f;
-    private com.badlogic.gdx.math.Vector2 currentCabDirection = new com.badlogic.gdx.math.Vector2(0, 1);
-    private float mapCameraHeight = 15f; // Altura para la vista MAP
-
-    private enum CameraMode {
-        ORBIT, CAB, MAP
-    }
-
-    private CameraMode cameraMode = CameraMode.ORBIT;
 
     private float stateTime = 0f;
 
@@ -936,10 +903,10 @@ public class Gdx3DView extends ApplicationAdapter
         renderer.setAnimationAlpha(alpha);
 
         // 2. ACTUALIZAR CÁMARA ANTES QUE EL AUDIO
-        updateCamera(alpha);
+        cameraController.update(alpha);
 
         // 3. Sincronizar Audio con la posición REAL de la cámara de este frame
-        float camAngle = (float) Math.atan2(cam.direction.z, cam.direction.x);
+        float camAngle = cameraController.getListenerAngle();
         audioController.setListenerPosition(cam.position.x, cam.position.z, cam.position.y, camAngle);
         audioController.update();
 
@@ -1045,101 +1012,7 @@ public class Gdx3DView extends ApplicationAdapter
         stage.draw();
     }
 
-    private void updateCamera(float alpha) {
-        // Centrar cámara en el cursor o en la locomotora seleccionada
-        float targetX, targetZ;
-        if ((model.getMode() == letrain.mvp.Model.GameMode.DRIVE || model.getMode() == letrain.mvp.Model.GameMode.LINK)
-                && model.getSelectedLocomotive() != null) {
-            letrain.vehicle.impl.rail.Locomotive selected = model.getSelectedLocomotive();
-            com.badlogic.gdx.math.Vector2 interpPos = getInterpolatedPosition(selected, alpha);
-            targetX = interpPos.x + 0.5f;
-            targetZ = interpPos.y + 0.5f;
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS && model.getSelectedFork() != null) {
-            letrain.track.rail.ForkRailTrack selected = model.getSelectedFork();
-            targetX = selected.getPosition().getX() + 0.5f;
-            targetZ = selected.getPosition().getY() + 0.5f;
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES && model.getSelectedSemaphore() != null) {
-            letrain.track.RailSemaphore selected = model.getSelectedSemaphore();
-            targetX = selected.getPosition().getX() + 0.5f;
-            targetZ = selected.getPosition().getY() + 0.5f;
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS && model.getSelectedStation() != null) {
-            letrain.track.Station selected = model.getSelectedStation();
-            targetX = selected.getPosition().getX() + 0.5f;
-            targetZ = selected.getPosition().getY() + 0.5f;
-        } else {
-            letrain.map.Point cursorState = model.getCursor().getPosition();
-            targetX = cursorState.getX() + 0.5f;
-            targetZ = cursorState.getY() + 0.5f;
-        }
-
-        // Calcular posición de cámara
-        if (cameraMode == CameraMode.CAB) {
-            letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
-            if (loco == null && !model.getLocomotives().isEmpty()) {
-                loco = model.getLocomotives().get(0);
-            }
-
-            if (loco != null) {
-                // Posición interpolada de la locomotora (visual)
-                com.badlogic.gdx.math.Vector2 interpPos = getInterpolatedPosition(loco, alpha);
-                float x = interpPos.x + 0.5f;
-                float z = interpPos.y + 0.5f;
-
-                // Dirección de la locomotora para mirar hacia adelante
-                letrain.map.Dir d = loco.getDir();
-                float dx = letrain.visitor.Gdx3DRenderer.getDirX(d);
-                float dz = letrain.visitor.Gdx3DRenderer.getDirZ(d);
-
-                com.badlogic.gdx.math.Vector2 targetDir = new com.badlogic.gdx.math.Vector2(dx, dz);
-
-                // Interpolamos currentCabDirection hacia targetDir
-                currentCabDirection.lerp(targetDir, 0.05f);
-                currentCabDirection.nor();
-
-                float smoothDx = currentCabDirection.x;
-                float smoothDz = currentCabDirection.y;
-
-                // Altura de cabina ajustada: "Chase Cam"
-                float camX = x - smoothDx * 1.2f;
-                float camY = 2.0f;
-                float camZ = z - smoothDz * 1.2f;
-
-                cam.position.set(camX, camY, camZ);
-                cam.lookAt(x + smoothDx * 5f, 0.5f, z + smoothDz * 5f);
-                cam.up.set(0, 1, 0);
-            }
-        }
-
-        if (cameraMode == CameraMode.ORBIT) {
-            // Interpolación del punto de enfoque solo cuando el objetivo cambia
-            camTarget.lerp(new com.badlogic.gdx.math.Vector3(targetX, 0, targetZ), 0.05f);
-
-            // Interpolación de ángulo y distancia para suavidad
-            cameraAngle = com.badlogic.gdx.math.MathUtils.lerp(cameraAngle, targetCameraAngle, 0.1f);
-            cameraDistance = com.badlogic.gdx.math.MathUtils.lerp(cameraDistance, targetCameraDistance, 0.1f);
-
-            // Calcular posición de cámara usando ángulo y distancia horizontal
-            float angleRad = cameraAngle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
-            float camX = camTarget.x + cameraDistance * com.badlogic.gdx.math.MathUtils.sin(angleRad);
-            float camZ = camTarget.z + cameraDistance * com.badlogic.gdx.math.MathUtils.cos(angleRad);
-            // ORBIT height now follows distance slightly for a more natural zoom (30%
-            // distance)
-            float camY = Math.max(2.0f, cameraDistance * 0.7f);
-
-            cam.position.set(camX, camY, camZ);
-            cam.lookAt(camTarget);
-            cam.up.set(0, 1, 0);
-        }
-
-        if (cameraMode == CameraMode.MAP) {
-            // Top-down view
-            camTarget.lerp(new com.badlogic.gdx.math.Vector3(targetX, 0, targetZ), 0.05f);
-            cam.position.set(camTarget.x, mapCameraHeight, camTarget.z);
-            cam.lookAt(camTarget.x, 0, camTarget.z);
-            cam.up.set(0, 0, -1); // "Up" is north in top-down view
-        }
-        cam.update();
-    }
+    // updateCamera(alpha) ha sido extraído a CameraController; se mantiene aquí solo la delegación.
 
     private void updateUIData() {
         // Update HUD (Finances)
@@ -1219,24 +1092,16 @@ public class Gdx3DView extends ApplicationAdapter
         // Global Camera Zoom/Rotation (Alt + Arrows)
         if (stroke.isAltDown()) {
             if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
-                targetCameraAngle -= 15f;
+                cameraController.rotateOrbit(-15f);
                 return;
             } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
-                targetCameraAngle += 15f;
+                cameraController.rotateOrbit(15f);
                 return;
             } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
-                if (cameraMode == CameraMode.MAP) {
-                    mapCameraHeight = Math.max(3f, mapCameraHeight - 1f);
-                } else {
-                    targetCameraDistance = Math.max(3f, targetCameraDistance - 1f);
-                }
+                cameraController.zoomStep(-1f);
                 return;
             } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
-                if (cameraMode == CameraMode.MAP) {
-                    mapCameraHeight = Math.min(100f, mapCameraHeight + 1f);
-                } else {
-                    targetCameraDistance = Math.min(40f, targetCameraDistance + 1f);
-                }
+                cameraController.zoomStep(1f);
                 return;
             }
         }
@@ -2374,9 +2239,7 @@ public class Gdx3DView extends ApplicationAdapter
     @Override
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true);
-        cam.viewportWidth = width;
-        cam.viewportHeight = height;
-        cam.update();
+        cameraController.resize(width, height);
     }
 
     private com.badlogic.gdx.math.Vector2 getInterpolatedPosition(letrain.vehicle.impl.rail.Locomotive locomotive,
