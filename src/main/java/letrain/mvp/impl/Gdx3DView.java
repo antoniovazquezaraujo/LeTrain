@@ -2,6 +2,7 @@ package letrain.mvp.impl;
 
 import java.io.File;
 import java.util.List;
+import java.util.Optional;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -49,6 +50,7 @@ public class Gdx3DView extends ApplicationAdapter
         implements letrain.mvp.View, letrain.mvp.Presenter, com.badlogic.gdx.InputProcessor,
         letrain.vehicle.impl.rail.TrainEventListener {
     private static final Logger log = LoggerFactory.getLogger(Gdx3DView.class);
+    private static final String DEFAULT_SAVEGAME_FILENAME = "savegame.dat";
     private PerspectiveCamera cam;
     private ModelBatch modelBatch;
     private ModelBuilder modelBuilder;
@@ -102,6 +104,9 @@ public class Gdx3DView extends ApplicationAdapter
     // Audio
     private letrain.audio.AudioController audioController;
 
+    // Persistence
+    private final GameSaveService gameSaveService;
+
     // Multi-digit selection state (Point 20)
     private int forkIdAccumulator = 0;
     private int semaphoreIdAccumulator = 0;
@@ -117,6 +122,7 @@ public class Gdx3DView extends ApplicationAdapter
         this.renderer = new Gdx3DRenderer();
         this.trackMaker = new RailTrackMaker(this);
         this.audioController = new letrain.audio.AudioController(model);
+        this.gameSaveService = new GameSaveService();
 
         // Use the initial cursor position as the center for initial ground loading
         letrain.map.Point startPos = model.getCursor().getPosition();
@@ -1636,14 +1642,17 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void onNewGame() {
+        // Not used in 3D view (handled by presenter/model directly).
     }
 
     @Override
     public void onPlay() {
+        // Not used in 3D view (handled by presenter/model directly).
     }
 
     @Override
     public void setProgram(String program) {
+        // Not used in 3D view (program is set via onEditCommands/onLoadCommands).
     }
 
     @Override
@@ -1683,58 +1692,72 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void setMapScrollPage(Point pos) {
+        // Not used in 3D view.
     }
 
     @Override
     public void paint() {
+        // Not used in 3D view (LibGDX render loop drives drawing).
     }
 
     @Override
     public void clear() {
+        // Not used in 3D view.
     }
 
     @Override
     public void set(int x, int y, String c) {
+        // Not used in 3D view.
     }
 
     @Override
     public void setFgColor(TextColor color) {
+        // Not used in 3D view.
     }
 
     @Override
     public void setBgColor(TextColor color) {
+        // Not used in 3D view.
     }
 
     @Override
     public void setPageOfPos(int x, int y) {
+        // Not used in 3D view.
     }
 
     @Override
     public void clear(int x, int y) {
+        // Not used in 3D view.
     }
 
     @Override
     public void fill(int x, int y, int width, int height, String c) {
+        // Not used in 3D view.
     }
 
     @Override
     public void box(int x, int y, int width, int height) {
+        // Not used in 3D view.
     }
 
     @Override
     public void setStatusBarText(String info) {
+        // Not used in 3D view.
     }
 
     @Override
     public void setInfoBarText(String info) {
+        // Not used in 3D view.
     }
 
     @Override
     public void setMenu(List<GameModeMenuOption> options) {
+        // Not used in 3D view (menu is rendered via Scene2D).
     }
 
     @Override
     public void setHelpBarText(String info) {
+        // Not used in 3D view.
     }
 
     @Override
@@ -1744,81 +1767,94 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public KeyStroke readKey() {
+        // Not used in 3D view (input handled by LibGDX).
         return null;
     }
 
     @Override
     public void setScreen(com.googlecode.lanterna.screen.Screen screen) {
+        // Not used in 3D view.
     }
 
     @Override
     public TextColor getFgColor() {
+        // Not used in 3D view.
         return null;
     }
 
     @Override
     public void onSaveGame(File file) {
-        try (java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(new java.io.FileOutputStream(file))) {
-            oos.writeObject(model);
-            log.info("Game saved successfully to {}", file.getAbsolutePath());
-        } catch (java.io.IOException e) {
-            log.error("Error saving game to {}", file.getAbsolutePath(), e);
+        if (file == null) {
+            log.warn("Ignoring save request with null file");
+            return;
+        }
+        boolean ok = gameSaveService.save(model, file);
+        if (!ok) {
+            showMessage("Save Error", "Could not save game to\n" + file.getAbsolutePath());
+        }
+    }
+
+    private void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) throws ReflectiveOperationException {
+        java.lang.reflect.Field modelField = Gdx3DView.class.getDeclaredField("model");
+        modelField.setAccessible(true);
+        modelField.set(this, loadedModel);
+
+        log.info("Game loaded successfully from {}", file.getAbsolutePath());
+
+        // Refresh references
+        trackMaker = new RailTrackMaker(this);
+        audioController = new letrain.audio.AudioController(model);
+
+        // RegisterPresenter as listener
+        model.addTrainEventListener(this);
+
+        // Re-establish script listeners
+        if (model.getProgram() != null && !model.getProgram().isEmpty()) {
+            model.setProgram(model.getProgram());
+        }
+
+        // Re-establish system listeners
+        ((letrain.mvp.impl.Model) model).reestablishSystemListeners();
+
+        // Re-attach stations as listeners to trains they are hosting
+        for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
+            letrain.vehicle.impl.rail.Train train = loco.getTrain();
+            if (train != null && train.getStationId() != 0) {
+                for (letrain.track.Station station : model.getStations()) {
+                    if (station.getId() == train.getStationId()) {
+                        train.addTrainEventListener(station);
+                        break;
+                    }
+                }
+            }
         }
     }
 
     @Override
     public void onLoadGame(File file) {
-        try (java.io.ObjectInputStream ois = new java.io.ObjectInputStream(new java.io.FileInputStream(file))) {
-            letrain.mvp.impl.Model loadedModel = (letrain.mvp.impl.Model) ois.readObject();
-
-            // Hack to update final model field using Reflection
-            try {
-                java.lang.reflect.Field modelField = Gdx3DView.class.getDeclaredField("model");
-                modelField.setAccessible(true);
-                modelField.set(this, loadedModel);
-                log.info("Game loaded successfully from {}", file.getAbsolutePath());
-
-                // Refresh references
-                trackMaker = new RailTrackMaker(this);
-                audioController = new letrain.audio.AudioController(model);
-
-                // RegisterPresenter as listener
-                model.addTrainEventListener(this);
-
-                // Re-establish script listeners
-                if (model.getProgram() != null && !model.getProgram().isEmpty()) {
-                    model.setProgram(model.getProgram());
-                }
-
-                // Re-establish system listeners
-                ((letrain.mvp.impl.Model) model).reestablishSystemListeners();
-
-                // Re-attach stations as listeners to trains they are hosting
-                for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
-                    letrain.vehicle.impl.rail.Train train = loco.getTrain();
-                    if (train != null && train.getStationId() != 0) {
-                        for (letrain.track.Station station : model.getStations()) {
-                            if (station.getId() == train.getStationId()) {
-                                train.addTrainEventListener(station);
-                                break;
-                            }
-                        }
-                    }
-                }
-
-            } catch (Exception e) {
-                log.error("Critical error updating model reference after loading game from {}", file.getAbsolutePath(),
-                        e);
+        Optional<letrain.mvp.impl.Model> maybeModel = gameSaveService.load(file);
+        if (maybeModel.isEmpty()) {
+            if (file != null) {
+                showMessage("Load Error", "Could not load game from\n" + file.getAbsolutePath());
+            } else {
+                showMessage("Load Error", "Could not load game: invalid file");
             }
+            return;
+        }
 
+        letrain.mvp.impl.Model loadedModel = maybeModel.get();
+        try {
+            applyLoadedModel(loadedModel, file);
         } catch (Exception e) {
-            log.error("Error loading game from {}", file.getAbsolutePath(), e);
+            log.error("Critical error updating model reference after loading game from {}", file != null ? file.getAbsolutePath() : "<null>",
+                    e);
+            showMessage("Load Error", "A critical error occurred while applying loaded game state.");
         }
     }
 
     @Override
     public void showSaveDialog() {
-        showFileDialog("Save Game", "savegame.dat", (text) -> {
+        showFileDialog("Save Game", DEFAULT_SAVEGAME_FILENAME, (text) -> {
             if (text != null && !text.trim().isEmpty()) {
                 File file = new File(text);
                 log.info("Saving game to {}", file.getAbsolutePath());
@@ -1829,7 +1865,7 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void showLoadDialog() {
-        showFileDialog("Load Game", "savegame.dat", (text) -> {
+        showFileDialog("Load Game", DEFAULT_SAVEGAME_FILENAME, (text) -> {
             if (text != null && !text.trim().isEmpty()) {
                 File file = new File(text);
                 log.info("Loading game from {}", file.getAbsolutePath());

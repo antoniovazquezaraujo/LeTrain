@@ -34,8 +34,6 @@ import letrain.mvp.GameViewListener;
 import letrain.mvp.Model.GameModeMenuOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class View implements letrain.mvp.View {
     private static final Logger log = LoggerFactory.getLogger(View.class);
