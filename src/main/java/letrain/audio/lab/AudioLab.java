@@ -24,8 +24,12 @@ import letrain.audio.core.AudioMixer;
 import letrain.audio.sources.AmbientSource;
 import letrain.audio.synth.AudioSample;
 import letrain.audio.synth.TrainSynthesizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AudioLab extends ApplicationAdapter {
+
+    private static final Logger log = LoggerFactory.getLogger(AudioLab.class);
 
     private AudioMixer mixer;
     private Stage stage;
@@ -188,7 +192,7 @@ public class AudioLab extends ApplicationAdapter {
             addControlPanel(new AmbientControlPanel(name, source));
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error adding ambience from file {}", file, e);
         }
     }
 
@@ -469,8 +473,9 @@ public class AudioLab extends ApplicationAdapter {
 
     @Override
     public void dispose() {
-        if (mixer != null)
+        if (mixer != null) {
             mixer.stop();
+        }
         if (stage != null)
             stage.dispose();
         if (skin != null)

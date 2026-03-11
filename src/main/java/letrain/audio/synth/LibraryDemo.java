@@ -5,7 +5,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LibraryDemo implements TrainSynthesizer.SynthesizerListener {
+
+    private static final Logger log = LoggerFactory.getLogger(LibraryDemo.class);
 
     private TrainSynthesizer synth;
 
@@ -62,9 +67,10 @@ public class LibraryDemo implements TrainSynthesizer.SynthesizerListener {
                 loadUrl(url, fileLabel);
             } else {
                 fileLabel.setText("Default sound not found");
+                log.warn("Default sound resource {} not found", RESOURCE_PATH);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error loading default resource {}", RESOURCE_PATH, e);
         }
 
         loadButton.addActionListener(e -> {
@@ -199,7 +205,7 @@ public class LibraryDemo implements TrainSynthesizer.SynthesizerListener {
             if (tableModel != null)
                 tableModel.fireTableDataChanged();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error loading audio sample from url {}", url, e);
         }
     }
 
@@ -213,7 +219,7 @@ public class LibraryDemo implements TrainSynthesizer.SynthesizerListener {
             if (tableModel != null)
                 tableModel.fireTableDataChanged();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error loading audio sample from file {}", f, e);
         }
     }
 

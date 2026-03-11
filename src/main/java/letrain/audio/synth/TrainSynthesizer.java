@@ -4,8 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import letrain.audio.core.AudioSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TrainSynthesizer implements AudioSource {
+
+    private static final Logger log = LoggerFactory.getLogger(TrainSynthesizer.class);
 
     private GrainEngine locoEngine;
     private GrainEngine locoIdleEngine;
@@ -110,7 +114,7 @@ public class TrainSynthesizer implements AudioSource {
             // Load WAV
             java.net.URL wavUrl = getClass().getResource("/sound/train-sound.wav");
             if (wavUrl == null) {
-                System.err.println("TrainSynthesizer: train-sound.wav not found!");
+                log.error("train-sound.wav not found on classpath");
                 return;
             }
             sharedSample = new AudioSample(wavUrl);
@@ -124,7 +128,7 @@ public class TrainSynthesizer implements AudioSource {
                 brakeEngine.setVolume(0.0f);
                 brakeEngine.setSampleRate(44100.0f);
             } else {
-                System.err.println("TrainSynthesizer: train-brakes.wav not found!");
+                log.error("train-brakes.wav not found on classpath");
             }
 
             // Load Load/Unload WAV
@@ -137,7 +141,7 @@ public class TrainSynthesizer implements AudioSource {
                 loadEngine.setVolume(0.0f);
                 loadEngine.setSampleRate(44100.0f);
             } else {
-                System.err.println("TrainSynthesizer: load-unload.wav not found!");
+                log.error("load-unload.wav not found on classpath");
             }
 
             // Load Labels
@@ -146,7 +150,7 @@ public class TrainSynthesizer implements AudioSource {
                 sharedLabels = letrain.audio.util.AudacityLabelParser.parse(labelsStream);
                 initNotchesFromLabels(sharedLabels, sharedSample);
             } else {
-                System.err.println("TrainSynthesizer: train-sound-labels.txt not found! Using defaults.");
+                log.warn("train-sound-labels.txt not found, using default notches");
                 initDefaultNotches();
             }
 
@@ -154,7 +158,7 @@ public class TrainSynthesizer implements AudioSource {
             resourcesLoaded = true;
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error initializing shared train audio resources", e);
             initDefaultNotches();
         }
     }

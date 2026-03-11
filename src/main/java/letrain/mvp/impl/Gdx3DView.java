@@ -42,10 +42,13 @@ import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.utils.ValidationUtils;
 import letrain.visitor.Gdx3DRenderer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Gdx3DView extends ApplicationAdapter
         implements letrain.mvp.View, letrain.mvp.Presenter, com.badlogic.gdx.InputProcessor,
         letrain.vehicle.impl.rail.TrainEventListener {
+    private static final Logger log = LoggerFactory.getLogger(Gdx3DView.class);
     private PerspectiveCamera cam;
     private ModelBatch modelBatch;
     private ModelBuilder modelBuilder;
@@ -1648,10 +1651,9 @@ public class Gdx3DView extends ApplicationAdapter
         if (file != null) {
             try (java.io.FileWriter writer = new java.io.FileWriter(file)) {
                 writer.write(model.getProgram());
-                System.out.println("Gdx3DView: Commands saved successfully to " + file.getAbsolutePath());
+                log.info("Commands saved successfully to {}", file.getAbsolutePath());
             } catch (java.io.IOException e) {
-                e.printStackTrace();
-                System.err.println("Gdx3DView: Error saving commands: " + e.getMessage());
+                log.error("Error saving commands to {}", file.getAbsolutePath(), e);
             }
         }
     }
@@ -1666,10 +1668,9 @@ public class Gdx3DView extends ApplicationAdapter
                 }
                 List<String> errors = model.setProgram(sb.toString());
                 handleScriptErrors(errors);
-                System.out.println("Gdx3DView: Commands loaded successfully from " + file.getAbsolutePath());
+                log.info("Commands loaded successfully from {}", file.getAbsolutePath());
             } catch (java.io.FileNotFoundException e) {
-                e.printStackTrace();
-                System.err.println("Gdx3DView: Error loading commands: " + e.getMessage());
+                log.error("Error loading commands from {}", file.getAbsolutePath(), e);
             }
         }
     }
@@ -1759,10 +1760,9 @@ public class Gdx3DView extends ApplicationAdapter
     public void onSaveGame(File file) {
         try (java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(new java.io.FileOutputStream(file))) {
             oos.writeObject(model);
-            System.out.println("Gdx3DView: Game saved successfully to " + file.getAbsolutePath());
+            log.info("Game saved successfully to {}", file.getAbsolutePath());
         } catch (java.io.IOException e) {
-            e.printStackTrace();
-            System.err.println("Gdx3DView: Error saving game: " + e.getMessage());
+            log.error("Error saving game to {}", file.getAbsolutePath(), e);
         }
     }
 
@@ -1776,7 +1776,7 @@ public class Gdx3DView extends ApplicationAdapter
                 java.lang.reflect.Field modelField = Gdx3DView.class.getDeclaredField("model");
                 modelField.setAccessible(true);
                 modelField.set(this, loadedModel);
-                System.out.println("Gdx3DView: Game loaded successfully from " + file.getAbsolutePath());
+                log.info("Game loaded successfully from {}", file.getAbsolutePath());
 
                 // Refresh references
                 trackMaker = new RailTrackMaker(this);
@@ -1807,13 +1807,12 @@ public class Gdx3DView extends ApplicationAdapter
                 }
 
             } catch (Exception e) {
-                e.printStackTrace();
-                System.err.println("Gdx3DView: Critical error updating model reference: " + e.getMessage());
+                log.error("Critical error updating model reference after loading game from {}", file.getAbsolutePath(),
+                        e);
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Gdx3DView: Error loading game: " + e.getMessage());
+            log.error("Error loading game from {}", file.getAbsolutePath(), e);
         }
     }
 
@@ -1822,7 +1821,7 @@ public class Gdx3DView extends ApplicationAdapter
         showFileDialog("Save Game", "savegame.dat", (text) -> {
             if (text != null && !text.trim().isEmpty()) {
                 File file = new File(text);
-                System.out.println("Saving game to: " + file.getAbsolutePath());
+                log.info("Saving game to {}", file.getAbsolutePath());
                 onSaveGame(file);
             }
         });
@@ -1833,11 +1832,11 @@ public class Gdx3DView extends ApplicationAdapter
         showFileDialog("Load Game", "savegame.dat", (text) -> {
             if (text != null && !text.trim().isEmpty()) {
                 File file = new File(text);
-                System.out.println("Loading game from: " + file.getAbsolutePath());
+                log.info("Loading game from {}", file.getAbsolutePath());
                 if (file.exists()) {
                     onLoadGame(file);
                 } else {
-                    System.err.println("File not found: " + text);
+                    log.warn("Savegame file not found: {}", text);
                 }
             }
         });

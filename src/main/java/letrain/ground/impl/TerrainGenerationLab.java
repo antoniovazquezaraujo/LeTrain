@@ -12,8 +12,11 @@ import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
 import letrain.ground.PerlinNoise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TerrainGenerationLab {
+    private static final Logger log = LoggerFactory.getLogger(TerrainGenerationLab.class);
     private DefaultTerminalFactory terminalFactory;
     private Terminal terminal;
     private TerminalSize terminalSize;
@@ -31,7 +34,7 @@ public class TerrainGenerationLab {
             terminal.setCursorVisible(false);
             this.screen = createScreen(terminal);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error creating terminal for TerrainGenerationLab", e);
         }
         terminalSize = screen.getTerminalSize();
 
@@ -92,11 +95,13 @@ public class TerrainGenerationLab {
                 this.screen.refresh();
                 Thread.yield();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Error refreshing TerrainGenerationLab screen", e);
             }
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             }
 
             KeyStroke keyStroke = terminal.pollInput();

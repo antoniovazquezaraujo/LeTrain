@@ -14,9 +14,11 @@ import letrain.audio.synth.TrainSynthesizer;
 import letrain.map.Point;
 import letrain.mvp.impl.Model;
 import letrain.vehicle.impl.rail.Locomotive;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AudioController {
-    // Logger removed as unused
+    private static final Logger log = LoggerFactory.getLogger(AudioController.class);
     private final Model model;
     private final Map<Integer, TrainSynthesizer> synthesizers = new HashMap<>();
     private final AudioMixer mixer;
@@ -65,13 +67,11 @@ public class AudioController {
                 if (file.exists()) {
                     samples.put(name, new AudioSample(file));
                 } else {
-                    System.err
-                            .println("CRITICAL: " + filename + " not found in resources or src/main/resources/sound/");
+                    log.error("{} not found in resources or src/main/resources/sound/", filename);
                 }
             }
         } catch (Exception e) {
-            System.err.println("Failed to load " + filename + ": " + e.getMessage());
-            e.printStackTrace();
+            log.error("Failed to load {}", filename, e);
         }
     }
 
@@ -118,7 +118,7 @@ public class AudioController {
             oneShotSources.add(source);
             mixer.addSource(source);
         } else {
-            System.err.println("Audio sample not found: " + name);
+            log.warn("Audio sample not found: {}", name);
         }
     }
 

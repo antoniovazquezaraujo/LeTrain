@@ -8,10 +8,15 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AudioMixer {
 
+    private static final Logger log = LoggerFactory.getLogger(AudioMixer.class);
+
     private final List<AudioSource> sources = new CopyOnWriteArrayList<>();
-    private boolean running = false;
+    private volatile boolean running = false;
     private Thread audioThread;
 
     // Audio Format Constants
@@ -48,7 +53,8 @@ public class AudioMixer {
             if (audioThread != null)
                 audioThread.join(500);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            log.warn("Audio mixer stop interrupted", e);
         }
     }
 
@@ -63,9 +69,10 @@ public class AudioMixer {
     }
 
     private void audioLoop() {
+        SourceDataLine line = null;
         try {
             AudioFormat format = new AudioFormat(SAMPLE_RATE, 16, 2, true, true); // Stereo
-            SourceDataLine line = AudioSystem.getSourceDataLine(format);
+            line = AudioSystem.getSourceDataLine(format);
             line.open(format, BUFFER_SIZE * 4); // 4096 frames
             line.start();
 
@@ -155,16 +162,27 @@ public class AudioMixer {
                     line.write(outputBuffer, 0, outputBuffer.length);
                 } catch (Exception e) {
                     // Prevent thread death on single source error
-                    System.err.println("AudioMixer Error: " + e.getMessage());
-                    try { Thread.sleep(10); } catch (InterruptedException ie) {}
+                    log.error("AudioMixer error in mixing loop", e);
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                 }
             }
 
             line.drain();
-            line.close();
-
         } catch (LineUnavailableException e) {
-            e.printStackTrace();
+            log.error("AudioMixer failed to initialize audio line", e);
+        } finally {
+            if (line != null) {
+                try {
+                    line.close();
+                } catch (Exception e) {
+                    log.warn("Error closing audio line", e);
+                }
+            }
         }
     }
 }

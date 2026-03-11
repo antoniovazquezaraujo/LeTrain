@@ -34,9 +34,11 @@ import letrain.mvp.GameViewListener;
 import letrain.mvp.Model.GameModeMenuOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class View implements letrain.mvp.View {
-    Logger log = LoggerFactory.getLogger(View.class);
+    private static final Logger log = LoggerFactory.getLogger(View.class);
     private final GameViewListener gameViewListener;
     private Point mapScrollPage = new Point(0, 0);
     private Screen screen;
@@ -67,7 +69,7 @@ public class View implements letrain.mvp.View {
             terminal.setCursorVisible(false);
             setScreen(createScreen(terminal));
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error creating terminal for View", e);
         }
         terminalSize = screen.getTerminalSize();
         gameBox = screen.newTextGraphics();
@@ -85,6 +87,7 @@ public class View implements letrain.mvp.View {
         try {
             return screen.pollInput();
         } catch (IOException e) {
+            log.warn("Error reading key from screen", e);
         }
         return null;
     }
@@ -129,7 +132,7 @@ public class View implements letrain.mvp.View {
             this.screen.refresh();
             Thread.yield();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error refreshing screen", e);
         }
     }
 
