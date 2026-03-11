@@ -117,6 +117,7 @@ public class Gdx3DView extends ApplicationAdapter
     private long locomotiveInputTimeout = 0;
 
     private final CameraController cameraController;
+    private final InputController inputController;
 
     public Gdx3DView(letrain.mvp.impl.Model model) {
         this.model = ValidationUtils.requireNonNull(model, "model");
@@ -125,6 +126,7 @@ public class Gdx3DView extends ApplicationAdapter
         this.audioController = new letrain.audio.AudioController(model);
         this.gameSaveService = new GameSaveService();
         this.cameraController = new CameraController(model);
+        this.inputController = new InputController(model, this, cameraController);
 
         // Use the initial cursor position as the center for initial ground loading
         letrain.map.Point startPos = model.getCursor().getPosition();
@@ -609,49 +611,7 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public boolean keyTyped(char character) {
-        // --- 1. ABSOLUTE GLOBAL CAMERA TOGGLE ---
-        if (character == 'c' || character == 'C') {
-            cameraController.cycleMode(!model.getLocomotives().isEmpty());
-            return true;
-        }
-
-        if (model.getMode() == letrain.mvp.Model.GameMode.TRAINS) {
-            if (Character.isLetter(character)) {
-                createVehicle(character);
-                return true;
-            }
-            // 's' key handler removed (moved to HOME key in keyDown)
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.RAILS) {
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS) {
-            if (character == '-') {
-                letrain.track.Station station = model.getSelectedStation();
-                if (station != null) {
-                    for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
-                        if (loco.getTrain() != null && loco.getTrain().getStationId() == station.getId()) {
-                            loco.getTrain().isLoading = !loco.getTrain().isLoading;
-                        }
-                    }
-                }
-                return true;
-            }
-        }
-
-        // All key shortcuts are now centralized in onChar() to allow case-insensitive
-        // handling
-        // and consistent behavior across inputs.
-
-        // Pass any other character input to the presenter/trackmaker
-        boolean ctrlPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
-                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_RIGHT);
-        boolean altPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
-                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
-
-        if (!Character.isISOControl(character)) {
-            ((letrain.mvp.GameViewListener) this)
-                    .onChar(new com.googlecode.lanterna.input.KeyStroke(character, ctrlPressed, altPressed));
-            return true;
-        }
-        return false;
+        return inputController.keyTyped(character);
     }
 
     private void createVehicle(char c) {
@@ -712,121 +672,12 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public boolean keyDown(int keycode) {
-        // Interceptar Alt+flechas para controles de cámara (consumir evento)
-        // Alt check removed to allow processing in onChar
-
-        // Alt check removed to allow processing in onChar
-
-        KeyStroke keyStroke = null;
-        switch (keycode) {
-            case com.badlogic.gdx.Input.Keys.UP:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp);
-                break;
-            case com.badlogic.gdx.Input.Keys.DOWN:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowDown);
-                break;
-            case com.badlogic.gdx.Input.Keys.LEFT:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowLeft);
-                break;
-            case com.badlogic.gdx.Input.Keys.RIGHT:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowRight);
-                break;
-            case com.badlogic.gdx.Input.Keys.ENTER:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Enter);
-                break;
-            case com.badlogic.gdx.Input.Keys.ESCAPE:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Escape);
-                break;
-            case com.badlogic.gdx.Input.Keys.BACKSPACE:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Backspace);
-                break;
-            case com.badlogic.gdx.Input.Keys.FORWARD_DEL:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Delete);
-                break;
-            case com.badlogic.gdx.Input.Keys.HOME:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Home);
-                break;
-            case com.badlogic.gdx.Input.Keys.END:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.End);
-                break;
-            case com.badlogic.gdx.Input.Keys.PAGE_UP:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.PageUp);
-                break;
-            case com.badlogic.gdx.Input.Keys.PAGE_DOWN:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.PageDown);
-                break;
-            case com.badlogic.gdx.Input.Keys.INSERT:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Insert);
-                break;
-            case com.badlogic.gdx.Input.Keys.TAB:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Tab);
-                break;
-            case com.badlogic.gdx.Input.Keys.F12:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.F12);
-                break;
-        }
-
-        if (keyStroke != null) {
-            boolean ctrlPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
-                    || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_RIGHT);
-            boolean altPressedKey = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
-                    || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
-            boolean shiftPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)
-                    || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
-
-            // Re-create keystroke with modifiers if needed
-            // Note: Lanterna KeyStroke constructor for KeyType doesn't take modifiers
-            // easily
-            // without using the other constructor, but for now we dispatch as is.
-            // Or we can construct it better if needed.
-            // For now, let's dispatch.
-            ((letrain.mvp.GameViewListener) this)
-                    .onChar(new KeyStroke(keyStroke.getKeyType(), ctrlPressed, altPressedKey, shiftPressed));
-            return true;
-        }
-
-        return false;
-
+        return inputController.keyDown(keycode);
     }
 
     @Override
     public boolean keyUp(int keycode) {
-        KeyStroke keyStroke = null;
-        switch (keycode) {
-            case com.badlogic.gdx.Input.Keys.UP:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp);
-                break;
-            case com.badlogic.gdx.Input.Keys.DOWN:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowDown);
-                break;
-            case com.badlogic.gdx.Input.Keys.LEFT:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowLeft);
-                break;
-            case com.badlogic.gdx.Input.Keys.RIGHT:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowRight);
-                break;
-            case com.badlogic.gdx.Input.Keys.CONTROL_LEFT:
-            case com.badlogic.gdx.Input.Keys.CONTROL_RIGHT:
-                // We pass a dummy character or just type for modifiers if we can
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Unknown, true, false, false);
-                break;
-            case com.badlogic.gdx.Input.Keys.SHIFT_LEFT:
-            case com.badlogic.gdx.Input.Keys.SHIFT_RIGHT:
-                keyStroke = new KeyStroke(com.googlecode.lanterna.input.KeyType.Unknown, false, false, true);
-                break;
-        }
-
-        if (keyStroke != null) {
-            boolean ctrlPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
-                    || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_RIGHT);
-            boolean shiftPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)
-                    || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
-
-            ((letrain.mvp.GameViewListener) this)
-                    .onKeyUp(new KeyStroke(keyStroke.getKeyType(), ctrlPressed, false, shiftPressed));
-            return true;
-        }
-        return false;
+        return inputController.keyUp(keycode);
     }
 
     @Override
@@ -856,14 +707,7 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public boolean scrolled(float amountX, float amountY) {
-        com.badlogic.gdx.math.Vector2 stageCoords = stage.screenToStageCoordinates(
-                new com.badlogic.gdx.math.Vector2(Gdx.input.getX(), Gdx.input.getY()));
-        if (stage.hit(stageCoords.x, stageCoords.y, true) != null) {
-            return true; // Bloquear zoom si el ratón está sobre la UI
-        }
-
-        cameraController.zoom(amountY);
-        return true;
+        return inputController.scrolled(amountX, amountY, stage);
     }
 
     private float stateTime = 0f;
