@@ -77,7 +77,7 @@ public class Gdx3DView extends ApplicationAdapter
 
     private Environment environment;
 
-    private final letrain.mvp.impl.Model model;
+    private letrain.mvp.impl.Model model;
     private final Gdx3DRenderer renderer;
     private com.badlogic.gdx.graphics.g3d.Model groundModel;
     private com.badlogic.gdx.graphics.g3d.Model gridModel;
@@ -1794,10 +1794,8 @@ public class Gdx3DView extends ApplicationAdapter
         }
     }
 
-    private void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) throws ReflectiveOperationException {
-        java.lang.reflect.Field modelField = Gdx3DView.class.getDeclaredField("model");
-        modelField.setAccessible(true);
-        modelField.set(this, loadedModel);
+    private void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) {
+        this.model = ValidationUtils.requireNonNull(loadedModel, "loadedModel");
 
         log.info("Game loaded successfully from {}", file.getAbsolutePath());
 
