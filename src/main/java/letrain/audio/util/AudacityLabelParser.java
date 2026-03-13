@@ -47,13 +47,13 @@ public class AudacityLabelParser {
                         double start = Double.parseDouble(parts[0]);
                         double end = Double.parseDouble(parts[1]);
                         // Reassemble name if it had spaces
-                        String name = parts[2];
+                        String name = parts[2].trim();
                         if (parts.length > 3) {
                             for (int i = 3; i < parts.length; i++)
-                                name += " " + parts[i];
+                                name += " " + parts[i].trim();
                         }
 
-                        labels.add(new Label(start, end, name));
+                        labels.add(new Label(start, end, name.trim()));
                     } catch (NumberFormatException e) {
                         System.err.println("Skipping invalid label line: " + line);
                     }

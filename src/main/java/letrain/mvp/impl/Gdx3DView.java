@@ -1087,14 +1087,14 @@ public class Gdx3DView extends ApplicationAdapter
 
     private void handleDriveInput(KeyStroke stroke) {
         if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
-            if (model.getSelectedLocomotive() != null && !model.getSelectedLocomotive().getTrain().isLoading()) {
-                // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
-                model.getSelectedLocomotive().incSpeed();
+            letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
+            if (loco != null && loco.isEngineOn() && !loco.getTrain().isLoading()) {
+                loco.incSpeed();
             }
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
-            if (model.getSelectedLocomotive() != null && !model.getSelectedLocomotive().getTrain().isLoading()) {
-                // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
-                model.getSelectedLocomotive().decSpeed();
+            letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
+            if (loco != null && loco.isEngineOn() && !loco.getTrain().isLoading()) {
+                loco.decSpeed();
             }
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
             model.selectPrevLocomotive();
@@ -1149,6 +1149,16 @@ public class Gdx3DView extends ApplicationAdapter
             }
             // If not on a station or not stopped, Enter should switch to menu
             model.setMode(letrain.mvp.Model.GameMode.MENU);
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
+                && stroke.getCharacter() == 'm') {
+            letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
+            if (loco != null) {
+                if (!loco.isEngineOn()) {
+                    audioController.startEngine(loco);
+                } else if (loco.getSpeed() == 0 && loco.getTargetSpeed() == 0) {
+                    audioController.stopEngineWithSound(loco.getId(), loco);
+                }
+            }
         }
     }
 

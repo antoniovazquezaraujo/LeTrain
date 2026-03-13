@@ -60,8 +60,24 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
 
         // Ensure start < end
         if (this.loopStart >= this.loopEnd) {
-            this.loopStart = this.loopEnd - 0.01; // Minimum loop size
+            this.loopStart = Math.max(0.0, this.loopEnd - 0.0001); // Smaller minimum loop size
         }
+    }
+
+    /**
+     * Resetea el estado interno de reproducción. 
+     * Crucial al cambiar entre segmentos (start/stop/ralenti) para evitar que herede 
+     * una dirección reversa aleatoria o una posición fuera de rango.
+     */
+    public void resetState() {
+        this.position = 0.0;
+        this.reverse = false;
+        this.isInRandomReverse = false;
+        this.samplesSinceLastCheck = 0;
+    }
+
+    public void seekSamples(double samples) {
+        this.position = samples;
     }
 
     public double getLoopStart() {

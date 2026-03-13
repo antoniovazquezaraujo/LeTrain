@@ -25,6 +25,7 @@ public class Locomotive extends Linker implements Tractor {
     int minSpeed = 0;
     boolean destroying = false;
     int destroyingTurns = 0;
+    boolean engineOn = false;
 
     public enum SpeedLimitType {
         MAX_SPEED,
@@ -96,6 +97,11 @@ public class Locomotive extends Linker implements Tractor {
         }
 
         if (isDirectorLinker()) {
+            // Motor apagado: no puede moverse
+            if (!engineOn) {
+                return moved;
+            }
+
             // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
             if (getTrain() != null && getTrain().isLoading()) {
                 return moved;
@@ -198,6 +204,14 @@ public class Locomotive extends Linker implements Tractor {
 
     public boolean isEngineStarting() {
         return engineStarting;
+    }
+
+    public boolean isEngineOn() {
+        return engineOn;
+    }
+
+    public void setEngineOn(boolean on) {
+        this.engineOn = on;
     }
 
     private boolean engineTransitioning = false;

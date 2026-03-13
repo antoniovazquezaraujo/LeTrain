@@ -39,6 +39,28 @@ public class AudioController {
         }
     }
 
+    /**
+     * Apaga el motor reproduciendo primero el segmento 'stop' del WAV.
+     * Una vez finalizado el sonido, retira el sintetizador del mixer.
+     */
+    public void stopEngineWithSound(int id, letrain.vehicle.impl.rail.Locomotive loco) {
+        TrainSynthesizer synth = synthesizers.get(id);
+        if (synth == null) return;
+        loco.setEngineOn(false); // <--- Inmediatamente apagamos el estado para evitar recreaciones
+        synthesizers.remove(id); // ya no recibe actualizaciones de throttle
+        synth.playStopSound(() -> {
+            mixer.removeSource(synth);
+        });
+    }
+
+    /**
+     * Enciende el motor de una locomotora (crea su sintetizador si no existe).
+     */
+    public void startEngine(letrain.vehicle.impl.rail.Locomotive loco) {
+        loco.setEngineOn(true);
+        // El synth se creará en el próximo ciclo de update()
+    }
+
     public AudioController(Model model) {
         this.model = model;
         this.mixer = new AudioMixer();
@@ -178,6 +200,8 @@ public class AudioController {
 
             TrainSynthesizer synth = synthesizers.get(loco.getId());
             if (synth == null) {
+                // Solo crear el synth si el motor está encendido
+                if (!loco.isEngineOn()) continue;
                 synth = new TrainSynthesizer();
 
                 final letrain.vehicle.impl.rail.Locomotive trackedLoco = loco;

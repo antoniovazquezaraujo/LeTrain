@@ -596,8 +596,8 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
             // break;
             case ArrowUp:
                 if (model.getSelectedLocomotive() != null) {
-                    if (!model.getSelectedLocomotive().getTrain().isLoading) {
-                        // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
+                    Locomotive loco = model.getSelectedLocomotive();
+                    if (loco.isEngineOn() && !loco.getTrain().isLoading) {
                         accelerateLocomotive();
                         locomotiveId = 0;
                     }
@@ -605,8 +605,8 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
                 break;
             case ArrowDown:
                 if (model.getSelectedLocomotive() != null) {
-                    if (!model.getSelectedLocomotive().getTrain().isLoading) {
-                        // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
+                    Locomotive loco = model.getSelectedLocomotive();
+                    if (loco.isEngineOn() && !loco.getTrain().isLoading) {
                         decelerateLocomotive();
                         locomotiveId = 0;
                     }
@@ -650,6 +650,15 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
                     } else {
                         locomotiveId = locomotiveId * 10 + (keyEvent.getCharacter() - '0');
                         selectLocomotive(locomotiveId);
+                    }
+                } else if (keyEvent.getCharacter() == 'm') {
+                    Locomotive loco = model.getSelectedLocomotive();
+                    if (loco != null) {
+                        if (!loco.isEngineOn()) {
+                            audioController.startEngine(loco);
+                        } else if (loco.getSpeed() == 0 && loco.getTargetSpeed() == 0) {
+                            audioController.stopEngineWithSound(loco.getId(), loco);
+                        }
                     }
                 }
                 break;
