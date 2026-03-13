@@ -2,6 +2,7 @@ package letrain.mvp.impl;
 
 import letrain.audio.AudioController;
 import letrain.vehicle.impl.rail.Locomotive;
+import letrain.mvp.impl.services.SimulationService;
 
 /**
  * Centralizes the simulation logic that runs on every game tick (approx 20 TPS).
@@ -11,11 +12,13 @@ public class SimulationController {
     private final letrain.mvp.impl.Model model;
     private final AudioController audioController;
     private final RailTrackMaker trackMaker;
+    private final SimulationService simulationService;
 
     public SimulationController(letrain.mvp.impl.Model model, AudioController audioController, RailTrackMaker trackMaker) {
         this.model = model;
         this.audioController = audioController;
         this.trackMaker = trackMaker;
+        this.simulationService = new SimulationService(model);
     }
 
     /**
@@ -28,7 +31,7 @@ public class SimulationController {
         }
 
         // 2. Move all vehicles
-        model.moveLocomotives();
+        simulationService.moveVehicles();
 
         // 3. Handle sound for destroying locomotives (before they are removed)
         for (Locomotive loco : model.getLocomotives()) {
@@ -38,9 +41,9 @@ public class SimulationController {
         }
 
         // 4. Load and unload trains at stations
-        model.loadAndUnloadTrains();
+        simulationService.handleIndustrialActions();
 
         // 5. Cleanup destroyed trains
-        model.removeDestroyedTrains();
+        simulationService.cleanupEntities();
     }
 }

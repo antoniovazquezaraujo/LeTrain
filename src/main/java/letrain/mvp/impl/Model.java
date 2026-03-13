@@ -36,6 +36,9 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import letrain.mvp.impl.services.AutomationEngine;
+import letrain.mvp.impl.services.SimulationService;
+
 public class Model implements Serializable, letrain.mvp.Model {
     static Logger log = LoggerFactory.getLogger(Model.class);
 
@@ -90,6 +93,23 @@ public class Model implements Serializable, letrain.mvp.Model {
     int quantifier = 1;
     int quantifierSteps = 0;
     LocalDateTime lastSaveTime = null;
+
+    private transient AutomationEngine automationEngine;
+    private transient SimulationService simulationService;
+
+    private AutomationEngine getAutomationEngine() {
+        if (automationEngine == null) {
+            automationEngine = new AutomationEngine(this);
+        }
+        return automationEngine;
+    }
+
+    private SimulationService getSimulationService() {
+        if (simulationService == null) {
+            simulationService = new SimulationService(this);
+        }
+        return simulationService;
+    }
 
     public Model() {
         this.eventLogManager = new EventLogManager();
@@ -356,18 +376,15 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
-    public void moveLocomotives() {
-        locomotives.forEach(locomotive -> {
-            if (locomotive.update()) {
-                // Only charge fuel and notify movement for the director to avoid multiple
-                // charges per train
-                if (locomotive.isDirectorLinker()) {
-                    getEconomyManager().onTrainMoved(locomotive.getTrain());
-                    getEconomyManager().chargeFuel(locomotive.getTrain()); // Fuel cost per meter
-                }
-            }
-        });
+    public void removeDestroyedTrains() {
+        getSimulationService().cleanupEntities();
     }
+
+    @Override
+    public void moveLocomotives() {
+        getSimulationService().moveVehicles();
+    }
+
 
     @Override
     public GameMode getMode() {
@@ -627,89 +644,11 @@ public class Model implements Serializable, letrain.mvp.Model {
         return this.showId;
     }
 
-    @Override
-    public void removeDestroyedTrains() {
-        AtomicBoolean removed = new AtomicBoolean(false);
-
-        getLocomotives().forEach(locomotive -> {
-            locomotive.updateDestroyTimer();
-            if (locomotive.isDestroyed()) {
-                removed.set(true);
-            }
-        });
-
-        getLocomotives().removeIf(locomotive -> {
-            if (locomotive.isDestroyed()) {
-                locomotive.getTrack().removeLinker();
-                return true;
-            }
-            return false;
-        });
-
-        getWagons().removeIf(wagon -> {
-            wagon.updateDestroyTimer();
-            if (wagon.isDestroyed()) {
-                wagon.getTrack().removeLinker();
-                return true;
-            }
-            return false;
-        });
-
-        if (removed.get()) {
-            selectNextLocomotive();
-        }
-    }
 
     @Override
     public List<String> setProgram(String program) {
         this.program = program;
-        clearAllAutomationListeners();
-        log.info("Setting new automation program. Available stations:");
-        getStations()
-                .forEach(s -> log.info(" - Station {}: Role={}, Cargo={}", s.getId(), s.getRole(), s.getCargoType()));
-        List<String> errors = new java.util.ArrayList<>();
-
-        try {
-            CharStream input = CharStreams.fromString(program);
-            LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
-
-            parser.removeErrorListeners();
-            parser.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
-                @Override
-                public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer, Object offendingSymbol,
-                        int line,
-                        int charPositionInLine, String msg, org.antlr.v4.runtime.RecognitionException e) {
-                    String errorMsg = "Syntax error at line " + line + ":" + charPositionInLine + " " + msg;
-                    log.error(errorMsg);
-                    errors.add(errorMsg);
-                }
-            });
-
-            LeTrainProgramParser.StartContext sintaxTree = parser.start();
-            CommandManager manager = new CommandManager(this);
-            manager.visit(sintaxTree);
-        } catch (Exception e) {
-            log.error("Error parsing or executing automation program", e);
-            errors.add("Critical error: " + e.getMessage());
-        }
-        return errors;
-    }
-
-    private void clearAllAutomationListeners() {
-        for (Sensor sensor : sensors) {
-            sensor.removeAllSensorEventListeners();
-        }
-        for (Station station : stations) {
-            station.removeAllStationEventListeners();
-        }
-        for (ForkRailTrack fork : forks) {
-            fork.removeAllForkEventListeners();
-        }
-        for (RailSemaphore semaphore : semaphores) {
-            semaphore.removeAllSemaphoreEventListeners();
-        }
+        return getAutomationEngine().setProgram(program);
     }
 
     public void reestablishSystemListeners() {
@@ -730,86 +669,7 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     @Override
     public void loadAndUnloadTrains() {
-        // Regenerate cargo at all stations
-        if (Math.random() < 0.05) { // Slow regeneration
-            getStations().forEach(Station::regenerateCargo);
-        }
-
-        // We will detect wagon cargo state changes to trigger economy events
-        class CargoState {
-            CargoTypes type;
-            int amount;
-
-            CargoState(CargoTypes t, int a) {
-                type = t;
-                amount = a;
-            }
-        }
-        java.util.Map<Wagon, CargoState> wagonsPrevState = new java.util.HashMap<>();
-        getWagons().forEach(w -> {
-            wagonsPrevState.put(w, new CargoState(w.getCargoType(), w.getCargoAmount()));
-        });
-
-        java.util.Set<Train> processedTrains = new java.util.HashSet<>();
-        getLocomotives().forEach(locomotive -> {
-            Train train = locomotive.getTrain();
-            if (train != null && !processedTrains.contains(train)) {
-                processedTrains.add(train);
-
-                if (train.isLoading()) {
-                    int count = train.getLoadingCount();
-                    if (count > 0) {
-                        train.setLoadingCount(count - 1);
-                        Station station = train.getStationAtTrain();
-                        if (station != null) {
-                            train.performIndustrialAction(station);
-                        }
-                    } else {
-                        Station station = train.getStationAtTrain();
-                        log.info("Loading process ended for train {}. Station: {}. Unloading: {}",
-                                train.getId(), station != null ? station.getId() : "null",
-                                train.isUnloadingDirection());
-                        if (station != null) {
-                            if (train.isUnloadingDirection()) {
-                                station.notifyEndUnload(train);
-                            } else {
-                                station.notifyEndLoad(train);
-                            }
-                        }
-                        train.endLoadUnloadProcess();
-                    }
-                }
-
-                // Track changes for EACH wagon in THIS train
-                for (Linker linker : train.getLinkers()) {
-                    if (linker instanceof Wagon) {
-                        Wagon wagon = (Wagon) linker;
-                        CargoState prevState = wagonsPrevState.get(wagon);
-                        if (prevState == null)
-                            continue;
-
-                        int currentAmount = wagon.getCargoAmount();
-                        if (currentAmount > prevState.amount) {
-                            // LOADING: flat fee on FIRST load only
-                            if (prevState.amount == 0) {
-                                getEconomyManager().onLoadCargo(wagon);
-                            }
-                        } else if (currentAmount < prevState.amount) {
-                            // UNLOADING: PAY PER UNIT!
-                            int unitsUnloaded = prevState.amount - currentAmount;
-                            int distance = 0;
-                            if (train.getItinerary() != null && train.getItinerary().getFirstStop() != null) {
-                                Stop startStop = train.getItinerary().getFirstStop();
-                                distance = train.getDistanceTraveled() - startStop.distanceTraveled();
-                            }
-                            // Important: use previous state's type for the payment
-                            getEconomyManager().onUnloadCargo(wagon, prevState.type, unitsUnloaded,
-                                    Math.max(0, distance));
-                        }
-                    }
-                }
-            }
-        });
+        getSimulationService().handleIndustrialActions();
     }
 
     @Override

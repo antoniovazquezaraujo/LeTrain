@@ -48,6 +48,10 @@ public class Itinerary {
         addStop(stop);
     }
 
+    public List<Stop> getStopsList() {
+        return stops;
+    }
+
     public Stream<Stop> getStops() {
         return stops.stream();
     }
