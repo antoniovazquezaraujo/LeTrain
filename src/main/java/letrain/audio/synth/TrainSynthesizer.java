@@ -152,8 +152,8 @@ public class TrainSynthesizer implements AudioSource {
         applySharedResources();
     }
 
-    /**
-     * Permite inyectar un AudioSample externo (usado por LibraryDemo / TestSynth).
+     /**
+     * Permite inyectar un AudioSample externo (usado por TestSynth).
      * Actualiza los engines y re-inicializa los notches con las labels existentes.
      */
     public void setSample(AudioSample sample) {
