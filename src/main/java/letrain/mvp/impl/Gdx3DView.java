@@ -83,6 +83,8 @@ public class Gdx3DView extends ApplicationAdapter
     private com.badlogic.gdx.graphics.g3d.Model boxModel;
     private RailTrackMaker trackMaker;
 
+    private letrain.visitor.Gdx3DResourceContext resourceContext;
+
     private SpriteBatch spriteBatch;
     private BitmapFont font;
 
@@ -103,6 +105,8 @@ public class Gdx3DView extends ApplicationAdapter
     // Audio
     private letrain.audio.AudioController audioController;
 
+    private SimulationController simulationController;
+
     // Persistence
     private final GameSaveService gameSaveService;
 
@@ -121,12 +125,14 @@ public class Gdx3DView extends ApplicationAdapter
 
     public Gdx3DView(letrain.mvp.impl.Model model) {
         this.model = ValidationUtils.requireNonNull(model, "model");
-        this.renderer = new Gdx3DRenderer();
+        this.resourceContext = new letrain.visitor.Gdx3DResourceContext();
+        this.renderer = new Gdx3DRenderer(resourceContext);
         this.trackMaker = new RailTrackMaker(this);
         this.audioController = new letrain.audio.AudioController(model);
         this.gameSaveService = new GameSaveService();
         this.cameraController = new CameraController(model);
         this.inputController = new InputController(model, this, cameraController);
+        this.simulationController = new SimulationController(model, audioController, trackMaker);
 
         // Use the initial cursor position as the center for initial ground loading
         letrain.map.Point startPos = model.getCursor().getPosition();
@@ -188,6 +194,7 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void create() {
+        resourceContext.init();
         renderer.init();
         modelBatch = new ModelBatch();
         environment = new Environment();
@@ -728,10 +735,7 @@ public class Gdx3DView extends ApplicationAdapter
             int radius = model.getEconomyManager().getViewRadius();
             model.getGroundMap().renderBlock(cp.getX() - radius, cp.getY() - radius, radius * 2 + 1, radius * 2 + 1);
 
-            trackMaker.makeTracks();
-            model.moveLocomotives();
-            model.loadAndUnloadTrains();
-            model.removeDestroyedTrains();
+            simulationController.tick();
             updateSelectionTimeouts();
             updateIDE();
 
@@ -2133,6 +2137,9 @@ public class Gdx3DView extends ApplicationAdapter
     public void dispose() {
         if (audioController != null) {
             audioController.stop();
+        }
+        if (resourceContext != null) {
+            resourceContext.dispose();
         }
         if (modelBatch != null)
             modelBatch.dispose();

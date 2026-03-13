@@ -60,6 +60,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
 
     RailTrackMaker railTrackMaker;
     letrain.audio.AudioController audioController;
+    SimulationController simulationController;
 
     public CompactPresenter() {
         this(null);
@@ -72,6 +73,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         informer = new InfoVisitor(view);
         railTrackMaker = new RailTrackMaker(this);
         audioController = new letrain.audio.AudioController(this.model);
+        simulationController = new SimulationController(this.model, audioController, railTrackMaker);
     }
 
     void setModel(Model model) {
@@ -85,6 +87,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
             this.audioController.stop();
         }
         this.audioController = new letrain.audio.AudioController(this.model);
+        this.simulationController = new SimulationController(this.model, audioController, railTrackMaker);
 
         // Register this as global listener for all present and future trains
         this.model.addTrainEventListener(this);
@@ -114,16 +117,10 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
                         stroke = view.readKey();
                     }
                 }
-                railTrackMaker.makeTracks();
+                simulationController.tick();
                 renderer.visitModel(model);
                 informer.visitModel(model);
                 view.paint();
-                model.moveLocomotives();
-                for (Locomotive loco : model.getLocomotives()) {
-                    if (loco.isDestroying()) {
-                        audioController.stopSynthesizer(loco.getId());
-                    }
-                }
                 if (model.getMode() == DRIVE) {
                     Locomotive selectedLocomotive = model.getSelectedLocomotive();
                     if (selectedLocomotive != null) {
@@ -131,9 +128,6 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
                                 selectedLocomotive.getPosition().getY());
                     }
                 }
-                model.loadAndUnloadTrains();
-                model.removeDestroyedTrains();
-                audioController.update();
 
                 updateTimeouts();
 

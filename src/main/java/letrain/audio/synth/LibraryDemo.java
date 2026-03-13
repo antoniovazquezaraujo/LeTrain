@@ -1,6 +1,6 @@
 package letrain.audio.synth;
 
-import javax.sound.sampled.*;
+
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
