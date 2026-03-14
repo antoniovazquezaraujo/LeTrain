@@ -322,7 +322,8 @@ class SerializationTest {
         train.pushFront(frontWagon);
         train.assignDefaultDirectorLinker();
 
-        // Unlink one vehicle from the front side (frontWagon), leaving loco+backWagon intact
+        // Unlink one vehicle from the front side (frontWagon), leaving loco+backWagon
+        // intact
         train.setFrontDivisionSense();
         train.divideTrain(() -> 501);
 

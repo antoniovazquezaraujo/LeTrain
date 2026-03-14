@@ -6,7 +6,8 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 
 /**
- * Se encarga de gestionar la cámara 3D (modos ORBIT, CAB, MAP) a partir del estado del modelo.
+ * Se encarga de gestionar la cámara 3D (modos ORBIT, CAB, MAP) a partir del
+ * estado del modelo.
  * No toca audio ni renderizado; solo actualiza una {@link PerspectiveCamera}.
  */
 public class CameraController {
@@ -212,7 +213,8 @@ public class CameraController {
     }
 
     private Vector2 getInterpolatedPosition(letrain.vehicle.impl.rail.Locomotive locomotive, float alpha) {
-        // Copiado desde la lógica original de Gdx3DView para mantener el mismo comportamiento visual.
+        // Copiado desde la lógica original de Gdx3DView para mantener el mismo
+        // comportamiento visual.
         float x = locomotive.getPosition().getX();
         float y = locomotive.getPosition().getY();
 
@@ -244,4 +246,3 @@ public class CameraController {
         return new Vector2(x, y);
     }
 }
-

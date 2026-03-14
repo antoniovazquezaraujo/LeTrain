@@ -25,7 +25,8 @@ public class TrackDirector<T extends Track> implements Serializable {
 
     public boolean enterLinkerFromDir(T track, Dir d, Linker vehicle) {
         if (!canEnter(track, d, vehicle)) {
-            log.warn("Cannot enter linker {} from {} into track {}: occupied or reserved.", vehicle, d, track.getPosition());
+            log.warn("Cannot enter linker {} from {} into track {}: occupied or reserved.", vehicle, d,
+                    track.getPosition());
             return false;
         }
 
