@@ -703,19 +703,33 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         } else {
             linkerDivisionSense = LinkersSense.BACK;
         }
-        numLinkersToRemove = Math.min(count, getLinkers().size() - 1);
+
+        int maxRemovable = Math.max(0, getLinkers().size() - 1);
+        if (maxRemovable == 0) {
+            numLinkersToRemove = 0;
+        } else if (count <= 0) {
+            numLinkersToRemove = 1;
+        } else {
+            numLinkersToRemove = Math.min(Math.max(1, count), maxRemovable);
+        }
+
         updateLinkersToRemove();
+    }
+
+    private int calcInitialUnlinkCount() {
+        int maxRemovable = Math.max(0, getLinkers().size() - 1);
+        return maxRemovable == 0 ? 0 : 1;
     }
 
     public void setFrontDivisionSense() {
         linkerDivisionSense = LinkersSense.FRONT;
-        numLinkersToRemove = Math.max(0, getLinkers().size() - 1);
+        numLinkersToRemove = calcInitialUnlinkCount();
         updateLinkersToRemove();
     }
 
     public void setBackDivisionSense() {
         linkerDivisionSense = LinkersSense.BACK;
-        numLinkersToRemove = Math.max(0, getLinkers().size() - 1);
+        numLinkersToRemove = calcInitialUnlinkCount();
         updateLinkersToRemove();
     }
 
@@ -725,7 +739,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         } else {
             linkerDivisionSense = LinkersSense.BACK;
         }
-        numLinkersToRemove = Math.max(0, getLinkers().size() - 1);
+        numLinkersToRemove = calcInitialUnlinkCount();
         updateLinkersToRemove();
     }
 

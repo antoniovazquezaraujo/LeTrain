@@ -195,8 +195,8 @@ public abstract class Track implements
     }
 
     @Override
-    public void enterLinkerFromDir(Dir d, Linker vehicle) {
-        getTrackDirector().enterLinkerFromDir(this, d, vehicle);
+    public boolean enterLinkerFromDir(Dir d, Linker vehicle) {
+        return getTrackDirector().enterLinkerFromDir(this, d, vehicle);
     }
 
     @Override

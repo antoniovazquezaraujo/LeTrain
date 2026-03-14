@@ -116,7 +116,9 @@ public class CameraController {
         float targetX;
         float targetZ;
 
-        if ((model.getMode() == letrain.mvp.Model.GameMode.DRIVE || model.getMode() == letrain.mvp.Model.GameMode.LINK)
+        if ((model.getMode() == letrain.mvp.Model.GameMode.DRIVE
+                || model.getMode() == letrain.mvp.Model.GameMode.LINK
+                || model.getMode() == letrain.mvp.Model.GameMode.UNLINK)
                 && model.getSelectedLocomotive() != null) {
             letrain.vehicle.impl.rail.Locomotive selected = model.getSelectedLocomotive();
             Vector2 interpPos = getInterpolatedPosition(selected, alpha);

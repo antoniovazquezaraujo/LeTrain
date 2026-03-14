@@ -23,7 +23,12 @@ public class TrackDirector<T extends Track> implements Serializable {
 
     private static final Logger log = LoggerFactory.getLogger(TrackDirector.class);
 
-    public void enterLinkerFromDir(T track, Dir d, Linker vehicle) {
+    public boolean enterLinkerFromDir(T track, Dir d, Linker vehicle) {
+        if (!canEnter(track, d, vehicle)) {
+            log.warn("Cannot enter linker {} from {} into track {}: occupied or reserved.", vehicle, d, track.getPosition());
+            return false;
+        }
+
         vehicle.setTrack(track);
         vehicle.setPosition(track.getPosition());
         Dir exitDir = track.getRouter().getDir(d);
@@ -34,6 +39,7 @@ public class TrackDirector<T extends Track> implements Serializable {
                     track.getPosition(), d, vehicle.getDir());
         }
         track.setLinker(vehicle);
+        return true;
     }
 
     public Linker removeLinker(T track) {

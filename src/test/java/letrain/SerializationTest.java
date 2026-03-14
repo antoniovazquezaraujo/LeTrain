@@ -3,6 +3,7 @@ package letrain;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -306,5 +307,28 @@ class SerializationTest {
 
         // The object should be usable without NPE
         assertDoesNotThrow(() -> original.getId());
+    }
+
+    @Test
+    @DisplayName("Unlink removes only selected side and preserves opposite side")
+    void testUnlinkRespectsSideIsolation() {
+        Train train = new Train(500);
+        letrain.vehicle.impl.rail.Locomotive loco = new letrain.vehicle.impl.rail.Locomotive(1, 'L');
+        letrain.vehicle.impl.rail.Wagon frontWagon = new letrain.vehicle.impl.rail.Wagon();
+        letrain.vehicle.impl.rail.Wagon backWagon = new letrain.vehicle.impl.rail.Wagon();
+
+        train.pushBack(loco);
+        train.pushBack(backWagon);
+        train.pushFront(frontWagon);
+        train.assignDefaultDirectorLinker();
+
+        // Unlink one vehicle from the front side (frontWagon), leaving loco+backWagon intact
+        train.setFrontDivisionSense();
+        train.divideTrain(() -> 501);
+
+        assertEquals(2, train.getLinkers().size(), "Train should keep two linkers after unlinking one from front");
+        assertTrue(train.getLinkers().contains(loco));
+        assertTrue(train.getLinkers().contains(backWagon));
+        assertNull(frontWagon.getTrain(), "Front-side wagon should be removed from the original train");
     }
 }
