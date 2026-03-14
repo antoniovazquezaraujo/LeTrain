@@ -1291,6 +1291,12 @@ public class Gdx3DRenderer implements Visitor {
             // Mode-based transparency for Rocks/Tunnels
             if (type == GroundMap.ROCK || model == resourceContext.tunnelPortalModel) {
                 if (isXRayActive) {
+                    // Render a ground tile underneath the transparent mountain to provide the green background
+                    ModelInstance groundBelow = new ModelInstance(resourceContext.groundModel);
+                    groundBelow.transform.setToTranslation(x, 0.0f, z);
+                    groundBelow.transform.scale(scaleX, scaleY, scaleZ);
+                    instances.add(groundBelow);
+
                     instance.materials.get(0)
                             .set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
                     // No DepthTestAttribute here, we manage it globally in the Two-Pass loop

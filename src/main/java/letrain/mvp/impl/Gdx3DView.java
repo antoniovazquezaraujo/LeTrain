@@ -764,11 +764,12 @@ public class Gdx3DView extends ApplicationAdapter
         // Actualizar instancias desde el modelo
         renderer.clear();
         renderer.visitModel(model, cam);
-        renderer.getInstances().add(new ModelInstance(groundModel));
-        // renderer.getInstances().add(new ModelInstance(gridModel)); // Grid oculto
-
         modelBatch.begin(cam);
         modelBatch.render(renderer.getInstances(), environment);
+        // Render the background table slightly below ground level
+        ModelInstance tableInstance = new ModelInstance(groundModel);
+        tableInstance.transform.setToTranslation(0, -0.02f, 0);
+        modelBatch.render(tableInstance, environment);
         modelBatch.end();
 
         // Renderizado de Etiquetas 3D (Decals)
