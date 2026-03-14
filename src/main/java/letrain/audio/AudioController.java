@@ -45,7 +45,8 @@ public class AudioController {
      */
     public void stopEngineWithSound(int id, letrain.vehicle.impl.rail.Locomotive loco) {
         TrainSynthesizer synth = synthesizers.get(id);
-        if (synth == null) return;
+        if (synth == null)
+            return;
         loco.setEngineOn(false); // <--- Inmediatamente apagamos el estado para evitar recreaciones
         synthesizers.remove(id); // ya no recibe actualizaciones de throttle
         synth.playStopSound(() -> {
@@ -176,7 +177,7 @@ public class AudioController {
             boolean exists = false;
             for (Locomotive loco : model.getLocomotives()) {
                 if (loco.getId() == locoId) {
-                    if (!loco.isDestroying() && !loco.isStalled()) { // Also remove if stalled
+                    if (!loco.isDestroying()) {
                         exists = true;
                     }
                     break;
@@ -193,7 +194,7 @@ public class AudioController {
         // 2. Add/Update synthesizers
         for (Locomotive loco : model.getLocomotives()) {
             // Stop sound if stalled or destroying
-            if (loco.isStalled() || loco.isDestroying()) {
+            if (loco.isDestroying()) {
                 stopSynthesizer(loco.getId());
                 continue;
             }
@@ -201,7 +202,8 @@ public class AudioController {
             TrainSynthesizer synth = synthesizers.get(loco.getId());
             if (synth == null) {
                 // Solo crear el synth si el motor está encendido
-                if (!loco.isEngineOn()) continue;
+                if (!loco.isEngineOn())
+                    continue;
                 synth = new TrainSynthesizer();
 
                 final letrain.vehicle.impl.rail.Locomotive trackedLoco = loco;
@@ -230,6 +232,8 @@ public class AudioController {
                 mixer.addSource(synth);
                 synthesizers.put(loco.getId(), synth);
             }
+
+            synth.update();
 
             // Sync Throttle (Engine Sound)
             int targetNotch = Math.min(loco.getTargetSpeed(), 10);

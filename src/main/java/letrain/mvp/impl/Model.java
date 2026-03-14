@@ -7,16 +7,14 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import letrain.command.CommandManager;
-import letrain.command.LeTrainProgramLexer;
-import letrain.command.LeTrainProgramParser;
 import letrain.economy.impl.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
+import letrain.mvp.impl.services.AutomationEngine;
+import letrain.mvp.impl.services.SimulationService;
 import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
@@ -25,19 +23,11 @@ import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.utils.SerializationHelper;
 import letrain.vehicle.impl.Cursor;
-import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Stop;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import letrain.mvp.impl.services.AutomationEngine;
-import letrain.mvp.impl.services.SimulationService;
 
 public class Model implements Serializable, letrain.mvp.Model {
     static Logger log = LoggerFactory.getLogger(Model.class);
@@ -385,7 +375,6 @@ public class Model implements Serializable, letrain.mvp.Model {
         getSimulationService().moveVehicles();
     }
 
-
     @Override
     public GameMode getMode() {
         return mode;
@@ -644,7 +633,6 @@ public class Model implements Serializable, letrain.mvp.Model {
         return this.showId;
     }
 
-
     @Override
     public List<String> setProgram(String program) {
         this.program = program;
@@ -827,7 +815,7 @@ public class Model implements Serializable, letrain.mvp.Model {
                         () -> (GameMode.RAILS)),
                 new GameModeMenuOption(
                         "&drive",
-                        "[Left/Right]:Select [Up]:Accel [Down]:Decel [Space]:Reverse [Enter]:Load/Unload [#]:Select by ID",
+                        "[Left/Right]:Select [m]:Motor On/Off [Up]:Accel [Down]:Decel [Space]:Reverse [Enter]:Load/Unload [#]:Select by ID",
                         () -> !this.getLocomotives().isEmpty(),
                         () -> this.getMode() == GameMode.DRIVE,
                         () -> GameMode.DRIVE),

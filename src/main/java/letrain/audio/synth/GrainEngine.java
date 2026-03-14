@@ -22,7 +22,8 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
     // Loop Modes
     public enum LoopMode {
         WRAP,
-        PING_PONG
+        PING_PONG,
+        PLAY_ONCE
     }
 
     private LoopMode loopMode = LoopMode.WRAP;
@@ -65,8 +66,9 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
     }
 
     /**
-     * Resetea el estado interno de reproducción. 
-     * Crucial al cambiar entre segmentos (start/stop/ralenti) para evitar que herede 
+     * Resetea el estado interno de reproducción.
+     * Crucial al cambiar entre segmentos (start/stop/ralenti) para evitar que
+     * herede
      * una dirección reversa aleatoria o una posición fuera de rango.
      */
     public void resetState() {
@@ -124,16 +126,18 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
         float rawFilter = 0.8f - (speed * 0.8f);
         float speedFilter = Math.max(0.0f, Math.min(0.95f, rawFilter));
 
-        // Combine filters: keep the stronger one? or add?
-        // Let's take the Maximum filtering required.
-        float filterAmount = Math.max(speedFilter, distanceFilter);
-
         double len = sample.getLength();
         double startPos = len * loopStart;
         double endPos = len * loopEnd;
 
+        if (loopMode == LoopMode.PLAY_ONCE && (position < startPos || position >= endPos)) {
+            return; // Finished playing, produce silence.
+        }
+
+        float filterAmount = Math.max(speedFilter, distanceFilter);
+
         // Ensure we are inside loop
-        if (position < startPos || position >= endPos) {
+        if (loopMode != LoopMode.PLAY_ONCE && (position < startPos || position >= endPos)) {
             position = reverse ? endPos : startPos;
         }
 
@@ -228,24 +232,24 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
                     if (loopMode == LoopMode.PING_PONG) {
                         reverse = true;
                         position = endPos - (position - endPos); // Bounce back
-                    } else {
+                    } else if (loopMode == LoopMode.WRAP) {
                         // WRAP
                         position = startPos + crossfadeLen + (position - endPos);
                         if (position >= endPos)
                             position = startPos;
-                    }
+                    } // For PLAY_ONCE, do nothing. Let position increment out of bounds.
                 }
             } else {
                 if (position <= startPos) {
                     if (loopMode == LoopMode.PING_PONG) {
                         reverse = false;
                         position = startPos + (startPos - position); // Bounce forward
-                    } else {
+                    } else if (loopMode == LoopMode.WRAP) {
                         // WRAP (Reverse wrapping)
                         position = endPos - crossfadeLen + (position - startPos);
                         if (position <= startPos)
                             position = endPos;
-                    }
+                    } // For PLAY_ONCE, do nothing.
                 }
             }
         }

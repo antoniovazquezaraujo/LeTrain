@@ -14,19 +14,20 @@ import org.slf4j.LoggerFactory;
  * más un GrainEngine de vagones (coachEngine).
  *
  * Estados:
- *   OFF       → sin sonido
- *   STARTING  → reproduce segmento 'start' una vez, luego → RALENTI
- *   RALENTI   → loop del segmento 'ralenti' (notch 0)
- *   CRUISE_N  → loop del segmento 'cruise' con pitch del notch N, con ramp entre notches
- *   STOPPING  → reproduce segmento 'stop' una vez, luego → OFF
+ * OFF → sin sonido
+ * STARTING → reproduce segmento 'start' una vez, luego → RALENTI
+ * RALENTI → loop del segmento 'ralenti' (notch 0)
+ * CRUISE_N → loop del segmento 'cruise' con pitch del notch N, con ramp entre
+ * notches
+ * STOPPING → reproduce segmento 'stop' una vez, luego → OFF
  */
 public class TrainSynthesizer implements AudioSource {
 
     private static final Logger log = LoggerFactory.getLogger(TrainSynthesizer.class);
 
     // --- Engines ---
-    private GrainEngine locoEngine;   // Motor: start / ralenti / cruise / stop
-    private GrainEngine coachEngine;  // Vagones
+    private GrainEngine locoEngine; // Motor: start / ralenti / cruise / stop
+    private GrainEngine coachEngine; // Vagones
     private GrainEngine brakeEngine;
     private GrainEngine loadEngine;
 
@@ -37,12 +38,30 @@ public class TrainSynthesizer implements AudioSource {
     private int currentNotchIndex = 0;
     private int targetNotchIndex = 0;
 
+    private enum State {
+        OFF,
+        STARTING,
+        IDLE,
+        CRUISING,
+        TRANSITIONING_UP,
+        TRANSITIONING_DOWN,
+        STOPPING
+    }
+
+    private State state = State.OFF;
+    private float stateTimer = 0.0f;
+    private long lastUpdateTime = 0;
+    private Runnable onStopFinished;
+    private float rampStartSpeed;
+    private float rampTargetSpeed;
+    private float rampDuration;
+    private long rampStartTime;
+    private float rampStartCoachVol;
+    private float rampTargetCoachVol;
+
     // --- Estado de transición ---
-    private boolean isTransitioning = false;
-    private Thread transitionThread;
-    private Thread startupThread;
-    private boolean engineStarting = false;   // bloquea movimiento durante arranque
-    private boolean isStopping = false;       // bloquea comandos durante apagado
+    private boolean engineStarting = false; // bloquea movimiento durante arranque
+    private boolean isStopping = false; // bloquea comandos durante apagado
     private boolean loading = false;
     private float targetLoadVolume = 0.0f;
 
@@ -59,6 +78,7 @@ public class TrainSynthesizer implements AudioSource {
 
     public interface SynthesizerListener {
         void onSpeedUpdate(float displaySpeed);
+
         void onNotchChanged(int notchIndex);
     }
 
@@ -68,10 +88,10 @@ public class TrainSynthesizer implements AudioSource {
 
     // --- Segmentos (en segundos, de las labels) ---
     private double startSegStart = 0, startSegEnd = 0;
-    private double stopSegStart  = 0, stopSegEnd  = 0;
-    private double ralentiStart  = 0, ralentiEnd  = 0;
-    private double cruiseStart   = 0, cruiseEnd   = 0;
-    private double wagonsStart   = 0, wagonsEnd   = 0;
+    private double stopSegStart = 0, stopSegEnd = 0;
+    private double ralentiStart = 0, ralentiEnd = 0;
+    private double cruiseStart = 0, cruiseEnd = 0;
+    private double wagonsStart = 0, wagonsEnd = 0;
 
     // =====================================================================
     // Constructor
@@ -80,7 +100,7 @@ public class TrainSynthesizer implements AudioSource {
     public TrainSynthesizer() {
         locoEngine = new GrainEngine();
         locoEngine.setLoopMode(GrainEngine.LoopMode.PING_PONG);
-        locoEngine.setTurnProbability(0.15f);   // random reverse
+        locoEngine.setTurnProbability(0.15f); // random reverse
         locoEngine.setReverseDuration(1.5f);
 
         coachEngine = new GrainEngine();
@@ -152,7 +172,7 @@ public class TrainSynthesizer implements AudioSource {
         applySharedResources();
     }
 
-     /**
+    /**
      * Permite inyectar un AudioSample externo (usado por TestSynth).
      * Actualiza los engines y re-inicializa los notches con las labels existentes.
      */
@@ -209,7 +229,7 @@ public class TrainSynthesizer implements AudioSource {
         // Arrancar en estado ralentí (silencioso, volumen 0 hasta que se active)
         applyLoopForNotch(0);
         locoEngine.setSpeed(notches[0].cruiseSpeed);
-        locoEngine.setVolume(0f);   // silencioso hasta startAudio()
+        locoEngine.setVolume(0f); // silencioso hasta startAudio()
         coachEngine.setVolume(0f);
     }
 
@@ -223,11 +243,26 @@ public class TrainSynthesizer implements AudioSource {
 
         for (letrain.audio.util.AudacityLabelParser.Label l : labels) {
             switch (l.name.toLowerCase()) {
-                case "start":   startSegStart = l.startTime; startSegEnd = l.endTime; break;
-                case "stop":    stopSegStart  = l.startTime; stopSegEnd  = l.endTime; break;
-                case "ralenti": ralentiStart  = l.startTime; ralentiEnd  = l.endTime; break;
-                case "cruise":  cruiseStart   = l.startTime; cruiseEnd   = l.endTime; break;
-                case "wagons":  wagonsStart   = l.startTime; wagonsEnd   = l.endTime; break;
+                case "start":
+                    startSegStart = l.startTime;
+                    startSegEnd = l.endTime;
+                    break;
+                case "stop":
+                    stopSegStart = l.startTime;
+                    stopSegEnd = l.endTime;
+                    break;
+                case "ralenti":
+                    ralentiStart = l.startTime;
+                    ralentiEnd = l.endTime;
+                    break;
+                case "cruise":
+                    cruiseStart = l.startTime;
+                    cruiseEnd = l.endTime;
+                    break;
+                case "wagons":
+                    wagonsStart = l.startTime;
+                    wagonsEnd = l.endTime;
+                    break;
             }
         }
 
@@ -235,7 +270,8 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     /**
-     * Pitchs: notch 0 = ralenti (1.0), notch 1..10 = cruise a distintas velocidades.
+     * Pitchs: notch 0 = ralenti (1.0), notch 1..10 = cruise a distintas
+     * velocidades.
      * Rango 0.7 → 1.5 (80% de rango tonal, claramente audible).
      */
     private void buildNotches(AudioSample sample) {
@@ -243,18 +279,18 @@ public class TrainSynthesizer implements AudioSource {
 
         // Notch 0 — ralenti
         float rStart = (float) ralentiStart * sampleRate;
-        float rEnd   = (float) ralentiEnd   * sampleRate;
-        float cStart = (float) cruiseStart  * sampleRate;
-        float cEnd   = (float) cruiseEnd    * sampleRate;
-        float wStart = (float) wagonsStart  * sampleRate;
-        float wEnd   = (float) wagonsEnd    * sampleRate;
+        float rEnd = (float) ralentiEnd * sampleRate;
+        float cStart = (float) cruiseStart * sampleRate;
+        float cEnd = (float) cruiseEnd * sampleRate;
+        float wStart = (float) wagonsStart * sampleRate;
+        float wEnd = (float) wagonsEnd * sampleRate;
 
         notches[0] = new SpeedNotch("Ralenti", 1.0f, 1.0f, 1.0f,
                 rStart, rEnd, wStart, wEnd, 2.0f);
 
         // Notchs 1-10 — pitch range 1.1 → 2.0
         for (int i = 1; i <= 10; i++) {
-            float pitch = 1.1f + (i - 1) * (0.9f / 9f);  // 1.10 … 2.00
+            float pitch = 1.1f + (i - 1) * (0.9f / 9f); // 1.10 … 2.00
             notches[i] = new SpeedNotch("Notch " + i, pitch, pitch, pitch,
                     cStart, cEnd, wStart, wEnd, 2.0f);
         }
@@ -271,9 +307,12 @@ public class TrainSynthesizer implements AudioSource {
         notches[0].name = "Ralenti";
 
         // Defaults for start/stop if labels fail
-        ralentiStart = locoStart / 44100.0; ralentiEnd = locoEnd / 44100.0;
-        startSegStart = 0; startSegEnd = ralentiStart;
-        stopSegStart = ralentiEnd; stopSegEnd = sharedSample != null ? sharedSample.getLength()/sharedSample.getSampleRate() : ralentiEnd + 1.0;
+        ralentiStart = locoStart / 44100.0;
+        ralentiEnd = locoEnd / 44100.0;
+        startSegStart = 0;
+        startSegEnd = ralentiStart;
+        stopSegStart = ralentiEnd;
+        stopSegEnd = sharedSample != null ? sharedSample.getLength() / sharedSample.getSampleRate() : ralentiEnd + 1.0;
     }
 
     // =====================================================================
@@ -282,19 +321,21 @@ public class TrainSynthesizer implements AudioSource {
 
     /** Aplica los puntos de bucle del notch N al locoEngine. */
     private void applyLoopForNotch(int notchIdx) {
-        if (sharedSample == null) return;
+        if (sharedSample == null)
+            return;
         SpeedNotch n = notches[notchIdx];
         float ls = convertSamplesToNorm(n.loopStart, sharedSample);
-        float le = convertSamplesToNorm(n.loopEnd,   sharedSample);
+        float le = convertSamplesToNorm(n.loopEnd, sharedSample);
         locoEngine.setLoopPoints(ls, le);
     }
 
     /** Aplica puntos de bucle en segundos (p.ej. start/stop). */
     private void applyLoopSeconds(double startSec, double endSec) {
-        if (sharedSample == null) return;
+        if (sharedSample == null)
+            return;
         float rate = sharedSample.getSampleRate();
-        float ls = convertSamplesToNorm((float)(startSec * rate), sharedSample);
-        float le = convertSamplesToNorm((float)(endSec   * rate), sharedSample);
+        float ls = convertSamplesToNorm((float) (startSec * rate), sharedSample);
+        float le = convertSamplesToNorm((float) (endSec * rate), sharedSample);
         locoEngine.setLoopPoints(ls, le);
     }
 
@@ -304,22 +345,52 @@ public class TrainSynthesizer implements AudioSource {
 
     @Override
     public boolean read(float[] buffer) {
-        if (!audioRunning) return false;
+        if (state == State.OFF)
+            return false;
+        if (!audioRunning)
+            return false;
         updateBrakeVolume();
         locoEngine.read(buffer);
         coachEngine.read(buffer);
-        if (brakeEngine != null) brakeEngine.read(buffer);
+        if (brakeEngine != null)
+            brakeEngine.read(buffer);
         updateLoadVolume();
-        if (loadEngine != null) loadEngine.read(buffer);
+        if (loadEngine != null)
+            loadEngine.read(buffer);
         return true;
     }
 
-    @Override public void setPosition(float x, float y, float z) { this.x=x; this.y=y; this.z=z; }
-    @Override public float getX() { return x; }
-    @Override public float getY() { return y; }
-    @Override public float getZ() { return z; }
-    @Override public float getReferenceDistance() { return refDistance; }
-    @Override public float getMaxDistance() { return maxDistance; }
+    @Override
+    public void setPosition(float x, float y, float z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    @Override
+    public float getX() {
+        return x;
+    }
+
+    @Override
+    public float getY() {
+        return y;
+    }
+
+    @Override
+    public float getZ() {
+        return z;
+    }
+
+    @Override
+    public float getReferenceDistance() {
+        return refDistance;
+    }
+
+    @Override
+    public float getMaxDistance() {
+        return maxDistance;
+    }
 
     public void setAudioRange(float ref, float max) {
         this.refDistance = ref;
@@ -331,42 +402,28 @@ public class TrainSynthesizer implements AudioSource {
     // =====================================================================
 
     public void startAudio() {
+        if (state != State.OFF)
+            return;
         audioRunning = true;
 
         if (startSegEnd > startSegStart && sharedSample != null) {
             log.info("Starting engine engine: sequence [{}, {}]", startSegStart, startSegEnd);
-            // 1. Reproducir segmento START una vez
             locoEngine.resetState();
-            locoEngine.setLoopMode(GrainEngine.LoopMode.WRAP);
-            locoEngine.setTurnProbability(0f);  // sin random durante arranque
+            locoEngine.setLoopMode(GrainEngine.LoopMode.PLAY_ONCE);
+            locoEngine.setTurnProbability(0f); // sin random durante arranque
             applyLoopSeconds(startSegStart, startSegEnd);
             locoEngine.seekSamples(startSegStart * sharedSample.getSampleRate());
             locoEngine.setSpeed(1.0f);
             locoEngine.setVolume(baseLocoVolume);
+            state = State.STARTING;
+            stateTimer = (float) (startSegEnd - startSegStart);
             engineStarting = true;
-
-            long durationMs = (long)((startSegEnd - startSegStart) * 1000);
-            startupThread = new Thread(() -> {
-                try {
-                    Thread.sleep(durationMs);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-                // 2. Transición a RALENTI loop
-                locoEngine.setLoopMode(GrainEngine.LoopMode.PING_PONG);
-                locoEngine.setTurnProbability(0.15f);
-                applyLoopForNotch(0);
-                locoEngine.setSpeed(notches[0].cruiseSpeed);
-                engineStarting = false;
-            });
-            startupThread.setDaemon(true);
-            startupThread.start();
         } else {
             // Sin segmento start: ir directamente a ralenti
             applyLoopForNotch(0);
             locoEngine.setSpeed(notches[0].cruiseSpeed);
             locoEngine.setVolume(baseLocoVolume);
+            state = State.IDLE;
         }
 
         coachEngine.setVolume(0f);
@@ -382,49 +439,31 @@ public class TrainSynthesizer implements AudioSource {
      * Reproduce el segmento STOP una vez y luego llama a onFinished.
      */
     public void playStopSound(Runnable onFinished) {
-        if (isStopping) return;
+        if (state == State.STOPPING)
+            return;
         if (stopSegEnd <= stopSegStart || sharedSample == null) {
             audioRunning = false;
-            if (onFinished != null) onFinished.run();
+            state = State.OFF;
+            if (onFinished != null)
+                onFinished.run();
             return;
         }
 
         isStopping = true;
-
-        // Interrumpir transición o arranque en curso
-        if (transitionThread != null && transitionThread.isAlive()) {
-            transitionThread.interrupt();
-        }
-        if (startupThread != null && startupThread.isAlive()) {
-            startupThread.interrupt();
-        }
+        state = State.STOPPING;
+        stateTimer = (float) (stopSegEnd - stopSegStart);
+        this.onStopFinished = onFinished;
 
         log.info("Stopping engine: segment [{}, {}]", stopSegStart, stopSegEnd);
 
-        // Cambiar a WRAP (play once) y apuntar al segmento stop
         locoEngine.resetState();
-        locoEngine.setLoopMode(GrainEngine.LoopMode.WRAP);
+        locoEngine.setLoopMode(GrainEngine.LoopMode.PLAY_ONCE);
         locoEngine.setTurnProbability(0f);
         applyLoopSeconds(stopSegStart, stopSegEnd);
         locoEngine.seekSamples(stopSegStart * sharedSample.getSampleRate());
         locoEngine.setSpeed(1.0f);
         locoEngine.setVolume(baseLocoVolume);
         coachEngine.setVolume(0f);
-
-        long durationMs = (long)((stopSegEnd - stopSegStart) * 1000);
-        Thread t = new Thread(() -> {
-            try {
-                Thread.sleep(durationMs);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } finally {
-                audioRunning = false;
-                isStopping = false;
-                if (onFinished != null) onFinished.run();
-            }
-        });
-        t.setDaemon(true);
-        t.start();
     }
 
     // =====================================================================
@@ -433,7 +472,8 @@ public class TrainSynthesizer implements AudioSource {
 
     public void setLocoVolume(float vol) {
         this.baseLocoVolume = vol;
-        if (audioRunning) locoEngine.setVolume(vol);
+        if (audioRunning)
+            locoEngine.setVolume(vol);
     }
 
     public void setCoachVolume(float vol) {
@@ -447,7 +487,8 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     private void updateBrakeVolume() {
-        if (brakeEngine == null) return;
+        if (brakeEngine == null)
+            return;
         float cur = brakeEngine.getVolume();
         float step = (targetBrakeVolume > cur) ? 0.02f : 0.01f;
         if (Math.abs(cur - targetBrakeVolume) < 0.01f)
@@ -461,10 +502,13 @@ public class TrainSynthesizer implements AudioSource {
         this.targetLoadVolume = loading ? 0.7f : 0.0f;
     }
 
-    public boolean isLoading() { return loading; }
+    public boolean isLoading() {
+        return loading;
+    }
 
     private void updateLoadVolume() {
-        if (loadEngine == null) return;
+        if (loadEngine == null)
+            return;
         float cur = loadEngine.getVolume();
         float step = (targetLoadVolume > cur) ? 0.05f : 0.02f;
         if (Math.abs(cur - targetLoadVolume) < 0.01f)
@@ -473,14 +517,17 @@ public class TrainSynthesizer implements AudioSource {
             loadEngine.setVolume(cur + (targetLoadVolume > cur ? step : -step));
     }
 
-    public void setFilterSensitivity(float s) { this.filterSensitivity = s; }
+    public void setFilterSensitivity(float s) {
+        this.filterSensitivity = s;
+    }
 
     @Override
     public void setDistanceFilter(float amount) {
         float eff = Math.min(0.99f, amount * filterSensitivity);
         locoEngine.setDistanceFilter(eff);
         coachEngine.setDistanceFilter(eff);
-        if (brakeEngine != null) brakeEngine.setDistanceFilter(eff);
+        if (brakeEngine != null)
+            brakeEngine.setDistanceFilter(eff);
     }
 
     public void setLocoRandomness(float prob, float duration) {
@@ -498,35 +545,47 @@ public class TrainSynthesizer implements AudioSource {
     // =====================================================================
 
     public void setNotch(int index, SpeedNotch notch) {
-        if (index >= 0 && index < notches.length) notches[index] = notch;
+        if (index >= 0 && index < notches.length)
+            notches[index] = notch;
     }
 
     public SpeedNotch getNotch(int index) {
         return (index >= 0 && index < notches.length) ? notches[index] : null;
     }
 
-    public SpeedNotch[] getNotches() { return notches; }
+    public SpeedNotch[] getNotches() {
+        return notches;
+    }
 
     // =====================================================================
     // Listeners
     // =====================================================================
 
-    public void addListener(SynthesizerListener l) { listeners.add(l); }
+    public void addListener(SynthesizerListener l) {
+        listeners.add(l);
+    }
 
     private void notifySpeed(float speed) {
-        for (SynthesizerListener l : listeners) l.onSpeedUpdate(speed);
+        for (SynthesizerListener l : listeners)
+            l.onSpeedUpdate(speed);
     }
 
     private void notifyNotch(int idx) {
-        for (SynthesizerListener l : listeners) l.onNotchChanged(idx);
+        for (SynthesizerListener l : listeners)
+            l.onNotchChanged(idx);
     }
 
     // =====================================================================
     // Control de aceleración / desaceleración
     // =====================================================================
 
-    public boolean isEngineStarting() { return engineStarting; }
-    public boolean isTransitioning()  { return isTransitioning; }
+    public boolean isEngineStarting() {
+        return engineStarting;
+    }
+
+    public boolean isTransitioning() {
+        return state == State.TRANSITIONING_UP || state == State.TRANSITIONING_DOWN;
+    }
 
     /**
      * Solicita cambiar al notch 'index'.
@@ -534,118 +593,175 @@ public class TrainSynthesizer implements AudioSource {
      * la detecte en el siguiente paso.
      */
     public synchronized void setThrottle(int index) {
-        if (isStopping || engineStarting) return;
-        if (index < 0 || index >= notches.length) return;
-        if (index == currentNotchIndex && !isTransitioning) return;
+        if (state == State.STOPPING || state == State.STARTING)
+            return;
+        if (index < 0 || index >= notches.length)
+            return;
+        if (index == targetNotchIndex)
+            return;
 
-        // Frenazo rápido
-        if (isTransitioning && index < targetNotchIndex && index < currentNotchIndex) {
+        if (isTransitioning() && index < targetNotchIndex && index < currentNotchIndex) {
             setBraking(true);
         }
 
         targetNotchIndex = index;
 
-        if (!isTransitioning) {
-            startTransitionLoop();
+        if (state == State.IDLE || state == State.CRUISING) {
+            startTransition();
         }
     }
 
-    private void startTransitionLoop() {
-        isTransitioning = true;
-        transitionThread = new Thread(() -> {
-            try {
-                while (!Thread.currentThread().isInterrupted()) {
-                    int next;
-                    synchronized (TrainSynthesizer.this) {
-                        if (currentNotchIndex == targetNotchIndex) break;
-                        next = currentNotchIndex + (targetNotchIndex > currentNotchIndex ? 1 : -1);
-                    }
+    private void startTransition() {
+        if (currentNotchIndex == targetNotchIndex) {
+            state = (currentNotchIndex == 0) ? State.IDLE : State.CRUISING;
+            return;
+        }
 
-                    SpeedNotch target = notches[next];
-                    float startSpeed = locoEngine.getSpeed();
-                    float targetSpeed = target.cruiseSpeed;
-                    float duration = target.rampTime;
+        int nextNotch = currentNotchIndex + (targetNotchIndex > currentNotchIndex ? 1 : -1);
+        state = (targetNotchIndex > currentNotchIndex) ? State.TRANSITIONING_UP : State.TRANSITIONING_DOWN;
 
-                    // Primero el ramp (en el segmento actual):
-                    //  - Ralenti→notch1: sube pitch del RALENTI hasta el pitch de notch1
-                    //  - Cruise N→N+1: sube pitch del CRUISE
-                    //  - Cruise 1→0: baja pitch del CRUISE hasta el pitch de ralenti
-                    performRampSync(startSpeed, targetSpeed, duration);
+        SpeedNotch target = notches[nextNotch];
+        rampStartSpeed = locoEngine.getSpeed();
+        rampTargetSpeed = target.cruiseSpeed;
+        rampDuration = target.rampTime;
+        rampStartTime = System.nanoTime();
 
-                    // Cambia el segmento SOLO cuando el ramp ya terminó:
-                    if (next > 0 && currentNotchIndex == 0) {
-                        // Ralenti → primer notch cruise: cambia a cruise al terminar
-                        applyLoopForNotch(next);
-                    } else if (next == 0) {
-                        // Último cruise → ralenti: cambia a ralenti al terminar
-                        applyLoopForNotch(0);
-                    }
-                    // Entre notches cruise: mismo segmento, solo cambió el pitch
-
-                    currentNotchIndex = next;
-                    notifyNotch(next);
-                }
-            } finally {
-                synchronized (TrainSynthesizer.this) {
-                    isTransitioning = false;
-                    engineStarting = false;
-                    setBraking(false);
-                }
-            }
-        });
-        transitionThread.setDaemon(true);
-        transitionThread.start();
+        rampStartCoachVol = coachEngine.getVolume();
+        rampTargetCoachVol = (nextNotch > 0) ? baseCoachVolume : 0.0f;
     }
 
+    public void update() {
+        if (state == State.OFF)
+            return;
+
+        if (lastUpdateTime == 0) {
+            lastUpdateTime = System.nanoTime();
+            return;
+        }
+        long now = System.nanoTime();
+        float deltaTime = (now - lastUpdateTime) / 1_000_000_000.0f;
+        lastUpdateTime = now;
+
+        switch (state) {
+            case STARTING:
+                stateTimer -= deltaTime;
+                if (stateTimer <= 0) {
+                    locoEngine.setLoopMode(GrainEngine.LoopMode.PING_PONG);
+                    locoEngine.setTurnProbability(0.15f);
+                    applyLoopForNotch(0);
+                    locoEngine.setSpeed(notches[0].cruiseSpeed);
+                    engineStarting = false;
+                    state = State.IDLE;
+                    if (targetNotchIndex != currentNotchIndex) {
+                        startTransition();
+                    }
+                }
+                break;
+
+            case STOPPING:
+                stateTimer -= deltaTime;
+                if (stateTimer <= 0) {
+                    audioRunning = false;
+                    isStopping = false;
+                    state = State.OFF;
+                    if (onStopFinished != null) {
+                        onStopFinished.run();
+                        onStopFinished = null;
+                    }
+                }
+                break;
+
+            case TRANSITIONING_UP:
+            case TRANSITIONING_DOWN:
+                long elapsed = now - rampStartTime;
+                float progress = (float) elapsed / (rampDuration * 1_000_000_000.0f);
+
+                if (progress >= 1.0f) {
+                    locoEngine.setSpeed(rampTargetSpeed);
+                    coachEngine.setVolume(rampTargetCoachVol);
+
+                    int nextNotch = currentNotchIndex + (state == State.TRANSITIONING_UP ? 1 : -1);
+
+                    if (nextNotch > 0 && currentNotchIndex == 0) {
+                        applyLoopForNotch(nextNotch);
+                    } else if (nextNotch == 0) {
+                        applyLoopForNotch(0);
+                    }
+
+                    currentNotchIndex = nextNotch;
+                    notifyNotch(currentNotchIndex);
+
+                    if (currentNotchIndex == targetNotchIndex) {
+                        state = (currentNotchIndex == 0) ? State.IDLE : State.CRUISING;
+                        setBraking(false);
+                    } else {
+                        startTransition();
+                    }
+                } else {
+                    float newSpeed = rampStartSpeed + (rampTargetSpeed - rampStartSpeed) * progress;
+                    locoEngine.setSpeed(newSpeed);
+                    float newCoachVol = rampStartCoachVol + (rampTargetCoachVol - rampStartCoachVol) * progress;
+                    coachEngine.setVolume(newCoachVol);
+                }
+                break;
+        }
+    }
 
     /**
      * Rampa de pitch durante durationSec segundos.
-     * Simultáneamente notifica la velocidad para que la locomotora y la palanca se actualicen.
+     * Simultáneamente notifica la velocidad para que la locomotora y la palanca se
+     * actualicen.
      */
     private void performRampSync(float startSpeed, float targetSpeed, float durationSec) {
-        int interval = 33; // ms (~30fps)
-        int steps = Math.max(1, (int)((durationSec * 1000) / interval));
-        float speedStep = (targetSpeed - startSpeed) / steps;
-
-        // Para los vagones: volumen proporcional a la velocidad
-        float startCoachVol = coachEngine.getVolume();
-        float targetCoachVol = (targetNotchIndex > 0) ? baseCoachVolume : 0.0f;
-        float coachStep = (targetCoachVol - startCoachVol) / steps;
-
-        for (int i = 1; i <= steps; i++) {
-            if (Thread.currentThread().isInterrupted()) return;
-            try { Thread.sleep(interval); } catch (InterruptedException e) { return; }
-
-            float newSpeed = startSpeed + speedStep * i;
-            // Clamp
-            if (speedStep > 0 && newSpeed > targetSpeed) newSpeed = targetSpeed;
-            if (speedStep < 0 && newSpeed < targetSpeed) newSpeed = targetSpeed;
-
-            locoEngine.setSpeed(newSpeed);
-            notifySpeed(newSpeed);
-
-            // Actualizar volumen de vagones proporcionalmente
-            float newCoachVol = startCoachVol + coachStep * i;
-            if (newCoachVol < 0) newCoachVol = 0;
-            if (newCoachVol > baseCoachVolume) newCoachVol = baseCoachVolume;
-            coachEngine.setVolume(newCoachVol);
-        }
+        /*
+         * int interval = 33; // ms (~30fps)
+         * int steps = Math.max(1, (int)((durationSec * 1000) / interval));
+         * float speedStep = (targetSpeed - startSpeed) / steps;
+         * 
+         * // Para los vagones: volumen proporcional a la velocidad
+         * float startCoachVol = coachEngine.getVolume();
+         * float targetCoachVol = (targetNotchIndex > 0) ? baseCoachVolume : 0.0f;
+         * float coachStep = (targetCoachVol - startCoachVol) / steps;
+         * 
+         * for (int i = 1; i <= steps; i++) {
+         * if (Thread.currentThread().isInterrupted()) return;
+         * try { Thread.sleep(interval); } catch (InterruptedException e) { return; }
+         * 
+         * float newSpeed = startSpeed + speedStep * i;
+         * // Clamp
+         * if (speedStep > 0 && newSpeed > targetSpeed) newSpeed = targetSpeed;
+         * if (speedStep < 0 && newSpeed < targetSpeed) newSpeed = targetSpeed;
+         * 
+         * locoEngine.setSpeed(newSpeed);
+         * notifySpeed(newSpeed);
+         * 
+         * // Actualizar volumen de vagones proporcionalmente
+         * float newCoachVol = startCoachVol + coachStep * i;
+         * if (newCoachVol < 0) newCoachVol = 0;
+         * if (newCoachVol > baseCoachVolume) newCoachVol = baseCoachVolume;
+         * coachEngine.setVolume(newCoachVol);
+         * }
+         */
     }
 
     /** Actualiza el loopPoint de los vagones según velocidad de movimiento. */
     public void setMotionSpeed(int speed) {
-        if (isStopping) return;
-        if (sharedSample == null) return;
-        // Los vagones usan siempre el mismo segmento pero con volumen proporcional a la velocidad.
+        if (isStopping)
+            return;
+        if (sharedSample == null)
+            return;
+        // Los vagones usan siempre el mismo segmento pero con volumen proporcional a la
+        // velocidad.
         // El loop ya está configurado en los notches.
-        if (notches[0] == null) return;
+        if (notches[0] == null)
+            return;
         float wStart = convertSamplesToNorm(notches[0].coachLoopStart, sharedSample);
-        float wEnd   = convertSamplesToNorm(notches[0].coachLoopEnd,   sharedSample);
+        float wEnd = convertSamplesToNorm(notches[0].coachLoopEnd, sharedSample);
         coachEngine.setLoopPoints(wStart, wEnd);
-        coachEngine.setSpeed(1.0f + speed * 0.05f);  // mismo rango que los notchs del loco
+        coachEngine.setSpeed(1.0f + speed * 0.05f); // mismo rango que los notchs del loco
 
         // El volumen se gestiona en performRampSync; aquí solo si el tren está parado
-        if (speed == 0 && !isTransitioning) {
+        if (speed == 0 && !isTransitioning()) {
             coachEngine.setVolume(0f);
         }
     }
@@ -655,11 +771,17 @@ public class TrainSynthesizer implements AudioSource {
     // =====================================================================
 
     private float convertSamplesToNorm(float samples, AudioSample sample) {
-        if (sample == null || sample.getLength() == 0) return 0.0f;
+        if (sample == null || sample.getLength() == 0)
+            return 0.0f;
         return samples / sample.getLength();
     }
 
     // --- Acceso a engines para debug ---
-    public GrainEngine getLocoEngine()  { return locoEngine; }
-    public GrainEngine getCoachEngine() { return coachEngine; }
+    public GrainEngine getLocoEngine() {
+        return locoEngine;
+    }
+
+    public GrainEngine getCoachEngine() {
+        return coachEngine;
+    }
 }

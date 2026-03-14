@@ -698,6 +698,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public void prepareUnlink(boolean forward, int count) {
+        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
+            return;
+        }
+
         if (forward) {
             linkerDivisionSense = LinkersSense.FRONT;
         } else {
@@ -722,12 +726,18 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public void setFrontDivisionSense() {
+        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
+            return;
+        }
         linkerDivisionSense = LinkersSense.FRONT;
         numLinkersToRemove = calcInitialUnlinkCount();
         updateLinkersToRemove();
     }
 
     public void setBackDivisionSense() {
+        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
+            return;
+        }
         linkerDivisionSense = LinkersSense.BACK;
         numLinkersToRemove = calcInitialUnlinkCount();
         updateLinkersToRemove();
@@ -749,6 +759,9 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public void selectNextDivisionLink() {
+        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
+            return;
+        }
         if (numLinkersToRemove < getLinkers().size() - 1) {
             numLinkersToRemove++;
         }
@@ -756,6 +769,9 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public void selectPrevDivisionLink() {
+        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
+            return;
+        }
         if (numLinkersToRemove > 0) {
             numLinkersToRemove--;
         }
@@ -790,6 +806,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public void divideTrain(Supplier<Integer> nextTrainIdSupplier) {
+        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
+            return;
+        }
+
         Linker linkerToRemove = null;
         for (int n = 0; n < numLinkersToRemove; n++) {
             if (linkerDivisionSense == LinkersSense.BACK) {
@@ -815,6 +835,10 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public List<Linker> destroyLinkers(Supplier<Integer> nextTrainIdSupplier) {
+        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
+            return new ArrayList<>();
+        }
+
         List<Linker> linkersToDestroy = new ArrayList<>();
         Linker linkerToRemove = null;
         for (int n = 0; n < numLinkersToRemove; n++) {
