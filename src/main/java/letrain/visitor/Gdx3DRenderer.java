@@ -447,7 +447,8 @@ public class Gdx3DRenderer implements Visitor {
         }
 
         // Base plate (Always visible: Gray by default, White if selected)
-        ModelInstance base = new ModelInstance(isSelected ? resourceContext.selectedForkBaseModel : resourceContext.forkBaseModel);
+        ModelInstance base = new ModelInstance(
+                isSelected ? resourceContext.selectedForkBaseModel : resourceContext.forkBaseModel);
         base.transform.setToTranslation(track.getPosition().getX() + 0.5f, 0.03f,
                 track.getPosition().getY() + 0.5f);
         instances.add(base);
@@ -462,7 +463,8 @@ public class Gdx3DRenderer implements Visitor {
         bx += getDirX(sideDir) * boxOffset;
         bz += getDirZ(sideDir) * boxOffset;
 
-        ModelInstance box = new ModelInstance(isSelected ? resourceContext.selectedForkBoxModel : resourceContext.forkBoxModel);
+        ModelInstance box = new ModelInstance(
+                isSelected ? resourceContext.selectedForkBoxModel : resourceContext.forkBoxModel);
         box.transform.setToTranslation(bx, 0.06f + 0.01f, bz); // On top of the base plate (height 0.06)
         instances.add(box);
 
@@ -870,7 +872,8 @@ public class Gdx3DRenderer implements Visitor {
         // que lo oculte)
         // Si hay blink, a veces ocultamos todo.
         // Si hay highlight/unlink, ocultamos la carga para ser claros con la selección.
-        if (wagon.getCargoAmount() > 0 && !highlight && !unlinkHighlight && chassisModel != resourceContext.wagonHighlightModel) {
+        if (wagon.getCargoAmount() > 0 && !highlight && !unlinkHighlight
+                && chassisModel != resourceContext.wagonHighlightModel) {
             int cargoAmount = wagon.getCargoAmount();
             int maxCapacity = wagon.getMaxCapacity();
             com.badlogic.gdx.graphics.Color cargoColor = (wagon.getCargoType() != null)
@@ -985,11 +988,12 @@ public class Gdx3DRenderer implements Visitor {
         instance.materials.get(0)
                 .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                         .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW));
-        // Raise to rail level (Y=0.08f) and scale Y by 10 to match rail height (0.2f
-        // total)
-        instance.transform.setToTranslation(x + 0.5f, 0.08f, y + 0.5f);
+        // Place sensor with a smaller block that fits inside a single track cell, plus
+        // number label.
+        float sensorBottomHeight = 0.09f;
+        instance.transform.setToTranslation(x + 0.5f, sensorBottomHeight, y + 0.5f);
         instance.transform.rotate(0, 1, 0, angle - 90f);
-        instance.transform.scale(0.7f, 10f, 0.25f);
+        instance.transform.scale(1.0f, 1.04f, 1.0f);
         instances.add(instance);
 
         // Render ID label flat on top of the sensor
@@ -1005,7 +1009,8 @@ public class Gdx3DRenderer implements Visitor {
         float x = semaphore.getPosition().getX();
         float y = semaphore.getPosition().getY();
 
-        com.badlogic.gdx.graphics.g3d.Model modelToUse = semaphore.isOpen() ? resourceContext.semaphoreOpenModel : resourceContext.semaphoreClosedModel;
+        com.badlogic.gdx.graphics.g3d.Model modelToUse = semaphore.isOpen() ? resourceContext.semaphoreOpenModel
+                : resourceContext.semaphoreClosedModel;
         ModelInstance instance = new ModelInstance(modelToUse);
 
         // Calcular offset basado en la vía si existe
@@ -1223,7 +1228,6 @@ public class Gdx3DRenderer implements Visitor {
         float scaleY = 0.01f;
         float scaleZ = 1.0f;
 
-
         if (type >= 10 && type <= 19) {
             // PRODUCER - Solid Crystal Jewel Block
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
@@ -1283,7 +1287,6 @@ public class Gdx3DRenderer implements Visitor {
             float z = ground.getPosition().getY() + 0.5f;
 
             ModelInstance instance = new ModelInstance(model);
-
 
             // Mode-based transparency for Rocks/Tunnels
             if (type == GroundMap.ROCK || model == resourceContext.tunnelPortalModel) {
