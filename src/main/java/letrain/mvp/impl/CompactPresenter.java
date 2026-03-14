@@ -18,7 +18,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.time.LocalDateTime;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -58,6 +60,13 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     private long stationInputTimeout = 0;
     private long locomotiveInputTimeout = 0;
 
+    private final Map<letrain.mvp.Model.GameMode, ModeKeyHandler> modeKeyHandlers = new EnumMap<>(
+            letrain.mvp.Model.GameMode.class);
+
+    private interface ModeKeyHandler {
+        void handle(KeyStroke keyEvent);
+    }
+
     RailTrackMaker railTrackMaker;
     letrain.audio.AudioController audioController;
     SimulationController simulationController;
@@ -74,6 +83,31 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         railTrackMaker = new RailTrackMaker(this);
         audioController = new letrain.audio.AudioController(this.model);
         simulationController = new SimulationController(this.model, audioController, railTrackMaker);
+        initModeKeyHandlers();
+    }
+
+    private void initModeKeyHandlers() {
+        modeKeyHandlers.put(RAILS, keyEvent -> railTrackMaker.onChar(keyEvent));
+        modeKeyHandlers.put(DRIVE, keyEvent -> trainDriverOnChar(keyEvent));
+        modeKeyHandlers.put(FORKS, keyEvent -> forkManagerOnChar(keyEvent));
+        modeKeyHandlers.put(SEMAPHORES, keyEvent -> semaphoreManagerOnChar(keyEvent));
+        modeKeyHandlers.put(TRAINS, keyEvent -> {
+            if (keyEvent.getKeyType() == KeyType.Backspace) {
+                deleteVehicle();
+            } else if (keyEvent.getKeyType() == KeyType.Character) {
+                trainManagerOnChar(keyEvent);
+            }
+        });
+        modeKeyHandlers.put(LINK, keyEvent -> linkerOnChar(keyEvent));
+        modeKeyHandlers.put(UNLINK, keyEvent -> unlinkerOnChar(keyEvent));
+        modeKeyHandlers.put(STATIONS, keyEvent -> stationManagerOnChar(keyEvent));
+        modeKeyHandlers.put(PROGRAM, keyEvent -> programManagerOnChar(keyEvent));
+        modeKeyHandlers.put(MENU, keyEvent -> {
+            // no-op in menu mode
+        });
+        modeKeyHandlers.put(letrain.mvp.Model.GameMode.LOAD_TRAINS, keyEvent -> {
+            // no-op
+        });
     }
 
     void setModel(Model model) {
@@ -247,41 +281,9 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
             }
         }
 
-        switch (model.getMode()) {
-            case RAILS:
-                railTrackMaker.onChar(keyEvent);
-                break;
-            case DRIVE:
-                trainDriverOnChar(keyEvent);
-                break;
-            case FORKS:
-                forkManagerOnChar(keyEvent);
-                break;
-            case SEMAPHORES:
-                semaphoreManagerOnChar(keyEvent);
-                break;
-            case TRAINS:
-                if (keyEvent.getKeyType() == KeyType.Backspace) {
-                    deleteVehicle();
-                } else if (keyEvent.getKeyType() == KeyType.Character) {
-                    trainManagerOnChar(keyEvent);
-                }
-                break;
-            case LINK:
-                linkerOnChar(keyEvent);
-                break;
-            case UNLINK:
-                unlinkerOnChar(keyEvent);
-                break;
-            case STATIONS:
-                stationManagerOnChar(keyEvent);
-                break;
-            case PROGRAM:
-                programManagerOnChar(keyEvent);
-                break;
-            case LOAD_TRAINS:
-            case MENU:
-                break;
+        ModeKeyHandler handler = modeKeyHandlers.get(model.getMode());
+        if (handler != null) {
+            handler.handle(keyEvent);
         }
     }
 
