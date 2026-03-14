@@ -1247,7 +1247,10 @@ public class Gdx3DRenderer implements Visitor {
             jewelBlock.transform.scale(0.9f, h, 0.9f);
 
             instances.add(jewelBlock);
-            return;
+
+            // Continue to render base and walls
+            model = resourceContext.groundModel;
+            yPosition = 0.0f;
         } else if (type >= 20 && type <= 29) {
             // CONSUMER - Optimized Pre-built Icon Model
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
@@ -1263,7 +1266,10 @@ public class Gdx3DRenderer implements Visitor {
             ModelInstance instance = new ModelInstance(consumerModelToUse);
             instance.transform.setToTranslation(x, 0.01f, z);
             instances.add(instance);
-            return;
+
+            // Continue to render base and walls
+            model = resourceContext.groundModel;
+            yPosition = 0.0f;
         } else {
             switch (type) {
                 case GroundMap.GROUND:
@@ -1308,6 +1314,12 @@ public class Gdx3DRenderer implements Visitor {
                     instance.transform.scale(scaleX, scaleY, scaleZ);
                     instances.add(instance);
                 }
+            } else if (type >= 10 && type <= 29) {
+                // Industry Base: Render black
+                instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.BLACK));
+                instance.transform.setToTranslation(x, yPosition, z);
+                instance.transform.scale(scaleX, scaleY, scaleZ);
+                instances.add(instance);
             } else {
                 instance.transform.setToTranslation(x, yPosition, z);
                 instance.transform.scale(scaleX, scaleY, scaleZ);
@@ -1320,9 +1332,15 @@ public class Gdx3DRenderer implements Visitor {
                 int gy = ground.getPosition().getY();
 
                 // Color de la pared: si es roca, color montaña. Si no, color tierra.
-                com.badlogic.gdx.graphics.Color wallColor = (type == GroundMap.ROCK)
-                        ? new com.badlogic.gdx.graphics.Color(0.5f, 0.4f, 0.3f, 1f)
-                        : new com.badlogic.gdx.graphics.Color(0.4f, 0.6f, 0.3f, 1f);
+                // Si es industria, color negro.
+                com.badlogic.gdx.graphics.Color wallColor;
+                if (type == GroundMap.ROCK) {
+                    wallColor = new com.badlogic.gdx.graphics.Color(0.5f, 0.4f, 0.3f, 1f);
+                } else if (type >= 10 && type <= 29) {
+                    wallColor = com.badlogic.gdx.graphics.Color.BLACK;
+                } else {
+                    wallColor = new com.badlogic.gdx.graphics.Color(0.4f, 0.6f, 0.3f, 1f);
+                }
 
                 checkAndAddWall(gx, gy - 1, x, -1.05f, z - 0.5f, 0, wallColor); // Norte
                 checkAndAddWall(gx, gy + 1, x, -1.05f, z + 0.5f, 0, wallColor); // Sur
