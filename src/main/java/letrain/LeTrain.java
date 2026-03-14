@@ -1,13 +1,13 @@
 package letrain;
 
 import letrain.mvp.Model;
-import letrain.mvp.impl.CompactPresenter;
-import letrain.mvp.impl.Gdx3DView;
+import letrain.mvp.impl.Presenter2D;
+import letrain.mvp.impl.Presenter3D;
 
 public class LeTrain {
 
     private Model model = null;
-    private CompactPresenter presenter;
+    private Presenter2D presenter;
 
     public static void main(String[] args) {
         new LeTrain().start(args);
@@ -30,10 +30,10 @@ public class LeTrain {
             com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration config = new com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration();
             config.setTitle("LeTrain 3D - Wooden Edition");
             config.setWindowedMode(1280, 720);
-            Gdx3DView view3D = new Gdx3DView((letrain.mvp.impl.Model) this.model);
+            Presenter3D view3D = new Presenter3D((letrain.mvp.impl.Model) this.model);
             new com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application(view3D, config);
         } else {
-            presenter = new CompactPresenter((letrain.mvp.impl.Model) this.model);
+            presenter = new Presenter2D((letrain.mvp.impl.Model) this.model);
             presenter.start();
             presenter.stop();
         }

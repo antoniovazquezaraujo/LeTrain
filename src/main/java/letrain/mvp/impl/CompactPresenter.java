@@ -89,19 +89,19 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     private void initModeKeyHandlers() {
         modeKeyHandlers.put(RAILS, keyEvent -> railTrackMaker.onChar(keyEvent));
         modeKeyHandlers.put(DRIVE, keyEvent -> trainDriverOnChar(keyEvent));
-        modeKeyHandlers.put(FORKS, keyEvent -> forkManagerOnChar(keyEvent));
-        modeKeyHandlers.put(SEMAPHORES, keyEvent -> semaphoreManagerOnChar(keyEvent));
+        modeKeyHandlers.put(FORKS, keyEvent -> handleForksModeKey(keyEvent));
+        modeKeyHandlers.put(SEMAPHORES, keyEvent -> handleSemaphoresModeKey(keyEvent));
         modeKeyHandlers.put(TRAINS, keyEvent -> {
             if (keyEvent.getKeyType() == KeyType.Backspace) {
                 deleteVehicle();
             } else if (keyEvent.getKeyType() == KeyType.Character) {
-                trainManagerOnChar(keyEvent);
+                handleTrainsModeKey(keyEvent);
             }
         });
-        modeKeyHandlers.put(LINK, keyEvent -> linkerOnChar(keyEvent));
-        modeKeyHandlers.put(UNLINK, keyEvent -> unlinkerOnChar(keyEvent));
-        modeKeyHandlers.put(STATIONS, keyEvent -> stationManagerOnChar(keyEvent));
-        modeKeyHandlers.put(PROGRAM, keyEvent -> programManagerOnChar(keyEvent));
+        modeKeyHandlers.put(LINK, keyEvent -> handleLinkModeKey(keyEvent));
+        modeKeyHandlers.put(UNLINK, keyEvent -> handleUnlinkModeKey(keyEvent));
+        modeKeyHandlers.put(STATIONS, keyEvent -> handleStationsModeKey(keyEvent));
+        modeKeyHandlers.put(PROGRAM, keyEvent -> handleProgramModeKey(keyEvent));
         modeKeyHandlers.put(MENU, keyEvent -> {
             // no-op in menu mode
         });
@@ -214,76 +214,87 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
             }
         } else if (keyEvent.getKeyType() == KeyType.Escape) {
             view.showExitDialog();
-        } else if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != ' ') {
-            if (model.getMode() == TRAINS) {
-                trainManagerOnChar(keyEvent);
-            } else {
-                switch (keyEvent.getCharacter()) {
-                    case 'r':
-                        model.setMode(RAILS);
-                        break;
-                    case 'd':
-                        if (!model.getLocomotives().isEmpty()) {
-                            model.setMode(DRIVE);
-                        }
-                        break;
-                    case 'f':
-                        if (!model.getForks().isEmpty()) {
-                            model.setMode(FORKS);
-                        }
-                        break;
-                    case 's':
-                        if (!model.getSemaphores().isEmpty()) {
-                            model.setMode(SEMAPHORES);
-                        }
-                        break;
-                    case 't':
-                        if (model.getCursorRailTrack() != null) {
-                            model.setMode(TRAINS);
-                        }
-                        newTrain = null;
-                        break;
-                    case 'l':
-                        if (!model.getLocomotives().isEmpty()) {
-                            model.setMode(LINK);
-                            if (model.getSelectedLocomotive() != null
-                                    && model.getSelectedLocomotive().getTrain() != null) {
-                                model.getSelectedLocomotive().getTrain().resetLinkState();
-                            }
-                        }
-                        break;
-                    case 'u':
-                        if (!model.getLocomotives().isEmpty()) {
-                            model.setMode(UNLINK);
-                            if (model.getSelectedLocomotive() != null
-                                    && model.getSelectedLocomotive().getTrain() != null) {
-                                model.getSelectedLocomotive().getTrain().resetUnlinkState();
-                            }
-                        }
-                        break;
-                    case 'n':
-                        if (!model.getStations().isEmpty()) {
-                            model.setMode(STATIONS);
-                        }
-                        break;
-                    case 'p':
-                        model.setMode(PROGRAM);
-                        view.showIDE();
-                        break;
-                    default:
-                        isAMenuKey = false;
-                        break;
-
-                }
-                if (isAMenuKey) {
-                    return;
-                }
-            }
+        } else if (handleModeHotkey(keyEvent)) {
+            return;
         }
 
         ModeKeyHandler handler = modeKeyHandlers.get(model.getMode());
         if (handler != null) {
             handler.handle(keyEvent);
+        }
+    }
+
+    private boolean handleModeHotkey(KeyStroke keyEvent) {
+        if (keyEvent.getKeyType() != KeyType.Character || keyEvent.getCharacter() == ' ') {
+            return false;
+        }
+
+        if (model.getMode() == TRAINS) {
+            handleTrainsModeKey(keyEvent);
+            return true;
+        }
+
+        switch (keyEvent.getCharacter()) {
+            case 'r':
+                model.setMode(RAILS);
+                return true;
+            case 'd':
+                if (!model.getLocomotives().isEmpty()) {
+                    model.setMode(DRIVE);
+                    return true;
+                }
+                return false;
+            case 'f':
+                if (!model.getForks().isEmpty()) {
+                    model.setMode(FORKS);
+                    return true;
+                }
+                return false;
+            case 's':
+                if (!model.getSemaphores().isEmpty()) {
+                    model.setMode(SEMAPHORES);
+                    return true;
+                }
+                return false;
+            case 't':
+                if (model.getCursorRailTrack() != null) {
+                    model.setMode(TRAINS);
+                    newTrain = null;
+                    return true;
+                }
+                return false;
+            case 'l':
+                if (!model.getLocomotives().isEmpty()) {
+                    model.setMode(LINK);
+                    if (model.getSelectedLocomotive() != null
+                            && model.getSelectedLocomotive().getTrain() != null) {
+                        model.getSelectedLocomotive().getTrain().resetLinkState();
+                    }
+                    return true;
+                }
+                return false;
+            case 'u':
+                if (!model.getLocomotives().isEmpty()) {
+                    model.setMode(UNLINK);
+                    if (model.getSelectedLocomotive() != null
+                            && model.getSelectedLocomotive().getTrain() != null) {
+                        model.getSelectedLocomotive().getTrain().resetUnlinkState();
+                    }
+                    return true;
+                }
+                return false;
+            case 'n':
+                if (!model.getStations().isEmpty()) {
+                    model.setMode(STATIONS);
+                    return true;
+                }
+                return false;
+            case 'p':
+                model.setMode(PROGRAM);
+                view.showIDE();
+                return true;
+            default:
+                return false;
         }
     }
 
@@ -294,7 +305,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         }
     }
 
-    void programManagerOnChar(KeyStroke keyEvent) {
+    void handleProgramModeKey(KeyStroke keyEvent) {
         if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() == ' ') {
             view.showIDE();
         } else if (keyEvent.getKeyType() == KeyType.F12) {
@@ -302,7 +313,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         }
     }
 
-    void stationManagerOnChar(KeyStroke keyEvent) {
+    void handleStationsModeKey(KeyStroke keyEvent) {
         switch (keyEvent.getKeyType()) {
             case Backspace:
                 StationId = StationId / 10;
@@ -352,7 +363,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         }
     }
 
-    private void semaphoreManagerOnChar(KeyStroke keyEvent) {
+    private void handleSemaphoresModeKey(KeyStroke keyEvent) {
         switch (keyEvent.getKeyType()) {
             case Backspace:
                 semaphoreId = semaphoreId / 10;
@@ -391,7 +402,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         }
     }
 
-    private void unlinkerOnChar(KeyStroke keyEvent) {
+    private void handleUnlinkModeKey(KeyStroke keyEvent) {
         log.info("Unlinker key: " + keyEvent.getKeyType() + " char: " + keyEvent.getCharacter()); // DEBUG
         switch (keyEvent.getKeyType()) {
             case ArrowUp:
@@ -425,7 +436,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         }
     }
 
-    private void linkerOnChar(KeyStroke keyEvent) {
+    private void handleLinkModeKey(KeyStroke keyEvent) {
         log.info("Linker key: " + keyEvent.getKeyType() + " char: " + keyEvent.getCharacter()); // DEBUG
         switch (keyEvent.getKeyType()) {
             case ArrowUp:
@@ -463,7 +474,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         }
     }
 
-    private void trainManagerOnChar(KeyStroke keyEvent) {
+    private void handleTrainsModeKey(KeyStroke keyEvent) {
         if (model.getRailMap().getTrackAt(model.getCursor().getPosition()) == null) {
             return;
         }
@@ -529,7 +540,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         }
     }
 
-    private void forkManagerOnChar(KeyStroke keyEvent) {
+    private void handleForksModeKey(KeyStroke keyEvent) {
         switch (keyEvent.getKeyType()) {
             case Backspace:
                 forkId = forkId / 10;
