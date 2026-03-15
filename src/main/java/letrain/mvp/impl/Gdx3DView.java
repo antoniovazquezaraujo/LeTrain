@@ -642,6 +642,7 @@ public class Gdx3DView extends ApplicationAdapter
             cursorDir = locomotive.getDir();
         } else {
             letrain.vehicle.impl.rail.Wagon wagon = new letrain.vehicle.impl.rail.Wagon("" + c);
+            wagon.setExclusiveCargoType(model.getSelectedWagonType());
             model.addWagon(wagon);
             track.enterLinkerFromDir(cursorDir.inverse(), wagon);
             cursorDir = wagon.getDir();
@@ -649,6 +650,11 @@ public class Gdx3DView extends ApplicationAdapter
         // Avanzar el cursor automáticamente para facilitar la creación de trenes largos
         model.getCursor().setDir(cursorDir);
         model.getCursor().getPosition().move(cursorDir);
+    }
+
+    private void updateHUD() {
+        // Force UI update
+        updateUIData();
     }
 
     private void deleteVehicle() {
@@ -908,7 +914,13 @@ public class Gdx3DView extends ApplicationAdapter
                         btn.setText(getMenuButtonText(option.gameModeName(), isEnabled));
 
                         if (isSelected) {
-                            descLabel.setText(option.gameModeDescription());
+                            String desc = option.gameModeDescription();
+                            if (model.getMode() == letrain.mvp.Model.GameMode.TRAINS) {
+                                String colorName = model.getSelectedWagonType().name();
+                                String colorMarkup = "[#"+model.getSelectedWagonType().getColor().toString()+"]";
+                                desc = "Selected: " + colorMarkup + colorName + "[] | " + desc;
+                            }
+                            descLabel.setText(desc);
                         }
                     }
                 }
@@ -1039,7 +1051,19 @@ public class Gdx3DView extends ApplicationAdapter
                 break;
             case TRAINS:
                 if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character) {
-                    createVehicle(stroke.getCharacter());
+                    char c = stroke.getCharacter();
+                    if (c == '1') {
+                        model.setSelectedWagonType(letrain.track.CargoTypes.GOLD);
+                        updateHUD();
+                    } else if (c == '2') {
+                        model.setSelectedWagonType(letrain.track.CargoTypes.COAL);
+                        updateHUD();
+                    } else if (c == '3') {
+                        model.setSelectedWagonType(letrain.track.CargoTypes.RUBY);
+                        updateHUD();
+                    } else {
+                        createVehicle(c);
+                    }
                 } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Backspace) {
                     deleteVehicle();
                 }
@@ -1137,15 +1161,16 @@ public class Gdx3DView extends ApplicationAdapter
                         if (selectedTrain.isLoading()) {
                             selectedTrain.endLoadUnloadProcess();
                         } else {
-                            letrain.track.CargoTypes trainCargoType = selectedTrain.getTrainCargoType();
-                            if (trainCargoType != null && trainCargoType != letrain.track.CargoTypes.NONE
-                                    && station.getRole() == letrain.track.CargoTypes.StationRole.CONSUMER) {
-                                selectedTrain.startUnloadProcess(station);
-                                selectedTrain.recordStopAtStation();
-                            } else if (trainCargoType == letrain.track.CargoTypes.NONE // Handles empty train
-                                    && station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER) {
-                                selectedTrain.startLoadProcess(station);
-                                selectedTrain.recordStopAtStation();
+                            if (station.getRole() == letrain.track.CargoTypes.StationRole.CONSUMER) {
+                                if (!selectedTrain.getCapableWagons(station, true).isEmpty()) {
+                                    selectedTrain.startUnloadProcess(station);
+                                    selectedTrain.recordStopAtStation();
+                                }
+                            } else if (station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER) {
+                                if (!selectedTrain.getCapableWagons(station, false).isEmpty()) {
+                                    selectedTrain.startLoadProcess(station);
+                                    selectedTrain.recordStopAtStation();
+                                }
                             }
                         }
                         return; // Consume the event
@@ -1313,6 +1338,16 @@ public class Gdx3DView extends ApplicationAdapter
             stationIdAccumulator = stationIdAccumulator / 10;
             model.selectStation(stationIdAccumulator);
             stationInputTimeout = System.currentTimeMillis() + 1000;
+        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
+                && stroke.getCharacter() == '-') {
+            letrain.track.Station station = model.getSelectedStation();
+            if (station != null) {
+                for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
+                    if (loco.getTrain() != null && loco.getTrain().getStationId() == station.getId()) {
+                        loco.getTrain().isLoading = !loco.getTrain().isLoading;
+                    }
+                }
+            }
         }
     }
 
@@ -1378,6 +1413,7 @@ public class Gdx3DView extends ApplicationAdapter
     public void setProgram(String program) {
         // Not used in 3D view (program is set via onEditCommands/onLoadCommands).
     }
+
 
     @Override
     public void onSaveCommands(java.io.File file) {
@@ -2093,6 +2129,7 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void showExitDialog() {
+        showMessage("Exit", "Use ALT+F4 to exit the application.");
     }
 
     @Override

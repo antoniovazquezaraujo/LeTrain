@@ -205,4 +205,8 @@ public interface Model {
     letrain.mvp.impl.EventLogManager getEventLogManager();
 
     String getGameObjectsReport();
+
+    CargoTypes getSelectedWagonType();
+
+    void setSelectedWagonType(CargoTypes type);
 }

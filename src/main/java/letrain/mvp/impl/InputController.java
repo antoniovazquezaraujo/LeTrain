@@ -29,27 +29,7 @@ public class InputController {
             return true;
         }
 
-        // 2. Creación de vehículos en modo TRAINS
-        if (model.getMode() == letrain.mvp.Model.GameMode.TRAINS) {
-            if (Character.isLetter(character)) {
-                createVehicle(character);
-                return true;
-            }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS) {
-            if (character == '-') {
-                letrain.track.Station station = model.getSelectedStation();
-                if (station != null) {
-                    for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
-                        if (loco.getTrain() != null && loco.getTrain().getStationId() == station.getId()) {
-                            loco.getTrain().isLoading = !loco.getTrain().isLoading;
-                        }
-                    }
-                }
-                return true;
-            }
-        }
-
-        // 3. Resto de caracteres -> GameViewListener.onChar
+        // 2. Resto de caracteres -> GameViewListener.onChar
         boolean ctrlPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
                 || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_RIGHT);
         boolean altPressed = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
@@ -175,31 +155,6 @@ public class InputController {
         return true;
     }
 
-    private void createVehicle(char c) {
-        letrain.track.rail.RailTrack track = model.getCursorRailTrack();
-        if (track == null || track.getLinker() != null)
-            return;
 
-        letrain.map.Dir cursorDir = model.getCursor().getDir();
-
-        if (Character.isUpperCase(c)) {
-            int locoId = model.nextLocomotiveId();
-            letrain.vehicle.impl.rail.Locomotive locomotive = new letrain.vehicle.impl.rail.Locomotive(locoId, "" + c);
-            letrain.vehicle.impl.rail.Train train = new letrain.vehicle.impl.rail.Train(model.nextTrainId());
-            train.pushBack(locomotive);
-            train.setDirectorLinker(locomotive);
-            model.addLocomotive(locomotive);
-            model.selectLocomotive(locoId);
-            track.enterLinkerFromDir(cursorDir.inverse(), locomotive);
-            cursorDir = locomotive.getDir();
-        } else {
-            letrain.vehicle.impl.rail.Wagon wagon = new letrain.vehicle.impl.rail.Wagon("" + c);
-            model.addWagon(wagon);
-            track.enterLinkerFromDir(cursorDir.inverse(), wagon);
-            cursorDir = wagon.getDir();
-        }
-        model.getCursor().setDir(cursorDir);
-        model.getCursor().getPosition().move(cursorDir);
-    }
 }
 

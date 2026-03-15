@@ -762,8 +762,13 @@ public class Gdx3DRenderer implements Visitor {
         // completo de antes?
         // El usuario quiere "Toy Style".
         // Vamos a usar el chasis como base.
-
         com.badlogic.gdx.graphics.g3d.Model chassisModel = resourceContext.wagonModel; // El nuevo chasis plano
+        com.badlogic.gdx.graphics.Color chassisColor = com.badlogic.gdx.graphics.Color.BLUE; // Default color
+        
+        if (wagon.getExclusiveCargoType() != CargoTypes.NONE) {
+            chassisColor = wagon.getExclusiveCargoType().getColor();
+        }
+
         if (unlinkHighlight) {
             chassisModel = resourceContext.wagonUnlinkModel; // Rojo completo
         } else if (highlight) {
@@ -772,6 +777,9 @@ public class Gdx3DRenderer implements Visitor {
         // Blinking removed as per user request
 
         ModelInstance instance = new ModelInstance(chassisModel);
+        if (!highlight && !unlinkHighlight) {
+            instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(chassisColor));
+        }
 
         float x = wagon.getPosition().getX();
         float y = wagon.getPosition().getY();

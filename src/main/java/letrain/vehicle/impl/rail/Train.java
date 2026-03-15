@@ -78,6 +78,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     private int loadingCount;
     private transient boolean isNotifying = false;
     private transient List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
+    private transient List<Wagon> currentCapableWagons = null;
 
     public void addTrainEventListener(TrainEventListener listener) {
         if (trainListeners == null)
@@ -938,47 +939,52 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     public void startLoadProcess(letrain.track.Station station) {
         setLoading(true);
         this.isUnloadingDirection = false;
-        int wagonsToLoad = 0;
-        CargoTypes trainCurrentCargoType = getTrainCargoType();
-
-        for (letrain.vehicle.impl.Linker linker : getLinkers()) {
-            if (linker instanceof Wagon) {
-                Wagon wagon = (Wagon) linker;
-                // Punto 10: Si un tren lleva carga no se puede volver a cargar hasta que se
-                // descargue.
-                // Punto 11: No se permiten trenes que carguen distintos tipos de mercancía
-                // simultáneamente.
-                if (wagon.getCargoAmount() == 0 &&
-                        (trainCurrentCargoType == CargoTypes.NONE
-                                || trainCurrentCargoType == station.getCargoType())) {
-                    wagonsToLoad++;
-                }
-            }
-        }
-        setLoadingCount(MAX_LOADING_COUNT * wagonsToLoad); // SEQUENTIAL: Total time is sum of all wagons
+        
+        this.currentCapableWagons = getCapableWagons(station, false);
+        setLoadingCount(MAX_LOADING_COUNT * currentCapableWagons.size());
+        
         if (loadingCount == 0) { // Si no hay vagones que puedan cargar, finaliza el proceso inmediatamente
             setLoading(false);
+            this.currentCapableWagons = null;
         } else {
             station.notifyStartLoad(this);
         }
+    }
+
+    public List<Wagon> getCapableWagons(letrain.track.Station station, boolean isUnload) {
+        List<Wagon> result = new ArrayList<>();
+        CargoTypes stationCargo = station.getCargoType();
+        for (letrain.vehicle.impl.Linker linker : getLinkers()) {
+            if (linker instanceof Wagon) {
+                Wagon wagon = (Wagon) linker;
+                if (isUnload) {
+                    // UNLOADING: Wagon must have the station's cargo
+                    if (wagon.getCargoAmount() > 0 && wagon.getCargoType() == stationCargo) {
+                        result.add(wagon);
+                    }
+                } else {
+                    // LOADING: Wagon must be able to receive matching cargo AND match station specialization
+                    boolean canLoadMore = !wagon.isFull() && (wagon.getCargoAmount() == 0 || wagon.getCargoType() == stationCargo);
+                    if (canLoadMore && (wagon.getExclusiveCargoType() == CargoTypes.NONE || wagon.getExclusiveCargoType() == stationCargo)) {
+                        result.add(wagon);
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     // Punto 9: El tiempo de descarga depende de la cantidad de vagones descargados.
     public void startUnloadProcess(letrain.track.Station station) {
         setLoading(true);
         this.isUnloadingDirection = true;
-        int wagonsToUnload = 0;
-        for (letrain.vehicle.impl.Linker linker : getLinkers()) {
-            if (linker instanceof Wagon) {
-                Wagon wagon = (Wagon) linker;
-                if (wagon.getCargoAmount() > 0 && wagon.getCargoType() == station.getCargoType()) {
-                    wagonsToUnload++;
-                }
-            }
-        }
-        setLoadingCount(MAX_LOADING_COUNT * wagonsToUnload); // SEQUENTIAL: Total time is sum of all wagons
+        
+        this.currentCapableWagons = getCapableWagons(station, true);
+        setLoadingCount(MAX_LOADING_COUNT * currentCapableWagons.size());
+        
         if (loadingCount == 0) { // Si no hay vagones que puedan descargar, finaliza el proceso inmediatamente
             setLoading(false);
+            this.currentCapableWagons = null;
         } else {
             station.notifyStartUnload(this);
         }
@@ -987,17 +993,12 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     public void endLoadUnloadProcess() {
         setLoading(false);
         setLoadingCount(0);
+        this.currentCapableWagons = null;
     }
 
     public boolean performIndustrialAction(letrain.track.Station station) {
         if (getDirectorLinker().getSpeed() != 0)
             return false;
-
-        // Punto 10: Si un tren lleva carga no se puede volver a cargar hasta que se
-        // descargue.
-        // Punto 11: No se permiten trenes que carguen distintos tipos de mercancía
-        // simultáneamente.
-        CargoTypes trainCurrentCargoType = getTrainCargoType();
 
         boolean anyActionTaken = false;
         double totalDistance = 0;
@@ -1005,36 +1006,28 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
 
         if (getLinkers().isEmpty())
             return false;
-        List<letrain.vehicle.impl.Linker> wagons = getLinkers().stream()
-                .filter(l -> l instanceof Wagon)
-                .collect(java.util.stream.Collectors.toList());
+        
+        if (currentCapableWagons == null || currentCapableWagons.isEmpty()) {
+            currentCapableWagons = getCapableWagons(station, isUnloadingDirection);
+        }
 
-        if (wagons.isEmpty())
+        if (currentCapableWagons.isEmpty())
             return false;
 
-        // CALCULATE CURRENT WAGON INDEX
-        // loadingCount goes from (MAX_LOADING_COUNT * numWagons) down to 1.
-        // Index 0 is the first wagon in the list, Index (N-1) is the last.
-        // We process them in order: first wagon, then second, etc.
-        // For numWagons = 2:
-        // ticks 160...81 -> wagonIndex 0
-        // ticks 80...1 -> wagonIndex 1
-        int numWagons = wagons.size();
-        int totalTicks = MAX_LOADING_COUNT * numWagons;
-        int currentTickInTotal = totalTicks - (loadingCount - 1); // 1 to totalTicks
+        int numCapableWagons = currentCapableWagons.size();
+        int totalTicks = MAX_LOADING_COUNT * numCapableWagons;
+        int currentTickInTotal = totalTicks - loadingCount; // 1 to totalTicks
         int wagonIndex = (currentTickInTotal - 1) / MAX_LOADING_COUNT;
 
-        if (wagonIndex >= numWagons)
+        if (wagonIndex >= numCapableWagons)
             return false;
 
-        Wagon wagon = (Wagon) wagons.get(wagonIndex);
+        Wagon wagon = currentCapableWagons.get(wagonIndex);
         int wagonTick = (currentTickInTotal - 1) % MAX_LOADING_COUNT; // 0 to 79
 
         if (station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER) {
             // LOADING
-            if (trainCurrentCargoType != CargoTypes.NONE && trainCurrentCargoType != station.getCargoType()) {
-                return false;
-            }
+            // No global check anymore, we only care about capable wagons
 
             // PRECISION SYNC: Reach exactly 50 at tick 80
             int targetCargo = ((wagonTick + 1) * 50) / MAX_LOADING_COUNT;

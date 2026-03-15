@@ -64,7 +64,16 @@ public class Wagon extends Linker {
     private int cargoAmount = 0;
     private int maxCapacity = 50;
     private CargoTypes cargoType = CargoTypes.NONE;
+    private CargoTypes exclusiveCargoType = CargoTypes.NONE;
     private letrain.map.Point loadingPoint = null;
+
+    public CargoTypes getExclusiveCargoType() {
+        return exclusiveCargoType;
+    }
+
+    public void setExclusiveCargoType(CargoTypes exclusiveCargoType) {
+        this.exclusiveCargoType = exclusiveCargoType;
+    }
 
     public CargoTypes getCargoType() {
         return cargoType;

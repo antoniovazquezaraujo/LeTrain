@@ -57,6 +57,7 @@ public class Model implements Serializable, letrain.mvp.Model {
     List<Station> stations;
     int nextLocomotiveId;
     int nextForkId;
+    private transient CargoTypes selectedWagonType = CargoTypes.GOLD;
 
     private transient List<letrain.vehicle.impl.rail.TrainEventListener> trainEventListeners = new ArrayList<>();
 
@@ -176,6 +177,7 @@ public class Model implements Serializable, letrain.mvp.Model {
             throws IOException, ClassNotFoundException {
         ois.defaultReadObject();
         this.trainEventListeners = SerializationHelper.ensureListInitialized(trainEventListeners);
+        this.selectedWagonType = CargoTypes.GOLD;
     }
 
     @Override
@@ -797,6 +799,18 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public EconomyManager getEconomyManager() {
         return this.economyManager;
+    }
+
+    @Override
+    public CargoTypes getSelectedWagonType() {
+        if (selectedWagonType == null)
+            selectedWagonType = CargoTypes.GOLD;
+        return selectedWagonType;
+    }
+
+    @Override
+    public void setSelectedWagonType(CargoTypes type) {
+        this.selectedWagonType = type;
     }
 
     @Override
