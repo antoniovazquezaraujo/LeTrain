@@ -14,6 +14,7 @@ public class Locomotive extends Linker implements Tractor {
     int currentSpeed;
     int targetSpeed;
     int railsSinceLastSpeedChange = 0;
+    int previousSpeed = 0;
     int distanceTraveled = 0;
     boolean engineStarting = false;
     int turns;
@@ -58,6 +59,7 @@ public class Locomotive extends Linker implements Tractor {
         }
         Dir pushDir = getDir();
         Track nextTrack = getTrack();
+        setEntryDir(pushDir);
         setDir(nextTrack.getDir(pushDir));
         setReversed(!isReversed());
         if (getTrain() != null) {
@@ -129,6 +131,10 @@ public class Locomotive extends Linker implements Tractor {
                 resetTurns();
             }
 
+            if (currentSpeed > 0) {
+                consumeTurn();
+            }
+
             if (isTimeToMove()) {
                 if (getTrain().advance()) {
                     moved = true;
@@ -146,6 +152,7 @@ public class Locomotive extends Linker implements Tractor {
                     updateInertia();
                     resetTurns();
                     updateLimitedSpeed();
+                    this.previousSpeed = this.currentSpeed;
                     // Sincronizar resets de animación en otras locomotoras
                     getTrain().getTractors().stream()
                             .filter(t -> t instanceof Locomotive && t != this)
@@ -155,8 +162,6 @@ public class Locomotive extends Linker implements Tractor {
                     setCurrentSpeed(0);
                     setTargetSpeed(0);
                 }
-            } else {
-                consumeTurn();
             }
         } else {
             // No somos el director, pero consumimos turnos para animación suave
@@ -168,6 +173,9 @@ public class Locomotive extends Linker implements Tractor {
     private void updateInertia() {
         if (currentSpeed == targetSpeed) {
             railsSinceLastSpeedChange = 0;
+            if (currentSpeed == 0) {
+                setRailsSinceStop(0);
+            }
             return;
         }
 
@@ -268,14 +276,21 @@ public class Locomotive extends Linker implements Tractor {
             return;
         }
         this.currentSpeed = speed;
+        if (this.currentSpeed == 0) {
+            // We allow the renderer to finish the last move before resetting in the next tick
+        }
         limitCurrentSpeed();
-        resetTurns(); // Force reset to ensure turns are synchronized with speed 0 immediately
+        resetTurns();
+
         if (getTrain() != null) {
             getTrain().notifySpeedChanged(this.currentSpeed);
             // Sincronizar con el resto de locomotoras del tren
             for (Tractor tractor : getTrain().getTractors()) {
                 if (tractor instanceof Locomotive && tractor != this) {
-                    ((Locomotive) tractor).setCurrentSpeed(this.currentSpeed);
+                    Locomotive other = (Locomotive) tractor;
+                    if (other.currentSpeed != this.currentSpeed) {
+                        other.setCurrentSpeed(this.currentSpeed);
+                    }
                 }
             }
         }
@@ -325,12 +340,16 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void resetTurns() {
-        this.turns = currentSpeed == 0 ? -1 : 50 / currentSpeed;
+        this.turns = currentSpeed <= 0 ? -1 : 50 / currentSpeed;
         this.totalTurns = this.turns;
     }
 
     public int getTotalTurns() {
         return totalTurns;
+    }
+
+    public int getPreviousSpeed() {
+        return previousSpeed;
     }
 
     public int getTurns() {
@@ -403,6 +422,10 @@ public class Locomotive extends Linker implements Tractor {
     @Override
     public void incDistanceTraveled() {
         distanceTraveled++;
+    }
+
+    public int getRailsSinceLastSpeedChange() {
+        return railsSinceLastSpeedChange;
     }
 
     public void setStalled(boolean stalled) {

@@ -213,36 +213,61 @@ public class CameraController {
     }
 
     private Vector2 getInterpolatedPosition(letrain.vehicle.impl.rail.Locomotive locomotive, float alpha) {
-        // Copiado desde la lógica original de Gdx3DView para mantener el mismo
-        // comportamiento visual.
         float x = locomotive.getPosition().getX();
         float y = locomotive.getPosition().getY();
 
-        if (locomotive.getTotalTurns() >= 0) {
-            float totalDelay = (float) locomotive.getTotalTurns() + 1.0f;
-            float currentDelay = (float) locomotive.getTurns() + 1.0f - alpha;
+        if (locomotive.getTotalTurns() > 0) {
+            float totalDelay = (float) locomotive.getTotalTurns();
+            float currentDelay = (float) locomotive.getTurns() - alpha;
             float progress = 1.0f - (currentDelay / totalDelay);
 
-            if (progress < 0)
-                progress = 0;
-            if (progress > 1)
-                progress = 1;
+            if (progress < 0) progress = 0;
+            if (progress > 1) progress = 1;
 
             letrain.track.Track currentTrack = locomotive.getTrack();
-            if (currentTrack != null) {
-                letrain.track.Track nextTrack = currentTrack.getConnected(locomotive.getDir());
-                if (nextTrack != null) {
+            letrain.map.Dir dExit = locomotive.getDir();
+            letrain.map.Dir dEntry = locomotive.getEntryDir();
+            if (dEntry == null) dEntry = dExit.inverse();
+
+            if (progress < 0.5f) {
+                // Phase 1: Center to Exit
+                float t = 0.5f + progress;
+                return calculateBezierVector2(x, y, dEntry, dExit, t);
+            } else {
+                // Phase 2: Entry to Center of next
+                letrain.track.Track nextTrack = (currentTrack != null) ? currentTrack.getConnected(dExit) : null;
+                if (nextTrack != null && locomotive.getSpeed() > 0) {
+                    letrain.map.Dir nextEntry = dExit.inverse();
+                    letrain.map.Dir nextExit = nextTrack.getDir(nextEntry);
                     float nextX = nextTrack.getPosition().getX();
                     float nextY = nextTrack.getPosition().getY();
-
-                    // Si la distancia es mayor a 1 (teletransporte/wrap), no interpolar
-                    if (Math.abs(nextX - x) <= 1 && Math.abs(nextY - y) <= 1) {
-                        x = x + (nextX - x) * progress;
-                        y = y + (nextY - y) * progress;
-                    }
+                    float t = progress - 0.5f;
+                    return calculateBezierVector2(nextX, nextY, nextEntry, nextExit, t);
+                } else {
+                    return calculateBezierVector2(x, y, dEntry, dExit, 0.5f);
                 }
             }
+        } else {
+            // Stationary: Use Bezier midpoint for correct curve alignment
+            letrain.map.Dir dExit = locomotive.getDir();
+            letrain.map.Dir dEntry = locomotive.getEntryDir();
+            if (dEntry == null) dEntry = dExit.inverse();
+            return calculateBezierVector2(x, y, dEntry, dExit, 0.5f);
         }
-        return new Vector2(x, y);
+    }
+
+    private Vector2 calculateBezierVector2(float cellX, float cellY, letrain.map.Dir dEntry, letrain.map.Dir dExit, float t) {
+        if (dEntry == null) dEntry = dExit.inverse();
+        float p0x = cellX + 0.5f + letrain.visitor.Gdx3DRenderer.getDirX(dEntry);
+        float p0y = cellY + 0.5f + letrain.visitor.Gdx3DRenderer.getDirZ(dEntry);
+        float p1x = cellX + 0.5f;
+        float p1y = cellY + 0.5f;
+        float p2x = cellX + 0.5f + letrain.visitor.Gdx3DRenderer.getDirX(dExit);
+        float p2y = cellY + 0.5f + letrain.visitor.Gdx3DRenderer.getDirZ(dExit);
+
+        float invT = 1.0f - t;
+        float resX = invT * invT * p0x + 2 * invT * t * p1x + t * t * p2x;
+        float resY = invT * invT * p0y + 2 * invT * t * p1y + t * t * p2y;
+        return new Vector2(resX - 0.5f, resY - 0.5f);
     }
 }

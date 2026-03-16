@@ -789,13 +789,26 @@ public class Gdx3DView extends ApplicationAdapter
                 float totalWidth = label.text.length() * charSpacing;
                 float startOffset = -totalWidth / 2f + charSpacing / 2f;
 
-                // Vector horizontal paralelo a la cara (perpendicular a la normal y a Y)
-                com.badlogic.gdx.math.Vector3 horizontal = new com.badlogic.gdx.math.Vector3(label.normal.z, 0,
-                        -label.normal.x).nor();
-                // Si la normal es vertical, el producto vectorial anterior es cero.
-                // Usamos un vector por defecto en ese caso.
-                if (horizontal.len() < 0.1f) {
-                    horizontal.set(1, 0, 0);
+                // Comportamiento de orientación:
+                // El 'up' vector define la dirección "hacia arriba" del carácter.
+                // El 'horizontal' vector define la dirección en la que se disponen los caracteres (el "avance" del texto).
+                
+                com.badlogic.gdx.math.Vector3 up = label.up != null ? label.up : com.badlogic.gdx.math.Vector3.Y;
+                
+                // Vector horizontal paralelo a la cara
+                com.badlogic.gdx.math.Vector3 horizontal = new com.badlogic.gdx.math.Vector3();
+                
+                // Si la normal es vertical (p.ej. número ID en techo), el horizontal debe ser
+                // perpendicular al 'up' vector (que suele ser el forward).
+                // Horizontal = Up x Normal
+                if (Math.abs(label.normal.y) > 0.9f) {
+                    horizontal.set(up).crs(label.normal).nor();
+                } else {
+                    // Para caras laterales, mantenemos la lógica de ser perpendicular a la normal en el plano XZ
+                    horizontal.set(label.normal.z, 0, -label.normal.x).nor();
+                    if (horizontal.len() < 0.1f) {
+                        horizontal.set(1, 0, 0);
+                    }
                 }
 
                 for (int i = 0; i < label.text.length(); i++) {
@@ -812,8 +825,7 @@ public class Gdx3DView extends ApplicationAdapter
                         d.setPosition(charPos);
 
                         // Orientar el decal para que mire hacia afuera de la superficie
-                        com.badlogic.gdx.math.Vector3 up = label.up != null ? label.up
-                                : com.badlogic.gdx.math.Vector3.Y;
+                        // (up ya ha sido definido arriba del bucle de glifos)
 
                         // Si la normal es vertical (0,1,0) y el up también es Y o paralelo, lookAt
                         // fallará.

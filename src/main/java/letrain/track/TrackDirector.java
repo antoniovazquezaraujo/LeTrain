@@ -32,6 +32,7 @@ public class TrackDirector<T extends Track> implements Serializable {
 
         vehicle.setTrack(track);
         vehicle.setPosition(track.getPosition());
+        vehicle.setEntryDir(d);
         Dir exitDir = track.getRouter().getDir(d);
         if (exitDir != null) {
             vehicle.setDir(exitDir);

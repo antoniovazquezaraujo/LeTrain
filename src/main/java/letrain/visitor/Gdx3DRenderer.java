@@ -257,9 +257,6 @@ public class Gdx3DRenderer implements Visitor {
         drawHalfTrackElevated(pos, d, connected, 0.0f, shortenL, shortenR, resourceContext.railModel);
     }
 
-    private static void getQuadraticBezierTangent(com.badlogic.gdx.math.Vector3 out, com.badlogic.gdx.math.Vector3 p0, com.badlogic.gdx.math.Vector3 p1, com.badlogic.gdx.math.Vector3 p2, float t) {
-        out.set(p1).sub(p0).scl(2f * (1f - t)).add(new com.badlogic.gdx.math.Vector3(p2).sub(p1).scl(2f * t));
-    }
 
     private void renderMultiSegmentCurve(letrain.map.Point pos, com.badlogic.gdx.math.Vector3 p0, com.badlogic.gdx.math.Vector3 pc, com.badlogic.gdx.math.Vector3 p2, 
             boolean connected, float elevation, com.badlogic.gdx.graphics.g3d.Model railModelToUse) {
@@ -427,35 +424,6 @@ public class Gdx3DRenderer implements Visitor {
 
     }
 
-    public static float getDirX(letrain.map.Dir d) {
-        switch (d) {
-            case E:
-            case NE:
-            case SE:
-                return 0.5f;
-            case W:
-            case NW:
-            case SW:
-                return -0.5f;
-            default:
-                return 0f;
-        }
-    }
-
-    public static float getDirZ(letrain.map.Dir d) {
-        switch (d) {
-            case S:
-            case SE:
-            case SW:
-                return 0.5f;
-            case N:
-            case NE:
-            case NW:
-                return -0.5f;
-            default:
-                return 0f;
-        }
-    }
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
@@ -583,9 +551,13 @@ public class Gdx3DRenderer implements Visitor {
         // usamos la posición actual y la proyectamos hacia la siguiente celda
         // basándonos en el tiempo de espera (turns).
 
-        float x = locomotive.getPosition().getX();
-        float y = locomotive.getPosition().getY();
+        float cellX = locomotive.getPosition().getX();
+        float cellY = locomotive.getPosition().getY();
+        float renderX = cellX + 0.5f;
+        float renderY = cellY + 0.5f;
         float angle = locomotive.getDir().getValue() * 45f; // Default angle
+        float progress = 0.5f; // Center by default
+        com.badlogic.gdx.math.Vector3 renderTangent = new com.badlogic.gdx.math.Vector3(getDirX(locomotive.getDir()), 0, getDirZ(locomotive.getDir()));
 
         // Interpolación continua (Predictiva) basada en la locomotora directora (o sí
         // mismo si es director)
@@ -598,51 +570,29 @@ public class Gdx3DRenderer implements Visitor {
             }
         }
 
-        if (interpolationRef.getTotalTurns() >= 0) {
-            float totalDelay = (float) interpolationRef.getTotalTurns() + 1.0f;
-            float currentDelay = (float) interpolationRef.getTurns() + 1.0f - animationAlpha;
-            float progress = 1.0f - (currentDelay / totalDelay);
+        if (interpolationRef.getTotalTurns() > 0) {
+            float totalDelay = (float) interpolationRef.getTotalTurns();
+            float currentDelay = (float) interpolationRef.getTurns() - animationAlpha;
+            progress = 1.0f - (currentDelay / totalDelay);
 
             // Clamp progress
-            if (progress < 0)
-                progress = 0;
-            if (progress > 1)
-                progress = 1;
+            if (progress < 0) progress = 0;
+            if (progress > 1) progress = 1;
 
-            letrain.track.Track currentTrack = locomotive.getTrack();
-            if (currentTrack != null) {
-                letrain.track.Track nextTrack = currentTrack.getConnected(locomotive.getDir());
-                if (nextTrack != null) {
-                    // Prevent visual "mixing": check if next track is blocked recursively
-                    boolean blocked = isPredictiveMoveBlocked((letrain.vehicle.impl.Linker) locomotive, new java.util.HashSet<letrain.vehicle.impl.Linker>());
-                    if (blocked) {
-                        progress *= 0.25f; // Slow down to touch exactly at end of tick
-                    }
-                    if (locomotive.getTrain() != null && locomotive.getTrain().isStalled()) {
-                        progress = 0.25f; // Stay touching
-                    }
-
-                    float nextX = nextTrack.getPosition().getX();
-                    float nextY = nextTrack.getPosition().getY();
-                    // Si la distancia es mayor a 1 (teletransporte/wrap), no interpolar
-                    if (Math.abs(nextX - x) <= 1 && Math.abs(nextY - y) <= 1) {
-                        com.badlogic.gdx.math.Vector3 pStart = new com.badlogic.gdx.math.Vector3(x, 0, y);
-                        com.badlogic.gdx.math.Vector3 pEnd = new com.badlogic.gdx.math.Vector3(nextX, 0, nextY);
-                        com.badlogic.gdx.math.Vector3 pControl = new com.badlogic.gdx.math.Vector3(x + getDirX(locomotive.getDir()), 0, y + getDirZ(locomotive.getDir()));
-                        
-                        com.badlogic.gdx.math.Vector3 pBezier = new com.badlogic.gdx.math.Vector3();
-                        getQuadraticBezier(pBezier, pStart, pControl, pEnd, progress);
-                        
-                        x = pBezier.x;
-                        y = pBezier.z;
-
-                        // Interpolación de ángulo suave basada en la tangente de la curva
-                        com.badlogic.gdx.math.Vector3 tangent = new com.badlogic.gdx.math.Vector3();
-                        tangent.set(pControl).sub(pStart).scl(2f * (1f - progress)).add(new com.badlogic.gdx.math.Vector3(pEnd).sub(pControl).scl(2f * progress));
-                        angle = (float) Math.atan2(tangent.x, tangent.z) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-                    }
-                }
-            }
+            com.badlogic.gdx.math.Vector3 pComputed = new com.badlogic.gdx.math.Vector3();
+            calculateEdgeToEdge(locomotive, interpolationRef, progress, pComputed, renderTangent);
+            
+            renderX = pComputed.x;
+            renderY = pComputed.z;
+            angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+        } else {
+            // Stationary: Use Bezier midpoint for correct curve alignment
+            com.badlogic.gdx.math.Vector3 pComputed = new com.badlogic.gdx.math.Vector3();
+            calculateEdgeToEdge(locomotive, interpolationRef, 0.0f, pComputed, renderTangent);
+            
+            renderX = pComputed.x;
+            renderY = pComputed.z;
+            angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
         }
 
         if (locomotive.isDestroying()) {
@@ -655,31 +605,31 @@ public class Gdx3DRenderer implements Visitor {
             float rotY = (rnd.nextFloat() - 0.5f) * 45f;
             float rotZ = (rnd.nextFloat() - 0.5f) * 45f;
 
-            instance.transform.setToTranslation(x + 0.5f + offsetX, 0.6f, y + 0.5f + offsetZ);
+            instance.transform.setToTranslation(renderX + offsetX, 0.6f, renderY + offsetZ);
             instance.transform.rotate(1, 0, 0, rotX);
             instance.transform.rotate(0, 1, 0, angle + rotY);
             instance.transform.rotate(0, 0, 1, rotZ);
         } else {
-            instance.transform.setToTranslation(x + 0.5f, 0.6f, y + 0.5f);
+            instance.transform.setToTranslation(renderX, 0.6f, renderY);
             instance.transform.rotate(0, 1, 0, angle);
         }
         instances.add(instance);
 
         if (locomotive.isDestroying()) {
-            drawFire(x + 0.5f, 0.6f, y + 0.5f, animationAlpha + locomotive.getId());
+            drawFire(renderX, 0.6f, renderY, animationAlpha + locomotive.getId());
         }
 
         // Añadir indicador de selección para locomotora seleccionada (Número ID + Línea
         // verde)
         // Pegado a la cara superior (flat on top)
         if (isSelected) {
-            float radL = angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
-            float dxL = com.badlogic.gdx.math.MathUtils.cos(radL);
-            float dzL = -com.badlogic.gdx.math.MathUtils.sin(radL);
+            com.badlogic.gdx.math.Vector3 forward = renderTangent.cpy().nor();
+            float dxL = forward.x;
+            float dzL = forward.z;
 
             // Número ID de la locomotora (En blanco y más grande)
             labels.add(new VehicleLabel(
-                    new com.badlogic.gdx.math.Vector3(x + 0.5f, 1.01f, y + 0.5f),
+                    new com.badlogic.gdx.math.Vector3(renderX, 1.01f, renderY),
                     "" + locomotive.getId(),
                     new com.badlogic.gdx.math.Vector3(0, 1, 0), // Normal up
                     new com.badlogic.gdx.math.Vector3(dxL, 0, dzL).nor(), // Up vector
@@ -688,29 +638,27 @@ public class Gdx3DRenderer implements Visitor {
             // Línea verde pegada al techo, delante del número
             ModelInstance selectionLine = new ModelInstance(resourceContext.selectionLineModel);
             float lineOffset = 0.25f;
-            selectionLine.transform.setToTranslation(x + 0.5f + dxL * lineOffset, 1.01f, y + 0.5f + dzL * lineOffset);
+            selectionLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.01f, renderY + dzL * lineOffset);
             selectionLine.transform.rotate(0, 1, 0, angle);
             instances.add(selectionLine);
         }
 
         // Añadir etiquetas a los lados
         {
-            // Calcular vectores dirección dinámicos basados en el ángulo interpolado
-            float radL = angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
-
-            float dxL = com.badlogic.gdx.math.MathUtils.cos(radL);
-            float dzL = -com.badlogic.gdx.math.MathUtils.sin(radL);
+            com.badlogic.gdx.math.Vector3 forward = renderTangent.cpy().nor();
+            float dxL = forward.x;
+            float dzL = forward.z;
 
             // Perpendicular: (dz, -dx)
             float perpXL = dzL * 0.48f;
             float perpZL = -dxL * 0.48f;
 
             labels.add(new VehicleLabel(
-                    new com.badlogic.gdx.math.Vector3(x + 0.5f + perpXL, 0.4f, y + 0.5f + perpZL),
+                    new com.badlogic.gdx.math.Vector3(renderX + perpXL, 0.4f, renderY + perpZL),
                     locomotive.getAspect(),
                     new com.badlogic.gdx.math.Vector3(perpXL, 0, perpZL).nor()));
             labels.add(new VehicleLabel(
-                    new com.badlogic.gdx.math.Vector3(x + 0.5f - perpXL, 0.4f, y + 0.5f - perpZL),
+                    new com.badlogic.gdx.math.Vector3(renderX - perpXL, 0.4f, renderY - perpZL),
                     locomotive.getAspect(),
                     new com.badlogic.gdx.math.Vector3(-perpXL, 0, -perpZL).nor()));
         }
@@ -769,9 +717,13 @@ public class Gdx3DRenderer implements Visitor {
             instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(chassisColor));
         }
 
-        float x = wagon.getPosition().getX();
-        float y = wagon.getPosition().getY();
+        float cellX = wagon.getPosition().getX();
+        float cellY = wagon.getPosition().getY();
+        float renderX = cellX + 0.5f;
+        float renderY = cellY + 0.5f;
         float angle = wagon.getDir().getValue() * 45f; // Default angle
+        float progress = 0.5f; // Center by default
+        com.badlogic.gdx.math.Vector3 renderTangent = new com.badlogic.gdx.math.Vector3(getDirX(wagon.getDir()), 0, getDirZ(wagon.getDir()));
 
         // Interpolación continua (Predictiva) basada en la locomotora directora
         letrain.vehicle.impl.rail.Train train = wagon.getTrain();
@@ -779,49 +731,29 @@ public class Gdx3DRenderer implements Visitor {
             letrain.vehicle.impl.Tractor director = train.getDirectorLinker();
             if (director instanceof Locomotive) {
                 Locomotive loc = (Locomotive) director;
-                if (loc.getTotalTurns() >= 0) {
-                    float totalDelay = (float) loc.getTotalTurns() + 1.0f;
-                    float currentDelay = (float) loc.getTurns() + 1.0f - animationAlpha;
-                    float progress = 1.0f - (currentDelay / totalDelay);
+                if (loc.getTotalTurns() > 0) {
+                    float totalDelay = (float) loc.getTotalTurns();
+                    float currentDelay = (float) loc.getTurns() - animationAlpha;
+                    progress = 1.0f - (currentDelay / totalDelay);
 
-                    if (progress < 0)
-                        progress = 0;
-                    if (progress > 1)
-                        progress = 1;
+                    // Clamp progress
+                    if (progress < 0) progress = 0;
+                    if (progress > 1) progress = 1;
 
-                    letrain.track.Track currentTrack = wagon.getTrack();
-                    if (currentTrack != null) {
-                        letrain.track.Track nextTrack = currentTrack.getConnected(wagon.getDir());
-                        if (nextTrack != null) {
-                            // Prevent visual "mixing": check if next track is blocked recursively
-                            boolean blocked = isPredictiveMoveBlocked((letrain.vehicle.impl.Linker) wagon, new java.util.HashSet<letrain.vehicle.impl.Linker>());
-                            if (blocked) {
-                                progress *= 0.25f; // Slow down to touch exactly at end of tick
-                            }
-                            if (wagon.getTrain() != null && wagon.getTrain().isStalled()) {
-                                progress = 0.25f; // Stay touching
-                            }
-
-                            float nextX = nextTrack.getPosition().getX();
-                            float nextY = nextTrack.getPosition().getY();
-                            if (Math.abs(nextX - x) <= 1 && Math.abs(nextY - y) <= 1) {
-                                com.badlogic.gdx.math.Vector3 pStart = new com.badlogic.gdx.math.Vector3(x, 0, y);
-                                com.badlogic.gdx.math.Vector3 pEnd = new com.badlogic.gdx.math.Vector3(nextX, 0, nextY);
-                                com.badlogic.gdx.math.Vector3 pControl = new com.badlogic.gdx.math.Vector3(x + getDirX(wagon.getDir()), 0, y + getDirZ(wagon.getDir()));
-                                
-                                com.badlogic.gdx.math.Vector3 pBezier = new com.badlogic.gdx.math.Vector3();
-                                getQuadraticBezier(pBezier, pStart, pControl, pEnd, progress);
-                                
-                                x = pBezier.x;
-                                y = pBezier.z;
-
-                                // Interpolación de ángulo suave basada en la tangente de la curva
-                                com.badlogic.gdx.math.Vector3 tangent = new com.badlogic.gdx.math.Vector3();
-                                tangent.set(pControl).sub(pStart).scl(2f * (1f - progress)).add(new com.badlogic.gdx.math.Vector3(pEnd).sub(pControl).scl(2f * progress));
-                                angle = (float) Math.atan2(tangent.x, tangent.z) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-                            }
-                        }
-                    }
+                    com.badlogic.gdx.math.Vector3 pComputed = new com.badlogic.gdx.math.Vector3();
+                    calculateEdgeToEdge(wagon, loc, progress, pComputed, renderTangent);
+                    
+                    renderX = pComputed.x;
+                    renderY = pComputed.z;
+                    angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+                } else {
+                    // Stationary: Use Bezier midpoint for correct curve alignment
+                    com.badlogic.gdx.math.Vector3 pComputed = new com.badlogic.gdx.math.Vector3();
+                    calculateEdgeToEdge(wagon, loc, 0.0f, pComputed, renderTangent);
+                    
+                    renderX = pComputed.x;
+                    renderY = pComputed.z;
+                    angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
                 }
             }
         }
@@ -840,18 +772,18 @@ public class Gdx3DRenderer implements Visitor {
             float rotY = (rnd.nextFloat() - 0.5f) * 45f;
             float rotZ = (rnd.nextFloat() - 0.5f) * 45f;
 
-            instance.transform.setToTranslation(x + 0.5f + offsetX, wagonY, y + 0.5f + offsetZ);
+            instance.transform.setToTranslation(renderX + offsetX, wagonY, renderY + offsetZ);
             instance.transform.rotate(1, 0, 0, rotX);
             instance.transform.rotate(0, 1, 0, angle + rotY);
             instance.transform.rotate(0, 0, 1, rotZ);
         } else {
-            instance.transform.setToTranslation(x + 0.5f, wagonY, y + 0.5f);
+            instance.transform.setToTranslation(renderX, wagonY, renderY);
             instance.transform.rotate(0, 1, 0, angle);
         }
         instances.add(instance);
 
         if (wagon.isDestroying()) {
-            drawFire(x + 0.5f, 0.5f, y + 0.5f, animationAlpha + wagon.hashCode());
+            drawFire(renderX, 0.5f, renderY, animationAlpha + wagon.hashCode());
         }
 
         // 2. Renderizar Bloque de Carga (Si hay carga y no estamos en modo highlight
@@ -881,7 +813,7 @@ public class Gdx3DRenderer implements Visitor {
             // Position: y=0.25 (floor level) + half height
             float jewelY = 0.25f + (currentHeight / 2f);
 
-            jewelBlock.transform.setToTranslation(x + 0.5f, jewelY, y + 0.5f);
+            jewelBlock.transform.setToTranslation(renderX, jewelY, renderY);
             jewelBlock.transform.rotate(0, 1, 0, angle);
             jewelBlock.transform.scale(0.6f, currentHeight, 0.6f);
 
@@ -890,21 +822,20 @@ public class Gdx3DRenderer implements Visitor {
 
         // Añadir etiquetas a los lados
         {
-            float radW = angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
-
-            float dxW = com.badlogic.gdx.math.MathUtils.cos(radW);
-            float dzW = -com.badlogic.gdx.math.MathUtils.sin(radW);
+            com.badlogic.gdx.math.Vector3 forward = renderTangent.cpy().nor();
+            float dxW = forward.x;
+            float dzW = forward.z;
 
             // Perpendicular: (dz, -dx)
             float perpXW = dzW * 0.48f;
             float perpZW = -dxW * 0.48f;
 
             labels.add(new VehicleLabel(
-                    new com.badlogic.gdx.math.Vector3(x + 0.5f + perpXW, 0.4f, y + 0.5f + perpZW),
+                    new com.badlogic.gdx.math.Vector3(renderX + perpXW, 0.4f, renderY + perpZW),
                     wagon.getAspect(),
                     new com.badlogic.gdx.math.Vector3(perpXW, 0, perpZW).nor()));
             labels.add(new VehicleLabel(
-                    new com.badlogic.gdx.math.Vector3(x + 0.5f - perpXW, 0.4f, y + 0.5f - perpZW),
+                    new com.badlogic.gdx.math.Vector3(renderX - perpXW, 0.4f, renderY - perpZW),
                     wagon.getAspect(),
                     new com.badlogic.gdx.math.Vector3(-perpXW, 0, -perpZW).nor()));
         }
@@ -1195,7 +1126,6 @@ public class Gdx3DRenderer implements Visitor {
                 new com.badlogic.gdx.math.Vector3(centerX - paraX * labelOffset, boardCenterY,
                         centerZ - paraZ * labelOffset),
                 idText, new com.badlogic.gdx.math.Vector3(-paraX, 0, -paraZ), labelColor));
-
     }
 
     @Override
@@ -1227,18 +1157,15 @@ public class Gdx3DRenderer implements Visitor {
             jewelBlock.materials.get(0).set(
                     com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(jewelColor));
 
-            // Single large block (footprint 0.9x0.9, height 0.5)
             float h = 0.5f;
             jewelBlock.transform.setToTranslation(x, h / 2f, z);
             jewelBlock.transform.scale(0.9f, h, 0.9f);
-
             instances.add(jewelBlock);
 
-            // Continue to render base and walls
             model = resourceContext.groundModel;
             yPosition = 0.0f;
         } else if (type >= 20 && type <= 29) {
-            // CONSUMER - Optimized Pre-built Icon Model
+            // CONSUMER
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
             com.badlogic.gdx.graphics.g3d.Model consumerModelToUse = resourceContext.coalConsumerModel;
             if (cargo == CargoTypes.GOLD)
@@ -1253,7 +1180,6 @@ public class Gdx3DRenderer implements Visitor {
             instance.transform.setToTranslation(x, 0.01f, z);
             instances.add(instance);
 
-            // Continue to render base and walls
             model = resourceContext.groundModel;
             yPosition = 0.0f;
         } else {
@@ -1280,10 +1206,8 @@ public class Gdx3DRenderer implements Visitor {
 
             ModelInstance instance = new ModelInstance(model);
 
-            // Mode-based transparency for Rocks/Tunnels
             if (type == GroundMap.ROCK || model == resourceContext.tunnelPortalModel) {
                 if (isXRayActive) {
-                    // Render a ground tile underneath the transparent mountain to provide the green background
                     ModelInstance groundBelow = new ModelInstance(resourceContext.groundModel);
                     groundBelow.transform.setToTranslation(x, 0.0f, z);
                     groundBelow.transform.scale(scaleX, scaleY, scaleZ);
@@ -1291,7 +1215,6 @@ public class Gdx3DRenderer implements Visitor {
 
                     instance.materials.get(0)
                             .set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
-                    // No DepthTestAttribute here, we manage it globally in the Two-Pass loop
                     instance.transform.setToTranslation(x, yPosition, z);
                     instance.transform.scale(scaleX, scaleY, scaleZ);
                     transparentInstances.add(instance);
@@ -1301,7 +1224,6 @@ public class Gdx3DRenderer implements Visitor {
                     instances.add(instance);
                 }
             } else if (type >= 10 && type <= 29) {
-                // Industry Base: Render black
                 instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.BLACK));
                 instance.transform.setToTranslation(x, yPosition, z);
                 instance.transform.scale(scaleX, scaleY, scaleZ);
@@ -1312,13 +1234,10 @@ public class Gdx3DRenderer implements Visitor {
                 instances.add(instance);
             }
 
-            // Si no es agua, comprobamos vecinos para poner "paredes" hacia el agua
             if (type != GroundMap.WATER && modelRef != null && modelRef.getGroundMap() != null) {
                 int gx = ground.getPosition().getX();
                 int gy = ground.getPosition().getY();
 
-                // Color de la pared: si es roca, color montaña. Si no, color tierra.
-                // Si es industria, color negro.
                 com.badlogic.gdx.graphics.Color wallColor;
                 if (type == GroundMap.ROCK) {
                     wallColor = new com.badlogic.gdx.graphics.Color(0.5f, 0.4f, 0.3f, 1f);
@@ -1352,79 +1271,105 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack) {
-        // El pilar ahora se gestiona automáticamente en visitRailTrack si detecta agua.
-        // Pero por si acaso no hay agua (puente sobre tierra?), mantenemos la lógica
-        // o la unificamos.
-        // visitRailTrack ya se llama al final.
         visitRailTrack(bridgeGateRailTrack);
     }
 
     @Override
     public void visitBridgeRailTrack(BridgeRailTrack bridgeRailTrack) {
-        // El pilar ahora se gestiona automáticamente en visitRailTrack si detecta agua.
         visitRailTrack(bridgeRailTrack);
     }
 
     @Override
     public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
-        // Renderizar portal del túnel como bloque negro simple
         ModelInstance portal = new ModelInstance(resourceContext.tunnelPortalModel);
         if (isXRayActive) {
             portal.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
             portal.transform.setToTranslation(
                     tunnelGateRailTrack.getPosition().getX() + 0.5f,
-                    0.6f, // Mismo nivel que montañas
+                    0.6f,
                     tunnelGateRailTrack.getPosition().getY() + 0.5f);
             transparentInstances.add(portal);
         } else {
             portal.transform.setToTranslation(
                     tunnelGateRailTrack.getPosition().getX() + 0.5f,
-                    0.6f, // Mismo nivel que montañas
+                    0.6f,
                     tunnelGateRailTrack.getPosition().getY() + 0.5f);
             instances.add(portal);
         }
-
-        // Renderizar vías normales
         visitRailTrack(tunnelGateRailTrack);
     }
 
-    // createOpenBox moved to ResourceContext
-
-    private boolean isPredictiveMoveBlocked(letrain.vehicle.impl.Linker linker,
-            java.util.Set<letrain.vehicle.impl.Linker> visited) {
-        if (!visited.add(linker))
-            return false;
-
+    private void calculateEdgeToEdge(letrain.vehicle.impl.Linker linker, Locomotive director, float progress,
+            com.badlogic.gdx.math.Vector3 outPos, com.badlogic.gdx.math.Vector3 outTangent) {
+        
         letrain.track.Track currentTrack = linker.getTrack();
-        if (currentTrack == null)
-            return true;
+        letrain.map.Dir dExit = linker.getDir();
+        letrain.map.Dir dEntry = linker.getEntryDir();
+        if (dEntry == null) dEntry = dExit.inverse();
 
-        letrain.track.Track nextTrack = currentTrack.getConnected(linker.getDir());
-        if (nextTrack == null)
-            return true;
-
-        // Check if we can enter (includes linker and reservation checks)
-        // Dir is inversion of current move direction
-        if (!nextTrack.canEnter(linker.getDir().inverse(), linker)) {
-            letrain.vehicle.impl.Linker occupying = nextTrack.getLinker();
-            letrain.vehicle.impl.Linker reservation = nextTrack.getReservation();
-
-            boolean blockedByOther = (occupying != null && occupying.getTrain() != linker.getTrain())
-                    || (reservation != null && reservation.getTrain() != linker.getTrain());
-
-            if (blockedByOther)
-                return true;
-
-            // If it's blocked by OUR train, we need to check if THAT linker is also
-            // blocked.
-            if (occupying != null && occupying.getTrain() == linker.getTrain()) {
-                return isPredictiveMoveBlocked(occupying, visited);
+        if (progress < 0.5f) {
+            // Phase 1: Current Cell (Center -> Exit)
+            float t = 0.5f + progress; // [0.5, 1.0]
+            float cellX = linker.getPosition().getX();
+            float cellY = linker.getPosition().getY();
+            
+            calculateBezierPoint(cellX, cellY, dEntry, dExit, t, outPos, outTangent);
+        } else {
+            // Phase 2: Next Cell (Entry -> Center)
+            letrain.track.Track nextTrack = (currentTrack != null) ? currentTrack.getConnected(dExit) : null;
+            if (nextTrack != null && director.getSpeed() > 0) {
+                letrain.map.Dir nextEntry = dExit.inverse();
+                letrain.map.Dir nextExit = nextTrack.getDir(nextEntry);
+                float nextX = nextTrack.getPosition().getX();
+                float nextY = nextTrack.getPosition().getY();
+                
+                float t = progress - 0.5f; // [0.0, 0.5]
+                calculateBezierPoint(nextX, nextY, nextEntry, nextExit, t, outPos, outTangent);
+            } else {
+                // End of line or stationary: Stay at center of current
+                float cellX = linker.getPosition().getX();
+                float cellY = linker.getPosition().getY();
+                calculateBezierPoint(cellX, cellY, dEntry, dExit, 0.5f, outPos, outTangent);
             }
-
-            // If it's blocked by something else in canEnter (router/sensor), it's blocked.
-            return true;
         }
+    }
 
-        return false;
+    private void calculateBezierPoint(float cellX, float cellY, letrain.map.Dir dEntry, letrain.map.Dir dExit, float t,
+            com.badlogic.gdx.math.Vector3 outPos, com.badlogic.gdx.math.Vector3 outTangent) {
+        
+        if (dEntry == null) dEntry = dExit.inverse();
+
+        // Control point is the center
+        com.badlogic.gdx.math.Vector3 pControl = new com.badlogic.gdx.math.Vector3(cellX + 0.5f, 0, cellY + 0.5f);
+        // Start point is the entry edge (0.5 units from center)
+        com.badlogic.gdx.math.Vector3 pStart = new com.badlogic.gdx.math.Vector3(cellX + 0.5f + getDirX(dEntry), 0, cellY + 0.5f + getDirZ(dEntry));
+        // End point is the exit edge (0.5 units from center)
+        com.badlogic.gdx.math.Vector3 pEnd = new com.badlogic.gdx.math.Vector3(cellX + 0.5f + getDirX(dExit), 0, cellY + 0.5f + getDirZ(dExit));
+        
+        getQuadraticBezier(outPos, pStart, pControl, pEnd, t);
+        getQuadraticBezierTangent(outTangent, pStart, pControl, pEnd, t);
+    }
+
+    public static float getDirX(letrain.map.Dir d) {
+        if (d == null) return 0;
+        switch (d) {
+            case E: case NE: case SE: return 0.5f;
+            case W: case NW: case SW: return -0.5f;
+            default: return 0;
+        }
+    }
+
+    public static float getDirZ(letrain.map.Dir d) {
+        if (d == null) return 0;
+        switch (d) {
+            case S: case SE: case SW: return 0.5f;
+            case N: case NE: case NW: return -0.5f;
+            default: return 0;
+        }
+    }
+
+    private static void getQuadraticBezierTangent(com.badlogic.gdx.math.Vector3 out, com.badlogic.gdx.math.Vector3 p0, com.badlogic.gdx.math.Vector3 p1, com.badlogic.gdx.math.Vector3 p2, float t) {
+        float invT = 1f - t;
+        out.set(p1).sub(p0).scl(2f * invT).add((p2.x - p1.x) * 2f * t, (p2.y - p1.y) * 2f * t, (p2.z - p1.z) * 2f * t);
     }
 }
