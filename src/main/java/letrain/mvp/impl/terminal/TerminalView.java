@@ -1,11 +1,10 @@
-package letrain.mvp.impl;
+package letrain.mvp.impl.terminal;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import com.googlecode.lanterna.Symbols;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextCharacter;
@@ -28,6 +27,7 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
+
 import letrain.map.Page;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
@@ -35,8 +35,12 @@ import letrain.mvp.Model.GameModeMenuOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class View implements letrain.mvp.View {
-    private static final Logger log = LoggerFactory.getLogger(View.class);
+/**
+ * Modernized Terminal implementation of the View interface using Lanterna.
+ * This class isolates terminal-specific logic and UI handling.
+ */
+public class TerminalView implements letrain.mvp.View {
+    private static final Logger log = LoggerFactory.getLogger(TerminalView.class);
     private final GameViewListener gameViewListener;
     private Point mapScrollPage = new Point(0, 0);
     private Screen screen;
@@ -59,7 +63,7 @@ public class View implements letrain.mvp.View {
     static final TextColor SELECTED_BG_COLOR = ANSI.BLUE;
     static final TextColor SHORTCUT_COLOR = ANSI.GREEN_BRIGHT;
 
-    public View(GameViewListener gameViewListener) {
+    public TerminalView(GameViewListener gameViewListener) {
         this.gameViewListener = gameViewListener;
         terminalFactory = new DefaultTerminalFactory();
         try {
@@ -67,7 +71,7 @@ public class View implements letrain.mvp.View {
             terminal.setCursorVisible(false);
             setScreen(createScreen(terminal));
         } catch (IOException e) {
-            log.error("Error creating terminal for View", e);
+            log.error("Error creating terminal for TerminalView", e);
         }
         terminalSize = screen.getTerminalSize();
         gameBox = screen.newTextGraphics();
@@ -103,11 +107,12 @@ public class View implements letrain.mvp.View {
     public void setMapScrollPage(Point pos) {
         this.mapScrollPage = pos;
         setStatusBarText("Page: " + mapScrollPage.getX() + ", " + mapScrollPage.getY());
-        View.this.gameViewListener.onMapPageChanged(mapScrollPage, gameBoxSize.getColumns(), gameBoxSize.getRows());
+        TerminalView.this.gameViewListener.onMapPageChanged(mapScrollPage, gameBoxSize.getColumns(), gameBoxSize.getRows());
     }
 
+    @Override
     public void setStatusBarText(String text) {
-        // statusBar.setText(text);
+        // Implementation for status bar updates in terminal
     }
 
     @Override
@@ -121,7 +126,7 @@ public class View implements letrain.mvp.View {
         if (changedSize != null) {
             terminalSize = changedSize;
             recalculateSizes(terminalSize);
-            View.this.gameViewListener.onMapPageChanged(mapScrollPage, gameBoxSize.getColumns(),
+            TerminalView.this.gameViewListener.onMapPageChanged(mapScrollPage, gameBoxSize.getColumns(),
                     gameBoxSize.getRows());
             gameBox.fillRectangle(gameBoxPosition, gameBoxSize, ' ');
         }
@@ -144,7 +149,6 @@ public class View implements letrain.mvp.View {
         return gameBoxSize.getRows();
     }
 
-    // TODO: this must be made in InfoViewer with a visitMenu method
     @Override
     public void setMenu(List<GameModeMenuOption> options) {
         int length = 1;
@@ -189,6 +193,7 @@ public class View implements letrain.mvp.View {
         menuBox.putString(menuBoxPosition.withRelative(1, 2), text);
     }
 
+    @Override
     public void set(int x, int y, String c) {
         x -= mapScrollPage.getX() * getCols();
         y -= mapScrollPage.getY() * getRows();
@@ -205,17 +210,14 @@ public class View implements letrain.mvp.View {
         }
     }
 
-    @Override
     public TextColor getFgColor() {
         return fgColor;
     }
 
-    @Override
     public void setFgColor(TextColor color) {
         this.fgColor = color;
     }
 
-    @Override
     public void setBgColor(TextColor color) {
         this.bgColor = color;
     }
@@ -286,24 +288,7 @@ public class View implements letrain.mvp.View {
         return screen;
     }
 
-    public static void drawBox(TextGraphics textGraphics, TerminalPosition topLeft, TerminalSize size) {
-        TerminalPosition topRight = topLeft.withRelativeColumn(size.getColumns() - 1);
-        TerminalPosition bottomLeft = topLeft.withRelativeRow(size.getRows() - 1);
-        TerminalPosition bottomRight = bottomLeft.withRelativeColumn(size.getColumns() - 1);
-
-        textGraphics.drawLine(topLeft.withRelative(1, 0), topRight.withRelative(-1, 0), Symbols.SINGLE_LINE_HORIZONTAL);
-        textGraphics.drawLine(bottomLeft.withRelative(1, 0), bottomRight.withRelative(-1, 0),
-                Symbols.SINGLE_LINE_HORIZONTAL);
-        textGraphics.drawLine(topLeft.withRelative(0, 1), bottomLeft.withRelative(0, -1), Symbols.SINGLE_LINE_VERTICAL);
-        textGraphics.drawLine(topRight.withRelative(0, 1), bottomRight.withRelative(0, -1),
-                Symbols.SINGLE_LINE_VERTICAL);
-
-        textGraphics.setCharacter(topLeft, Symbols.SINGLE_LINE_TOP_LEFT_CORNER);
-        textGraphics.setCharacter(topRight, Symbols.SINGLE_LINE_TOP_RIGHT_CORNER);
-        textGraphics.setCharacter(bottomLeft, Symbols.SINGLE_LINE_BOTTOM_LEFT_CORNER);
-        textGraphics.setCharacter(bottomRight, Symbols.SINGLE_LINE_BOTTOM_RIGHT_CORNER);
-    }
-
+    @Override
     public void showSaveDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
         File result = new FileDialogBuilder()
@@ -312,9 +297,10 @@ public class View implements letrain.mvp.View {
                 .setActionLabel(LocalizedString.Save.toString())
                 .build()
                 .showDialog(gui);
-        View.this.gameViewListener.onSaveGame(result);
+        TerminalView.this.gameViewListener.onSaveGame(result);
     }
 
+    @Override
     public void showLoadDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
 
@@ -324,7 +310,7 @@ public class View implements letrain.mvp.View {
                 .setActionLabel(LocalizedString.Open.toString())
                 .build()
                 .showDialog(gui);
-        View.this.gameViewListener.onLoadGame(result);
+        TerminalView.this.gameViewListener.onLoadGame(result);
     }
 
     @Override
@@ -337,10 +323,11 @@ public class View implements letrain.mvp.View {
                 .build()
                 .showDialog(gui);
         if (result != null) {
-            View.this.gameViewListener.onEditCommands(result);
+            TerminalView.this.gameViewListener.onEditCommands(result);
         }
     }
 
+    @Override
     public void showExitDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
         BasicWindow window = new BasicWindow();
@@ -378,6 +365,7 @@ public class View implements letrain.mvp.View {
         com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui, title, message);
     }
 
+    @Override
     public void showReferenceGuide() {
         String guide = "LeTrain Automation Reference:\n\n" +
                 "Triggers:\n" +

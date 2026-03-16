@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import letrain.economy.impl.EconomyManager;
+import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
@@ -105,7 +105,7 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     public Model() {
         this.eventLogManager = new EventLogManager();
-        this.economyManager = new EconomyManager(eventLogManager);
+        this.economyManager = new letrain.economy.impl.EconomyManager(eventLogManager);
         this.economyManager.reloadConfig(); // Initial load
         if (seed == 0) {
             seed = 1 + (int) (Math.random() * 255);

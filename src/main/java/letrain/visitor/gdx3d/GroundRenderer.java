@@ -1,6 +1,7 @@
-package letrain.visitor;
+package letrain.visitor.gdx3d;
 
 import java.util.List;
+import letrain.visitor.Visitor;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;

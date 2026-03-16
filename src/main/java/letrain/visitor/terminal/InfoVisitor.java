@@ -1,6 +1,7 @@
-package letrain.visitor;
+package letrain.visitor.terminal;
 
 import com.googlecode.lanterna.TextColor;
+import letrain.visitor.Visitor;
 import com.googlecode.lanterna.TextColor.ANSI;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
@@ -10,7 +11,7 @@ import letrain.map.DynamicRouter;
 import letrain.map.Router;
 import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
-import letrain.mvp.View;
+import letrain.mvp.impl.terminal.TerminalView;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
@@ -35,9 +36,9 @@ public class InfoVisitor implements Visitor {
 
     String infoBarText = "";
     String helpBarText = "";
-    private final View view;
+    private final TerminalView view;
 
-    public InfoVisitor(View view) {
+    public InfoVisitor(TerminalView view) {
         this.view = view;
     }
 

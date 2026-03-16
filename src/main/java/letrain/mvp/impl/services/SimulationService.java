@@ -1,7 +1,7 @@
 package letrain.mvp.impl.services;
 
-import letrain.economy.impl.EconomyManager;
-import letrain.mvp.impl.Model;
+import letrain.economy.EconomyManager;
+import letrain.mvp.Model;
 import letrain.track.CargoTypes;
 import letrain.track.Station;
 import letrain.vehicle.impl.Linker;

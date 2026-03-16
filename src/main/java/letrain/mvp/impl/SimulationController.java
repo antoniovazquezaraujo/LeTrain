@@ -9,12 +9,12 @@ import letrain.mvp.impl.services.SimulationService;
  * This ensures that both 2D and 3D views behave identically regarding physics and logic.
  */
 public class SimulationController {
-    private final letrain.mvp.impl.Model model;
+    private final letrain.mvp.Model model;
     private final AudioController audioController;
     private final RailTrackMaker trackMaker;
     private final SimulationService simulationService;
 
-    public SimulationController(letrain.mvp.impl.Model model, AudioController audioController, RailTrackMaker trackMaker) {
+    public SimulationController(letrain.mvp.Model model, AudioController audioController, RailTrackMaker trackMaker) {
         this.model = model;
         this.audioController = audioController;
         this.trackMaker = trackMaker;

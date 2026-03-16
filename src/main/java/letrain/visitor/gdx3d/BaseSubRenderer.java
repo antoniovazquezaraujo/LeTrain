@@ -1,9 +1,10 @@
-package letrain.visitor;
+package letrain.visitor.gdx3d;
 
 import java.util.List;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import letrain.mvp.Model;
+import letrain.visitor.Visitor;
 
 /**
  * Base class for specialized 3D sub-renderers.

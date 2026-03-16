@@ -18,7 +18,7 @@ public class GameSaveService {
 
     private static final Logger log = LoggerFactory.getLogger(GameSaveService.class);
 
-    public boolean save(letrain.mvp.impl.Model model, File file) {
+    public boolean save(letrain.mvp.Model model, File file) {
         if (file == null) {
             log.warn("Ignoring save request with null file");
             return false;

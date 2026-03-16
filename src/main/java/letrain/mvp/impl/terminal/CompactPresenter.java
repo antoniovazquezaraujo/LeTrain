@@ -1,4 +1,4 @@
-package letrain.mvp.impl;
+package letrain.mvp.impl.terminal;
 
 import static letrain.mvp.Model.GameMode.DRIVE;
 import static letrain.mvp.Model.GameMode.FORKS;
@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import letrain.mvp.Model;
 
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -34,18 +35,20 @@ import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
-import letrain.visitor.InfoVisitor;
-import letrain.visitor.RenderVisitor;
+import letrain.visitor.terminal.InfoVisitor;
+import letrain.visitor.terminal.RenderVisitor;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import letrain.mvp.impl.SimulationController;
+import letrain.mvp.impl.RailTrackMaker;
 
 public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.impl.rail.TrainEventListener {
     Logger log = LoggerFactory.getLogger(CompactPresenter.class);
 
     Model model;
-    private final letrain.mvp.View view;
+    private final TerminalView view;
     private final RenderVisitor renderer;
     private final InfoVisitor informer;
     boolean running;
@@ -77,7 +80,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
 
     public CompactPresenter(Model model) {
         setModel(model);
-        view = new View(this);
+        view = new TerminalView(this);
         renderer = new RenderVisitor(view);
         informer = new InfoVisitor(view);
         railTrackMaker = new RailTrackMaker(this);
@@ -114,7 +117,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         if (model != null) {
             this.model = model;
         } else {
-            this.model = new Model();
+            this.model = new letrain.mvp.impl.Model();
         }
         // Re-create audio controller for the new model
         if (this.audioController != null) {

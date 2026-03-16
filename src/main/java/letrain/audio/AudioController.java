@@ -12,7 +12,7 @@ import letrain.audio.sources.WavSource;
 import letrain.audio.synth.AudioSample;
 import letrain.audio.synth.TrainSynthesizer;
 import letrain.map.Point;
-import letrain.mvp.impl.Model;
+import letrain.mvp.Model;
 import letrain.vehicle.impl.rail.Locomotive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

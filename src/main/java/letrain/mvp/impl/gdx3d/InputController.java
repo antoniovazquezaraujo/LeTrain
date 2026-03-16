@@ -1,5 +1,6 @@
-package letrain.mvp.impl;
+package letrain.mvp.impl.gdx3d;
 
+import letrain.mvp.Model;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.googlecode.lanterna.input.KeyStroke;

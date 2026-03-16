@@ -1,6 +1,7 @@
-package letrain.visitor;
+package letrain.visitor.terminal;
 
 import java.util.Random;
+import letrain.visitor.Visitor;
 
 import com.googlecode.lanterna.TextColor;
 import letrain.economy.EconomyManager;
@@ -12,7 +13,7 @@ import letrain.map.impl.RailMap;
 import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
-import letrain.mvp.View;
+import letrain.mvp.impl.terminal.TerminalView;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
@@ -112,11 +113,11 @@ public class RenderVisitor implements Visitor {
     ForkRailTrack selectedFork;
     Station selectedStation;
     RailSemaphore selectedSemaphore;
-    private final View view;
+    private final TerminalView view;
     private GameMode mode;
     boolean showId = false;
 
-    public RenderVisitor(View view) {
+    public RenderVisitor(TerminalView view) {
         this.view = view;
         view.setFgColor(FG_COLOR);
         view.setBgColor(BG_COLOR);

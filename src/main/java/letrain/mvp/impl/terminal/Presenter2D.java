@@ -1,4 +1,6 @@
-package letrain.mvp.impl;
+package letrain.mvp.impl.terminal;
+ 
+import letrain.mvp.Model;
 
 /**
  * 2D presenter implementation (text/terminal UI) for cleaner naming with 3D

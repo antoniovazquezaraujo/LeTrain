@@ -1,5 +1,6 @@
-package letrain.mvp.impl;
+package letrain.mvp.impl.gdx3d;
 
+import letrain.mvp.Model;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;

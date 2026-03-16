@@ -1,4 +1,6 @@
-package letrain.mvp.impl;
+package letrain.mvp.impl.gdx3d;
+ 
+import letrain.mvp.Model;
 
 /**
  * 3D presenter implementation (GDX 3D UI) for naming symmetry.

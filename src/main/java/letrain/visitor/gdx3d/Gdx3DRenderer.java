@@ -1,9 +1,10 @@
-package letrain.visitor;
+package letrain.visitor.gdx3d;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import letrain.visitor.Visitor;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;

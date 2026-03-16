@@ -1,4 +1,4 @@
-package letrain.mvp.impl;
+package letrain.mvp.impl.gdx3d;
 
 import java.io.File;
 import java.util.List;
@@ -39,9 +39,17 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import letrain.map.Point;
+import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.utils.ValidationUtils;
-import letrain.visitor.Gdx3DRenderer;
+import letrain.visitor.gdx3d.Gdx3DRenderer;
+import letrain.visitor.gdx3d.Gdx3DResourceContext;
+import letrain.visitor.terminal.InfoVisitor;
+import letrain.visitor.terminal.RenderVisitor;
+import letrain.mvp.impl.services.SimulationService;
+import letrain.mvp.impl.SimulationController;
+import letrain.mvp.impl.GameSaveService;
+import letrain.mvp.impl.RailTrackMaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,14 +84,14 @@ public class Gdx3DView extends ApplicationAdapter
 
     private Environment environment;
 
-    private letrain.mvp.impl.Model model;
+    private letrain.mvp.Model model;
     private final Gdx3DRenderer renderer;
     private com.badlogic.gdx.graphics.g3d.Model groundModel;
     private com.badlogic.gdx.graphics.g3d.Model gridModel;
     private com.badlogic.gdx.graphics.g3d.Model boxModel;
     private RailTrackMaker trackMaker;
 
-    private letrain.visitor.Gdx3DResourceContext resourceContext;
+    private letrain.visitor.gdx3d.Gdx3DResourceContext resourceContext;
 
     private SpriteBatch spriteBatch;
     private BitmapFont font;
@@ -123,9 +131,9 @@ public class Gdx3DView extends ApplicationAdapter
     private final CameraController cameraController;
     private final InputController inputController;
 
-    public Gdx3DView(letrain.mvp.impl.Model model) {
+    public Gdx3DView(letrain.mvp.Model model) {
         this.model = ValidationUtils.requireNonNull(model, "model");
-        this.resourceContext = new letrain.visitor.Gdx3DResourceContext();
+        this.resourceContext = new letrain.visitor.gdx3d.Gdx3DResourceContext();
         this.renderer = new Gdx3DRenderer(resourceContext);
         this.trackMaker = new RailTrackMaker(this);
         this.audioController = new letrain.audio.AudioController(model);
@@ -781,7 +789,7 @@ public class Gdx3DView extends ApplicationAdapter
 
         // Renderizado de Etiquetas 3D (Decals)
         if (!renderer.getLabels().isEmpty()) {
-            for (letrain.visitor.Gdx3DRenderer.VehicleLabel label : renderer.getLabels()) {
+            for (letrain.visitor.gdx3d.Gdx3DRenderer.VehicleLabel label : renderer.getLabels()) {
                 if (label.text == null || label.text.isEmpty())
                     continue;
 
@@ -1483,13 +1491,11 @@ public class Gdx3DView extends ApplicationAdapter
         // Not used in 3D view.
     }
 
-    @Override
-    public void setFgColor(TextColor color) {
+    public void setFgColor(com.googlecode.lanterna.TextColor color) {
         // Not used in 3D view.
     }
 
-    @Override
-    public void setBgColor(TextColor color) {
+    public void setBgColor(com.googlecode.lanterna.TextColor color) {
         // Not used in 3D view.
     }
 
@@ -1533,24 +1539,20 @@ public class Gdx3DView extends ApplicationAdapter
         // Not used in 3D view.
     }
 
-    @Override
-    public boolean isEndOfGame(KeyStroke stroke) {
+    public boolean isEndOfGame(com.googlecode.lanterna.input.KeyStroke stroke) {
         return false;
     }
 
-    @Override
-    public KeyStroke readKey() {
+    public com.googlecode.lanterna.input.KeyStroke readKey() {
         // Not used in 3D view (input handled by LibGDX).
         return null;
     }
 
-    @Override
     public void setScreen(com.googlecode.lanterna.screen.Screen screen) {
         // Not used in 3D view.
     }
 
-    @Override
-    public TextColor getFgColor() {
+    public com.googlecode.lanterna.TextColor getFgColor() {
         // Not used in 3D view.
         return null;
     }

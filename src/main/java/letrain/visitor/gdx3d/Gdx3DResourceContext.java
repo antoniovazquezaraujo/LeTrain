@@ -1,4 +1,4 @@
-package letrain.visitor;
+package letrain.visitor.gdx3d;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;

@@ -1,7 +1,8 @@
-package letrain.visitor;
+package letrain.visitor.gdx3d;
 
 import java.util.List;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import letrain.visitor.Visitor;
 import com.badlogic.gdx.math.Vector3;
 import letrain.map.Dir;
 import letrain.map.Point;
