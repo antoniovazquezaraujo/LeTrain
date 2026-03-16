@@ -108,6 +108,8 @@ public class RenderVisitor implements Visitor {
     public static String VERTICAL_DIR = "|";
     public static String DIAGONAL_DIR = "/";
     public static String ANTI_DIAGONAL_DIR = "\\";
+    public static String PRODUCER_ASPECT = "■";
+    public static String CONSUMER_ASPECT = "X";
 
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
@@ -409,23 +411,52 @@ public class RenderVisitor implements Visitor {
         int type = ground.getType();
         int x = ground.getPosition().getX();
         int y = ground.getPosition().getY();
-        String aspect = " ";
-        switch (type) {
-            case GroundMap.GROUND:
-                view.setFgColor(GROUND_COLOR);
-                aspect = GROUND_ASPECT;
-                break;
-            case GroundMap.WATER:
-                view.setFgColor(WATER_COLOR);
-                aspect = WATER_ASPECT;
-                break;
-            case GroundMap.ROCK:
-                view.setFgColor(ROCK_COLOR);
-                aspect = ROCK_ASPECT;
-                break;
+        String aspect = GROUND_ASPECT;
+        TextColor color = GROUND_COLOR;
+
+        if (type >= 10 && type <= 19) {
+            letrain.track.CargoTypes cargo = letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
+            color = getCargoColor(cargo);
+            aspect = PRODUCER_ASPECT;
+        } else if (type >= 20 && type <= 29) {
+            letrain.track.CargoTypes cargo = letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
+            color = getCargoColor(cargo);
+            aspect = CONSUMER_ASPECT;
+        } else {
+            switch (type) {
+                case GroundMap.GROUND:
+                    color = GROUND_COLOR;
+                    aspect = GROUND_ASPECT;
+                    break;
+                case GroundMap.WATER:
+                    color = WATER_COLOR;
+                    aspect = WATER_ASPECT;
+                    break;
+                case GroundMap.ROCK:
+                    color = ROCK_COLOR;
+                    aspect = ROCK_ASPECT;
+                    break;
+            }
         }
+        view.setFgColor(color);
         view.set(x, y, aspect);
         resetColors();
+    }
+
+    private TextColor getCargoColor(letrain.track.CargoTypes cargo) {
+        if (cargo == null)
+            return TextColor.ANSI.WHITE;
+        switch (cargo) {
+            case COAL:
+                return TextColor.ANSI.BLACK_BRIGHT;
+            case GOLD:
+                return TextColor.ANSI.YELLOW;
+            case RUBY:
+                return TextColor.ANSI.RED_BRIGHT;
+            case NONE:
+            default:
+                return TextColor.ANSI.WHITE;
+        }
     }
 
     @Override
