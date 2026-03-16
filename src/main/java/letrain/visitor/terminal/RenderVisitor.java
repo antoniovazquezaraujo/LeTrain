@@ -52,7 +52,7 @@ public class RenderVisitor implements Visitor {
     public static final TextColor SELECTED_FORK_COLOR = TextColor.ANSI.RED_BRIGHT;
     public static final TextColor FG_COLOR = TextColor.ANSI.WHITE;
     public static final TextColor BG_COLOR = TextColor.ANSI.BLACK;
-    public static final TextColor SELECTED_LINKER_COLOR = TextColor.ANSI.YELLOW;
+    public static final TextColor SELECTED_LINKER_COLOR = TextColor.ANSI.MAGENTA;
     public static final TextColor SEMAPHORE_OPEN_COLOR = TextColor.ANSI.GREEN;
     public static final TextColor SEMAPHORE_CLOSED_COLOR = TextColor.ANSI.RED;
     public static final TextColor SEMAPHORE_COLOR = TextColor.ANSI.BLUE;
@@ -237,20 +237,27 @@ public class RenderVisitor implements Visitor {
     }
 
     private void highlightIfSelected(Linker linker) {
-        if (linker.getTrain() != null) {
-            Train train = linker.getTrain();
-            if (train.getLinkersToRemove().contains(linker)) {
-                view.setBgColor(SELECTED_LINKER_COLOR);
-            }
-            int count = 0;
-            for (Linker linkerToJoin : train.getLinkersToJoin()) {
-                if (count >= train.getNumLinkersToJoin())
-                    break;
-                if (linkerToJoin == linker) {
-                    view.setBgColor(SELECTED_LINKER_COLOR);
-                    break;
+        if (selectedLocomotive != null && selectedLocomotive.getTrain() != null) {
+            Train activeTrain = selectedLocomotive.getTrain();
+            boolean highlighted = false;
+            if (activeTrain.getLinkersToRemove().contains(linker)) {
+                highlighted = true;
+            } else {
+                int count = 0;
+                for (Linker linkerToJoin : activeTrain.getLinkersToJoin()) {
+                    if (count >= activeTrain.getNumLinkersToJoin())
+                        break;
+                    if (linkerToJoin == linker) {
+                        highlighted = true;
+                        break;
+                    }
+                    count++;
                 }
-                count++;
+            }
+
+            if (highlighted) {
+                view.setBgColor(SELECTED_LINKER_COLOR);
+                view.setFgColor(TextColor.ANSI.BLACK);
             }
         }
     }
