@@ -1,7 +1,6 @@
 package letrain.vehicle.impl.rail;
 
 import letrain.map.Dir;
-import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 import letrain.visitor.Visitor;
@@ -57,10 +56,10 @@ public class Locomotive extends Linker implements Tractor {
             setTargetSpeed(0);
             return;
         }
-        Dir pushDir = getDir();
-        Track nextTrack = getTrack();
-        setEntryDir(pushDir);
-        setDir(nextTrack.getDir(pushDir));
+        Dir currentDir = getDir();
+        Dir currentEntry = getEntryDir();
+        setEntryDir(currentDir);
+        setDir(currentEntry);
         setReversed(!isReversed());
         if (getTrain() != null) {
             getTrain().setStalled(false);

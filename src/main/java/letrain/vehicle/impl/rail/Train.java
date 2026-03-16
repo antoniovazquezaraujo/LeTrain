@@ -374,9 +374,16 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         while (iterator.hasNext()) {
             Linker next = iterator.next();
             Track nextTrack = next.getTrack();
+            if (pushDir == null) {
+                break;
+            }
             Dir inverseEntry = pushDir.inverse();
             next.setEntryDir(inverseEntry);
-            next.setDir(nextTrack.getDir(inverseEntry));
+            Dir nextDir = nextTrack.getDir(inverseEntry);
+            if (nextDir == null) {
+                break;
+            }
+            next.setDir(nextDir);
             pushDir = next.getDir();
         }
     }
@@ -398,8 +405,16 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         Track oldTrack = ((Locomotive) tractor).getTrack();
         while (iterator.hasNext()) {
             Linker next = iterator.next();
-            next.setDir(next.getPosition().locate(oldTrack.getPosition()));
-            next.setEntryDir(next.getTrack().getDir(next.getDir()));
+            Dir nextDir = next.getPosition().locate(oldTrack.getPosition());
+            if (nextDir == null) {
+                break;
+            }
+            next.setDir(nextDir);
+            Dir nextEntry = next.getTrack().getDir(next.getDir());
+            if (nextEntry == null) {
+                break;
+            }
+            next.setEntryDir(nextEntry);
             oldTrack = next.getTrack();
         }
     }

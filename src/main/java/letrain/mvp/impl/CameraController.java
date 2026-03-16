@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import letrain.utils.PathGeometry;
 
 /**
  * Se encarga de gestionar la cámara 3D (modos ORBIT, CAB, MAP) a partir del
@@ -170,8 +171,8 @@ public class CameraController {
             float z = interpPos.y + 0.5f;
 
             letrain.map.Dir d = loco.getDir();
-            float dx = letrain.visitor.Gdx3DRenderer.getDirX(d);
-            float dz = letrain.visitor.Gdx3DRenderer.getDirZ(d);
+            float dx = PathGeometry.getDirX(d);
+            float dz = PathGeometry.getDirZ(d);
 
             Vector2 targetDir = new Vector2(dx, dz);
             currentCabDirection.lerp(targetDir, 0.05f).nor();
@@ -215,59 +216,21 @@ public class CameraController {
     private Vector2 getInterpolatedPosition(letrain.vehicle.impl.rail.Locomotive locomotive, float alpha) {
         float x = locomotive.getPosition().getX();
         float y = locomotive.getPosition().getY();
+        Vector3 outPos = new Vector3();
+        Vector3 outTangent = new Vector3();
 
+        float progress = 0;
         if (locomotive.getTotalTurns() > 0) {
             float totalDelay = (float) locomotive.getTotalTurns();
             float currentDelay = (float) locomotive.getTurns() - alpha;
-            float progress = 1.0f - (currentDelay / totalDelay);
-
+            progress = 1.0f - (currentDelay / totalDelay);
             if (progress < 0) progress = 0;
             if (progress > 1) progress = 1;
-
-            letrain.track.Track currentTrack = locomotive.getTrack();
-            letrain.map.Dir dExit = locomotive.getDir();
-            letrain.map.Dir dEntry = locomotive.getEntryDir();
-            if (dEntry == null) dEntry = dExit.inverse();
-
-            if (progress < 0.5f) {
-                // Phase 1: Center to Exit
-                float t = 0.5f + progress;
-                return calculateBezierVector2(x, y, dEntry, dExit, t);
-            } else {
-                // Phase 2: Entry to Center of next
-                letrain.track.Track nextTrack = (currentTrack != null) ? currentTrack.getConnected(dExit) : null;
-                if (nextTrack != null && locomotive.getSpeed() > 0) {
-                    letrain.map.Dir nextEntry = dExit.inverse();
-                    letrain.map.Dir nextExit = nextTrack.getDir(nextEntry);
-                    float nextX = nextTrack.getPosition().getX();
-                    float nextY = nextTrack.getPosition().getY();
-                    float t = progress - 0.5f;
-                    return calculateBezierVector2(nextX, nextY, nextEntry, nextExit, t);
-                } else {
-                    return calculateBezierVector2(x, y, dEntry, dExit, 0.5f);
-                }
-            }
-        } else {
-            // Stationary: Use Bezier midpoint for correct curve alignment
-            letrain.map.Dir dExit = locomotive.getDir();
-            letrain.map.Dir dEntry = locomotive.getEntryDir();
-            if (dEntry == null) dEntry = dExit.inverse();
-            return calculateBezierVector2(x, y, dEntry, dExit, 0.5f);
         }
-    }
 
-    private Vector2 calculateBezierVector2(float cellX, float cellY, letrain.map.Dir dEntry, letrain.map.Dir dExit, float t) {
-        if (dEntry == null) dEntry = dExit.inverse();
-        float p0x = cellX + 0.5f + letrain.visitor.Gdx3DRenderer.getDirX(dEntry);
-        float p0y = cellY + 0.5f + letrain.visitor.Gdx3DRenderer.getDirZ(dEntry);
-        float p1x = cellX + 0.5f;
-        float p1y = cellY + 0.5f;
-        float p2x = cellX + 0.5f + letrain.visitor.Gdx3DRenderer.getDirX(dExit);
-        float p2y = cellY + 0.5f + letrain.visitor.Gdx3DRenderer.getDirZ(dExit);
-
-        float invT = 1.0f - t;
-        float resX = invT * invT * p0x + 2 * invT * t * p1x + t * t * p2x;
-        float resY = invT * invT * p0y + 2 * invT * t * p1y + t * t * p2y;
-        return new Vector2(resX - 0.5f, resY - 0.5f);
+        PathGeometry.calculateTwoStagePath(x, y, locomotive.getEntryDir(), locomotive.getDir(), locomotive.getTrack(), 
+                                          progress, locomotive.getSpeed(), outPos, outTangent);
+        
+        return new Vector2(outPos.x - 0.5f, outPos.z - 0.5f);
     }
 }
