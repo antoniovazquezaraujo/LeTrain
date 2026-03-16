@@ -132,6 +132,12 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
 
     public void stop() {
         running = false;
+        if (audioController != null) {
+            audioController.stop();
+        }
+        if (view != null) {
+            view.stop();
+        }
     }
 
     public void start() {

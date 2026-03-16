@@ -37,5 +37,6 @@ public class LeTrain {
             presenter.start();
             presenter.stop();
         }
+        System.exit(0);
     }
 }

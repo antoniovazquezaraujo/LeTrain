@@ -89,7 +89,8 @@ public class TerminalView implements letrain.mvp.View {
         try {
             return screen.pollInput();
         } catch (IOException e) {
-            log.warn("Error reading key from screen", e);
+            log.warn("Error reading key from screen, window might be closed", e);
+            setEndOfGame(true);
         }
         return null;
     }
@@ -135,7 +136,8 @@ public class TerminalView implements letrain.mvp.View {
             this.screen.refresh();
             Thread.yield();
         } catch (IOException e) {
-            log.error("Error refreshing screen", e);
+            log.error("Error refreshing screen, window might be closed", e);
+            setEndOfGame(true);
         }
     }
 
@@ -355,8 +357,22 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     protected void setEndOfGame(boolean endOfGame) {
-        this.screen.doResizeIfNecessary();
+        try {
+            this.screen.doResizeIfNecessary();
+        } catch (Exception e) {
+            // Ignored on shutdown
+        }
         this.endOfGame = endOfGame;
+    }
+
+    public void stop() {
+        try {
+            if (screen != null) {
+                screen.stopScreen();
+            }
+        } catch (IOException e) {
+            log.warn("Error stopping screen", e);
+        }
     }
 
     @Override
