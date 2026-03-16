@@ -4,14 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
-import com.badlogic.gdx.math.MathUtils;
-import letrain.utils.PathGeometry;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
 import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
-import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
@@ -26,20 +23,24 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Wagon;
 
 public class Gdx3DRenderer implements Visitor {
-    private final java.util.List<com.badlogic.gdx.graphics.g3d.ModelInstance> instances = new java.util.ArrayList<>();
-    private final java.util.List<com.badlogic.gdx.graphics.g3d.ModelInstance> transparentInstances = new java.util.ArrayList<>();
+    private final List<ModelInstance> instances = new ArrayList<>();
+    private final List<ModelInstance> transparentInstances = new ArrayList<>();
+    private final List<VehicleLabel> labels = new ArrayList<>();
 
-    public java.util.List<com.badlogic.gdx.graphics.g3d.ModelInstance> getInstances() {
-        return instances;
-    }
+    private final TrackRenderer trackRenderer;
+    private final VehicleRenderer vehicleRenderer;
+    private final InfrastructureRenderer infrastructureRenderer;
+    private final GroundRenderer groundRenderer;
 
-    private final Gdx3DResourceContext resourceContext;
+    private float animationAlpha = 1.0f;
+    private boolean isXRayActive = false;
 
     public Gdx3DRenderer(Gdx3DResourceContext resourceContext) {
-        this.resourceContext = resourceContext;
+        this.trackRenderer = new TrackRenderer(resourceContext, instances, transparentInstances, labels);
+        this.vehicleRenderer = new VehicleRenderer(resourceContext, instances, transparentInstances, labels);
+        this.infrastructureRenderer = new InfrastructureRenderer(resourceContext, instances, transparentInstances, labels, trackRenderer);
+        this.groundRenderer = new GroundRenderer(resourceContext, instances, transparentInstances, labels);
     }
-
-    private java.util.Set<letrain.track.rail.RailTrack> selectedStationTracks = new java.util.HashSet<>();
 
     public static class VehicleLabel {
         public com.badlogic.gdx.math.Vector3 pos;
@@ -77,25 +78,24 @@ public class Gdx3DRenderer implements Visitor {
         }
     }
 
-    private List<VehicleLabel> labels = new ArrayList<>();
-    private Model modelRef;
-    private com.badlogic.gdx.graphics.Camera camera;
-    private float animationAlpha = 1.0f;
-    private boolean isXRayActive = false;
+    public List<ModelInstance> getInstances() {
+        return instances;
+    }
 
-    public void setAnimationAlpha(float alpha) {
-        this.animationAlpha = alpha;
+    public List<ModelInstance> getTransparentInstances() {
+        return transparentInstances;
     }
 
     public List<VehicleLabel> getLabels() {
         return labels;
     }
 
-    public void init() {
-        // Models are initialized in ResourceContext.
+    public void setAnimationAlpha(float alpha) {
+        this.animationAlpha = alpha;
     }
 
-    // Helper methods moved to ResourceContext
+    public void init() {
+    }
 
     public void clear() {
         instances.clear();
@@ -103,12 +103,8 @@ public class Gdx3DRenderer implements Visitor {
         labels.clear();
     }
 
-    public java.util.List<com.badlogic.gdx.graphics.g3d.ModelInstance> getTransparentInstances() {
-        return transparentInstances;
-    }
-
-    public void visitGroundPlane(com.badlogic.gdx.graphics.g3d.Model ground) {
-        instances.add(new ModelInstance(ground));
+    public void visitGroundPlane(ModelInstance ground) {
+        instances.add(ground);
     }
 
     @Override
@@ -117,1190 +113,118 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitModel(Model model) {
-        visitModel(model, null);
+        visitModel(model, model.getCamera());
     }
 
     public void visitModel(Model model, com.badlogic.gdx.graphics.Camera camera) {
-        this.modelRef = model;
-        this.camera = camera;
-        labels.clear();
+        this.isXRayActive = model.isXRayActive();
+        clear();
 
-        // ----------------------------------------------------------------------------------
         // X-RAY Detection: Are we inside any mountain or tunnel?
-        // ----------------------------------------------------------------------------------
-        isXRayActive = false;
-        if (model.getMode() == letrain.mvp.Model.GameMode.RAILS) {
+        if (model.getMode() == Model.GameMode.RAILS) {
             letrain.map.Point cp = model.getCursor().getPosition();
             Integer terrain = model.getGroundMap().getValueAt(cp);
             if (terrain != null && terrain == GroundMap.ROCK) {
                 isXRayActive = true;
             } else {
-                // Also check if cursor is over a tunnel gate
-                letrain.track.rail.RailTrack rt = model.getCursorRailTrack();
-                if (rt instanceof letrain.track.rail.TunnelGateRailTrack) {
+                RailTrack rt = model.getCursorRailTrack();
+                if (rt instanceof TunnelGateRailTrack) {
                     isXRayActive = true;
                 }
             }
         }
 
-        // Ya no limpiamos instances aquí, lo hace la vista antes de empezar
-        model.getGroundMap().accept(this);
-        model.getRailMap().accept(this);
-        model.getSemaphores().forEach(s -> s.accept(this));
-        model.getSensors().forEach(s -> s.accept(this));
-        model.getStations().forEach(s -> s.accept(this));
-        model.getLocomotives().forEach(l -> l.accept(this));
-        model.getWagons().forEach(w -> w.accept(this));
+        trackRenderer.updateState(model, camera, animationAlpha, isXRayActive);
+        vehicleRenderer.updateState(model, camera, animationAlpha, isXRayActive);
+        infrastructureRenderer.updateState(model, camera, animationAlpha, isXRayActive);
+        groundRenderer.updateState(model, camera, animationAlpha, isXRayActive);
+
+        model.getGroundMap().accept(groundRenderer);
+        model.getRailMap().forEach(track -> track.accept(this));
+        model.getSensors().forEach(t -> t.accept(infrastructureRenderer));
+        model.getSemaphores().forEach(t -> t.accept(infrastructureRenderer));
+        model.getWagons().forEach(t -> t.accept(vehicleRenderer));
+        model.getLocomotives().forEach(t -> t.accept(vehicleRenderer));
+        model.getStations().forEach(t -> t.accept(infrastructureRenderer));
         visitCursor(model.getCursor());
     }
 
-    private boolean isVisible(letrain.map.Point pos) {
-        if (camera == null)
-            return true;
-        // Check if the tile bounds are within the camera frustum (performance
-        // optimization)
-        return camera.frustum.boundsInFrustum(pos.getX() + 0.5f, 0.5f, pos.getY() + 0.5f, 0.5f, 0.5f, 0.5f);
+    @Override
+    public void visitLocomotive(Locomotive locomotive) {
+        vehicleRenderer.visitLocomotive(locomotive);
     }
 
-    private letrain.map.Dir getValidOrientation(letrain.track.rail.RailTrack track) {
-        letrain.map.Dir dir = track.getFirstOpenDir();
-        if (dir == null)
-            return letrain.map.Dir.N;
-        return dir;
+    @Override
+    public void visitWagon(Wagon wagon) {
+        vehicleRenderer.visitWagon(wagon);
     }
 
     @Override
     public void visitRailMap(RailMap map) {
-        // Pre-calcular tracks de la estación seleccionada para iluminar el andén
-        // completo
-        selectedStationTracks.clear();
-        if (modelRef != null && modelRef.getSelectedStation() != null) {
-            letrain.track.Track startTrack = modelRef.getSelectedStation().getTrack();
-            if (startTrack instanceof letrain.track.rail.StationRailTrack) {
-                java.util.Queue<letrain.track.rail.RailTrack> queue = new java.util.LinkedList<>();
-                queue.add((letrain.track.rail.RailTrack) startTrack);
-                selectedStationTracks.add((letrain.track.rail.RailTrack) startTrack);
-
-                while (!queue.isEmpty()) {
-                    letrain.track.rail.RailTrack current = queue.poll();
-                    for (letrain.map.Dir d : letrain.map.Dir.values()) {
-                        letrain.track.Track neighbor = current.getConnected(d);
-                        if (neighbor instanceof letrain.track.rail.StationRailTrack
-                                && !selectedStationTracks.contains(neighbor)) {
-                            selectedStationTracks.add((letrain.track.rail.RailTrack) neighbor);
-                            queue.add((letrain.track.rail.RailTrack) neighbor);
-                        }
-                    }
-                }
-            }
-        }
-        map.forEach(track -> track.accept(this));
+        map.accept(trackRenderer);
     }
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        if (!isVisible(track.getPosition()))
-            return;
-        // Renderizamos cada ruta del tramo como dos medios segmentos (o una curva suave)
-        track.forEach(route -> {
-            letrain.map.Dir d1 = route.getFirst();
-            letrain.map.Dir d2 = route.getSecond();
-            float shortenL1 = 1.0f;
-            float shortenR1 = 1.0f;
-            float shortenL2 = 1.0f;
-            float shortenR2 = 1.0f;
-
-            int dist = d1.angularDistance(d2);
-            int absDist = Math.abs(dist);
-            boolean d1Connected = isConnected(track, d1);
-            boolean d2Connected = isConnected(track, d2);
-            if (absDist >= 1 && absDist <= 3) {
-                // CURVE: Multi-segment high-fidelity Bezier
-                com.badlogic.gdx.math.Vector3 p1 = new com.badlogic.gdx.math.Vector3(PathGeometry.getDirX(d1), 0, PathGeometry.getDirZ(d1));
-                com.badlogic.gdx.math.Vector3 p2 = new com.badlogic.gdx.math.Vector3(PathGeometry.getDirX(d2), 0, PathGeometry.getDirZ(d2));
-                com.badlogic.gdx.math.Vector3 pc = new com.badlogic.gdx.math.Vector3(0, 0, 0);
-                
-                renderMultiSegmentCurve(track.getPosition(), p1, pc, p2, d1Connected && d2Connected, 0, resourceContext.railModel);
-            } else {
-                // STRAIGHT
-                drawHalfTrack(track.getPosition(), d1, d1Connected, shortenL1, shortenR1);
-                drawHalfTrack(track.getPosition(), d2, d2Connected, shortenL2, shortenR2);
-            }
-        });
-
-        // Si la vía está sobre agua, ponemos un pilar
-        if (modelRef != null && modelRef.getGroundMap() != null) {
-            Integer terrain = modelRef.getGroundMap().getValueAt(track.getPosition());
-            if (terrain != null && terrain == GroundMap.WATER) {
-                ModelInstance pillar = new ModelInstance(resourceContext.bridgePillarModel);
-                pillar.transform.setToTranslation(
-                        track.getPosition().getX() + 0.5f, -1.05f, track.getPosition().getY() + 0.5f);
-                pillar.transform.scale(1f, 1.9f, 1f);
-                instances.add(pillar);
-            }
-        }
-
-        // Fallback: si no hay rutas, usamos la dirección abierta
-        if (track.getNumRoutes() == 0) {
-            letrain.map.Dir d = track.getFirstOpenDir();
-            if (d != null) {
-                drawHalfTrack(track.getPosition(), d, true);
-            }
-        }
+        trackRenderer.visitRailTrack(track);
     }
-
-    private void drawHalfTrack(letrain.map.Point pos, letrain.map.Dir d, boolean active) {
-        drawHalfTrackElevated(pos, d, active, 0.0f, 1.0f, 1.0f);
-    }
-
-    private void drawHalfTrack(letrain.map.Point pos, letrain.map.Dir d, boolean connected, float shortenL,
-            float shortenR) {
-        drawHalfTrackElevated(pos, d, connected, 0.0f, shortenL, shortenR, resourceContext.railModel);
-    }
-
-
-    private void renderMultiSegmentCurve(letrain.map.Point pos, com.badlogic.gdx.math.Vector3 p0, com.badlogic.gdx.math.Vector3 pc, com.badlogic.gdx.math.Vector3 p2, 
-            boolean connected, float elevation, com.badlogic.gdx.graphics.g3d.Model railModelToUse) {
-        int numSegments = 10;
-        com.badlogic.gdx.math.Vector3 pPrev = new com.badlogic.gdx.math.Vector3();
-        com.badlogic.gdx.math.Vector3 pCurr = new com.badlogic.gdx.math.Vector3();
-        com.badlogic.gdx.math.Vector3 nPrev = new com.badlogic.gdx.math.Vector3();
-        com.badlogic.gdx.math.Vector3 nCurr = new com.badlogic.gdx.math.Vector3();
-        com.badlogic.gdx.math.Vector3 tan = new com.badlogic.gdx.math.Vector3();
-
-        for (int i = 0; i < numSegments; i++) {
-            float t0 = (float) i / numSegments;
-            float t1 = (float) (i + 1) / numSegments;
-            PathGeometry.getQuadraticBezier(pPrev, p0, pc, p2, t0);
-            PathGeometry.getQuadraticBezier(pCurr, p0, pc, p2, t1);
-            PathGeometry.getQuadraticBezierTangent(tan, p0, pc, p2, t0);
-            nPrev.set(-tan.z, 0, tan.x).nor();
-            PathGeometry.getQuadraticBezierTangent(tan, p0, pc, p2, t1);
-            nCurr.set(-tan.z, 0, tan.x).nor();
-            
-            renderLineModel(pos, pPrev, pCurr, 0.03f + elevation, resourceContext.ballastModel);
-            if (connected) {
-                com.badlogic.gdx.math.Vector3 startOut = new com.badlogic.gdx.math.Vector3(pPrev).add(nPrev.x * 0.15f, 0, nPrev.z * 0.15f);
-                com.badlogic.gdx.math.Vector3 endOut = new com.badlogic.gdx.math.Vector3(pCurr).add(nCurr.x * 0.15f, 0, nCurr.z * 0.15f);
-                renderLineModel(pos, startOut, endOut, 0.08f + elevation, railModelToUse);
-                com.badlogic.gdx.math.Vector3 startIn = new com.badlogic.gdx.math.Vector3(pPrev).sub(nPrev.x * 0.15f, 0, nPrev.z * 0.15f);
-                com.badlogic.gdx.math.Vector3 endIn = new com.badlogic.gdx.math.Vector3(pCurr).sub(nCurr.x * 0.15f, 0, nCurr.z * 0.15f);
-                renderLineModel(pos, startIn, endIn, 0.08f + elevation, railModelToUse);
-            } else if (i == numSegments / 2) {
-                renderLineModel(pos, pPrev, pCurr, 0.2f + elevation, resourceContext.invalidRailModel);
-            }
-        }
-    }
-
-    private void renderLineModel(letrain.map.Point pos, com.badlogic.gdx.math.Vector3 pStart, com.badlogic.gdx.math.Vector3 pEnd, float y, com.badlogic.gdx.graphics.g3d.Model model) {
-        com.badlogic.gdx.math.Vector3 diff = new com.badlogic.gdx.math.Vector3(pEnd).sub(pStart);
-        float len = diff.len();
-        if (len < 0.001f) return;
-        float angle = (float) Math.atan2(diff.x, diff.z) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-        com.badlogic.gdx.math.Vector3 mid = new com.badlogic.gdx.math.Vector3(pStart).add(pEnd).scl(0.5f);
-        ModelInstance instance = new ModelInstance(model);
-        instance.transform.setToTranslation(pos.getX() + 0.5f + mid.x, y, pos.getY() + 0.5f + mid.z);
-        instance.transform.rotate(0, 1, 0, angle);
-        instance.transform.scale(1, 1, len / 0.5f);
-        instances.add(instance);
-    }
-
-    private void renderSegment(letrain.map.Point pos, com.badlogic.gdx.math.Vector3 pStart, com.badlogic.gdx.math.Vector3 pEnd, 
-            boolean connected, float elevation, float shortenL, float shortenR, com.badlogic.gdx.graphics.g3d.Model railModelToUse) {
-        com.badlogic.gdx.math.Vector3 diff = new com.badlogic.gdx.math.Vector3(pEnd).sub(pStart);
-        float len = diff.len();
-        if (len < 0.001f) return;
-        float angle = (float) Math.atan2(diff.x, diff.z) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-        com.badlogic.gdx.math.Vector3 mid = new com.badlogic.gdx.math.Vector3(pStart).add(pEnd).scl(0.5f);
-        
-        float shortenB = (shortenL + shortenR) / 2f;
-        float shortenBallast = connected ? shortenB : 0.95f;
-        float scaleB = (len * shortenBallast) / 0.5f;
-        ModelInstance ballast = new ModelInstance(resourceContext.ballastModel);
-        ballast.transform.setToTranslation(pos.getX() + 0.5f + mid.x, 0.03f + elevation, pos.getY() + 0.5f + mid.z);
-        ballast.transform.rotate(0, 1, 0, angle);
-        ballast.transform.scale(1, 1, scaleB);
-        instances.add(ballast);
-
-        if (connected) {
-            float offX = (-diff.z / len) * 0.15f;
-            float offZ = (diff.x / len) * 0.15f;
-            float scale = len / 0.5f;
-            
-            float shiftX_L = diff.x * (1 - shortenL) / 2f;
-            float shiftZ_L = diff.z * (1 - shortenL) / 2f;
-            ModelInstance railL = new ModelInstance(railModelToUse);
-            railL.transform.setToTranslation(pos.getX() + 0.5f + mid.x + offX + shiftX_L, 0.08f + elevation, pos.getY() + 0.5f + mid.z + offZ + shiftZ_L);
-            railL.transform.rotate(0, 1, 0, angle);
-            railL.transform.scale(1, 1, scale * shortenL);
-            instances.add(railL);
-
-            float shiftX_R = diff.x * (1 - shortenR) / 2f;
-            float shiftZ_R = diff.z * (1 - shortenR) / 2f;
-            ModelInstance railR = new ModelInstance(railModelToUse);
-            railR.transform.setToTranslation(pos.getX() + 0.5f + mid.x - offX + shiftX_R, 0.08f + elevation, pos.getY() + 0.5f + mid.z - offZ + shiftZ_R);
-            railR.transform.rotate(0, 1, 0, angle);
-            railR.transform.scale(1, 1, scale * shortenR);
-            instances.add(railR);
-        } else {
-            ModelInstance grader = new ModelInstance(resourceContext.invalidRailModel);
-            grader.transform.setToTranslation(pos.getX() + 0.5f + pStart.x + diff.x * 0.7f, 0.2f + elevation, pos.getY() + 0.5f + pStart.z + diff.z * 0.7f);
-            grader.transform.rotate(0, 1, 0, angle);
-            instances.add(grader);
-        }
-    }
-
-    private void drawHalfTrackElevated(letrain.map.Point pos, letrain.map.Dir d, boolean connected, float elevation,
-            float shortenL, float shortenR) {
-        drawHalfTrackElevated(pos, d, connected, elevation, shortenL, shortenR, resourceContext.railModel);
-    }
-
-    private void drawHalfTrackElevated(letrain.map.Point pos, letrain.map.Dir d, boolean connected, float elevation,
-            float shortenL, float shortenR, com.badlogic.gdx.graphics.g3d.Model railModelToUse) {
-        float dx = PathGeometry.getDirX(d);
-        float dz = PathGeometry.getDirZ(d);
-        renderSegment(pos, new com.badlogic.gdx.math.Vector3(0, 0, 0), new com.badlogic.gdx.math.Vector3(dx, 0, dz), 
-                connected, elevation, shortenL, shortenR, railModelToUse);
-    }
-
-    private boolean isConnected(letrain.track.Track track, letrain.map.Dir dir) {
-        letrain.track.Track neighbor = track.getConnected(dir);
-        if (neighbor == null)
-            return false;
-        // El vecino debe tener una ruta que empiece desde nuestra dirección inversa
-        return neighbor.getRouter().getDir(dir.inverse()) != null;
-    }
-
-    @Override
-    public void visitCursor(Cursor cursor) {
-        // Determinamos el color según el modo
-        com.badlogic.gdx.graphics.Color color = com.badlogic.gdx.graphics.Color.YELLOW;
-        switch (cursor.getMode()) {
-            case DRAWING:
-                color = com.badlogic.gdx.graphics.Color.GREEN;
-                break;
-            case ERASING:
-                color = com.badlogic.gdx.graphics.Color.RED;
-                break;
-            case MAKING_TRACKS:
-                color = com.badlogic.gdx.graphics.Color.ORANGE;
-                break;
-            case MOVING:
-                color = com.badlogic.gdx.graphics.Color.CYAN;
-                break;
-            default:
-                break;
-        }
-
-        letrain.map.Dir d = cursor.getDir();
-        letrain.map.Point pos = cursor.getPosition();
-        float dx = PathGeometry.getDirX(d);
-        float dz = PathGeometry.getDirZ(d);
-        float angle = (float) Math.atan2(dx, dz) * MathUtils.radiansToDegrees;
-
-        ModelInstance instance = new ModelInstance(resourceContext.cursorModel);
-        instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
-
-        // El prisma triangular ya está "tumbado" (caras planas Ry), solo rotamos yaw
-        // Aplicamos un desfase de -90 para que el vértice apunte a 'angle'
-        float cursorY = 0.10f;
-        instance.transform.setToTranslation(pos.getX() + 0.5f, cursorY, pos.getY() + 0.5f);
-        instance.transform.rotate(0, 1, 0, angle - 90f);
-        // Escalamos para afilar el cursor: más largo en X (dirección) y más estrecho en
-        // Z
-        instance.transform.scale(1.6f, 1f, 0.6f);
-        instances.add(instance);
-
-        // X-RAY GHOST: Rendered through depth with transparency
-        ModelInstance ghost = new ModelInstance(instance);
-        ghost.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
-        ghost.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.DepthTestAttribute(
-                com.badlogic.gdx.graphics.GL20.GL_GREATER, false));
-        instances.add(ghost);
-
-    }
-
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        boolean isSelected = false;
-        if (modelRef != null && modelRef.getMode() == Model.GameMode.FORKS) {
-            if (modelRef.getSelectedFork() != null
-                    && modelRef.getSelectedFork().getPosition().equals(track.getPosition())) {
-                isSelected = true;
-            }
-        }
-
-        ModelInstance base = new ModelInstance(
-                isSelected ? resourceContext.selectedForkBaseModel : resourceContext.forkBaseModel);
-        base.transform.setToTranslation(track.getPosition().getX() + 0.5f, 0.03f,
-                track.getPosition().getY() + 0.5f);
-        instances.add(base);
-
-        float bx = track.getPosition().getX() + 0.5f;
-        float bz = track.getPosition().getY() + 0.5f;
-        float boxOffset = 0.8f;
-
-        letrain.map.Dir trackAxis = track.getOriginalRoute().getFirst();
-        letrain.map.Dir sideDir = trackAxis.turnRight().turnRight();
-        bx += PathGeometry.getDirX(sideDir) * boxOffset;
-        bz += PathGeometry.getDirZ(sideDir) * boxOffset;
-
-        ModelInstance box = new ModelInstance(
-                isSelected ? resourceContext.selectedForkBoxModel : resourceContext.forkBoxModel);
-        box.transform.setToTranslation(bx, 0.07f, bz); 
-        instances.add(box);
-
-        letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> route = track.isUsingAlternativeRoute()
-                ? track.getAlternativeRoute()
-                : track.getOriginalRoute();
-
-        if (route != null) {
-            letrain.map.Dir d1 = route.getFirst();
-            letrain.map.Dir d2 = route.getSecond();
-            int dist = d1.angularDistance(d2);
-            int absDist = Math.abs(dist);
-            boolean d1Connected = isConnected(track, d1);
-            boolean d2Connected = isConnected(track, d2);
-            if (absDist >= 1 && absDist <= 3) {
-                // CURVE: Multi-segment high-fidelity Bezier
-                com.badlogic.gdx.math.Vector3 p1 = new com.badlogic.gdx.math.Vector3(PathGeometry.getDirX(d1), 0, PathGeometry.getDirZ(d1));
-                com.badlogic.gdx.math.Vector3 p2 = new com.badlogic.gdx.math.Vector3(PathGeometry.getDirX(d2), 0, PathGeometry.getDirZ(d2));
-                com.badlogic.gdx.math.Vector3 pc = new com.badlogic.gdx.math.Vector3(0, 0, 0);
-                renderMultiSegmentCurve(track.getPosition(), p1, pc, p2, d1Connected && d2Connected, 0, resourceContext.railModel);
-            } else {
-                drawHalfTrack(track.getPosition(), d1, d1Connected, 1.0f, 1.0f);
-                drawHalfTrack(track.getPosition(), d2, d2Connected, 1.0f, 1.0f);
-            }
-        }
-
-        String idText = String.valueOf(track.getId());
-        labels.add(new VehicleLabel(new com.badlogic.gdx.math.Vector3(bx, 0.09f, bz), idText,
-                new com.badlogic.gdx.math.Vector3(0, 1, 0), new com.badlogic.gdx.math.Vector3(0, 0, -1),
-                com.badlogic.gdx.graphics.Color.BLACK, 0.4f));
-
-        if (modelRef != null && modelRef.getGroundMap() != null) {
-            Integer terrain = modelRef.getGroundMap().getValueAt(track.getPosition());
-            if (terrain != null && terrain == GroundMap.WATER) {
-                ModelInstance pillar = new ModelInstance(resourceContext.bridgePillarModel);
-                pillar.transform.setToTranslation(track.getPosition().getX() + 0.5f, -1.05f,
-                        track.getPosition().getY() + 0.5f);
-                pillar.transform.scale(1f, 1.9f, 1f);
-                instances.add(pillar);
-            }
-        }
+        infrastructureRenderer.visitForkRailTrack(track);
     }
 
     @Override
     public void visitTunnelRailTrack(TunnelRailTrack track) {
-        visitRailTrack(track);
+        trackRenderer.visitTunnelRailTrack(track);
+    }
+
+    @Override
+    public void visitSensor(Sensor sensor) {
+        infrastructureRenderer.visitSensor(sensor);
+    }
+
+    @Override
+    public void visitSemaphore(RailSemaphore semaphore) {
+        infrastructureRenderer.visitSemaphore(semaphore);
+    }
+
+    @Override
+    public void visitStation(Station station) {
+        infrastructureRenderer.visitStation(station);
+    }
+
+    @Override
+    public void visitGroundMap(GroundMap groundMap) {
+        groundMap.accept(groundRenderer);
+    }
+
+    @Override
+    public void visitGround(Ground ground) {
+        groundRenderer.visitGround(ground);
+    }
+
+    @Override
+    public void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack) {
+        trackRenderer.visitRailTrack(bridgeGateRailTrack);
+    }
+
+    @Override
+    public void visitBridgeRailTrack(BridgeRailTrack bridgeRailTrack) {
+        trackRenderer.visitRailTrack(bridgeRailTrack);
+    }
+
+    @Override
+    public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
+        infrastructureRenderer.visitTunnelGateRailTrack(tunnelGateRailTrack);
+    }
+
+    @Override
+    public void visitCursor(Cursor cursor) {
+        infrastructureRenderer.visitCursor(cursor);
     }
 
     public void dispose() {
         // resourceContext is disposed by Gdx3DView
     }
-
-    @Override
-    public void visitLocomotive(Locomotive locomotive) {
-        boolean highlight = false;
-        boolean unlinkHighlight = false;
-
-        if (modelRef != null) {
-            if (modelRef.getMode() == Model.GameMode.LINK) {
-                Locomotive selected = modelRef.getSelectedLocomotive();
-                if (selected != null && selected.getTrain() != null) {
-                    for (letrain.vehicle.impl.Linker l : selected.getTrain().getSelectedLinkersToJoin()) {
-                        if (l == locomotive) {
-                            highlight = true;
-                            break;
-                        }
-                    }
-                }
-            } else if (modelRef.getMode() == Model.GameMode.UNLINK) {
-                Locomotive selected = modelRef.getSelectedLocomotive();
-                if (selected != null && selected.getTrain() != null) {
-                    for (letrain.vehicle.impl.Linker l : selected.getTrain().getLinkersToRemove()) {
-                        if (l == locomotive) {
-                            unlinkHighlight = true;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        boolean isSelected = (modelRef != null && modelRef.getSelectedLocomotive() == locomotive);
-
-        com.badlogic.gdx.graphics.g3d.Model modelToUse = resourceContext.locomotiveModel;
-
-        if (unlinkHighlight) {
-            modelToUse = resourceContext.locomotiveUnlinkModel; // Rojo (Unlink)
-        } else if (highlight) {
-            modelToUse = resourceContext.locomotiveHighlightModel; // Amarillo (Link)
-        }
-        // Selection color removed as requested by user
-
-        ModelInstance instance = new ModelInstance(modelToUse);
-
-        // Interpolación continua (Predictiva)
-        // en lugar de usar previousPosition (que interpolaba el "salto" ya ocurrido),
-        // usamos la posición actual y la proyectamos hacia la siguiente celda
-        // basándonos en el tiempo de espera (turns).
-
-        float cellX = locomotive.getPosition().getX();
-        float cellY = locomotive.getPosition().getY();
-        float renderX = cellX + 0.5f;
-        float renderY = cellY + 0.5f;
-        float angle = locomotive.getDir().getValue() * 45f; // Default angle
-        float progress = 0.5f; // Center by default
-        com.badlogic.gdx.math.Vector3 renderTangent = new com.badlogic.gdx.math.Vector3(PathGeometry.getDirX(locomotive.getDir()), 0, PathGeometry.getDirZ(locomotive.getDir()));
-
-        // Interpolación continua (Predictiva) basada en la locomotora directora (o sí
-        // mismo si es director)
-        Locomotive interpolationRef = locomotive;
-        letrain.vehicle.impl.rail.Train train = locomotive.getTrain();
-        if (train != null) {
-            letrain.vehicle.impl.Tractor director = train.getDirectorLinker();
-            if (director instanceof Locomotive) {
-                interpolationRef = (Locomotive) director;
-            }
-        }
-
-        if (interpolationRef.getTotalTurns() > 0) {
-            float totalDelay = (float) interpolationRef.getTotalTurns();
-            float currentDelay = (float) interpolationRef.getTurns() - animationAlpha;
-            progress = 1.0f - (currentDelay / totalDelay);
-
-            // Clamp progress
-            if (progress < 0) progress = 0;
-            if (progress > 1) progress = 1;
-
-            com.badlogic.gdx.math.Vector3 pComputed = new com.badlogic.gdx.math.Vector3();
-            PathGeometry.calculateTwoStagePath(locomotive.getPosition().getX(), locomotive.getPosition().getY(), 
-                locomotive.getEntryDir(), locomotive.getDir(), locomotive.getTrack(), 
-                progress, locomotive.getSpeed(), pComputed, renderTangent);
-            
-            renderX = pComputed.x;
-            renderY = pComputed.z;
-            angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-        } else {
-            // Stationary: Use Bezier midpoint for correct curve alignment
-            com.badlogic.gdx.math.Vector3 pComputed = new com.badlogic.gdx.math.Vector3();
-            PathGeometry.calculateTwoStagePath(locomotive.getPosition().getX(), locomotive.getPosition().getY(), 
-                locomotive.getEntryDir(), locomotive.getDir(), locomotive.getTrack(), 
-                0.0f, locomotive.getSpeed(), pComputed, renderTangent);
-            
-            renderX = pComputed.x;
-            renderY = pComputed.z;
-            angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-        }
-
-        if (locomotive.isDestroying()) {
-            // Derailed effect: deterministic random based on id
-            long seed = locomotive.getId();
-            java.util.Random rnd = new java.util.Random(seed);
-            float offsetX = (rnd.nextFloat() - 0.5f) * 0.4f;
-            float offsetZ = (rnd.nextFloat() - 0.5f) * 0.4f;
-            float rotX = (rnd.nextFloat() - 0.5f) * 45f;
-            float rotY = (rnd.nextFloat() - 0.5f) * 45f;
-            float rotZ = (rnd.nextFloat() - 0.5f) * 45f;
-
-            instance.transform.setToTranslation(renderX + offsetX, 0.6f, renderY + offsetZ);
-            instance.transform.rotate(1, 0, 0, rotX);
-            instance.transform.rotate(0, 1, 0, angle + rotY);
-            instance.transform.rotate(0, 0, 1, rotZ);
-        } else {
-            instance.transform.setToTranslation(renderX, 0.6f, renderY);
-            instance.transform.rotate(0, 1, 0, angle);
-        }
-        instances.add(instance);
-
-        if (locomotive.isDestroying()) {
-            drawFire(renderX, 0.6f, renderY, animationAlpha + locomotive.getId());
-        }
-
-        // Añadir indicador de selección para locomotora seleccionada (Número ID + Línea
-        // verde)
-        // Pegado a la cara superior (flat on top)
-        if (isSelected) {
-            com.badlogic.gdx.math.Vector3 forward = renderTangent.cpy().nor();
-            float dxL = forward.x;
-            float dzL = forward.z;
-
-            // Número ID de la locomotora (En blanco y más grande)
-            labels.add(new VehicleLabel(
-                    new com.badlogic.gdx.math.Vector3(renderX, 1.01f, renderY),
-                    "" + locomotive.getId(),
-                    new com.badlogic.gdx.math.Vector3(0, 1, 0), // Normal up
-                    new com.badlogic.gdx.math.Vector3(dxL, 0, dzL).nor(), // Up vector
-                    com.badlogic.gdx.graphics.Color.WHITE));
-
-            // Línea verde pegada al techo, delante del número
-            ModelInstance selectionLine = new ModelInstance(resourceContext.selectionLineModel);
-            float lineOffset = 0.25f;
-            selectionLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.01f, renderY + dzL * lineOffset);
-            selectionLine.transform.rotate(0, 1, 0, angle);
-            instances.add(selectionLine);
-        }
-
-        // Añadir etiquetas a los lados
-        {
-            com.badlogic.gdx.math.Vector3 forward = renderTangent.cpy().nor();
-            float dxL = forward.x;
-            float dzL = forward.z;
-
-            // Perpendicular: (dz, -dx)
-            float perpXL = dzL * 0.48f;
-            float perpZL = -dxL * 0.48f;
-
-            labels.add(new VehicleLabel(
-                    new com.badlogic.gdx.math.Vector3(renderX + perpXL, 0.4f, renderY + perpZL),
-                    locomotive.getAspect(),
-                    new com.badlogic.gdx.math.Vector3(perpXL, 0, perpZL).nor()));
-            labels.add(new VehicleLabel(
-                    new com.badlogic.gdx.math.Vector3(renderX - perpXL, 0.4f, renderY - perpZL),
-                    locomotive.getAspect(),
-                    new com.badlogic.gdx.math.Vector3(-perpXL, 0, -perpZL).nor()));
-        }
-    }
-
-    @Override
-    public void visitWagon(Wagon wagon) {
-        boolean highlight = false;
-        boolean unlinkHighlight = false;
-
-        if (modelRef != null) {
-            if (modelRef.getMode() == Model.GameMode.LINK) {
-                Locomotive selected = modelRef.getSelectedLocomotive();
-                if (selected != null && selected.getTrain() != null) {
-                    for (letrain.vehicle.impl.Linker l : selected.getTrain().getSelectedLinkersToJoin()) {
-                        if (l == wagon) {
-                            highlight = true;
-                            break;
-                        }
-                    }
-                }
-            } else if (modelRef.getMode() == Model.GameMode.UNLINK) {
-                Locomotive selected = modelRef.getSelectedLocomotive();
-                if (selected != null && selected.getTrain() != null) {
-                    for (letrain.vehicle.impl.Linker l : selected.getTrain().getLinkersToRemove()) {
-                        if (l == wagon) {
-                            unlinkHighlight = true;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // 1. Renderizar Chasis (Siempre visible, Azul)
-        // Salvo que esté en modo highlight/unlink, en cuyo caso usamos el modelo
-        // completo de antes?
-        // El usuario quiere "Toy Style".
-        // Vamos a usar el chasis como base.
-        com.badlogic.gdx.graphics.g3d.Model chassisModel = resourceContext.wagonModel; // El nuevo chasis plano
-        com.badlogic.gdx.graphics.Color chassisColor = com.badlogic.gdx.graphics.Color.BLUE; // Default color
-        
-        if (wagon.getExclusiveCargoType() != CargoTypes.NONE) {
-            chassisColor = wagon.getExclusiveCargoType().getColor();
-        }
-
-        if (unlinkHighlight) {
-            chassisModel = resourceContext.wagonUnlinkModel; // Rojo completo
-        } else if (highlight) {
-            chassisModel = resourceContext.wagonHighlightModel; // Amarillo completo
-        }
-        // Blinking removed as per user request
-
-        ModelInstance instance = new ModelInstance(chassisModel);
-        if (!highlight && !unlinkHighlight) {
-            instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(chassisColor));
-        }
-
-        float cellX = wagon.getPosition().getX();
-        float cellY = wagon.getPosition().getY();
-        float renderX = cellX + 0.5f;
-        float renderY = cellY + 0.5f;
-        float angle = wagon.getDir().getValue() * 45f; // Default angle
-        float progress = 0.5f; // Center by default
-        com.badlogic.gdx.math.Vector3 renderTangent = new com.badlogic.gdx.math.Vector3(PathGeometry.getDirX(wagon.getDir()), 0, PathGeometry.getDirZ(wagon.getDir()));
-
-        // Interpolación continua (Predictiva) basada en la locomotora directora
-        letrain.vehicle.impl.rail.Train train = wagon.getTrain();
-        if (train != null) {
-            letrain.vehicle.impl.Tractor director = train.getDirectorLinker();
-            if (director instanceof Locomotive) {
-                Locomotive loc = (Locomotive) director;
-                if (loc.getTotalTurns() > 0) {
-                    float totalDelay = (float) loc.getTotalTurns();
-                    float currentDelay = (float) loc.getTurns() - animationAlpha;
-                    progress = 1.0f - (currentDelay / totalDelay);
-
-                    // Clamp progress
-                    if (progress < 0) progress = 0;
-                    if (progress > 1) progress = 1;
-
-                    com.badlogic.gdx.math.Vector3 pComputed = new com.badlogic.gdx.math.Vector3();
-                    PathGeometry.calculateTwoStagePath(wagon.getPosition().getX(), wagon.getPosition().getY(), 
-                        wagon.getEntryDir(), wagon.getDir(), wagon.getTrack(), 
-                        progress, loc.getSpeed(), pComputed, renderTangent);
-                    
-                    renderX = pComputed.x;
-                    renderY = pComputed.z;
-                    angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-                } else {
-                    // Stationary: Use Bezier midpoint for correct curve alignment
-                    com.badlogic.gdx.math.Vector3 pComputed = new com.badlogic.gdx.math.Vector3();
-                    PathGeometry.calculateTwoStagePath(wagon.getPosition().getX(), wagon.getPosition().getY(), 
-                        wagon.getEntryDir(), wagon.getDir(), wagon.getTrack(), 
-                        0.0f, loc.getSpeed(), pComputed, renderTangent);
-                    
-                    renderX = pComputed.x;
-                    renderY = pComputed.z;
-                    angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-                }
-            }
-        }
-
-        // Raise wagon to sit on rails. Rails are at 0.08 + elevation.
-        // Wagon height is now 0.6. Center needs to be at 0.08 + 0.3 = 0.38?
-        // Let's try 0.45f to be safe and clearly on top.
-        float wagonY = 0.45f;
-        if (wagon.isDestroying()) {
-            // Derailed effect: deterministic random based on hash
-            long seed = wagon.hashCode();
-            java.util.Random rnd = new java.util.Random(seed);
-            float offsetX = (rnd.nextFloat() - 0.5f) * 0.4f;
-            float offsetZ = (rnd.nextFloat() - 0.5f) * 0.4f;
-            float rotX = (rnd.nextFloat() - 0.5f) * 45f;
-            float rotY = (rnd.nextFloat() - 0.5f) * 45f;
-            float rotZ = (rnd.nextFloat() - 0.5f) * 45f;
-
-            instance.transform.setToTranslation(renderX + offsetX, wagonY, renderY + offsetZ);
-            instance.transform.rotate(1, 0, 0, rotX);
-            instance.transform.rotate(0, 1, 0, angle + rotY);
-            instance.transform.rotate(0, 0, 1, rotZ);
-        } else {
-            instance.transform.setToTranslation(renderX, wagonY, renderY);
-            instance.transform.rotate(0, 1, 0, angle);
-        }
-        instances.add(instance);
-
-        if (wagon.isDestroying()) {
-            drawFire(renderX, 0.5f, renderY, animationAlpha + wagon.hashCode());
-        }
-
-        // 2. Renderizar Bloque de Carga (Si hay carga y no estamos en modo highlight
-        // que lo oculte)
-        // Si hay blink, a veces ocultamos todo.
-        // Si hay highlight/unlink, ocultamos la carga para ser claros con la selección.
-        if (wagon.getCargoAmount() > 0 && !highlight && !unlinkHighlight
-                && chassisModel != resourceContext.wagonHighlightModel) {
-            int cargoAmount = wagon.getCargoAmount();
-            int maxCapacity = wagon.getMaxCapacity();
-            com.badlogic.gdx.graphics.Color cargoColor = (wagon.getCargoType() != null)
-                    ? wagon.getCargoType().getColor().cpy()
-                    : com.badlogic.gdx.graphics.Color.YELLOW.cpy();
-
-            float fullness = (float) cargoAmount / (float) maxCapacity;
-
-            // Single Block Jewels
-            // Base width/depth to fit walls: 0.6f (same as wagonCargoModel footprint)
-            // Max height: 0.5f (same as wagon height)
-            float maxHeight = 0.5f;
-            float currentHeight = fullness * maxHeight;
-
-            ModelInstance jewelBlock = new ModelInstance(resourceContext.wagonJewelModel);
-            jewelBlock.materials.get(0).set(
-                    com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(cargoColor));
-
-            // Position: y=0.25 (floor level) + half height
-            float jewelY = 0.25f + (currentHeight / 2f);
-
-            jewelBlock.transform.setToTranslation(renderX, jewelY, renderY);
-            jewelBlock.transform.rotate(0, 1, 0, angle);
-            jewelBlock.transform.scale(0.6f, currentHeight, 0.6f);
-
-            instances.add(jewelBlock);
-        }
-
-        // Añadir etiquetas a los lados
-        {
-            com.badlogic.gdx.math.Vector3 forward = renderTangent.cpy().nor();
-            float dxW = forward.x;
-            float dzW = forward.z;
-
-            // Perpendicular: (dz, -dx)
-            float perpXW = dzW * 0.48f;
-            float perpZW = -dxW * 0.48f;
-
-            labels.add(new VehicleLabel(
-                    new com.badlogic.gdx.math.Vector3(renderX + perpXW, 0.4f, renderY + perpZW),
-                    wagon.getAspect(),
-                    new com.badlogic.gdx.math.Vector3(perpXW, 0, perpZW).nor()));
-            labels.add(new VehicleLabel(
-                    new com.badlogic.gdx.math.Vector3(renderX - perpXW, 0.4f, renderY - perpZW),
-                    wagon.getAspect(),
-                    new com.badlogic.gdx.math.Vector3(-perpXW, 0, -perpZW).nor()));
-        }
-    }
-
-    private void drawFire(float x, float y, float z, float stateTime) {
-        // Use real-time for animation so it doesn't pause when game logic stalls
-        // Slower movement: decreased frame multiplier
-        float realTime = (float) (com.badlogic.gdx.Gdx.graphics.getFrameId()) * 0.025f;
-        float timeScale = 2.5f; // Slower swaying
-        int numParticles = 12;
-        for (int i = 0; i < numParticles; i++) {
-            float seed = i * 123.456f; // Seed independent of stateTime for consistent speed
-            float offsetX = (float) Math.sin(seed * 0.7f + realTime * timeScale) * 0.4f;
-            float offsetZ = (float) Math.cos(seed * 0.8f + realTime * timeScale * 1.1f) * 0.4f;
-            // Slower upward drift: reduced constant in realTime multiplier
-            float offsetY = (float) ((realTime * 1.5f + seed) % 1.5f);
-
-            com.badlogic.gdx.graphics.g3d.Model fireModel;
-            int colorPick = (int) (seed * 10f + realTime * 5f) % 6;
-            boolean isSphere = (i % 2 == 0); // Alternate shapes
-
-            if (colorPick == 0)
-                fireModel = isSphere ? resourceContext.redSphereModel1 : resourceContext.redFireModel1;
-            else if (colorPick == 1)
-                fireModel = isSphere ? resourceContext.redSphereModel2 : resourceContext.redFireModel2;
-            else if (colorPick == 2)
-                fireModel = isSphere ? resourceContext.redSphereModel3 : resourceContext.redFireModel3;
-            else if (colorPick == 3)
-                fireModel = isSphere ? resourceContext.yellowSphereModel1 : resourceContext.yellowFireModel1;
-            else if (colorPick == 4)
-                fireModel = isSphere ? resourceContext.yellowSphereModel2 : resourceContext.yellowFireModel2;
-            else
-                fireModel = isSphere ? resourceContext.yellowSphereModel3 : resourceContext.yellowFireModel3;
-
-            if (fireModel == null)
-                continue;
-
-            float sizeScale = 1.0f - offsetY / 1.5f;
-            if (sizeScale <= 0)
-                continue;
-
-            ModelInstance firePart = new ModelInstance(fireModel);
-            firePart.transform.setToTranslation(x + offsetX, y + offsetY, z + offsetZ);
-            firePart.transform.scale(sizeScale, sizeScale, sizeScale);
-            // Slower rotation
-            firePart.transform.rotate(com.badlogic.gdx.math.Vector3.Y, realTime * 150f + seed * 100f);
-            instances.add(firePart);
-        }
-    }
-
-    public void visitSensor(Sensor sensor) {
-        if (sensor.getPosition() == null)
-            return;
-
-        float x = sensor.getPosition().getX();
-        float y = sensor.getPosition().getY();
-        letrain.map.Dir d = sensor.getCreationDir();
-        if (d == null)
-            d = letrain.map.Dir.N;
-
-        float dx = PathGeometry.getDirX(d);
-        float dz = PathGeometry.getDirZ(d);
-        float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-
-        ModelInstance instance = new ModelInstance(resourceContext.sensorModel);
-        instance.materials.get(0)
-                .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                        .createDiffuse(com.badlogic.gdx.graphics.Color.YELLOW));
-        // Place sensor with a smaller block that fits inside a single track cell, plus
-        // number label.
-        float sensorBottomHeight = 0.09f;
-        instance.transform.setToTranslation(x + 0.5f, sensorBottomHeight, y + 0.5f);
-        instance.transform.rotate(0, 1, 0, angle - 90f);
-        instance.transform.scale(1.0f, 1.04f, 1.0f);
-        instances.add(instance);
-
-        // Render ID label flat on top of the sensor
-        String idText = String.valueOf(sensor.getId());
-        float labelHeight = 0.19f; // Just above the new 0.20f top surface (0.08f + 0.10f) -> 0.18f + 0.01f margin
-        labels.add(new VehicleLabel(new com.badlogic.gdx.math.Vector3(x + 0.5f, labelHeight, y + 0.5f), idText,
-                new com.badlogic.gdx.math.Vector3(0, 1, 0), new com.badlogic.gdx.math.Vector3(0, 0, -1),
-                com.badlogic.gdx.graphics.Color.BLACK, 0.4f));
-    }
-
-    @Override
-    public void visitSemaphore(RailSemaphore semaphore) {
-        float x = semaphore.getPosition().getX();
-        float y = semaphore.getPosition().getY();
-
-        com.badlogic.gdx.graphics.g3d.Model modelToUse = semaphore.isOpen() ? resourceContext.semaphoreOpenModel
-                : resourceContext.semaphoreClosedModel;
-        ModelInstance instance = new ModelInstance(modelToUse);
-
-        // Calcular offset basado en la vía si existe
-        float offsetX = 0;
-        float offsetZ = 0;
-        float angle = 0;
-
-        if (modelRef != null) {
-            letrain.track.Track track = modelRef.getRailMap().getTrackAt((int) x, (int) y);
-            if (track != null && track instanceof letrain.track.rail.RailTrack) {
-                letrain.track.rail.RailTrack railTrack = (letrain.track.rail.RailTrack) track;
-                if (railTrack.getNumRoutes() > 0) {
-                    // Usamos la primera ruta para determinar orientación
-                    letrain.map.Dir d = railTrack.getFirstOpenDir();
-                    float dx = PathGeometry.getDirX(d);
-                    float dz = PathGeometry.getDirZ(d);
-
-                    // Perpendicular (offset a la derecha de la dirección)
-                    // Dir(dx, dz) -> Perpendicular(dz, -dx)
-                    offsetX = dz * 1.0f;
-                    offsetZ = -dx * 1.0f;
-
-                    // Rotar para mirar a la vía (opcional, pero queda mejor)
-                    angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-                }
-            }
-        }
-
-        instance.transform.setToTranslation(x + 0.5f + offsetX, 0.5f, y + 0.5f + offsetZ);
-        instance.transform.rotate(0, 1, 0, angle);
-
-        if (modelRef.getSelectedSemaphore() == semaphore) {
-            instance.transform.scale(1.5f, 1.5f, 1.5f);
-        }
-
-        instances.add(instance);
-    }
-
-    @Override
-    public void visitStation(Station station) {
-        if (station.getPosition() == null)
-            return;
-
-        letrain.track.rail.RailTrack track = (letrain.track.rail.RailTrack) station.getTrack();
-        if (track == null) {
-            track = modelRef.getRailMap().getTrackAt(station.getPosition());
-        }
-
-        if (track == null)
-            return;
-
-        drawStation(station, station.getPosition(), station.getCargoType(), station.getRole(), track,
-                station.getId(), station.getName(), (modelRef != null && modelRef.getSelectedStation() == station),
-                1.0f);
-    }
-
-    private void drawStation(letrain.track.Station station, letrain.map.Point pos, CargoTypes cargo,
-            CargoTypes.StationRole role,
-            letrain.track.rail.RailTrack track, int id, String name, boolean selected, float alpha) {
-
-        float xIndex = pos.getX();
-        float zIndex = pos.getY();
-
-        letrain.map.Dir rightDir = (station != null && station.getSideDir() != null)
-                ? station.getSideDir()
-                : getValidOrientation(track).turnRight().turnRight();
-        letrain.map.Dir orientation = (station != null && station.getSideDir() != null)
-                ? station.getSideDir().turnLeft().turnLeft()
-                : getValidOrientation(track);
-
-        float perpX = PathGeometry.getDirX(rightDir);
-        float perpZ = PathGeometry.getDirZ(rightDir);
-        float lenPerp = (float) Math.sqrt(perpX * perpX + perpZ * perpZ);
-        if (lenPerp > 0) {
-            perpX /= lenPerp;
-            perpZ /= lenPerp;
-        }
-
-        float paraX = PathGeometry.getDirX(orientation);
-        float paraZ = PathGeometry.getDirZ(orientation);
-        float lenPara = (float) Math.sqrt(paraX * paraX + paraZ * paraZ);
-        if (lenPara > 0) {
-            paraX /= lenPara;
-            paraZ /= lenPara;
-        }
-
-        // Proximity refinement: move structure closer to track
-        float distPlatform = 0.65f;
-        float centerX = xIndex + 0.5f + perpX * distPlatform;
-        float centerZ = zIndex + 0.5f + perpZ * distPlatform;
-
-        float mastHeight = 1.2f;
-        if (selected) {
-            mastHeight = 2.0f;
-        }
-
-        com.badlogic.gdx.graphics.Color structureColor = (cargo != null) ? cargo.getColor().cpy()
-                : com.badlogic.gdx.graphics.Color.WHITE.cpy();
-        structureColor.a = alpha;
-
-        // Blinking logic (Action Active)
-        boolean isActionActive = false;
-        if (modelRef != null && station != null) {
-            for (letrain.vehicle.impl.rail.Locomotive loc : modelRef.getLocomotives()) {
-                letrain.vehicle.impl.rail.Train train = loc.getTrain();
-                if (train != null && train.isLoading()) {
-                    if (train.getStationAtTrain() == station) {
-                        isActionActive = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        com.badlogic.gdx.graphics.Color boardColor = structureColor.cpy();
-        if (isActionActive) {
-            // Blinking effect: swap between base color and highlight
-            if (System.currentTimeMillis() % 400 < 200) {
-                boardColor = com.badlogic.gdx.graphics.Color.WHITE.cpy();
-                boardColor.a = alpha;
-            }
-        }
-
-        com.badlogic.gdx.graphics.Color mastColor = com.badlogic.gdx.graphics.Color.GRAY.cpy();
-        mastColor.a = alpha;
-
-        // 0. Expansive plate: covers track tile + mast area
-        float plateLengthPerp = distPlatform + 0.5f;
-        float plateWidth = 1.0f;
-        float plateMidX = xIndex + 0.5f + perpX * (distPlatform / 2f);
-        float plateMidZ = zIndex + 0.5f + perpZ * (distPlatform / 2f);
-        float plateAngle = (float) Math.atan2(perpX, perpZ) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-
-        ModelInstance plate = new ModelInstance(resourceContext.wagonJewelModel);
-        plate.materials.get(0)
-                .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(structureColor));
-        plate.transform.setToTranslation(plateMidX, 0.01f, plateMidZ); // Lowered
-        plate.transform.rotate(0, 1, 0, plateAngle);
-        plate.transform.scale(plateLengthPerp, 0.01f, plateWidth); // Thinner
-        if (alpha < 1.0f) {
-            plate.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
-        }
-        instances.add(plate);
-
-        // 1. Mástil (Sturdier)
-        ModelInstance mast = new ModelInstance(resourceContext.cylinderModel);
-        mast.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(mastColor));
-        mast.transform.setToTranslation(centerX, mastHeight / 2f, centerZ);
-        mast.transform.rotate(0, 1, 0, plateAngle); // Rotated to match angle
-        mast.transform.scale(0.15f, mastHeight, 0.15f); // Thicker
-        if (alpha < 1.0f) {
-            mast.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
-        }
-        instances.add(mast);
-
-        // 2. Cartel (Cube Sign)
-        float boardSize = 0.6f;
-        ModelInstance board = new ModelInstance(resourceContext.wagonJewelModel);
-        board.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(boardColor));
-        board.transform.setToTranslation(centerX, mastHeight + (boardSize / 2f), centerZ);
-        board.transform.rotate(0, 1, 0, plateAngle); // Rotated to match angle
-        board.transform.scale(boardSize, boardSize, boardSize);
-        if (alpha < 1.0f) {
-            board.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
-        }
-        instances.add(board);
-
-        // Labels (IDs on all 4 faces)
-        float boardCenterY = mastHeight + (boardSize / 2f);
-        com.badlogic.gdx.graphics.Color labelColor = com.badlogic.gdx.graphics.Color.WHITE.cpy();
-        labelColor.a = alpha;
-
-        String idText = (id >= 0) ? String.valueOf(id) : "?";
-        float labelOffset = boardSize / 2f + 0.01f;
-
-        // Face 1: Front
-        labels.add(new VehicleLabel(
-                new com.badlogic.gdx.math.Vector3(centerX + perpX * labelOffset, boardCenterY,
-                        centerZ + perpZ * labelOffset),
-                idText, new com.badlogic.gdx.math.Vector3(perpX, 0, perpZ), labelColor));
-
-        // Face 2: Back
-        labels.add(new VehicleLabel(
-                new com.badlogic.gdx.math.Vector3(centerX - perpX * labelOffset, boardCenterY,
-                        centerZ - perpZ * labelOffset),
-                idText, new com.badlogic.gdx.math.Vector3(-perpX, 0, -perpZ), labelColor));
-
-        // Face 3: Side Para
-        labels.add(new VehicleLabel(
-                new com.badlogic.gdx.math.Vector3(centerX + paraX * labelOffset, boardCenterY,
-                        centerZ + paraZ * labelOffset),
-                idText, new com.badlogic.gdx.math.Vector3(paraX, 0, paraZ), labelColor));
-
-        // Face 4: Side -Para
-        labels.add(new VehicleLabel(
-                new com.badlogic.gdx.math.Vector3(centerX - paraX * labelOffset, boardCenterY,
-                        centerZ - paraZ * labelOffset),
-                idText, new com.badlogic.gdx.math.Vector3(-paraX, 0, -paraZ), labelColor));
-    }
-
-    @Override
-    public void visitGroundMap(GroundMap groundMap) {
-        groundMap.forEach(ground -> visitGround(ground));
-    }
-
-    @Override
-    public void visitGround(Ground ground) {
-        if (!isVisible(ground.getPosition()))
-            return;
-        int type = ground.getType();
-        com.badlogic.gdx.graphics.g3d.Model model = resourceContext.groundModel;
-        float yPosition = 0.0f;
-        float scaleX = 1.0f;
-        float scaleY = 0.01f;
-        float scaleZ = 1.0f;
-
-        if (type >= 10 && type <= 19) {
-            // PRODUCER - Solid Crystal Jewel Block
-            CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            com.badlogic.gdx.graphics.Color jewelColor = (cargo != null) ? cargo.getColor().cpy()
-                    : com.badlogic.gdx.graphics.Color.WHITE.cpy();
-
-            float x = ground.getPosition().getX() + 0.5f;
-            float z = ground.getPosition().getY() + 0.5f;
-
-            ModelInstance jewelBlock = new ModelInstance(resourceContext.wagonJewelModel);
-            jewelBlock.materials.get(0).set(
-                    com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(jewelColor));
-
-            float h = 0.5f;
-            jewelBlock.transform.setToTranslation(x, h / 2f, z);
-            jewelBlock.transform.scale(0.9f, h, 0.9f);
-            instances.add(jewelBlock);
-
-            model = resourceContext.groundModel;
-            yPosition = 0.0f;
-        } else if (type >= 20 && type <= 29) {
-            // CONSUMER
-            CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            com.badlogic.gdx.graphics.g3d.Model consumerModelToUse = resourceContext.coalConsumerModel;
-            if (cargo == CargoTypes.GOLD)
-                consumerModelToUse = resourceContext.goldConsumerModel;
-            else if (cargo == CargoTypes.RUBY)
-                consumerModelToUse = resourceContext.rubyConsumerModel;
-
-            float x = ground.getPosition().getX() + 0.5f;
-            float z = ground.getPosition().getY() + 0.5f;
-
-            ModelInstance instance = new ModelInstance(consumerModelToUse);
-            instance.transform.setToTranslation(x, 0.01f, z);
-            instances.add(instance);
-
-            model = resourceContext.groundModel;
-            yPosition = 0.0f;
-        } else {
-            switch (type) {
-                case GroundMap.GROUND:
-                    model = resourceContext.groundModel;
-                    yPosition = 0.0f;
-                    break;
-                case GroundMap.WATER:
-                    model = resourceContext.waterModel;
-                    yPosition = -2.0f;
-                    break;
-                case GroundMap.ROCK:
-                    model = resourceContext.mountainModel;
-                    yPosition = 0.6f;
-                    scaleY = 1.2f;
-                    break;
-            }
-        }
-
-        if (model != null) {
-            float x = ground.getPosition().getX() + 0.5f;
-            float z = ground.getPosition().getY() + 0.5f;
-
-            ModelInstance instance = new ModelInstance(model);
-
-            if (type == GroundMap.ROCK || model == resourceContext.tunnelPortalModel) {
-                if (isXRayActive) {
-                    ModelInstance groundBelow = new ModelInstance(resourceContext.groundModel);
-                    groundBelow.transform.setToTranslation(x, 0.0f, z);
-                    groundBelow.transform.scale(scaleX, scaleY, scaleZ);
-                    instances.add(groundBelow);
-
-                    instance.materials.get(0)
-                            .set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
-                    instance.transform.setToTranslation(x, yPosition, z);
-                    instance.transform.scale(scaleX, scaleY, scaleZ);
-                    transparentInstances.add(instance);
-                } else {
-                    instance.transform.setToTranslation(x, yPosition, z);
-                    instance.transform.scale(scaleX, scaleY, scaleZ);
-                    instances.add(instance);
-                }
-            } else if (type >= 10 && type <= 29) {
-                instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.BLACK));
-                instance.transform.setToTranslation(x, yPosition, z);
-                instance.transform.scale(scaleX, scaleY, scaleZ);
-                instances.add(instance);
-            } else {
-                instance.transform.setToTranslation(x, yPosition, z);
-                instance.transform.scale(scaleX, scaleY, scaleZ);
-                instances.add(instance);
-            }
-
-            if (type != GroundMap.WATER && modelRef != null && modelRef.getGroundMap() != null) {
-                int gx = ground.getPosition().getX();
-                int gy = ground.getPosition().getY();
-
-                com.badlogic.gdx.graphics.Color wallColor;
-                if (type == GroundMap.ROCK) {
-                    wallColor = new com.badlogic.gdx.graphics.Color(0.5f, 0.4f, 0.3f, 1f);
-                } else if (type >= 10 && type <= 29) {
-                    wallColor = com.badlogic.gdx.graphics.Color.BLACK;
-                } else {
-                    wallColor = new com.badlogic.gdx.graphics.Color(0.4f, 0.6f, 0.3f, 1f);
-                }
-
-                checkAndAddWall(gx, gy - 1, x, -1.05f, z - 0.5f, 0, wallColor); // Norte
-                checkAndAddWall(gx, gy + 1, x, -1.05f, z + 0.5f, 0, wallColor); // Sur
-                checkAndAddWall(gx - 1, gy, x - 0.5f, -1.05f, z, 90, wallColor); // Oeste
-                checkAndAddWall(gx + 1, gy, x + 0.5f, -1.05f, z, 90, wallColor); // Este
-            }
-        }
-    }
-
-    private void checkAndAddWall(int gx, int gy, float x, float y, float z, float rotationY,
-            com.badlogic.gdx.graphics.Color color) {
-        Integer neighborType = modelRef.getGroundMap().getValueAt(gx, gy);
-        if (neighborType != null && neighborType == GroundMap.WATER) {
-            ModelInstance wall = new ModelInstance(resourceContext.terrainWallModel);
-            wall.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
-            wall.transform.setToTranslation(x, y, z);
-            if (rotationY != 0) {
-                wall.transform.rotate(0, 1, 0, rotationY);
-            }
-            instances.add(wall);
-        }
-    }
-
-    @Override
-    public void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack) {
-        visitRailTrack(bridgeGateRailTrack);
-    }
-
-    @Override
-    public void visitBridgeRailTrack(BridgeRailTrack bridgeRailTrack) {
-        visitRailTrack(bridgeRailTrack);
-    }
-
-    @Override
-    public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
-        ModelInstance portal = new ModelInstance(resourceContext.tunnelPortalModel);
-        if (isXRayActive) {
-            portal.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
-            portal.transform.setToTranslation(
-                    tunnelGateRailTrack.getPosition().getX() + 0.5f,
-                    0.6f,
-                    tunnelGateRailTrack.getPosition().getY() + 0.5f);
-            transparentInstances.add(portal);
-        } else {
-            portal.transform.setToTranslation(
-                    tunnelGateRailTrack.getPosition().getX() + 0.5f,
-                    0.6f,
-                    tunnelGateRailTrack.getPosition().getY() + 0.5f);
-            instances.add(portal);
-        }
-        visitRailTrack(tunnelGateRailTrack);
-    }
-
 }

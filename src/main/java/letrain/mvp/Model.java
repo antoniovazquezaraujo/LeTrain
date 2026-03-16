@@ -209,4 +209,10 @@ public interface Model {
     CargoTypes getSelectedWagonType();
 
     void setSelectedWagonType(CargoTypes type);
+
+    boolean isXRayActive();
+    void setXRayActive(boolean xRayActive);
+
+    com.badlogic.gdx.graphics.Camera getCamera();
+    void setCamera(com.badlogic.gdx.graphics.Camera camera);
 }

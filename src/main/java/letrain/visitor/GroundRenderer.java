@@ -1,0 +1,139 @@
+package letrain.visitor;
+
+import java.util.List;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g3d.Model;
+import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import letrain.ground.Ground;
+import letrain.ground.GroundMap;
+import letrain.track.CargoTypes;
+
+public class GroundRenderer extends BaseSubRenderer {
+
+    public GroundRenderer(Gdx3DResourceContext resourceContext, 
+                        List<ModelInstance> instances, 
+                        List<ModelInstance> transparentInstances,
+                        List<Gdx3DRenderer.VehicleLabel> labels) {
+        super(resourceContext, instances, transparentInstances, labels);
+    }
+
+    @Override
+    public void visitGroundMap(GroundMap groundMap) {
+        groundMap.forEach(ground -> visitGround(ground));
+    }
+
+    @Override
+    public void visitGround(Ground ground) {
+        if (!isVisible(ground.getPosition()))
+            return;
+        int type = ground.getType();
+        Model model = resourceContext.groundModel;
+        float yPosition = 0.0f;
+        float scaleX = 1.0f;
+        float scaleY = 0.01f;
+        float scaleZ = 1.0f;
+
+        if (type >= 10 && type <= 19) {
+            CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
+            Color jewelColor = (cargo != null) ? cargo.getColor().cpy() : Color.WHITE.cpy();
+            float x = ground.getPosition().getX() + 0.5f;
+            float z = ground.getPosition().getY() + 0.5f;
+
+            ModelInstance jewelBlock = new ModelInstance(resourceContext.wagonJewelModel);
+            jewelBlock.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(jewelColor));
+            float h = 0.5f;
+            jewelBlock.transform.setToTranslation(x, h / 2f, z);
+            jewelBlock.transform.scale(0.9f, h, 0.9f);
+            instances.add(jewelBlock);
+            model = resourceContext.groundModel;
+            yPosition = 0.0f;
+        } else if (type >= 20 && type <= 29) {
+            CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
+            Model consumerModelToUse = resourceContext.coalConsumerModel;
+            if (cargo == CargoTypes.GOLD) consumerModelToUse = resourceContext.goldConsumerModel;
+            else if (cargo == CargoTypes.RUBY) consumerModelToUse = resourceContext.rubyConsumerModel;
+
+            float x = ground.getPosition().getX() + 0.5f;
+            float z = ground.getPosition().getY() + 0.5f;
+            ModelInstance instance = new ModelInstance(consumerModelToUse);
+            instance.transform.setToTranslation(x, 0.01f, z);
+            instances.add(instance);
+            model = resourceContext.groundModel;
+            yPosition = 0.0f;
+        } else {
+            switch (type) {
+                case GroundMap.GROUND:
+                    model = resourceContext.groundModel;
+                    yPosition = 0.0f;
+                    break;
+                case GroundMap.WATER:
+                    model = resourceContext.waterModel;
+                    yPosition = -2.0f;
+                    break;
+                case GroundMap.ROCK:
+                    model = resourceContext.mountainModel;
+                    yPosition = 0.6f;
+                    scaleY = 1.2f;
+                    break;
+            }
+        }
+
+        if (model != null) {
+            float x = ground.getPosition().getX() + 0.5f;
+            float z = ground.getPosition().getY() + 0.5f;
+            ModelInstance instance = new ModelInstance(model);
+
+            if (type == GroundMap.ROCK || model == resourceContext.tunnelPortalModel) {
+                if (isXRayActive) {
+                    ModelInstance groundBelow = new ModelInstance(resourceContext.groundModel);
+                    groundBelow.transform.setToTranslation(x, 0.0f, z);
+                    groundBelow.transform.scale(scaleX, scaleY, scaleZ);
+                    instances.add(groundBelow);
+
+                    instance.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
+                    instance.transform.setToTranslation(x, yPosition, z);
+                    instance.transform.scale(scaleX, scaleY, scaleZ);
+                    transparentInstances.add(instance);
+                } else {
+                    instance.transform.setToTranslation(x, yPosition, z);
+                    instance.transform.scale(scaleX, scaleY, scaleZ);
+                    instances.add(instance);
+                }
+            } else if (type >= 10 && type <= 29) {
+                instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(Color.BLACK));
+                instance.transform.setToTranslation(x, yPosition, z);
+                instance.transform.scale(scaleX, scaleY, scaleZ);
+                instances.add(instance);
+            } else {
+                instance.transform.setToTranslation(x, yPosition, z);
+                instance.transform.scale(scaleX, scaleY, scaleZ);
+                instances.add(instance);
+            }
+
+            if (type != GroundMap.WATER && modelRef != null && modelRef.getGroundMap() != null) {
+                int gx = ground.getPosition().getX();
+                int gy = ground.getPosition().getY();
+                Color wallColor;
+                if (type == GroundMap.ROCK) wallColor = new Color(0.5f, 0.4f, 0.3f, 1f);
+                else if (type >= 10 && type <= 29) wallColor = Color.BLACK;
+                else wallColor = new Color(0.4f, 0.6f, 0.3f, 1f);
+
+                checkAndAddWall(gx, gy - 1, x, -1.05f, z - 0.5f, 0, wallColor);
+                checkAndAddWall(gx, gy + 1, x, -1.05f, z + 0.5f, 0, wallColor);
+                checkAndAddWall(gx - 1, gy, x - 0.5f, -1.05f, z, 90, wallColor);
+                checkAndAddWall(gx + 1, gy, x + 0.5f, -1.05f, z, 90, wallColor);
+            }
+        }
+    }
+
+    private void checkAndAddWall(int gx, int gy, float x, float y, float z, float rotationY, Color color) {
+        Integer neighborType = modelRef.getGroundMap().getValueAt(gx, gy);
+        if (neighborType != null && neighborType == GroundMap.WATER) {
+            ModelInstance wall = new ModelInstance(resourceContext.terrainWallModel);
+            wall.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
+            wall.transform.setToTranslation(x, y, z);
+            if (rotationY != 0) wall.transform.rotate(0, 1, 0, rotationY);
+            instances.add(wall);
+        }
+    }
+}

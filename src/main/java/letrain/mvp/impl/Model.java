@@ -58,6 +58,7 @@ public class Model implements Serializable, letrain.mvp.Model {
     int nextLocomotiveId;
     int nextForkId;
     private transient CargoTypes selectedWagonType = CargoTypes.GOLD;
+    private transient com.badlogic.gdx.graphics.Camera camera;
 
     private transient List<letrain.vehicle.impl.rail.TrainEventListener> trainEventListeners = new ArrayList<>();
 
@@ -801,6 +802,18 @@ public class Model implements Serializable, letrain.mvp.Model {
         return this.economyManager;
     }
 
+    private boolean xRayActive = false;
+
+    @Override
+    public boolean isXRayActive() {
+        return xRayActive;
+    }
+
+    @Override
+    public void setXRayActive(boolean xRayActive) {
+        this.xRayActive = xRayActive;
+    }
+
     @Override
     public CargoTypes getSelectedWagonType() {
         if (selectedWagonType == null)
@@ -1001,5 +1014,15 @@ public class Model implements Serializable, letrain.mvp.Model {
                     .append(" (").append(s.isOpen() ? "OPEN" : "CLOSED").append(")\n");
         }
         return sb.toString();
+    }
+
+    @Override
+    public com.badlogic.gdx.graphics.Camera getCamera() {
+        return camera;
+    }
+
+    @Override
+    public void setCamera(com.badlogic.gdx.graphics.Camera camera) {
+        this.camera = camera;
     }
 }
