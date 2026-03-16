@@ -485,6 +485,13 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         if (c.isEmpty()) {
             return;
         }
+        if (c.matches("[123]")) {
+            if (c.equals("1")) model.setSelectedWagonType(letrain.track.CargoTypes.GOLD);
+            else if (c.equals("2")) model.setSelectedWagonType(letrain.track.CargoTypes.COAL);
+            else if (c.equals("3")) model.setSelectedWagonType(letrain.track.CargoTypes.RUBY);
+            return;
+        }
+
         if (!c.matches("([A-Za-z])?")) {
             return;
         }
@@ -506,6 +513,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
             cursorDir = locomotive.getDir();
         } else {
             Wagon wagon = new Wagon(c);
+            wagon.setExclusiveCargoType(model.getSelectedWagonType());
             model.addWagon(wagon);
             model.getEconomyManager().onWagonConstructed(wagon);
             track.enterLinkerFromDir(model.getCursor().getDir().inverse(), wagon);

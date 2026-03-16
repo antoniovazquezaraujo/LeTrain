@@ -89,7 +89,7 @@ public class RenderVisitor implements Visitor {
     public static String BRIDGE_RAILTRACK_ASPECT = "\u252C";
     public static String BRIDGE_GATE_RAILTRACK_ASPECT = "\u224E";
     public static String SENSOR_ASPECT = "₪";
-    public static String STATION_ASPECT = "\u27F0";
+    public static String STATION_ASPECT = "[";
     public static String RAIL_CROSS_ASPECT = "+";
     public static String DIAGONAL_RAIL_CROSS_ASPECT = "X";
     public static String SEMAPHORE_ASPECT = ":";
@@ -108,7 +108,7 @@ public class RenderVisitor implements Visitor {
     public static String VERTICAL_DIR = "|";
     public static String DIAGONAL_DIR = "/";
     public static String ANTI_DIAGONAL_DIR = "\\";
-    public static String PRODUCER_ASPECT = "■";
+    public static String PRODUCER_ASPECT = "¬";
     public static String CONSUMER_ASPECT = "X";
 
     Locomotive selectedLocomotive;
@@ -176,15 +176,17 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitStation(Station station) {
         Track track = station.getTrack();
-        if (this.mode == GameMode.STATIONS) {
-            if (station == selectedStation) {
-                view.setFgColor(SELECTED_STATION_COLOR);
-            } else {
-                view.setFgColor(STATION_COLOR);
-            }
-
-            view.set(track.getPosition().getX(), track.getPosition().getY(), STATION_ASPECT + station.getId());
+        if (station == selectedStation && this.mode == GameMode.STATIONS) {
+            view.setFgColor(SELECTED_STATION_COLOR);
+        } else if (station.getCargoType() != letrain.track.CargoTypes.NONE) {
+            boolean isProducer = station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER;
+            view.setFgColor(getCargoColor(station.getCargoType(), isProducer));
+        } else {
+            view.setFgColor(STATION_COLOR);
         }
+
+        view.set(track.getPosition().getX(), track.getPosition().getY(),
+                STATION_ASPECT + (this.mode == GameMode.STATIONS ? station.getId() : ""));
         resetColors();
     }
 
@@ -296,6 +298,9 @@ public class RenderVisitor implements Visitor {
         }
         if (wagon.getTrain() != null && wagon.getTrain().isLoading) {
             view.setFgColor(TextColor.ANSI.values()[new Random().nextInt(TextColor.ANSI.values().length)]);
+        } else if (wagon.getExclusiveCargoType() != letrain.track.CargoTypes.NONE) {
+            boolean isLoaded = wagon.getCargoAmount() > 0;
+            view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), isLoaded));
         } else {
             view.setFgColor(WAGON_COLOR);
         }
@@ -416,11 +421,11 @@ public class RenderVisitor implements Visitor {
 
         if (type >= 10 && type <= 19) {
             letrain.track.CargoTypes cargo = letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            color = getCargoColor(cargo);
+            color = getCargoColor(cargo, true);
             aspect = PRODUCER_ASPECT;
         } else if (type >= 20 && type <= 29) {
             letrain.track.CargoTypes cargo = letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            color = getCargoColor(cargo);
+            color = getCargoColor(cargo, false);
             aspect = CONSUMER_ASPECT;
         } else {
             switch (type) {
@@ -443,16 +448,16 @@ public class RenderVisitor implements Visitor {
         resetColors();
     }
 
-    private TextColor getCargoColor(letrain.track.CargoTypes cargo) {
+    private TextColor getCargoColor(letrain.track.CargoTypes cargo, boolean isLoaded) {
         if (cargo == null)
             return TextColor.ANSI.WHITE;
         switch (cargo) {
             case COAL:
-                return TextColor.ANSI.BLACK_BRIGHT;
+                return isLoaded ? TextColor.ANSI.WHITE : TextColor.ANSI.BLACK_BRIGHT;
             case GOLD:
-                return TextColor.ANSI.YELLOW;
+                return isLoaded ? TextColor.ANSI.YELLOW_BRIGHT : TextColor.ANSI.YELLOW;
             case RUBY:
-                return TextColor.ANSI.RED_BRIGHT;
+                return isLoaded ? TextColor.ANSI.RED_BRIGHT : TextColor.ANSI.RED;
             case NONE:
             default:
                 return TextColor.ANSI.WHITE;
