@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
@@ -70,6 +72,35 @@ public class TerminalView implements letrain.mvp.View {
             terminal = terminalFactory.createTerminal();
             terminal.setCursorVisible(false);
             setScreen(createScreen(terminal));
+
+            // Fix for "zombie process" when closing window via "X" button
+            // If the terminal is a Swing frame, we add a listener to detect closure
+            try {
+                // We use reflection or check if it implements a known Swing interface
+                // Lanterna Swing terminals typically have a component or are a JFrame
+                Object t = terminal;
+                if (t instanceof javax.swing.JFrame) {
+                    ((javax.swing.JFrame) t).addWindowListener(new WindowAdapter() {
+                        @Override
+                        public void windowClosing(WindowEvent e) {
+                            setEndOfGame(true);
+                        }
+                    });
+                } else if (t.getClass().getMethod("getJFrame") != null) {
+                   Object frame = t.getClass().getMethod("getJFrame").invoke(t);
+                   if (frame instanceof javax.swing.JFrame) {
+                       ((javax.swing.JFrame) frame).addWindowListener(new WindowAdapter() {
+                           @Override
+                           public void windowClosing(WindowEvent e) {
+                               setEndOfGame(true);
+                           }
+                       });
+                   }
+                }
+            } catch (Exception e) {
+                // If reflection fails or it's not Swing, we just continue
+                log.debug("Terminal is not a Swing frame or doesn't expose JFrame", e);
+            }
         } catch (IOException e) {
             log.error("Error creating terminal for TerminalView", e);
         }
@@ -118,7 +149,12 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void setInfoBarText(String text) {
-        menuBox.putString(menuBoxPosition.withRelative(1, 3), text);
+        String[] lines = text.split("\n");
+        for (int i = 0; i < lines.length; i++) {
+            if (i + 3 < menuBoxSize.getRows()) {
+                menuBox.putString(menuBoxPosition.withRelative(1, 3 + i), lines[i]);
+            }
+        }
     }
 
     @Override
@@ -274,12 +310,12 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     void recalculateSizes(TerminalSize terminalSize) {
-        gameBoxSize = new TerminalSize(terminalSize.getColumns(), terminalSize.getRows() - 4);
+        gameBoxSize = new TerminalSize(terminalSize.getColumns(), terminalSize.getRows() - 7);
         gameBoxPosition = TerminalPosition.TOP_LEFT_CORNER;
         Page.setWidth(gameBoxSize.getColumns());
         Page.setHeight(gameBoxSize.getRows());
-        menuBoxSize = new TerminalSize(terminalSize.getColumns(), 4);
-        menuBoxPosition = new TerminalPosition(0, terminalSize.getRows() - 4);
+        menuBoxSize = new TerminalSize(terminalSize.getColumns(), 7);
+        menuBoxPosition = new TerminalPosition(0, terminalSize.getRows() - 7);
     }
 
     Screen createScreen(Terminal terminal) throws IOException {

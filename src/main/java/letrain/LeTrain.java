@@ -34,6 +34,11 @@ public class LeTrain {
             new com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application(view3D, config);
         } else {
             presenter = new Presenter2D(this.model);
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                if (presenter != null) {
+                    presenter.stop();
+                }
+            }));
             presenter.start();
             presenter.stop();
         }

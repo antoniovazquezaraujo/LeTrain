@@ -46,9 +46,6 @@ public class InfoVisitor implements Visitor {
     public void visitModel(Model model) {
         infoBarText = "";
         switch (model.getMode()) {
-            case RAILS:
-
-                break;
             case DRIVE:
                 Locomotive locomotive = model.getSelectedLocomotive();
                 if (locomotive != null) {
@@ -74,40 +71,68 @@ public class InfoVisitor implements Visitor {
                 }
                 break;
             case LINK:
-                infoBarText += "Modo: VINCULAR (LINK)\n";
-                infoBarText += "Flechas Arriba/Abajo: Seleccionar sentido\n";
-                infoBarText += "Flechas Izqu/Der: Ajustar cantidad\n";
-                infoBarText += "Espacio: Vincular\n";
+                infoBarText += "Modo: VINCULAR (LINK) [Arriba/Abajo]: Sentido [Izqu/Der]: Cantidad [Espacio]: Vincular";
                 Locomotive selected = model.getSelectedLocomotive();
                 if (selected != null && selected.getTrain() != null) {
-                    infoBarText += "Vagones: " + selected.getTrain().getSelectedLinkersToJoin().size() + "/"
-                            + selected.getTrain().getLinkersToJoin().size() + "\n";
+                    infoBarText += " Vagones: " + selected.getTrain().getSelectedLinkersToJoin().size() + "/"
+                            + selected.getTrain().getLinkersToJoin().size();
                 }
                 break;
             case UNLINK:
-                infoBarText += "Modo: DESVINCULAR (UNLINK)\n";
-                infoBarText += "Flechas: Seleccionar vagones\n";
-                infoBarText += "Espacio: Desvincular\n";
+                infoBarText += "Modo: DESVINCULAR (UNLINK) [Flechas]: Seleccionar [Espacio]: Desvincular";
                 break;
             case MENU:
-                infoBarText += "Menu Principal\n";
-                break;
-            case LOAD_TRAINS:
-                break;
-            case TRAINS:
+                infoBarText += "Menu Principal";
                 break;
             case PROGRAM:
                 visitProgram(model);
                 break;
+            case RAILS:
+            case TRAINS:
+            case LOAD_TRAINS:
             default:
                 break;
         }
 
         view.setMenu(model.getMenuModel());
+
+        StringBuilder richInfo = new StringBuilder();
+        // Row 3: Finances
+        EconomyManager economy = model.getEconomyManager();
+        richInfo.append(String.format("$: %.2f | Ingresos(+): %.2f | Gastos(-): %.2f\n",
+                economy.getBalance(), economy.getTotalIncome(), economy.getTotalExpenses()));
+
+        // Row 4: Vehicle Status / Mode Help fallback
+        Locomotive selectedLoco = model.getSelectedLocomotive();
+        if (selectedLoco != null) {
+            String notchBar = getNotchBar(selectedLoco.getSpeed(), selectedLoco.getTargetSpeed(), 10);
+            richInfo.append(String.format("Notch: %s | Vagones: %d\n",
+                    notchBar, selectedLoco.getTrain().getLinkers().size() - 1));
+        } else {
+            richInfo.append(infoBarText).append("\n");
+        }
+
+        // Row 5: System info
         String commonText = getCommonInfoBarText(model);
-        int fillSpaces = view.getCols() - (infoBarText.length());
-        commonText = String.format("%" + fillSpaces + "s", commonText);
-        view.setInfoBarText(infoBarText + commonText);
+        String lastSave = model.getLastSaveTime() != null ? " | Guardado: " + model.getLastSaveTime().toString().substring(11, 16) : "";
+        richInfo.append(commonText).append(lastSave).append("\n");
+
+        // Row 6: Global Help
+        richInfo.append("[PgUp/PgDn]: Scroll Mapa | [r/d/f/s/t/l/u/p/n]: Modos | [Esc]: Salir");
+
+        view.setInfoBarText(richInfo.toString());
+    }
+
+    private String getNotchBar(int current, int target, int max) {
+        StringBuilder bar = new StringBuilder("[");
+        for (int i = 1; i <= max; i++) {
+            char c = ' ';
+            if (i <= current) c = '=';
+            if (i == target) c = '!';
+            bar.append(c);
+        }
+        bar.append("]");
+        return bar.toString();
     }
 
     private void visitProgram(Model model) {
