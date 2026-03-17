@@ -36,17 +36,11 @@ import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import letrain.map.Point;
-import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.utils.ValidationUtils;
 import letrain.visitor.gdx3d.Gdx3DRenderer;
-import letrain.visitor.gdx3d.Gdx3DResourceContext;
-import letrain.visitor.terminal.InfoVisitor;
-import letrain.visitor.terminal.RenderVisitor;
-import letrain.mvp.impl.services.SimulationService;
 import letrain.mvp.impl.SimulationController;
 import letrain.mvp.impl.GameSaveService;
 import letrain.mvp.impl.RailTrackMaker;
@@ -1703,6 +1697,16 @@ public class Gdx3DView extends ApplicationAdapter
             stage.addActor(window);
             stage.setKeyboardFocus(textField);
         });
+    }
+
+    @Override
+    public String getGameObjectsReport() {
+        return model.getGameObjectsReport();
+    }
+
+    @Override
+    public java.util.List<String> getEventLogEntries() {
+        return model.getEventLogManager().getEntries();
     }
 
     @Override

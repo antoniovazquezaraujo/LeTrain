@@ -13,17 +13,20 @@ import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.TextColor.ANSI;
 import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.gui2.ActionListBox;
 import com.googlecode.lanterna.gui2.BasicWindow;
+import com.googlecode.lanterna.gui2.BorderLayout;
 import com.googlecode.lanterna.gui2.Button;
 import com.googlecode.lanterna.gui2.Direction;
 import com.googlecode.lanterna.gui2.EmptySpace;
+import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.LocalizedString;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.TextBox;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.dialogs.FileDialogBuilder;
-import com.googlecode.lanterna.gui2.dialogs.TextInputDialogBuilder;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
@@ -354,15 +357,114 @@ public class TerminalView implements letrain.mvp.View {
     @Override
     public void showIDE() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        String result = new TextInputDialogBuilder()
-                .setTitle("LeTrain program editor")
-                .setTextBoxSize(new TerminalSize(85, 25))
-                .setInitialContent(gameViewListener.getProgram())
-                .build()
-                .showDialog(gui);
-        if (result != null) {
-            TerminalView.this.gameViewListener.onEditCommands(result);
+        BasicWindow window = new BasicWindow();
+        window.setTitle("LT-IDE v1.1 - LeTrain Integrated Development Environment (2D)");
+        window.setHints(Arrays.asList(Window.Hint.CENTERED, Window.Hint.EXPANDED));
+
+        Panel mainPanel = new Panel(new BorderLayout());
+
+        // Editor Area
+        final TextBox editor = new TextBox(new TerminalSize(60, 20), gameViewListener.getProgram(), TextBox.Style.MULTI_LINE);
+        mainPanel.addComponent(editor, BorderLayout.Location.CENTER);
+
+        // Side Panel (Reference)
+        Panel sidePanel = new Panel(new LinearLayout(Direction.VERTICAL));
+        sidePanel.addComponent(new Label("QUICK REFERENCE").setLabelWidth(30));
+        
+        ActionListBox refList = new ActionListBox(new TerminalSize(30, 8));
+        String[][] refs = {
+                { "TRIGGERS", "" },
+                { "  sensor entry", "sensor 1 on train enter {\n  \n}" },
+                { "  sensor exit", "sensor 1 on train exit {\n  \n}" },
+                { "  fork entry", "fork 1 on train enter {\n  \n}" },
+                { "  station entry", "station 1 on train enter {\n  \n}" },
+                { "  train crash", "train 1 on crash {\n  \n}" },
+                { "  train contact", "train 1 on contact {\n  \n}" },
+                { "", "" },
+                { "ACTIONS", "" },
+                { "  train speed", "train 1 set speed 5;" },
+                { "  train stop", "train 1 stop;" },
+                { "  train invert", "train 1 invert;" },
+                { "  train load", "train 1 load;" },
+                { "  train unload", "train 1 unload;" },
+                { "  fork straight", "fork 1 set straight;" },
+                { "  fork curved", "fork 1 set curved;" },
+                { "  semaphore open", "semaphore 1 set open;" },
+                { "  semaphore closed", "semaphore 1 set closed;" }
+        };
+        for (String[] r : refs) {
+            String label = r[0];
+            String snippet = r[1];
+            if (label.isEmpty()) continue;
+            if (snippet.isEmpty()) {
+                refList.addItem("[" + label + "]", () -> {});
+            } else {
+                refList.addItem(label, () -> insertAtCaret(editor, snippet));
+            }
         }
+        sidePanel.addComponent(refList);
+        
+        sidePanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
+        sidePanel.addComponent(new Label("OBJECTS STATUS:"));
+        TextBox objectsStatus = new TextBox(new TerminalSize(30, 4), gameViewListener.getGameObjectsReport());
+        objectsStatus.setReadOnly(true);
+        sidePanel.addComponent(objectsStatus);
+        
+        sidePanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
+        sidePanel.addComponent(new Label("LATEST LOGS:"));
+        List<String> logs = gameViewListener.getEventLogEntries();
+        int start = Math.max(0, logs.size() - 5);
+        String recentLogs = String.join("\n", logs.subList(start, logs.size()));
+        TextBox logsBox = new TextBox(new TerminalSize(30, 4), recentLogs);
+        logsBox.setReadOnly(true);
+        sidePanel.addComponent(logsBox);
+
+        mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
+
+        // Footer (Buttons)
+        Panel footer = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        footer.addComponent(new Button("Apply", () -> {
+            gameViewListener.onEditCommands(editor.getText());
+            window.close();
+        }));
+        footer.addComponent(new Button("Save", () -> {
+            // We apply first to ensure the saved game has the latest code
+            gameViewListener.onEditCommands(editor.getText());
+            showSaveDialog();
+        }));
+        footer.addComponent(new Button("Load", () -> {
+            showLoadDialog();
+            window.close();
+        }));
+        footer.addComponent(new Button("Cancel", window::close));
+
+        mainPanel.addComponent(footer, BorderLayout.Location.BOTTOM);
+
+        window.setComponent(mainPanel);
+        gui.addWindowAndWait(window);
+    }
+
+    private void insertAtCaret(TextBox editor, String text) {
+        String current = editor.getText();
+        TerminalPosition pos = editor.getCaretPosition();
+        
+        // Convert TerminalPosition to linear offset
+        String[] lines = current.split("\n", -1);
+        int offset = 0;
+        for (int i = 0; i < pos.getRow() && i < lines.length; i++) {
+            offset += lines[i].length() + 1; // +1 for the newline
+        }
+        offset += pos.getColumn();
+        offset = Math.min(offset, current.length());
+
+        String before = current.substring(0, offset);
+        String after = current.substring(offset);
+        editor.setText(before + text + after);
+        
+        // Refocus and place caret after insertion would be nice, but 
+        // setCaretPosition with TerminalPosition is complex to calculate accurately with multi-line snippets.
+        // For now, refocusing will suffice as the user can see the change.
+        editor.takeFocus();
     }
 
     @Override

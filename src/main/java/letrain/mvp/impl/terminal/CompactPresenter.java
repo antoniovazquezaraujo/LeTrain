@@ -1126,6 +1126,16 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     }
 
     @Override
+    public String getGameObjectsReport() {
+        return model.getGameObjectsReport();
+    }
+
+    @Override
+    public java.util.List<String> getEventLogEntries() {
+        return model.getEventLogManager().getEntries();
+    }
+
+    @Override
     public void onMapPageChanged(Point mapScrollPage, int columns, int rows) {
         model.updateGroundMap(mapScrollPage, columns, rows);
 
