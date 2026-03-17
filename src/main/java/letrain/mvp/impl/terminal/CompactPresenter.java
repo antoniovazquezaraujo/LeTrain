@@ -161,6 +161,16 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
                     }
                 }
                 simulationController.tick();
+                if (audioController != null) {
+                    if (model.getMode() == DRIVE && model.getSelectedLocomotive() != null) {
+                        Point pos = model.getSelectedLocomotive().getPosition();
+                        audioController.setListenerPosition((float) pos.getX(), (float) pos.getY(), 0, 0);
+                    } else {
+                        Point pos = model.getCursor().getPosition();
+                        audioController.setListenerPosition((float) pos.getX(), (float) pos.getY(), 0, 0);
+                    }
+                    audioController.update();
+                }
                 renderer.visitModel(model);
                 informer.visitModel(model);
                 view.paint();
@@ -1163,14 +1173,26 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     @Override
     public void onLink(Train train) {
         if (audioController != null) {
-            audioController.playOneShot("link", 0, 0); // Position is less critical for link
+            Linker firstLinker = train.getLinkers().peekFirst();
+            if (firstLinker != null) {
+                letrain.map.Point pos = firstLinker.getPosition();
+                if (pos != null) {
+                    audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
+                }
+            }
         }
     }
 
     @Override
     public void onUnlink(Train train) {
         if (audioController != null) {
-            audioController.playOneShot("link", 0, 0);
+            Linker firstLinker = train.getLinkers().peekFirst();
+            if (firstLinker != null) {
+                letrain.map.Point pos = firstLinker.getPosition();
+                if (pos != null) {
+                    audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
+                }
+            }
         }
     }
 

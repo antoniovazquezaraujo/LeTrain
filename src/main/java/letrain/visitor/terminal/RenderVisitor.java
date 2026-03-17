@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 public class RenderVisitor implements Visitor {
     Logger log = LoggerFactory.getLogger(RenderVisitor.class);
+    private Model model;
     private static final TextColor GROUND_COLOR = TextColor.ANSI.WHITE;
     private static final TextColor WATER_COLOR = TextColor.ANSI.BLUE_BRIGHT;
     private static final TextColor ROCK_COLOR = TextColor.ANSI.RED_BRIGHT;
@@ -136,6 +137,7 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitModel(Model model) {
+        this.model = model;
         this.showId = model.isShowId();
         this.mode = model.getMode();
         selectedLocomotive = model.getSelectedLocomotive();
@@ -304,7 +306,16 @@ public class RenderVisitor implements Visitor {
             return;
         }
         if (wagon.getTrain() != null && wagon.getTrain().isLoading) {
-            view.setFgColor(TextColor.ANSI.values()[new Random().nextInt(TextColor.ANSI.values().length)]);
+            letrain.track.Station station = model.getStation(wagon.getTrain().getRailStationId());
+            if (station != null && station.getCargoType() != letrain.track.CargoTypes.NONE &&
+                    station.getCargoType() == wagon.getExclusiveCargoType()) {
+                view.setFgColor(TextColor.ANSI.values()[new Random().nextInt(TextColor.ANSI.values().length)]);
+            } else if (wagon.getExclusiveCargoType() != letrain.track.CargoTypes.NONE) {
+                boolean isLoaded = wagon.getCargoAmount() > 0;
+                view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), isLoaded));
+            } else {
+                view.setFgColor(WAGON_COLOR);
+            }
         } else if (wagon.getExclusiveCargoType() != letrain.track.CargoTypes.NONE) {
             boolean isLoaded = wagon.getCargoAmount() > 0;
             view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), isLoaded));
