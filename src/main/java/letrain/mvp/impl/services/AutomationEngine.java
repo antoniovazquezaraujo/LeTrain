@@ -17,9 +17,12 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+
 /**
  * Encapsulates the logic for parsing and executing LeTrain automation programs.
  */
+@JsonIgnoreType
 public class AutomationEngine {
     private static final Logger log = LoggerFactory.getLogger(AutomationEngine.class);
     private final Model model;

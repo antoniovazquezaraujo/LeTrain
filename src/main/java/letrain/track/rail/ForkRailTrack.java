@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
@@ -45,6 +46,12 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     public ForkRailTrack(int id) {
         setId(id);
+    }
+
+    /**
+     * Protected default constructor for Jackson deserialization.
+     */
+    protected ForkRailTrack() {
     }
 
     /**
@@ -134,6 +141,7 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
      **********************************************************/
 
     @Override
+    @JsonIgnore
     public int getNumRoutes() {
         return 3;
     }
@@ -144,6 +152,7 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     }
 
     @Override
+    @JsonIgnore
     public void setAlternativeRoute() {
         boolean changed = !getRouter().isUsingAlternativeRoute();
         getRouter().setAlternativeRoute();
@@ -162,6 +171,7 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     }
 
     @Override
+    @JsonIgnore
     public void setNormalRoute() {
         boolean changed = getRouter().isUsingAlternativeRoute();
         getRouter().setNormalRoute();
@@ -196,36 +206,43 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     }
 
     @Override
+    @JsonIgnore
     public boolean isUsingAlternativeRoute() {
         return getRouter().isUsingAlternativeRoute();
     }
 
     @Override
+    @JsonIgnore
     public Pair<Dir, Dir> getAlternativeRoute() {
         return getRouter().getAlternativeRoute();
     }
 
     @Override
+    @JsonIgnore
     public Pair<Dir, Dir> getOriginalRoute() {
         return getRouter().getOriginalRoute();
     }
 
     @Override
+    @JsonIgnore
     public Dir getAnyDir() {
         return getRouter().getAnyDir();
     }
 
     @Override
+    @JsonIgnore
     public boolean isStraight() {
         return getRouter().isStraight();
     }
 
     @Override
+    @JsonIgnore
     public boolean isCurve() {
         return getRouter().isCurve();
     }
 
     @Override
+    @JsonIgnore
     public boolean isCross() {
         return getRouter().isCross();
     }
@@ -236,6 +253,7 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     }
 
     @Override
+    @JsonIgnore
     public Dir getFirstOpenDir() {
         return getRouter().getFirstOpenDir();
     }

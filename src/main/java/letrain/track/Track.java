@@ -1,6 +1,11 @@
 package letrain.track;
 
-import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -13,22 +18,29 @@ import letrain.utils.Pair;
 import letrain.vehicle.impl.Linker;
 import letrain.visitor.Renderable;
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = letrain.track.rail.RailTrack.class, name = "RailTrack"),
+    @JsonSubTypes.Type(value = letrain.track.rail.ForkRailTrack.class, name = "ForkRailTrack")
+})
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class Track implements
-        Serializable,
         Router,
         Connectable,
         LinkerCompartment,
         Mapeable,
         LinkerCompartmentListener,
         Renderable {
-    private static final long serialVersionUID = 1L;
     private TrackDirector trackDirector;
     private Linker linker = null;
     private Linker reservation = null; // NEW: Track reservation to prevent race conditions during multi-train ticks
     private Sensor sensor = null;
     private RailSemaphore semaphore = null;
     private Point pos = new Point(0, 0);
+    @com.fasterxml.jackson.annotation.JsonProperty("connectedTracks")
     protected Track[] connections;
+    @JsonIgnore
     List<Pair<Dir, Point>> connectedPositions = new ArrayList<>();
     private final List<LinkerCompartmentListener> trackeableCompartmentListeners = new ArrayList<>();
 
@@ -41,9 +53,16 @@ public abstract class Track implements
         return "{" + pos + " Connections:(" + getConnectedPositions().toString() + ")}";
     }
 
+    @JsonIgnore
     public List<LinkerCompartmentListener> getTrackeableCompartmentListeners() {
         return trackeableCompartmentListeners;
     }
+
+    public void setConnectedTracks(Track[] connectedTracks) {
+        this.connections = connectedTracks;
+    }
+
+    public abstract void setRouter(Router router);
 
     public abstract Router getRouter();
 
@@ -143,8 +162,10 @@ public abstract class Track implements
     }
 
     @Override
+    @JsonIgnore
     public List<Dir> getConnections() {
         List<Dir> ret = new ArrayList<>();
+        if (connections == null) return ret;
         for (int i = 0; i < connections.length; i++) {
             if (connections[i] != null) {
                 ret.add(Dir.values()[i]);
@@ -153,6 +174,7 @@ public abstract class Track implements
         return ret;
     }
 
+    @JsonIgnore
     public List<Pair<Dir, Point>> getConnectedPositions() {
         return this.connectedPositions;
     }
@@ -162,7 +184,14 @@ public abstract class Track implements
         for (int i = 0; i < connections.length; i++) {
             if (connections[i] != null) {
                 Track connected = getConnected(Dir.values()[i]);
-                if (!this.connectedPositions.contains(connected)) {
+                boolean alreadyAdded = false;
+                for (Pair<Dir, Point> pair : connectedPositions) {
+                    if (pair.getSecond().equals(connected.getPosition())) {
+                        alreadyAdded = true;
+                        break;
+                    }
+                }
+                if (!alreadyAdded) {
                     this.connectedPositions.add(new Pair<Dir, Point>(Dir.values()[i], connected.getPosition()));
                 }
             }

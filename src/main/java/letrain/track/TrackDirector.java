@@ -1,13 +1,12 @@
 package letrain.track;
 
-import java.io.Serializable;
 
 import letrain.map.Dir;
 import letrain.vehicle.impl.Linker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TrackDirector<T extends Track> implements Serializable {
+public class TrackDirector<T extends Track> {
     private static TrackDirector instance;
 
     public TrackDirector() {

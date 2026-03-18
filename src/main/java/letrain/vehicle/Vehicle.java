@@ -10,6 +10,10 @@ import letrain.map.Rotable;
 import letrain.track.Track;
 import letrain.visitor.Renderable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class Vehicle<T extends Track>
         implements
         Serializable,
@@ -126,13 +130,27 @@ public abstract class Vehicle<T extends Track>
     }
 
     @Override
+    @JsonIgnore
     public void toggleReversed() {
         setReversed(!isReversed());
     }
 
     @Override
+    @JsonIgnore
     public Dir getRealDir() {
         return this.dir;
+    }
+
+    @Override
+    @JsonIgnore
+    public boolean isDestroying() {
+        return false;
+    }
+
+    @Override
+    @JsonIgnore
+    public boolean isDestroyed() {
+        return false;
     }
 
 }

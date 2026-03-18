@@ -1,6 +1,7 @@
 package letrain.map.impl;
+ 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -9,7 +10,7 @@ import letrain.map.Dir;
 import letrain.map.Router;
 import letrain.utils.Pair;
 
-public class SimpleRouter implements Serializable, Router {
+public class SimpleRouter implements Router {
 
     protected final Map<Dir, Dir> dirMap = new HashMap<>();
 
@@ -17,6 +18,7 @@ public class SimpleRouter implements Serializable, Router {
 
     }
 
+    @JsonIgnore
     public boolean isHorizontalOrVertical() {
         return dirMap.keySet().stream()
                 .filter(t -> {
@@ -30,11 +32,13 @@ public class SimpleRouter implements Serializable, Router {
     }
 
     @Override
+    @JsonIgnore
     public Dir getAnyDir() {
         return getFirstOpenDir();
     }
 
     @Override
+    @JsonIgnore
     public boolean isStraight() {
         return getNumRoutes() <= 2
                 &&
@@ -42,6 +46,7 @@ public class SimpleRouter implements Serializable, Router {
     }
 
     @Override
+    @JsonIgnore
     public boolean isCurve() {
         return getNumRoutes() == 2
                 &&
@@ -49,6 +54,7 @@ public class SimpleRouter implements Serializable, Router {
     }
 
     @Override
+    @JsonIgnore
     public boolean isCross() {
         return getNumRoutes() > 3;
     }
@@ -68,6 +74,7 @@ public class SimpleRouter implements Serializable, Router {
     }
 
     @Override
+    @JsonIgnore
     public Dir getFirstOpenDir() {
         if (getNumRoutes() > 0) {
             return dirMap.keySet().iterator().next();
@@ -76,6 +83,7 @@ public class SimpleRouter implements Serializable, Router {
     }
 
     @Override
+    @JsonIgnore
     public int getNumRoutes() {
         return dirMap.keySet().size();
     }

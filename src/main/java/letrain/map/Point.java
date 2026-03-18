@@ -9,13 +9,18 @@ import static letrain.map.Dir.SE;
 import static letrain.map.Dir.SW;
 import static letrain.map.Dir.W;
 
-import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
-public class Point implements Serializable {
-    private static final long serialVersionUID = 1L;
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+public class Point {
 
     private int x;
     private int y;
+
+    public Point() {
+    }
 
     public Point(int x, int y) {
         this.y = y;
@@ -140,11 +145,13 @@ public class Point implements Serializable {
                 (getY() + page.getY() * Page.getHeight()));
     }
 
+    @JsonIgnore
     public Point setPage(Page page) {
         Point relativePosition = this.getPosInPage();
         return relativePosition.addPage(page);
     }
 
+    @JsonIgnore
     public Point getPosInPage() {
         Page currentPage = getPage();
         int relativeX = getX() - currentPage.getX() * Page.getWidth();

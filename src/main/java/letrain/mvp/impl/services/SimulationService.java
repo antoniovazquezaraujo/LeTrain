@@ -17,9 +17,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+
 /**
  * Handles the core simulation logic: movement, industrial actions, and entity lifecycle.
  */
+@JsonIgnoreType
 public class SimulationService {
     private final Model model;
 

@@ -1,13 +1,16 @@
 package letrain.mvp.impl;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
-public class EventLogManager implements Serializable {
-    private static final long serialVersionUID = 1L;
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+public class EventLogManager {
+    public EventLogManager() {
+    }
     private final int MAX_ENTRIES = 100;
-    private final List<String> entries = new ArrayList<>();
+    private List<String> entries = new ArrayList<>();
 
     public synchronized void addEntry(String entry) {
         entries.add(entry);
@@ -18,6 +21,10 @@ public class EventLogManager implements Serializable {
 
     public synchronized List<String> getEntries() {
         return new ArrayList<>(entries);
+    }
+
+    public synchronized void setEntries(List<String> entries) {
+        this.entries = new ArrayList<>(entries);
     }
 
     public synchronized void clear() {

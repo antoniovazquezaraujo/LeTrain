@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import letrain.utils.SerializationHelper;
 import letrain.vehicle.impl.rail.Train;
@@ -12,7 +13,9 @@ import letrain.visitor.Visitor;
 
 public class Station extends Sensor implements TrainEventListener {
 
+    @JsonIgnore
     private transient List<StationEventListener> stationListeners = new ArrayList<>();
+    @JsonIgnore
     private transient List<StationEventListener> systemStationListeners = new ArrayList<>();
 
     public void addStationEventListener(StationEventListener listener) {
@@ -141,6 +144,9 @@ public class Station extends Sensor implements TrainEventListener {
         }
     }
 
+    public Station() {
+    }
+ 
     public Station(int id) {
         super(id);
     }
@@ -276,14 +282,17 @@ public class Station extends Sensor implements TrainEventListener {
     }
 
     // Compatibility methods redirected to storage
+    @JsonIgnore
     public int getExportCargoAmount() {
         return (role == CargoTypes.StationRole.PRODUCER) ? storage : 0;
     }
 
+    @JsonIgnore
     public int getImportCargoAmount() {
         return (role == CargoTypes.StationRole.CONSUMER) ? storage : 0;
     }
 
+    @JsonIgnore
     public int getCargoAmount() {
         return storage;
     }
@@ -326,6 +335,7 @@ public class Station extends Sensor implements TrainEventListener {
      * Returns the number of cargo units that can be transferred per tick.
      * Scales with surrounding industry density.
      */
+    @JsonIgnore
     public int getTransferRate() {
         // Base transfer rate of 1, plus 1 for every 3 industry blocks
         return 1 + (industryCount / 3);

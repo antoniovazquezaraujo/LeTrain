@@ -2,7 +2,6 @@ package letrain.track;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,12 +11,17 @@ import letrain.utils.SerializationHelper;
 import letrain.vehicle.impl.rail.Train;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
-public class Sensor implements Renderable, Serializable {
-    private static final long serialVersionUID = 1L;
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+public class Sensor implements Renderable {
     private int id;
     Track track;
+    @JsonIgnore
     transient List<SensorEventListener> listeners = new ArrayList<>();
+    @JsonIgnore
     transient List<SensorEventListener> systemListeners = new ArrayList<>();
     private Dir sideDir;
     private Dir creationDir = Dir.E;
@@ -26,6 +30,9 @@ public class Sensor implements Renderable, Serializable {
         return track;
     }
 
+    public Sensor() {
+    }
+ 
     public void setTrack(Track track) {
         this.track = track;
     }
@@ -49,6 +56,7 @@ public class Sensor implements Renderable, Serializable {
         this.id = i;
     }
 
+    @JsonIgnore
     public Point getPosition() {
         if (track == null) {
             return null;

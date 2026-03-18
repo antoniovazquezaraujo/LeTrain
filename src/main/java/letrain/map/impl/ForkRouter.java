@@ -1,4 +1,6 @@
 package letrain.map.impl;
+ 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
@@ -29,11 +31,12 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
     }
 
     @Override
+    @JsonIgnore
     public Dir getFirstOpenDir() {
         if (isUsingAlternativeRoute()) {
-            return alternativeRoute.getValue();
+            return alternativeRoute != null ? alternativeRoute.getValue() : null;
         } else {
-            return originalRoute.getValue();
+            return originalRoute != null ? originalRoute.getValue() : null;
         }
     }
 
@@ -70,11 +73,13 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
     }
 
     @Override
+    @JsonIgnore
     public Pair<Dir, Dir> getAlternativeRoute() {
         return alternativeRoute;
     }
 
     @Override
+    @JsonIgnore
     public Pair<Dir, Dir> getOriginalRoute() {
         return originalRoute;
     }

@@ -39,11 +39,11 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.googlecode.lanterna.input.KeyStroke;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
-import letrain.utils.ValidationUtils;
-import letrain.visitor.gdx3d.Gdx3DRenderer;
-import letrain.mvp.impl.SimulationController;
 import letrain.mvp.impl.GameSaveService;
 import letrain.mvp.impl.RailTrackMaker;
+import letrain.mvp.impl.SimulationController;
+import letrain.utils.ValidationUtils;
+import letrain.visitor.gdx3d.Gdx3DRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -794,20 +794,22 @@ public class Gdx3DView extends ApplicationAdapter
 
                 // Comportamiento de orientación:
                 // El 'up' vector define la dirección "hacia arriba" del carácter.
-                // El 'horizontal' vector define la dirección en la que se disponen los caracteres (el "avance" del texto).
-                
+                // El 'horizontal' vector define la dirección en la que se disponen los
+                // caracteres (el "avance" del texto).
+
                 com.badlogic.gdx.math.Vector3 up = label.up != null ? label.up : com.badlogic.gdx.math.Vector3.Y;
-                
+
                 // Vector horizontal paralelo a la cara
                 com.badlogic.gdx.math.Vector3 horizontal = new com.badlogic.gdx.math.Vector3();
-                
+
                 // Si la normal es vertical (p.ej. número ID en techo), el horizontal debe ser
                 // perpendicular al 'up' vector (que suele ser el forward).
                 // Horizontal = Up x Normal
                 if (Math.abs(label.normal.y) > 0.9f) {
                     horizontal.set(up).crs(label.normal).nor();
                 } else {
-                    // Para caras laterales, mantenemos la lógica de ser perpendicular a la normal en el plano XZ
+                    // Para caras laterales, mantenemos la lógica de ser perpendicular a la normal
+                    // en el plano XZ
                     horizontal.set(label.normal.z, 0, -label.normal.x).nor();
                     if (horizontal.len() < 0.1f) {
                         horizontal.set(1, 0, 0);
@@ -882,7 +884,8 @@ public class Gdx3DView extends ApplicationAdapter
         stage.draw();
     }
 
-    // updateCamera(alpha) ha sido extraído a CameraController; se mantiene aquí solo la delegación.
+    // updateCamera(alpha) ha sido extraído a CameraController; se mantiene aquí
+    // solo la delegación.
 
     private void updateUIData() {
         // Update HUD (Finances)
@@ -932,7 +935,7 @@ public class Gdx3DView extends ApplicationAdapter
                             String desc = option.gameModeDescription();
                             if (model.getMode() == letrain.mvp.Model.GameMode.TRAINS) {
                                 String colorName = model.getSelectedWagonType().name();
-                                String colorMarkup = "[#"+model.getSelectedWagonType().getColor().toString()+"]";
+                                String colorMarkup = "[#" + model.getSelectedWagonType().getColor().toString() + "]";
                                 desc = "Selected: " + colorMarkup + colorName + "[] | " + desc;
                             }
                             descLabel.setText(desc);
@@ -1216,11 +1219,11 @@ public class Gdx3DView extends ApplicationAdapter
     private void handleLinkInput(KeyStroke stroke) {
         if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
             if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().setLinkersToJoin(true);
+                model.getSelectedLocomotive().getTrain().updateLinkersToJoin(true);
             }
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
             if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().setLinkersToJoin(false);
+                model.getSelectedLocomotive().getTrain().updateLinkersToJoin(false);
             }
         } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
             if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
@@ -1429,7 +1432,6 @@ public class Gdx3DView extends ApplicationAdapter
         // Not used in 3D view (program is set via onEditCommands/onLoadCommands).
     }
 
-
     @Override
     public void onSaveCommands(java.io.File file) {
         if (file != null) {
@@ -1575,13 +1577,11 @@ public class Gdx3DView extends ApplicationAdapter
         // RegisterPresenter as listener
         model.addTrainEventListener(this);
 
-        // Re-establish script listeners
-        if (model.getProgram() != null && !model.getProgram().isEmpty()) {
-            model.setProgram(model.getProgram());
-        }
+        // RegisterPresenter as listener
+        model.addTrainEventListener(this);
 
         // Re-establish system listeners
-        ((letrain.mvp.impl.Model) model).reestablishSystemListeners();
+        // line 1583
 
         // Re-attach stations as listeners to trains they are hosting
         for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
@@ -1613,7 +1613,8 @@ public class Gdx3DView extends ApplicationAdapter
         try {
             applyLoadedModel(loadedModel, file);
         } catch (Exception e) {
-            log.error("Critical error updating model reference after loading game from {}", file != null ? file.getAbsolutePath() : "<null>",
+            log.error("Critical error updating model reference after loading game from {}",
+                    file != null ? file.getAbsolutePath() : "<null>",
                     e);
             showMessage("Load Error", "A critical error occurred while applying loaded game state.");
         }

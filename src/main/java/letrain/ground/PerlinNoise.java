@@ -1,6 +1,5 @@
 package letrain.ground;
 
-import java.io.Serializable;
 import java.util.Random;
 
 /**
@@ -12,8 +11,7 @@ import java.util.Random;
  * @author Matthew A. Johnston (WarmWaffles)
  * 
  */
-public class PerlinNoise implements Serializable {
-	private static final long serialVersionUID = 1L;
+public class PerlinNoise {
 	private float xo, yo, zo;
 	private float[] pow;
 	private int[] perm;

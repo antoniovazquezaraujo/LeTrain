@@ -1,21 +1,31 @@
 package letrain.map.impl;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import letrain.map.Point;
 import letrain.track.rail.RailTrack;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 
-public class RailMap implements Serializable, letrain.map.RailMap<RailTrack>, Renderable {
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+public class RailMap implements letrain.map.RailMap<RailTrack>, Renderable {
 
-    private final Map<Integer, Map<Integer, RailTrack>> rails;
+    private Map<Integer, Map<Integer, RailTrack>> rails;
 
     public RailMap() {
         rails = new HashMap<>();
+    }
+
+    public Map<Integer, Map<Integer, RailTrack>> getRails() {
+        return rails;
+    }
+
+    public void setRails(Map<Integer, Map<Integer, RailTrack>> rails) {
+        this.rails = rails;
     }
 
     @Override

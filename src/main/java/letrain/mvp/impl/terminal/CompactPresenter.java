@@ -15,9 +15,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.time.LocalDateTime;
+import letrain.mvp.impl.GameSaveService;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +71,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     RailTrackMaker railTrackMaker;
     letrain.audio.AudioController audioController;
     SimulationController simulationController;
+    private final GameSaveService gameSaveService;
 
     public CompactPresenter() {
         this(null);
@@ -86,6 +85,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         railTrackMaker = new RailTrackMaker(this);
         audioController = new letrain.audio.AudioController(this.model);
         simulationController = new SimulationController(this.model, audioController, railTrackMaker);
+        this.gameSaveService = new GameSaveService();
         initModeKeyHandlers();
     }
 
@@ -769,14 +769,14 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     private void selectVehiclesAtBack() {
         if (model.getSelectedLocomotive() != null &&
                 model.getSelectedLocomotive().getTrain() != null) {
-            model.getSelectedLocomotive().getTrain().setLinkersToJoin(false);
+            model.getSelectedLocomotive().getTrain().updateLinkersToJoin(false);
         }
     }
 
     private void selectVehiclesInFront() {
         if (model.getSelectedLocomotive() != null) {
             if (model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().setLinkersToJoin(true);
+                model.getSelectedLocomotive().getTrain().updateLinkersToJoin(true);
             } else {
                 // handle error
             }
@@ -989,42 +989,26 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     @Override
     public void onSaveGame(File file) {
         if (file != null) {
-            File mapFile = changeExtension(file, "ltr");
-            saveModel(this.model, mapFile);
+            boolean ok = gameSaveService.save(this.model, file);
+            if (!ok) {
+                view.showMessage("Save Error", "Could not save game to\n" + file.getAbsolutePath());
+            }
         }
     }
 
     @Override
     public void onLoadGame(File file) {
         if (file != null && file.exists()) {
-            File mapFile = changeExtension(file, "ltr");
-            Model loadedModel = loadModel(mapFile);
-            if (loadedModel != null) {
+            java.util.Optional<letrain.mvp.impl.Model> optionalModel = gameSaveService.load(file);
+            if (optionalModel.isPresent()) {
+                letrain.mvp.impl.Model loadedModel = optionalModel.get();
                 stop();
                 setModel(loadedModel);
-                // Register this as listener for all trains in the loaded model
-                for (Locomotive loco : loadedModel.getLocomotives()) {
-                    if (loco.getTrain() != null) {
-                        loco.getTrain().addTrainEventListener(this);
-                    }
-                }
-                // Re-establish script listeners
-                if (loadedModel.getProgram() != null && !loadedModel.getProgram().isEmpty()) {
-                    loadedModel.setProgram(loadedModel.getProgram());
-                }
-                // Re-attach stations as listeners to trains they are hosting
-                for (Locomotive loco : loadedModel.getLocomotives()) {
-                    Train train = loco.getTrain();
-                    if (train != null && train.getStationId() != 0) {
-                        for (Station station : loadedModel.getStations()) {
-                            if (station.getId() == train.getStationId()) {
-                                train.addTrainEventListener(station);
-                                break;
-                            }
-                        }
-                    }
-                }
+                // View specific listener
+                loadedModel.addTrainEventListener(this);
                 start();
+            } else {
+                view.showMessage("Load Error", "Could not load game from\n" + file.getAbsolutePath());
             }
         }
     }
@@ -1070,26 +1054,6 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
         // start();
     }
 
-    void saveModel(Model model, File file) {
-        model.setLastSaveTime(LocalDateTime.now());
-        try (FileOutputStream fos = new FileOutputStream(file);
-                ObjectOutputStream oos = new ObjectOutputStream(fos)) {
-            oos.writeObject(model);
-        } catch (IOException ex) {
-            log.error("Error saving model", ex);
-        }
-    }
-
-    Model loadModel(File file) {
-        try (FileInputStream fis = new FileInputStream(file);
-                ObjectInputStream ois = new ObjectInputStream(fis)) {
-            Model model = (Model) ois.readObject();
-            return model;
-        } catch (IOException | ClassNotFoundException ex) {
-            log.error("Error loading model", ex);
-            return null;
-        }
-    }
 
     CharStream loadProgram(File file) {
         try (FileInputStream fis = new FileInputStream(file)) {

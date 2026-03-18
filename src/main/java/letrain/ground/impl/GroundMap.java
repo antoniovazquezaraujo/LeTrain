@@ -14,7 +14,10 @@ import letrain.visitor.Visitor;
 import letrain.economy.EconomyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class GroundMap implements letrain.ground.GroundMap, Serializable {
     private static final long serialVersionUID = 1L;
     Logger log = LoggerFactory.getLogger(getClass());
@@ -38,11 +41,19 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         this.economyManager = economyManager;
     }
 
+    /**
+     * Public default constructor for Jackson deserialization.
+     */
+    public GroundMap() {
+        cells = new HashMap<>();
+        blocks = new HashSet<>();
+    }
+
     record CellEnv(int ground, int rock, int water) {
 
     }
 
-    record Block(int x, int y, int width, int height) implements Serializable {
+    record Block(int x, int y, int width, int height) {
     }
 
     @Override

@@ -1,6 +1,5 @@
 package letrain.command;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,8 +15,7 @@ import letrain.vehicle.impl.rail.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CommandManager extends LeTrainProgramBaseVisitor<Object> implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     static Logger log = LoggerFactory.getLogger(CommandManager.class);
     Model model;
 
@@ -25,7 +23,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> implements
         this.model = model;
     }
 
-    interface ExecutableCommand extends Serializable {
+    interface ExecutableCommand {
         void execute(Train contextTrain);
     }
 

@@ -8,7 +8,11 @@ import letrain.map.Point;
 import letrain.utils.SerializationHelper;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class RailSemaphore implements Renderable, Serializable {
     private static final long serialVersionUID = 1L;
     private int id;
@@ -20,7 +24,9 @@ public class RailSemaphore implements Renderable, Serializable {
         return open;
     }
 
+    @JsonIgnore
     private transient java.util.List<SemaphoreEventListener> listeners = new java.util.ArrayList<>();
+    @JsonIgnore
     private transient java.util.List<SemaphoreEventListener> systemListeners = new java.util.ArrayList<>();
 
     public void addSemaphoreEventListener(SemaphoreEventListener listener) {
@@ -75,6 +81,9 @@ public class RailSemaphore implements Renderable, Serializable {
 
     public void setPosition(Point position) {
         this.position = position;
+    }
+
+    public RailSemaphore() {
     }
 
     public RailSemaphore(int id, Point position) {

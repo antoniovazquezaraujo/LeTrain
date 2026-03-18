@@ -4,7 +4,18 @@ import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.vehicle.Linkable;
 import letrain.vehicle.impl.rail.Train;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = letrain.vehicle.impl.rail.Locomotive.class, name = "Locomotive"),
+    @JsonSubTypes.Type(value = letrain.vehicle.impl.rail.Wagon.class, name = "Wagon"),
+    @JsonSubTypes.Type(value = letrain.vehicle.impl.Cursor.class, name = "Cursor")
+})
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public abstract class Linker extends Tracker implements Linkable {
     private Train train;
     private Dir entryDir;

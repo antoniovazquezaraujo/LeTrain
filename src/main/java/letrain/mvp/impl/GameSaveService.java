@@ -1,13 +1,11 @@
 package letrain.mvp.impl;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.Optional;
-
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,9 +21,12 @@ public class GameSaveService {
             log.warn("Ignoring save request with null file");
             return false;
         }
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
-            oos.writeObject(model);
-            log.info("Game saved successfully to {}", file.getAbsolutePath());
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
+            mapper.enable(SerializationFeature.INDENT_OUTPUT);
+            mapper.writeValue(file, model);
+            log.info("Game saved successfully to {} (JSON)", file.getAbsolutePath());
             return true;
         } catch (IOException e) {
             log.error("Error saving game to {}", file.getAbsolutePath(), e);
@@ -43,11 +44,14 @@ public class GameSaveService {
             return Optional.empty();
         }
 
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-            letrain.mvp.impl.Model loadedModel = (letrain.mvp.impl.Model) ois.readObject();
-            log.info("Game loaded successfully from {}", file.getAbsolutePath());
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
+            letrain.mvp.impl.Model loadedModel = mapper.readValue(file, letrain.mvp.impl.Model.class);
+            loadedModel.postLoadInit();
+            log.info("Game loaded successfully from {} (JSON)", file.getAbsolutePath());
             return Optional.of(loadedModel);
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             log.error("Error loading game from {}", file.getAbsolutePath(), e);
             return Optional.empty();
         }

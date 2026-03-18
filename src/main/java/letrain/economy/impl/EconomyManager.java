@@ -3,11 +3,12 @@ package letrain.economy.impl;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import letrain.mvp.Presenter;
 import letrain.track.CargoTypes;
@@ -20,8 +21,8 @@ import letrain.vehicle.impl.rail.Wagon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EconomyManager implements letrain.economy.EconomyManager, Serializable {
-    private static final long serialVersionUID = 1L;
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+public class EconomyManager implements letrain.economy.EconomyManager {
     float totalIncome = 0;
     float totalExpenses = 0;
     float balance = 1000000f; // Initial balance as requested
@@ -59,6 +60,9 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
     int destroyedLocomotives = 0;
     int destroyedWagons = 0;
 
+    protected EconomyManager() {
+    }
+ 
     public EconomyManager(letrain.mvp.impl.EventLogManager eventLogManager) {
         this.eventLogManager = eventLogManager;
         prices.put(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK, 100f);

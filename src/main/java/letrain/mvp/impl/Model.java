@@ -1,9 +1,10 @@
 package letrain.mvp.impl;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,37 +30,77 @@ import letrain.vehicle.impl.rail.Wagon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Model implements Serializable, letrain.mvp.Model {
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+@JsonAutoDetect(
+    fieldVisibility = JsonAutoDetect.Visibility.NONE, 
+    getterVisibility = JsonAutoDetect.Visibility.NONE, 
+    setterVisibility = JsonAutoDetect.Visibility.NONE, 
+    isGetterVisibility = JsonAutoDetect.Visibility.NONE, 
+    creatorVisibility = JsonAutoDetect.Visibility.NONE
+)
+public class Model implements letrain.mvp.Model {
     static Logger log = LoggerFactory.getLogger(Model.class);
 
+    @JsonProperty("economyManager")
+    @JsonDeserialize(as = letrain.economy.impl.EconomyManager.class)
     EconomyManager economyManager;
+    @JsonIgnore
     Locomotive selectedLocomotive;
+    @JsonIgnore
     ForkRailTrack selectedFork;
+    @JsonIgnore
     RailSemaphore selectedSemaphore;
+    @JsonIgnore
     Station selectedStation;
+    @JsonProperty("eventLogManager")
     EventLogManager eventLogManager;
 
+    @JsonProperty("selectedLocomotiveIndex")
     int selectedLocomotiveIndex;
+    @JsonProperty("selectedForkIndex")
     int selectedForkIndex;
+    @JsonProperty("selectedSemaphoreIndex")
     int selectedSemaphoreIndex;
+    @JsonProperty("selectedStationIndex")
     int selectedStationIndex;
+    @JsonProperty("showId")
     boolean showId = false;
 
+    @JsonProperty("groundMap")
+    @JsonDeserialize(as = letrain.ground.impl.GroundMap.class)
     letrain.ground.GroundMap groundMap;
+    @JsonProperty("mode")
     GameMode mode = letrain.mvp.Model.GameMode.RAILS;
+    @JsonProperty("railMap")
     RailMap map;
+    @JsonProperty("locomotives")
     List<Locomotive> locomotives;
+    @JsonProperty("wagons")
     List<Wagon> wagons;
+    @JsonProperty("cursor")
     Cursor cursor;
+    @JsonProperty("forks")
     List<ForkRailTrack> forks;
+    @JsonProperty("sensors")
     List<Sensor> sensors;
+    @JsonProperty("semaphores")
     List<RailSemaphore> semaphores;
+    @JsonProperty("stations")
     List<Station> stations;
+    @JsonProperty("nextLocomotiveId")
     int nextLocomotiveId;
+    @JsonProperty("nextForkId")
     int nextForkId;
+    @JsonIgnore
     private transient CargoTypes selectedWagonType = CargoTypes.GOLD;
+    @JsonIgnore
     private transient com.badlogic.gdx.graphics.Camera camera;
 
+    @JsonIgnore
     private transient List<letrain.vehicle.impl.rail.TrainEventListener> trainEventListeners = new ArrayList<>();
 
     @Override
@@ -76,19 +117,33 @@ public class Model implements Serializable, letrain.mvp.Model {
         }
     }
 
+    @JsonProperty("nextSensorId")
     int nextSensorId;
+    @JsonProperty("nextSemaphoreId")
     int nextSemaphoreId;
+    @JsonProperty("nextTrainId")
     int nextTrainId;
+    @JsonProperty("nextStationId")
     int nextStationId;
+    @JsonProperty("program")
     String program;
+    @JsonProperty("seed")
     int seed = 0;
+    @JsonProperty("quantifier")
     int quantifier = 1;
+    @JsonProperty("quantifierSteps")
     int quantifierSteps = 0;
+    @JsonProperty("lastSaveTime")
+    @JsonDeserialize(using = com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer.class)
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(using = com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer.class)
     LocalDateTime lastSaveTime = null;
 
+    @JsonIgnore
     private transient AutomationEngine automationEngine;
-    private transient SimulationService simulationService;
+    @JsonIgnore
+    private transient SimulationService internalSimService;
 
+    @JsonIgnore
     private AutomationEngine getAutomationEngine() {
         if (automationEngine == null) {
             automationEngine = new AutomationEngine(this);
@@ -96,11 +151,12 @@ public class Model implements Serializable, letrain.mvp.Model {
         return automationEngine;
     }
 
-    private SimulationService getSimulationService() {
-        if (simulationService == null) {
-            simulationService = new SimulationService(this);
+    @JsonIgnore
+    private SimulationService peekSimulationService() {
+        if (internalSimService == null) {
+            internalSimService = new SimulationService(this);
         }
-        return simulationService;
+        return internalSimService;
     }
 
     public Model() {
@@ -172,14 +228,86 @@ public class Model implements Serializable, letrain.mvp.Model {
 
     /**
      * Reinitializes transient fields after deserialization.
-     * Ensures listener collections are not null to prevent NPE.
      */
-    private void readObject(ObjectInputStream ois)
-            throws IOException, ClassNotFoundException {
-        ois.defaultReadObject();
+    public void postLoadInit() {
         this.trainEventListeners = SerializationHelper.ensureListInitialized(trainEventListeners);
         this.selectedWagonType = CargoTypes.GOLD;
+        
+        // Re-initialize transient services
+        this.automationEngine = new AutomationEngine(this);
+        this.internalSimService = new SimulationService(this);
+
+        // Re-initialize GroundMap
+        if (this.groundMap != null) {
+            // We need to re-inject economyManager and noise into groundMap
+            // since they are transient/circular.
+            // Using reflection or a dedicated init method if available.
+            // But GroundMap regenerates terrain based on seed.
+            // Let's assume we need to re-setup the PerlinNoise.
+            try {
+                java.lang.reflect.Field noiseField = letrain.ground.impl.GroundMap.class.getDeclaredField("noise");
+                noiseField.setAccessible(true);
+                noiseField.set(this.groundMap, new letrain.ground.PerlinNoise(this.seed));
+                
+                java.lang.reflect.Field ecoField = letrain.ground.impl.GroundMap.class.getDeclaredField("economyManager");
+                ecoField.setAccessible(true);
+                ecoField.set(this.groundMap, this.economyManager);
+            } catch (Exception e) {
+                log.error("Error re-initializing GroundMap", e);
+            }
+        }
+
+        // Re-add system listeners
+        setupModelTrainEventListeners();
+        
+        if (locomotives != null) {
+            for (Locomotive loco : locomotives) {
+                Train train = loco.getTrain();
+                if (train != null) {
+                    train.postLoadInit();
+                    // Re-attach station listener if train is in a station
+                    int stationId = train.getStationId();
+                    if (stationId != 0) {
+                        Station station = getStation(stationId);
+                        if (station != null) {
+                            train.addTrainEventListener(station);
+                        }
+                    }
+                    // Re-attach model event listeners to restored trains
+                    for (letrain.vehicle.impl.rail.TrainEventListener l : trainEventListeners) {
+                        train.addTrainEventListener(l);
+                    }
+                }
+            }
+        }
+        reestablishSystemListeners();
     }
+
+    private void setupModelTrainEventListeners() {
+        this.addTrainEventListener(new letrain.vehicle.impl.rail.TrainEventListener() {
+            @Override
+            public void onCrash(Train train, letrain.map.Point pos, int speed) {
+                eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
+                getEconomyManager().onTrainCrashed(train);
+            }
+
+            @Override
+            public void onContact(Train train, letrain.map.Point pos, int speed) {
+                eventLogManager.addEntry("Train " + train.getId() + " contact (speed=" + speed + ")");
+            }
+
+            @Override
+            public void onLink(Train train) {
+                eventLogManager.addEntry("Train " + train.getId() + " linked");
+            }
+
+            @Override
+            public void onUnlink(Train train) {
+                eventLogManager.addEntry("Train " + train.getId() + " unlinked");
+            }
+        });
+    }
+
 
     @Override
     public int nextSemaphoreId() {
@@ -220,6 +348,10 @@ public class Model implements Serializable, letrain.mvp.Model {
     @Override
     public RailMap getRailMap() {
         return map;
+    }
+
+    public void setRailMap(RailMap map) {
+        this.map = map;
     }
 
     @Override
@@ -827,11 +959,13 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
+    @JsonIgnore
     public RailTrack getCursorRailTrack() {
         return getRailMap().getTrackAt(getCursor().getPosition());
     }
 
     @Override
+    @JsonIgnore
     public List<GameModeMenuOption> getMenuModel() {
         return Arrays.asList(
                 new GameModeMenuOption(
@@ -944,6 +1078,7 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
+    @JsonIgnore
     public String getGameObjectsReport() {
         StringBuilder sb = new StringBuilder();
         sb.append("--- TRAINS ---\n");
@@ -1017,12 +1152,82 @@ public class Model implements Serializable, letrain.mvp.Model {
     }
 
     @Override
+    @JsonIgnore
     public com.badlogic.gdx.graphics.Camera getCamera() {
         return camera;
     }
 
     @Override
+    @JsonIgnore
     public void setCamera(com.badlogic.gdx.graphics.Camera camera) {
         this.camera = camera;
+    }
+
+    public void setEconomyManager(EconomyManager economyManager) {
+        this.economyManager = economyManager;
+    }
+
+    public void setGroundMap(letrain.ground.GroundMap groundMap) {
+        this.groundMap = groundMap;
+    }
+
+    public void setLocomotives(List<Locomotive> locomotives) {
+        this.locomotives = locomotives;
+    }
+
+    public void setWagons(List<Wagon> wagons) {
+        this.wagons = wagons;
+    }
+
+    public void setCursor(Cursor cursor) {
+        this.cursor = cursor;
+    }
+
+    public void setForks(List<ForkRailTrack> forks) {
+        this.forks = forks;
+    }
+
+    public void setSensors(List<Sensor> sensors) {
+        this.sensors = sensors;
+    }
+
+    public void setSemaphores(List<RailSemaphore> semaphores) {
+        this.semaphores = semaphores;
+    }
+
+    public void setStations(List<Station> stations) {
+        this.stations = stations;
+    }
+
+    public void setNextLocomotiveId(int nextLocomotiveId) {
+        this.nextLocomotiveId = nextLocomotiveId;
+    }
+
+    public void setNextForkId(int nextForkId) {
+        this.nextForkId = nextForkId;
+    }
+
+    public void setNextSensorId(int nextSensorId) {
+        this.nextSensorId = nextSensorId;
+    }
+
+    public void setNextSemaphoreId(int nextSemaphoreId) {
+        this.nextSemaphoreId = nextSemaphoreId;
+    }
+
+    public void setNextTrainId(int nextTrainId) {
+        this.nextTrainId = nextTrainId;
+    }
+
+    public void setNextStationId(int nextStationId) {
+        this.nextStationId = nextStationId;
+    }
+
+    public void setSeed(int seed) {
+        this.seed = seed;
+    }
+
+    public void setEventLogManager(EventLogManager eventLogManager) {
+        this.eventLogManager = eventLogManager;
     }
 }

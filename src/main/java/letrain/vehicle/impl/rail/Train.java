@@ -1,8 +1,5 @@
 package letrain.vehicle.impl.rail;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -14,6 +11,9 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import letrain.map.Dir;
 import letrain.track.CargoTypes;
@@ -34,7 +34,9 @@ import letrain.visitor.Visitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Train implements Serializable, Trailer<RailTrack>, Renderable, Transportable {
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     private static final int MAX_LOADING_COUNT = 80; // 4.0 seconds at 20fps per wagon
     private static final Logger log = LoggerFactory.getLogger(Train.class);
     protected final Deque<Linker> linkers;
@@ -76,8 +78,11 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     boolean joined = false;
     protected Tractor directorLinker;
     private int loadingCount;
+    @JsonIgnore
     private transient boolean isNotifying = false;
+    @JsonIgnore
     private transient List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
+    @JsonIgnore
     private transient List<Wagon> currentCapableWagons = null;
 
     public void addTrainEventListener(TrainEventListener listener) {
@@ -164,19 +169,35 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         this.linkersToRemove = new LinkedList<>();
     }
 
+    /**
+     * Protected default constructor for Jackson deserialization.
+     */
+    protected Train() {
+        this.linkers = new LinkedList<>();
+        this.tractors = new ArrayList<>();
+        this.linkersToJoin = new LinkedList<>();
+        this.linkersToRemove = new LinkedList<>();
+    }
+
     public int getId() {
         return this.id;
     }
 
     /**
      * Reinitializes transient fields after deserialization.
-     * Ensures listener collections are not null to prevent NPE.
      */
-    private void readObject(ObjectInputStream ois)
-            throws IOException, ClassNotFoundException {
-        ois.defaultReadObject();
+    public void postLoadInit() {
         this.trainListeners = SerializationHelper.ensureListInitializedConcurrent(trainListeners);
         this.isNotifying = false;
+    }
+
+    @JsonIgnore
+    public void initLinkersToJoin(boolean forwardDirection) {
+        if (forwardDirection) {
+            this.linkerJoinSense = LinkersSense.FRONT;
+        } else {
+            this.linkerJoinSense = LinkersSense.BACK;
+        }
     }
 
     public void addLinkerToJoin() {
@@ -191,6 +212,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         }
     }
 
+    @JsonIgnore
     public List<Linker> getSelectedLinkersToJoin() {
         if (linkersToJoin.isEmpty() || numLinkersToJoin == 0)
             return new ArrayList<>();
@@ -235,8 +257,9 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     @Override
+    @JsonIgnore
     public Linker getFront() {
-        return linkers.getFirst();
+        return linkers.isEmpty() ? null : linkers.getFirst();
     }
 
     @Override
@@ -255,16 +278,19 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     @Override
+    @JsonIgnore
     public Linker getBack() {
-        return linkers.getLast();
+        return linkers.isEmpty() ? null : linkers.getLast();
     }
 
     @Override
+    @JsonIgnore
     public boolean isEmpty() {
         return linkers.isEmpty();
     }
 
     @Override
+    @JsonIgnore
     public int size() {
         return linkers.size();
     }
@@ -595,12 +621,14 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         }
     }
 
+    @JsonIgnore
     public Linker getFirstLinker() {
-        return linkers.getFirst();
+        return linkers.isEmpty() ? null : linkers.getFirst();
     }
 
+    @JsonIgnore
     public Linker getLastLinker() {
-        return linkers.getLast();
+        return linkers.isEmpty() ? null : linkers.getLast();
     }
 
     /***********************************************************
@@ -624,7 +652,8 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
      * - Si el tren está invertido es lo contrario, la que hay que invertir es la
      * primera.
      */
-    public void setLinkersToJoin(boolean forwardDirection) {
+    @JsonIgnore
+    public void updateLinkersToJoin(boolean forwardDirection) {
         linkersToJoin.clear();
         joined = false;
         Linker lastLinker = null;
@@ -711,7 +740,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     public void prepareLink(boolean forward, int count) {
-        setLinkersToJoin(forward);
+        updateLinkersToJoin(forward);
         if (count > 0 && count < linkersToJoin.size()) {
             numLinkersToJoin = count;
         } else {
@@ -922,6 +951,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         return null;
     }
 
+    @JsonIgnore
     public letrain.track.Station getStationAtTrain() {
         for (letrain.vehicle.impl.Linker linker : getLinkers()) {
             letrain.track.Track track = linker.getTrack();
@@ -1113,11 +1143,16 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
         this.isLoading = isLoading;
     }
 
+    @JsonIgnore
     public boolean isUnloadingDirection() {
         return isUnloadingDirection;
     }
 
+    @JsonIgnore
     public int getDistanceTraveled() {
+        if (getDirectorLinker() == null) {
+            return 0;
+        }
         return getDirectorLinker().getDistanceTraveled();
     }
 
@@ -1141,6 +1176,7 @@ public class Train implements Serializable, Trailer<RailTrack>, Renderable, Tran
     }
 
     // Método auxiliar para determinar el tipo de carga general del tren
+    @JsonIgnore
     public CargoTypes getTrainCargoType() {
         CargoTypes firstCargoType = CargoTypes.NONE;
         for (Linker linker : linkers) {
