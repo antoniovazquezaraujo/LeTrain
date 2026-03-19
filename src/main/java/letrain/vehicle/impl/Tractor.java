@@ -3,6 +3,7 @@ package letrain.vehicle.impl;
 import letrain.map.Reversible;
 
 public interface Tractor extends Reversible {
+
     boolean isTimeToMove();
 
     void consumeTurn();

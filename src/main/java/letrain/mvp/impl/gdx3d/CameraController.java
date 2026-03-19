@@ -46,8 +46,9 @@ public class CameraController {
         }
         cam = new PerspectiveCamera(67, viewportWidth, viewportHeight);
         letrain.map.Point startPos = model.getCursor().getPosition();
+        camTarget.set(startPos.getX() + 0.5f, 0, startPos.getY() + 0.5f);
         cam.position.set(startPos.getX() + 20f, 20f, startPos.getY() + 20f);
-        cam.lookAt(startPos.getX() + 0.5f, 0, startPos.getY() + 0.5f);
+        cam.lookAt(camTarget);
         cam.near = 1f;
         cam.far = 1000f;
         cam.update();

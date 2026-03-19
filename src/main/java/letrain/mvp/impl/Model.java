@@ -22,7 +22,6 @@ import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.utils.SerializationHelper;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
@@ -152,7 +151,8 @@ public class Model implements letrain.mvp.Model {
     }
 
     @JsonIgnore
-    private SimulationService peekSimulationService() {
+    private SimulationService getSimulationService() {
+
         if (internalSimService == null) {
             internalSimService = new SimulationService(this);
         }
@@ -230,7 +230,11 @@ public class Model implements letrain.mvp.Model {
      * Reinitializes transient fields after deserialization.
      */
     public void postLoadInit() {
-        this.trainEventListeners = SerializationHelper.ensureListInitialized(trainEventListeners);
+        if (this.trainEventListeners == null) {
+            this.trainEventListeners = new ArrayList<>();
+        } else {
+            this.trainEventListeners.clear();
+        }
         this.selectedWagonType = CargoTypes.GOLD;
         
         // Re-initialize transient services
@@ -257,7 +261,7 @@ public class Model implements letrain.mvp.Model {
             }
         }
 
-        // Re-add system listeners
+        // Re-add system listeners (this populates trainEventListeners)
         setupModelTrainEventListeners();
         
         if (locomotives != null) {

@@ -6,9 +6,13 @@ import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.utils.Pair;
 
+@com.fasterxml.jackson.annotation.JsonTypeName("ForkRouter")
 public class ForkRouter extends SimpleRouter implements DynamicRouter {
+    @com.fasterxml.jackson.annotation.JsonProperty("alternativeRoute")
     private Pair<Dir, Dir> alternativeRoute = null;
+    @com.fasterxml.jackson.annotation.JsonProperty("originalRoute")
     private Pair<Dir, Dir> originalRoute = null;
+    @com.fasterxml.jackson.annotation.JsonProperty("usingAlternativeRoute")
     private boolean usingAlternativeRoute = false;
 
     @Override

@@ -10,9 +10,12 @@ import letrain.map.Dir;
 import letrain.map.Router;
 import letrain.utils.Pair;
 
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+@com.fasterxml.jackson.annotation.JsonTypeName("SimpleRouter")
 public class SimpleRouter implements Router {
 
-    protected final Map<Dir, Dir> dirMap = new HashMap<>();
+    @com.fasterxml.jackson.annotation.JsonProperty("dirMap")
+    protected Map<Dir, Dir> dirMap = new HashMap<>();
 
     public SimpleRouter() {
 

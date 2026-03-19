@@ -28,8 +28,18 @@ public class GameSaveService {
             mapper.writeValue(file, model);
             log.info("Game saved successfully to {} (JSON)", file.getAbsolutePath());
             return true;
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("Error saving game to {}", file.getAbsolutePath(), e);
+            // Diagnostic logging to file for the AI agent to read
+            try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter("save_error.log"))) {
+                e.printStackTrace(pw);
+                if (e.getCause() != null) {
+                    pw.println("--- CAUSE ---");
+                    e.getCause().printStackTrace(pw);
+                }
+            } catch (IOException ioe) {
+                log.error("Failed to write diagnostic error log", ioe);
+            }
             return false;
         }
     }
@@ -51,10 +61,21 @@ public class GameSaveService {
             loadedModel.postLoadInit();
             log.info("Game loaded successfully from {} (JSON)", file.getAbsolutePath());
             return Optional.of(loadedModel);
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("Error loading game from {}", file.getAbsolutePath(), e);
+            // Diagnostic logging to file for the AI agent to read
+            try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter("serialization_error.log"))) {
+                e.printStackTrace(pw);
+                if (e.getCause() != null) {
+                    pw.println("--- CAUSE ---");
+                    e.getCause().printStackTrace(pw);
+                }
+            } catch (IOException ioe) {
+                log.error("Failed to write diagnostic error log", ioe);
+            }
             return Optional.empty();
         }
+
     }
 }
 

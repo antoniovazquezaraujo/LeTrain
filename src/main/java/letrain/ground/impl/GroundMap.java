@@ -21,8 +21,11 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 public class GroundMap implements letrain.ground.GroundMap, Serializable {
     private static final long serialVersionUID = 1L;
     Logger log = LoggerFactory.getLogger(getClass());
-    final Map<Integer, Map<Integer, Integer>> cells;
+    @com.fasterxml.jackson.annotation.JsonProperty("cells")
+    Map<Integer, Map<Integer, Integer>> cells;
+    @com.fasterxml.jackson.annotation.JsonIgnore
     PerlinNoise noise = null;
+    @com.fasterxml.jackson.annotation.JsonProperty("blocks")
     Set<Block> blocks;
     private EconomyManager economyManager;
 

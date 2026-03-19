@@ -39,9 +39,13 @@ import org.slf4j.LoggerFactory;
 public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     private static final int MAX_LOADING_COUNT = 80; // 4.0 seconds at 20fps per wagon
     private static final Logger log = LoggerFactory.getLogger(Train.class);
-    protected final Deque<Linker> linkers;
-    protected final List<Tractor> tractors;
-    protected final Deque<Linker> linkersToJoin;
+    @com.fasterxml.jackson.annotation.JsonProperty("linkers")
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = java.util.LinkedList.class)
+    protected Deque<Linker> linkers;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("linkersToJoin")
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = java.util.LinkedList.class)
+    protected Deque<Linker> linkersToJoin;
     private int numLinkersToRemove = 0;
     private int numLinkersToJoin = 0;
 
@@ -53,7 +57,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         return numLinkersToRemove;
     }
 
-    protected final Deque<Linker> linkersToRemove;
+    @com.fasterxml.jackson.annotation.JsonProperty("linkersToRemove")
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = java.util.LinkedList.class)
+    protected Deque<Linker> linkersToRemove;
     int railStationId = 0;
     public boolean isLoading = false;
     private boolean stalled = false;
@@ -76,6 +82,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     LinkersSense linkerJoinSense;
     LinkersSense linkerDivisionSense;
     boolean joined = false;
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = letrain.vehicle.impl.rail.Locomotive.class)
     protected Tractor directorLinker;
     private int loadingCount;
     @JsonIgnore
@@ -164,7 +171,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
         this.linkers = new LinkedList<>();
-        this.tractors = new ArrayList<>();
         this.linkersToJoin = new LinkedList<>();
         this.linkersToRemove = new LinkedList<>();
     }
@@ -174,7 +180,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
      */
     protected Train() {
         this.linkers = new LinkedList<>();
-        this.tractors = new ArrayList<>();
         this.linkersToJoin = new LinkedList<>();
         this.linkersToRemove = new LinkedList<>();
     }
@@ -328,6 +333,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     }
 
     @Override
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public List<Tractor> getTractors() {
         return linkers.stream()
                 .filter(t -> Tractor.class.isAssignableFrom(t.getClass()))

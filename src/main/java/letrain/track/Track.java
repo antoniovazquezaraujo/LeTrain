@@ -21,8 +21,14 @@ import letrain.visitor.Renderable;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     @JsonSubTypes.Type(value = letrain.track.rail.RailTrack.class, name = "RailTrack"),
-    @JsonSubTypes.Type(value = letrain.track.rail.ForkRailTrack.class, name = "ForkRailTrack")
+    @JsonSubTypes.Type(value = letrain.track.rail.ForkRailTrack.class, name = "ForkRailTrack"),
+    @JsonSubTypes.Type(value = letrain.track.rail.BridgeRailTrack.class, name = "BridgeRailTrack"),
+    @JsonSubTypes.Type(value = letrain.track.rail.BridgeGateRailTrack.class, name = "BridgeGateRailTrack"),
+    @JsonSubTypes.Type(value = letrain.track.rail.TunnelRailTrack.class, name = "TunnelRailTrack"),
+    @JsonSubTypes.Type(value = letrain.track.rail.TunnelGateRailTrack.class, name = "TunnelGateRailTrack"),
+    @JsonSubTypes.Type(value = letrain.track.rail.StationRailTrack.class, name = "StationRailTrack")
 })
+
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class Track implements
@@ -32,7 +38,9 @@ public abstract class Track implements
         Mapeable,
         LinkerCompartmentListener,
         Renderable {
+    @JsonIgnore
     private TrackDirector trackDirector;
+
     private Linker linker = null;
     private Linker reservation = null; // NEW: Track reservation to prevent race conditions during multi-train ticks
     private Sensor sensor = null;

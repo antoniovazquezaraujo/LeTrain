@@ -22,7 +22,8 @@ public class Point {
     public Point() {
     }
 
-    public Point(int x, int y) {
+    public Point(@com.fasterxml.jackson.annotation.JsonProperty("x") int x, 
+                 @com.fasterxml.jackson.annotation.JsonProperty("y") int y) {
         this.y = y;
         this.x = x;
     }

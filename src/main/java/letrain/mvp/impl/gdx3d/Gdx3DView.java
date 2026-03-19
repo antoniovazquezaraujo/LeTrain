@@ -78,7 +78,7 @@ public class Gdx3DView extends ApplicationAdapter
     private Environment environment;
 
     private letrain.mvp.Model model;
-    private final Gdx3DRenderer renderer;
+    private Gdx3DRenderer renderer;
     private com.badlogic.gdx.graphics.g3d.Model groundModel;
     private com.badlogic.gdx.graphics.g3d.Model gridModel;
     private com.badlogic.gdx.graphics.g3d.Model boxModel;
@@ -121,8 +121,8 @@ public class Gdx3DView extends ApplicationAdapter
     private long stationInputTimeout = 0;
     private long locomotiveInputTimeout = 0;
 
-    private final CameraController cameraController;
-    private final InputController inputController;
+    private CameraController cameraController;
+    private InputController inputController;
 
     public Gdx3DView(letrain.mvp.Model model) {
         this.model = ValidationUtils.requireNonNull(model, "model");
@@ -1528,18 +1528,30 @@ public class Gdx3DView extends ApplicationAdapter
 
         log.info("Game loaded successfully from {}", file.getAbsolutePath());
 
-        // Refresh references
-        trackMaker = new RailTrackMaker(this);
-        audioController = new letrain.audio.AudioController(model);
+        // Stop previous sounds
+        if (this.audioController != null) {
+            this.audioController.stop();
+        }
 
-        // RegisterPresenter as listener
+        // Refresh all references that depend on the model
+        this.trackMaker = new RailTrackMaker(this);
+        this.audioController = new letrain.audio.AudioController(model);
+        this.cameraController = new CameraController(model);
+        this.cam = cameraController.init(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        this.inputController = new InputController(model, this, cameraController);
+        this.simulationController = new SimulationController(model, audioController, trackMaker);
+        this.renderer = new letrain.visitor.gdx3d.Gdx3DRenderer(resourceContext);
+        this.decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(
+                new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam));
+
+        // Register View as listener
         model.addTrainEventListener(this);
 
-        // RegisterPresenter as listener
-        model.addTrainEventListener(this);
+        // Render initial ground around cursor
+        letrain.map.Point startPos = model.getCursor().getPosition();
+        model.getGroundMap().renderBlock(startPos.getX() - getCols() / 2, startPos.getY() - getRows() / 2, getCols(),
+                getRows());
 
-        // Re-establish system listeners
-        // line 1583
 
         // Re-attach stations as listeners to trains they are hosting
         for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {

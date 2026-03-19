@@ -11,6 +11,8 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.TrainEventListener;
 import letrain.visitor.Visitor;
 
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+@com.fasterxml.jackson.annotation.JsonTypeName("Station")
 public class Station extends Sensor implements TrainEventListener {
 
     @JsonIgnore

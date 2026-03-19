@@ -35,6 +35,7 @@ public class RailTrack extends Track {
         this.router = router;
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public TrackFormat getType() {
         if (getNumRoutes() == 2) {
             Dir d1 = getFirstOpenDir();

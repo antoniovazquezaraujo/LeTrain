@@ -40,6 +40,9 @@ public class Locomotive extends Linker implements Tractor {
         resetTurns();
     }
 
+    protected Locomotive() {
+    }
+
     public Locomotive(int id, char c) {
         this(id, "" + c);
     }
