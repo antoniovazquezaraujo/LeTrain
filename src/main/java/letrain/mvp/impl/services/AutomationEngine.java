@@ -34,6 +34,9 @@ public class AutomationEngine {
     public List<String> setProgram(String program) {
         clearAllAutomationListeners();
         List<String> errors = new ArrayList<>();
+        if (program == null || program.trim().isEmpty()) {
+            return errors;
+        }
 
         try {
             CharStream input = CharStreams.fromString(program);

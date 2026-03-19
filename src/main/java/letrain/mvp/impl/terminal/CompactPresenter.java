@@ -999,16 +999,20 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     @Override
     public void onLoadGame(File file) {
         if (file != null && file.exists()) {
-            java.util.Optional<letrain.mvp.impl.Model> optionalModel = gameSaveService.load(file);
-            if (optionalModel.isPresent()) {
-                letrain.mvp.impl.Model loadedModel = optionalModel.get();
-                stop();
-                setModel(loadedModel);
-                // View specific listener
-                loadedModel.addTrainEventListener(this);
-                start();
-            } else {
-                view.showMessage("Load Error", "Could not load game from\n" + file.getAbsolutePath());
+            try {
+                java.util.Optional<letrain.mvp.impl.Model> optionalModel = gameSaveService.load(file);
+                if (optionalModel.isPresent()) {
+                    letrain.mvp.impl.Model loadedModel = optionalModel.get();
+                    // Just replace the model and let the existing loop continue
+                    setModel(loadedModel);
+                    // View specific listener
+                    loadedModel.addTrainEventListener(this);
+                } else {
+                    view.showMessage("Load Error", "Could not load game from\n" + file.getAbsolutePath());
+                }
+            } catch (Exception e) {
+                log.error("Serious error while loading game in 2D", e);
+                view.showMessage("Load Error", "Exception: " + e.getMessage());
             }
         }
     }
