@@ -7,6 +7,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Cross-platform font loader that manages font loading from multiple sources.
@@ -14,6 +16,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFont
  * to default BitmapFont.
  */
 public class FontManager {
+    private static final Logger log = LoggerFactory.getLogger(FontManager.class);
 
     private FontManager() {
         // Utility class, no instantiation
@@ -55,8 +58,9 @@ public class FontManager {
     public static BitmapFont loadMonospaceFont(int size) {
         ValidationUtils.requirePositive(size, "size");
 
-        // Try common monospace fonts in order
-        String[] monospaceFonts = { "Consolas", "Courier New", "Menlo", "DejaVu Sans Mono" };
+        // Try common monospace fonts in order, starting with our bundled JuliaMono
+        String[] monospaceFonts = { "JuliaMono-Regular", "JetBrainsMono-Regular", "Inconsolata-Regular", "Consolas", "Courier New", "Menlo", "DejaVu Sans Mono" };
+
         for (String fontName : monospaceFonts) {
             BitmapFont font = loadFont(fontName, size);
             if (font != null) {
@@ -81,21 +85,32 @@ public class FontManager {
     private static BitmapFont loadFontFromAssets(String fontName, int size) {
         try {
             // Try common font file extensions
-            String[] extensions = { ".ttf", ".otf" };
+            String[] extensions = { ".ttf", ".otf", ".woff", ".woff2" };
             for (String ext : extensions) {
                 String path = "fonts/" + fontName + ext;
+                log.debug("Checking for font asset: {}", path);
                 if (Gdx.files.internal(path).exists()) {
-                    return generateFontFromFile(Gdx.files.internal(path).path(), size);
+                    log.info("Found font asset: {}", path);
+                    return generateFontFromFile(Gdx.files.internal(path), size);
                 }
 
                 // Try lowercase variant
                 path = "fonts/" + fontName.toLowerCase() + ext;
+                log.debug("Checking for lowercase font asset: {}", path);
                 if (Gdx.files.internal(path).exists()) {
-                    return generateFontFromFile(Gdx.files.internal(path).path(), size);
+                    log.info("Found lowercase font asset: {}", path);
+                    return generateFontFromFile(Gdx.files.internal(path), size);
+                }
+
+                // Try without fonts/ prefix just in case
+                path = fontName + ext;
+                if (Gdx.files.internal(path).exists()) {
+                    log.info("Found font asset (no prefix): {}", path);
+                    return generateFontFromFile(Gdx.files.internal(path), size);
                 }
             }
         } catch (Exception e) {
-            // Silent fail, will try next method
+            log.error("Error loading font from assets (fontName={}): {}", fontName, e.getMessage());
         }
         return null;
     }
@@ -111,7 +126,7 @@ public class FontManager {
         try {
             File systemFontFile = findSystemFont(fontName);
             if (systemFontFile != null && systemFontFile.exists()) {
-                return generateFontFromFile(systemFontFile.getAbsolutePath(), size);
+                return generateFontFromFile(Gdx.files.absolute(systemFontFile.getAbsolutePath()), size);
             }
         } catch (Exception e) {
             // Silent fail, will return null
@@ -187,10 +202,9 @@ public class FontManager {
      * @param size         the desired font size
      * @return a BitmapFont, or null if generation fails
      */
-    private static BitmapFont generateFontFromFile(String fontFilePath, int size) {
+    private static BitmapFont generateFontFromFile(com.badlogic.gdx.files.FileHandle fileHandle, int size) {
         try {
-            FreeTypeFontGenerator generator = new FreeTypeFontGenerator(
-                    Gdx.files.absolute(fontFilePath));
+            FreeTypeFontGenerator generator = new FreeTypeFontGenerator(fileHandle);
             FreeTypeFontParameter parameter = new FreeTypeFontParameter();
             parameter.size = size;
             parameter.magFilter = Texture.TextureFilter.Linear;
@@ -200,7 +214,7 @@ public class FontManager {
             generator.dispose();
             return font;
         } catch (Exception e) {
-            // Return null on failure
+            log.error("Error generating font from file {}: {}", fileHandle.path(), e.getMessage());
             return null;
         }
     }
