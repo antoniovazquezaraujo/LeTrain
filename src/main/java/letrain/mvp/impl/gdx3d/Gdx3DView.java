@@ -2245,7 +2245,8 @@ public class Gdx3DView extends ApplicationAdapter
             batch.begin();
             float oldScaleX = font.getScaleX();
             float oldScaleY = font.getScaleY();
-            font.getData().setScale(0.7f);
+            font.getData().setScale(0.5f);
+
             for (int i = 0; i <= 10; i++) {
                 float ty = y + (i / 10f) * h;
                 String txt = String.valueOf(i);

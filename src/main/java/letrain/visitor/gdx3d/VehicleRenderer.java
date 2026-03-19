@@ -149,8 +149,8 @@ public class VehicleRenderer extends BaseSubRenderer {
             Vector3 forward = renderTangent.cpy().nor();
             float dxL = forward.x;
             float dzL = forward.z;
-            float perpXL = dzL * 0.48f;
-            float perpZL = -dxL * 0.48f;
+            float perpXL = dzL * 0.42f;
+            float perpZL = -dxL * 0.42f;
 
             labels.add(new Gdx3DRenderer.VehicleLabel(
                     new Vector3(renderX + perpXL, 0.4f, renderY + perpZL),
@@ -290,8 +290,8 @@ public class VehicleRenderer extends BaseSubRenderer {
             Vector3 forward = renderTangent.cpy().nor();
             float dxW = forward.x;
             float dzW = forward.z;
-            float perpXW = dzW * 0.48f;
-            float perpZW = -dxW * 0.48f;
+            float perpXW = dzW * 0.42f;
+            float perpZW = -dxW * 0.42f;
 
             labels.add(new Gdx3DRenderer.VehicleLabel(
                     new Vector3(renderX + perpXW, 0.4f, renderY + perpZW),
