@@ -1,11 +1,13 @@
 package letrain.mvp.impl.terminal;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.awt.Font;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
@@ -32,7 +34,6 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
-
 import letrain.map.Page;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
@@ -71,6 +72,23 @@ public class TerminalView implements letrain.mvp.View {
     public TerminalView(GameViewListener gameViewListener) {
         this.gameViewListener = gameViewListener;
         terminalFactory = new DefaultTerminalFactory();
+
+        // Configure font for Swing terminal
+        try {
+            InputStream is = getClass().getResourceAsStream("/fonts/JuliaMono-Regular.ttf");
+            if (is != null) {
+                Font customFont = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(20f);
+                terminalFactory.setTerminalEmulatorFontConfiguration(
+                        com.googlecode.lanterna.terminal.swing.SwingTerminalFontConfiguration.newInstance(customFont));
+            } else {
+                log.warn("Font resource /fonts/JuliaMono-Regular.ttf not found in classpath!");
+            }
+
+        } catch (Exception e) {
+            log.warn("Error loading custom JuliaMono font for terminal: {}", e.getMessage(), e);
+        }
+
+
         try {
             terminal = terminalFactory.createTerminal();
             terminal.setCursorVisible(false);
@@ -90,15 +108,15 @@ public class TerminalView implements letrain.mvp.View {
                         }
                     });
                 } else if (t.getClass().getMethod("getJFrame") != null) {
-                   Object frame = t.getClass().getMethod("getJFrame").invoke(t);
-                   if (frame instanceof javax.swing.JFrame) {
-                       ((javax.swing.JFrame) frame).addWindowListener(new WindowAdapter() {
-                           @Override
-                           public void windowClosing(WindowEvent e) {
-                               setEndOfGame(true);
-                           }
-                       });
-                   }
+                    Object frame = t.getClass().getMethod("getJFrame").invoke(t);
+                    if (frame instanceof javax.swing.JFrame) {
+                        ((javax.swing.JFrame) frame).addWindowListener(new WindowAdapter() {
+                            @Override
+                            public void windowClosing(WindowEvent e) {
+                                setEndOfGame(true);
+                            }
+                        });
+                    }
                 }
             } catch (Exception e) {
                 // If reflection fails or it's not Swing, we just continue
@@ -142,7 +160,8 @@ public class TerminalView implements letrain.mvp.View {
     public void setMapScrollPage(Point pos) {
         this.mapScrollPage = pos;
         setStatusBarText("Page: " + mapScrollPage.getX() + ", " + mapScrollPage.getY());
-        TerminalView.this.gameViewListener.onMapPageChanged(mapScrollPage, gameBoxSize.getColumns(), gameBoxSize.getRows());
+        TerminalView.this.gameViewListener.onMapPageChanged(mapScrollPage, gameBoxSize.getColumns(),
+                gameBoxSize.getRows());
     }
 
     @Override
@@ -364,13 +383,14 @@ public class TerminalView implements letrain.mvp.View {
         Panel mainPanel = new Panel(new BorderLayout());
 
         // Editor Area
-        final TextBox editor = new TextBox(new TerminalSize(60, 20), gameViewListener.getProgram(), TextBox.Style.MULTI_LINE);
+        final TextBox editor = new TextBox(new TerminalSize(60, 20), gameViewListener.getProgram(),
+                TextBox.Style.MULTI_LINE);
         mainPanel.addComponent(editor, BorderLayout.Location.CENTER);
 
         // Side Panel (Reference)
         Panel sidePanel = new Panel(new LinearLayout(Direction.VERTICAL));
         sidePanel.addComponent(new Label("QUICK REFERENCE").setLabelWidth(30));
-        
+
         ActionListBox refList = new ActionListBox(new TerminalSize(30, 8));
         String[][] refs = {
                 { "TRIGGERS", "" },
@@ -395,21 +415,23 @@ public class TerminalView implements letrain.mvp.View {
         for (String[] r : refs) {
             String label = r[0];
             String snippet = r[1];
-            if (label.isEmpty()) continue;
+            if (label.isEmpty())
+                continue;
             if (snippet.isEmpty()) {
-                refList.addItem("[" + label + "]", () -> {});
+                refList.addItem("[" + label + "]", () -> {
+                });
             } else {
                 refList.addItem(label, () -> insertAtCaret(editor, snippet));
             }
         }
         sidePanel.addComponent(refList);
-        
+
         sidePanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
         sidePanel.addComponent(new Label("OBJECTS STATUS:"));
         TextBox objectsStatus = new TextBox(new TerminalSize(30, 4), gameViewListener.getGameObjectsReport());
         objectsStatus.setReadOnly(true);
         sidePanel.addComponent(objectsStatus);
-        
+
         sidePanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
         sidePanel.addComponent(new Label("LATEST LOGS:"));
         List<String> logs = gameViewListener.getEventLogEntries();
@@ -447,7 +469,7 @@ public class TerminalView implements letrain.mvp.View {
     private void insertAtCaret(TextBox editor, String text) {
         String current = editor.getText();
         TerminalPosition pos = editor.getCaretPosition();
-        
+
         // Convert TerminalPosition to linear offset
         String[] lines = current.split("\n", -1);
         int offset = 0;
@@ -460,9 +482,10 @@ public class TerminalView implements letrain.mvp.View {
         String before = current.substring(0, offset);
         String after = current.substring(offset);
         editor.setText(before + text + after);
-        
-        // Refocus and place caret after insertion would be nice, but 
-        // setCaretPosition with TerminalPosition is complex to calculate accurately with multi-line snippets.
+
+        // Refocus and place caret after insertion would be nice, but
+        // setCaretPosition with TerminalPosition is complex to calculate accurately
+        // with multi-line snippets.
         // For now, refocusing will suffice as the user can see the change.
         editor.takeFocus();
     }

@@ -14,8 +14,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
@@ -42,6 +40,7 @@ import letrain.mvp.Model.GameModeMenuOption;
 import letrain.mvp.impl.GameSaveService;
 import letrain.mvp.impl.RailTrackMaker;
 import letrain.mvp.impl.SimulationController;
+import letrain.utils.FontManager;
 import letrain.utils.ValidationUtils;
 import letrain.visitor.gdx3d.Gdx3DRenderer;
 import org.slf4j.Logger;
@@ -238,9 +237,8 @@ public class Gdx3DView extends ApplicationAdapter
                 Usage.Position | Usage.Normal);
 
         spriteBatch = new SpriteBatch();
-        font = new BitmapFont();
+        font = FontManager.loadMonospaceFont(24);
         font.setColor(Color.WHITE);
-        font.getData().setScale(1.5f);
         font.getData().markupEnabled = true;
 
         initUI();
@@ -262,40 +260,15 @@ public class Gdx3DView extends ApplicationAdapter
         pixmap.fill();
         skin.add("white", new Texture(pixmap));
 
-        BitmapFont uiFont = new BitmapFont();
+        BitmapFont uiFont = FontManager.loadFont("JuliaMono-Regular", 18);
         uiFont.getData().markupEnabled = true;
         skin.add("default", uiFont);
 
         // High-resolution fonts for HUD
-        BitmapFont smallFont, mediumFont, largeFont, tinyFont;
-        File fontFile = new File("C:/Windows/Fonts/arial.ttf");
-        if (fontFile.exists()) {
-            FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.absolute(fontFile.getAbsolutePath()));
-            FreeTypeFontParameter parameter = new FreeTypeFontParameter();
-            parameter.size = 18;
-            parameter.magFilter = Texture.TextureFilter.Linear;
-            parameter.minFilter = Texture.TextureFilter.Linear;
-            smallFont = generator.generateFont(parameter);
-
-            parameter.size = 12; // Even smaller for global help
-            tinyFont = generator.generateFont(parameter);
-
-            parameter.size = 26; // For income/expenses
-            mediumFont = generator.generateFont(parameter);
-
-            parameter.size = 52; // For balance (approx double)
-            largeFont = generator.generateFont(parameter);
-            generator.dispose();
-        } else {
-            // Fallback to default if font not found
-            smallFont = new BitmapFont();
-            tinyFont = new BitmapFont();
-            tinyFont.getData().setScale(0.8f);
-            mediumFont = new BitmapFont();
-            mediumFont.getData().setScale(1.5f);
-            largeFont = new BitmapFont();
-            largeFont.getData().setScale(3.0f);
-        }
+        BitmapFont smallFont = FontManager.loadFont("JuliaMono-Regular", 18);
+        BitmapFont tinyFont = FontManager.loadFont("JuliaMono-Regular", 12);
+        BitmapFont mediumFont = FontManager.loadFont("JuliaMono-Regular", 26);
+        BitmapFont largeFont = FontManager.loadFont("JuliaMono-Regular", 52);
 
         smallFont.getData().markupEnabled = true;
         tinyFont.getData().markupEnabled = true;
@@ -307,37 +280,22 @@ public class Gdx3DView extends ApplicationAdapter
         skin.add("medium-font", mediumFont);
         skin.add("large-font", largeFont);
 
-        // Consolas init for IDE
-        File consolaFile = new File("C:/Windows/Fonts/consola.ttf");
-        if (consolaFile.exists()) {
-            FreeTypeFontGenerator generatorLT = new FreeTypeFontGenerator(
-                    Gdx.files.absolute(consolaFile.getAbsolutePath()));
-            FreeTypeFontParameter parameterLT = new FreeTypeFontParameter();
-            parameterLT.size = 18;
-            BitmapFont monospaceFont = generatorLT.generateFont(parameterLT);
-            monospaceFont.setUseIntegerPositions(true); // Ensure crisp rendering
-            generatorLT.dispose();
-            skin.add("monospace-font", monospaceFont);
+        // Monospace font for IDE
+        BitmapFont monospaceFont = FontManager.loadMonospaceFont(18);
+        skin.add("monospace-font", monospaceFont);
 
-            Label.LabelStyle monoLabelStyle = new Label.LabelStyle();
-            monoLabelStyle.font = monospaceFont;
-            monoLabelStyle.fontColor = Color.WHITE;
-            skin.add("monospace", monoLabelStyle);
+        Label.LabelStyle monoLabelStyle = new Label.LabelStyle();
+        monoLabelStyle.font = monospaceFont;
+        monoLabelStyle.fontColor = Color.WHITE;
+        skin.add("monospace", monoLabelStyle);
 
-            TextField.TextFieldStyle textAreaStyle = new TextField.TextFieldStyle();
-            textAreaStyle.font = monospaceFont;
-            textAreaStyle.fontColor = Color.WHITE;
-            textAreaStyle.selection = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.8f, 0.5f));
-            textAreaStyle.cursor = skin.newDrawable("white", Color.WHITE);
-            textAreaStyle.background = skin.newDrawable("white", new Color(0.05f, 0.05f, 0.05f, 0.8f));
-            skin.add("monospace-textarea", textAreaStyle);
-        } else {
-            // Fallback
-            TextField.TextFieldStyle textAreaStyle = new TextField.TextFieldStyle();
-            textAreaStyle.font = skin.getFont("default");
-            textAreaStyle.fontColor = Color.WHITE;
-            skin.add("monospace-textarea", textAreaStyle);
-        }
+        TextField.TextFieldStyle textAreaStyle = new TextField.TextFieldStyle();
+        textAreaStyle.font = monospaceFont;
+        textAreaStyle.fontColor = Color.WHITE;
+        textAreaStyle.selection = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.8f, 0.5f));
+        textAreaStyle.cursor = skin.newDrawable("white", Color.WHITE);
+        textAreaStyle.background = skin.newDrawable("white", new Color(0.05f, 0.05f, 0.05f, 0.8f));
+        skin.add("monospace-textarea", textAreaStyle);
 
         // TextButton Style (Menu Buttons)
         TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle();
@@ -499,7 +457,7 @@ public class Gdx3DView extends ApplicationAdapter
         menuTable = new Table();
         // menuTable is populated in updateMenuButtons()
 
-        descLabel = new Label("", skin);
+        descLabel = new Label("", skin, "small");
         descLabel.setWrap(true);
         descLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
         globalHelpLabel = new Label(
@@ -2283,7 +2241,8 @@ public class Gdx3DView extends ApplicationAdapter
             batch.begin();
             float oldScaleX = font.getScaleX();
             float oldScaleY = font.getScaleY();
-            font.getData().setScale(0.7f);
+            font.getData().setScale(0.5f);
+
             for (int i = 0; i <= 10; i++) {
                 float ty = y + (i / 10f) * h;
                 String txt = String.valueOf(i);
