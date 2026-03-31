@@ -81,13 +81,13 @@ public class Model implements letrain.mvp.Model {
     @JsonProperty("cursor")
     Cursor cursor;
     @JsonProperty("forks")
-    List<ForkRailTrack> forks;
+    List<ForkRailTrack> forks = new java.util.ArrayList<>();
     @JsonProperty("sensors")
-    List<Sensor> sensors;
+    List<Sensor> sensors = new java.util.ArrayList<>();
     @JsonProperty("semaphores")
-    List<RailSemaphore> semaphores;
+    List<RailSemaphore> semaphores = new java.util.ArrayList<>();
     @JsonProperty("stations")
-    List<Station> stations;
+    List<Station> stations = new java.util.ArrayList<>();
     @JsonProperty("nextLocomotiveId")
     int nextLocomotiveId;
     @JsonProperty("nextForkId")

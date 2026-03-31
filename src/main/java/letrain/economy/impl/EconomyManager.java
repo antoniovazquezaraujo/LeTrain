@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class EconomyManager implements letrain.economy.EconomyManager {
     @Override
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public double getCargoRegenerationRate() {
         return 0.05;
     }
