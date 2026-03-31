@@ -15,7 +15,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
 
@@ -121,16 +120,9 @@ public class SimulationService {
     }
 
     public void cleanupEntities() {
-        AtomicBoolean removed = new AtomicBoolean(false);
+        model.getLocomotives().forEach(letrain.vehicle.impl.rail.Locomotive::updateDestroyTimer);
 
-        model.getLocomotives().forEach(locomotive -> {
-            locomotive.updateDestroyTimer();
-            if (locomotive.isDestroyed()) {
-                removed.set(true);
-            }
-        });
-
-        model.getLocomotives().removeIf(locomotive -> {
+        boolean removed = model.getLocomotives().removeIf(locomotive -> {
             if (locomotive.isDestroyed()) {
                 locomotive.getTrack().removeLinker();
                 return true;
@@ -147,7 +139,7 @@ public class SimulationService {
             return false;
         });
 
-        if (removed.get()) {
+        if (removed) {
             model.selectNextLocomotive();
         }
     }
