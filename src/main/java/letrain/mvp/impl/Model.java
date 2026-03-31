@@ -3,6 +3,7 @@ package letrain.mvp.impl;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import letrain.map.impl.RailMap;
 import letrain.mvp.impl.services.AutomationEngine;
 import letrain.mvp.impl.services.SimulationService;
 import letrain.track.CargoTypes;
+import letrain.track.InfrastructureManager;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
@@ -46,28 +48,19 @@ public class Model implements letrain.mvp.Model {
     @com.fasterxml.jackson.annotation.JsonUnwrapped
     private VehicleRoster vehicleRoster = new VehicleRoster();
 
+    @JsonUnwrapped
+    private InfrastructureManager infrastructureManager = new InfrastructureManager();
+
     static Logger log = LoggerFactory.getLogger(Model.class);
 
     @JsonProperty("economyManager")
     @JsonDeserialize(as = letrain.economy.impl.EconomyManager.class)
     EconomyManager economyManager;
-    @JsonIgnore
-    ForkRailTrack selectedFork;
-    @JsonIgnore
-    RailSemaphore selectedSemaphore;
-    @JsonIgnore
-    Station selectedStation;
     @JsonProperty("eventLogManager")
     EventLogManager eventLogManager;
 
     @JsonProperty("selectedLocomotiveIndex")
     int selectedLocomotiveIndex;
-    @JsonProperty("selectedForkIndex")
-    int selectedForkIndex;
-    @JsonProperty("selectedSemaphoreIndex")
-    int selectedSemaphoreIndex;
-    @JsonProperty("selectedStationIndex")
-    int selectedStationIndex;
     @JsonProperty("showId")
     boolean showId = false;
 
@@ -80,14 +73,6 @@ public class Model implements letrain.mvp.Model {
     RailMap map;
     @JsonProperty("cursor")
     Cursor cursor;
-    @JsonProperty("forks")
-    List<ForkRailTrack> forks = new java.util.ArrayList<>();
-    @JsonProperty("sensors")
-    List<Sensor> sensors = new java.util.ArrayList<>();
-    @JsonProperty("semaphores")
-    List<RailSemaphore> semaphores = new java.util.ArrayList<>();
-    @JsonProperty("stations")
-    List<Station> stations = new java.util.ArrayList<>();
     @JsonProperty("nextLocomotiveId")
     int nextLocomotiveId;
     @JsonProperty("nextForkId")
@@ -174,8 +159,6 @@ public class Model implements letrain.mvp.Model {
         int offsetX = (minOffset + (int) (Math.random() * (maxOffset - minOffset))) * (Math.random() > 0.5 ? 1 : -1);
         int offsetY = (minOffset + (int) (Math.random() * (maxOffset - minOffset))) * (Math.random() > 0.5 ? 1 : -1);
         this.cursor.setPosition(new Point(offsetX, offsetY));
-        this.semaphores = new ArrayList<>();
-        this.stations = new ArrayList<>();
         this.map = new RailMap();
 
         // Economy: Handle train crashes
@@ -206,18 +189,6 @@ public class Model implements letrain.mvp.Model {
         if (!getLocomotives().isEmpty()) {
             vehicleRoster.setSelectedLocomotive(getLocomotives().get(selectedLocomotiveIndex));
         }
-        selectedForkIndex = 0;
-        if (!getForks().isEmpty()) {
-            selectedFork = getForks().get(selectedForkIndex);
-        }
-        selectedSemaphoreIndex = 0;
-        if (!getSemaphores().isEmpty()) {
-            selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
-        }
-        selectedStationIndex = 0;
-        if (!getStations().isEmpty()) {
-            selectedStation = getStations().get(selectedStationIndex);
-        }
     }
 
     /**
@@ -234,6 +205,7 @@ public class Model implements letrain.mvp.Model {
         // Re-initialize transient services
         this.automationEngine = new AutomationEngine(this);
         this.internalSimService = new SimulationService(this);
+        this.infrastructureManager.postLoadInit();
 
         // Re-initialize GroundMap
         if (this.groundMap != null) {
@@ -359,7 +331,7 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public List<Sensor> getSensors() {
-        return sensors;
+        return infrastructureManager.getSensors();
     }
 
     @Override
@@ -374,7 +346,7 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public void addSensor(Sensor sensor) {
-        sensors.add(sensor);
+        infrastructureManager.addSensor(sensor);
         getEconomyManager().onSensorConstructed(sensor);
         setupSensorSystemListeners(sensor);
     }
@@ -397,7 +369,7 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public void removeSensor(Sensor sensor) {
-        if (sensors.remove(sensor)) {
+        if (infrastructureManager.getSensors().remove(sensor)) {
             getEconomyManager().onSensorDestroyed(sensor);
         }
     }
@@ -437,12 +409,12 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public List<ForkRailTrack> getForks() {
-        return this.forks;
+        return this.infrastructureManager.getForks();
     }
 
     @Override
     public void addFork(ForkRailTrack fork) {
-        this.forks.add(fork);
+        this.infrastructureManager.addFork(fork);
         getEconomyManager().onForkConstructed(fork);
         setupForkSystemListeners(fork);
     }
@@ -470,7 +442,7 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public void removeFork(ForkRailTrack fork) {
-        if (this.forks.remove(fork)) {
+        if (this.infrastructureManager.getForks().remove(fork)) {
             getEconomyManager().onForkDestroyed(fork);
         }
     }
@@ -504,28 +476,26 @@ public class Model implements letrain.mvp.Model {
     @Override
     public void setMode(GameMode mode) {
         this.mode = mode;
-        if (mode == GameMode.FORKS && selectedFork == null && !getForks().isEmpty()) {
-            selectedFork = getForks().get(0);
-            selectedForkIndex = 0;
+        if (mode == GameMode.FORKS && infrastructureManager.getSelectedFork() == null && !getForks().isEmpty()) {
+            infrastructureManager.setSelectedFork(getForks().get(0));
         }
     }
 
     @Override
     public ForkRailTrack getSelectedFork() {
-        return selectedFork;
+        return infrastructureManager.getSelectedFork();
     }
 
     @Override
     public void setSelectedFork(ForkRailTrack selectedFork) {
-        this.selectedFork = selectedFork;
+        infrastructureManager.setSelectedFork(selectedFork);
     }
 
     @Override
     public boolean selectFork(int id) {
         for (ForkRailTrack fork : getForks()) {
             if (fork.getId() == id) {
-                selectedFork = fork;
-                selectedForkIndex = forks.indexOf(fork);
+                infrastructureManager.setSelectedFork(fork);
                 return true;
             }
         }
@@ -544,30 +514,13 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public boolean selectNextFork() {
-        if (getForks().isEmpty()) {
-            return false;
-        }
-
-        selectedForkIndex++;
-        if (selectedForkIndex >= getForks().size()) {
-            selectedForkIndex = 0;
-        }
-        selectedFork = getForks().get(selectedForkIndex);
-        return true;
+        return infrastructureManager.selectNextFork();
 
     }
 
     @Override
     public boolean selectPrevFork() {
-        if (getForks().isEmpty()) {
-            return false;
-        }
-        selectedForkIndex--;
-        if (selectedForkIndex < 0) {
-            selectedForkIndex = getForks().size() - 1;
-        }
-        selectedFork = getForks().get(selectedForkIndex);
-        return true;
+        return infrastructureManager.selectPrevFork();
     }
 
     @Override
@@ -600,12 +553,12 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public List<RailSemaphore> getSemaphores() {
-        return this.semaphores;
+        return this.infrastructureManager.getSemaphores();
     }
 
     @Override
     public void addSemaphore(RailSemaphore semaphore) {
-        this.semaphores.add(semaphore);
+        this.infrastructureManager.addSemaphore(semaphore);
         getEconomyManager().onSemaphoreConstructed(semaphore);
         RailTrack track = map.getTrackAt(semaphore.getPosition());
         if (track != null) {
@@ -642,7 +595,7 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public void removeSemaphore(RailSemaphore semaphore) {
-        if (this.semaphores.remove(semaphore)) {
+        if (this.infrastructureManager.getSemaphores().remove(semaphore)) {
             getEconomyManager().onSemaphoreDestroyed(semaphore);
             RailTrack track = map.getTrackAt(semaphore.getPosition());
             if (track != null) {
@@ -663,47 +616,29 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public boolean selectNextSemaphore() {
-        if (getSemaphores().isEmpty()) {
-            return false;
-        }
-
-        selectedSemaphoreIndex++;
-        if (selectedSemaphoreIndex >= getSemaphores().size()) {
-            selectedSemaphoreIndex = 0;
-        }
-        selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
-        return true;
+        return infrastructureManager.selectNextSemaphore();
     }
 
     @Override
     public boolean selectPrevSemaphore() {
-        if (getSemaphores().isEmpty()) {
-            return false;
-        }
-        selectedSemaphoreIndex--;
-        if (selectedSemaphoreIndex < 0) {
-            selectedSemaphoreIndex = getSemaphores().size() - 1;
-        }
-        selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
-        return true;
+        return infrastructureManager.selectPrevSemaphore();
     }
 
     @Override
     public RailSemaphore getSelectedSemaphore() {
-        return selectedSemaphore;
+        return infrastructureManager.getSelectedSemaphore();
     }
 
     @Override
     public void setSelectedSemaphore(RailSemaphore selectedSemaphore) {
-        this.selectedSemaphore = selectedSemaphore;
+        infrastructureManager.setSelectedSemaphore(selectedSemaphore);
     }
 
     @Override
     public boolean selectSemaphore(int id) {
         for (RailSemaphore semaphore : getSemaphores()) {
             if (semaphore.getId() == id) {
-                selectedSemaphore = semaphore;
-                selectedSemaphoreIndex = semaphores.indexOf(semaphore);
+                infrastructureManager.setSelectedSemaphore(semaphore);
                 return true;
             }
         }
@@ -737,14 +672,10 @@ public class Model implements letrain.mvp.Model {
     }
 
     public void reestablishSystemListeners() {
-        if (sensors != null)
-            sensors.forEach(this::setupSensorSystemListeners);
-        if (forks != null)
-            forks.forEach(this::setupForkSystemListeners);
-        if (stations != null)
-            stations.forEach(this::setupStationSystemListeners);
-        if (semaphores != null)
-            semaphores.forEach(this::setupSemaphoreSystemListeners);
+        infrastructureManager.getSensors().forEach(this::setupSensorSystemListeners);
+        infrastructureManager.getForks().forEach(this::setupForkSystemListeners);
+        infrastructureManager.getStations().forEach(this::setupStationSystemListeners);
+        infrastructureManager.getSemaphores().forEach(this::setupSemaphoreSystemListeners);
     }
 
     @Override
@@ -759,12 +690,12 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public List<Station> getStations() {
-        return this.stations;
+        return this.infrastructureManager.getStations();
     }
 
     @Override
     public void addStation(Station station) {
-        stations.add(station);
+        infrastructureManager.addStation(station);
         getEconomyManager().onStationConstructed();
         setupStationSystemListeners(station);
     }
@@ -824,7 +755,7 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public void removeStation(Station Station) {
-        if (stations.remove(Station)) {
+        if (infrastructureManager.getStations().remove(Station)) {
             getEconomyManager().onStationDestroyed();
         }
     }
@@ -841,46 +772,29 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public Station getSelectedStation() {
-        return selectedStation;
+        return infrastructureManager.getSelectedStation();
     }
 
     @Override
     public void setSelectedStation(Station selectedStation) {
-        this.selectedStation = selectedStation;
+        infrastructureManager.setSelectedStation(selectedStation);
     }
 
     @Override
     public boolean selectNextStation() {
-        if (getStations().isEmpty()) {
-            return false;
-        }
-        selectedStationIndex++;
-        if (selectedStationIndex >= getStations().size()) {
-            selectedStationIndex = 0;
-        }
-        selectedStation = getStations().get(selectedStationIndex);
-        return true;
+        return infrastructureManager.selectNextStation();
     }
 
     @Override
     public boolean selectPrevStation() {
-        if (getStations().isEmpty()) {
-            return false;
-        }
-        selectedStationIndex--;
-        if (selectedStationIndex < 0) {
-            selectedStationIndex = getStations().size() - 1;
-        }
-        selectedStation = getStations().get(selectedStationIndex);
-        return true;
+        return infrastructureManager.selectPrevStation();
     }
 
     @Override
     public boolean selectStation(int id) {
         for (Station station : getStations()) {
             if (station.getId() == id) {
-                selectedStation = station;
-                selectedStationIndex = stations.indexOf(station);
+                infrastructureManager.setSelectedStation(station);
                 return true;
             }
         }
@@ -1085,7 +999,7 @@ public class Model implements letrain.mvp.Model {
         }
 
         sb.append("\n--- STATIONS ---\n");
-        for (Station s : stations) {
+        for (Station s : infrastructureManager.getStations()) {
             sb.append("Station ").append(s.getId()).append(": ").append(s.getRole()).append(" ")
                     .append(s.getCargoType());
             sb.append(" (").append(s.getStorage()).append("/").append(s.getMaxStorage()).append(")");
@@ -1093,20 +1007,20 @@ public class Model implements letrain.mvp.Model {
         }
 
         sb.append("\n--- SENSORS ---\n");
-        for (Sensor s : sensors) {
+        for (Sensor s : infrastructureManager.getSensors()) {
             if (!(s instanceof Station)) {
                 sb.append("Sensor ").append(s.getId()).append(" @ ").append(s.getPosition()).append("\n");
             }
         }
 
         sb.append("\n--- FORKS ---\n");
-        for (ForkRailTrack f : forks) {
+        for (ForkRailTrack f : infrastructureManager.getForks()) {
             sb.append("Fork ").append(f.getId()).append(" @ ").append(f.getPosition())
                     .append(" (").append(f.isUsingAlternativeRoute() ? "Alternative" : "Normal").append(")\n");
         }
 
         sb.append("\n--- SEMAPHORES ---\n");
-        for (RailSemaphore s : semaphores) {
+        for (RailSemaphore s : infrastructureManager.getSemaphores()) {
             sb.append("Semaphore ").append(s.getId()).append(" @ ").append(s.getPosition())
                     .append(" (").append(s.isOpen() ? "OPEN" : "CLOSED").append(")\n");
         }
@@ -1141,44 +1055,12 @@ public class Model implements letrain.mvp.Model {
         this.cursor = cursor;
     }
 
-    public void setForks(List<ForkRailTrack> forks) {
-        this.forks = forks;
-    }
-
-    public void setSensors(List<Sensor> sensors) {
-        this.sensors = sensors;
-    }
-
-    public void setSemaphores(List<RailSemaphore> semaphores) {
-        this.semaphores = semaphores;
-    }
-
-    public void setStations(List<Station> stations) {
-        this.stations = stations;
-    }
-
     public void setNextLocomotiveId(int nextLocomotiveId) {
         this.nextLocomotiveId = nextLocomotiveId;
     }
 
-    public void setNextForkId(int nextForkId) {
-        this.nextForkId = nextForkId;
-    }
-
-    public void setNextSensorId(int nextSensorId) {
-        this.nextSensorId = nextSensorId;
-    }
-
-    public void setNextSemaphoreId(int nextSemaphoreId) {
-        this.nextSemaphoreId = nextSemaphoreId;
-    }
-
     public void setNextTrainId(int nextTrainId) {
         this.nextTrainId = nextTrainId;
-    }
-
-    public void setNextStationId(int nextStationId) {
-        this.nextStationId = nextStationId;
     }
 
     public void setSeed(int seed) {
