@@ -11,6 +11,7 @@ import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
 public interface EconomyManager {
+    double getCargoRegenerationRate();
     enum ExpenseType {
         CONSTRUCTED_NORMAL_RAIL_TRACK,
         CONSTRUCTED_BRIDGE_RAIL_TRACK,

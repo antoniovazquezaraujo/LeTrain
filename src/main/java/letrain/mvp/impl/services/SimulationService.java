@@ -46,7 +46,7 @@ public class SimulationService {
         EconomyManager economyManager = model.getEconomyManager();
         
         // Regenerate cargo at all stations
-        if (Math.random() < 0.05) {
+        if (Math.random() < economyManager.getCargoRegenerationRate()) {
             model.getStations().forEach(Station::regenerateCargo);
         }
 
