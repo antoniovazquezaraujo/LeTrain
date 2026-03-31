@@ -42,13 +42,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
     creatorVisibility = JsonAutoDetect.Visibility.NONE
 )
 public class Model implements letrain.mvp.Model {
+
+    @com.fasterxml.jackson.annotation.JsonUnwrapped
+    private VehicleRoster vehicleRoster = new VehicleRoster();
+
     static Logger log = LoggerFactory.getLogger(Model.class);
 
     @JsonProperty("economyManager")
     @JsonDeserialize(as = letrain.economy.impl.EconomyManager.class)
     EconomyManager economyManager;
-    @JsonIgnore
-    Locomotive selectedLocomotive;
     @JsonIgnore
     ForkRailTrack selectedFork;
     @JsonIgnore
@@ -76,10 +78,6 @@ public class Model implements letrain.mvp.Model {
     GameMode mode = letrain.mvp.Model.GameMode.RAILS;
     @JsonProperty("railMap")
     RailMap map;
-    @JsonProperty("locomotives")
-    List<Locomotive> locomotives;
-    @JsonProperty("wagons")
-    List<Wagon> wagons;
     @JsonProperty("cursor")
     Cursor cursor;
     @JsonProperty("forks")
@@ -109,7 +107,7 @@ public class Model implements letrain.mvp.Model {
         }
         this.trainEventListeners.add(listener);
         // Apply to existing trains
-        for (Locomotive loco : locomotives) {
+        for (Locomotive loco : getLocomotives()) {
             if (loco.getTrain() != null) {
                 loco.getTrain().addTrainEventListener(listener);
             }
@@ -176,10 +174,6 @@ public class Model implements letrain.mvp.Model {
         int offsetX = (minOffset + (int) (Math.random() * (maxOffset - minOffset))) * (Math.random() > 0.5 ? 1 : -1);
         int offsetY = (minOffset + (int) (Math.random() * (maxOffset - minOffset))) * (Math.random() > 0.5 ? 1 : -1);
         this.cursor.setPosition(new Point(offsetX, offsetY));
-        this.locomotives = new ArrayList<>();
-        this.wagons = new ArrayList<>();
-        this.forks = new ArrayList<>();
-        this.sensors = new ArrayList<>();
         this.semaphores = new ArrayList<>();
         this.stations = new ArrayList<>();
         this.map = new RailMap();
@@ -210,7 +204,7 @@ public class Model implements letrain.mvp.Model {
         this.program = "";
         selectedLocomotiveIndex = 0;
         if (!getLocomotives().isEmpty()) {
-            selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
+            vehicleRoster.setSelectedLocomotive(getLocomotives().get(selectedLocomotiveIndex));
         }
         selectedForkIndex = 0;
         if (!getForks().isEmpty()) {
@@ -264,8 +258,8 @@ public class Model implements letrain.mvp.Model {
         // Re-add system listeners (this populates trainEventListeners)
         setupModelTrainEventListeners();
         
-        if (locomotives != null) {
-            for (Locomotive loco : locomotives) {
+        if (getLocomotives() != null) {
+            for (Locomotive loco : getLocomotives()) {
                 Train train = loco.getTrain();
                 if (train != null) {
                     train.postLoadInit();
@@ -419,26 +413,21 @@ public class Model implements letrain.mvp.Model {
     }
 
     @Override
-    public List<Locomotive> getLocomotives() {
-        return locomotives;
-    }
+    public List<Locomotive> getLocomotives() { return vehicleRoster.getLocomotives(); }
 
     @Override
-    public List<Wagon> getWagons() {
-        return wagons;
-    }
+    public List<Wagon> getWagons() { return vehicleRoster.getWagons(); }
 
     @Override
     public void removeWagon(Wagon wagon) {
-        if (this.wagons.remove(wagon)) {
+        if (this.getWagons().remove(wagon)) {
             getEconomyManager().onWagonDestroyed(wagon);
         }
     }
 
     @Override
     public void addWagon(Wagon wagon) {
-        this.wagons.add(wagon);
-        getEconomyManager().onWagonConstructed(wagon);
+        vehicleRoster.addWagon(wagon);
     }
 
     @Override
@@ -488,20 +477,13 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public void addLocomotive(Locomotive locomotive) {
-        this.locomotives.add(locomotive);
-        if (locomotive.getTrain() != null) {
-            for (letrain.vehicle.impl.rail.TrainEventListener l : trainEventListeners) {
-                locomotive.getTrain().addTrainEventListener(l);
-            }
-        }
-        getEconomyManager().onLocomotiveConstructed(locomotive);
+        vehicleRoster.addLocomotive(locomotive);
+        if (vehicleRoster.getSelectedLocomotive() == null) { vehicleRoster.setSelectedLocomotive(locomotive); }
     }
 
     @Override
     public void removeLocomotive(Locomotive locomotive) {
-        if (this.locomotives.remove(locomotive)) {
-            getEconomyManager().onLocomotiveDestroyed(locomotive);
-        }
+        vehicleRoster.removeLocomotive(locomotive);
     }
 
     @Override
@@ -590,50 +572,26 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public boolean selectNextLocomotive() {
-        if (getLocomotives().isEmpty()) {
-            return false;
-        }
-        do {
-            selectedLocomotiveIndex++;
-            if (selectedLocomotiveIndex >= getLocomotives().size()) {
-                selectedLocomotiveIndex = 0;
-            }
-            selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
-        } while (!selectedLocomotive.isDirectorLinker() && selectedLocomotiveIndex < getLocomotives().size());
-        return true;
+        return vehicleRoster.selectNextLocomotive();
     }
 
     @Override
     public boolean selectPrevLocomotive() {
-        if (getLocomotives().isEmpty()) {
-            return false;
-        }
-        do {
-            selectedLocomotiveIndex--;
-            if (selectedLocomotiveIndex < 0) {
-                selectedLocomotiveIndex = getLocomotives().size() - 1;
-            }
-            selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
-        } while (!selectedLocomotive.isDirectorLinker() && selectedLocomotiveIndex >= 0);
-        return true;
+        return vehicleRoster.selectPrevLocomotive();
     }
 
     @Override
-    public Locomotive getSelectedLocomotive() {
-        return selectedLocomotive;
-    }
+    public Locomotive getSelectedLocomotive() { return vehicleRoster.getSelectedLocomotive(); }
 
     @Override
-    public void setSelectedLocomotive(Locomotive selectedLocomotive) {
-        this.selectedLocomotive = selectedLocomotive;
-    }
+    public void setSelectedLocomotive(Locomotive selectedLocomotive) { vehicleRoster.setSelectedLocomotive(selectedLocomotive); }
 
     @Override
     public boolean selectLocomotive(int id) {
-        for (Locomotive loco : locomotives) {
+        for (Locomotive loco : getLocomotives()) {
             if (loco.getId() == id) {
-                selectedLocomotive = loco;
-                selectedLocomotiveIndex = locomotives.indexOf(loco);
+                vehicleRoster.setSelectedLocomotive(loco);
+                selectedLocomotiveIndex = getLocomotives().indexOf(loco);
                 return true;
             }
         }
@@ -1087,7 +1045,7 @@ public class Model implements letrain.mvp.Model {
         StringBuilder sb = new StringBuilder();
         sb.append("--- TRAINS ---\n");
         java.util.Set<Train> processedTrains = new java.util.HashSet<>();
-        for (Locomotive loco : locomotives) {
+        for (Locomotive loco : getLocomotives()) {
             Train train = loco.getTrain();
             if (train != null && !processedTrains.contains(train)) {
                 processedTrains.add(train);
@@ -1175,13 +1133,9 @@ public class Model implements letrain.mvp.Model {
         this.groundMap = groundMap;
     }
 
-    public void setLocomotives(List<Locomotive> locomotives) {
-        this.locomotives = locomotives;
-    }
+    public void setLocomotives(List<Locomotive> locomotives) { vehicleRoster.setLocomotives(locomotives); }
 
-    public void setWagons(List<Wagon> wagons) {
-        this.wagons = wagons;
-    }
+    public void setWagons(List<Wagon> wagons) { vehicleRoster.setWagons(wagons); }
 
     public void setCursor(Cursor cursor) {
         this.cursor = cursor;
