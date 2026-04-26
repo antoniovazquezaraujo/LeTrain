@@ -47,7 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Gdx3DView extends ApplicationAdapter
-        implements letrain.mvp.View, letrain.mvp.Presenter, com.badlogic.gdx.InputProcessor,
+        implements letrain.mvp.View, letrain.mvp.Presenter,
         letrain.vehicle.impl.rail.TrainEventListener {
     private static final Logger log = LoggerFactory.getLogger(Gdx3DView.class);
     private static final String DEFAULT_SAVEGAME_FILENAME = "savegame.dat";
@@ -111,18 +111,8 @@ public class Gdx3DView extends ApplicationAdapter
     // Persistence
     private final GameSaveService gameSaveService;
 
-    // Multi-digit selection state (Point 20)
-    private int forkIdAccumulator = 0;
-    private int semaphoreIdAccumulator = 0;
-    private int stationIdAccumulator = 0;
-    private int locomotiveIdAccumulator = 0;
-    private long forkInputTimeout = 0;
-    private long semaphoreInputTimeout = 0;
-    private long stationInputTimeout = 0;
-    private long locomotiveInputTimeout = 0;
-
     private CameraController cameraController;
-    private InputController inputController;
+    private Gdx3DInputHandler inputHandler;
 
     public Gdx3DView(letrain.mvp.Model model) {
         this.model = ValidationUtils.requireNonNull(model, "model");
@@ -132,7 +122,7 @@ public class Gdx3DView extends ApplicationAdapter
         this.audioController = new letrain.audio.AudioController(model);
         this.gameSaveService = new GameSaveService();
         this.cameraController = new CameraController(model);
-        this.inputController = new InputController(model, this, cameraController);
+        this.inputHandler = new Gdx3DInputHandler(model, this, cameraController, trackMaker, audioController);
         this.simulationController = new SimulationController(model, audioController, trackMaker);
 
         // Use the initial cursor position as the center for initial ground loading
@@ -142,6 +132,10 @@ public class Gdx3DView extends ApplicationAdapter
 
         // Register as listener for audio events
         model.addTrainEventListener(this);
+    }
+
+    public Stage getStage() {
+        return stage;
     }
 
     @Override
@@ -246,7 +240,7 @@ public class Gdx3DView extends ApplicationAdapter
 
         InputMultiplexer multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(stage);
-        multiplexer.addProcessor(this);
+        multiplexer.addProcessor(inputHandler);
         Gdx.input.setInputProcessor(multiplexer);
     }
 
@@ -576,111 +570,9 @@ public class Gdx3DView extends ApplicationAdapter
         }
     }
 
-    @Override
-    public boolean keyTyped(char character) {
-        return inputController.keyTyped(character);
-    }
-
-    private void createVehicle(char c) {
-        letrain.track.rail.RailTrack track = model.getCursorRailTrack();
-        if (track == null || track.getLinker() != null)
-            return;
-
-        letrain.map.Dir cursorDir = model.getCursor().getDir();
-
-        if (Character.isUpperCase(c)) {
-            int locoId = model.nextLocomotiveId();
-            letrain.vehicle.impl.rail.Locomotive locomotive = new letrain.vehicle.impl.rail.Locomotive(
-                    locoId, "" + c);
-            letrain.vehicle.impl.rail.Train train = new letrain.vehicle.impl.rail.Train(model.nextTrainId());
-            train.pushBack(locomotive);
-            train.setDirectorLinker(locomotive);
-            model.addLocomotive(locomotive);
-            // Seleccionamos la locomotora recién creada para que el modelo la reconozca
-            model.selectLocomotive(locoId);
-            track.enterLinkerFromDir(cursorDir.inverse(), locomotive);
-            cursorDir = locomotive.getDir();
-        } else {
-            letrain.vehicle.impl.rail.Wagon wagon = new letrain.vehicle.impl.rail.Wagon("" + c);
-            wagon.setExclusiveCargoType(model.getSelectedWagonType());
-            model.addWagon(wagon);
-            track.enterLinkerFromDir(cursorDir.inverse(), wagon);
-            cursorDir = wagon.getDir();
-        }
-        // Avanzar el cursor automáticamente para facilitar la creación de trenes largos
-        model.getCursor().setDir(cursorDir);
-        model.getCursor().getPosition().move(cursorDir);
-    }
-
-    private void updateHUD() {
+    void updateHUD() {
         // Force UI update
         updateUIData();
-    }
-
-    private void deleteVehicle() {
-        letrain.map.Dir cursorDir = model.getCursor().getDir();
-        // Move back to the previous track
-        model.getCursor().getPosition().move(cursorDir.inverse());
-
-        letrain.track.rail.RailTrack track = model.getCursorRailTrack();
-        if (track != null && track.getLinker() != null) {
-            letrain.vehicle.impl.Linker linker = track.getLinker();
-            if (linker instanceof letrain.vehicle.impl.rail.Locomotive) {
-                model.removeLocomotive((letrain.vehicle.impl.rail.Locomotive) linker);
-            } else if (linker instanceof letrain.vehicle.impl.rail.Wagon) {
-                model.removeWagon((letrain.vehicle.impl.rail.Wagon) linker);
-            }
-            track.removeLinker();
-
-            // Restore proper cursor direction before curve
-            letrain.map.Dir entryDir = track.getRouter().getDir(cursorDir);
-            if (entryDir != null) {
-                model.getCursor().setDir(entryDir.inverse());
-            }
-        } else {
-            // Restore cursor if nothing was deleted
-            model.getCursor().getPosition().move(cursorDir);
-        }
-    }
-
-    @Override
-    public boolean keyDown(int keycode) {
-        return inputController.keyDown(keycode);
-    }
-
-    @Override
-    public boolean keyUp(int keycode) {
-        return inputController.keyUp(keycode);
-    }
-
-    @Override
-    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        return false;
-    }
-
-    @Override
-    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-        return false;
-    }
-
-    @Override
-    public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
-        return false;
-    }
-
-    @Override
-    public boolean touchDragged(int screenX, int screenY, int pointer) {
-        return false;
-    }
-
-    @Override
-    public boolean mouseMoved(int screenX, int screenY) {
-        return false;
-    }
-
-    @Override
-    public boolean scrolled(float amountX, float amountY) {
-        return inputController.scrolled(amountX, amountY, stage);
     }
 
     private float stateTime = 0f;
@@ -702,7 +594,7 @@ public class Gdx3DView extends ApplicationAdapter
             model.getGroundMap().renderBlock(cp.getX() - radius, cp.getY() - radius, radius * 2 + 1, radius * 2 + 1);
 
             simulationController.tick();
-            updateSelectionTimeouts();
+            inputHandler.update();
             updateIDE();
 
             stateTime -= 0.05f;
@@ -842,9 +734,6 @@ public class Gdx3DView extends ApplicationAdapter
         stage.draw();
     }
 
-    // updateCamera(alpha) ha sido extraído a CameraController; se mantiene aquí
-    // solo la delegación.
-
     private void updateUIData() {
         // Update HUD (Finances)
         if (model.getEconomyManager() != null) {
@@ -921,433 +810,12 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void onChar(com.googlecode.lanterna.input.KeyStroke stroke) {
-        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.F12) {
-            showReferenceGuide();
-            return;
-        }
-
-        // Global Camera Zoom/Rotation (Alt + Arrows)
-        if (stroke.isAltDown()) {
-            if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
-                cameraController.rotateOrbit(-15f);
-                return;
-            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
-                cameraController.rotateOrbit(15f);
-                return;
-            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
-                cameraController.zoomStep(-1f);
-                return;
-            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
-                cameraController.zoomStep(1f);
-                return;
-            }
-        }
-
-        // Global Enter to Menu (matches CompactPresenter)
-        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Enter) {
-            // In DRIVE mode, Enter is for loading/unloading, not for switching to MENU.
-            // The logic is handled inside handleDriveInput.
-            if (model.getMode() != letrain.mvp.Model.GameMode.DRIVE) {
-                model.setMode(letrain.mvp.Model.GameMode.MENU);
-                return;
-            }
-        }
-
-        // Mode Switching Shortcuts (from CompactPresenter)
-        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character && stroke.getCharacter() != ' ') {
-            // Exceptions: TRAINS mode uses characters for vehicle types
-            if (model.getMode() != letrain.mvp.Model.GameMode.TRAINS) {
-                switch (stroke.getCharacter()) {
-                    case 'r':
-                        model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                        return;
-                    case 'd':
-                        if (!model.getLocomotives().isEmpty())
-                            model.setMode(letrain.mvp.Model.GameMode.DRIVE);
-                        return;
-                    case 'f':
-                        if (!model.getForks().isEmpty())
-                            model.setMode(letrain.mvp.Model.GameMode.FORKS);
-                        return;
-                    case 's':
-                        if (!model.getSemaphores().isEmpty())
-                            model.setMode(letrain.mvp.Model.GameMode.SEMAPHORES);
-                        return;
-                    case 't':
-                        if (model.getCursorRailTrack() != null)
-                            model.setMode(letrain.mvp.Model.GameMode.TRAINS);
-                        return;
-                    case 'l':
-                        if (!model.getLocomotives().isEmpty())
-                            model.setMode(letrain.mvp.Model.GameMode.LINK);
-                        return;
-                    case 'u':
-                        if (!model.getLocomotives().isEmpty())
-                            model.setMode(letrain.mvp.Model.GameMode.UNLINK);
-                        return;
-                    case 'n':
-                        if (!model.getStations().isEmpty())
-                            model.setMode(letrain.mvp.Model.GameMode.STATIONS);
-                        return;
-                    case 'p':
-                        model.setMode(letrain.mvp.Model.GameMode.PROGRAM);
-                        onGameModeSelected(letrain.mvp.Model.GameMode.PROGRAM);
-                        return;
-                    case 'o':
-                        handleSnapCursor();
-                        return;
-                }
-            }
-        }
-
-        switch (model.getMode()) {
-            case RAILS:
-                trackMaker.onChar(stroke);
-                break;
-            case DRIVE:
-                handleDriveInput(stroke);
-                break;
-            case PROGRAM:
-                handleProgramInput(stroke);
-                break;
-            case LINK:
-                handleLinkInput(stroke);
-                break;
-            case UNLINK:
-                handleUnlinkInput(stroke);
-                break;
-            case FORKS:
-                handleForkInput(stroke);
-                break;
-            case SEMAPHORES:
-                handleSemaphoreInput(stroke);
-                break;
-            case STATIONS:
-                handleStationInput(stroke);
-                break;
-            case TRAINS:
-                if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character) {
-                    char c = stroke.getCharacter();
-                    if (c == '1') {
-                        model.setSelectedWagonType(letrain.track.CargoTypes.GOLD);
-                        updateHUD();
-                    } else if (c == '2') {
-                        model.setSelectedWagonType(letrain.track.CargoTypes.COAL);
-                        updateHUD();
-                    } else if (c == '3') {
-                        model.setSelectedWagonType(letrain.track.CargoTypes.RUBY);
-                        updateHUD();
-                    } else {
-                        createVehicle(c);
-                    }
-                } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Backspace) {
-                    deleteVehicle();
-                }
-                break;
-            default:
-                break;
-        }
+        inputHandler.onChar(stroke);
     }
 
     @Override
     public void onKeyUp(KeyStroke stroke) {
-        if (model.getMode() == letrain.mvp.Model.GameMode.RAILS) {
-            trackMaker.onKeyUp(stroke);
-        }
-    }
-
-    private void handleSnapCursor() {
-        letrain.map.Point targetPos = null;
-        switch (model.getMode()) {
-            case DRIVE:
-            case LINK:
-            case UNLINK:
-                if (model.getSelectedLocomotive() != null) {
-                    targetPos = model.getSelectedLocomotive().getPosition();
-                }
-                break;
-            case FORKS:
-                if (model.getSelectedFork() != null) {
-                    targetPos = model.getSelectedFork().getPosition();
-                }
-                break;
-            case SEMAPHORES:
-                if (model.getSelectedSemaphore() != null) {
-                    targetPos = model.getSelectedSemaphore().getPosition();
-                }
-                break;
-            case STATIONS:
-                if (model.getSelectedStation() != null) {
-                    targetPos = model.getSelectedStation().getPosition();
-                }
-                break;
-            default:
-                break;
-        }
-
-        if (targetPos != null) {
-            model.getCursor().setPosition(targetPos);
-        }
-    }
-
-    private void handleDriveInput(KeyStroke stroke) {
-        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
-            letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
-            if (loco != null && loco.isEngineOn() && !loco.getTrain().isLoading()) {
-                loco.incSpeed();
-            }
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
-            letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
-            if (loco != null && loco.isEngineOn() && !loco.getTrain().isLoading()) {
-                loco.decSpeed();
-            }
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
-            model.selectPrevLocomotive();
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
-            model.selectNextLocomotive();
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
-                && stroke.getCharacter() == ' ') {
-            if (locomotiveIdAccumulator > 0) {
-                model.selectLocomotive(locomotiveIdAccumulator);
-                locomotiveIdAccumulator = 0;
-                locomotiveInputTimeout = 0;
-            }
-            // Space bar now only toggles reverse when stopped
-            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) {
-                if (model.getSelectedLocomotive().getTrack() != null) {
-                    model.getSelectedLocomotive().toggleReversed();
-                }
-            }
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character &&
-                Character.isDigit(stroke.getCharacter())) {
-            locomotiveIdAccumulator = locomotiveIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
-            model.selectLocomotive(locomotiveIdAccumulator);
-            locomotiveInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Backspace) {
-            locomotiveIdAccumulator = locomotiveIdAccumulator / 10;
-            model.selectLocomotive(locomotiveIdAccumulator);
-            locomotiveInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Enter) {
-            // Enter key now handles loading/unloading at a station, or switches to menu
-            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getSpeed() == 0) {
-                letrain.vehicle.impl.rail.Train selectedTrain = model.getSelectedLocomotive().getTrain();
-                if (selectedTrain != null) {
-                    letrain.track.Station station = selectedTrain.getStationAtTrain();
-                    if (station != null) {
-                        if (selectedTrain.isLoading()) {
-                            selectedTrain.endLoadUnloadProcess();
-                        } else {
-                            if (station.getRole() == letrain.track.CargoTypes.StationRole.CONSUMER) {
-                                if (!selectedTrain.getCapableWagons(station, true).isEmpty()) {
-                                    selectedTrain.startUnloadProcess(station);
-                                    selectedTrain.recordStopAtStation();
-                                }
-                            } else if (station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER) {
-                                if (!selectedTrain.getCapableWagons(station, false).isEmpty()) {
-                                    selectedTrain.startLoadProcess(station);
-                                    selectedTrain.recordStopAtStation();
-                                }
-                            }
-                        }
-                        return; // Consume the event
-                    }
-                }
-            }
-            // If not on a station or not stopped, Enter should switch to menu
-            model.setMode(letrain.mvp.Model.GameMode.MENU);
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
-                && stroke.getCharacter() == 'm') {
-            letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
-            if (loco != null) {
-                if (!loco.isEngineOn()) {
-                    audioController.startEngine(loco);
-                } else if (loco.getSpeed() == 0 && loco.getTargetSpeed() == 0) {
-                    audioController.stopEngineWithSound(loco.getId(), loco);
-                }
-            }
-        }
-    }
-
-    private void handleProgramInput(KeyStroke stroke) {
-        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.F12) {
-            showReferenceGuide();
-        }
-    }
-
-    private void handleLinkInput(KeyStroke stroke) {
-        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
-            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().updateLinkersToJoin(true);
-            }
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
-            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().updateLinkersToJoin(false);
-            }
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
-            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().removeLinkerToJoin();
-            }
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
-            if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().addLinkerToJoin();
-            }
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
-                && stroke.getCharacter() == ' ') {
-            letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
-            if (loco != null && loco.getTrain() != null) {
-                letrain.vehicle.impl.rail.Train train = loco.getTrain();
-                if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
-                    train.joinLinkers();
-                }
-                model.setMode(letrain.mvp.Model.GameMode.MENU);
-            }
-        }
-    }
-
-    private void handleUnlinkInput(KeyStroke stroke) {
-        if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-            letrain.vehicle.impl.rail.Train train = model.getSelectedLocomotive().getTrain();
-            if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowUp) {
-                train.setFrontDivisionSense();
-            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowDown) {
-                train.setBackDivisionSense();
-            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
-                train.selectPrevDivisionLink();
-            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
-                train.selectNextDivisionLink();
-            } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
-                    && stroke.getCharacter() == ' ') {
-                train.divideTrain(() -> model.nextTrainId());
-                audioController.playOneShot("link",
-                        (float) model.getSelectedLocomotive().getPosition().getX(),
-                        (float) model.getSelectedLocomotive().getPosition().getY());
-                model.setMode(letrain.mvp.Model.GameMode.MENU);
-            }
-        }
-    }
-
-    private void handleForkInput(KeyStroke stroke) {
-        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
-            model.selectPrevFork();
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
-            model.selectNextFork();
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
-                && stroke.getCharacter() == ' ') {
-            if (forkIdAccumulator > 0) {
-                model.selectFork(forkIdAccumulator);
-                forkIdAccumulator = 0;
-                forkInputTimeout = 0;
-            }
-            if (model.getSelectedFork() != null) {
-                model.getSelectedFork().flipRoute();
-                audioController.playOneShot("fork",
-                        (float) model.getSelectedFork().getPosition().getX(),
-                        (float) model.getSelectedFork().getPosition().getY());
-            }
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character &&
-                Character.isDigit(stroke.getCharacter())) {
-            forkIdAccumulator = forkIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
-            model.selectFork(forkIdAccumulator);
-            forkInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Backspace) {
-            forkIdAccumulator = forkIdAccumulator / 10;
-            model.selectFork(forkIdAccumulator);
-            forkInputTimeout = System.currentTimeMillis() + 1000;
-        }
-    }
-
-    private void handleSemaphoreInput(KeyStroke stroke) {
-        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
-            model.selectPrevSemaphore();
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
-            model.selectNextSemaphore();
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
-                && stroke.getCharacter() == ' ') {
-            if (semaphoreIdAccumulator > 0) {
-                model.selectSemaphore(semaphoreIdAccumulator);
-                semaphoreIdAccumulator = 0;
-                semaphoreInputTimeout = 0;
-            }
-            letrain.track.RailSemaphore s = model.getSelectedSemaphore();
-            if (s != null) {
-                s.setOpen(!s.isOpen());
-                audioController.playOneShot("construction",
-                        (float) s.getPosition().getX(),
-                        (float) s.getPosition().getY());
-            }
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character &&
-                Character.isDigit(stroke.getCharacter())) {
-            semaphoreIdAccumulator = semaphoreIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
-            model.selectSemaphore(semaphoreIdAccumulator);
-            semaphoreInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Backspace) {
-            semaphoreIdAccumulator = semaphoreIdAccumulator / 10;
-            model.selectSemaphore(semaphoreIdAccumulator);
-            semaphoreInputTimeout = System.currentTimeMillis() + 1000;
-        }
-    }
-
-    private void handleStationInput(KeyStroke stroke) {
-        if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
-            model.selectPrevStation();
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowRight) {
-            model.selectNextStation();
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
-                && stroke.getCharacter() == ' ') {
-            if (stationIdAccumulator > 0) {
-                model.selectStation(stationIdAccumulator);
-                stationIdAccumulator = 0;
-                stationInputTimeout = 0;
-            }
-            if (model.getSelectedStation() != null && model.getSelectedStation().getTrack() != null) {
-                letrain.vehicle.impl.Linker linker = model.getSelectedStation().getTrack().getLinker();
-                if (linker != null && linker.getTrain() != null) {
-                    linker.getTrain().performIndustrialAction(model.getSelectedStation());
-                }
-            }
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character &&
-                Character.isDigit(stroke.getCharacter())) {
-            stationIdAccumulator = stationIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
-            model.selectStation(stationIdAccumulator);
-            stationInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Backspace) {
-            stationIdAccumulator = stationIdAccumulator / 10;
-            model.selectStation(stationIdAccumulator);
-            stationInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Character
-                && stroke.getCharacter() == '-') {
-            letrain.track.Station station = model.getSelectedStation();
-            if (station != null) {
-                for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
-                    if (loco.getTrain() != null && loco.getTrain().getStationId() == station.getId()) {
-                        loco.getTrain().isLoading = !loco.getTrain().isLoading;
-                    }
-                }
-            }
-        }
-    }
-
-    private void updateSelectionTimeouts() {
-        if (forkInputTimeout > 0 && System.currentTimeMillis() > forkInputTimeout) {
-            model.selectFork(forkIdAccumulator);
-            forkIdAccumulator = 0;
-            forkInputTimeout = 0;
-        }
-        if (semaphoreInputTimeout > 0 && System.currentTimeMillis() > semaphoreInputTimeout) {
-            model.selectSemaphore(semaphoreIdAccumulator);
-            semaphoreIdAccumulator = 0;
-            semaphoreInputTimeout = 0;
-        }
-        if (stationInputTimeout > 0 && System.currentTimeMillis() > stationInputTimeout) {
-            model.selectStation(stationIdAccumulator);
-            stationIdAccumulator = 0;
-            stationInputTimeout = 0;
-        }
-        if (locomotiveInputTimeout > 0 && System.currentTimeMillis() > locomotiveInputTimeout) {
-            model.selectLocomotive(locomotiveIdAccumulator);
-            locomotiveIdAccumulator = 0;
-            locomotiveInputTimeout = 0;
-        }
+        inputHandler.onKeyUp(stroke);
     }
 
     @Override
@@ -1538,7 +1006,7 @@ public class Gdx3DView extends ApplicationAdapter
         this.audioController = new letrain.audio.AudioController(model);
         this.cameraController = new CameraController(model);
         this.cam = cameraController.init(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        this.inputController = new InputController(model, this, cameraController);
+        this.inputHandler = new Gdx3DInputHandler(model, this, cameraController, trackMaker, audioController);
         this.simulationController = new SimulationController(model, audioController, trackMaker);
         this.renderer = new letrain.visitor.gdx3d.Gdx3DRenderer(resourceContext);
         this.decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(
@@ -2128,39 +1596,6 @@ public class Gdx3DView extends ApplicationAdapter
         cameraController.resize(width, height);
     }
 
-    private com.badlogic.gdx.math.Vector2 getInterpolatedPosition(letrain.vehicle.impl.rail.Locomotive locomotive,
-            float alpha) {
-        float x = locomotive.getPosition().getX();
-        float y = locomotive.getPosition().getY();
-
-        if (locomotive.getTotalTurns() >= 0) {
-            float totalDelay = (float) locomotive.getTotalTurns() + 1.0f;
-            float currentDelay = (float) locomotive.getTurns() + 1.0f - alpha;
-            float progress = 1.0f - (currentDelay / totalDelay);
-
-            if (progress < 0)
-                progress = 0;
-            if (progress > 1)
-                progress = 1;
-
-            letrain.track.Track currentTrack = locomotive.getTrack();
-            if (currentTrack != null) {
-                letrain.track.Track nextTrack = currentTrack.getConnected(locomotive.getDir());
-                if (nextTrack != null) {
-                    float nextX = nextTrack.getPosition().getX();
-                    float nextY = nextTrack.getPosition().getY();
-
-                    // Si la distancia es mayor a 1 (teletransporte/wrap), no interpolar
-                    if (Math.abs(nextX - x) <= 1 && Math.abs(nextY - y) <= 1) {
-                        x = x + (nextX - x) * progress;
-                        y = y + (nextY - y) * progress;
-                    }
-                }
-            }
-        }
-        return new com.badlogic.gdx.math.Vector2(x, y);
-    }
-
     @Override
     public void dispose() {
         if (audioController != null) {
@@ -2306,13 +1741,6 @@ public class Gdx3DView extends ApplicationAdapter
             // This forces them to 'stall' and stop moving sounds instantly.
             for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
                 if (loco.getTrain() != null && (loco.getSpeed() > 0 || loco.getTargetSpeed() > 0)) {
-                    // Check if this loco's train is at the collision position
-                    // Actually, a simpler way is to check all trains involved.
-                    // But usually, the contact event implies the moving train hits something.
-                    // For now, let's stop synthesizers for any loco that is "involved" or just all
-                    // of them
-                    // if they are at speed and we just had a contact nearby?
-                    // No, let's be more specific.
                     if (Point.distance(loco.getPosition(), pos) < 2.0) {
                         audioController.stopSynthesizer(loco.getId());
                     }
