@@ -10,6 +10,9 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+@JsonDeserialize(as = letrain.economy.impl.EconomyManager.class)
 public interface EconomyManager {
     enum ExpenseType {
         CONSTRUCTED_NORMAL_RAIL_TRACK,

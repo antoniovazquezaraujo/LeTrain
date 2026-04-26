@@ -213,7 +213,5 @@ public interface Model {
     boolean isXRayActive();
     void setXRayActive(boolean xRayActive);
 
-    com.badlogic.gdx.graphics.Camera getCamera();
-    void setCamera(com.badlogic.gdx.graphics.Camera camera);
     void updateGroundMap(Point p, int type, int variation);
 }

@@ -264,7 +264,6 @@ public class Gdx3DView extends ApplicationAdapter
 
         // Actualizar instancias desde el modelo
         renderer.clear();
-        model.setCamera(cam);
         renderer.visitModel(model, cam);
         modelBatch.begin(cam);
         modelBatch.render(renderer.getInstances(), environment);

@@ -24,6 +24,7 @@ public class GameSaveService {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
+            mapper.addMixIn(Model.class, ModelMixin.class);
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
             mapper.writeValue(file, model);
             log.info("Game saved successfully to {} (JSON)", file.getAbsolutePath());
@@ -57,6 +58,7 @@ public class GameSaveService {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
+            mapper.addMixIn(Model.class, ModelMixin.class);
             letrain.mvp.impl.Model loadedModel = mapper.readValue(file, letrain.mvp.impl.Model.class);
             loadedModel.postLoadInit();
             log.info("Game loaded successfully from {} (JSON)", file.getAbsolutePath());

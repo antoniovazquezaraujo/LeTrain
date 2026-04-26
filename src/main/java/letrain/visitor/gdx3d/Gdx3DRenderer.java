@@ -112,12 +112,17 @@ public class Gdx3DRenderer implements Visitor {
     public void visitEconomyManager(EconomyManager economyManager) {
     }
 
+    private com.badlogic.gdx.graphics.Camera camera;
+
     @Override
     public void visitModel(Model model) {
-        visitModel(model, model.getCamera());
+        if (this.camera != null) {
+            visitModel(model, this.camera);
+        }
     }
 
     public void visitModel(Model model, com.badlogic.gdx.graphics.Camera camera) {
+        this.camera = camera;
         this.isXRayActive = model.isXRayActive();
         clear();
 
