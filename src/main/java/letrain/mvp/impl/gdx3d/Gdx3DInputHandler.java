@@ -20,6 +20,9 @@ import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 
 /**
@@ -28,6 +31,7 @@ import java.util.List;
  * asociada a cada modo de juego.
  */
 public class Gdx3DInputHandler implements InputProcessor {
+    private static final Logger log = LoggerFactory.getLogger(Gdx3DInputHandler.class);
 
     private final Model model;
     private final Gdx3DView view;
@@ -191,6 +195,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             case Input.Keys.PAGE_DOWN: return new KeyStroke(KeyType.PageDown);
             case Input.Keys.INSERT: return new KeyStroke(KeyType.Insert);
             case Input.Keys.TAB: return new KeyStroke(KeyType.Tab);
+            case Input.Keys.F1: return new KeyStroke(KeyType.F1);
             case Input.Keys.F12: return new KeyStroke(KeyType.F12);
             default: return null;
         }
@@ -213,6 +218,11 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     public void onChar(KeyStroke stroke) {
+        if (stroke.getKeyType() == KeyType.F1) {
+            log.info("\n" + model.getRailwayGraphReport());
+            return;
+        }
+
         if (stroke.getKeyType() == KeyType.F12) {
             view.showReferenceGuide();
             return;

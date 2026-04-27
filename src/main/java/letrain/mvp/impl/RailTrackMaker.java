@@ -26,7 +26,12 @@ import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Cursor.CursorMode;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import letrain.core.segments.impl.TopologyServiceImpl;
+
 public class RailTrackMaker {
+    private static final Logger log = LoggerFactory.getLogger(RailTrackMaker.class);
     private Presenter.TrackType newTrackType = Presenter.TrackType.NORMAL_TRACK;
     private int degreesOfRotation = 0;
     private Dir dir = Dir.E;

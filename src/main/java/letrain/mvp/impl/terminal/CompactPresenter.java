@@ -223,6 +223,11 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
 
     @Override
     public void onChar(KeyStroke keyEvent) {
+        if (keyEvent.getKeyType() == KeyType.F1) {
+            log.info("\n" + model.getRailwayGraphReport());
+            return;
+        }
+
         boolean isAMenuKey = true;
         if (keyEvent.getKeyType() == KeyType.Enter) {
             // In DRIVE mode, Enter is for loading/unloading, not for switching to MENU.

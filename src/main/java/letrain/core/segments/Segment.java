@@ -8,6 +8,11 @@ import letrain.utils.Pair;
  */
 public interface Segment {
     /**
+     * Devuelve el identificador único del segmento.
+     */
+    String getId();
+
+    /**
      * Devuelve el par de PathSteps que definen los extremos de este segmento.
      */
     Pair<PathStep, PathStep> getSteps();

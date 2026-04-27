@@ -206,6 +206,8 @@ public interface Model {
 
     String getGameObjectsReport();
 
+    String getRailwayGraphReport();
+
     CargoTypes getSelectedWagonType();
 
     void setSelectedWagonType(CargoTypes type);

@@ -2,6 +2,9 @@ package letrain.core.segments;
 
 import letrain.core.segments.impl.*;
 import letrain.map.Dir;
+import letrain.map.Point;
+import letrain.track.rail.RailTrack;
+import letrain.track.rail.ForkRailTrack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,10 +30,15 @@ class RailwayGraphTest {
     void setUp() {
         graph = new RailwayGraphImpl();
         
+        // Tracks físicos para los nodos
+        RailTrack trackA = new RailTrack(); trackA.setPosition(new Point(0,0));
+        ForkRailTrack trackB = new ForkRailTrack(1); trackB.setPosition(new Point(1,0));
+        RailTrack trackC = new RailTrack(); trackC.setPosition(new Point(2,0));
+
         // Nodos
-        nodeA = new RailNodeImpl(); // Tope
-        nodeB = new RailNodeImpl(); // Fork (decisión)
-        nodeC = new RailNodeImpl(); // Tope
+        nodeA = new RailNodeImpl(trackA); // Tope
+        nodeB = new RailNodeImpl(trackB); // Fork (decisión)
+        nodeC = new RailNodeImpl(trackC); // Tope
         
         // Pasos (Decisiones)
         stepA_to_B = new PathStepImpl(nodeA, Dir.E);
@@ -45,8 +53,8 @@ class RailwayGraphTest {
         nodeC.addOutStep(stepC_to_B);
         
         // Segmentos (unión de dos pasos enfrentados)
-        segmentAB = new SegmentImpl(stepA_to_B, stepB_to_A);
-        segmentBC = new SegmentImpl(stepB_to_C, stepC_to_B);
+        segmentAB = new SegmentImpl("AB", stepA_to_B, stepB_to_A);
+        segmentBC = new SegmentImpl("BC", stepB_to_C, stepC_to_B);
         
         // Registrar en el grafo
         graph.registerSegment(stepA_to_B, segmentAB);
@@ -57,71 +65,59 @@ class RailwayGraphTest {
 
     @Test
     void testGetNextSteps() {
-        // Pregunta 1: De A voy a B. ¿Qué opciones tengo en B?
         List<PathStep> nextSteps = graph.getNextSteps(stepA_to_B);
-        
         assertNotNull(nextSteps);
-        assertEquals(1, nextSteps.size(), "Debería haber solo 1 paso siguiente (B->C), no B->A porque es de donde venimos");
+        assertEquals(1, nextSteps.size());
         assertEquals(stepB_to_C, nextSteps.get(0));
     }
 
     @Test
     void testEndOfTrackReturnsEmpty() {
-        // Pregunta 2: De B voy a C (tope). ¿Qué opciones hay en C?
         List<PathStep> nextSteps = graph.getNextSteps(stepB_to_C);
-        
-        // El nodo C solo tiene el paso C->B, pero como venimos del segmento BC, se filtra.
-        assertTrue(nextSteps.isEmpty(), "En un tope de vía no debería haber más pasos de salida");
+        assertTrue(nextSteps.isEmpty());
     }
 
     @Test
     void testMultipleExitsFromFork() {
-        // Escenario: Un Fork (B) con 3 salidas (A, C, D)
-        RailNodeImpl nodeD = new RailNodeImpl();
+        RailTrack trackD = new RailTrack(); trackD.setPosition(new Point(1,1));
+        RailNodeImpl nodeD = new RailNodeImpl(trackD);
         PathStep stepB_to_D = new PathStepImpl(nodeB, Dir.S);
         PathStep stepD_to_B = new PathStepImpl(nodeD, Dir.N);
         nodeB.addOutStep(stepB_to_D);
         nodeD.addOutStep(stepD_to_B);
         
-        Segment segmentBD = new SegmentImpl(stepB_to_D, stepD_to_B);
+        Segment segmentBD = new SegmentImpl("BD", stepB_to_D, stepD_to_B);
         graph.registerSegment(stepB_to_D, segmentBD);
         graph.registerSegment(stepD_to_B, segmentBD);
         
-        // Si vengo de A -> B, debería poder ir a C O a D, pero NO volver a A
         List<PathStep> nextSteps = graph.getNextSteps(stepA_to_B);
         
         assertEquals(2, nextSteps.size());
         assertTrue(nextSteps.contains(stepB_to_C));
         assertTrue(nextSteps.contains(stepB_to_D));
-        assertFalse(nextSteps.contains(stepB_to_A), "No debería permitir volver al segmento de origen");
+        assertFalse(nextSteps.contains(stepB_to_A));
     }
 
     @Test
     void testCircularSegment() {
-        // Escenario: Un nodo que se conecta a sí mismo (Bucle)
-        RailNodeImpl circularNode = new RailNodeImpl();
+        RailTrack trackCircle = new RailTrack(); trackCircle.setPosition(new Point(5,5));
+        RailNodeImpl circularNode = new RailNodeImpl(trackCircle);
         PathStep exit1 = new PathStepImpl(circularNode, Dir.N);
         PathStep exit2 = new PathStepImpl(circularNode, Dir.S);
         circularNode.addOutStep(exit1);
         circularNode.addOutStep(exit2);
         
-        Segment circularSegment = new SegmentImpl(exit1, exit2);
+        Segment circularSegment = new SegmentImpl("CIRCLE", exit1, exit2);
         graph.registerSegment(exit1, circularSegment);
         graph.registerSegment(exit2, circularSegment);
         
-        // Si entro por el Norte, salgo por el mismo nodo por el Sur. 
-        // ¿Qué hay después? Solo el camino de vuelta, que debe ser filtrado.
         List<PathStep> nextSteps = graph.getNextSteps(exit1);
-        
-        assertNotNull(nextSteps);
-        assertTrue(nextSteps.isEmpty(), "En un bucle cerrado sin más salidas, no debería haber pasos siguientes válidos tras el primero");
+        assertTrue(nextSteps.isEmpty());
     }
 
     @Test
     void testFindPath() {
-        // Camino de A a C a través de B
         List<Segment> path = graph.findPath(segmentAB, segmentBC);
-        
         assertNotNull(path);
         assertEquals(2, path.size());
         assertEquals(segmentAB, path.get(0));
@@ -137,19 +133,22 @@ class RailwayGraphTest {
 
     @Test
     void testFindNonExistentPath() {
-        Segment isolatedSegment = new SegmentImpl(
-            new PathStepImpl(new RailNodeImpl(), Dir.N),
-            new PathStepImpl(new RailNodeImpl(), Dir.S)
+        RailTrack tIso1 = new RailTrack(); tIso1.setPosition(new Point(10,10));
+        RailTrack tIso2 = new RailTrack(); tIso2.setPosition(new Point(10,11));
+        Segment isolatedSegment = new SegmentImpl("ISO", 
+            new PathStepImpl(new RailNodeImpl(tIso1), Dir.N),
+            new PathStepImpl(new RailNodeImpl(tIso2), Dir.S)
         );
         
         List<Segment> path = graph.findPath(segmentAB, isolatedSegment);
-        assertTrue(path.isEmpty(), "Si no hay conexión, el camino debe estar vacío");
+        assertTrue(path.isEmpty());
     }
 
     @Test
     void testNonExistentPathStep() {
-        PathStep ghostStep = new PathStepImpl(new RailNodeImpl(), Dir.NE);
+        RailTrack tGhost = new RailTrack(); tGhost.setPosition(new Point(100,100));
+        PathStep ghostStep = new PathStepImpl(new RailNodeImpl(tGhost), Dir.NE);
         assertNull(graph.getSegment(ghostStep));
-        assertNull(graph.getNextSteps(ghostStep), "Un paso no registrado debe devolver null de forma segura");
+        assertNull(graph.getNextSteps(ghostStep));
     }
 }

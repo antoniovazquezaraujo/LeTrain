@@ -98,4 +98,35 @@ public class RailwayGraphImpl implements RailwayGraph {
         RailNode node = step.getRailNode();
         nodeToSegments.computeIfAbsent(node, k -> new ArrayList<>()).add(segment);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("--- RAILWAY GRAPH TOPOLOGY ---\n");
+        
+        List<Segment> segments = stepToSegment.values().stream().distinct().collect(Collectors.toList());
+        sb.append("SEGMENTS (").append(segments.size()).append("):\n");
+        for (Segment s : segments) {
+            sb.append("  ").append(s.getId()).append(": ")
+              .append(s.getSteps().getFirst().getRailNode()).append(" -> ")
+              .append(s.getSteps().getSecond().getRailNode()).append("\n");
+        }
+        
+        sb.append("NODES (").append(nodeToSegments.size()).append("):\n");
+        for (Map.Entry<RailNode, List<Segment>> entry : nodeToSegments.entrySet()) {
+            sb.append("  ").append(entry.getKey()).append(" connects to segments: ");
+            String segIds = entry.getValue().stream()
+                    .map(Segment::getId)
+                    .collect(Collectors.joining(", "));
+            sb.append(segIds).append("\n");
+            
+            sb.append("    OutSteps: ");
+            String outSteps = entry.getKey().getOutSteps().stream()
+                    .map(ps -> ps.getDir().toString())
+                    .collect(Collectors.joining(", "));
+            sb.append(outSteps).append("\n");
+        }
+        sb.append("------------------------------");
+        return sb.toString();
+    }
 }

@@ -1,10 +1,14 @@
 package letrain.mvp.impl;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import letrain.core.segments.RailwayGraph;
+import letrain.core.segments.TopologyService;
+import letrain.core.segments.impl.TopologyServiceImpl;
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -25,8 +29,6 @@ import letrain.vehicle.impl.rail.Wagon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-@com.fasterxml.jackson.annotation.JsonAutoDetect(fieldVisibility = com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY, getterVisibility = com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE, setterVisibility = com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE)
 public class Model implements letrain.mvp.Model {
     static Logger log = LoggerFactory.getLogger(Model.class);
 
@@ -532,8 +534,10 @@ public class Model implements letrain.mvp.Model {
     }
 
     @Override public void setSelectedWagonType(CargoTypes type) { this.selectedWagonType = type; }
+    @JsonIgnore
     @Override public RailTrack getCursorRailTrack() { return getRailMap().getTrackAt(getCursor().getPosition()); }
 
+    @JsonIgnore
     @Override
     public List<GameModeMenuOption> getMenuModel() {
         return Arrays.asList(
@@ -555,6 +559,7 @@ public class Model implements letrain.mvp.Model {
     @Override public void setLastSaveTime(LocalDateTime now) { this.lastSaveTime = now; }
     @Override public LocalDateTime getLastSaveTime() { return this.lastSaveTime; }
 
+    @JsonIgnore
     @Override
     public CargoTypes getStationGhostCargoType() {
         Integer terrain = groundMap.findClosestIndustry(cursor.getPosition(), 5);
@@ -562,6 +567,7 @@ public class Model implements letrain.mvp.Model {
         return CargoTypes.NONE;
     }
 
+    @JsonIgnore
     @Override
     public CargoTypes.StationRole getStationGhostRole() {
         Integer terrain = groundMap.findClosestIndustry(cursor.getPosition(), 5);
@@ -571,6 +577,7 @@ public class Model implements letrain.mvp.Model {
 
     @Override public EventLogManager getEventLogManager() { return eventLogManager; }
 
+    @JsonIgnore
     @Override
     public String getGameObjectsReport() {
         StringBuilder sb = new StringBuilder();
@@ -610,6 +617,14 @@ public class Model implements letrain.mvp.Model {
         sb.append("\n--- SEMAPHORES ---\n");
         for (RailSemaphore s : semaphores) { sb.append("Semaphore ").append(s.getId()).append(" @ ").append(s.getPosition()).append(" (").append(s.isOpen() ? "OPEN" : "CLOSED").append(")\n"); }
         return sb.toString();
+    }
+
+    @Override
+    @JsonIgnore
+    public String getRailwayGraphReport() {
+        TopologyService topologyService = new TopologyServiceImpl();
+        RailwayGraph graph = topologyService.discover(getRailMap());
+        return graph.toString();
     }
 
     public void setEconomyManager(EconomyManager economyManager) { this.economyManager = economyManager; }
