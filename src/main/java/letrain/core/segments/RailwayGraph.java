@@ -21,4 +21,19 @@ public interface RailwayGraph {
      * Encuentra la secuencia de segmentos que conectan dos segmentos dados.
      */
     List<Segment> findPath(Segment start, Segment end);
+
+    /**
+     * Devuelve las estaciones presentes en un segmento.
+     */
+    List<letrain.track.Station> getStations(Segment segment);
+
+    /**
+     * Devuelve los sensores presentes en un segmento.
+     */
+    List<letrain.track.Sensor> getSensors(Segment segment);
+
+    /**
+     * Devuelve el segmento al que pertenece un raíl físico (si está mapeado).
+     */
+    Segment getSegment(letrain.track.rail.RailTrack track);
 }

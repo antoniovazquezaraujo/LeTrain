@@ -48,12 +48,35 @@ public class TopologyServiceImpl implements TopologyService {
                         graph.registerSegment(startStep, segment);
                         graph.registerSegment(endStep, segment);
                         discoveredSegments.add(segmentKey);
+
+                        // Registrar elementos en el nodo de inicio
+                        registerElements(graph, segment, startTrack);
+
+                        // Registrar raíles intermedios, estaciones y sensores
+                        for (RailTrack track : result.visitedTracks) {
+                            graph.registerTrack(segment, track);
+                            registerElements(graph, segment, track);
+                        }
+
+                        // Registrar elementos en el nodo de fin
+                        registerElements(graph, segment, (RailTrack) result.endNode.getTrack());
                     }
                 }
             }
         }
 
         return graph;
+    }
+
+    private void registerElements(RailwayGraphImpl graph, Segment segment, RailTrack track) {
+        letrain.track.Sensor sensor = track.getSensor();
+        if (sensor != null) {
+            if (sensor instanceof letrain.track.Station) {
+                graph.registerStation(segment, (letrain.track.Station) sensor);
+            } else {
+                graph.registerSensor(segment, sensor);
+            }
+        }
     }
 
     private boolean isNode(RailTrack track) {
@@ -72,10 +95,12 @@ public class TopologyServiceImpl implements TopologyService {
     }
 
     private CrawlResult crawl(RailTrack startTrack, Dir startDir, Map<RailTrack, RailNodeImpl> trackToNode) {
+        List<RailTrack> visited = new ArrayList<>();
         RailTrack currentTrack = (RailTrack) startTrack.getConnected(startDir);
         Dir incomingDir = startDir.inverse();
 
         while (currentTrack != null && !trackToNode.containsKey(currentTrack)) {
+            visited.add(currentTrack);
             Dir nextDir = currentTrack.getDir(incomingDir);
             if (nextDir == null) return null;
             
@@ -86,16 +111,18 @@ public class TopologyServiceImpl implements TopologyService {
 
         if (currentTrack == null) return null;
 
-        return new CrawlResult(trackToNode.get(currentTrack), incomingDir);
+        return new CrawlResult(trackToNode.get(currentTrack), incomingDir, visited);
     }
 
     private static class CrawlResult {
         final RailNodeImpl endNode;
         final Dir incomingDir;
+        final List<RailTrack> visitedTracks;
 
-        CrawlResult(RailNodeImpl endNode, Dir incomingDir) {
+        CrawlResult(RailNodeImpl endNode, Dir incomingDir, List<RailTrack> visitedTracks) {
             this.endNode = endNode;
             this.incomingDir = incomingDir;
+            this.visitedTracks = visitedTracks;
         }
     }
 }

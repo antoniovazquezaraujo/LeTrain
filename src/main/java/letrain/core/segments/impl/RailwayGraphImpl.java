@@ -15,10 +15,40 @@ import java.util.stream.Collectors;
 public class RailwayGraphImpl implements RailwayGraph {
     private final Map<PathStep, Segment> stepToSegment = new HashMap<>();
     private final Map<RailNode, List<Segment>> nodeToSegments = new HashMap<>();
+    private final Map<Segment, List<letrain.track.Station>> segmentToStations = new HashMap<>();
+    private final Map<Segment, List<letrain.track.Sensor>> segmentToSensors = new HashMap<>();
+    private final Map<letrain.track.rail.RailTrack, Segment> trackToSegment = new HashMap<>();
 
     @Override
     public Segment getSegment(PathStep step) {
         return stepToSegment.get(step);
+    }
+
+    @Override
+    public List<letrain.track.Station> getStations(Segment segment) {
+        return segmentToStations.getOrDefault(segment, new ArrayList<>());
+    }
+
+    @Override
+    public List<letrain.track.Sensor> getSensors(Segment segment) {
+        return segmentToSensors.getOrDefault(segment, new ArrayList<>());
+    }
+
+    @Override
+    public Segment getSegment(letrain.track.rail.RailTrack track) {
+        return trackToSegment.get(track);
+    }
+
+    public void registerStation(Segment segment, letrain.track.Station station) {
+        segmentToStations.computeIfAbsent(segment, k -> new ArrayList<>()).add(station);
+    }
+
+    public void registerSensor(Segment segment, letrain.track.Sensor sensor) {
+        segmentToSensors.computeIfAbsent(segment, k -> new ArrayList<>()).add(sensor);
+    }
+
+    public void registerTrack(Segment segment, letrain.track.rail.RailTrack track) {
+        trackToSegment.put(track, segment);
     }
 
     @Override
@@ -110,6 +140,16 @@ public class RailwayGraphImpl implements RailwayGraph {
             sb.append("  ").append(s.getId()).append(": ")
               .append(s.getSteps().getFirst().getRailNode()).append(" -> ")
               .append(s.getSteps().getSecond().getRailNode()).append("\n");
+            
+            List<letrain.track.Station> stations = getStations(s);
+            if (!stations.isEmpty()) {
+                sb.append("    Stations: ").append(stations.stream().map(st -> "ID=" + st.getId()).collect(Collectors.joining(", "))).append("\n");
+            }
+            
+            List<letrain.track.Sensor> sensors = getSensors(s);
+            if (!sensors.isEmpty()) {
+                sb.append("    Sensors: ").append(sensors.stream().map(se -> "ID=" + se.getId()).collect(Collectors.joining(", "))).append("\n");
+            }
         }
         
         sb.append("NODES (").append(nodeToSegments.size()).append("):\n");
