@@ -64,6 +64,24 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     public boolean isLoading = false;
     private boolean stalled = false;
     int id;
+    private boolean shuntingMode = false;
+
+    public boolean isShuntingMode() {
+        return shuntingMode;
+    }
+
+    public void setShuntingMode(boolean shuntingMode) {
+        if (getDirectorLinker() != null && ((Locomotive)getDirectorLinker()).getCurrentSpeed() > 0) {
+            log.warn("Cannot change shunting mode while train is moving");
+            return;
+        }
+        this.shuntingMode = shuntingMode;
+        if (shuntingMode) {
+            log.info("Train {} entered SHUNTING mode", id);
+        } else {
+            log.info("Train {} exited SHUNTING mode", id);
+        }
+    }
 
     public int getStationId() {
         return railStationId;
@@ -71,6 +89,17 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     public void setStationId(int railStationId) {
         this.railStationId = railStationId;
+    }
+
+    public int getSpeed() {
+        if (directorLinker instanceof Locomotive) {
+            return ((Locomotive) directorLinker).getSpeed();
+        }
+        return 0;
+    }
+
+    public boolean isStopped() {
+        return getSpeed() == 0;
     }
 
     Itinerary itinerary;
@@ -91,6 +120,13 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     private transient List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
     @JsonIgnore
     private transient List<Wagon> currentCapableWagons = null;
+
+    @JsonIgnore
+    private transient letrain.mvp.Model model;
+
+    public void setModel(letrain.mvp.Model model) {
+        this.model = model;
+    }
 
     public void addTrainEventListener(TrainEventListener listener) {
         if (trainListeners == null)
@@ -186,6 +222,42 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     public int getId() {
         return this.id;
+    }
+
+    @JsonIgnore
+    public void rebind() {
+        if (model == null) {
+            log.warn("Cannot rebind train {}: model is null", id);
+            return;
+        }
+
+        letrain.core.segments.RailwayGraph graph = ((letrain.mvp.impl.Model)model).getRailwayGraph();
+        letrain.core.segments.BlockManager blockManager = model.getBlockManager();
+        
+        // Limpiamos referencias viejas (aunque el BlockManager ya debería estar limpio por Tabula Rasa)
+        // Pero el tren también debe saber qué segmentos posee físicamente.
+        
+        // ADR-005: Un tren debe reclamar sus segmentos basándose en su posición física.
+        // Por simplicidad en este MVP del rebind, miramos todas las piezas del tren.
+        Set<letrain.core.segments.Segment> segmentsToClaim = new HashSet<>();
+        for (Linker linker : linkers) {
+            if (linker.getTrack() instanceof letrain.track.rail.RailTrack) {
+                letrain.core.segments.Segment segment = graph.getSegment((letrain.track.rail.RailTrack) linker.getTrack());
+                if (segment != null) {
+                    segmentsToClaim.add(segment);
+                }
+            }
+        }
+
+        for (letrain.core.segments.Segment segment : segmentsToClaim) {
+            if (!blockManager.tryLock(this, segment)) {
+                // Si falla el bloqueo normal tras una Tabula Rasa, es que hay convivencia forzada
+                // Pasamos a modo Shunting para cumplir el Mandamiento del ADR-005.
+                this.setShuntingMode(true);
+                blockManager.tryShuntingLock(this, segment);
+            }
+        }
+        log.info("Train {} rebound to {} segments (Shunting: {})", id, segmentsToClaim.size(), shuntingMode);
     }
 
     /**
@@ -867,6 +939,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             return;
         }
 
+        // ADR-005: Unlink results in auto-shunting
+        this.setShuntingMode(true);
+
         Linker linkerToRemove = null;
         for (int n = 0; n < numLinkersToRemove; n++) {
             if (linkerDivisionSense == LinkersSense.BACK) {
@@ -880,6 +955,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 linkerToRemove.setTrain(train);
                 train.getLinkers().add(linkerToRemove);
                 train.assignDefaultDirectorLinker();
+                // ADR-005: New train also starts in shunting mode
+                train.setShuntingMode(true);
                 // Inherit listeners so the Presenter keeps receiving events
                 for (TrainEventListener listener : trainListeners) {
                     train.addTrainEventListener(listener);

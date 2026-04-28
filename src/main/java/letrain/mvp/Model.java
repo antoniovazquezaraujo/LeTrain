@@ -216,4 +216,6 @@ public interface Model {
     void setXRayActive(boolean xRayActive);
 
     void updateGroundMap(Point p, int type, int variation);
+
+    letrain.core.segments.BlockManager getBlockManager();
 }

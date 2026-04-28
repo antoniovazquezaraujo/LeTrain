@@ -39,6 +39,22 @@ public class Model implements letrain.mvp.Model {
     Station selectedStation;
     EventLogManager eventLogManager;
 
+    @JsonIgnore
+    private letrain.core.segments.BlockManager blockManager;
+
+    @JsonIgnore
+    private transient letrain.core.segments.RailwayGraph currentGraph;
+
+    private transient boolean mapChanged = false;
+
+    public boolean isMapChanged() {
+        return mapChanged;
+    }
+
+    public void setMapChanged(boolean mapChanged) {
+        this.mapChanged = mapChanged;
+    }
+
     int selectedLocomotiveIndex;
     int selectedForkIndex;
     int selectedSemaphoreIndex;
@@ -102,6 +118,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     public Model() {
+        this.blockManager = new letrain.core.segments.impl.BlockManagerImpl();
         this.eventLogManager = new EventLogManager();
         this.economyManager = new letrain.economy.impl.EconomyManager(eventLogManager);
         this.economyManager.reloadConfig();
@@ -144,6 +161,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     public void postLoadInit() {
+        this.blockManager = new letrain.core.segments.impl.BlockManagerImpl();
         if (this.trainEventListeners == null) {
             this.trainEventListeners = new ArrayList<>();
         } else {
@@ -171,6 +189,7 @@ public class Model implements letrain.mvp.Model {
             for (Locomotive loco : locomotives) {
                 Train train = loco.getTrain();
                 if (train != null) {
+                    train.setModel(this);
                     train.postLoadInit();
                     int stationId = train.getStationId();
                     if (stationId != 0) {
@@ -229,6 +248,7 @@ public class Model implements letrain.mvp.Model {
         sensors.add(sensor);
         getEconomyManager().onSensorConstructed(sensor);
         setupSensorSystemListeners(sensor);
+        mapChanged = true;
     }
 
     private void setupSensorSystemListeners(Sensor sensor) {
@@ -243,7 +263,7 @@ public class Model implements letrain.mvp.Model {
         });
     }
 
-    @Override public void removeSensor(Sensor sensor) { if (sensors.remove(sensor)) getEconomyManager().onSensorDestroyed(sensor); }
+    @Override public void removeSensor(Sensor sensor) { if (sensors.remove(sensor)) { getEconomyManager().onSensorDestroyed(sensor); mapChanged = true; } }
     @Override public Sensor getSensor(int id) {
         for (Sensor sensor : getSensors()) { if (sensor.getId() == id) return sensor; }
         return null;
@@ -260,6 +280,7 @@ public class Model implements letrain.mvp.Model {
         this.forks.add(fork);
         getEconomyManager().onForkConstructed(fork);
         setupForkSystemListeners(fork);
+        mapChanged = true;
     }
 
     private void setupForkSystemListeners(ForkRailTrack fork) {
@@ -277,11 +298,12 @@ public class Model implements letrain.mvp.Model {
         });
     }
 
-    @Override public void removeFork(ForkRailTrack fork) { if (this.forks.remove(fork)) getEconomyManager().onForkDestroyed(fork); }
+    @Override public void removeFork(ForkRailTrack fork) { if (this.forks.remove(fork)) { getEconomyManager().onForkDestroyed(fork); mapChanged = true; } }
 
     @Override public void addLocomotive(Locomotive locomotive) {
         this.locomotives.add(locomotive);
         if (locomotive.getTrain() != null) {
+            locomotive.getTrain().setModel(this);
             for (letrain.vehicle.impl.rail.TrainEventListener l : trainEventListeners) {
                 locomotive.getTrain().addTrainEventListener(l);
             }
@@ -295,11 +317,34 @@ public class Model implements letrain.mvp.Model {
     @Override public GameMode getMode() { return mode; }
 
     @Override public void setMode(GameMode mode) {
+        if (this.mode == GameMode.RAILS && mode != GameMode.RAILS && mapChanged) {
+            log.info("Tabula Rasa triggered: map changed during editing.");
+            blockManager.clearAll();
+            currentGraph = null;
+            // Re-bind all trains to the new graph and re-establish locks
+            if (locomotives != null) {
+                for (Locomotive loco : locomotives) {
+                    if (loco.getTrain() != null) {
+                        loco.getTrain().rebind();
+                    }
+                }
+            }
+            mapChanged = false;
+        }
         this.mode = mode;
         if (mode == GameMode.FORKS && selectedFork == null && !getForks().isEmpty()) {
             selectedFork = getForks().get(0);
             selectedForkIndex = 0;
         }
+    }
+
+    public letrain.core.segments.RailwayGraph getRailwayGraph() {
+        if (currentGraph == null) {
+            log.info("Discovering railway topology...");
+            TopologyService topologyService = new TopologyServiceImpl();
+            currentGraph = topologyService.discover(getRailMap());
+        }
+        return currentGraph;
     }
 
     @Override public ForkRailTrack getSelectedFork() { return selectedFork; }
@@ -379,6 +424,7 @@ public class Model implements letrain.mvp.Model {
         RailTrack track = map.getTrackAt(semaphore.getPosition());
         if (track != null) track.setSemaphore(semaphore);
         setupSemaphoreSystemListeners(semaphore);
+        mapChanged = true;
     }
 
     private void setupSemaphoreSystemListeners(RailSemaphore semaphore) {
@@ -396,6 +442,7 @@ public class Model implements letrain.mvp.Model {
             getEconomyManager().onSemaphoreDestroyed(semaphore);
             RailTrack track = map.getTrackAt(semaphore.getPosition());
             if (track != null) track.setSemaphore(null);
+            mapChanged = true;
         }
     }
 
@@ -464,6 +511,7 @@ public class Model implements letrain.mvp.Model {
         stations.add(station);
         getEconomyManager().onStationConstructed();
         setupStationSystemListeners(station);
+        mapChanged = true;
     }
 
     private void setupStationSystemListeners(Station station) {
@@ -482,7 +530,7 @@ public class Model implements letrain.mvp.Model {
         });
     }
 
-    @Override public void removeStation(Station Station) { if (stations.remove(Station)) getEconomyManager().onStationDestroyed(); }
+    @Override public void removeStation(Station Station) { if (stations.remove(Station)) { getEconomyManager().onStationDestroyed(); mapChanged = true; } }
     @Override public Station getStation(int id) {
         for (Station Station : getStations()) { if (Station.getId() == id) return Station; }
         return null;
@@ -622,9 +670,7 @@ public class Model implements letrain.mvp.Model {
     @Override
     @JsonIgnore
     public String getRailwayGraphReport() {
-        TopologyService topologyService = new TopologyServiceImpl();
-        RailwayGraph graph = topologyService.discover(getRailMap());
-        return graph.toString();
+        return getRailwayGraph().toString();
     }
 
     public void setEconomyManager(EconomyManager economyManager) { this.economyManager = economyManager; }
@@ -644,4 +690,9 @@ public class Model implements letrain.mvp.Model {
     public void setNextStationId(int nextStationId) { this.nextStationId = nextStationId; }
     public void setSeed(int seed) { this.seed = seed; }
     public void setEventLogManager(EventLogManager eventLogManager) { this.eventLogManager = eventLogManager; }
+
+    @Override
+    public letrain.core.segments.BlockManager getBlockManager() {
+        return blockManager;
+    }
 }

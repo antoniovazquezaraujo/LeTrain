@@ -318,6 +318,12 @@ public class RailTrackMaker {
         Point position = presenter.getModel().getCursor().getPosition();
         RailTrack track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
+            // ADR-005: Prohibido modificar o eliminar raíles con vehículos encima
+            if (track.getLinker() != null) {
+                log.warn("Cannot remove occupied track at {}", position);
+                return;
+            }
+
             if (track.getSensor() != null) {
                 if (track.getSensor() instanceof letrain.track.Station) {
                     presenter.getModel().removeStation((letrain.track.Station) track.getSensor());
@@ -332,6 +338,7 @@ public class RailTrackMaker {
                 presenter.getModel().removeFork((letrain.track.rail.ForkRailTrack) track);
             }
             presenter.getModel().getRailMap().removeTrack(position);
+            presenter.getModel().setMapChanged(true);
         }
 
         if (moveCursor) {
@@ -541,6 +548,7 @@ public class RailTrackMaker {
         }
         track.setPosition(actualCursorPosition);
         presenter.getModel().getRailMap().addTrack(actualCursorPosition, track);
+        presenter.getModel().setMapChanged(true);
         presenter.getModel().getEconomyManager().onRailTrackConstructed(newTrackType);
         if (canBeAFork(track, oldDir, dir)) {
             RailTrack trackToSubstitute = track;
@@ -575,6 +583,7 @@ public class RailTrackMaker {
     private void substituteInMapTrackWithFork(RailTrack track1, final ForkRailTrack fork) {
         presenter.getModel().getRailMap().removeTrack(track1.getPosition());
         presenter.getModel().getRailMap().addTrack(presenter.getModel().getCursor().getPosition(), fork);
+        presenter.getModel().setMapChanged(true);
     }
 
     ForkRailTrack createForkRailTrack(Point cursorPosition, RailTrack track) {
