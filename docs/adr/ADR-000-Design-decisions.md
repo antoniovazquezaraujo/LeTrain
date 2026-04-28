@@ -1,46 +1,42 @@
 # ADR-000: Sistema de Guiado Automático (Fase 1: Guiado Topológico)
 
 ## Estado
-Propuesto
+Implementado / En Evolución
 
 ## Contexto
-Se requiere un sistema que permita a un tren alcanzar un destino de forma autónoma basándose en la topología de la red ferroviaria. Se descarta el seguimiento baldosa a baldosa en favor de un modelo de grafos.
+Se requiere un sistema que permita a un tren alcanzar un destino de forma autónoma basándose en la topología de la red ferroviaria. Se descarta el seguimiento baldosa a baldosa en favor de un modelo de grafos lógicos que desacople la navegación de la física del raíl.
 
 ## Decisión: Abstracción Topológica por Segmentos
 
-### 1. Entidades Mínimas
-- **RailNode**: Punto de decisión o frontera (Forks, Topes de vía). Gestiona su propia lista de `PathSteps` de salida.
-- **PathStep**: Una intención o decisión en un nodo: `(RailNode, Dir)`.
-- **Segment**: Conexión física única entre dos `RailNode`. Se define mediante un `Pair<PathStep, PathStep>` que representa sus dos extremos.
+### 1. Entidades Fundamentales
+- **RailNode**: Punto de decisión o frontera (Forks, Topes, Estaciones, Sensores). Es el "dueño" de la conectividad.
+- **PathStep**: La unidad mínima de intención. Combina un `RailNode` con una dirección (`Dir`) de salida.
+- **Segment**: El tramo atómico de vía entre dos nodos. Es el contenedor de la propiedad física y los elementos operativos.
 
 ### 2. Interfaz del Grafo (`RailwayGraph`)
-El sistema se basará en una interfaz que gestione la conectividad sin conocer los detalles físicos de los raíles.
+El `RailwayGraph` es la fuente de verdad para la navegación y el contexto operativo.
 
 ```java
 public interface RailwayGraph {
-    /**
-     * Dado un PathStep, devuelve el segmento al que pertenece.
-     */
+    // --- Navegación ---
     Segment getSegment(PathStep step);
-
-    /**
-     * Dado un paso actual, devuelve los posibles pasos siguientes 
-     * al final del segmento. Devuelve null si es fin de vía.
-     */
     List<PathStep> getNextSteps(PathStep current);
-
-    /**
-     * Encuentra la secuencia de segmentos que conectan dos segmentos dados.
-     */
     List<Segment> findPath(Segment start, Segment end);
+
+    // --- Contexto Operativo ---
+    List<Station> getStations(Segment segment);
+    List<Sensor> getSensors(Segment segment);
+    Segment getSegment(RailTrack track);
 }
 ```
 
-### 3. Lógica de Implementación Simple
-- El `RailwayGraph` mantendrá un mapeo `Map<PathStep, Segment>` y un registro de qué segmentos llegan a cada `Node`.
-- Para encontrar el "Siguiente Paso", el grafo identifica el nodo opuesto en el segmento y consulta los pasos de salida de dicho nodo.
+### 3. Lógica de Descubrimiento
+El `TopologyService` realiza un crawl (rastreo) recursivo del mapa físico para construir el grafo. Durante este proceso, asocia dinámicamente cada raíl, estación y sensor al `Segment` correspondiente.
 
 ## Consecuencias
-- **Desacoplamiento:** La lógica de navegación es independiente de si la vía es curva, recta o un túnel.
-- **Eficiencia:** Las búsquedas de ruta se realizan sobre un grafo de nodos reducido.
-- **Robustez:** La integridad se mantiene siempre que los `Segments` y sus `Nodes` estén correctamente vinculados.
+- **Independencia del Motor Físico:** El buscador de rutas no necesita saber si la vía es curva o recta.
+- **Soporte para Seguridad:** Los segmentos atómicos permiten implementar bloqueos robustos (ADR-005).
+- **Visibilidad Operativa:** El sistema sabe exactamente qué estaciones hay "delante" en el grafo, permitiendo una planificación de paradas mucho más sencilla.
+
+---
+*Última actualización: 2026-04-28*
