@@ -15,18 +15,22 @@ Tras el descarte de implementaciones anteriores que resultaron inestables, se pr
 ## Entidades Propuestas
 
 ### 1. El Itinerario (Itinerary)
-Una secuencia lógica de estaciones u objetivos. A diferencia de las versiones descartadas, el itinerario no debe contener la ruta física, sino solo los "puntos de paso". La ruta física se recalcula dinámicamente según el estado de los desvíos y la ocupación.
+Una secuencia lógica de estaciones u objetivos.
+- **Persistencia de Estaciones**: El itinerario se basa en IDs de estación persistentes. Tras una regeneración del grafo (Tabula Rasa), el sistema debe buscar automáticamente en qué nuevo segmento reside cada estación del itinerario.
+- **Dinamismo**: El itinerario no contiene la ruta física, sino solo los puntos de paso. La ruta física se recalcula dinámicamente.
 
 ### 2. El Piloto Automático (AutoPilot)
-Componente que se acoplará al tren para:
-- Solicitar rutas al `PathResolver`.
-- Negociar bloqueos con el `BlockManager`.
-- Ajustar la velocidad física de la locomotora.
-- Reaccionar a eventos de estación (Carga/Descarga).
+Componente que se acoplará al tren para orquestar la navegación:
+- **Recálculo Obligatorio**: Tras cualquier regeneración del mapa o cambio en la topología, el AutoPilot debe recalcular la ruta íntegramente desde su nueva posición física.
+- **Gestión de Bloqueos**: Negocia con el `BlockManager` el acceso a los segmentos.
 
 ## Reglas de Navegación Propuestas
 - **Engagement**: El piloto automático solo se activa si la locomotora "ve" un camino claro hacia el primer punto del itinerario.
-- **Inversión Atómica**: Al llegar al final de una línea, el tren debe realizar una secuencia segura: Parada completa -> Inversión de marcha -> Recálculo de ruta.
+- **Inversión Atómica**: Al llegar al final de una línea o por orden manual, el tren realiza una secuencia segura:
+    1. Parada completa.
+    2. **Liberación Preventiva**: Se ejecuta un `release()` de todos los segmentos bloqueados "hacia adelante" que ya no formarán parte de la nueva ruta.
+    3. Inversión física de marcha.
+    4. Recálculo íntegro de la ruta.
 - **Prioridad de Seguridad**: Ante cualquier pérdida de integridad del bloque o ruta, el `AutoPilot` debe devolver el control al manual tras una frenada de emergencia.
 
 ## Próximos Pasos

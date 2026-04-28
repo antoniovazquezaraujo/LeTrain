@@ -9,7 +9,7 @@ Se requiere un sistema que permita a un tren alcanzar un destino de forma autón
 ## Decisión: Abstracción Topológica por Segmentos
 
 ### 1. Entidades Fundamentales
-- **RailNode**: Punto de decisión o frontera (Forks, Topes, Estaciones, Sensores). Es el "dueño" de la conectividad.
+- **RailNode**: Punto de decisión o frontera lógica. Se limita exclusivamente a **Forks** (desvíos) y **Topes de vía**. Es el "dueño" de la conectividad y define los límites de los segmentos.
 - **PathStep**: La unidad mínima de intención. Combina un `RailNode` con una dirección (`Dir`) de salida.
 - **Segment**: El tramo atómico de vía entre dos nodos. Es el contenedor de la propiedad física y los elementos operativos.
 
