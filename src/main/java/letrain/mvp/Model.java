@@ -217,5 +217,8 @@ public interface Model {
 
     void updateGroundMap(Point p, int type, int variation);
 
+    boolean isMapChanged();
+    void setMapChanged(boolean mapChanged);
+
     letrain.core.segments.BlockManager getBlockManager();
 }

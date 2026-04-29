@@ -8,6 +8,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -71,7 +73,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     }
 
     public void setShuntingMode(boolean shuntingMode) {
-        if (getDirectorLinker() != null && ((Locomotive)getDirectorLinker()).getCurrentSpeed() > 0) {
+        if (getDirectorLinker() != null && ((Locomotive)getDirectorLinker()).getSpeed() > 0) {
             log.warn("Cannot change shunting mode while train is moving");
             return;
         }
