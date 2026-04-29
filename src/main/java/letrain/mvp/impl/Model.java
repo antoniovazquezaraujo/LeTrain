@@ -47,6 +47,7 @@ public class Model implements letrain.mvp.Model {
 
     private transient boolean mapChanged = false;
 
+    @JsonIgnore
     public boolean isMapChanged() {
         return mapChanged;
     }
@@ -338,6 +339,7 @@ public class Model implements letrain.mvp.Model {
         }
     }
 
+    @JsonIgnore
     public letrain.core.segments.RailwayGraph getRailwayGraph() {
         if (currentGraph == null) {
             log.info("Discovering railway topology...");
@@ -692,6 +694,7 @@ public class Model implements letrain.mvp.Model {
     public void setEventLogManager(EventLogManager eventLogManager) { this.eventLogManager = eventLogManager; }
 
     @Override
+    @JsonIgnore
     public letrain.core.segments.BlockManager getBlockManager() {
         return blockManager;
     }
