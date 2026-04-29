@@ -42,4 +42,9 @@ public interface BlockManager {
      * Limpia todos los bloqueos registrados (Protocolo Tabula Rasa).
      */
     void clearAll();
+
+    /**
+     * Devuelve la lista de segmentos que posee actualmente un tren.
+     */
+    List<Segment> getOwnedSegments(Train train);
 }

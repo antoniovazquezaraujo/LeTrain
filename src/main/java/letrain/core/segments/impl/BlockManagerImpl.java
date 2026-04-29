@@ -93,4 +93,9 @@ public class BlockManagerImpl implements BlockManager {
     private void registerTrainSegment(Train train, Segment segment) {
         trainSegments.computeIfAbsent(train, k -> new CopyOnWriteArrayList<>()).add(segment);
     }
+
+    @Override
+    public List<Segment> getOwnedSegments(Train train) {
+        return trainSegments.getOrDefault(train, Collections.emptyList());
+    }
 }

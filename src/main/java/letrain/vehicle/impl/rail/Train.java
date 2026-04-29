@@ -442,6 +442,17 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         if (isLoading) {
             return false;
         }
+
+        if (model != null) {
+            if (!checkSafety()) {
+                // Si la seguridad falla (no tenemos bloqueo del siguiente segmento),
+                // forzamos el frenado de la locomotora.
+                if (directorLinker instanceof Locomotive) {
+                    ((Locomotive) directorLinker).setTargetSpeed(0);
+                }
+            }
+        }
+
         boolean normalSense = true;
         if (getDirectorLinker().isReversed()) {
             normalSense = false;
@@ -450,6 +461,106 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         setDirPushedLinkers(normalSense);
         setDirTowedLinkers(normalSense);
         return moveLinkers(normalSense);
+    }
+
+    /**
+     * Implementación del Mandamiento 5 del ADR-005 (Reserva en Cascada).
+     * Verifica que poseemos el segmento actual y el siguiente.
+     * @return true si es seguro moverse, false si hay que frenar.
+     */
+    private boolean checkSafety() {
+        if (shuntingMode) return true; // En Shunting Mode las reglas de exclusividad se relajan
+
+        letrain.core.segments.BlockManager bm = model.getBlockManager();
+        letrain.core.segments.RailwayGraph graph = ((letrain.mvp.impl.Model)model).getRailwayGraph();
+        
+        Linker head = (Linker) getDirectorLinker();
+        if (!(head.getTrack() instanceof RailTrack)) return true;
+        
+        RailTrack currentTrack = (RailTrack) head.getTrack();
+        letrain.core.segments.Segment sCurrent = graph.getSegment(currentTrack);
+        if (sCurrent == null) return true;
+
+        // 1. Asegurar que poseemos el actual (re-validación)
+        if (!bm.getOwners(sCurrent).contains(this)) {
+            if (!bm.tryLock(this, sCurrent)) return false;
+        }
+
+        // 2. Identificar y asegurar el siguiente segmento
+        letrain.core.segments.Segment sNext = findNextSegment(head, graph);
+        if (sNext != null && !sNext.equals(sCurrent)) {
+            if (!bm.getOwners(sNext).contains(this)) {
+                if (!bm.tryLock(this, sNext)) {
+                    log.info("Train {} could not lock next segment {}. Braking.", id, sNext.getId());
+                    return false;
+                }
+                log.info("Train {} locked next segment {}", id, sNext.getId());
+            }
+        }
+
+        // 3. Liberar segmentos que ya no ocupamos (cola)
+        // ADR-005: Se libera cuando el último vagón ha salido TOTALMENTE del segmento anterior.
+        releaseOldSegments(bm, graph);
+
+        return true;
+    }
+
+    private letrain.core.segments.Segment findNextSegment(Linker head, letrain.core.segments.RailwayGraph graph) {
+        Dir exitDir = head.getDir();
+        Track nextT = head.getTrack().getConnected(exitDir);
+        if (!(nextT instanceof RailTrack)) return null;
+        
+        letrain.core.segments.Segment nextS = graph.getSegment((RailTrack) nextT);
+        // Si el siguiente raíl ya es otro segmento, ese es el sNext
+        if (nextS != null && !nextS.equals(graph.getSegment((RailTrack)head.getTrack()))) {
+            return nextS;
+        }
+        
+        // Si el siguiente raíl es del mismo segmento, tenemos que buscar más adelante
+        // hasta encontrar el primer cambio de segmento.
+        RailIterator it = new RailIterator(nextT, exitDir);
+        // Límite de búsqueda para evitar bucles infinitos en circuitos cerrados de un solo segmento (poco probable)
+        for (int i = 0; i < 500; i++) {
+            Track t = it.getTrack();
+            letrain.core.segments.Segment s = graph.getSegment((RailTrack) t);
+            if (s != null && !s.equals(graph.getSegment((RailTrack)head.getTrack()))) {
+                return s;
+            }
+            if (!it.advance()) break;
+        }
+        return null;
+    }
+
+    private void releaseOldSegments(letrain.core.segments.BlockManager bm, letrain.core.segments.RailwayGraph graph) {
+        Linker tail = getLinkers().peekLast(); // El último de la lista (asumiendo sentido normal)
+        // En realidad hay que mirar todos los linkers para ver qué segmentos ocupan físicamente
+        Set<letrain.core.segments.Segment> physicallyOccupied = new HashSet<>();
+        for (Linker l : getLinkers()) {
+            if (l.getTrack() instanceof RailTrack) {
+                letrain.core.segments.Segment s = graph.getSegment((RailTrack) l.getTrack());
+                if (s != null) physicallyOccupied.add(s);
+            }
+        }
+        
+        // Obtenemos lo que poseemos en el BlockManager y soltamos lo que ya no pisamos
+        // NOTA: El ADR dice que hay que esperar a despejar el Fork. 
+        // Como los segmentos terminan en Forks, si ya no pisamos ningún raíl de un segmento, 
+        // es que ya hemos cruzado el Fork.
+        List<letrain.core.segments.Segment> owned = bm.getOwnedSegments(this);
+        for (letrain.core.segments.Segment s : owned) {
+            if (!physicallyOccupied.contains(s)) {
+                // Solo soltamos si no es el sNext que acabamos de pedir
+                // (Aunque físicamente no lo pisemos aún, lo necesitamos poseer)
+                // Pero sNext no estará en physicallyOccupied todavía, así que cuidado.
+                
+                // Mejor: Si s no está en physicallyOccupied AND no es el segmento que tiene la locomotora delante.
+                letrain.core.segments.Segment sNext = findNextSegment((Linker)getDirectorLinker(), graph);
+                if (sNext == null || !s.equals(sNext)) {
+                    bm.release(this, s);
+                    log.info("Train {} released segment {}", id, s.getId());
+                }
+            }
+        }
     }
 
     public void refreshLinkersDirection() {
