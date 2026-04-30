@@ -18,6 +18,7 @@ import letrain.visitor.Visitor;
 public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     int id;
+    private boolean locked = false;
     private letrain.map.Dir creationDir = letrain.map.Dir.E;
     private transient List<ForkEventListener> listeners = new ArrayList<>();
     private transient List<ForkEventListener> systemListeners = new ArrayList<>();
@@ -71,6 +72,14 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public boolean isLocked() {
+        return locked;
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
     }
 
     public void onEnterTrain(letrain.vehicle.impl.rail.Train train) {
@@ -191,6 +200,21 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     @Override
     public boolean flipRoute() {
+        // ADR-005 Mandamiento 6: Bloqueo de Agujas
+        // 1. Bloqueo Físico: Prohibido si hay cualquier vehículo encima.
+        if (getLinker() != null) {
+            return false;
+        }
+
+        // 2. Bloqueo Lógico (Anclaje): Prohibido si algún tren tiene bloqueado un segmento que depende de este Fork.
+        // Necesitamos acceso al BlockManager para esto. 
+        // Como no queremos pasar el Model a cada RailTrack, lo gestionamos a través de los systemListeners
+        // o permitiendo que el llamador lo verifique.
+        // Sin embargo, para cumplir el ADR, el Fork debe ser capaz de denegar el cambio.
+        if (isLocked()) {
+            return false;
+        }
+
         boolean ret = getRouter().flipRoute();
         if (listeners != null) {
             for (ForkEventListener listener : listeners) {

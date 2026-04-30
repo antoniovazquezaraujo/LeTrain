@@ -374,6 +374,10 @@ public class Gdx3DView extends ApplicationAdapter
         hud.render(Gdx.graphics.getDeltaTime());
     }
 
+    public CameraController getCameraController() {
+        return cameraController;
+    }
+
     // Presenter implementation
     @Override
     public letrain.mvp.View getView() {

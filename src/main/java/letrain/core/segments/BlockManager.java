@@ -47,4 +47,9 @@ public interface BlockManager {
      * Devuelve la lista de segmentos que posee actualmente un tren.
      */
     List<Segment> getOwnedSegments(Train train);
+
+    /**
+     * Devuelve todos los segmentos que tienen algún bloqueo activo.
+     */
+    java.util.Set<Segment> getAllLockedSegments();
 }

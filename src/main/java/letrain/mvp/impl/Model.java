@@ -119,7 +119,15 @@ public class Model implements letrain.mvp.Model {
     }
 
     public Model() {
-        this.blockManager = new letrain.core.segments.impl.BlockManagerImpl();
+        letrain.core.segments.impl.BlockManagerImpl bmi = new letrain.core.segments.impl.BlockManagerImpl();
+        bmi.setOnReleaseListener(() -> {
+            for (Locomotive loco : locomotives) {
+                if (loco.getTrain() != null) {
+                    loco.getTrain().wakeUp();
+                }
+            }
+        });
+        this.blockManager = bmi;
         this.eventLogManager = new EventLogManager();
         this.economyManager = new letrain.economy.impl.EconomyManager(eventLogManager);
         this.economyManager.reloadConfig();
@@ -638,6 +646,23 @@ public class Model implements letrain.mvp.Model {
             if (train != null && !processedTrains.contains(train)) {
                 processedTrains.add(train);
                 sb.append("Train ID: ").append(train.getId()).append("\n");
+                sb.append("  Segments Owned: ");
+                java.util.List<letrain.core.segments.Segment> owned = getBlockManager().getOwnedSegments(train);
+                for (letrain.core.segments.Segment s : owned) sb.append(s.getId()).append(" ");
+                sb.append("\n");
+                
+                sb.append("  Current Segment: ").append(train.getCurrentSegment() != null ? train.getCurrentSegment().getId() : "None").append("\n");
+                sb.append("  Next Segment: ").append(train.getNextSegment() != null ? train.getNextSegment().getId() : "None").append("\n");
+                if (!train.hasPermissionToMove() && train.getNextSegment() != null) {
+                    java.util.List<letrain.vehicle.impl.rail.Train> blockers = getBlockManager().getOwners(train.getNextSegment());
+                    sb.append("  Permission: WAITING (Blocked by: ");
+                    if (blockers.isEmpty()) sb.append("Logic/Retry Timer");
+                    else { for (letrain.vehicle.impl.rail.Train b : blockers) sb.append("Train ").append(b.getId()).append(" "); }
+                    sb.append(")\n");
+                } else {
+                    sb.append("  Permission: ").append(train.hasPermissionToMove() ? "GRANTED" : "WAITING").append("\n");
+                }
+
                 int wagonCount = 0;
                 for (letrain.vehicle.impl.Linker l : train.getLinkers()) { if (l instanceof Wagon) wagonCount++; }
                 sb.append("  Wagons: ").append(wagonCount).append("\n");
@@ -672,7 +697,30 @@ public class Model implements letrain.mvp.Model {
     @Override
     @JsonIgnore
     public String getRailwayGraphReport() {
-        return getRailwayGraph().toString();
+        StringBuilder sb = new StringBuilder();
+        sb.append(getRailwayGraph().toString());
+        
+        sb.append("\n\n--- SEGMENT OWNERSHIP ---\n");
+        letrain.core.segments.BlockManager bm = getBlockManager();
+        java.util.Set<letrain.core.segments.Segment> segments = bm.getAllLockedSegments();
+        
+        if (segments.isEmpty()) {
+            sb.append("No active segment locks.\n");
+        } else {
+            for (letrain.core.segments.Segment s : segments) {
+                java.util.List<letrain.vehicle.impl.rail.Train> owners = bm.getOwners(s);
+                if (!owners.isEmpty()) {
+                    sb.append("Segment ").append(s.getId()).append(" owned by: ");
+                    for (letrain.vehicle.impl.rail.Train train : owners) {
+                        sb.append("Train ").append(train.getId()).append(" ");
+                    }
+                    sb.append("\n");
+                }
+            }
+        }
+        
+        sb.append("\n").append(getGameObjectsReport());
+        return sb.toString();
     }
 
     public void setEconomyManager(EconomyManager economyManager) { this.economyManager = economyManager; }

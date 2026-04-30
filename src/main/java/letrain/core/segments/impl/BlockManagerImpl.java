@@ -13,14 +13,16 @@ public class BlockManagerImpl implements BlockManager {
     private final Map<Segment, List<Train>> segmentOwners = new ConcurrentHashMap<>();
     // Mapa inverso para optimizar consultas de trenes
     private final Map<Train, List<Segment>> trainSegments = new ConcurrentHashMap<>();
+    private Runnable onReleaseListener;
+
+    public void setOnReleaseListener(Runnable listener) {
+        this.onReleaseListener = listener;
+    }
 
     @Override
     public boolean tryLock(Train train, Segment segment) {
         List<Train> owners = segmentOwners.computeIfAbsent(segment, k -> new CopyOnWriteArrayList<>());
         
-        // Si ya hay dueños (incluso si soy yo mismo para re-bloqueo), no permitimos bloqueo exclusivo
-        // Nota: Si soy yo mismo, el ADR no especifica si debemos permitir el tryLock de nuevo.
-        // Asumimos que si ya lo tengo, el éxito es trivial.
         if (!owners.isEmpty() && !owners.contains(train)) {
             return false;
         }
@@ -28,20 +30,21 @@ public class BlockManagerImpl implements BlockManager {
         if (!owners.contains(train)) {
             owners.add(train);
             registerTrainSegment(train, segment);
+            updateForkLocks(segment, true);
         }
         return true;
     }
 
     @Override
     public boolean tryShuntingLock(Train train, Segment segment) {
-        // En modo Shunting, permitimos compartir siempre.
-        // El ADR menciona "Adicionalmente, ningún tren debe estar moviéndose". 
-        // Como el BlockManager no conoce velocidades, esa validación debe hacerse en el llamador (AutoPilot/Train).
         List<Train> owners = segmentOwners.computeIfAbsent(segment, k -> new CopyOnWriteArrayList<>());
         
         if (!owners.contains(train)) {
             owners.add(train);
             registerTrainSegment(train, segment);
+            // En Shunting, el anclaje se relaja según ADR-005, 
+            // pero el bloqueo FÍSICO (vehículo encima) sigue mandando.
+            // No activamos updateForkLocks aquí.
         }
         return true;
     }
@@ -53,6 +56,10 @@ public class BlockManagerImpl implements BlockManager {
             owners.remove(train);
             if (owners.isEmpty()) {
                 segmentOwners.remove(segment);
+                updateForkLocks(segment, false);
+                if (onReleaseListener != null) {
+                    onReleaseListener.run();
+                }
             }
         }
         
@@ -63,6 +70,19 @@ public class BlockManagerImpl implements BlockManager {
                 trainSegments.remove(train);
             }
         }
+    }
+
+    private void updateForkLocks(Segment segment, boolean lock) {
+        // Los Forks que definen un segmento son sus extremos (RailNodes)
+        segment.getSteps().getFirst().getRailNode().getOutSteps().stream()
+            .map(ps -> ps.getRailNode().getTrack())
+            .filter(t -> t instanceof letrain.track.rail.ForkRailTrack)
+            .forEach(f -> ((letrain.track.rail.ForkRailTrack)f).setLocked(lock));
+
+        segment.getSteps().getSecond().getRailNode().getOutSteps().stream()
+            .map(ps -> ps.getRailNode().getTrack())
+            .filter(t -> t instanceof letrain.track.rail.ForkRailTrack)
+            .forEach(f -> ((letrain.track.rail.ForkRailTrack)f).setLocked(lock));
     }
 
     @Override
@@ -97,5 +117,10 @@ public class BlockManagerImpl implements BlockManager {
     @Override
     public List<Segment> getOwnedSegments(Train train) {
         return trainSegments.getOrDefault(train, Collections.emptyList());
+    }
+
+    @Override
+    public Set<Segment> getAllLockedSegments() {
+        return segmentOwners.keySet();
     }
 }

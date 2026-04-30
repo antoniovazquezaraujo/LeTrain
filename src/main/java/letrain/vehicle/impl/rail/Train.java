@@ -67,9 +67,35 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     private boolean stalled = false;
     int id;
     private boolean shuntingMode = false;
+    private boolean permissionToMove = true;
+    private letrain.core.segments.Segment currentSegment;
+    private letrain.core.segments.Segment nextSegment;
+    private int safetyRetryTimer = 0;
+    private static final int SAFETY_RETRY_TICKS = 300; // 15s at 20fps
 
     public boolean isShuntingMode() {
-        return shuntingMode;
+        if (shuntingMode) return true;
+        if (model != null && currentSegment != null) {
+            java.util.List<Train> owners = model.getBlockManager().getOwners(currentSegment);
+            return owners.size() > 1; // Si hay más de un dueño, el segmento está degradado a Shunting
+        }
+        return false;
+    }
+
+    public letrain.core.segments.Segment getCurrentSegment() {
+        return currentSegment;
+    }
+
+    public letrain.core.segments.Segment getNextSegment() {
+        return nextSegment;
+    }
+
+    public boolean hasPermissionToMove() {
+        return permissionToMove;
+    }
+
+    public void wakeUp() {
+        this.safetyRetryTimer = 0;
     }
 
     public void setShuntingMode(boolean shuntingMode) {
@@ -444,12 +470,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         }
 
         if (model != null) {
-            if (!checkSafety()) {
-                // Si la seguridad falla (no tenemos bloqueo del siguiente segmento),
-                // forzamos el frenado de la locomotora.
+            if (!checkSafetyOptimized()) {
+                // Si la seguridad falla, forzamos el frenado.
                 if (directorLinker instanceof Locomotive) {
                     ((Locomotive) directorLinker).setTargetSpeed(0);
                 }
+                return false;
             }
         }
 
@@ -464,12 +490,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     }
 
     /**
-     * Implementación del Mandamiento 5 del ADR-005 (Reserva en Cascada).
-     * Verifica que poseemos el segmento actual y el siguiente.
-     * @return true si es seguro moverse, false si hay que frenar.
+     * Implementación del Mandamiento 5 del ADR-005 con lógica de 'Permiso de Movimiento'.
+     * @return true si el tren tiene permiso para avanzar por el segmento actual.
      */
-    private boolean checkSafety() {
-        if (shuntingMode) return true; // En Shunting Mode las reglas de exclusividad se relajan
+    private boolean checkSafetyOptimized() {
+        if (shuntingMode) return true;
 
         letrain.core.segments.BlockManager bm = model.getBlockManager();
         letrain.core.segments.RailwayGraph graph = ((letrain.mvp.impl.Model)model).getRailwayGraph();
@@ -477,57 +502,101 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         Linker head = (Linker) getDirectorLinker();
         if (!(head.getTrack() instanceof RailTrack)) return true;
         
-        RailTrack currentTrack = (RailTrack) head.getTrack();
-        letrain.core.segments.Segment sCurrent = graph.getSegment(currentTrack);
-        if (sCurrent == null) return true;
+        RailTrack headTrack = (RailTrack) head.getTrack();
+        letrain.core.segments.Segment headS = graph.getSegment(headTrack);
+        if (headS == null) return true;
 
-        // 1. Asegurar que poseemos el actual (re-validación)
-        if (!bm.getOwners(sCurrent).contains(this)) {
-            if (!bm.tryLock(this, sCurrent)) return false;
+        // 1. Detectar cambio de segmento para resetear el permiso
+        if (currentSegment == null || !headS.equals(currentSegment)) {
+            currentSegment = headS;
+            // Asegurarnos de poseer el segmento actual (Mandamiento 1: Pisar es poseer)
+            if (!bm.getOwnedSegments(this).contains(currentSegment)) {
+                bm.tryLock(this, currentSegment);
+            }
+            permissionToMove = false; // Al entrar en uno nuevo, perdemos el permiso hasta bloquear el siguiente
+            nextSegment = findNextSegmentTopological(head, graph);
+            safetyRetryTimer = 0; // Intentar inmediatamente
         }
 
-        // 2. Identificar y asegurar el siguiente segmento
-        letrain.core.segments.Segment sNext = findNextSegment(head, graph);
-        if (sNext != null && !sNext.equals(sCurrent)) {
-            if (!bm.getOwners(sNext).contains(this)) {
-                if (!bm.tryLock(this, sNext)) {
-                    log.info("Train {} could not lock next segment {}. Braking.", id, sNext.getId());
-                    return false;
+        // 2. Si no tenemos permiso, intentar conseguirlo (bloquear Sn+1)
+        if (!permissionToMove) {
+            if (safetyRetryTimer <= 0) {
+                if (nextSegment == null || nextSegment.equals(currentSegment)) {
+                    permissionToMove = true; // No hay siguiente, podemos avanzar libremente
+                } else {
+                    if (bm.tryLock(this, nextSegment)) {
+                        log.info("Train {} granted permission to move into {}. Next segment {} locked.", 
+                            id, currentSegment.getId(), nextSegment.getId());
+                        permissionToMove = true;
+                    } else {
+                        log.debug("Train {} denied permission. Segment {} occupied. Retrying in 15s.", 
+                            id, nextSegment.getId());
+                        safetyRetryTimer = SAFETY_RETRY_TICKS;
+                    }
                 }
-                log.info("Train {} locked next segment {}", id, sNext.getId());
+            } else {
+                safetyRetryTimer--;
             }
         }
 
-        // 3. Liberar segmentos que ya no ocupamos (cola)
-        // ADR-005: Se libera cuando el último vagón ha salido TOTALMENTE del segmento anterior.
+        // 3. Liberación de segmentos antiguos
         releaseOldSegments(bm, graph);
 
-        return true;
+        // 4. Lógica de frenado proactivo (Mandamiento 3)
+        if (!permissionToMove) {
+            // No tenemos permiso para entrar en el SIGUIENTE. Pero estamos EN el actual.
+            // Iniciamos frenado de servicio (targetSpeed 0)
+            if (directorLinker instanceof Locomotive) {
+                ((Locomotive) directorLinker).setTargetSpeed(0);
+            }
+
+            // Si hemos cruzado la frontera física hacia el siguiente sin permiso: ENTRADA ILEGAL
+            Track nextTrack = headTrack.getConnected(head.getDir());
+            if (nextTrack != null && (nextTrack instanceof ForkRailTrack || graph.getSegment((RailTrack)nextTrack) != headS)) {
+                if (nextSegment != null) {
+                    log.warn("Train {} ENTERED ILLEGALLY into segment {}. Forcing segment shunting.", id, nextSegment.getId());
+                    bm.tryShuntingLock(this, nextSegment);
+                    permissionToMove = true; // Obtenemos el permiso "por la fuerza"
+                }
+            }
+        }
+
+        return true; // Siempre permitimos el movimiento, la física decidirá si frena a tiempo o no
     }
 
-    private letrain.core.segments.Segment findNextSegment(Linker head, letrain.core.segments.RailwayGraph graph) {
+    private letrain.core.segments.Segment findNextSegmentTopological(Linker head, letrain.core.segments.RailwayGraph graph) {
+        RailTrack headTrack = (RailTrack) head.getTrack();
+        letrain.core.segments.Segment s = graph.getSegment(headTrack);
+        if (s == null) return null;
+
+        // Buscamos el PathStep de salida de este segmento basado en la dirección de la locomotora
+        letrain.core.segments.PathStep exitStep = s.getSteps().getFirst().getRailNode().getTrack() == headTrack 
+            ? s.getSteps().getSecond() : s.getSteps().getFirst();
+        
+        // Pero eso asume que conocemos el sentido. Mejor: usamos el sentido real de la locomotora.
         Dir exitDir = head.getDir();
-        Track nextT = head.getTrack().getConnected(exitDir);
-        if (!(nextT instanceof RailTrack)) return null;
+        // El nodo de salida es el que está en la dirección de movimiento
+        // En un segmento atómico, solo hay un nodo de salida posible en cada dirección.
         
-        letrain.core.segments.Segment nextS = graph.getSegment((RailTrack) nextT);
-        // Si el siguiente raíl ya es otro segmento, ese es el sNext
-        if (nextS != null && !nextS.equals(graph.getSegment((RailTrack)head.getTrack()))) {
-            return nextS;
-        }
+        // Reutilizamos la lógica del grafo para ver qué sigue al nodo en esa dirección
+        List<letrain.core.segments.PathStep> nextSteps = graph.getNextSteps(new letrain.core.segments.impl.PathStepImpl(
+            new letrain.core.segments.impl.RailNodeImpl(headTrack), exitDir));
         
-        // Si el siguiente raíl es del mismo segmento, tenemos que buscar más adelante
-        // hasta encontrar el primer cambio de segmento.
-        RailIterator it = new RailIterator(nextT, exitDir);
-        // Límite de búsqueda para evitar bucles infinitos en circuitos cerrados de un solo segmento (poco probable)
-        for (int i = 0; i < 500; i++) {
-            Track t = it.getTrack();
-            letrain.core.segments.Segment s = graph.getSegment((RailTrack) t);
-            if (s != null && !s.equals(graph.getSegment((RailTrack)head.getTrack()))) {
-                return s;
+        if (nextSteps == null || nextSteps.isEmpty()) {
+            // Si no hay pasos inmediatos, es que estamos dentro del segmento. 
+            // Buscamos el nodo extremo del segmento s que esté en el sentido de la marcha.
+            // Para eso, sí que necesitamos "caminar" un poco o usar la topología.
+            // Usemos un iterador ligero que salte directamente al siguiente nodo.
+            RailIterator it = new RailIterator(headTrack, exitDir);
+            while (it.advance()) {
+                Track t = it.getTrack();
+                letrain.core.segments.Segment nextS = graph.getSegment((RailTrack) t);
+                if (nextS != null && !nextS.equals(s)) return nextS;
             }
-            if (!it.advance()) break;
+        } else {
+            return graph.getSegment(nextSteps.get(0));
         }
+
         return null;
     }
 
@@ -554,7 +623,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 // Pero sNext no estará en physicallyOccupied todavía, así que cuidado.
                 
                 // Mejor: Si s no está en physicallyOccupied AND no es el segmento que tiene la locomotora delante.
-                letrain.core.segments.Segment sNext = findNextSegment((Linker)getDirectorLinker(), graph);
+                letrain.core.segments.Segment sNext = findNextSegmentTopological((Linker)getDirectorLinker(), graph);
                 if (sNext == null || !s.equals(sNext)) {
                     bm.release(this, s);
                     log.info("Train {} released segment {}", id, s.getId());

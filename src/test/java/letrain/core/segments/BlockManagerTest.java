@@ -24,6 +24,18 @@ class BlockManagerTest {
         segment = Mockito.mock(Segment.class);
         when(segment.getId()).thenReturn("S1");
         
+        PathStep ps1 = Mockito.mock(PathStep.class);
+        PathStep ps2 = Mockito.mock(PathStep.class);
+        RailNode rn1 = Mockito.mock(RailNode.class);
+        RailNode rn2 = Mockito.mock(RailNode.class);
+        
+        when(ps1.getRailNode()).thenReturn(rn1);
+        when(ps2.getRailNode()).thenReturn(rn2);
+        when(rn1.getOutSteps()).thenReturn(Collections.emptyList());
+        when(rn2.getOutSteps()).thenReturn(Collections.emptyList());
+        
+        when(segment.getSteps()).thenReturn(new letrain.utils.Pair<>(ps1, ps2));
+        
         trainA = Mockito.mock(Train.class);
         trainB = Mockito.mock(Train.class);
     }
