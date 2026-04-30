@@ -28,6 +28,12 @@ public interface BlockManager {
     void release(Train train, Segment segment);
 
     /**
+     * Libera todos los segmentos que posee un tren.
+     * Útil en caso de destrucción total del tren.
+     */
+    void releaseAll(Train train);
+
+    /**
      * Devuelve la lista de trenes que poseen actualmente el segmento.
      */
     List<Train> getOwners(Segment segment);

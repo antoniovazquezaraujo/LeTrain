@@ -27,4 +27,25 @@ public class SegmentImpl implements Segment {
     public String toString() {
         return "Segment[" + id + "]";
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SegmentImpl segment = (SegmentImpl) o;
+        // Identidad basada en el conjunto de pasos (orden-independiente)
+        if (steps == null || segment.steps == null) return false;
+        
+        return (java.util.Objects.equals(steps.getFirst(), segment.steps.getFirst()) && 
+                java.util.Objects.equals(steps.getSecond(), segment.steps.getSecond())) ||
+               (java.util.Objects.equals(steps.getFirst(), segment.steps.getSecond()) && 
+                java.util.Objects.equals(steps.getSecond(), segment.steps.getFirst()));
+    }
+
+    @Override
+    public int hashCode() {
+        if (steps == null) return 0;
+        // Hash independiente del orden de los pasos
+        return steps.getFirst().hashCode() + steps.getSecond().hashCode();
+    }
 }

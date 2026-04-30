@@ -300,6 +300,12 @@ public class Model implements letrain.mvp.Model {
             }
             @Override public void onDirectionChanged(boolean normal) {
                 eventLogManager.addEntry("Fork " + id + " set to " + (normal ? "Normal" : "Alternative"));
+                // Despertar a todos los trenes cuando cambia un desvío
+                for (Locomotive loco : locomotives) {
+                    if (loco.getTrain() != null) {
+                        loco.getTrain().resetSafetyTimer();
+                    }
+                }
             }
             @Override public void onExitTrain(Train train, boolean isForward) {
                 eventLogManager.addEntry("Train " + train.getId() + " exited Fork " + id);

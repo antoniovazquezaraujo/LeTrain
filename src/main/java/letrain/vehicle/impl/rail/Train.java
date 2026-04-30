@@ -259,14 +259,13 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             return;
         }
 
-        letrain.core.segments.RailwayGraph graph = ((letrain.mvp.impl.Model)model).getRailwayGraph();
+        letrain.core.segments.RailwayGraph graph = ((letrain.mvp.impl.Model) model).getRailwayGraph();
         letrain.core.segments.BlockManager blockManager = model.getBlockManager();
-        
-        // Limpiamos referencias viejas (aunque el BlockManager ya debería estar limpio por Tabula Rasa)
-        // Pero el tren también debe saber qué segmentos posee físicamente.
-        
+
         // ADR-005: Un tren debe reclamar sus segmentos basándose en su posición física.
-        // Por simplicidad en este MVP del rebind, miramos todas las piezas del tren.
+        // Liberamos primero lo que tengamos para evitar dejar basura en el BlockManager
+        blockManager.releaseAll(this);
+
         Set<letrain.core.segments.Segment> segmentsToClaim = new HashSet<>();
         for (Linker linker : linkers) {
             if (linker.getTrack() instanceof letrain.track.rail.RailTrack) {
@@ -287,7 +286,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         }
         log.info("Train {} rebound to {} segments (Shunting: {})", id, segmentsToClaim.size(), shuntingMode);
     }
-
     /**
      * Reinitializes transient fields after deserialization.
      */
@@ -461,6 +459,15 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     public void setStalled(boolean stalled) {
         this.stalled = stalled;
+    }
+
+    /**
+     * Resetea el temporizador de reintento de seguridad.
+     * Útil cuando ocurre un evento externo (como un cambio de desvío) que podría
+     * liberar el camino del tren.
+     */
+    public void resetSafetyTimer() {
+        this.safetyRetryTimer = 0;
     }
 
     public boolean advance() {

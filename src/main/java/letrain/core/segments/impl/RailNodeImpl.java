@@ -36,4 +36,17 @@ public class RailNodeImpl implements RailNode {
         }
         return "DeadEnd@" + track.getPosition();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RailNodeImpl railNode = (RailNodeImpl) o;
+        return java.util.Objects.equals(track.getPosition(), railNode.track.getPosition());
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(track.getPosition());
+    }
 }

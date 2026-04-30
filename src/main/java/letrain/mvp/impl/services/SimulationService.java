@@ -122,17 +122,19 @@ public class SimulationService {
 
     public void cleanupEntities() {
         AtomicBoolean removed = new AtomicBoolean(false);
-
-        model.getLocomotives().forEach(locomotive -> {
-            locomotive.updateDestroyTimer();
-            if (locomotive.isDestroyed()) {
-                removed.set(true);
-            }
-        });
+        Set<Train> affectedTrains = new HashSet<>();
 
         model.getLocomotives().removeIf(locomotive -> {
+            locomotive.updateDestroyTimer();
             if (locomotive.isDestroyed()) {
+                Train train = locomotive.getTrain();
+                if (train != null) {
+                    affectedTrains.add(train);
+                    train.getLinkers().remove(locomotive);
+                    train.assignDefaultDirectorLinker();
+                }
                 locomotive.getTrack().removeLinker();
+                removed.set(true);
                 return true;
             }
             return false;
@@ -141,11 +143,22 @@ public class SimulationService {
         model.getWagons().removeIf(wagon -> {
             wagon.updateDestroyTimer();
             if (wagon.isDestroyed()) {
+                Train train = wagon.getTrain();
+                if (train != null) {
+                    affectedTrains.add(train);
+                    train.getLinkers().remove(wagon);
+                }
                 wagon.getTrack().removeLinker();
                 return true;
             }
             return false;
         });
+
+        for (Train train : affectedTrains) {
+            if (train.isEmpty()) {
+                model.getBlockManager().releaseAll(train);
+            }
+        }
 
         if (removed.get()) {
             model.selectNextLocomotive();

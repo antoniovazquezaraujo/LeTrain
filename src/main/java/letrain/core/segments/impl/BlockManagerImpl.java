@@ -13,6 +13,11 @@ public class BlockManagerImpl implements BlockManager {
     private final Map<Segment, List<Train>> segmentOwners = new ConcurrentHashMap<>();
     // Mapa inverso para optimizar consultas de trenes
     private final Map<Train, List<Segment>> trainSegments = new ConcurrentHashMap<>();
+    
+    // Nueva estructura para el Mandamiento 6 (Regla de los Dos Segmentos):
+    // Mapa de Nodo (Fork) -> Mapa de Tren -> Contador de segmentos adyacentes bloqueados
+    private final Map<letrain.core.segments.RailNode, Map<Train, Integer>> forkOwnershipCounts = new ConcurrentHashMap<>();
+    
     private Runnable onReleaseListener;
 
     public void setOnReleaseListener(Runnable listener) {
@@ -30,7 +35,7 @@ public class BlockManagerImpl implements BlockManager {
         if (!owners.contains(train)) {
             owners.add(train);
             registerTrainSegment(train, segment);
-            updateForkLocks(segment, true);
+            updateForkLocks(segment, train, true);
         }
         return true;
     }
@@ -42,9 +47,7 @@ public class BlockManagerImpl implements BlockManager {
         if (!owners.contains(train)) {
             owners.add(train);
             registerTrainSegment(train, segment);
-            // En Shunting, el anclaje se relaja según ADR-005, 
-            // pero el bloqueo FÍSICO (vehículo encima) sigue mandando.
-            // No activamos updateForkLocks aquí.
+            // En Shunting, no bloqueamos desvíos por software
         }
         return true;
     }
@@ -53,12 +56,13 @@ public class BlockManagerImpl implements BlockManager {
     public void release(Train train, Segment segment) {
         List<Train> owners = segmentOwners.get(segment);
         if (owners != null) {
-            owners.remove(train);
-            if (owners.isEmpty()) {
-                segmentOwners.remove(segment);
-                updateForkLocks(segment, false);
-                if (onReleaseListener != null) {
-                    onReleaseListener.run();
+            if (owners.remove(train)) {
+                updateForkLocks(segment, train, false);
+                if (owners.isEmpty()) {
+                    segmentOwners.remove(segment);
+                    if (onReleaseListener != null) {
+                        onReleaseListener.run();
+                    }
                 }
             }
         }
@@ -72,17 +76,52 @@ public class BlockManagerImpl implements BlockManager {
         }
     }
 
-    private void updateForkLocks(Segment segment, boolean lock) {
-        // Los Forks que definen un segmento son sus extremos (RailNodes)
-        segment.getSteps().getFirst().getRailNode().getOutSteps().stream()
-            .map(ps -> ps.getRailNode().getTrack())
-            .filter(t -> t instanceof letrain.track.rail.ForkRailTrack)
-            .forEach(f -> ((letrain.track.rail.ForkRailTrack)f).setLocked(lock));
+    @Override
+    public void releaseAll(Train train) {
+        if (train == null) return;
+        List<Segment> owned = trainSegments.get(train);
+        if (owned != null) {
+            // Use a copy to avoid ConcurrentModificationException
+            List<Segment> copy = new ArrayList<>(owned);
+            for (Segment s : copy) {
+                release(train, s);
+            }
+        }
+    }
 
-        segment.getSteps().getSecond().getRailNode().getOutSteps().stream()
-            .map(ps -> ps.getRailNode().getTrack())
-            .filter(t -> t instanceof letrain.track.rail.ForkRailTrack)
-            .forEach(f -> ((letrain.track.rail.ForkRailTrack)f).setLocked(lock));
+    private void updateForkLocks(Segment segment, Train train, boolean lock) {
+        // Un segmento tiene dos extremos (nodos)
+        updateNodeLock(segment.getSteps().getFirst().getRailNode(), train, lock);
+        updateNodeLock(segment.getSteps().getSecond().getRailNode(), train, lock);
+    }
+
+    private void updateNodeLock(letrain.core.segments.RailNode node, Train train, boolean lock) {
+        if (!(node.getTrack() instanceof letrain.track.rail.ForkRailTrack)) {
+            return;
+        }
+        
+        letrain.track.rail.ForkRailTrack fork = (letrain.track.rail.ForkRailTrack) node.getTrack();
+        
+        Map<Train, Integer> counts = forkOwnershipCounts.computeIfAbsent(node, k -> new ConcurrentHashMap<>());
+        int currentCount = counts.getOrDefault(train, 0);
+        
+        if (lock) {
+            currentCount++;
+        } else {
+            currentCount = Math.max(0, currentCount - 1);
+        }
+        
+        if (currentCount == 0) {
+            counts.remove(train);
+        } else {
+            counts.put(train, currentCount);
+        }
+        
+        // REGLA DE ORO: Un Fork solo se bloquea si UN MISMO TREN posee 2 o más segmentos que confluyen en él.
+        // Esto permite que el tren pase seguro por el desvío (teniendo el de entrada y el de salida),
+        // pero NO bloquea el desvío si el tren solo está en un segmento (permitiendo resolución manual).
+        boolean shouldBeLocked = counts.values().stream().anyMatch(c -> c >= 2);
+        fork.setLocked(shouldBeLocked);
     }
 
     @Override
