@@ -1,29 +1,27 @@
 [[Index|⬅️ Volver al Índice]]
 
-# Seguridad y Colisiones (Simple Blocking)
+# Seguridad y Colisiones (Segment Blocking)
 
-Actualmente, LeTrain utiliza un sistema de seguridad basado en el chequeo de ocupación baldosa a baldosa en lugar de un gestor de cantones (`BlockManager`) centralizado.
+LeTrain ha evolucionado de un chequeo baldosa a baldosa a un sistema de **Segmentos Atómicos** (basado en el [[adr/ADR-005-Block-Segments|ADR-005]]), gestionado por el `BlockManager`.
 
-## Mecanismo de Colisión
-La seguridad se gestiona durante el movimiento del tren en `Train#moveLinkers(boolean)`.
+## El Sistema de Segmentos
+La red ferroviaria se divide lógicamente en segmentos indivisibles cuyos límites son los **Nodos** (Forks o DeadEnds).
 
-1. **Chequeo de Ocupación**: Antes de que cada pieza del tren (`Linker`) avance a la siguiente baldosa (`RailTrack`), el sistema verifica si esa baldosa ya tiene un `Linker` asignado:
-   ```java
-   Linker occupyingL = nextTrackOfLinker.getLinker();
-   ```
-2. **Detección de Conflicto**:
-   - Si la baldosa está ocupada por un tren diferente, se produce una interacción física.
-   - Si la velocidad es alta (`v >= 5`), se dispara un **Choque (`crash`)**.
-   - Si la velocidad es baja, se produce un **Contacto** y el tren se detiene inmediatamente.
-3. **Sensores y Semáforos**: 
-   - Los trenes activan sensores al entrar/salir de una baldosa.
-   - Estos sensores pueden disparar programas de automatización (ANTLR) que a su vez cierran semáforos para detener otros trenes.
+1. **Propiedad y Reserva**: Un tren debe poseer el segmento que ocupa físicamente y reservar el segmento siguiente antes de entrar en él.
+2. **Cascada de Seguridad**: En cada avance, el tren utiliza un mecanismo de "look-ahead" para verificar la viabilidad de su ruta futura.
+3. **Frenado Proactivo**: Si el tren no puede obtener la propiedad del siguiente segmento (porque está ocupado por otro tren o un desvío está mal orientado), inicia un frenado de emergencia.
 
-## Arquitectura Objetivo (ADR-005)
-Existe una propuesta de diseño para implementar un sistema de **Segmentos Atómicos** que sustituya al chequeo baldosa a baldosa por una reserva de tramos completos de vía entre estaciones y desvíos. 
-Ver [[adr/ADR-005-Block-Segments|ADR-005: Sistema de Seguridad por Segmentos]] para más detalles sobre esta futura implementación.
+## El Rol de `RailIterator`
+Para que el sistema de segmentos funcione, el tren necesita "ver" más allá de su posición actual. Aquí es donde entra el `RailIterator`:
+- **Exploración Lógica**: El iterador recorre las vías por delante del tren para identificar dónde termina el segmento actual y qué segmento sigue.
+- **Robustez de 45 Grados**: El iterador está diseñado para manejar la geometría de LeTrain, incluyendo curvas de 45 grados y conexiones desalineadas (kinks), asegurando que el sistema de seguridad no se quede "ciego" en tramos complejos como apartaderos.
+
+## Mecanismo de Colisión Física
+A pesar del bloqueo lógico, se mantiene una capa de seguridad física en `Train#moveLinkers(boolean)` como última línea de defensa:
+- **Detección Directa**: Verifica la ocupación física de la baldosa destino.
+- **Consecuencias**: Velocidad alta resulta en **Choque (`crash`)**, velocidad baja en **Parada Inmediata**.
 
 ## Símbolos Clave
-- `letrain.vehicle.impl.rail.Train`: Implementa el método `moveLinkers` con la lógica de colisión.
-- `letrain.track.rail.RailTrack`: Mantiene la referencia al `Linker` que la ocupa actualmente.
-- `letrain.track.RailSemaphore`: Objeto de vía que puede ser consultado por la automatización para gestionar el tráfico.
+- `letrain.core.segments.BlockManager`: Gestor central de la propiedad de los segmentos.
+- `letrain.vehicle.impl.RailIterator`: Herramienta de exploración para la lógica de bloques.
+- `letrain.core.segments.RailwayGraph`: Representación topológica de la red en segmentos.
