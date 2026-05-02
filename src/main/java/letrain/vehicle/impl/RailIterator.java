@@ -25,24 +25,33 @@ public class RailIterator implements Transportable, Trackeable, Rotable, Mapeabl
     @Override
     public boolean advance() {
         Track currentTrack = getTrack();
-        Dir entryDir = getDir();
-        Dir exitDir = currentTrack.getDir(entryDir.inverse());
+        Dir movementDir = getDir();
 
-        if (exitDir == null) {
-            log.error("No exit direction found for track at {} with entry dir {}", currentTrack.getPosition(),
-                    entryDir);
-            return false;
-        }
-
-        Track nextTrack = currentTrack.getConnected(exitDir);
+        // 1. Move to the next track in the current direction
+        Track nextTrack = currentTrack.getConnected(movementDir);
         if (nextTrack == null) {
-            log.error("No track connected to {} in direction {}", currentTrack, exitDir);
+            // End of the line
             return false;
         }
 
+        // 2. Determine the physical entry port of the next track
+        Dir entryPort = nextTrack.getPosition().locate(currentTrack.getPosition());
+
+        // 3. Determine the exit direction of the next track
+        Dir nextExitDir = (entryPort != null) ? nextTrack.getDir(entryPort) : null;
+
+        if (nextExitDir == null) {
+            // Fallback: If the track router doesn't have a route for this entry port (kink),
+            // keep moving in the same direction. This matches TrackDirector's behavior.
+            log.warn("Kink or missing route detected at {}. Entry port {} not found in router. Falling back to movement dir {}.",
+                    nextTrack.getPosition(), entryPort, movementDir);
+            nextExitDir = movementDir;
+        }
+
+        // 4. Update iterator state
         setTrack(nextTrack);
         setPosition(nextTrack.getPosition());
-        setDir(exitDir); // We exited in exitDir, so we entered the next track from exitDir
+        setDir(nextExitDir);
         return true;
     }
 
