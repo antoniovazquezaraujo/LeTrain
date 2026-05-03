@@ -23,8 +23,8 @@ public class TrackDirector<T extends Track> {
     private static final Logger log = LoggerFactory.getLogger(TrackDirector.class);
 
     public boolean enterLinkerFromDir(T track, Dir d, Linker vehicle) {
-        if (!canEnter(track, d, vehicle)) {
-            log.warn("Cannot enter linker {} from {} into track {}: occupied or reserved.", vehicle, d,
+        if (!track.canEnter(d, vehicle)) {
+            log.debug("Cannot enter linker {} from {} into track {}: occupied or reserved.", vehicle, d,
                     track.getPosition());
             return false;
         }

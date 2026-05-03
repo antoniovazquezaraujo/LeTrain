@@ -14,6 +14,12 @@ public interface Tractor extends Reversible {
 
     void setSpeed(int speed);
 
+    void setTargetSpeed(int speed);
+
+    int getTargetSpeed();
+
+    void setCurrentSpeed(int speed);
+
     void incSpeed();
 
     void decSpeed();
@@ -21,5 +27,7 @@ public interface Tractor extends Reversible {
     int getDistanceTraveled();
 
     void incDistanceTraveled();
+
+    int getId();
 
 }

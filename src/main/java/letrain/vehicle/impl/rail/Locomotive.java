@@ -270,10 +270,16 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     @Override
+    public int getTargetSpeed() {
+        return this.targetSpeed;
+    }
+
+    @Override
     public void setSpeed(int speed) {
         setTargetSpeed(speed);
     }
 
+    @Override
     public void setCurrentSpeed(int speed) {
         int effectiveSpeed = speed;
         if (getTrain() != null && getTrain().isShuntingMode()) {
@@ -306,10 +312,6 @@ public class Locomotive extends Linker implements Tractor {
     // Mantener getSpeed para compatibilidad con el resto del sistema
     public int getSpeed() {
         return this.currentSpeed;
-    }
-
-    public int getTargetSpeed() {
-        return this.targetSpeed;
     }
 
     private void limitTargetSpeed() {

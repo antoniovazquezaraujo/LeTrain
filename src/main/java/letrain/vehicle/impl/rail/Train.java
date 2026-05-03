@@ -108,8 +108,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     }
 
     public int getSpeed() {
-        if (directorLinker instanceof Locomotive) {
-            return ((Locomotive) directorLinker).getSpeed();
+        if (directorLinker != null) {
+            return directorLinker.getSpeed();
         }
         return 0;
     }
@@ -545,8 +545,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         if (!permissionToMove) {
             // No tenemos permiso para entrar en el SIGUIENTE. Pero estamos EN el actual.
             // Iniciamos frenado de servicio (targetSpeed 0)
-            if (directorLinker instanceof Locomotive) {
-                ((Locomotive) directorLinker).setTargetSpeed(0);
+            if (directorLinker != null) {
+                directorLinker.setTargetSpeed(0);
             }
 
             // Si hemos cruzado la frontera física hacia el siguiente sin permiso: ENTRADA ILEGAL
@@ -625,7 +625,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 letrain.core.segments.Segment sNext = findNextSegmentTopological((Linker)getDirectorLinker(), graph);
                 if (sNext == null || !s.equals(sNext)) {
                     bm.release(this, s);
-                    log.info("Train {} released segment {}", id, s.getId());
+                    log.debug("Train {} released segment {}", id, s.getId());
                 }
             }
         }
@@ -738,7 +738,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             Track nextTrackOfLinker = currentTrack.getConnected(exitDir);
 
             if (nextTrackOfLinker == null) {
-                log.info("Pass 1: nextTrack is null for {}", linkerToMove);
+                log.debug("Pass 1: nextTrack is null for {}", linkerToMove);
                 clearReservations(targetTracks);
                 return false;
             }
@@ -747,19 +747,16 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             if (occupyingL != null) {
 
                 if (occupyingL.getTrain() != this) {
-                    int speed = (getDirectorLinker() instanceof Locomotive)
-                            ? ((Locomotive) getDirectorLinker()).getSpeed()
-                            : 0;
+                    int speed = getSpeed();
 
                     if (Math.abs(speed) >= 5) {
                         crash(occupyingL, speed);
                     } else {
                         letrain.map.Point collisionPos = occupyingL.getPosition();
                         notifyContact(collisionPos, speed);
-                        getLinkers().forEach(l -> {
-                            if (l instanceof Locomotive) {
-                                ((Locomotive) l).setTargetSpeed(0);
-                            }
+                        getTractors().forEach(t -> {
+                            t.setCurrentSpeed(0);
+                            t.setTargetSpeed(0);
                         });
                         this.setStalled(true);
                         Train otherTrain = occupyingL.getTrain();

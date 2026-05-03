@@ -427,7 +427,6 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     }
 
     private void handleUnlinkModeKey(KeyStroke keyEvent) {
-        log.info("Unlinker key: " + keyEvent.getKeyType() + " char: " + keyEvent.getCharacter()); // DEBUG
         switch (keyEvent.getKeyType()) {
             case ArrowUp:
                 selectFrontDivisionSense();
@@ -461,7 +460,6 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     }
 
     private void handleLinkModeKey(KeyStroke keyEvent) {
-        log.info("Linker key: " + keyEvent.getKeyType() + " char: " + keyEvent.getCharacter()); // DEBUG
         switch (keyEvent.getKeyType()) {
             case ArrowUp:
                 selectVehiclesInFront();
@@ -472,15 +470,11 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
             case ArrowLeft:
                 if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
                     model.getSelectedLocomotive().getTrain().removeLinkerToJoin();
-                    log.info("Removed linker to join. Count: "
-                            + model.getSelectedLocomotive().getTrain().getNumLinkersToJoin()); // DEBUG
                 }
                 break;
             case ArrowRight:
                 if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
                     model.getSelectedLocomotive().getTrain().addLinkerToJoin();
-                    log.info("Added linker to join. Count: "
-                            + model.getSelectedLocomotive().getTrain().getNumLinkersToJoin()); // DEBUG
                 }
                 break;
             case Character:
