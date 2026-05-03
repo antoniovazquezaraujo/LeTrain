@@ -279,7 +279,6 @@ public class RailTrackMaker {
     }
 
     private void reset() {
-        degreesOfRotation = 0;
         dir = presenter.getModel().getCursor().getDir();
         Point actualCursorPosition = presenter.getModel().getCursor().getPosition();
 
@@ -300,8 +299,11 @@ public class RailTrackMaker {
                 oldTrack = null;
                 oldDir = dir;
                 canResume = false;
+                degreesOfRotation = 0;
             } else {
                 oldGroundType = presenter.getModel().getGroundMap().getValueAt(oldTrack.getPosition());
+                // ADR-005 / Infrastructure rule: Initialize rotation degrees based on entry angle
+                degreesOfRotation = oldDir.inverse().angularDistance(dir);
             }
         }
 
@@ -309,6 +311,7 @@ public class RailTrackMaker {
             oldTrack = null;
             oldDir = dir;
             oldGroundType = null;
+            degreesOfRotation = 0;
         }
 
         reversed = false;
@@ -542,8 +545,13 @@ public class RailTrackMaker {
             }
         }
         // al track que había (o al que hemos creado normal) le agregamos la ruta entre
-        // la vieja dir y la nueva
+        // la vieja dir y la nueva.
+        // REGLA DE LOS 45 GRADOS: Prohibido curvas de más de 1 paso angular.
         if (oldDir != null && dir != null) {
+            if (Math.abs(oldDir.inverse().angularDistance(dir)) > 1) {
+                log.warn("Illegal rail curvature attempted: > 45 degrees. Aborting placement.");
+                return false;
+            }
             track.addRoute(oldDir, dir);
         }
         track.setPosition(actualCursorPosition);
