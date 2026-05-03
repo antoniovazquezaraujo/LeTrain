@@ -44,6 +44,13 @@ public class BlockManagerImpl implements BlockManager {
     public boolean tryShuntingLock(Train train, Segment segment) {
         List<Train> owners = segmentOwners.computeIfAbsent(segment, k -> new CopyOnWriteArrayList<>());
         
+        // ADR-005 REFINEMENT: Only allow coexistence if all current owners are stopped.
+        for (Train owner : owners) {
+            if (owner != train && owner.getSpeed() != 0) {
+                return false;
+            }
+        }
+
         if (!owners.contains(train)) {
             owners.add(train);
             registerTrainSegment(train, segment);

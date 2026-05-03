@@ -45,6 +45,7 @@ public class Gdx3DHud {
     private Label balanceLabel;
     private Label incomeLabel;
     private Label expensesLabel;
+    private Label shuntingLabel;
     private NotchLever notchLever;
     private ShapeRenderer shapeRenderer;
     private Label ideLogContent;
@@ -311,8 +312,12 @@ public class Gdx3DHud {
 
         bottomContainer.add(financeArea).width(200).left().bottom().padLeft(20).padRight(20);
 
+        shuntingLabel = new Label("[RED]SHUNTING[]", skin, "medium");
+        shuntingLabel.setVisible(false);
+
         Table labelArea = new Table();
         labelArea.add(menuTable).padBottom(5).row();
+        labelArea.add(shuntingLabel).padBottom(5).row();
         labelArea.add(descLabel).fillX().expandX().padBottom(2).row();
         labelArea.add(globalHelpLabel).fillX().expandX().padBottom(2).row();
 
@@ -422,8 +427,12 @@ public class Gdx3DHud {
             notchLever.setVisible(true);
             notchLever.setNotch(loco.getSpeed());
             notchLever.setTargetNotch(loco.getTargetSpeed());
+            
+            // Show shunting indicator
+            shuntingLabel.setVisible(loco.getTrain().isShuntingMode());
         } else {
             notchLever.setVisible(false);
+            shuntingLabel.setVisible(false);
         }
 
         // Marcamos el botón seleccionado según el modo y actualizamos textos

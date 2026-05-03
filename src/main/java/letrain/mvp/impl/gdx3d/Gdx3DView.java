@@ -43,6 +43,7 @@ import letrain.mvp.impl.SimulationController;
 import letrain.utils.FontManager;
 import letrain.utils.ValidationUtils;
 import letrain.visitor.gdx3d.Gdx3DRenderer;
+import letrain.vehicle.impl.rail.Locomotive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -37,22 +37,23 @@ El bloqueo de un segmento a través de un Fork implica una acción física autom
 
 ## 4. Modo de Maniobras (Shunting Mode): La Excepción de Convivencia
 
-El `Shunting Mode` es un estado especial y persistente del tren que permite relajar las reglas de exclusividad para permitir operaciones logísticas.
+El `Shunting Mode` es un estado especial, efímero y totalmente **automático** que permite relajar las reglas de exclusividad para permitir operaciones logísticas.
 
 ### 4.1 Naturaleza y Propagación
-- **Activación Manual**: Solo se puede activar con el tren totalmente detenido.
-- **Limitación de Velocidad**: El tren entra en un estado de limitación física (Vel 1-2).
+- **Activación Automática**: Un tren entra en modo Shunting de forma instantánea en cuanto el sistema detecta que está compartiendo la propiedad de un segmento con otro tren. No requiere intervención del usuario.
+- **Limitación de Velocidad**: Mientras el tren detecte convivencia (Shunting), entra en un estado de limitación física (Vel 1-2).
 - **Propagación (La Burbuja de Maniobra)**:
-    - **Requisito de Entrada**: Un tren **solo** puede entrar en un segmento ocupado si ya tiene el `Shunting Mode` activado. 
-    - **Regla de Parada Total**: Para que un tren en Shunting pueda invadir un segmento ocupado, el tren que ya está dentro debe estar en **Parada Total (Velocidad = 0)**. No se permiten aproximaciones a trenes en movimiento.
-    - **Control de Agujas**: Durante el estado de "Zona de Maniobra" (propiedad compartida), el anclaje lógico se relaja, permitiendo operar los Forks libremente según las necesidades de maniobra, siempre respetando el **Bloqueo Físico** del Mandamiento 6.
+    - **Requisito de Entrada**: Para que un tren pueda invadir un segmento ocupado, el tren que ya está dentro debe estar en **Parada Total (Velocidad = 0)**.
+    - **Control de Agujas**: Durante el estado de propiedad compartida, el anclaje lógico de los Forks se relaja, permitiendo operarlos libremente según las necesidades de maniobra, siempre respetando el **Bloqueo Físico** del Mandamiento 6.
 
 ### 4.2 Propiedad Compartida de Segmentos
 En este modo, el sistema permite que varios trenes sean dueños del mismo segmento simultáneamente. El segmento registrará a todos como propietarios concurrentes y ningún tercer tren ajeno a la maniobra podrá entrar.
 
-### 4.3 La Condición de Salida y Casos de División
-- **Regla de Soledad**: Solo se puede desactivar el modo Shunting si el tren es el único dueño lógico de sus segmentos.
-- **Unlink Automático**: Si un tren en modo Normal realiza una operación de desenganche (`Unlink`) que resulte en dos entes separados compartiendo el mismo segmento, **ambos trenes pasarán automáticamente a modo Shunting**. Esto garantiza que la nueva situación de "convivencia" esté protegida por las reglas de baja velocidad.
+### 4.3 La Condición de Salida y Casos de Evolución
+- **Salida Automática**: El modo Shunting se desactiva automáticamente en el momento en que el tren recupera la propiedad exclusiva de todos los segmentos que pisa.
+- **Ciclo de Vida de Unión/División**:
+    - **Unlink**: Si un tren se divide, ambos fragmentos resultantes detectan la convivencia física inmediata y activan el modo Shunting hasta que se separen lo suficiente.
+    - **Link**: Cuando dos trenes se unen, pasan a ser una sola entidad lógica. Al dejar de existir la "convivencia" entre dos dueños distintos, el nuevo tren resultante sale automáticamente del modo Shunting.
 
 ## 5. Ciclo de Vida: El Protocolo de "Tabula Rasa"
 

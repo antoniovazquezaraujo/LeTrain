@@ -106,8 +106,9 @@ public class InfoVisitor implements Visitor {
         Locomotive selectedLoco = model.getSelectedLocomotive();
         if (selectedLoco != null) {
             String notchBar = getNotchBar(selectedLoco.getSpeed(), selectedLoco.getTargetSpeed(), 10);
-            richInfo.append(String.format("Notch: %s | Vagones: %d\n",
-                    notchBar, selectedLoco.getTrain().getLinkers().size() - 1));
+            String shuntingIndicator = selectedLoco.getTrain().isShuntingMode() ? " [S]" : "";
+            richInfo.append(String.format("Notch: %s%s | Vagones: %d\n",
+                    notchBar, shuntingIndicator, selectedLoco.getTrain().getLinkers().size() - 1));
         } else {
             richInfo.append(infoBarText).append("\n");
         }

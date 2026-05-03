@@ -66,7 +66,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     public boolean isLoading = false;
     private boolean stalled = false;
     int id;
-    private boolean shuntingMode = false;
     private boolean permissionToMove = true;
     private letrain.core.segments.Segment currentSegment;
     private letrain.core.segments.Segment nextSegment;
@@ -74,10 +73,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     private static final int SAFETY_RETRY_TICKS = 300; // 15s at 20fps
 
     public boolean isShuntingMode() {
-        if (shuntingMode) return true;
-        if (model != null && currentSegment != null) {
-            java.util.List<Train> owners = model.getBlockManager().getOwners(currentSegment);
-            return owners.size() > 1; // Si hay más de un dueño, el segmento está degradado a Shunting
+        if (model == null) return false;
+        List<letrain.core.segments.Segment> owned = model.getBlockManager().getOwnedSegments(this);
+        for (letrain.core.segments.Segment s : owned) {
+            if (model.getBlockManager().getOwners(s).size() > 1) {
+                return true;
+            }
         }
         return false;
     }
@@ -96,19 +97,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     public void wakeUp() {
         this.safetyRetryTimer = 0;
-    }
-
-    public void setShuntingMode(boolean shuntingMode) {
-        if (getDirectorLinker() != null && ((Locomotive)getDirectorLinker()).getSpeed() > 0) {
-            log.warn("Cannot change shunting mode while train is moving");
-            return;
-        }
-        this.shuntingMode = shuntingMode;
-        if (shuntingMode) {
-            log.info("Train {} entered SHUNTING mode", id);
-        } else {
-            log.info("Train {} exited SHUNTING mode", id);
-        }
     }
 
     public int getStationId() {
@@ -279,12 +267,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         for (letrain.core.segments.Segment segment : segmentsToClaim) {
             if (!blockManager.tryLock(this, segment)) {
                 // Si falla el bloqueo normal tras una Tabula Rasa, es que hay convivencia forzada
-                // Pasamos a modo Shunting para cumplir el Mandamiento del ADR-005.
-                this.setShuntingMode(true);
+                // El modo Shunting se detectará dinámicamente.
                 blockManager.tryShuntingLock(this, segment);
             }
         }
-        log.info("Train {} rebound to {} segments (Shunting: {})", id, segmentsToClaim.size(), shuntingMode);
+        log.info("Train {} rebound to {} segments (Shunting: {})", id, segmentsToClaim.size(), isShuntingMode());
     }
     /**
      * Reinitializes transient fields after deserialization.
@@ -501,8 +488,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
      * @return true si el tren tiene permiso para avanzar por el segmento actual.
      */
     private boolean checkSafetyOptimized() {
-        if (shuntingMode) return true;
-
         letrain.core.segments.BlockManager bm = model.getBlockManager();
         letrain.core.segments.RailwayGraph graph = ((letrain.mvp.impl.Model)model).getRailwayGraph();
         
@@ -518,7 +503,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             currentSegment = headS;
             // Asegurarnos de poseer el segmento actual (Mandamiento 1: Pisar es poseer)
             if (!bm.getOwnedSegments(this).contains(currentSegment)) {
-                bm.tryLock(this, currentSegment);
+                if (!bm.tryLock(this, currentSegment)) {
+                    bm.tryShuntingLock(this, currentSegment);
+                }
             }
             permissionToMove = false; // Al entrar en uno nuevo, perdemos el permiso hasta bloquear el siguiente
             nextSegment = findNextSegmentTopological(head, graph);
@@ -531,9 +518,14 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 if (nextSegment == null || nextSegment.equals(currentSegment)) {
                     permissionToMove = true; // No hay siguiente, podemos avanzar libremente
                 } else {
-                    if (bm.tryLock(this, nextSegment)) {
-                        log.info("Train {} granted permission to move into {}. Next segment {} locked.", 
-                            id, currentSegment.getId(), nextSegment.getId());
+                    boolean locked = bm.tryLock(this, nextSegment);
+                    if (!locked) {
+                        locked = bm.tryShuntingLock(this, nextSegment);
+                    }
+                    
+                    if (locked) {
+                        log.info("Train {} granted permission to move into {}. Next segment {} locked (Shunting: {}).", 
+                            id, currentSegment.getId(), nextSegment.getId(), isShuntingMode());
                         permissionToMove = true;
                     } else {
                         log.debug("Train {} denied permission. Segment {} occupied. Retrying in 15s.", 
@@ -987,12 +979,16 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                     this.linkers.addLast(linkerToJoin);
                 }
 
-                Train train = linkerToJoin.getTrain();
+                Train oldTrain = linkerToJoin.getTrain();
                 linkerToJoin.setTrain(this);
-                if (train != null && linkerToJoin == train.getDirectorLinker()) {
-                    train.assignDefaultDirectorLinker();
-                    if (train.getDirectorLinker() == null) {
-                        train.getLinkers().stream().forEach(linker -> linker.setTrain(null));
+                if (oldTrain != null && linkerToJoin == oldTrain.getDirectorLinker()) {
+                    oldTrain.assignDefaultDirectorLinker();
+                    if (oldTrain.getDirectorLinker() == null) {
+                        oldTrain.getLinkers().stream().forEach(linker -> linker.setTrain(null));
+                        // Liberar bloques para evitar "ghost locks" que mantengan el modo Shunting
+                        if (model != null) {
+                            model.getBlockManager().releaseAll(oldTrain);
+                        }
                     }
                 }
                 count++;
@@ -1128,9 +1124,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             return;
         }
 
-        // ADR-005: Unlink results in auto-shunting
-        this.setShuntingMode(true);
-
         Linker linkerToRemove = null;
         for (int n = 0; n < numLinkersToRemove; n++) {
             if (linkerDivisionSense == LinkersSense.BACK) {
@@ -1144,8 +1137,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 linkerToRemove.setTrain(train);
                 train.getLinkers().add(linkerToRemove);
                 train.assignDefaultDirectorLinker();
-                // ADR-005: New train also starts in shunting mode
-                train.setShuntingMode(true);
                 // Inherit listeners so the Presenter keeps receiving events
                 for (TrainEventListener listener : trainListeners) {
                     train.addTrainEventListener(listener);

@@ -57,6 +57,9 @@ class BlockManagerTest {
         // Tren A bloquea el segmento (Normal)
         assertTrue(blockManager.tryLock(trainA, segment));
         
+        // Tren A está detenido (Velocidad 0 por defecto en mock)
+        when(trainA.getSpeed()).thenReturn(0);
+        
         // Tren B entra en modo Shunting y tiene éxito
         assertTrue(blockManager.tryShuntingLock(trainB, segment));
         
@@ -64,6 +67,20 @@ class BlockManagerTest {
         assertEquals(2, owners.size());
         assertTrue(owners.contains(trainA));
         assertTrue(owners.contains(trainB));
+    }
+
+    @Test
+    void testShuntingDenialWhenMoving() {
+        // Tren A bloquea el segmento
+        assertTrue(blockManager.tryLock(trainA, segment));
+        
+        // Tren A se está moviendo
+        when(trainA.getSpeed()).thenReturn(5);
+        
+        // Tren B intenta entrar en Shunting y FALLA (Regla de Parada Total)
+        assertFalse(blockManager.tryShuntingLock(trainB, segment));
+        
+        assertEquals(1, blockManager.getOwners(segment).size());
     }
 
     @Test
