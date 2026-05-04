@@ -63,21 +63,28 @@ class ShuntingAutomationOperationsTest {
         trainB.getLinkers().add(locoB);
         trainB.setDirectorLinker(locoB);
 
-        // Simulate the link operation: Transfer linker to trainA
-        trainA.getLinkers().add(locoB);
-        locoB.setTrain(trainA);
-        
-        // Simulate Train B becoming empty and releasing blocks
-        trainB.getLinkers().clear();
-        trainB.assignDefaultDirectorLinker();
-        if (trainB.getDirectorLinker() == null) {
-            model.getBlockManager().releaseAll(trainB);
+        // Setup the linking state in Train A
+        trainA.getLinkersToJoin().add(locoB);
+        try {
+            java.lang.reflect.Field f = Train.class.getDeclaredField("numLinkersToJoin");
+            f.setAccessible(true);
+            f.set(trainA, 1);
+            java.lang.reflect.Field f2 = Train.class.getDeclaredField("linkerJoinSense");
+            f2.setAccessible(true);
+            f2.set(trainA, Train.LinkersSense.BACK);
+        } catch (Exception e) {
+            fail(e);
         }
+        
+        // Execute the REAL method
+        trainA.joinLinkers();
 
         // THEN: Train A should be alone in the segment and EXIT Shunting
         assertFalse(trainA.isShuntingMode(), "Train A should have exited Shunting after link");
         assertEquals(1, blockManager.getOwners(segment).size());
         assertTrue(blockManager.getOwners(segment).contains(trainA));
+        assertFalse(blockManager.getOwners(segment).contains(trainB), "Train B should no longer own anything");
+        assertEquals(0, trainB.getLinkers().size(), "Train B should be empty");
     }
 
     @Test

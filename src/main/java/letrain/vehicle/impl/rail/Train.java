@@ -819,6 +819,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         if (!joined) {
             int count = 0;
             boolean linkersActuallyAdded = false;
+            Set<Train> affectedOldTrains = new HashSet<>();
             for (Linker linkerToJoin : linkersToJoin) {
                 if (count >= numLinkersToJoin)
                     break;
@@ -830,20 +831,30 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 }
 
                 Train oldTrain = linkerToJoin.getTrain();
-                linkerToJoin.setTrain(this);
-                if (oldTrain != null && linkerToJoin == oldTrain.getDirectorLinker()) {
-                    oldTrain.assignDefaultDirectorLinker();
-                    if (oldTrain.getDirectorLinker() == null) {
-                        oldTrain.getLinkers().stream().forEach(linker -> linker.setTrain(null));
-                        // Liberar bloques para evitar "ghost locks" que mantengan el modo Shunting
-                        if (model != null) {
-                            model.getBlockManager().releaseAll(oldTrain);
-                        }
-                    }
+                if (oldTrain != null && oldTrain != this) {
+                    oldTrain.getLinkers().remove(linkerToJoin);
+                    affectedOldTrains.add(oldTrain);
                 }
+                
+                linkerToJoin.setTrain(this);
                 count++;
                 linkersActuallyAdded = true;
             }
+
+            // Cleanup affected old trains
+            for (Train oldTrain : affectedOldTrains) {
+                oldTrain.assignDefaultDirectorLinker();
+                if (oldTrain.getDirectorLinker() == null || oldTrain.getLinkers().isEmpty()) {
+                    log.info("Cleaning up dead train {}", oldTrain.getId());
+                    // If no locomotives left or no linkers at all, the train is dead
+                    oldTrain.getLinkers().forEach(linker -> linker.setTrain(null));
+                    oldTrain.getLinkers().clear();
+                    if (model != null) {
+                        model.getBlockManager().releaseAll(oldTrain);
+                    }
+                }
+            }
+
             linkersToJoin.clear();
             joined = true;
             if (linkersActuallyAdded) {
