@@ -820,17 +820,19 @@ public class GraphicPresenter extends ApplicationAdapter
         mpb = mb.part("needleN", GL20.GL_TRIANGLES, Usage.Position | Usage.ColorUnpacked,
                 new com.badlogic.gdx.graphics.g3d.Material());
         mpb.setColor(Color.RED);
-        mpb.triangle(new com.badlogic.gdx.math.Vector3(-0.15f, 0, 0),
-                new com.badlogic.gdx.math.Vector3(0.15f, 0, 0),
-                new com.badlogic.gdx.math.Vector3(0, 0, -radius));
+        float needleLength = 0.45f;
+        float needleWidth = 0.10f;
+        mpb.triangle(new com.badlogic.gdx.math.Vector3(-needleWidth, 0, 0),
+                new com.badlogic.gdx.math.Vector3(needleWidth, 0, 0),
+                new com.badlogic.gdx.math.Vector3(0, 0, -needleLength));
 
         // Needle South (White)
         mpb = mb.part("needleS", GL20.GL_TRIANGLES, Usage.Position | Usage.ColorUnpacked,
                 new com.badlogic.gdx.graphics.g3d.Material());
         mpb.setColor(Color.WHITE);
-        mpb.triangle(new com.badlogic.gdx.math.Vector3(-0.15f, 0, 0),
-                new com.badlogic.gdx.math.Vector3(0.15f, 0, 0),
-                new com.badlogic.gdx.math.Vector3(0, 0, radius));
+        mpb.triangle(new com.badlogic.gdx.math.Vector3(-needleWidth, 0, 0),
+                new com.badlogic.gdx.math.Vector3(needleWidth, 0, 0),
+                new com.badlogic.gdx.math.Vector3(0, 0, needleLength));
 
         compassModel = mb.end();
         compassInstance = new ModelInstance(compassModel);
@@ -864,27 +866,33 @@ public class GraphicPresenter extends ApplicationAdapter
         modelBatch.render(compassInstance);
         modelBatch.end();
 
-        // Restore global viewport for SpriteBatch labels
+        // 3D Labels (Decals)
+        float labelRadius = 0.55f; // Inside 0.8f circle
+        Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
+        decalBatch.setGroupStrategy(new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(compassCam));
+        
+        addCompassDecal("N", 0, 0.02f, -labelRadius);
+        addCompassDecal("S", 0, 0.02f, labelRadius);
+        addCompassDecal("E", labelRadius, 0.02f, 0);
+        addCompassDecal("W", -labelRadius, 0.02f, 0);
+        
+        decalBatch.flush();
+        
+        // Restore main scene strategy
+        decalBatch.setGroupStrategy(new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam));
+        
+        // Restore global viewport
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-
-        spriteBatch.begin();
-        float oldScaleX = font.getScaleX();
-        float oldScaleY = font.getScaleY();
-        font.getData().setScale(0.5f);
-        float radius = 0.8f;
-        drawCompassLabel(compassCam, "N", 0, 0, -radius - 0.3f, x, y, size);
-        drawCompassLabel(compassCam, "S", 0, 0, radius + 0.3f, x, y, size);
-        drawCompassLabel(compassCam, "E", radius + 0.3f, 0, 0, x, y, size);
-        drawCompassLabel(compassCam, "W", -radius - 0.3f, 0, 0, x, y, size);
-        font.getData().setScale(oldScaleX, oldScaleY);
-        spriteBatch.end();
     }
 
-    private void drawCompassLabel(com.badlogic.gdx.graphics.Camera cam, String text, float x3, float y3, float z3, int vx,
-            int vy, int vsize) {
-        com.badlogic.gdx.math.Vector3 screenPos = new com.badlogic.gdx.math.Vector3(x3, y3, z3);
-        cam.project(screenPos, 0, 0, vsize, vsize);
-        com.badlogic.gdx.graphics.g2d.GlyphLayout layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, text);
-        font.draw(spriteBatch, text, vx + screenPos.x - layout.width / 2, vy + screenPos.y + layout.height / 2);
+    private void addCompassDecal(String text, float x, float y, float z) {
+        com.badlogic.gdx.graphics.g3d.decals.Decal d = getGlyphDecal(text.charAt(0));
+        if (d != null) {
+            d.setPosition(x, y, z);
+            d.setScale(0.4f); 
+            // Flat on the compass floor, North is -Z
+            d.lookAt(new com.badlogic.gdx.math.Vector3(x, y + 1, z), new com.badlogic.gdx.math.Vector3(0, 0, -1));
+            decalBatch.add(d);
+        }
     }
 }
