@@ -91,6 +91,9 @@ public class GraphicPresenter extends ApplicationAdapter
     private BitmapFont font;
 
     private Gdx3DHud hud;
+    private com.badlogic.gdx.graphics.PerspectiveCamera compassCam;
+    private com.badlogic.gdx.graphics.g3d.Model compassModel;
+    private com.badlogic.gdx.graphics.g3d.ModelInstance compassInstance;
 
     // Audio
     private letrain.audio.AudioController audioController;
@@ -212,6 +215,7 @@ public class GraphicPresenter extends ApplicationAdapter
         font.getData().markupEnabled = true;
 
         hud = new Gdx3DHud(model, this);
+        createCompassModel();
 
         InputMultiplexer multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(hud.getStage());
@@ -370,6 +374,8 @@ public class GraphicPresenter extends ApplicationAdapter
         spriteBatch.begin();
         // (Labels 2D removidos)
         spriteBatch.end();
+
+        renderCompass();
 
         // Renderizado de UI (Menú)
         hud.render(Gdx.graphics.getDeltaTime());
@@ -730,6 +736,8 @@ public class GraphicPresenter extends ApplicationAdapter
             gridModel.dispose();
         if (boxModel != null)
             boxModel.dispose();
+        if (compassModel != null)
+            compassModel.dispose();
 
         // Force exit to ensure no lingering threads (e.g. console input) keep JVM alive
         System.exit(0);
@@ -789,5 +797,94 @@ public class GraphicPresenter extends ApplicationAdapter
         dispose();
         Gdx.app.exit();
         System.exit(0);
+    }
+
+    private void createCompassModel() {
+        ModelBuilder mb = new ModelBuilder();
+        mb.begin();
+
+        // Base Circle
+        com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpb = mb.part("base", GL20.GL_LINES,
+                Usage.Position | Usage.ColorUnpacked, new com.badlogic.gdx.graphics.g3d.Material());
+        mpb.setColor(Color.WHITE);
+        float radius = 0.8f;
+        int segments = 32;
+        for (int i = 0; i < segments; i++) {
+            float a1 = (float) i / segments * com.badlogic.gdx.math.MathUtils.PI2;
+            float a2 = (float) (i + 1) / segments * com.badlogic.gdx.math.MathUtils.PI2;
+            mpb.line(com.badlogic.gdx.math.MathUtils.cos(a1) * radius, 0, com.badlogic.gdx.math.MathUtils.sin(a1) * radius,
+                    com.badlogic.gdx.math.MathUtils.cos(a2) * radius, 0, com.badlogic.gdx.math.MathUtils.sin(a2) * radius);
+        }
+
+        // Needle North (Red)
+        mpb = mb.part("needleN", GL20.GL_TRIANGLES, Usage.Position | Usage.ColorUnpacked,
+                new com.badlogic.gdx.graphics.g3d.Material());
+        mpb.setColor(Color.RED);
+        mpb.triangle(new com.badlogic.gdx.math.Vector3(-0.15f, 0, 0),
+                new com.badlogic.gdx.math.Vector3(0.15f, 0, 0),
+                new com.badlogic.gdx.math.Vector3(0, 0, -radius));
+
+        // Needle South (White)
+        mpb = mb.part("needleS", GL20.GL_TRIANGLES, Usage.Position | Usage.ColorUnpacked,
+                new com.badlogic.gdx.graphics.g3d.Material());
+        mpb.setColor(Color.WHITE);
+        mpb.triangle(new com.badlogic.gdx.math.Vector3(-0.15f, 0, 0),
+                new com.badlogic.gdx.math.Vector3(0.15f, 0, 0),
+                new com.badlogic.gdx.math.Vector3(0, 0, radius));
+
+        compassModel = mb.end();
+        compassInstance = new ModelInstance(compassModel);
+    }
+
+    private void renderCompass() {
+        int size = 150;
+        int padding = 20;
+        int x = Gdx.graphics.getWidth() - size - padding;
+        int y = Gdx.graphics.getHeight() - size - padding;
+
+        if (compassCam == null) {
+            compassCam = new com.badlogic.gdx.graphics.PerspectiveCamera(45, size, size);
+            compassCam.near = 0.1f;
+            compassCam.far = 10f;
+        }
+
+        compassCam.viewportWidth = size;
+        compassCam.viewportHeight = size;
+
+        // Sync compass camera with main camera rotation
+        compassCam.direction.set(cam.direction);
+        compassCam.up.set(cam.up);
+        compassCam.position.set(cam.direction).scl(-2.5f);
+        compassCam.update();
+
+        Gdx.gl.glViewport(x, y, size, size);
+        Gdx.gl.glClear(GL20.GL_DEPTH_BUFFER_BIT);
+
+        modelBatch.begin(compassCam);
+        modelBatch.render(compassInstance);
+        modelBatch.end();
+
+        // Restore global viewport for SpriteBatch labels
+        Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+
+        spriteBatch.begin();
+        float oldScaleX = font.getScaleX();
+        float oldScaleY = font.getScaleY();
+        font.getData().setScale(0.5f);
+        float radius = 0.8f;
+        drawCompassLabel(compassCam, "N", 0, 0, -radius - 0.3f, x, y, size);
+        drawCompassLabel(compassCam, "S", 0, 0, radius + 0.3f, x, y, size);
+        drawCompassLabel(compassCam, "E", radius + 0.3f, 0, 0, x, y, size);
+        drawCompassLabel(compassCam, "W", -radius - 0.3f, 0, 0, x, y, size);
+        font.getData().setScale(oldScaleX, oldScaleY);
+        spriteBatch.end();
+    }
+
+    private void drawCompassLabel(com.badlogic.gdx.graphics.Camera cam, String text, float x3, float y3, float z3, int vx,
+            int vy, int vsize) {
+        com.badlogic.gdx.math.Vector3 screenPos = new com.badlogic.gdx.math.Vector3(x3, y3, z3);
+        cam.project(screenPos, 0, 0, vsize, vsize);
+        com.badlogic.gdx.graphics.g2d.GlyphLayout layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, text);
+        font.draw(spriteBatch, text, vx + screenPos.x - layout.width / 2, vy + screenPos.y + layout.height / 2);
     }
 }

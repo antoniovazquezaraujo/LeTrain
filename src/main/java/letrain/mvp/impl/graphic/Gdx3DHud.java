@@ -325,13 +325,6 @@ public class Gdx3DHud {
 
         mainBottomTable.add(bottomContainer).expandX().fillX();
 
-        // Compass (Top-Right)
-        Table topTable = new Table();
-        topTable.setFillParent(true);
-        topTable.top().right().pad(20);
-        topTable.add(new CompassActor()).size(100, 100);
-        stage.addActor(topTable);
-
         updateMenuButtons();
     }
 
@@ -1077,79 +1070,6 @@ public class Gdx3DHud {
             Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
 
             batch.begin();
-        }
-    }
-
-    private class CompassActor extends Actor {
-        @Override
-        public void draw(com.badlogic.gdx.graphics.g2d.Batch batch, float parentAlpha) {
-            if (shapeRenderer == null)
-                return;
-
-            batch.end();
-
-            shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
-            shapeRenderer.setTransformMatrix(batch.getTransformMatrix());
-
-            float centerX = getX() + getWidth() / 2;
-            float centerY = getY() + getHeight() / 2;
-            float radius = Math.min(getWidth(), getHeight()) / 2 * 0.7f;
-
-            Gdx.gl.glEnable(GL20.GL_BLEND);
-            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-
-            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
-            shapeRenderer.setColor(0, 0, 0, 0.4f * parentAlpha);
-            shapeRenderer.circle(centerX, centerY, radius + 15);
-            shapeRenderer.end();
-
-            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Line);
-            shapeRenderer.setColor(1, 1, 1, 0.8f * parentAlpha);
-            shapeRenderer.circle(centerX, centerY, radius + 15);
-            shapeRenderer.end();
-
-            float angleRad = view.getCameraController().getListenerAngle();
-            float rotationDeg = 180 + angleRad * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-
-            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
-            shapeRenderer.setColor(1, 0, 0, 0.9f * parentAlpha);
-            float nx = centerX + radius * com.badlogic.gdx.math.MathUtils.cosDeg(rotationDeg);
-            float ny = centerY + radius * com.badlogic.gdx.math.MathUtils.sinDeg(rotationDeg);
-
-            float bx1 = centerX + (radius / 4) * com.badlogic.gdx.math.MathUtils.cosDeg(rotationDeg + 90);
-            float by1 = centerY + (radius / 4) * com.badlogic.gdx.math.MathUtils.sinDeg(rotationDeg + 90);
-            float bx2 = centerX + (radius / 4) * com.badlogic.gdx.math.MathUtils.cosDeg(rotationDeg - 90);
-            float by2 = centerY + (radius / 4) * com.badlogic.gdx.math.MathUtils.sinDeg(rotationDeg - 90);
-
-            shapeRenderer.triangle(nx, ny, bx1, by1, bx2, by2);
-
-            shapeRenderer.setColor(1, 1, 1, 0.9f * parentAlpha);
-            float sx = centerX + radius * com.badlogic.gdx.math.MathUtils.cosDeg(rotationDeg + 180);
-            float sy = centerY + radius * com.badlogic.gdx.math.MathUtils.sinDeg(rotationDeg + 180);
-            shapeRenderer.triangle(sx, sy, bx1, by1, bx2, by2);
-            shapeRenderer.end();
-
-            Gdx.gl.glDisable(GL20.GL_BLEND);
-
-            batch.begin();
-
-            BitmapFont font = skin.getFont("tiny-font");
-            float labelDist = radius + 10;
-            drawCentered(batch, font, "N", centerX + labelDist * com.badlogic.gdx.math.MathUtils.cosDeg(rotationDeg),
-                    centerY + labelDist * com.badlogic.gdx.math.MathUtils.sinDeg(rotationDeg));
-            drawCentered(batch, font, "S",
-                    centerX + labelDist * com.badlogic.gdx.math.MathUtils.cosDeg(rotationDeg + 180),
-                    centerY + labelDist * com.badlogic.gdx.math.MathUtils.sinDeg(rotationDeg + 180));
-            drawCentered(batch, font, "E", centerX + labelDist * com.badlogic.gdx.math.MathUtils.cosDeg(rotationDeg - 90),
-                    centerY + labelDist * com.badlogic.gdx.math.MathUtils.sinDeg(rotationDeg - 90));
-            drawCentered(batch, font, "W", centerX + labelDist * com.badlogic.gdx.math.MathUtils.cosDeg(rotationDeg + 90),
-                    centerY + labelDist * com.badlogic.gdx.math.MathUtils.sinDeg(rotationDeg + 90));
-        }
-
-        private void drawCentered(com.badlogic.gdx.graphics.g2d.Batch batch, BitmapFont font, String text, float x,
-                float y) {
-            com.badlogic.gdx.graphics.g2d.GlyphLayout layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, text);
-            font.draw(batch, text, x - layout.width / 2, y + layout.height / 2);
         }
     }
 }
