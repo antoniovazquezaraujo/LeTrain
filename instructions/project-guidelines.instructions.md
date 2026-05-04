@@ -17,7 +17,7 @@ This instruction enforces consistent coding standards, build commands, and proje
 - Adhere to the MVP (Model-View-Presenter) architecture.
 
 ### Naming Conventions
-- **Classes**: PascalCase (e.g., `RailTrackMaker`, `Gdx3DView`)
+- **Classes**: PascalCase (e.g., `RailTrackMaker`, `GraphicPresenter`)
 - **Methods/Variables**: camelCase (e.g., `addTrackConnectionsToFork`)
 - **Constants**: UPPER_SNAKE_CASE (e.g., `MAX_SPEED`)
 - **Packages**: lowercase, simple words (e.g., `letrain.track.rail`)

@@ -1,4 +1,4 @@
-package letrain.mvp.impl.gdx3d;
+package letrain.mvp.impl.graphic;
 
 import letrain.mvp.Model;
 import com.badlogic.gdx.graphics.PerspectiveCamera;

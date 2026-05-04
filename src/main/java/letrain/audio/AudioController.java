@@ -126,7 +126,7 @@ public class AudioController {
         AudioSample sample = samples.get(name);
         if (sample != null) {
             WavSource source = new WavSource(sample);
-            // Z is height in our AudioMixer/Gdx3DView mapping
+            // Z is height in our AudioMixer/GraphicPresenter mapping
             source.setPosition(x * SCALE_FACTOR, y * SCALE_FACTOR, 0);
 
             // Make one-shots much more audible

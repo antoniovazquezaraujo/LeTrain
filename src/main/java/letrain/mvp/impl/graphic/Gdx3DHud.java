@@ -1,4 +1,4 @@
-package letrain.mvp.impl.gdx3d;
+package letrain.mvp.impl.graphic;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -36,7 +36,7 @@ public class Gdx3DHud {
     private static final Logger log = LoggerFactory.getLogger(Gdx3DHud.class);
 
     private final Model model;
-    private final Gdx3DView view;
+    private final GraphicPresenter view;
     private final Stage stage;
     private Skin skin;
     private Table menuTable;
@@ -52,7 +52,7 @@ public class Gdx3DHud {
     private Label ideObjsContent;
     private Window ideWindow;
 
-    public Gdx3DHud(Model model, Gdx3DView view) {
+    public Gdx3DHud(Model model, GraphicPresenter view) {
         this.model = model;
         this.view = view;
         this.stage = new Stage(new ScreenViewport());

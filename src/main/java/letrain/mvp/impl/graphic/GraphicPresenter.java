@@ -1,4 +1,4 @@
-package letrain.mvp.impl.gdx3d;
+package letrain.mvp.impl.graphic;
 
 import java.io.File;
 import java.util.List;
@@ -47,10 +47,10 @@ import letrain.vehicle.impl.rail.Locomotive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Gdx3DView extends ApplicationAdapter
+public class GraphicPresenter extends ApplicationAdapter
         implements letrain.mvp.View, letrain.mvp.Presenter,
         letrain.vehicle.impl.rail.TrainEventListener {
-    private static final Logger log = LoggerFactory.getLogger(Gdx3DView.class);
+    private static final Logger log = LoggerFactory.getLogger(GraphicPresenter.class);
     private static final String DEFAULT_SAVEGAME_FILENAME = "savegame.dat";
     private com.badlogic.gdx.graphics.PerspectiveCamera cam;
     private ModelBatch modelBatch;
@@ -103,7 +103,7 @@ public class Gdx3DView extends ApplicationAdapter
     private CameraController cameraController;
     private Gdx3DInputHandler inputHandler;
 
-    public Gdx3DView(letrain.mvp.Model model) {
+    public GraphicPresenter(letrain.mvp.Model model) {
         this.model = ValidationUtils.requireNonNull(model, "model");
         this.resourceContext = new letrain.visitor.gdx3d.Gdx3DResourceContext();
         this.renderer = new Gdx3DRenderer(resourceContext);
@@ -737,12 +737,12 @@ public class Gdx3DView extends ApplicationAdapter
 
     @Override
     public void onSpeedChanged(int speed) {
-        // Gdx3DView handles speed changes via polling/sync in render loop
+        // GraphicPresenter handles speed changes via polling/sync in render loop
     }
 
     @Override
     public void onSenseChanged(boolean forward) {
-        // Gdx3DView handles sense changes via polling/sync in render loop
+        // GraphicPresenter handles sense changes via polling/sync in render loop
     }
 
     @Override

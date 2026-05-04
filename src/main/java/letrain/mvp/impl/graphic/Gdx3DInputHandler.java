@@ -1,4 +1,4 @@
-package letrain.mvp.impl.gdx3d;
+package letrain.mvp.impl.graphic;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -34,7 +34,7 @@ public class Gdx3DInputHandler implements InputProcessor {
     private static final Logger log = LoggerFactory.getLogger(Gdx3DInputHandler.class);
 
     private final Model model;
-    private final Gdx3DView view;
+    private final GraphicPresenter view;
     private final CameraController cameraController;
     private final RailTrackMaker trackMaker;
     private final AudioController audioController;
@@ -49,7 +49,7 @@ public class Gdx3DInputHandler implements InputProcessor {
     private long stationInputTimeout = 0;
     private long locomotiveInputTimeout = 0;
 
-    public Gdx3DInputHandler(Model model, Gdx3DView view, CameraController cameraController,
+    public Gdx3DInputHandler(Model model, GraphicPresenter view, CameraController cameraController,
                              RailTrackMaker trackMaker, AudioController audioController) {
         this.model = model;
         this.view = view;
@@ -245,7 +245,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             }
         }
 
-        // Global Enter to Menu (matches CompactPresenter)
+        // Global Enter to Menu (matches TerminalPresenter)
         if (stroke.getKeyType() == KeyType.Enter) {
             if (model.getMode() != Model.GameMode.DRIVE) {
                 model.setMode(Model.GameMode.MENU);

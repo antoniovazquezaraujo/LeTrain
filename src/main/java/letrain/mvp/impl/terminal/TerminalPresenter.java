@@ -42,8 +42,8 @@ import org.slf4j.LoggerFactory;
 import letrain.mvp.impl.SimulationController;
 import letrain.mvp.impl.RailTrackMaker;
 
-public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.impl.rail.TrainEventListener {
-    Logger log = LoggerFactory.getLogger(CompactPresenter.class);
+public class TerminalPresenter implements letrain.mvp.Presenter, letrain.vehicle.impl.rail.TrainEventListener {
+    Logger log = LoggerFactory.getLogger(TerminalPresenter.class);
 
     Model model;
     private final TerminalView view;
@@ -73,11 +73,11 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
     SimulationController simulationController;
     private final GameSaveService gameSaveService;
 
-    public CompactPresenter() {
+    public TerminalPresenter() {
         this(null);
     }
 
-    public CompactPresenter(Model model) {
+    public TerminalPresenter(Model model) {
         setModel(model);
         view = new TerminalView(this);
         renderer = new RenderVisitor(view);

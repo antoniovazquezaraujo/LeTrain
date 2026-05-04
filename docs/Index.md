@@ -5,6 +5,7 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 ## 🏗️ Arquitectura y Diseño
 - [[architecture/Overview|Visión General del Sistema (MVP & Visitor)]]
 - [[adr/ADR-001-Implementacion-MVP|ADR-001: Por qué usamos MVP]]
+- [[adr/ADR-006-Symmetry-in-Presenters|ADR-006: Simetría en Presentadores y Vistas]]
 - [[systems/CommandPattern|Gestión de Automatización (ANTLR)]]
 
 ## 🛤️ Infraestructura Ferroviaria

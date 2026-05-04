@@ -60,14 +60,12 @@ Esta lista se genera automáticamente a partir de los archivos fuente presentes 
 - `letrain.mvp.impl.RailTrackMaker`
 - `letrain.mvp.impl.SimulationController`
 - `letrain.mvp.impl.delegates.TrainFactory`
-- `letrain.mvp.impl.gdx3d.CameraController`
-- `letrain.mvp.impl.gdx3d.Gdx3DHud`
-- `letrain.mvp.impl.gdx3d.Gdx3DInputHandler`
-- `letrain.mvp.impl.gdx3d.Gdx3DView`
-- `letrain.mvp.impl.gdx3d.Presenter3D`
+- `letrain.mvp.impl.graphic.CameraController`
+- `letrain.mvp.impl.graphic.Gdx3DHud`
+- `letrain.mvp.impl.graphic.Gdx3DInputHandler`
+- `letrain.mvp.impl.graphic.GraphicPresenter`
 - `letrain.mvp.impl.services.SimulationService`
-- `letrain.mvp.impl.terminal.CompactPresenter`
-- `letrain.mvp.impl.terminal.Presenter2D`
+- `letrain.mvp.impl.terminal.TerminalPresenter`
 - `letrain.mvp.impl.terminal.TerminalView`
 
 ## Infraestructura y Vías

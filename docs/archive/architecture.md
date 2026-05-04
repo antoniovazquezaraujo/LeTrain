@@ -9,7 +9,7 @@ LeTrain utiliza el patrón **MVP** para separar la lógica de negocio de la inte
 - **Model (`letrain.mvp.Model`)**: Contiene el estado completo del juego (vías, trenes, estaciones, economía). Es el "Single Source of Truth". Proporciona métodos para manipular este estado.
 - **View (`letrain.mvp.View`)**: Define la interfaz de lo que el usuario ve y cómo interactúa. Hay dos implementaciones principales:
     - `TerminalView`: Implementación 2D para consola usando la librería Lanterna.
-    - `Gdx3DView`: Implementación 3D usando la librería LibGDX.
+    - `GraphicPresenter`: Implementación gráfica usando la librería LibGDX.
 - **Presenter (`letrain.mvp.Presenter`)**: Actúa como mediador. Recibe eventos de la View (teclado, ratón) y actualiza el Model. También coordina la actualización de la View cuando el Model cambia.
 
 ## 2. Sistema de Renderizado: Patrón Visitor
