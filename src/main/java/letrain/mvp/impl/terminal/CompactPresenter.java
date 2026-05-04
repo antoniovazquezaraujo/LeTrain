@@ -630,7 +630,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
             case ArrowUp:
                 if (model.getSelectedLocomotive() != null) {
                     Locomotive loco = model.getSelectedLocomotive();
-                    if (loco.isEngineOn() && !loco.getTrain().isLoading) {
+                    if (loco.isEngineOn() && !loco.getTrain().isLoading()) {
                         accelerateLocomotive();
                         locomotiveId = 0;
                     }
@@ -639,7 +639,7 @@ public class CompactPresenter implements letrain.mvp.Presenter, letrain.vehicle.
             case ArrowDown:
                 if (model.getSelectedLocomotive() != null) {
                     Locomotive loco = model.getSelectedLocomotive();
-                    if (loco.isEngineOn() && !loco.getTrain().isLoading) {
+                    if (loco.isEngineOn() && !loco.getTrain().isLoading()) {
                         decelerateLocomotive();
                         locomotiveId = 0;
                     }

@@ -242,6 +242,47 @@ public class Model implements letrain.mvp.Model {
     }
 
     @Override public RailMap getRailMap() { return map; }
+
+    @Override public void addTrack(Point p, RailTrack track) {
+        map.addTrack(p, track);
+        if (track instanceof ForkRailTrack) {
+            addFork((ForkRailTrack) track);
+        }
+        if (track.getSensor() != null) {
+            if (track.getSensor() instanceof Station) {
+                addStation((Station) track.getSensor());
+            } else {
+                addSensor(track.getSensor());
+            }
+        }
+        if (track.getSemaphore() != null) {
+            addSemaphore(track.getSemaphore());
+        }
+        mapChanged = true;
+    }
+
+    @Override public RailTrack removeTrack(Point p) {
+        RailTrack track = map.getTrackAt(p);
+        if (track != null) {
+            if (track.getSensor() != null) {
+                if (track.getSensor() instanceof Station) {
+                    removeStation((Station) track.getSensor());
+                } else {
+                    removeSensor(track.getSensor());
+                }
+            }
+            if (track.getSemaphore() != null) {
+                removeSemaphore(track.getSemaphore());
+            }
+            if (track instanceof ForkRailTrack) {
+                removeFork((ForkRailTrack) track);
+            }
+            map.removeTrack(p);
+            mapChanged = true;
+        }
+        return track;
+    }
+
     public void setRailMap(RailMap map) { this.map = map; }
     @Override public GroundMap getGroundMap() { return groundMap; }
     @Override public List<Sensor> getSensors() { return sensors; }
@@ -255,6 +296,9 @@ public class Model implements letrain.mvp.Model {
 
     @Override public void addSensor(Sensor sensor) {
         sensors.add(sensor);
+        if (sensor.getTrack() != null) {
+            sensor.getTrack().setSensor(sensor);
+        }
         getEconomyManager().onSensorConstructed(sensor);
         setupSensorSystemListeners(sensor);
         mapChanged = true;
@@ -272,7 +316,15 @@ public class Model implements letrain.mvp.Model {
         });
     }
 
-    @Override public void removeSensor(Sensor sensor) { if (sensors.remove(sensor)) { getEconomyManager().onSensorDestroyed(sensor); mapChanged = true; } }
+    @Override public void removeSensor(Sensor sensor) {
+        if (sensors.remove(sensor)) {
+            if (sensor.getTrack() != null) {
+                sensor.getTrack().setSensor(null);
+            }
+            getEconomyManager().onSensorDestroyed(sensor);
+            mapChanged = true;
+        }
+    }
     @Override public Sensor getSensor(int id) {
         for (Sensor sensor : getSensors()) { if (sensor.getId() == id) return sensor; }
         return null;
@@ -525,6 +577,9 @@ public class Model implements letrain.mvp.Model {
 
     @Override public void addStation(Station station) {
         stations.add(station);
+        if (station.getTrack() != null) {
+            station.getTrack().setSensor(station);
+        }
         getEconomyManager().onStationConstructed();
         setupStationSystemListeners(station);
         mapChanged = true;
@@ -546,7 +601,15 @@ public class Model implements letrain.mvp.Model {
         });
     }
 
-    @Override public void removeStation(Station Station) { if (stations.remove(Station)) { getEconomyManager().onStationDestroyed(); mapChanged = true; } }
+    @Override public void removeStation(Station Station) {
+        if (stations.remove(Station)) {
+            if (Station.getTrack() != null) {
+                Station.getTrack().setSensor(null);
+            }
+            getEconomyManager().onStationDestroyed();
+            mapChanged = true;
+        }
+    }
     @Override public Station getStation(int id) {
         for (Station Station : getStations()) { if (Station.getId() == id) return Station; }
         return null;

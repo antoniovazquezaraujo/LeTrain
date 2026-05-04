@@ -40,6 +40,10 @@ public interface Model {
 
     public int nextTrainId();
 
+    void addTrack(Point p, RailTrack track);
+
+    RailTrack removeTrack(Point p);
+
     RailMap getRailMap();
 
     GroundMap getGroundMap();

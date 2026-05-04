@@ -599,7 +599,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             if (station != null) {
                 for (Locomotive loco : model.getLocomotives()) {
                     if (loco.getTrain() != null && loco.getTrain().getStationId() == station.getId()) {
-                        loco.getTrain().isLoading = !loco.getTrain().isLoading;
+                        loco.getTrain().setLoading(!loco.getTrain().isLoading());
                     }
                 }
             }

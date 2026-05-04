@@ -206,13 +206,11 @@ public class RailTrackMaker {
         if (track != null) {
             Sensor sensor = track.getSensor();
             if (sensor != null) {
-                track.setSensor(null);
                 presenter.getModel().removeSensor(sensor);
             } else {
                 sensor = new Sensor(presenter.getModel().nextSensorId());
                 sensor.setTrack(track);
                 sensor.setCreationDir(presenter.getModel().getCursor().getDir());
-                track.setSensor(sensor);
                 presenter.getModel().addSensor(sensor);
             }
         }
@@ -236,7 +234,6 @@ public class RailTrackMaker {
         if (track != null) {
             Sensor sensor = track.getSensor();
             if (sensor != null && sensor instanceof Station) {
-                track.setSensor(null);
                 presenter.getModel().removeStation((Station) sensor);
             } else if (sensor == null) {
                 // BLOCK if building on industry
@@ -272,7 +269,6 @@ public class RailTrackMaker {
                     station.setRole(CargoTypes.StationRole.GENERIC);
                 }
 
-                track.setSensor(station);
                 presenter.getModel().addStation(station);
             }
         }
@@ -326,22 +322,7 @@ public class RailTrackMaker {
                 log.warn("Cannot remove occupied track at {}", position);
                 return;
             }
-
-            if (track.getSensor() != null) {
-                if (track.getSensor() instanceof letrain.track.Station) {
-                    presenter.getModel().removeStation((letrain.track.Station) track.getSensor());
-                } else {
-                    presenter.getModel().removeSensor(track.getSensor());
-                }
-            }
-            if (track.getSemaphore() != null) {
-                presenter.getModel().removeSemaphore(track.getSemaphore());
-            }
-            if (track instanceof letrain.track.rail.ForkRailTrack) {
-                presenter.getModel().removeFork((letrain.track.rail.ForkRailTrack) track);
-            }
-            presenter.getModel().getRailMap().removeTrack(position);
-            presenter.getModel().setMapChanged(true);
+            presenter.getModel().removeTrack(position);
         }
 
         if (moveCursor) {
@@ -555,16 +536,13 @@ public class RailTrackMaker {
             track.addRoute(oldDir, dir);
         }
         track.setPosition(actualCursorPosition);
-        presenter.getModel().getRailMap().addTrack(actualCursorPosition, track);
-        presenter.getModel().setMapChanged(true);
+        presenter.getModel().addTrack(actualCursorPosition, track);
         presenter.getModel().getEconomyManager().onRailTrackConstructed(newTrackType);
         if (canBeAFork(track, oldDir, dir)) {
             RailTrack trackToSubstitute = track;
             final ForkRailTrack fork = createForkRailTrack(actualCursorPosition, trackToSubstitute);
             addRoutesToFork(trackToSubstitute, fork);
             fork.setNormalRoute();
-            presenter.getModel().addFork(fork);
-            presenter.getModel().getEconomyManager().onForkConstructed(fork);
             substituteInMapTrackWithFork(trackToSubstitute, fork);
             addTrackConnectionsToFork(trackToSubstitute, fork);
             track = fork;
@@ -589,9 +567,8 @@ public class RailTrackMaker {
     }
 
     private void substituteInMapTrackWithFork(RailTrack track1, final ForkRailTrack fork) {
-        presenter.getModel().getRailMap().removeTrack(track1.getPosition());
-        presenter.getModel().getRailMap().addTrack(presenter.getModel().getCursor().getPosition(), fork);
-        presenter.getModel().setMapChanged(true);
+        presenter.getModel().removeTrack(track1.getPosition());
+        presenter.getModel().addTrack(track1.getPosition(), fork);
     }
 
     ForkRailTrack createForkRailTrack(Point cursorPosition, RailTrack track) {
