@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 class ShuntingAutomationOperationsTest {
     private BlockManager blockManager;
     private Model model;
+    private letrain.core.segments.RailwayGraph graph;
     private Segment segment;
     private Train trainA;
     private Train trainB;
@@ -25,7 +26,9 @@ class ShuntingAutomationOperationsTest {
     void setUp() {
         blockManager = new BlockManagerImpl();
         model = Mockito.mock(Model.class);
+        graph = Mockito.mock(letrain.core.segments.RailwayGraph.class);
         when(model.getBlockManager()).thenReturn(blockManager);
+        when(model.getRailwayGraph()).thenReturn(graph);
 
         segment = Mockito.mock(Segment.class);
         when(segment.getId()).thenReturn("S1");
@@ -46,6 +49,9 @@ class ShuntingAutomationOperationsTest {
         
         trainB = new Train(2);
         trainB.setModel(model);
+
+        // Configure graph to return segment for any RailTrack
+        when(graph.getSegment(Mockito.any(letrain.track.rail.RailTrack.class))).thenReturn(segment);
     }
 
     @Test
@@ -90,33 +96,46 @@ class ShuntingAutomationOperationsTest {
     @Test
     void testUnlinkLocomotiveEntersShunting() {
         // GIVEN: A single train in a segment
-        Locomotive loco1 = Mockito.mock(Locomotive.class);
-        Locomotive loco2 = Mockito.mock(Locomotive.class);
+        Locomotive loco1 = new Locomotive(101, "L1");
+        Locomotive loco2 = new Locomotive(102, "L2");
+        letrain.track.rail.RailTrack track1 = Mockito.mock(letrain.track.rail.RailTrack.class);
+        letrain.track.rail.RailTrack track2 = Mockito.mock(letrain.track.rail.RailTrack.class);
+        loco1.setTrack(track1);
+        loco2.setTrack(track2);
+
         trainA.getLinkers().add(loco1);
         trainA.getLinkers().add(loco2);
         trainA.setDirectorLinker(loco1);
+        loco1.setTrain(trainA);
+        loco2.setTrain(trainA);
         
         blockManager.tryLock(trainA, segment);
         assertFalse(trainA.isShuntingMode(), "Initially not in Shunting");
 
-        // WHEN: Unlink happens, creating Train B
+        // WHEN: Unlink happens, creating a new Train
         trainA.prepareUnlink(false, 1);
-        trainA.divideTrain(() -> 2); // Creates Train B with loco2
+        trainA.divideTrain(() -> 2); 
 
         // THEN: Both trains share the segment and enter Shunting
-        // (Note: In this test, we need to manually simulate that the new train also owns the segment
-        // since divideTrain doesn't automatically lock blocks, that's done by the safety logic in the next tick)
-        blockManager.tryShuntingLock(trainB, segment);
+        Train newTrain = loco2.getTrain();
+        assertNotNull(newTrain, "New train should have been created");
+        assertNotEquals(trainA, newTrain);
 
         assertTrue(trainA.isShuntingMode(), "Train A should now be in Shunting");
-        assertTrue(trainB.isShuntingMode(), "Train B should now be in Shunting");
+        assertTrue(newTrain.isShuntingMode(), "New train should now be in Shunting");
     }
 
     @Test
     void testUnlinkWagonsExitsShunting() {
         // GIVEN: A train with wagons
         Locomotive loco = Mockito.mock(Locomotive.class);
+        letrain.track.rail.RailTrack track1 = Mockito.mock(letrain.track.rail.RailTrack.class);
+        when(loco.getTrack()).thenReturn(track1);
+
         Wagon wagon = new Wagon("W");
+        letrain.track.rail.RailTrack track2 = Mockito.mock(letrain.track.rail.RailTrack.class);
+        wagon.setTrack(track2);
+
         trainA.getLinkers().add(loco);
         trainA.getLinkers().add(wagon);
         trainA.setDirectorLinker(loco);
@@ -127,9 +146,10 @@ class ShuntingAutomationOperationsTest {
         trainA.prepareUnlink(false, 1);
         trainA.divideTrain(() -> 2); // Wagons are just removed and have null train
 
-        // THEN: The wagons have no train, so Train A is alone in the BlockManager
-        assertNull(wagon.getTrain());
-        assertFalse(trainA.isShuntingMode(), "Train A should NOT be in Shunting with loose wagons");
-        assertEquals(1, blockManager.getOwners(segment).size());
+        // THEN: The wagons belong to a new Train (ID 2), and both are in Shunting
+        assertNotNull(wagon.getTrain());
+        assertEquals(2, wagon.getTrain().getId());
+        assertTrue(trainA.isShuntingMode(), "Train A should be in Shunting because Train 2 now co-owns the segment");
+        assertEquals(2, blockManager.getOwners(segment).size());
     }
 }

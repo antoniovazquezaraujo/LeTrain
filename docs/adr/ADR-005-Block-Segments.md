@@ -52,8 +52,8 @@ En este modo, el sistema permite que varios trenes sean dueños del mismo segmen
 ### 4.3 La Condición de Salida y Casos de Evolución
 - **Salida Automática**: El modo Shunting se desactiva automáticamente en el momento en que el tren recupera la propiedad exclusiva de todos los segmentos que pisa.
 - **Ciclo de Vida de Unión/División**:
-    - **Unlink**: Si un tren se divide, ambos fragmentos resultantes detectan la convivencia física inmediata y activan el modo Shunting hasta que se separen lo suficiente.
-    - **Link**: Cuando dos trenes se unen, pasan a ser una sola entidad lógica. Al dejar de existir la "convivencia" entre dos dueños distintos, el nuevo tren resultante sale automáticamente del modo Shunting.
+    - **Unlink**: Si un tren se divide, ambos fragmentos resultantes deben ejecutar un `rebind` inmediato para registrar su nueva propiedad física, detectando la convivencia y activando el modo Shunting hasta que se separen lo suficiente.
+    - **Link**: Cuando dos trenes se unen, pasan a ser una sola entidad lógica. Al dejar de existir la "convivencia" entre dos dueños distintos, el nuevo tren resultante sale automáticamente del modo Shunting tras un `rebind`.
 
 ## 5. Ciclo de Vida: El Protocolo de "Tabula Rasa"
 

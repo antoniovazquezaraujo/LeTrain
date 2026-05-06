@@ -266,8 +266,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             return;
         }
 
-        letrain.core.segments.RailwayGraph graph = ((letrain.mvp.impl.Model) model).getRailwayGraph();
+        letrain.core.segments.RailwayGraph graph = model.getRailwayGraph();
         letrain.core.segments.BlockManager blockManager = model.getBlockManager();
+
+        if (graph == null || blockManager == null) {
+            return;
+        }
 
         // ADR-005: Un tren debe reclamar sus segmentos basándose en su posición física.
         // Liberamos primero lo que tengamos para evitar dejar basura en el BlockManager
@@ -1008,25 +1012,31 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             return;
         }
 
-        Linker linkerToRemove = null;
-        for (int n = 0; n < numLinkersToRemove; n++) {
-            if (linkerDivisionSense == LinkersSense.BACK) {
-                linkerToRemove = getLinkers().removeLast();
-            } else {
-                linkerToRemove = getLinkers().removeFirst();
+        if (numLinkersToRemove > 0) {
+            Train newTrain = new Train(nextTrainIdSupplier.get());
+            newTrain.setModel(this.model);
+            for (TrainEventListener listener : trainListeners) {
+                newTrain.addTrainEventListener(listener);
             }
-            linkerToRemove.setTrain(null);
-            if (linkerToRemove instanceof Locomotive) {
-                Train train = new Train(nextTrainIdSupplier.get());
-                linkerToRemove.setTrain(train);
-                train.getLinkers().add(linkerToRemove);
-                train.assignDefaultDirectorLinker();
-                // Inherit listeners so the Presenter keeps receiving events
-                for (TrainEventListener listener : trainListeners) {
-                    train.addTrainEventListener(listener);
+
+            for (int n = 0; n < numLinkersToRemove; n++) {
+                Linker linkerToRemove;
+                if (linkerDivisionSense == LinkersSense.BACK) {
+                    linkerToRemove = getLinkers().removeLast();
+                    newTrain.getLinkers().addFirst(linkerToRemove);
+                } else {
+                    linkerToRemove = getLinkers().removeFirst();
+                    newTrain.getLinkers().addLast(linkerToRemove);
                 }
+                linkerToRemove.setTrain(newTrain);
+                log.info("Train {}: unlinked {} to new Train {}", this.id, linkerToRemove, newTrain.getId());
             }
+            newTrain.assignDefaultDirectorLinker();
+            newTrain.rebind();
         }
+
+        assignDefaultDirectorLinker();
+        rebind();
         linkersToRemove.clear();
         numLinkersToRemove = 0;
         notifyUnlink();
@@ -1038,26 +1048,31 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         }
 
         List<Linker> linkersToDestroy = new ArrayList<>();
-        Linker linkerToRemove = null;
-        for (int n = 0; n < numLinkersToRemove; n++) {
-            if (linkerDivisionSense == LinkersSense.BACK) {
-                linkerToRemove = getLinkers().removeLast();
-            } else {
-                linkerToRemove = getLinkers().removeFirst();
+        if (numLinkersToRemove > 0) {
+            Train newTrain = new Train(nextTrainIdSupplier.get());
+            newTrain.setModel(this.model);
+            for (TrainEventListener listener : trainListeners) {
+                newTrain.addTrainEventListener(listener);
             }
-            linkerToRemove.setTrain(null);
-            if (linkerToRemove instanceof Locomotive) {
-                Train train = new Train(nextTrainIdSupplier.get());
-                linkerToRemove.setTrain(train);
-                train.getLinkers().add(linkerToRemove);
-                train.assignDefaultDirectorLinker();
-                // Inherit listeners so the Presenter keeps receiving events
-                for (TrainEventListener listener : trainListeners) {
-                    train.addTrainEventListener(listener);
+
+            for (int n = 0; n < numLinkersToRemove; n++) {
+                Linker linkerToRemove;
+                if (linkerDivisionSense == LinkersSense.BACK) {
+                    linkerToRemove = getLinkers().removeLast();
+                    newTrain.getLinkers().addFirst(linkerToRemove);
+                } else {
+                    linkerToRemove = getLinkers().removeFirst();
+                    newTrain.getLinkers().addLast(linkerToRemove);
                 }
+                linkerToRemove.setTrain(newTrain);
+                linkersToDestroy.add(linkerToRemove);
             }
-            linkersToDestroy.add(linkerToRemove);
+            newTrain.assignDefaultDirectorLinker();
+            newTrain.rebind();
         }
+
+        assignDefaultDirectorLinker();
+        rebind();
         linkersToRemove.clear();
         numLinkersToRemove = 0;
         return linkersToDestroy;

@@ -312,6 +312,7 @@ class SerializationTest {
         assertEquals(2, train.getLinkers().size(), "Train should keep two linkers after unlinking one from front");
         assertTrue(train.getLinkers().contains(loco));
         assertTrue(train.getLinkers().contains(backWagon));
-        assertNull(frontWagon.getTrain(), "Front-side wagon should be removed from the original train");
+        assertNotNull(frontWagon.getTrain(), "Front-side wagon should belong to a new train");
+        assertEquals(501, frontWagon.getTrain().getId());
     }
 }
