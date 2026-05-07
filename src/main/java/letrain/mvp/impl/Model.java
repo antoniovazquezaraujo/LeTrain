@@ -378,7 +378,16 @@ public class Model implements letrain.mvp.Model {
         getEconomyManager().onLocomotiveConstructed(locomotive);
     }
 
-    @Override public void removeLocomotive(Locomotive locomotive) { if (this.locomotives.remove(locomotive)) getEconomyManager().onLocomotiveDestroyed(locomotive); }
+    @Override
+    public void removeLocomotive(Locomotive locomotive) {
+        if (this.locomotives.remove(locomotive)) {
+            if (selectedLocomotive == locomotive) {
+                selectedLocomotive = null;
+                selectedLocomotiveIndex = -1;
+            }
+            getEconomyManager().onLocomotiveDestroyed(locomotive);
+        }
+    }
     @Override public void removeDestroyedTrains() { getSimulationService().cleanupEntities(); }
     @Override public void moveLocomotives() { getSimulationService().moveVehicles(); }
     @Override public GameMode getMode() { return mode; }

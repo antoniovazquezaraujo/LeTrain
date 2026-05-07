@@ -819,7 +819,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 }
             }
         }
-        if (lastLinker != null && dir != null) {
+        if (lastLinker != null && lastLinker.getTrack() != null && dir != null) {
             Track nextTrack = lastLinker.getTrack().getConnected(dir);
             if (nextTrack != null) {
                 // We enter nextTrack from direction 'dir'
