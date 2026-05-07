@@ -99,8 +99,9 @@ public class VehicleRenderer extends BaseSubRenderer {
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
 
-        // Green line (direction marker) - ALWAYS for locomotives
-        {
+        // Green line (direction marker) - ONLY for selected locomotive
+        boolean isSelected = (modelRef != null && modelRef.getSelectedLocomotive() == locomotive);
+        if (isSelected) {
             ModelInstance selectionLine = resourceContext.getModelInstance(resourceContext.selectionLineModel);
             v1.set(renderTangent).nor();
             float dxL = v1.x;
@@ -110,7 +111,6 @@ public class VehicleRenderer extends BaseSubRenderer {
             selectionLine.transform.rotate(0, 1, 0, angle);
             instances.add(selectionLine);
         }
-
         if (locomotive.isDestroying()) {
             drawFire(renderX, 0.6f, renderY, animationAlpha + locomotive.getId());
         }
