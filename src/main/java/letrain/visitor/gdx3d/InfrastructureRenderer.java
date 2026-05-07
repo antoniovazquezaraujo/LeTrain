@@ -43,7 +43,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             }
         }
 
-        ModelInstance base = new ModelInstance(
+        ModelInstance base = resourceContext.getModelInstance(
                 isSelected ? resourceContext.selectedForkBaseModel : resourceContext.forkBaseModel);
         base.transform.setToTranslation(track.getPosition().getX() + 0.5f, 0.03f,
                 track.getPosition().getY() + 0.5f);
@@ -58,7 +58,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         bx += PathGeometry.getDirX(sideDir) * boxOffset;
         bz += PathGeometry.getDirZ(sideDir) * boxOffset;
 
-        ModelInstance box = new ModelInstance(
+        ModelInstance box = resourceContext.getModelInstance(
                 isSelected ? resourceContext.selectedForkBoxModel : resourceContext.forkBoxModel);
         box.transform.setToTranslation(bx, 0.07f, bz); 
         instances.add(box);
@@ -75,10 +75,10 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             boolean d1Connected = isConnected(track, d1);
             boolean d2Connected = isConnected(track, d2);
             if (absDist >= 1 && absDist <= 3) {
-                Vector3 p1 = new Vector3(PathGeometry.getDirX(d1), 0, PathGeometry.getDirZ(d1));
-                Vector3 p2 = new Vector3(PathGeometry.getDirX(d2), 0, PathGeometry.getDirZ(d2));
-                Vector3 pc = new Vector3(0, 0, 0);
-                trackRenderer.renderMultiSegmentCurve(track.getPosition(), p1, pc, p2, d1Connected && d2Connected, 0, resourceContext.railModel);
+                v1.set(PathGeometry.getDirX(d1), 0, PathGeometry.getDirZ(d1));
+                v2.set(PathGeometry.getDirX(d2), 0, PathGeometry.getDirZ(d2));
+                v3.set(0, 0, 0);
+                trackRenderer.renderMultiSegmentCurve(track.getPosition(), v1, v3, v2, d1Connected && d2Connected, 0, resourceContext.railModel);
             } else {
                 trackRenderer.drawHalfTrack(track.getPosition(), d1, d1Connected, 1.0f, 1.0f);
                 trackRenderer.drawHalfTrack(track.getPosition(), d2, d2Connected, 1.0f, 1.0f);
@@ -86,14 +86,15 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         }
 
         String idText = String.valueOf(track.getId());
-        labels.add(new Gdx3DRenderer.VehicleLabel(new Vector3(bx, 0.09f, bz), idText,
-                new Vector3(0, 1, 0), new Vector3(0, 0, -1),
-                Color.BLACK, 0.4f));
+        v1.set(bx, 0.09f, bz);
+        v2.set(0, 1, 0);
+        v3.set(0, 0, -1);
+        addLabel(v1, idText, v2, v3, Color.BLACK, 0.4f);
 
         if (modelRef != null && modelRef.getGroundMap() != null) {
             Integer terrain = modelRef.getGroundMap().getValueAt(track.getPosition());
             if (terrain != null && terrain == letrain.ground.GroundMap.WATER) {
-                ModelInstance pillar = new ModelInstance(resourceContext.bridgePillarModel);
+                ModelInstance pillar = resourceContext.getModelInstance(resourceContext.bridgePillarModel);
                 pillar.transform.setToTranslation(track.getPosition().getX() + 0.5f, -1.05f,
                         track.getPosition().getY() + 0.5f);
                 pillar.transform.scale(1f, 1.9f, 1f);
@@ -117,7 +118,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         float dz = PathGeometry.getDirZ(d);
         float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
 
-        ModelInstance instance = new ModelInstance(resourceContext.sensorModel);
+        ModelInstance instance = resourceContext.getModelInstance(resourceContext.sensorModel);
         instance.materials.get(0)
                 .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                         .createDiffuse(Color.YELLOW));
@@ -141,7 +142,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
         com.badlogic.gdx.graphics.g3d.Model modelToUse = semaphore.isOpen() ? resourceContext.semaphoreOpenModel
                 : resourceContext.semaphoreClosedModel;
-        ModelInstance instance = new ModelInstance(modelToUse);
+        ModelInstance instance = resourceContext.getModelInstance(modelToUse);
 
         float offsetX = 0;
         float offsetZ = 0;
@@ -263,7 +264,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         float plateMidZ = zIndex + 0.5f + perpZ * (distPlatform / 2f);
         float plateAngle = (float) Math.atan2(perpX, perpZ) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
 
-        ModelInstance plate = new ModelInstance(resourceContext.wagonJewelModel);
+        ModelInstance plate = resourceContext.getModelInstance(resourceContext.wagonJewelModel);
         plate.materials.get(0)
                 .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(structureColor));
         plate.transform.setToTranslation(plateMidX, 0.01f, plateMidZ);
@@ -274,7 +275,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         }
         instances.add(plate);
 
-        ModelInstance mast = new ModelInstance(resourceContext.cylinderModel);
+        ModelInstance mast = resourceContext.getModelInstance(resourceContext.cylinderModel);
         mast.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(mastColor));
         mast.transform.setToTranslation(centerX, mastHeight / 2f, centerZ);
         mast.transform.rotate(0, 1, 0, plateAngle);
@@ -285,7 +286,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         instances.add(mast);
 
         float boardSize = 0.6f;
-        ModelInstance board = new ModelInstance(resourceContext.wagonJewelModel);
+        ModelInstance board = resourceContext.getModelInstance(resourceContext.wagonJewelModel);
         board.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(boardColor));
         board.transform.setToTranslation(centerX, mastHeight + (boardSize / 2f), centerZ);
         board.transform.rotate(0, 1, 0, plateAngle);
@@ -325,7 +326,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
     @Override
     public void visitTunnelGateRailTrack(letrain.track.rail.TunnelGateRailTrack tunnelGateRailTrack) {
-        ModelInstance portal = new ModelInstance(resourceContext.tunnelPortalModel);
+        ModelInstance portal = resourceContext.getModelInstance(resourceContext.tunnelPortalModel);
         if (isXRayActive) {
             portal.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
             portal.transform.setToTranslation(
@@ -369,7 +370,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         float dz = PathGeometry.getDirZ(d);
         float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
 
-        ModelInstance instance = new ModelInstance(resourceContext.cursorModel);
+        ModelInstance instance = resourceContext.getModelInstance(resourceContext.cursorModel);
         instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
 
         float cursorY = 0.10f;
@@ -378,10 +379,11 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         instance.transform.scale(1.6f, 1f, 0.6f);
         instances.add(instance);
 
-        ModelInstance ghost = new ModelInstance(instance);
+        ModelInstance ghost = resourceContext.getModelInstance(resourceContext.cursorModel);
         ghost.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
         ghost.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.DepthTestAttribute(
                 com.badlogic.gdx.graphics.GL20.GL_GREATER, false));
+        ghost.transform.set(instance.transform);
         instances.add(ghost);
     }
 }

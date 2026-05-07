@@ -1,7 +1,7 @@
 package letrain.audio.core;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -15,7 +15,7 @@ public class AudioMixer {
 
     private static final Logger log = LoggerFactory.getLogger(AudioMixer.class);
 
-    private final List<AudioSource> sources = new CopyOnWriteArrayList<>();
+    private final Collection<AudioSource> sources = new ConcurrentLinkedQueue<>();
     private volatile boolean running = false;
     private Thread audioThread;
 
@@ -101,8 +101,12 @@ public class AudioMixer {
                             sourceBuffer[i] = 0;
 
                         boolean active = source.read(sourceBuffer);
-                        if (!active)
+                        if (!active) {
+                            if (source.isFinished()) {
+                                sources.remove(source);
+                            }
                             continue;
+                        }
 
                         // 2. Calculate Distance & Pan
                         float dx = source.getX() - listenerX;

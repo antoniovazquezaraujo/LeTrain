@@ -54,7 +54,7 @@ public class TrackRenderer extends BaseSubRenderer {
         if (modelRef != null && modelRef.getGroundMap() != null) {
             Integer terrain = modelRef.getGroundMap().getValueAt(track.getPosition());
             if (terrain != null && terrain == GroundMap.WATER) {
-                ModelInstance pillar = new ModelInstance(resourceContext.bridgePillarModel);
+                ModelInstance pillar = resourceContext.getModelInstance(resourceContext.bridgePillarModel);
                 pillar.transform.setToTranslation(
                         track.getPosition().getX() + 0.5f, -1.05f, track.getPosition().getY() + 0.5f);
                 pillar.transform.scale(1f, 1.9f, 1f);
@@ -136,7 +136,7 @@ public class TrackRenderer extends BaseSubRenderer {
         if (len < 0.001f) return;
         float angle = (float) Math.atan2(diff.x, diff.z) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
         Vector3 mid = new Vector3(pStart).add(pEnd).scl(0.5f);
-        ModelInstance instance = new ModelInstance(model);
+        ModelInstance instance = resourceContext.getModelInstance(model);
         instance.transform.setToTranslation(pos.getX() + 0.5f + mid.x, y, pos.getY() + 0.5f + mid.z);
         instance.transform.rotate(0, 1, 0, angle);
         instance.transform.scale(1, 1, len / 0.5f);
@@ -154,7 +154,7 @@ public class TrackRenderer extends BaseSubRenderer {
         float shortenB = (shortenL + shortenR) / 2f;
         float shortenBallast = connected ? shortenB : 0.95f;
         float scaleB = (len * shortenBallast) / 0.5f;
-        ModelInstance ballast = new ModelInstance(resourceContext.ballastModel);
+        ModelInstance ballast = resourceContext.getModelInstance(resourceContext.ballastModel);
         ballast.transform.setToTranslation(pos.getX() + 0.5f + mid.x, 0.03f + elevation, pos.getY() + 0.5f + mid.z);
         ballast.transform.rotate(0, 1, 0, angle);
         ballast.transform.scale(1, 1, scaleB);
@@ -167,7 +167,7 @@ public class TrackRenderer extends BaseSubRenderer {
             
             float shiftX_L = diff.x * (1 - shortenL) / 2f;
             float shiftZ_L = diff.z * (1 - shortenL) / 2f;
-            ModelInstance railL = new ModelInstance(railModelToUse);
+            ModelInstance railL = resourceContext.getModelInstance(railModelToUse);
             railL.transform.setToTranslation(pos.getX() + 0.5f + mid.x + offX + shiftX_L, 0.08f + elevation, pos.getY() + 0.5f + mid.z + offZ + shiftZ_L);
             railL.transform.rotate(0, 1, 0, angle);
             railL.transform.scale(1, 1, scale * shortenL);
@@ -175,13 +175,13 @@ public class TrackRenderer extends BaseSubRenderer {
 
             float shiftX_R = diff.x * (1 - shortenR) / 2f;
             float shiftZ_R = diff.z * (1 - shortenR) / 2f;
-            ModelInstance railR = new ModelInstance(railModelToUse);
+            ModelInstance railR = resourceContext.getModelInstance(railModelToUse);
             railR.transform.setToTranslation(pos.getX() + 0.5f + mid.x - offX + shiftX_R, 0.08f + elevation, pos.getY() + 0.5f + mid.z - offZ + shiftZ_R);
             railR.transform.rotate(0, 1, 0, angle);
             railR.transform.scale(1, 1, scale * shortenR);
             instances.add(railR);
         } else {
-            ModelInstance grader = new ModelInstance(resourceContext.invalidRailModel);
+            ModelInstance grader = resourceContext.getModelInstance(resourceContext.invalidRailModel);
             grader.transform.setToTranslation(pos.getX() + 0.5f + pStart.x + diff.x * 0.7f, 0.2f + elevation, pos.getY() + 0.5f + pStart.z + diff.z * 0.7f);
             grader.transform.rotate(0, 1, 0, angle);
             instances.add(grader);

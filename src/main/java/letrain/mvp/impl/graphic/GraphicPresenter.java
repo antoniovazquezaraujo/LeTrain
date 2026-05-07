@@ -56,6 +56,8 @@ public class GraphicPresenter extends ApplicationAdapter
     private ModelBatch modelBatch;
     private ModelBuilder modelBuilder;
     private com.badlogic.gdx.graphics.g3d.decals.DecalBatch decalBatch;
+    private com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy cameraGroupStrategy;
+    private com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy compassCameraGroupStrategy;
     private java.util.Map<Character, com.badlogic.gdx.graphics.g2d.TextureRegion> glyphRegions = new java.util.HashMap<>();
 
     private com.badlogic.gdx.graphics.g3d.decals.Decal getGlyphDecal(char c) {
@@ -72,8 +74,10 @@ public class GraphicPresenter extends ApplicationAdapter
         }
 
         com.badlogic.gdx.graphics.g2d.TextureRegion region = glyphRegions.get(c);
-        // Force size to 0.5x0.5 world units for readability
-        return com.badlogic.gdx.graphics.g3d.decals.Decal.newDecal(0.5f, 0.5f, region, true);
+        // Use pooling from resourceContext
+        com.badlogic.gdx.graphics.g3d.decals.Decal d = renderer.getResourceContext().getDecal(region);
+        d.setDimensions(0.5f, 0.5f);
+        return d;
     }
 
     private Environment environment;
@@ -201,8 +205,8 @@ public class GraphicPresenter extends ApplicationAdapter
         }
         gridModel = modelBuilder.end();
 
-        decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(
-                new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam));
+        cameraGroupStrategy = new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam);
+        decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(cameraGroupStrategy);
 
         boxModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
                 new com.badlogic.gdx.graphics.g3d.Material(
@@ -229,6 +233,8 @@ public class GraphicPresenter extends ApplicationAdapter
     public letrain.audio.AudioController getAudioController() {
         return audioController;
     }
+
+    private com.badlogic.gdx.graphics.g3d.ModelInstance tableInstance;
 
     @Override
     public void render() {
@@ -273,8 +279,10 @@ public class GraphicPresenter extends ApplicationAdapter
         modelBatch.begin(cam);
         modelBatch.render(renderer.getInstances(), environment);
         // Render the background table slightly below ground level
-        ModelInstance tableInstance = new ModelInstance(groundModel);
-        tableInstance.transform.setToTranslation(0, -0.02f, 0);
+        if (tableInstance == null) {
+            tableInstance = new ModelInstance(groundModel);
+            tableInstance.transform.setToTranslation(0, -0.02f, 0);
+        }
         modelBatch.render(tableInstance, environment);
         modelBatch.end();
 
@@ -596,6 +604,14 @@ public class GraphicPresenter extends ApplicationAdapter
             this.audioController.stop();
         }
 
+        // Dispose old HUD and decalBatch to prevent leaks
+        if (this.hud != null) {
+            this.hud.dispose();
+        }
+        if (this.decalBatch != null) {
+            this.decalBatch.dispose();
+        }
+
         // Refresh all references that depend on the model
         this.trackMaker = new RailTrackMaker(this);
         this.audioController = new letrain.audio.AudioController(model);
@@ -869,7 +885,10 @@ public class GraphicPresenter extends ApplicationAdapter
         // 3D Labels (Decals)
         float labelRadius = 0.55f; // Inside 0.8f circle
         Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
-        decalBatch.setGroupStrategy(new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(compassCam));
+        if (compassCameraGroupStrategy == null) {
+            compassCameraGroupStrategy = new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(compassCam);
+        }
+        decalBatch.setGroupStrategy(compassCameraGroupStrategy);
         
         addCompassDecal("N", 0, 0.02f, -labelRadius);
         addCompassDecal("S", 0, 0.02f, labelRadius);
@@ -879,7 +898,7 @@ public class GraphicPresenter extends ApplicationAdapter
         decalBatch.flush();
         
         // Restore main scene strategy
-        decalBatch.setGroupStrategy(new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam));
+        decalBatch.setGroupStrategy(cameraGroupStrategy);
         
         // Restore global viewport
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());

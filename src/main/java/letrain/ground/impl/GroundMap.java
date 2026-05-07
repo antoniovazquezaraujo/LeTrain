@@ -68,6 +68,28 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         }
     }
 
+    @Override
+    public void forEachInRange(int minX, int minY, int maxX, int maxY, Consumer<Ground> c) {
+        letrain.map.Point tempPoint = new letrain.map.Point(0, 0);
+        Ground tempGround = new Ground(0, 0, 0);
+        // Spatial optimization: only iterate over the relevant rows/columns
+        for (int row = minY; row <= maxY; row++) {
+            Map<Integer, Integer> mapRow = cells.get(row);
+            if (mapRow != null) {
+                for (int col = minX; col <= maxX; col++) {
+                    Integer value = mapRow.get(col);
+                    if (value != null) {
+                        tempPoint.setX(col);
+                        tempPoint.setY(row);
+                        tempGround.setPosition(tempPoint);
+                        tempGround.setType(value);
+                        c.accept(tempGround);
+                    }
+                }
+            }
+        }
+    }
+
     public Integer getValueAt(Point pos) {
         return getValueAt(pos.getX(), pos.getY());
     }

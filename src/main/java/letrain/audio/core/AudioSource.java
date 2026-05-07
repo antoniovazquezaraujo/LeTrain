@@ -43,4 +43,11 @@ public interface AudioSource {
      * @param amount 0.0 (no filter, close) to 1.0 (max filter, far)
      */
     void setDistanceFilter(float amount);
+
+    /**
+     * @return true if the source has finished playing and should be removed from the mixer.
+     */
+    default boolean isFinished() {
+        return false;
+    }
 }

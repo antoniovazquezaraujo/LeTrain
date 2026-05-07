@@ -1,19 +1,18 @@
 package letrain.visitor.gdx3d;
 
 import java.util.List;
-import letrain.visitor.Visitor;
-import java.util.Random;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import letrain.track.CargoTypes;
-import letrain.utils.PathGeometry;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Wagon;
-import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
+import letrain.vehicle.impl.rail.Locomotive;
+import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.impl.rail.Wagon;
+import letrain.utils.PathGeometry;
 
 public class VehicleRenderer extends BaseSubRenderer {
 
@@ -33,7 +32,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             if (modelRef.getMode() == letrain.mvp.Model.GameMode.LINK) {
                 Locomotive selected = modelRef.getSelectedLocomotive();
                 if (selected != null && selected.getTrain() != null) {
-                    for (letrain.vehicle.impl.Linker l : selected.getTrain().getSelectedLinkersToJoin()) {
+                    for (Linker l : selected.getTrain().getSelectedLinkersToJoin()) {
                         if (l == locomotive) {
                             highlight = true;
                             break;
@@ -43,7 +42,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             } else if (modelRef.getMode() == letrain.mvp.Model.GameMode.UNLINK) {
                 Locomotive selected = modelRef.getSelectedLocomotive();
                 if (selected != null && selected.getTrain() != null) {
-                    for (letrain.vehicle.impl.Linker l : selected.getTrain().getLinkersToRemove()) {
+                    for (Linker l : selected.getTrain().getLinkersToRemove()) {
                         if (l == locomotive) {
                             unlinkHighlight = true;
                             break;
@@ -53,23 +52,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             }
         }
 
-        boolean isSelected = (modelRef != null && modelRef.getSelectedLocomotive() == locomotive);
-        Model modelToUse = resourceContext.locomotiveModel;
-
-        if (unlinkHighlight) {
-            modelToUse = resourceContext.locomotiveUnlinkModel;
-        } else if (highlight) {
-            modelToUse = resourceContext.locomotiveHighlightModel;
-        }
-
-        ModelInstance instance = new ModelInstance(modelToUse);
-
-        float renderX = locomotive.getPosition().getX() + 0.5f;
-        float renderY = locomotive.getPosition().getY() + 0.5f;
-        float angle = locomotive.getDir().getValue() * 45f;
         float progress = 0.5f;
-        Vector3 renderTangent = new Vector3(PathGeometry.getDirX(locomotive.getDir()), 0, PathGeometry.getDirZ(locomotive.getDir()));
-
         Locomotive interpolationRef = locomotive;
         Train train = locomotive.getTrain();
         if (train != null) {
@@ -84,82 +67,75 @@ public class VehicleRenderer extends BaseSubRenderer {
             float currentDelay = (float) interpolationRef.getTurns() - animationAlpha;
             progress = 1.0f - (currentDelay / totalDelay);
             progress = MathUtils.clamp(progress, 0, 1);
-
-            Vector3 pComputed = new Vector3();
-            PathGeometry.calculateTwoStagePath(locomotive.getPosition().getX(), locomotive.getPosition().getY(), 
-                locomotive.getEntryDir(), locomotive.getDir(), locomotive.getTrack(), 
-                progress, locomotive.getSpeed(), pComputed, renderTangent);
-            
-            renderX = pComputed.x;
-            renderY = pComputed.z;
-            angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * MathUtils.radiansToDegrees;
         } else {
-            Vector3 pComputed = new Vector3();
-            PathGeometry.calculateTwoStagePath(locomotive.getPosition().getX(), locomotive.getPosition().getY(), 
-                locomotive.getEntryDir(), locomotive.getDir(), locomotive.getTrack(), 
-                0.0f, locomotive.getSpeed(), pComputed, renderTangent);
-            
+            progress = 0.0f;
+        }
+
+        Vector3 pComputed = new Vector3();
+        Vector3 renderTangent = new Vector3();
+        float renderX = locomotive.getPosition().getX() + 0.5f;
+        float renderY = locomotive.getPosition().getY() + 0.5f;
+        float angle = locomotive.getDir().getValue() * 45f;
+
+        PathGeometry.calculateTwoStagePath(locomotive.getPosition().getX(), locomotive.getPosition().getY(), 
+            locomotive.getEntryDir(), locomotive.getDir(), locomotive.getTrack(), 
+            progress, locomotive.getSpeed(), pComputed, renderTangent);
+
+        if (pComputed.x != 0 || pComputed.z != 0) {
             renderX = pComputed.x;
             renderY = pComputed.z;
             angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * MathUtils.radiansToDegrees;
         }
 
-        if (locomotive.isDestroying()) {
-            Random rnd = new Random(locomotive.getId());
-            float offsetX = (rnd.nextFloat() - 0.5f) * 0.4f;
-            float offsetZ = (rnd.nextFloat() - 0.5f) * 0.4f;
-            float rotX = (rnd.nextFloat() - 0.5f) * 45f;
-            float rotY = (rnd.nextFloat() - 0.5f) * 45f;
-            float rotZ = (rnd.nextFloat() - 0.5f) * 45f;
-
-            instance.transform.setToTranslation(renderX + offsetX, 0.6f, renderY + offsetZ);
-            instance.transform.rotate(1, 0, 0, rotX);
-            instance.transform.rotate(0, 1, 0, angle + rotY);
-            instance.transform.rotate(0, 0, 1, rotZ);
-        } else {
-            instance.transform.setToTranslation(renderX, 0.6f, renderY);
-            instance.transform.rotate(0, 1, 0, angle);
+        Model locoModelToUse = resourceContext.locomotiveModel;
+        if (unlinkHighlight) {
+            locoModelToUse = resourceContext.locomotiveUnlinkModel;
+        } else if (highlight) {
+            locoModelToUse = resourceContext.locomotiveHighlightModel;
         }
+
+        ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
+        instance.transform.setToTranslation(renderX, 0.6f, renderY);
+        instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
 
-        if (locomotive.isDestroying()) {
-            drawFire(renderX, 0.6f, renderY, animationAlpha + locomotive.getId());
-        }
-
-        if (isSelected) {
-            Vector3 forward = renderTangent.cpy().nor();
-            float dxL = forward.x;
-            float dzL = forward.z;
-
-            labels.add(new Gdx3DRenderer.VehicleLabel(
-                    new Vector3(renderX, 1.01f, renderY),
-                    "" + locomotive.getId(),
-                    new Vector3(0, 1, 0), 
-                    new Vector3(dxL, 0, dzL).nor(), 
-                    Color.WHITE));
-
-            ModelInstance selectionLine = new ModelInstance(resourceContext.selectionLineModel);
+        // Green line (direction marker) - ALWAYS for locomotives
+        {
+            ModelInstance selectionLine = resourceContext.getModelInstance(resourceContext.selectionLineModel);
+            v1.set(renderTangent).nor();
+            float dxL = v1.x;
+            float dzL = v1.z;
             float lineOffset = 0.25f;
             selectionLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.01f, renderY + dzL * lineOffset);
             selectionLine.transform.rotate(0, 1, 0, angle);
             instances.add(selectionLine);
         }
 
+        if (locomotive.isDestroying()) {
+            drawFire(renderX, 0.6f, renderY, animationAlpha + locomotive.getId());
+        }
+
+        // Locomotive labels
         {
-            Vector3 forward = renderTangent.cpy().nor();
-            float dxL = forward.x;
-            float dzL = forward.z;
+            v1.set(renderTangent).nor();
+            float dxL = v1.x;
+            float dzL = v1.z;
+
+            v1.set(renderX, 1.01f, renderY);
+            v2.set(0, 1, 0);
+            v3.set(dxL, 0, dzL).nor();
+            addLabel(v1, "" + locomotive.getId(), v2, v3, Color.WHITE, 1.0f);
+
             float perpXL = dzL * 0.42f;
             float perpZL = -dxL * 0.42f;
 
-            labels.add(new Gdx3DRenderer.VehicleLabel(
-                    new Vector3(renderX + perpXL, 0.4f, renderY + perpZL),
-                    locomotive.getAspect(),
-                    new Vector3(perpXL, 0, perpZL).nor()));
-            labels.add(new Gdx3DRenderer.VehicleLabel(
-                    new Vector3(renderX - perpXL, 0.4f, renderY - perpZL),
-                    locomotive.getAspect(),
-                    new Vector3(-perpXL, 0, -perpZL).nor()));
+            v1.set(renderX + perpXL, 0.4f, renderY + perpZL);
+            v2.set(perpXL, 0, perpZL).nor();
+            addLabel(v1, locomotive.getAspect(), v2);
+
+            v1.set(renderX - perpXL, 0.4f, renderY - perpZL);
+            v2.set(-perpXL, 0, -perpZL).nor();
+            addLabel(v1, locomotive.getAspect(), v2);
         }
     }
 
@@ -172,7 +148,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             if (modelRef.getMode() == letrain.mvp.Model.GameMode.LINK) {
                 Locomotive selected = modelRef.getSelectedLocomotive();
                 if (selected != null && selected.getTrain() != null) {
-                    for (letrain.vehicle.impl.Linker l : selected.getTrain().getSelectedLinkersToJoin()) {
+                    for (Linker l : selected.getTrain().getSelectedLinkersToJoin()) {
                         if (l == wagon) {
                             highlight = true;
                             break;
@@ -182,7 +158,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             } else if (modelRef.getMode() == letrain.mvp.Model.GameMode.UNLINK) {
                 Locomotive selected = modelRef.getSelectedLocomotive();
                 if (selected != null && selected.getTrain() != null) {
-                    for (letrain.vehicle.impl.Linker l : selected.getTrain().getLinkersToRemove()) {
+                    for (Linker l : selected.getTrain().getLinkersToRemove()) {
                         if (l == wagon) {
                             unlinkHighlight = true;
                             break;
@@ -205,7 +181,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             chassisModel = resourceContext.wagonHighlightModel;
         }
 
-        ModelInstance instance = new ModelInstance(chassisModel);
+        ModelInstance instance = resourceContext.getModelInstance(chassisModel);
         if (!highlight && !unlinkHighlight) {
             instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(chassisColor));
         }
@@ -213,71 +189,56 @@ public class VehicleRenderer extends BaseSubRenderer {
         float renderX = wagon.getPosition().getX() + 0.5f;
         float renderY = wagon.getPosition().getY() + 0.5f;
         float angle = wagon.getDir().getValue() * 45f;
+        float speed = 0.0f;
         float progress = 0.5f;
-        Vector3 renderTangent = new Vector3(PathGeometry.getDirX(wagon.getDir()), 0, PathGeometry.getDirZ(wagon.getDir()));
 
         Train train = wagon.getTrain();
         if (train != null) {
             Tractor director = train.getDirectorLinker();
             if (director instanceof Locomotive) {
                 Locomotive loc = (Locomotive) director;
+                speed = loc.getSpeed();
                 if (loc.getTotalTurns() > 0) {
                     float totalDelay = (float) loc.getTotalTurns();
                     float currentDelay = (float) loc.getTurns() - animationAlpha;
                     progress = 1.0f - (currentDelay / totalDelay);
                     progress = MathUtils.clamp(progress, 0, 1);
-
-                    Vector3 pComputed = new Vector3();
-                    PathGeometry.calculateTwoStagePath(wagon.getPosition().getX(), wagon.getPosition().getY(), 
-                        wagon.getEntryDir(), wagon.getDir(), wagon.getTrack(), 
-                        progress, loc.getSpeed(), pComputed, renderTangent);
-                    
-                    renderX = pComputed.x;
-                    renderY = pComputed.z;
-                    angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * MathUtils.radiansToDegrees;
-                } else {
-                    Vector3 pComputed = new Vector3();
-                    PathGeometry.calculateTwoStagePath(wagon.getPosition().getX(), wagon.getPosition().getY(), 
-                        wagon.getEntryDir(), wagon.getDir(), wagon.getTrack(), 
-                        0.0f, loc.getSpeed(), pComputed, renderTangent);
-                    
-                    renderX = pComputed.x;
-                    renderY = pComputed.z;
-                    angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * MathUtils.radiansToDegrees;
                 }
             }
         }
 
-        float wagonY = 0.45f;
-        if (wagon.isDestroying()) {
-            Random rnd = new Random(wagon.hashCode());
-            float offsetX = (rnd.nextFloat() - 0.5f) * 0.4f;
-            float offsetZ = (rnd.nextFloat() - 0.5f) * 0.4f;
-            float rotX = (rnd.nextFloat() - 0.5f) * 45f;
-            float rotY = (rnd.nextFloat() - 0.5f) * 45f;
-            float rotZ = (rnd.nextFloat() - 0.5f) * 45f;
-
-            instance.transform.setToTranslation(renderX + offsetX, wagonY, renderY + offsetZ);
-            instance.transform.rotate(1, 0, 0, rotX);
-            instance.transform.rotate(0, 1, 0, angle + rotY);
-            instance.transform.rotate(0, 0, 1, rotZ);
+        Vector3 pComputed = new Vector3();
+        Vector3 renderTangent = new Vector3();
+        PathGeometry.calculateTwoStagePath(wagon.getPosition().getX(), wagon.getPosition().getY(), 
+            wagon.getEntryDir(), wagon.getDir(), wagon.getTrack(), 
+            progress, speed, pComputed, renderTangent);
+        
+        if (pComputed.x != 0 || pComputed.z != 0) {
+            renderX = pComputed.x;
+            renderY = pComputed.z;
+            angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * MathUtils.radiansToDegrees;
         } else {
-            instance.transform.setToTranslation(renderX, wagonY, renderY);
-            instance.transform.rotate(0, 1, 0, angle);
+            renderTangent.set(PathGeometry.getDirX(wagon.getDir()), 0, PathGeometry.getDirZ(wagon.getDir()));
         }
+
+        if (wagon.isDestroying()) {
+            drawFire(renderX, 0.45f, renderY, animationAlpha + wagon.hashCode());
+        }
+
+        instance.transform.setToTranslation(renderX, 0.45f, renderY);
+        instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
 
-        if (wagon.isDestroying()) {
-            drawFire(renderX, 0.5f, renderY, animationAlpha + wagon.hashCode());
-        }
+        // NO green line for wagons, as per user's mandate.
 
+        // Jewel rendering
         if (wagon.getCargoAmount() > 0 && !highlight && !unlinkHighlight) {
-            Color cargoColor = (wagon.getCargoType() != null) ? wagon.getCargoType().getColor().cpy() : Color.YELLOW.cpy();
+            Color cargoColor = (wagon.getCargoType() != null) ? wagon.getCargoType().getColor() : Color.YELLOW;
             float fullness = (float) wagon.getCargoAmount() / (float) wagon.getMaxCapacity();
             float maxHeight = 0.5f;
             float currentHeight = fullness * maxHeight;
 
-            ModelInstance jewelBlock = new ModelInstance(resourceContext.wagonJewelModel);
+            ModelInstance jewelBlock = resourceContext.getModelInstance(resourceContext.wagonJewelModel);
             jewelBlock.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(cargoColor));
             float jewelY = 0.25f + (currentHeight / 2f);
             jewelBlock.transform.setToTranslation(renderX, jewelY, renderY);
@@ -286,21 +247,21 @@ public class VehicleRenderer extends BaseSubRenderer {
             instances.add(jewelBlock);
         }
 
+        // Wagon labels
         {
-            Vector3 forward = renderTangent.cpy().nor();
-            float dxW = forward.x;
-            float dzW = forward.z;
+            v1.set(renderTangent).nor();
+            float dxW = v1.x;
+            float dzW = v1.z;
             float perpXW = dzW * 0.42f;
             float perpZW = -dxW * 0.42f;
 
-            labels.add(new Gdx3DRenderer.VehicleLabel(
-                    new Vector3(renderX + perpXW, 0.4f, renderY + perpZW),
-                    wagon.getAspect(),
-                    new Vector3(perpXW, 0, perpZW).nor()));
-            labels.add(new Gdx3DRenderer.VehicleLabel(
-                    new Vector3(renderX - perpXW, 0.4f, renderY - perpZW),
-                    wagon.getAspect(),
-                    new Vector3(-perpXW, 0, -perpZW).nor()));
+            v1.set(renderX + perpXW, 0.4f, renderY + perpZW);
+            v2.set(perpXW, 0, perpZW).nor();
+            addLabel(v1, wagon.getAspect(), v2);
+
+            v1.set(renderX - perpXW, 0.4f, renderY - perpZW);
+            v2.set(-perpXW, 0, -perpZW).nor();
+            addLabel(v1, wagon.getAspect(), v2);
         }
     }
 
@@ -330,7 +291,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             float sizeScale = 1.0f - offsetY / 1.5f;
             if (sizeScale <= 0) continue;
 
-            ModelInstance firePart = new ModelInstance(fireModel);
+            ModelInstance firePart = resourceContext.getModelInstance(fireModel);
             firePart.transform.setToTranslation(x + offsetX, y + offsetY, z + offsetZ);
             firePart.transform.scale(sizeScale, sizeScale, sizeScale);
             firePart.transform.rotate(Vector3.Y, realTime * 150f + seed * 100f);

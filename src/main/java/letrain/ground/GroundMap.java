@@ -39,6 +39,8 @@ public interface GroundMap extends Renderable {
 
     public void forEach(Consumer<Ground> c);
 
+    public void forEachInRange(int minX, int minY, int maxX, int maxY, Consumer<Ground> c);
+
     Integer findClosestIndustry(Point center, int radius);
 
     int countIndustryDensity(Point center, int radius, int industryType);

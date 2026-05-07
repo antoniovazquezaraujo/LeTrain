@@ -38,6 +38,21 @@ public class RailMap implements letrain.map.RailMap<RailTrack>, Renderable {
     }
 
     @Override
+    public void forEachInRange(int minX, int minY, int maxX, int maxY, Consumer<RailTrack> c) {
+        for (int row = minY; row <= maxY; row++) {
+            Map<Integer, RailTrack> rowRails = rails.get(row);
+            if (rowRails != null) {
+                for (int col = minX; col <= maxX; col++) {
+                    RailTrack track = rowRails.get(col);
+                    if (track != null) {
+                        c.accept(track);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
     public RailTrack getTrackAt(Point pos) {
         return getTrackAt(pos.getX(), pos.getY());
     }

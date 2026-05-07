@@ -15,11 +15,18 @@ public abstract class BaseSubRenderer implements Visitor {
     protected final List<ModelInstance> instances;
     protected final List<ModelInstance> transparentInstances;
     protected final List<Gdx3DRenderer.VehicleLabel> labels;
+    protected Gdx3DRenderer parentRenderer;
     
     protected Model modelRef;
     protected Camera camera;
     protected float animationAlpha = 1.0f;
     protected boolean isXRayActive = false;
+
+    // Temporary objects for reuse in render loops
+    protected final com.badlogic.gdx.math.Vector3 v1 = new com.badlogic.gdx.math.Vector3();
+    protected final com.badlogic.gdx.math.Vector3 v2 = new com.badlogic.gdx.math.Vector3();
+    protected final com.badlogic.gdx.math.Vector3 v3 = new com.badlogic.gdx.math.Vector3();
+    protected final com.badlogic.gdx.graphics.Color c1 = new com.badlogic.gdx.graphics.Color();
 
     public BaseSubRenderer(Gdx3DResourceContext resourceContext, 
                           List<ModelInstance> instances, 
@@ -29,6 +36,22 @@ public abstract class BaseSubRenderer implements Visitor {
         this.instances = instances;
         this.transparentInstances = transparentInstances;
         this.labels = labels;
+    }
+
+    public void setParentRenderer(Gdx3DRenderer parentRenderer) {
+        this.parentRenderer = parentRenderer;
+    }
+
+    protected void addLabel(com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal, com.badlogic.gdx.math.Vector3 up, com.badlogic.gdx.graphics.Color color, float scale) {
+        if (parentRenderer != null) {
+            parentRenderer.addLabel(pos, text, normal, up, color, scale);
+        } else {
+            labels.add(new Gdx3DRenderer.VehicleLabel(pos, text, normal, up, color, scale));
+        }
+    }
+
+    protected void addLabel(com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal) {
+        addLabel(pos, text, normal, null, com.badlogic.gdx.graphics.Color.WHITE, 1.0f);
     }
 
     public void updateState(Model modelRef, Camera camera, float animationAlpha, boolean isXRayActive) {

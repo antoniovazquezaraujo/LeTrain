@@ -99,4 +99,9 @@ public class WavSource implements AudioSource {
     public boolean isActive() {
         return active;
     }
+
+    @Override
+    public boolean isFinished() {
+        return !active;
+    }
 }

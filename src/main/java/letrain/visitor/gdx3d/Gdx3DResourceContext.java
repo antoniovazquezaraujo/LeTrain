@@ -14,12 +14,18 @@ import com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder;
 import com.badlogic.gdx.graphics.g3d.utils.shapebuilders.CylinderShapeBuilder;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.decals.Decal;
 import com.badlogic.gdx.utils.Disposable;
+import com.badlogic.gdx.utils.Pool;
 
 import letrain.track.CargoTypes;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Manages the lifecycle and initialization of 3D models.
@@ -28,6 +34,63 @@ import java.util.List;
 public class Gdx3DResourceContext implements Disposable {
     private final List<Model> models = new ArrayList<>();
     private ModelBuilder modelBuilder;
+
+    // --- Object Pooling ---
+    private final Map<Model, Pool<ModelInstance>> pools = new HashMap<>();
+    private final List<ModelInstance> activeInstances = new ArrayList<>();
+
+    private final Pool<Decal> decalPool = new Pool<Decal>() {
+        @Override
+        protected Decal newObject() {
+            // Decal needs a TextureRegion to be initialized, we'll set the real one in getDecal
+            return Decal.newDecal(new TextureRegion());
+        }
+    };
+    private final List<Decal> activeDecals = new ArrayList<>();
+
+    public ModelInstance getModelInstance(Model model) {
+        if (model == null) return null;
+        Pool<ModelInstance> pool = pools.computeIfAbsent(model, m -> new Pool<ModelInstance>() {
+            @Override
+            protected ModelInstance newObject() {
+                return new ModelInstance(m);
+            }
+        });
+        ModelInstance instance = pool.obtain();
+        // Reset transform and materials to default state from model
+        instance.transform.idt();
+        // LibGDX ModelInstance shares materials but let's ensure we don't carry over blending from X-ray
+        for (int i = 0; i < instance.materials.size; i++) {
+            instance.materials.get(i).clear();
+            instance.materials.get(i).set(model.materials.get(i));
+        }
+        activeInstances.add(instance);
+        return instance;
+    }
+
+    public Decal getDecal(TextureRegion region) {
+        Decal decal = decalPool.obtain();
+        decal.setTextureRegion(region);
+        decal.setBlending(com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA, com.badlogic.gdx.graphics.GL20.GL_ONE_MINUS_SRC_ALPHA);
+        activeDecals.add(decal);
+        return decal;
+    }
+
+    public void freeAllInstances() {
+        for (ModelInstance instance : activeInstances) {
+            Pool<ModelInstance> pool = pools.get(instance.model);
+            if (pool != null) {
+                pool.free(instance);
+            }
+        }
+        activeInstances.clear();
+
+        for (Decal decal : activeDecals) {
+            decalPool.free(decal);
+        }
+        activeDecals.clear();
+    }
+    // ----------------------
 
     public Model railModel;
     public Model inactiveRailModel;
@@ -73,6 +136,8 @@ public class Gdx3DResourceContext implements Disposable {
     public Model yellowSphereModel1;
     public Model yellowSphereModel2;
     public Model yellowSphereModel3;
+
+    public final com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute blackDiffuseAttribute = com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.BLACK);
 
     public void init() {
         if (modelBuilder == null) {

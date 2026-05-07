@@ -29,7 +29,6 @@ public class AudioController {
     private static final float SCALE_FACTOR = 20.0f;
 
     private final Map<String, AudioSample> samples = new HashMap<>();
-    private final List<WavSource> oneShotSources = new CopyOnWriteArrayList<>();
 
     public void stopSynthesizer(int id) {
         TrainSynthesizer synth = synthesizers.get(id);
@@ -138,7 +137,6 @@ public class AudioController {
             // but we can modify the default in constructor or here if we had methods.
             // Since WavSource is ours, I'll add methods or just modify the defaults.
 
-            oneShotSources.add(source);
             mixer.addSource(source);
         } else {
             log.warn("Audio sample not found: {}", name);
@@ -157,17 +155,6 @@ public class AudioController {
     public void update() {
         if (!enabled)
             return;
-
-        // Clean up finished one-shots
-        oneShotSources.removeIf(source -> {
-            if (!source.isActive()) {
-                mixer.removeSource(source);
-                return true;
-            }
-            return false;
-        });
-
-        // One-shots are now played directly from the UI controller (Presenter)
 
         // 1. Remove synthesizers for destroyed locomotives
         Iterator<Map.Entry<Integer, TrainSynthesizer>> it = synthesizers.entrySet().iterator();
