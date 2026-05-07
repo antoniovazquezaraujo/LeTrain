@@ -994,15 +994,16 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 if (next != getDirectorLinker()) {
                     linkersToRemove.addLast(next);
                 } else {
-                    // Si nos topamos con el director, no podemos desvincularlo, así que reducimos
-                    // la cuenta y paramos.
-                    // Esto asume que el director no se puede desvincular de sí mismo si es el
-                    // único.
-                    // Pero en divideTrain se intenta separar.
-                    // La lógica original tenía este check.
-                    numLinkersToRemove--;
+                    // Si nos topamos con el director, no podemos desvincularlo, así que ajustamos
+                    // la cuenta al número actual de elementos válidos y paramos.
+                    numLinkersToRemove = n;
                     return;
                 }
+            } else {
+                // Si no hay más elementos en el iterador, ajustamos la cuenta al número real
+                // encontrado.
+                numLinkersToRemove = n;
+                break;
             }
         }
     }
@@ -1012,14 +1013,15 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             return;
         }
 
-        if (numLinkersToRemove > 0) {
+        int toRemove = linkersToRemove.size();
+        if (toRemove > 0) {
             Train newTrain = new Train(nextTrainIdSupplier.get());
             newTrain.setModel(this.model);
             for (TrainEventListener listener : trainListeners) {
                 newTrain.addTrainEventListener(listener);
             }
 
-            for (int n = 0; n < numLinkersToRemove; n++) {
+            for (int n = 0; n < toRemove; n++) {
                 Linker linkerToRemove;
                 if (linkerDivisionSense == LinkersSense.BACK) {
                     linkerToRemove = getLinkers().removeLast();
