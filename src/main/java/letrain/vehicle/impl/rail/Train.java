@@ -743,6 +743,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 int speed = getSpeed();
                 if (Math.abs(speed) >= 5) {
                     crash(blockingLinker, speed);
+                    this.setStalled(true);
                 } else {
                     letrain.map.Point collisionPos = blockingLinker.getPosition();
                     notifyContact(collisionPos, speed);
@@ -783,10 +784,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             notifyCrash(crashPos, speed);
             getLinkers().forEach(l -> {
                 if (l instanceof Locomotive) {
+                    ((Locomotive) l).setCurrentSpeed(0);
                     ((Locomotive) l).setTargetSpeed(0);
                 }
                 l.destroy();
             });
+            this.setStalled(true);
         }
 
         // Also handle the other linker/train
@@ -802,10 +805,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 linker.getTrain().notifyCrash(crashPos, speed);
                 linker.getTrain().getLinkers().forEach(l -> {
                     if (l instanceof Locomotive) {
+                        ((Locomotive) l).setCurrentSpeed(0);
                         ((Locomotive) l).setTargetSpeed(0);
                     }
                     l.destroy();
                 });
+                linker.getTrain().setStalled(true);
             }
         } else {
             log.info("crash: Destroying loose linker {} at crash position {}", linker, crashPos);
