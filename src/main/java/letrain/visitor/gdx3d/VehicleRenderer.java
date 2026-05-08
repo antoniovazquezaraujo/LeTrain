@@ -77,14 +77,41 @@ public class VehicleRenderer extends BaseSubRenderer {
         float renderY = locomotive.getPosition().getY() + 0.5f;
         float angle = locomotive.getDir().getValue() * 45f;
 
-        PathGeometry.calculateTwoStagePath(locomotive.getPosition().getX(), locomotive.getPosition().getY(), 
-            locomotive.getEntryDir(), locomotive.getDir(), locomotive.getTrack(), 
-            progress, locomotive.getSpeed(), pComputed, renderTangent);
+        // If the train is not moving, skip ALL interpolation.
+        int locoSpeed = locomotive.getSpeed();
+        if (locoSpeed == 0) {
+            renderTangent.set(PathGeometry.getDirX(locomotive.getDir()), 0, PathGeometry.getDirZ(locomotive.getDir()));
+        } else {
+            // Follow the chain of same-train linkers forward until we find
+            // either a free cell (can enter) or a different train (blocked).
+            boolean canEnterNext = true;
+            {
+                letrain.track.Track lookTrack = locomotive.getTrack();
+                letrain.map.Dir lookDir = locomotive.getDir();
+                while (lookTrack != null) {
+                    letrain.track.Track nextTrack = lookTrack.getConnected(lookDir);
+                    if (nextTrack == null) break;
+                    letrain.vehicle.impl.Linker occupyingL = nextTrack.getLinker();
+                    if (occupyingL == null) break; // free cell
+                    if (occupyingL.getTrain() != train) {
+                        canEnterNext = false; // different train blocks the chain
+                        break;
+                    }
+                    // Same train — follow the chain forward
+                    lookDir = occupyingL.getDir();
+                    lookTrack = nextTrack;
+                }
+            }
 
-        if (pComputed.x != 0 || pComputed.z != 0) {
-            renderX = pComputed.x;
-            renderY = pComputed.z;
-            angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * MathUtils.radiansToDegrees;
+            PathGeometry.calculateTwoStagePath(locomotive.getPosition().getX(), locomotive.getPosition().getY(), 
+                locomotive.getEntryDir(), locomotive.getDir(), locomotive.getTrack(), 
+                progress, locoSpeed, canEnterNext, pComputed, renderTangent);
+
+            if (pComputed.x != 0 || pComputed.z != 0) {
+                renderX = pComputed.x;
+                renderY = pComputed.z;
+                angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * MathUtils.radiansToDegrees;
+            }
         }
 
         Model locoModelToUse = resourceContext.locomotiveModel;
@@ -190,35 +217,70 @@ public class VehicleRenderer extends BaseSubRenderer {
         float renderY = wagon.getPosition().getY() + 0.5f;
         float angle = wagon.getDir().getValue() * 45f;
         float speed = 0.0f;
-        float progress = 0.5f;
+        float progress = 0.0f;
+        int totalTurns = 0;
+        int currentTurns = 0;
 
         Train train = wagon.getTrain();
+        Locomotive loc = null;
         if (train != null) {
             Tractor director = train.getDirectorLinker();
             if (director instanceof Locomotive) {
-                Locomotive loc = (Locomotive) director;
+                loc = (Locomotive) director;
                 speed = loc.getSpeed();
-                if (loc.getTotalTurns() > 0) {
-                    float totalDelay = (float) loc.getTotalTurns();
-                    float currentDelay = (float) loc.getTurns() - animationAlpha;
+                totalTurns = loc.getTotalTurns();
+                currentTurns = loc.getTurns();
+                if (totalTurns > 0) {
+                    float totalDelay = (float) totalTurns;
+                    float currentDelay = (float) currentTurns - animationAlpha;
                     progress = 1.0f - (currentDelay / totalDelay);
                     progress = MathUtils.clamp(progress, 0, 1);
+                } else {
+                    progress = 0.0f;
                 }
             }
         }
 
         Vector3 pComputed = new Vector3();
         Vector3 renderTangent = new Vector3();
-        PathGeometry.calculateTwoStagePath(wagon.getPosition().getX(), wagon.getPosition().getY(), 
-            wagon.getEntryDir(), wagon.getDir(), wagon.getTrack(), 
-            progress, speed, pComputed, renderTangent);
         
-        if (pComputed.x != 0 || pComputed.z != 0) {
-            renderX = pComputed.x;
-            renderY = pComputed.z;
-            angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * MathUtils.radiansToDegrees;
-        } else {
+        // If the train is stalled, stopped, or has no active turns, skip ALL interpolation.
+        if (speed == 0 || totalTurns <= 0 || (train != null && train.isStalled())) {
             renderTangent.set(PathGeometry.getDirX(wagon.getDir()), 0, PathGeometry.getDirZ(wagon.getDir()));
+        } else {
+            // Check whether the next cell is blocked by another train.
+            // Follow the chain of same-train linkers forward until we find
+            // either a free cell (can enter) or a different train (blocked).
+            boolean canEnterNext = true;
+            {
+                letrain.track.Track lookTrack = wagon.getTrack();
+                letrain.map.Dir lookDir = wagon.getDir();
+                while (lookTrack != null) {
+                    letrain.track.Track nextTrack = lookTrack.getConnected(lookDir);
+                    if (nextTrack == null) break;
+                    letrain.vehicle.impl.Linker occupyingL = nextTrack.getLinker();
+                    if (occupyingL == null) break; // free cell
+                    if (occupyingL.getTrain() != train) {
+                        canEnterNext = false; // different train blocks the chain
+                        break;
+                    }
+                    // Same train — follow the chain forward
+                    lookDir = occupyingL.getDir();
+                    lookTrack = nextTrack;
+                }
+            }
+
+            PathGeometry.calculateTwoStagePath(wagon.getPosition().getX(), wagon.getPosition().getY(), 
+                wagon.getEntryDir(), wagon.getDir(), wagon.getTrack(), 
+                progress, speed, canEnterNext, pComputed, renderTangent);
+            
+            if (pComputed.x != 0 || pComputed.z != 0) {
+                renderX = pComputed.x;
+                renderY = pComputed.z;
+                angle = (float) Math.atan2(-renderTangent.z, renderTangent.x) * MathUtils.radiansToDegrees;
+            } else {
+                renderTangent.set(PathGeometry.getDirX(wagon.getDir()), 0, PathGeometry.getDirZ(wagon.getDir()));
+            }
         }
 
         if (wagon.isDestroying()) {

@@ -506,9 +506,38 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             normalSense = false;
         }
 
+        // Save linker directions before attempting to move.
+        // If moveLinkers fails (collision, blocked), we must restore them
+        // so the renderer draws wagons at their correct positions.
+        Map<Linker, letrain.map.Dir> savedDirs = new HashMap<>();
+        Map<Linker, letrain.map.Dir> savedEntryDirs = new HashMap<>();
+        for (Linker l : getLinkers()) {
+            savedDirs.put(l, l.getDir());
+            savedEntryDirs.put(l, l.getEntryDir());
+        }
+
         setDirPushedLinkers(normalSense);
         setDirTowedLinkers(normalSense);
-        return moveLinkers(normalSense);
+        boolean moved = moveLinkers(normalSense);
+
+        if (!moved) {
+            // Movement failed — restore original directions.
+            // Without this, setDirTowedLinkers leaves wagons pointing
+            // forward, causing the renderer to interpolate them into
+            // the locomotive when the train has actually stopped.
+            for (Linker l : getLinkers()) {
+                letrain.map.Dir savedDir = savedDirs.get(l);
+                letrain.map.Dir savedEntry = savedEntryDirs.get(l);
+                if (savedDir != null) {
+                    l.setDir(savedDir);
+                }
+                if (savedEntry != null) {
+                    l.setEntryDir(savedEntry);
+                }
+            }
+        }
+
+        return moved;
     }
 
     public void refreshLinkersDirection() {
@@ -700,6 +729,33 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             }
             if (nextTrackOfLinker instanceof ForkRailTrack && linkerToMove == firstLinker) {
                 ((ForkRailTrack) nextTrackOfLinker).onEnterTrain(this);
+            }
+        }
+
+        // After a successful move, immediately check whether the next cell
+        // ahead is blocked by another train. If so, trigger collision NOW
+        // instead of waiting for the next advance() cycle (which would add
+        // up to 2.5s of delay before the crash sound plays).
+        Track nextAfterMove = firstLinker.getTrack().getConnected(firstLinker.getDir());
+        if (nextAfterMove != null) {
+            Linker blockingLinker = nextAfterMove.getLinker();
+            if (blockingLinker != null && blockingLinker.getTrain() != this) {
+                int speed = getSpeed();
+                if (Math.abs(speed) >= 5) {
+                    crash(blockingLinker, speed);
+                } else {
+                    letrain.map.Point collisionPos = blockingLinker.getPosition();
+                    notifyContact(collisionPos, speed);
+                    getTractors().forEach(t -> {
+                        t.setCurrentSpeed(0);
+                        t.setTargetSpeed(0);
+                    });
+                    this.setStalled(true);
+                    Train otherTrain = blockingLinker.getTrain();
+                    if (otherTrain != null) {
+                        otherTrain.notifyContact(collisionPos, speed);
+                    }
+                }
             }
         }
 

@@ -242,6 +242,11 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void incSpeed() {
+        // Do not increase speed while stalled from a collision.
+        // The player must reverse first to recover.
+        if (getTrain() != null && getTrain().isStalled()) {
+            return;
+        }
         setTargetSpeed(this.targetSpeed + 1);
     }
 

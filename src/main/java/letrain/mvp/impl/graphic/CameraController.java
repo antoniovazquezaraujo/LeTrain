@@ -230,8 +230,21 @@ public class CameraController {
             if (progress > 1) progress = 1;
         }
 
+        // Check whether the next cell is blocked by another train
+        boolean canEnterNext = true;
+        {
+            letrain.track.Track currentTrack = locomotive.getTrack();
+            letrain.track.Track nextTrack = (currentTrack != null) ? currentTrack.getConnected(locomotive.getDir()) : null;
+            if (nextTrack != null) {
+                letrain.vehicle.impl.Linker occupyingL = nextTrack.getLinker();
+                if (occupyingL != null && occupyingL.getTrain() != locomotive.getTrain()) {
+                    canEnterNext = false;
+                }
+            }
+        }
+
         PathGeometry.calculateTwoStagePath(x, y, locomotive.getEntryDir(), locomotive.getDir(), locomotive.getTrack(), 
-                                          progress, locomotive.getSpeed(), outPos, outTangent);
+                                          progress, locomotive.getSpeed(), canEnterNext, outPos, outTangent);
         
         return new Vector2(outPos.x - 0.5f, outPos.z - 0.5f);
     }

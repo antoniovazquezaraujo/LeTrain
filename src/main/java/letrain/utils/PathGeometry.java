@@ -67,16 +67,16 @@ public class PathGeometry {
      * @param outTangent Vector3 to store the result tangent
      */
     public static void calculateTwoStagePath(float cellX, float cellY, Dir dEntry, Dir dExit, Track currentTrack, 
-                                            float progress, float currentSpeed, 
+                                            float progress, float currentSpeed, boolean canEnterNext,
                                             Vector3 outPos, Vector3 outTangent) {
         if (progress < 0.5f) {
             // Phase 1: Current Cell (Center -> Exit)
-            float t = 0.5f + progress; // [0.5, 1.0]
+            float t = 0.5f + (canEnterNext ? progress : 0.0f);
             calculateBezierPoint(cellX, cellY, dEntry, dExit, t, outPos, outTangent);
         } else {
             // Phase 2: Next Cell (Entry -> Center)
             Track nextTrack = (currentTrack != null) ? currentTrack.getConnected(dExit) : null;
-            if (nextTrack != null && currentSpeed > 0) {
+            if (nextTrack != null && currentSpeed > 0 && canEnterNext) {
                 Dir nextEntry = dExit.inverse();
                 Dir nextExit = nextTrack.getDir(nextEntry);
                 float nextX = nextTrack.getPosition().getX();
@@ -85,7 +85,7 @@ public class PathGeometry {
                 float t = progress - 0.5f; // [0.0, 0.5]
                 calculateBezierPoint(nextX, nextY, nextEntry, nextExit, t, outPos, outTangent);
             } else {
-                // End of line or stationary: Stay at center of current
+                // Blocked or stationary: Stay at center of current cell
                 calculateBezierPoint(cellX, cellY, dEntry, dExit, 0.5f, outPos, outTangent);
             }
         }
