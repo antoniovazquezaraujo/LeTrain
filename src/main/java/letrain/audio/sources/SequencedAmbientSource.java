@@ -75,15 +75,9 @@ public class SequencedAmbientSource implements AudioSource {
     private float lastVal = 0.0f;
     private float filterSensitivity = 1.0f;
 
-    private boolean debugLogged = false;
-
     @Override
     public boolean read(float[] buffer) {
         if (state == State.IDLE || sample == null) {
-            if (!debugLogged && sample != null) {
-                System.out.println("SeqAmbient state=IDLE, desiredActive=" + desiredActive);
-                debugLogged = true;
-            }
             return false;
         }
 

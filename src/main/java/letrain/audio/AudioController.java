@@ -293,10 +293,8 @@ public class AudioController {
                     birdsSource.setVolume(0.5f);
                     birdsSource.setRange(2.0f * SCALE_FACTOR, 100.0f * SCALE_FACTOR);
                     mixer.addSource(birdsSource);
-                    log.info("Birds ambient source created ({} samples, {} Hz)",
-                            sample.getLength(), sample.getSampleRate());
                 } else {
-                    log.error("Birds sample not found in samples map");
+                    log.warn("Birds sample not found");
                 }
             }
             if (birdsSource != null) {
@@ -319,10 +317,8 @@ public class AudioController {
                     windSource.setVolume(0.5f);
                     windSource.setRange(2.0f * SCALE_FACTOR, 100.0f * SCALE_FACTOR);
                     mixer.addSource(windSource);
-                    log.info("Wind ambient source created ({} samples, {} Hz)",
-                            sample.getLength(), sample.getSampleRate());
                 } else {
-                    log.error("Wind sample not found in samples map");
+                    log.warn("Wind sample not found");
                 }
             }
             if (windSource != null) {
