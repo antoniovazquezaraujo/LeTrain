@@ -59,7 +59,7 @@ class TestCircuit1TraitTest {
 
     private boolean makeTrack() {
         Point cursorPosition = cursor.getPosition();
-        Dir dir = cursor.getDir();
+        Dir cursorDir = cursor.getDir();
         if (oldTrack != null) {
             oldDir = cursorPosition.locate(oldTrack.getPosition());
         } else {
@@ -78,14 +78,11 @@ class TestCircuit1TraitTest {
                 return false;
             }
         }
-        track.addRoute(oldDir, dir);
-        track.setPosition(cursorPosition);
-        if (oldTrack != null) {
-            track.connect(oldDir, oldTrack);
-            oldTrack.connect(track.getDir(dir).inverse(), track);
-        }
-        railMap.addTrack(cursorPosition, track);
-        if (canBeAFork(track, oldDir, dir)) {
+        track.addRoute(oldDir, cursorDir);
+
+            oldTrack.connect(track.getDir(cursorDir).inverse(), track);
+
+        if (canBeAFork(track, oldDir, cursorDir)) {
             final ForkRailTrack myNewTrack = new ForkRailTrack(1);
             // Modmodel.addFork(myNewTrack)
             final Router router = track.getRouter();
