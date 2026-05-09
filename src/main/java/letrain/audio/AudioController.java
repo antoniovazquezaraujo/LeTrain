@@ -289,7 +289,9 @@ public class AudioController {
             if (birdsSource == null) {
                 AudioSample sample = samples.get("birds");
                 if (sample != null) {
-                    birdsSource = letrain.audio.sources.SequencedAmbientSource.createSimpleLooper(sample);
+                    birdsSource = new letrain.audio.sources.SequencedAmbientSource(sample, true);
+                    birdsSource.setVolume(0.5f);
+                    birdsSource.setRange(2.0f * SCALE_FACTOR, 100.0f * SCALE_FACTOR);
                     mixer.addSource(birdsSource);
                     log.info("Birds ambient source created ({} samples, {} Hz)",
                             sample.getLength(), sample.getSampleRate());
@@ -300,7 +302,7 @@ public class AudioController {
             if (birdsSource != null) {
                 birdsSource.setActive(true);
                 birdsSource.setVolume(targetBirdsVol);
-                birdsSource.setPosition(listenerX, listenerY, listenerZ);
+                birdsSource.setPosition(listenerX * SCALE_FACTOR, listenerY * SCALE_FACTOR, listenerZ * SCALE_FACTOR);
             }
         } else {
             if (birdsSource != null) {
@@ -313,7 +315,9 @@ public class AudioController {
             if (windSource == null) {
                 AudioSample sample = samples.get("wind");
                 if (sample != null) {
-                    windSource = letrain.audio.sources.SequencedAmbientSource.createSimpleLooper(sample);
+                    windSource = new letrain.audio.sources.SequencedAmbientSource(sample, true);
+                    windSource.setVolume(0.5f);
+                    windSource.setRange(2.0f * SCALE_FACTOR, 100.0f * SCALE_FACTOR);
                     mixer.addSource(windSource);
                     log.info("Wind ambient source created ({} samples, {} Hz)",
                             sample.getLength(), sample.getSampleRate());
@@ -324,7 +328,7 @@ public class AudioController {
             if (windSource != null) {
                 windSource.setActive(true);
                 windSource.setVolume(targetWindVol);
-                windSource.setPosition(listenerX, listenerY, listenerZ);
+                windSource.setPosition(listenerX * SCALE_FACTOR, listenerY * SCALE_FACTOR, listenerZ * SCALE_FACTOR);
             }
         } else {
             if (windSource != null) {
