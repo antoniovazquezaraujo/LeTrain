@@ -9,18 +9,18 @@ import letrain.track.Track;
  */
 public class PathGeometry {
 
-    public static float getDirX(Dir d) {
-        if (d == null) return 0;
-        switch (d) {
+    public static float getDirX(Dir dir) {
+        if (dir == null) return 0;
+        switch (dir) {
             case E: case NE: case SE: return 0.5f;
             case W: case NW: case SW: return -0.5f;
             default: return 0;
         }
     }
 
-    public static float getDirZ(Dir d) {
-        if (d == null) return 0;
-        switch (d) {
+    public static float getDirZ(Dir dir) {
+        if (dir == null) return 0;
+        switch (dir) {
             case S: case SE: case SW: return 0.5f;
             case N: case NE: case NW: return -0.5f;
             default: return 0;

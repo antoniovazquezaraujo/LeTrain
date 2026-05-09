@@ -13,7 +13,7 @@ public interface RailMap<T> extends Renderable {
 
     T getTrackAt(Point pos);
 
-    void addTrack(Point p, T t);
+    void addTrack(Point point, T track);
 
-    T removeTrack(Point p);
+    T removeTrack(Point point);
 }

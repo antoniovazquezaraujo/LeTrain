@@ -2,9 +2,9 @@
 
 ## 1. Principios SOLID
 - **Single Responsibility (SRP)**: Cada clase (ej. `BlockManager`, `AudioController`) debe tener una sola razón para cambiar.
-- **Open/Closed (OCP)**: Las entidades deben estar abiertas a extensión pero cerradas a modificación. Usar interfaces para añadir nuevos comportamientos (ej. nuevos tipos de `Trackeable`).
+- **Open/Closed (OCP)**: Las entidades deben estar abiertas a extensión pero cerradas a modificación. Usar interfaces para añadir nuevos comportamientos (ej. nuevos tipos de `Trackable`).
 - **Liskov Substitution (LSP)**: Cualquier subclase (ej. `ForkRouter`) debe ser sustituible por su clase base (`Router`) sin romper el sistema.
-- **Interface Segregation (ISP)**: Interfaces pequeñas y específicas. En lugar de una interfaz gigante `Map`, tenemos `Mapeable`, `Reversible`, `Rotable`.
+- **Interface Segregation (ISP)**: Interfaces pequeñas y específicas. En lugar de una interfaz gigante `Map`, tenemos `Mappable`, `Reversible`, `Rotatable`.
 - **Dependency Inversion (DIP)**: Depender de abstracciones, no de implementaciones. (Inyección de dependencias).
 
 ## 2. Patrones de Comportamiento Aplicados

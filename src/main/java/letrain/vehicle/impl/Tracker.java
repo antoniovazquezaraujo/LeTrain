@@ -2,12 +2,12 @@ package letrain.vehicle.impl;
 
 import letrain.map.Dir;
 import letrain.track.Track;
-import letrain.track.Trackeable;
+import letrain.track.Trackable;
 import letrain.vehicle.Vehicle;
 
 public abstract class Tracker
         extends Vehicle
-        implements Trackeable {
+        implements Trackable {
     Track track;
 
     @Override

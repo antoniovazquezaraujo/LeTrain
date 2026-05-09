@@ -1,7 +1,6 @@
 package letrain.visitor.terminal;
 
 import com.googlecode.lanterna.TextColor;
-import letrain.visitor.Visitor;
 import com.googlecode.lanterna.TextColor.ANSI;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
@@ -25,6 +24,7 @@ import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Wagon;
+import letrain.visitor.Visitor;
 
 public class InfoVisitor implements Visitor {
 
@@ -167,10 +167,10 @@ public class InfoVisitor implements Visitor {
 
     private String getTrackConnectionsAspect(RailTrack track) {
         StringBuffer ret = new StringBuffer();
-        for (Dir d : Dir.values()) {
-            Track connected = track.getConnected(d);
+        for (Dir dir : Dir.values()) {
+            Track connected = track.getConnected(dir);
             if (connected != null) {
-                ret.append("(" + d + "->" + connected + ")");
+                ret.append("(" + dir + "->" + connected + ")");
             }
         }
         return ret.toString();
@@ -227,8 +227,8 @@ public class InfoVisitor implements Visitor {
     }
 
     @Override
-    public void visitStation(Station Station) {
-        infoBarText += "Station:[" + Station.getId() + "]" + "\n" + "Position:" + Station.getPosition() + "\n";
+    public void visitStation(Station station) {
+        infoBarText += "Station:[" + station.getId() + "]" + "\n" + "Position:" + station.getPosition() + "\n";
     }
 
     @Override

@@ -41,7 +41,7 @@ public interface Visitor {
 
     void visitSemaphore(RailSemaphore semaphore);
 
-    void visitStation(Station Station);
+    void visitStation(Station station);
 
     void visitGroundMap(GroundMap groundMap);
 

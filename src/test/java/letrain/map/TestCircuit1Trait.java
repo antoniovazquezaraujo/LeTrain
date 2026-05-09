@@ -96,9 +96,9 @@ class TestCircuit1TraitTest {
             myNewTrack.setNormalRoute();
             railMap.removeTrack(track.getPosition());
             railMap.addTrack(cursor.getPosition(), myNewTrack);
-            for (Dir d : Dir.values()) {
-                if (track.getConnected(d) != null) {
-                    myNewTrack.connect(d, track.getConnected(d));
+            for (Dir dir : Dir.values()) {
+                if (track.getConnected(dir) != null) {
+                    myNewTrack.connect(dir, track.getConnected(dir));
                 }
             }
             myNewTrack.setAlternativeRoute();

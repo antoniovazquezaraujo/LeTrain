@@ -22,22 +22,22 @@ public class TrackDirector<T extends Track> {
 
     private static final Logger log = LoggerFactory.getLogger(TrackDirector.class);
 
-    public boolean enterLinkerFromDir(T track, Dir d, Linker vehicle) {
-        if (!track.canEnter(d, vehicle)) {
-            log.debug("Cannot enter linker {} from {} into track {}: occupied or reserved.", vehicle, d,
+    public boolean enterLinkerFromDir(T track, Dir dir, Linker vehicle) {
+        if (!track.canEnter(dir, vehicle)) {
+            log.debug("Cannot enter linker {} from {} into track {}: occupied or reserved.", vehicle, dir,
                     track.getPosition());
             return false;
         }
 
         vehicle.setTrack(track);
         vehicle.setPosition(track.getPosition());
-        vehicle.setEntryDir(d);
-        Dir exitDir = track.getRouter().getDir(d);
+        vehicle.setEntryDir(dir);
+        Dir exitDir = track.getRouter().getDir(dir);
         if (exitDir != null) {
             vehicle.setDir(exitDir);
         } else {
             log.error("No exit direction found for track at {} entering from {}. Keeping current vehicle dir: {}.",
-                    track.getPosition(), d, vehicle.getDir());
+                    track.getPosition(), dir, vehicle.getDir());
         }
         track.setLinker(vehicle);
         return true;
@@ -52,7 +52,7 @@ public class TrackDirector<T extends Track> {
         return ret;
     }
 
-    public boolean canEnter(T track, Dir d, Linker v) {
+    public boolean canEnter(T track, Dir dir, Linker v) {
         // Points 5 & 10: One vehicle per track
         if (track.getLinker() != null) {
             return false;
@@ -68,11 +68,11 @@ public class TrackDirector<T extends Track> {
         return true;
     }
 
-    public boolean canExit(T track, Dir d) {
+    public boolean canExit(T track, Dir dir) {
         if (track.getLinker() != null) {
             Dir exitDir = track.getRouter().getDir(track.getLinker().getDir());
-            T target = (T) track.getConnected(d);
-            return target != null && target.canEnter(d, track.getLinker());
+            T target = (T) track.getConnected(dir);
+            return target != null && target.canEnter(dir, track.getLinker());
         }
         return true; // Qué contestar si estaba vacío??
     }

@@ -15,17 +15,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import letrain.mvp.impl.GameSaveService;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import letrain.mvp.Model;
 
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import letrain.map.Dir;
 import letrain.map.Page;
 import letrain.map.Point;
+import letrain.mvp.Model;
+import letrain.mvp.impl.GameSaveService;
+import letrain.mvp.impl.RailTrackMaker;
+import letrain.mvp.impl.SimulationController;
 import letrain.track.CargoTypes;
 import letrain.track.Station;
 import letrain.track.rail.RailTrack;
@@ -39,8 +41,6 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import letrain.mvp.impl.SimulationController;
-import letrain.mvp.impl.RailTrackMaker;
 
 public class TerminalPresenter implements letrain.mvp.Presenter, letrain.vehicle.impl.rail.TrainEventListener {
     Logger log = LoggerFactory.getLogger(TerminalPresenter.class);
@@ -894,41 +894,41 @@ public class TerminalPresenter implements letrain.mvp.Presenter, letrain.vehicle
 
     private void mapPageDown() {
         view.clear();
-        Point p = view.getMapScrollPage();
-        p.setY(p.getY() + 1);
-        view.setMapScrollPage(p);
+        Point point = view.getMapScrollPage();
+        point.setY(point.getY() + 1);
+        view.setMapScrollPage(point);
         view.clear();
     }
 
     private void mapPageLeft() {
         view.clear();
-        Point p = view.getMapScrollPage();
-        p.setX(p.getX() - 1);
-        view.setMapScrollPage(p);
+        Point point = view.getMapScrollPage();
+        point.setX(point.getX() - 1);
+        view.setMapScrollPage(point);
         view.clear();
 
     }
 
     private void mapPageUp() {
         view.clear();
-        Point p = view.getMapScrollPage();
-        p.setY(p.getY() - 1);
-        view.setMapScrollPage(p);
+        Point point = view.getMapScrollPage();
+        point.setY(point.getY() - 1);
+        view.setMapScrollPage(point);
         view.clear();
     }
 
     private void mapPageRight() {
         view.clear();
-        Point p = view.getMapScrollPage();
-        p.setX(p.getX() + 1);
-        view.setMapScrollPage(p);
+        Point point = view.getMapScrollPage();
+        point.setX(point.getX() + 1);
+        view.setMapScrollPage(point);
         view.clear();
 
     }
 
-    void setPageOfPoint(Point p) {
-        view.setPageOfPos(p.getX(), p.getY());
-        Page page = p.getPage();
+    void setPageOfPoint(Point point) {
+        view.setPageOfPos(point.getX(), point.getY());
+        Page page = point.getPage();
         railTrackMaker.setCursorPage(page);
     }
 

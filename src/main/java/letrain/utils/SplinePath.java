@@ -36,8 +36,8 @@ public class SplinePath {
             Point first = points.get(0);
             Point last = points.get(points.size() - 1);
             vPoints.add(new Vector3(first.getX(), 0, first.getY())); // p0
-            for (Point p : points) {
-                vPoints.add(new Vector3(p.getX(), 0, p.getY()));
+            for (Point point : points) {
+                vPoints.add(new Vector3(point.getX(), 0, point.getY()));
             }
             vPoints.add(new Vector3(last.getX(), 0, last.getY())); // pn+1
         }

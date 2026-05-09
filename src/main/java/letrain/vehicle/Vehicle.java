@@ -2,25 +2,24 @@ package letrain.vehicle;
 
 import java.io.Serializable;
 
-import letrain.map.Dir;
-import letrain.map.Mapeable;
-import letrain.map.Point;
-import letrain.map.Reversible;
-import letrain.map.Rotable;
-import letrain.track.Track;
-import letrain.visitor.Renderable;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import letrain.map.Dir;
+import letrain.map.Mappable;
+import letrain.map.Point;
+import letrain.map.Reversible;
+import letrain.map.Rotatable;
+import letrain.track.Track;
+import letrain.visitor.Renderable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class Vehicle<T extends Track>
         implements
         Serializable,
-        Rotable,
+        Rotatable,
         Reversible,
         Selectable,
-        Mapeable,
+        Mappable,
         Transportable,
         Renderable,
         Destructible {
@@ -42,7 +41,7 @@ public abstract class Vehicle<T extends Track>
     };
 
     /***********************************************************
-     * Mapeable implementation
+     * Mappable implementation
      **********************************************************/
     public Point getPosition() {
         return pos;
@@ -78,7 +77,7 @@ public abstract class Vehicle<T extends Track>
     }
 
     /***********************************************************
-     * Rotable implementation
+     * Rotatable implementation
      **********************************************************/
     @Override
     public void rotateLeft() {

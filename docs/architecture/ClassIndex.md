@@ -37,12 +37,12 @@ Esta lista se genera automáticamente a partir de los archivos fuente presentes 
 - `letrain.ground.impl.Terrain2D`
 - `letrain.map.Dir`
 - `letrain.map.DynamicRouter`
-- `letrain.map.Mapeable`
+- `letrain.map.Mappable`
 - `letrain.map.Page`
 - `letrain.map.Point`
 - `letrain.map.RailMap`
 - `letrain.map.Reversible`
-- `letrain.map.Rotable`
+- `letrain.map.Rotatable`
 - `letrain.map.Router`
 - `letrain.map.impl.ForkRouter`
 - `letrain.map.impl.RailMap`
@@ -83,7 +83,7 @@ Esta lista se genera automáticamente a partir de los archivos fuente presentes 
 - `letrain.track.StationEventListener`
 - `letrain.track.Track`
 - `letrain.track.TrackDirector`
-- `letrain.track.Trackeable`
+- `letrain.track.Trackable`
 - `letrain.track.rail.BridgeGateRailTrack`
 - `letrain.track.rail.BridgeRailTrack`
 - `letrain.track.rail.ForkRailTrack`

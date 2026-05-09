@@ -15,13 +15,12 @@ import static org.mockito.Mockito.when;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.track.Track;
 import letrain.vehicle.impl.Linker;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("Train.moveLinkers() — NPE fix regression tests")
 class TrainMoveLinkersTest {
@@ -369,7 +368,7 @@ class TrainMoveLinkersTest {
             Linker linker) {
 
         doAnswer(inv -> {
-            Dir d = inv.getArgument(0);
+            Dir dir = inv.getArgument(0);
             Linker v = inv.getArgument(1);
             linkerTrackRef.set(targetTrack);
             targetTrackLinkerRef.set(v);

@@ -1,10 +1,10 @@
 package letrain.mvp.impl.graphic;
 
-import letrain.mvp.Model;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import letrain.mvp.Model;
 import letrain.utils.PathGeometry;
 
 /**
@@ -172,9 +172,9 @@ public class CameraController {
             float x = interpPos.x + 0.5f;
             float z = interpPos.y + 0.5f;
 
-            letrain.map.Dir d = loco.getDir();
-            float dx = PathGeometry.getDirX(d);
-            float dz = PathGeometry.getDirZ(d);
+            letrain.map.Dir dir = loco.getDir();
+            float dx = PathGeometry.getDirX(dir);
+            float dz = PathGeometry.getDirZ(dir);
 
             Vector2 targetDir = new Vector2(dx, dz);
             currentCabDirection.lerp(targetDir, 0.05f).nor();
