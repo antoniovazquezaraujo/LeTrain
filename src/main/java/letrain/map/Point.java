@@ -30,7 +30,7 @@ public class Point {
 
     @Override
     public boolean equals(Object p) {
-        if (p.getClass() != Point.class) {
+        if (p == null || p.getClass() != Point.class) {
             return false;
         }
         Point q = (Point) p;
