@@ -24,8 +24,8 @@ public class AudioController {
     private final AudioMixer mixer;
     private boolean enabled = true;
     private letrain.audio.sources.SequencedAmbientSource jackhammerSource;
-    private letrain.audio.sources.AmbientSource birdsSource;
-    private letrain.audio.sources.AmbientSource windSource;
+    private letrain.audio.sources.SequencedAmbientSource birdsSource;
+    private letrain.audio.sources.SequencedAmbientSource windSource;
 
     // 1 Game Unit = 20 Real Meters (Approx length of a train car)
     private static final float SCALE_FACTOR = 20.0f;
@@ -289,8 +289,7 @@ public class AudioController {
             if (birdsSource == null) {
                 AudioSample sample = samples.get("birds");
                 if (sample != null) {
-                    birdsSource = new letrain.audio.sources.AmbientSource(sample);
-                    birdsSource.setLooping(true);
+                    birdsSource = letrain.audio.sources.SequencedAmbientSource.createSimpleLooper(sample);
                     mixer.addSource(birdsSource);
                     log.info("Birds ambient source created ({} samples, {} Hz)",
                             sample.getLength(), sample.getSampleRate());
@@ -314,8 +313,7 @@ public class AudioController {
             if (windSource == null) {
                 AudioSample sample = samples.get("wind");
                 if (sample != null) {
-                    windSource = new letrain.audio.sources.AmbientSource(sample);
-                    windSource.setLooping(true);
+                    windSource = letrain.audio.sources.SequencedAmbientSource.createSimpleLooper(sample);
                     mixer.addSource(windSource);
                     log.info("Wind ambient source created ({} samples, {} Hz)",
                             sample.getLength(), sample.getSampleRate());
@@ -342,10 +340,12 @@ public class AudioController {
             jackhammerSource = null;
         }
         if (birdsSource != null) {
+            birdsSource.setActive(false);
             mixer.removeSource(birdsSource);
             birdsSource = null;
         }
         if (windSource != null) {
+            windSource.setActive(false);
             mixer.removeSource(windSource);
             windSource = null;
         }

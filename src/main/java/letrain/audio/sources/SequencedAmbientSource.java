@@ -36,6 +36,29 @@ public class SequencedAmbientSource implements AudioSource {
         endEnd = (int) (10.545021f * rate);
     }
 
+    /**
+     * Creates a looping ambient source that plays the entire sample with no
+     * start/end sequencing. The sound starts immediately and loops forever.
+     */
+    public static SequencedAmbientSource createSimpleLooper(AudioSample sample) {
+        SequencedAmbientSource src = new SequencedAmbientSource();
+        src.sample = sample;
+        int totalFrames = sample.getLength();
+        // Zero-length START and END sections — jump straight to WORKING loop
+        src.startStart = 0;
+        src.startEnd = 0;
+        src.workStart = 0;
+        src.workEnd = totalFrames;
+        src.endStart = totalFrames;
+        src.endEnd = totalFrames;
+        src.state = State.IDLE;
+        return src;
+    }
+
+    private SequencedAmbientSource() {
+        // Used by createSimpleLooper
+    }
+
     public void setActive(boolean active) {
         this.desiredActive = active;
         if (active) {
