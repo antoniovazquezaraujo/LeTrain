@@ -39,13 +39,45 @@ public class AmbientSource implements AudioSource {
 
     @Override
     public boolean read(float[] buffer) {
-        if (!active || sample == null)
-            return false;
+        try {
+            if (!active || sample == null)
+                return false;
 
-        if (!loggedFirstRead) {
-            System.out.println("AmbientSource.read() called — active=" + active + " volume=" + volume + " sampleRate=" + sample.getSampleRate() + " looping=" + looping);
-            loggedFirstRead = true;
+            if (!loggedFirstRead) {
+                System.out.println("AmbientSource.read() called — active=" + active + " volume=" + volume + " sampleRate=" + sample.getSampleRate() + " looping=" + looping);
+                loggedFirstRead = true;
+            }
+
+            int len = buffer.length;
+            for (int i = 0; i < len; i++) {
+                if ((int) cursor >= sample.getLength()) {
+                    if (looping) {
+                        cursor = 0;
+                    } else {
+                        active = false;
+                        for (int j = i; j < len; j++)
+                            buffer[j] = 0;
+                        return true;
+                    }
+                }
+
+                float raw = sample.getSample((int) cursor);
+                float smoothed = (filterAmount == 0.0f) ? raw : lastVal + (raw - lastVal) * (1.0f - filterAmount);
+                lastVal = smoothed;
+
+                buffer[i] = smoothed * volume;
+
+                float rateRatio = sample.getSampleRate() / AudioMixer.SAMPLE_RATE;
+                cursor += rateRatio;
+            }
+            return true;
+        } catch (Exception e) {
+            System.err.println("AmbientSource.read() crashed: " + e.getMessage());
+            e.printStackTrace();
+            active = false;
+            return false;
         }
+    }
 
         int len = buffer.length;
         boolean hitEnd = false;
