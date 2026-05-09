@@ -27,21 +27,6 @@ public class Terrain2D {
     drawTerrain();
   }
 
-  // void keyPressed() {
-  // if (key == ' ') {
-  // noiseSeed(millis());
-  // drawTerrain();
-  // }
-  // if (key == 'w')
-  // y -= speed;
-  // if (key == 's')
-  // y += speed;
-  // if (key == 'a')
-  // x -= speed;
-  // if (key == 'd')
-  // x += speed;
-  // }
-
   public static void main(String[] args) {
     Terrain2D t = new Terrain2D();
     t.setup();
