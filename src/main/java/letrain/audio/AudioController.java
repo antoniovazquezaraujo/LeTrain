@@ -250,10 +250,7 @@ public class AudioController {
             // Sync States
             loco.setEngineStarting(synth.isEngineStarting());
             loco.setEngineTransitioning(synth.isTransitioning());
-            boolean braking = loco.isBraking();
-            if (braking) {
-            }
-            synth.setBraking(braking);
+            synth.setBraking(loco.isBraking());
 
             // Sync Loading State
             if (loco.getTrain() != null) {

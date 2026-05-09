@@ -36,12 +36,6 @@ public interface View {
 
     void setHelpBarText(String info);
 
-    // Lanterna specific types removed
-    // boolean isEndOfGame(KeyStroke stroke);
-    // public KeyStroke readKey();
-    // public void setScreen(Screen screen);
-    // TextColor getFgColor();
-
     void showSaveDialog();
 
     void showLoadDialog();

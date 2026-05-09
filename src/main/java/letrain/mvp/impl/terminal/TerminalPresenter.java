@@ -613,20 +613,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, letrain.vehicle
                 locomotiveId = locomotiveId / 10;
                 selectLocomotive(locomotiveId);
                 break;
-            // case Character:
-            // if (keyEvent.getCharacter() == ' ') {
-            // toggleReversed();
-            // locomotiveId = 0;
-            // } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9')
-            // {
-            // if (keyEvent.getCharacter() == '0' && locomotiveId == 0) {
-            // model.setShowId(true);
-            // } else {
-            // locomotiveId = locomotiveId * 10 + (keyEvent.getCharacter() - '0');
-            // selectLocomotive(locomotiveId);
-            // }
-            // }
-            // break;
             case ArrowUp:
                 if (model.getSelectedLocomotive() != null) {
                     Locomotive loco = model.getSelectedLocomotive();
