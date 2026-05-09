@@ -281,8 +281,8 @@ public class AudioController {
         if (!enabled)
             return;
 
-        float targetBirdsVol = isTopDown ? 0.0f : 0.2f + zoomFactor * 0.4f;
-        float targetWindVol = isTopDown ? 0.15f + zoomFactor * 0.35f : 0.0f;
+        float targetBirdsVol = isTopDown ? 0.0f : 0.3f + zoomFactor * 0.5f;
+        float targetWindVol = isTopDown ? 0.2f + zoomFactor * 0.4f : 0.0f;
 
         // Birds
         if (targetBirdsVol > 0.01f) {
@@ -292,6 +292,10 @@ public class AudioController {
                     birdsSource = new letrain.audio.sources.AmbientSource(sample);
                     birdsSource.setLooping(true);
                     mixer.addSource(birdsSource);
+                    log.info("Birds ambient source created ({} samples, {} Hz)",
+                            sample.getLength(), sample.getSampleRate());
+                } else {
+                    log.error("Birds sample not found in samples map");
                 }
             }
             if (birdsSource != null) {
@@ -313,6 +317,10 @@ public class AudioController {
                     windSource = new letrain.audio.sources.AmbientSource(sample);
                     windSource.setLooping(true);
                     mixer.addSource(windSource);
+                    log.info("Wind ambient source created ({} samples, {} Hz)",
+                            sample.getLength(), sample.getSampleRate());
+                } else {
+                    log.error("Wind sample not found in samples map");
                 }
             }
             if (windSource != null) {
