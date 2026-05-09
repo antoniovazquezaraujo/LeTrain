@@ -592,6 +592,24 @@ public class TrainSynthesizer implements AudioSource {
      * Si ya hay transición en curso, actualiza el target y deja que el hilo
      * la detecte en el siguiente paso.
      */
+    /**
+     * Fuerza una transición inmediata a ralentí (notch 0), saltándose cualquier
+     * rampa en curso. Se usa cuando un tren choca o llega a un fin de vía.
+     */
+    public synchronized void forceIdle() {
+        if (state == State.OFF || state == State.STOPPING)
+            return;
+
+        currentNotchIndex = 0;
+        targetNotchIndex = 0;
+        applyLoopForNotch(0);
+        locoEngine.setSpeed(notches[0].cruiseSpeed);
+        coachEngine.setVolume(0.0f);
+        state = State.IDLE;
+        setBraking(false);
+        notifyNotch(0);
+    }
+
     public synchronized void setThrottle(int index) {
         if (state == State.STOPPING || state == State.STARTING)
             return;

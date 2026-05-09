@@ -766,6 +766,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                     getTractors().forEach(t -> {
                         t.setCurrentSpeed(0);
                         t.setTargetSpeed(0);
+                        if (t instanceof Locomotive) {
+                            ((Locomotive) t).setForceIdleSound(true);
+                        }
                     });
                     this.setStalled(true);
                     Train otherTrain = blockingLinker.getTrain();
@@ -796,6 +799,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                             ((Locomotive) l).setTargetSpeed(0);
                             ((Locomotive) l).setAcousticSpeedSignal(-1);
                             ((Locomotive) l).setEngineTransitioning(false);
+                            ((Locomotive) l).setForceIdleSound(true);
                         }
                         l.destroy();
                     });
@@ -810,6 +814,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                     if (t instanceof Locomotive) {
                         ((Locomotive) t).setAcousticSpeedSignal(-1);
                         ((Locomotive) t).setEngineTransitioning(false);
+                        ((Locomotive) t).setForceIdleSound(true);
                     }
                 });
                 this.setStalled(true);
@@ -842,6 +847,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 if (l instanceof Locomotive) {
                     ((Locomotive) l).setCurrentSpeed(0);
                     ((Locomotive) l).setTargetSpeed(0);
+                    ((Locomotive) l).setForceIdleSound(true);
                 }
                 l.destroy();
             });
@@ -863,6 +869,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                     if (l instanceof Locomotive) {
                         ((Locomotive) l).setCurrentSpeed(0);
                         ((Locomotive) l).setTargetSpeed(0);
+                        ((Locomotive) l).setForceIdleSound(true);
                     }
                     l.destroy();
                 });

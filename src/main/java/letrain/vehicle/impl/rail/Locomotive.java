@@ -239,6 +239,16 @@ public class Locomotive extends Linker implements Tractor {
 
     private volatile int acousticSpeedSignal = -1;
 
+    private boolean forceIdleSound = false;
+
+    public void setForceIdleSound(boolean force) {
+        this.forceIdleSound = force;
+    }
+
+    public boolean isForceIdleSound() {
+        return forceIdleSound;
+    }
+
     public void setAcousticSpeedSignal(int notch) {
         this.acousticSpeedSignal = notch;
     }

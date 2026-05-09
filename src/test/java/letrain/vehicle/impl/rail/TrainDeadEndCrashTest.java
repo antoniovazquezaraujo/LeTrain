@@ -127,6 +127,7 @@ class TrainDeadEndCrashTest {
         // 2. Acoustic/idle state is reset so engine goes to idle immediately
         verify(loco).setAcousticSpeedSignal(-1);
         verify(loco).setEngineTransitioning(false);
+        verify(loco).setForceIdleSound(true);
         // 3. loco.destroy() was called
         verify(loco).destroy();
         // 4. Train is stalled
@@ -224,6 +225,7 @@ class TrainDeadEndCrashTest {
         // 2. Acoustic/idle state is reset so engine goes to idle immediately
         verify(loco).setAcousticSpeedSignal(-1);
         verify(loco).setEngineTransitioning(false);
+        verify(loco).setForceIdleSound(true);
         // 3. Speed was set to 0 on the tractors (called by both notifyContact and the
         //    dead-end handler, consistent with existing train-to-train contact logic)
         verify(loco, org.mockito.Mockito.atLeast(1)).setCurrentSpeed(0);
@@ -418,6 +420,7 @@ class TrainDeadEndCrashTest {
         // 2. Engine goes idle: acoustic signals reset
         verify(loco).setAcousticSpeedSignal(-1);
         verify(loco).setEngineTransitioning(false);
+        verify(loco).setForceIdleSound(true);
         // 3. Speed set to 0
         verify(loco, org.mockito.Mockito.atLeast(1)).setCurrentSpeed(0);
         verify(loco, org.mockito.Mockito.atLeast(1)).setTargetSpeed(0);
