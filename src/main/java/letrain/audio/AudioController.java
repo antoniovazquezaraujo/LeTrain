@@ -223,8 +223,13 @@ public class AudioController {
             synth.update();
 
             // Sync Throttle (Engine Sound)
-            int targetNotch = Math.min(loco.getTargetSpeed(), 10);
-            synth.setThrottle(targetNotch);
+            if (loco.isForceIdleSound()) {
+                synth.forceIdle();
+                loco.setForceIdleSound(false);
+            } else {
+                int targetNotch = Math.min(loco.getTargetSpeed(), 10);
+                synth.setThrottle(targetNotch);
+            }
 
             // Sync Motion (Rolling Sound)
             int currentSpeed = loco.getSpeed();

@@ -499,6 +499,15 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             return false;
         }
 
+        // Prevent any movement while the train is stalled from a collision or dead-end.
+        if (isStalled()) {
+            // Ensure tractors stay at idle when stalled.
+            if (directorLinker != null) {
+                directorLinker.setTargetSpeed(0);
+            }
+            return false;
+        }
+
         if (model != null) {
             if (!safetyManager.checkSafety((letrain.mvp.impl.Model) model)) {
                 // Si la seguridad falla, forzamos el frenado.
@@ -528,11 +537,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         setDirTowedLinkers(normalSense);
         boolean moved = moveLinkers(normalSense);
 
-        if (!moved) {
-            // Movement failed — restore original directions.
-            // Without this, setDirTowedLinkers leaves wagons pointing
-            // forward, causing the renderer to interpolate them into
-            // the locomotive when the train has actually stopped.
+        if (!moved || isStalled()) {
+            // Movement failed or train crashed/stalled — restore original
+            // directions. Without this, setDirTowedLinkers leaves wagons
+            // pointing forward, causing the renderer to interpolate them
+            // into the locomotive when the train has actually stopped.
             for (Linker l : getLinkers()) {
                 letrain.map.Dir savedDir = savedDirs.get(l);
                 letrain.map.Dir savedEntry = savedEntryDirs.get(l);
@@ -723,7 +732,17 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             linkerToMove.setPreviousTrack(currentTrack);
             linkerToMove.setPreviousDir(linkerToMove.getDir());
             currentTrack.removeLinker();
-            nextTrackOfLinker.enterLinkerFromDir(entryDirOfLinker, linkerToMove);
+            if (!nextTrackOfLinker.enterLinkerFromDir(entryDirOfLinker, linkerToMove)) {
+                // Rollback: the linker was removed from currentTrack but could not enter
+                // nextTrack (e.g. another linker from the same train still occupies it).
+                // Restore the linker to its previous track to avoid linkers with null track.
+                linkerToMove.setTrack(currentTrack);
+                currentTrack.setLinker(linkerToMove);
+                linkerToMove.setPreviousTrack(null);
+                linkerToMove.setPreviousDir(null);
+                clearReservations(targetTracks);
+                return false;
+            }
             linkerToMove.setRailsSinceStop(linkerToMove.getRailsSinceStop() + 1);
 
             nextTrackOfLinker.setReservation(null);
@@ -744,7 +763,13 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         // ahead is blocked by another train. If so, trigger collision NOW
         // instead of waiting for the next advance() cycle (which would add
         // up to 2.5s of delay before the crash sound plays).
-        Track nextAfterMove = firstLinker.getTrack().getConnected(firstLinker.getDir());
+        Track currentFirstTrack = firstLinker.getTrack();
+        if (currentFirstTrack == null) {
+            log.warn("First linker has no track after move sequence — cannot check next cell for collisions");
+            clearReservations(targetTracks);
+            return false;
+        }
+        Track nextAfterMove = currentFirstTrack.getConnected(firstLinker.getDir());
         if (nextAfterMove != null) {
             Linker blockingLinker = nextAfterMove.getLinker();
             if (blockingLinker != null && blockingLinker.getTrain() != this) {
@@ -758,6 +783,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                     getTractors().forEach(t -> {
                         t.setCurrentSpeed(0);
                         t.setTargetSpeed(0);
+                        if (t instanceof Locomotive) {
+                            ((Locomotive) t).setForceIdleSound(true);
+                        }
                     });
                     this.setStalled(true);
                     Train otherTrain = blockingLinker.getTrain();
@@ -765,6 +793,48 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                         otherTrain.notifyContact(collisionPos, speed);
                     }
                 }
+            }
+        } else {
+            // Train has reached a dead-end (no track connected ahead).
+            // Treat as collision: crash at high speed, contact at low speed.
+            int speed = getSpeed();
+            letrain.map.Point impactPos = firstLinker.getPosition();
+            if (Math.abs(speed) >= 5) {
+                // High-speed crash into dead-end -> destruction of THIS train
+                boolean alreadyDestroying = false;
+                for (Linker l : getLinkers()) {
+                    if (l instanceof Destructible && ((Destructible) l).isDestroying()) {
+                        alreadyDestroying = true;
+                        break;
+                    }
+                }
+                if (!alreadyDestroying) {
+                    notifyCrash(impactPos, speed);
+                    getLinkers().forEach(l -> {
+                        if (l instanceof Locomotive) {
+                            ((Locomotive) l).setCurrentSpeed(0);
+                            ((Locomotive) l).setTargetSpeed(0);
+                            ((Locomotive) l).setAcousticSpeedSignal(-1);
+                            ((Locomotive) l).setEngineTransitioning(false);
+                            ((Locomotive) l).setForceIdleSound(true);
+                        }
+                        l.destroy();
+                    });
+                    this.setStalled(true);
+                }
+            } else {
+                // Low-speed contact with dead-end -> stop without destruction
+                notifyContact(impactPos, speed);
+                getTractors().forEach(t -> {
+                    t.setCurrentSpeed(0);
+                    t.setTargetSpeed(0);
+                    if (t instanceof Locomotive) {
+                        ((Locomotive) t).setAcousticSpeedSignal(-1);
+                        ((Locomotive) t).setEngineTransitioning(false);
+                        ((Locomotive) t).setForceIdleSound(true);
+                    }
+                });
+                this.setStalled(true);
             }
         }
 
@@ -794,6 +864,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 if (l instanceof Locomotive) {
                     ((Locomotive) l).setCurrentSpeed(0);
                     ((Locomotive) l).setTargetSpeed(0);
+                    ((Locomotive) l).setForceIdleSound(true);
                 }
                 l.destroy();
             });
@@ -815,6 +886,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                     if (l instanceof Locomotive) {
                         ((Locomotive) l).setCurrentSpeed(0);
                         ((Locomotive) l).setTargetSpeed(0);
+                        ((Locomotive) l).setForceIdleSound(true);
                     }
                     l.destroy();
                 });
@@ -1151,28 +1223,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     public Deque<Linker> getLinkersToRemove() {
         return this.linkersToRemove;
-    }
-
-    // Devuelve la dirección en la que hay un linker que no pertenece al tren
-    Dir getLinkDir2(Linker linker) {
-        Dir linkerDir = linker.getDir();
-        Dir resultDir = linkerDir;
-        Train train = getAdjacentTrain(linker, linkerDir);
-        try {
-            if (train != this) {
-                return resultDir;
-            }
-            resultDir = linker.getTrack().getDir(resultDir);
-            train = getAdjacentTrain(linker, resultDir);
-            if (train != this) {
-                return resultDir;
-            }
-            log.error("Error getting link dir:" + resultDir + " train:" + train);
-            return null;
-        } catch (Exception e) {
-            log.error("Error getting link dir", e);
-            return null;
-        }
     }
 
     Dir getLinkDir(Linker linker) {
