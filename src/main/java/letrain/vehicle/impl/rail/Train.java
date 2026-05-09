@@ -498,6 +498,15 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             return false;
         }
 
+        // Prevent any movement while the train is stalled from a collision or dead-end.
+        if (isStalled()) {
+            // Ensure tractors stay at idle when stalled.
+            if (directorLinker != null) {
+                directorLinker.setTargetSpeed(0);
+            }
+            return false;
+        }
+
         if (model != null) {
             if (!safetyManager.checkSafety((letrain.mvp.impl.Model) model)) {
                 // Si la seguridad falla, forzamos el frenado.
