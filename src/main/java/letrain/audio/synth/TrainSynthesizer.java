@@ -602,9 +602,11 @@ public class TrainSynthesizer implements AudioSource {
 
         currentNotchIndex = 0;
         targetNotchIndex = 0;
+        locoEngine.setLoopMode(GrainEngine.LoopMode.PING_PONG);
+        locoEngine.setTurnProbability(0.15f);
         applyLoopForNotch(0);
         locoEngine.setSpeed(notches[0].cruiseSpeed);
-        coachEngine.setVolume(0.0f);
+        engineStarting = false;
         state = State.IDLE;
         setBraking(false);
         notifyNotch(0);
