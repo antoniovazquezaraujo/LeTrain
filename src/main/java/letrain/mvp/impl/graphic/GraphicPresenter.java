@@ -271,7 +271,8 @@ public class GraphicPresenter extends ApplicationAdapter
         audioController.update();
         audioController.updateAmbient(
                 cameraController.getMode() == CameraController.CameraMode.MAP,
-                cameraController.getZoomFactor());
+                cameraController.getZoomFactor(),
+                cam.position.x, cam.position.z, cam.position.y);
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);

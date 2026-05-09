@@ -272,8 +272,12 @@ public class AudioController {
      *
      * @param isTopDown true for MAP/cenital mode, false for ORBIT/CAB
      * @param zoomFactor 0.0 (close) to 1.0 (far)
+     * @param listenerX  camera X position in world units
+     * @param listenerY  camera Y position in world units
+     * @param listenerZ  camera Z position in world units
      */
-    public void updateAmbient(boolean isTopDown, float zoomFactor) {
+    public void updateAmbient(boolean isTopDown, float zoomFactor,
+            float listenerX, float listenerY, float listenerZ) {
         if (!enabled)
             return;
 
@@ -287,13 +291,13 @@ public class AudioController {
                 if (sample != null) {
                     birdsSource = new letrain.audio.sources.AmbientSource(sample);
                     birdsSource.setLooping(true);
-                    birdsSource.setVolume(targetBirdsVol);
                     mixer.addSource(birdsSource);
                 }
             }
             if (birdsSource != null) {
                 birdsSource.setActive(true);
                 birdsSource.setVolume(targetBirdsVol);
+                birdsSource.setPosition(listenerX, listenerY, listenerZ);
             }
         } else {
             if (birdsSource != null) {
@@ -308,13 +312,13 @@ public class AudioController {
                 if (sample != null) {
                     windSource = new letrain.audio.sources.AmbientSource(sample);
                     windSource.setLooping(true);
-                    windSource.setVolume(targetWindVol);
                     mixer.addSource(windSource);
                 }
             }
             if (windSource != null) {
                 windSource.setActive(true);
                 windSource.setVolume(targetWindVol);
+                windSource.setPosition(listenerX, listenerY, listenerZ);
             }
         } else {
             if (windSource != null) {
