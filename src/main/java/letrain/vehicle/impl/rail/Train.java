@@ -765,6 +765,40 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                     }
                 }
             }
+        } else {
+            // Train has reached a dead-end (no track connected ahead).
+            // Treat as collision: crash at high speed, contact at low speed.
+            int speed = getSpeed();
+            letrain.map.Point impactPos = firstLinker.getPosition();
+            if (Math.abs(speed) >= 5) {
+                // High-speed crash into dead-end -> destruction of THIS train
+                boolean alreadyDestroying = false;
+                for (Linker l : getLinkers()) {
+                    if (l instanceof Destructible && ((Destructible) l).isDestroying()) {
+                        alreadyDestroying = true;
+                        break;
+                    }
+                }
+                if (!alreadyDestroying) {
+                    notifyCrash(impactPos, speed);
+                    getLinkers().forEach(l -> {
+                        if (l instanceof Locomotive) {
+                            ((Locomotive) l).setCurrentSpeed(0);
+                            ((Locomotive) l).setTargetSpeed(0);
+                        }
+                        l.destroy();
+                    });
+                    this.setStalled(true);
+                }
+            } else {
+                // Low-speed contact with dead-end -> stop without destruction
+                notifyContact(impactPos, speed);
+                getTractors().forEach(t -> {
+                    t.setCurrentSpeed(0);
+                    t.setTargetSpeed(0);
+                });
+                this.setStalled(true);
+            }
         }
 
         return true;
