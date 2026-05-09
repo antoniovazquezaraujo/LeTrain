@@ -35,40 +35,44 @@ public class AmbientSource implements AudioSource {
     private float filterAmount = 0.0f;
     private float lastVal = 0.0f;
 
+    private boolean loggedFirstRead = false;
+
     @Override
     public boolean read(float[] buffer) {
         if (!active || sample == null)
             return false;
 
+        if (!loggedFirstRead) {
+            System.out.println("AmbientSource.read() called — active=" + active + " volume=" + volume + " sampleRate=" + sample.getSampleRate() + " looping=" + looping);
+            loggedFirstRead = true;
+        }
+
         int len = buffer.length;
+        boolean hitEnd = false;
         for (int i = 0; i < len; i++) {
             if ((int) cursor >= sample.getLength()) {
                 if (looping) {
                     cursor = 0;
+                    hitEnd = true;
                 } else {
                     active = false;
-                    // Fill rest with silence
                     for (int j = i; j < len; j++)
                         buffer[j] = 0;
-                    return true; // Finished but filled buffer partially
+                    return true;
                 }
             }
 
             float raw = sample.getSample((int) cursor);
-
-            // Apply Simple LPF
-            // output = last + alpha * (input - last)
-            float alpha = 1.0f - filterAmount;
-            float smoothed = lastVal + (raw - lastVal) * alpha;
+            float smoothed = (filterAmount == 0.0f) ? raw : lastVal + (raw - lastVal) * (1.0f - filterAmount);
             lastVal = smoothed;
 
             buffer[i] = smoothed * volume;
 
-            // Advance cursor
-            // Assuming sample rate matches Mixer (44100)
-            // If sample is different rate, we need simple resampling
             float rateRatio = sample.getSampleRate() / AudioMixer.SAMPLE_RATE;
             cursor += rateRatio;
+        }
+        if (hitEnd) {
+            // Logged once per loop for debugging
         }
         return true;
     }
