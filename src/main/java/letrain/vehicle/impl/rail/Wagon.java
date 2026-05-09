@@ -4,7 +4,12 @@ import letrain.track.CargoTypes;
 import letrain.vehicle.impl.Linker;
 import letrain.visitor.Visitor;
 
+/**
+ * A cargo wagon attached to a train. Holds up to {@link #MAX_CARGO_CAPACITY}
+ * units of a single cargo type and can be loaded/unloaded at stations.
+ */
 public class Wagon extends Linker {
+    /** Maximum cargo units a wagon can hold. */
     public static final int MAX_CARGO_CAPACITY = 50;
     private static final int MAX_DESTROY_TURNS = 200;
     String aspect;

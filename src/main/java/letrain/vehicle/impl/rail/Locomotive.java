@@ -5,11 +5,26 @@ import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 import letrain.visitor.Visitor;
 
+/**
+ * A locomotive (engine) that pulls or pushes a train. Implements {@link Tractor}
+ * for speed control, inertia, and turn-based movement timing.
+ *
+ * <p>Key concepts:
+ * <ul>
+ *   <li>{@code currentSpeed} (0-10) — actual visual/acoustic speed</li>
+ *   <li>{@code targetSpeed} (0-10) — desired speed set by player</li>
+ *   <li>{@code turns} — countdown ticks between cell advances
+ *       ({@code 50 / currentSpeed})</li>
+ *   <li>{@code stalled} — frozen after collision; must reverse to recover</li>
+ * </ul>
+ */
 public class Locomotive extends Linker implements Tractor {
     private static final int MAX_DESTROY_TURNS = 200;
     private static final long serialVersionUID = 1L;
-    final static int MAX_SPEED = 10;
-    final static int SHUNTING_SPEED_LIMIT = 2;
+    /** Maximum speed in game units (notches 0-10). */
+    public static final int MAX_SPEED = 10;
+    /** Speed limit when shunting mode is active. */
+    static final int SHUNTING_SPEED_LIMIT = 2;
     final static int SPEED_CHANGE_MAX_RELUCTANCE = 2;
     int currentSpeed;
     int targetSpeed;
@@ -95,6 +110,12 @@ public class Locomotive extends Linker implements Tractor {
         return false;
     }
 
+    /**
+     * Main update tick. Handles acoustic signals, inertia, turn consumption,
+     * and triggers {@link Train#advance()} when it's time to move.
+     *
+     * @return true if the train moved this tick
+     */
     public boolean update() {
         boolean moved = false;
         if (isDestroying()) {

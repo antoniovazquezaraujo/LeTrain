@@ -36,9 +36,18 @@ import letrain.visitor.Visitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Core train entity that groups locomotives and wagons ({@link Linker}s)
+ * and orchestrates movement, collisions, loading/unloading, and safety.
+ *
+ * <p>Movement is delegated to {@link TrainMovementManager}.
+ * Logistics are handled by {@link TrainLogisticsManager}.
+ * Block-segment safety is managed by {@link TrainSafetyManager}.
+ */
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 public class Train implements Trailer<RailTrack>, Renderable, Transportable {
+    /** Speed threshold above which a collision destroys both trains. */
     static final int CRASH_SPEED_THRESHOLD = 5;
     private static final int MAX_LOADING_COUNT = 80; // 4.0 seconds at 20fps per wagon
     private static final Logger log = LoggerFactory.getLogger(Train.class);
@@ -128,6 +137,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         return logisticsManager.isUnloadingDirection();
     }
 
+    /**
+     * Returns the current speed of the director locomotive, or 0 if none.
+     */
     public int getSpeed() {
         if (directorLinker != null) {
             return directorLinker.getSpeed();
@@ -454,6 +466,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Notifies listeners of a low-speed contact (speed &lt; {@link #CRASH_SPEED_THRESHOLD}).
+     * Stalls the train and sets all tractor speeds to 0.
+     */
     public void notifyContact(letrain.map.Point pos, int speed) {
         this.stalled = true;
         // Immediately stop all locomotives — the caller may rely on this
@@ -468,6 +484,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         }
     }
 
+    /**
+     * Notifies listeners of a high-speed crash (speed &ge; {@link #CRASH_SPEED_THRESHOLD}).
+     * Stalls the train. Actual destruction is handled by the caller or
+     * {@link TrainMovementManager}.
+     */
     public void notifyCrash(letrain.map.Point pos, int speed) {
         this.stalled = true;
         for (TrainEventListener l : trainListeners) {
@@ -475,6 +496,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         }
     }
 
+    /** @return true if the train is stalled from a collision or dead-end. */
     public boolean isStalled() {
         return stalled;
     }
@@ -494,6 +516,13 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         }
     }
 
+    /**
+     * Advances the train by one cell if conditions allow.
+     * Handles direction, safety checks, and delegates movement to
+     * {@link TrainMovementManager#moveLinkers(boolean)}.
+     *
+     * @return true if the train moved, false otherwise
+     */
     public boolean advance() {
         // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
         if (isLoading()) {
