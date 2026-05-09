@@ -40,9 +40,9 @@ public interface Model {
 
     public int nextTrainId();
 
-    void addTrack(Point p, RailTrack track);
+    void addTrack(Point point, RailTrack track);
 
-    RailTrack removeTrack(Point p);
+    RailTrack removeTrack(Point point);
 
     RailMap getRailMap();
 
@@ -64,9 +64,9 @@ public interface Model {
 
     List<Station> getStations();
 
-    void addStation(Station Station);
+    void addStation(Station station);
 
-    void removeStation(Station Station);
+    void removeStation(Station station);
 
     Station getStation(int id);
 
@@ -219,7 +219,7 @@ public interface Model {
     boolean isXRayActive();
     void setXRayActive(boolean xRayActive);
 
-    void updateGroundMap(Point p, int type, int variation);
+    void updateGroundMap(Point point, int type, int variation);
 
     boolean isMapChanged();
     void setMapChanged(boolean mapChanged);

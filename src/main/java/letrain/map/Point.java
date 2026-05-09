@@ -57,27 +57,27 @@ public class Point {
         this.y = y;
     }
 
-    public Dir locate(Point p) {
-        if (y > p.y) {
-            if (x > p.x) {
+    public Dir locate(Point point) {
+        if (y > point.y) {
+            if (x > point.x) {
                 return NW;
-            } else if (x < p.x) {
+            } else if (x < point.x) {
                 return NE;
             } else {
                 return N;
             }
-        } else if (y < p.y) {
-            if (x > p.x) {
+        } else if (y < point.y) {
+            if (x > point.x) {
                 return SW;
-            } else if (x < p.x) {
+            } else if (x < point.x) {
                 return SE;
             } else {
                 return S;
             }
         } else {// y == p.y
-            if (x > p.x) {
+            if (x > point.x) {
                 return W;
-            } else if (x < p.x) {
+            } else if (x < point.x) {
                 return E;
             } else {
                 return null;

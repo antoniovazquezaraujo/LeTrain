@@ -1,17 +1,17 @@
 package letrain.visitor.gdx3d;
 
 import java.util.List;
+
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
-import letrain.visitor.Visitor;
 import com.badlogic.gdx.math.Vector3;
+import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
-import letrain.track.rail.RailTrack;
-import letrain.track.rail.TunnelRailTrack;
 import letrain.track.rail.BridgeGateRailTrack;
 import letrain.track.rail.BridgeRailTrack;
+import letrain.track.rail.RailTrack;
+import letrain.track.rail.TunnelRailTrack;
 import letrain.utils.PathGeometry;
-import letrain.ground.GroundMap;
 
 public class TrackRenderer extends BaseSubRenderer {
 
@@ -63,9 +63,9 @@ public class TrackRenderer extends BaseSubRenderer {
         }
 
         if (track.getNumRoutes() == 0) {
-            Dir d = getValidOrientation(track);
-            if (d != null) {
-                drawHalfTrack(track.getPosition(), d, true, 1.0f, 1.0f);
+            Dir dir = getValidOrientation(track);
+            if (dir != null) {
+                drawHalfTrack(track.getPosition(), dir, true, 1.0f, 1.0f);
             }
         }
     }
@@ -85,14 +85,14 @@ public class TrackRenderer extends BaseSubRenderer {
         visitRailTrack(bridgeRailTrack);
     }
 
-    public void drawHalfTrack(Point pos, Dir d, boolean connected, float shortenL, float shortenR) {
-        drawHalfTrackElevated(pos, d, connected, 0.0f, shortenL, shortenR, resourceContext.railModel);
+    public void drawHalfTrack(Point pos, Dir dir, boolean connected, float shortenL, float shortenR) {
+        drawHalfTrackElevated(pos, dir, connected, 0.0f, shortenL, shortenR, resourceContext.railModel);
     }
 
-    public void drawHalfTrackElevated(Point pos, Dir d, boolean connected, float elevation,
+    public void drawHalfTrackElevated(Point pos, Dir dir, boolean connected, float elevation,
             float shortenL, float shortenR, com.badlogic.gdx.graphics.g3d.Model railModelToUse) {
-        float dx = PathGeometry.getDirX(d);
-        float dz = PathGeometry.getDirZ(d);
+        float dx = PathGeometry.getDirX(dir);
+        float dz = PathGeometry.getDirZ(dir);
         renderSegment(pos, new Vector3(0, 0, 0), new Vector3(dx, 0, dz), 
                 connected, elevation, shortenL, shortenR, railModelToUse);
     }

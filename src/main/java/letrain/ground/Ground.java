@@ -2,14 +2,14 @@ package letrain.ground;
 
 import java.io.Serializable;
 
-import letrain.map.Mapeable;
+import letrain.map.Mappable;
 import letrain.map.Point;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 
 public class Ground implements
         Serializable,
-        Mapeable,
+        Mappable,
         Renderable {
 
     int type;
@@ -42,7 +42,7 @@ public class Ground implements
     }
 
     /**************************************************************
-     * Mapeable implementation
+     * Mappable implementation
      ***************************************************************/
     @Override
     public Point getPosition() {

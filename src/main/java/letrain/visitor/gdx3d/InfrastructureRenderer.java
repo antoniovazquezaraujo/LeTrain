@@ -1,7 +1,7 @@
 package letrain.visitor.gdx3d;
 
 import java.util.List;
-import letrain.visitor.Visitor;
+
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.math.Vector3;
@@ -12,8 +12,8 @@ import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
-import letrain.utils.PathGeometry;
 import letrain.utils.Pair;
+import letrain.utils.PathGeometry;
 
 public class InfrastructureRenderer extends BaseSubRenderer {
     private final TrackRenderer trackRenderer;
@@ -110,12 +110,12 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
         float x = sensor.getPosition().getX();
         float y = sensor.getPosition().getY();
-        Dir d = sensor.getCreationDir();
-        if (d == null)
-            d = Dir.N;
+        Dir dir = sensor.getCreationDir();
+        if (dir == null)
+            dir = Dir.N;
 
-        float dx = PathGeometry.getDirX(d);
-        float dz = PathGeometry.getDirZ(d);
+        float dx = PathGeometry.getDirX(dir);
+        float dz = PathGeometry.getDirZ(dir);
         float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
 
         ModelInstance instance = resourceContext.getModelInstance(resourceContext.sensorModel);
@@ -153,9 +153,9 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             if (track != null && track instanceof letrain.track.rail.RailTrack) {
                 letrain.track.rail.RailTrack railTrack = (letrain.track.rail.RailTrack) track;
                 if (railTrack.getNumRoutes() > 0) {
-                    Dir d = railTrack.getFirstOpenDir();
-                    float dx = PathGeometry.getDirX(d);
-                    float dz = PathGeometry.getDirZ(d);
+                    Dir dir = railTrack.getFirstOpenDir();
+                    float dx = PathGeometry.getDirX(dir);
+                    float dz = PathGeometry.getDirZ(dir);
                     offsetX = dz * 1.0f;
                     offsetZ = -dx * 1.0f;
                     angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
@@ -364,10 +364,10 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 break;
         }
 
-        Dir d = cursor.getDir();
+        Dir dir = cursor.getDir();
         Point pos = cursor.getPosition();
-        float dx = PathGeometry.getDirX(d);
-        float dz = PathGeometry.getDirZ(d);
+        float dx = PathGeometry.getDirX(dir);
+        float dz = PathGeometry.getDirZ(dir);
         float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
 
         ModelInstance instance = resourceContext.getModelInstance(resourceContext.cursorModel);

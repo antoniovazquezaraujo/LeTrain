@@ -1,6 +1,6 @@
 package letrain.track;
 
-public interface Trackeable {
+public interface Trackable {
     void setTrack(Track track);
 
     Track getTrack();

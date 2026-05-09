@@ -1,6 +1,7 @@
 package letrain.visitor.gdx3d;
 
 import java.util.List;
+
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import letrain.mvp.Model;
@@ -73,7 +74,7 @@ public abstract class BaseSubRenderer implements Visitor {
     @Override public void visitCursor(letrain.vehicle.impl.Cursor cursor) {}
     @Override public void visitSensor(letrain.track.Sensor sensor) {}
     @Override public void visitSemaphore(letrain.track.RailSemaphore semaphore) {}
-    @Override public void visitStation(letrain.track.Station Station) {}
+    @Override public void visitStation(letrain.track.Station station) {}
     @Override public void visitGroundMap(letrain.ground.GroundMap groundMap) {}
     @Override public void visitGround(letrain.ground.Ground ground) {}
     @Override public void visitBridgeGateRailTrack(letrain.track.rail.BridgeGateRailTrack bridgeGateRailTrack) {}

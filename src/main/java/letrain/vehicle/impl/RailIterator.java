@@ -1,16 +1,16 @@
 package letrain.vehicle.impl;
 
 import letrain.map.Dir;
-import letrain.map.Mapeable;
+import letrain.map.Mappable;
 import letrain.map.Point;
-import letrain.map.Rotable;
+import letrain.map.Rotatable;
 import letrain.track.Track;
-import letrain.track.Trackeable;
+import letrain.track.Trackable;
 import letrain.vehicle.Transportable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RailIterator implements Transportable, Trackeable, Rotable, Mapeable {
+public class RailIterator implements Transportable, Trackable, Rotatable, Mappable {
     Logger log = LoggerFactory.getLogger(RailIterator.class);
     Point position;
     Dir dir;
@@ -41,9 +41,11 @@ public class RailIterator implements Transportable, Trackeable, Rotable, Mapeabl
         Dir nextExitDir = (entryPort != null) ? nextTrack.getDir(entryPort) : null;
 
         if (nextExitDir == null) {
-            // Fallback: If the track router doesn't have a route for this entry port (kink),
+            // Fallback: If the track router doesn't have a route for this entry port
+            // (kink),
             // keep moving in the same direction. This matches TrackDirector's behavior.
-            log.warn("Kink or missing route detected at {}. Entry port {} not found in router. Falling back to movement dir {}.",
+            log.warn(
+                    "Kink or missing route detected at {}. Entry port {} not found in router. Falling back to movement dir {}.",
                     nextTrack.getPosition(), entryPort, movementDir);
             nextExitDir = movementDir;
         }

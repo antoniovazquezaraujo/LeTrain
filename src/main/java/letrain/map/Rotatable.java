@@ -1,6 +1,6 @@
 package letrain.map;
 
-public interface Rotable  {
+public interface Rotatable {
     void rotateLeft();
 
     void rotateLeft(int angle);

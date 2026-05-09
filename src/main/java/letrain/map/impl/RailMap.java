@@ -3,9 +3,9 @@ package letrain.map.impl;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-
 import letrain.map.Point;
 import letrain.track.rail.RailTrack;
 import letrain.visitor.Renderable;
@@ -67,9 +67,9 @@ public class RailMap implements letrain.map.RailMap<RailTrack>, Renderable {
     }
 
     @Override
-    public void addTrack(Point p, RailTrack rail) {
-        int x = p.getX();
-        int y = p.getY();
+    public void addTrack(Point point, RailTrack rail) {
+        int x = point.getX();
+        int y = point.getY();
         if (!rails.containsKey(y)) {
             rails.put(y, new HashMap<>());
         }
@@ -84,9 +84,9 @@ public class RailMap implements letrain.map.RailMap<RailTrack>, Renderable {
     }
 
     @Override
-    public RailTrack removeTrack(Point p) {
-        RailTrack ret = getTrackAt(p);
-        rails.get(p.getY()).remove(p.getX());
+    public RailTrack removeTrack(Point point) {
+        RailTrack ret = getTrackAt(point);
+        rails.get(point.getY()).remove(point.getX());
         return ret;
     }
 

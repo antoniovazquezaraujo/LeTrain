@@ -1,6 +1,6 @@
 package letrain.map;
 
-public interface Mapeable {
+public interface Mappable {
     Point getPosition();
 
     void setPosition(Point pos);

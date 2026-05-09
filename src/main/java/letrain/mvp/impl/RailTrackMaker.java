@@ -25,10 +25,8 @@ import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.impl.Cursor;
 import letrain.vehicle.impl.Cursor.CursorMode;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import letrain.core.segments.impl.TopologyServiceImpl;
 
 public class RailTrackMaker {
     private static final Logger log = LoggerFactory.getLogger(RailTrackMaker.class);
@@ -333,8 +331,8 @@ public class RailTrackMaker {
                 newPos.move(presenter.getModel().getCursor().getDir().inverse());
             }
             updateCursorPosition(newPos);
-            Point p = presenter.getModel().getCursor().getPosition();
-            presenter.getView().setPageOfPos(p.getX(), p.getY());
+            Point point = presenter.getModel().getCursor().getPosition();
+            presenter.getView().setPageOfPos(point.getX(), point.getY());
         }
     }
 
@@ -360,9 +358,9 @@ public class RailTrackMaker {
         }
 
         if (caterpillarCounter > 0) {
-            Point p = presenter.getModel().getCursor().getPosition();
+            Point point = presenter.getModel().getCursor().getPosition();
             if (presenter.getAudioController() != null) {
-                presenter.getAudioController().setJackhammerActive(true, p.getX(), p.getY());
+                presenter.getAudioController().setJackhammerActive(true, point.getX(), point.getY());
             }
             caterpillarCounter--;
         } else {
@@ -586,12 +584,12 @@ public class RailTrackMaker {
     }
 
     void addTrackConnectionsToFork(RailTrack track, final ForkRailTrack fork) {
-        for (Dir d : Dir.values()) {
-            if (track.getConnected(d) != null) {
-                Track connectedTrack = track.getConnected(d);
-                connectedTrack.disconnect(d.inverse());
-                connectedTrack.connect(d.inverse(), fork);
-                fork.connect(d, connectedTrack);
+        for (Dir dir : Dir.values()) {
+            if (track.getConnected(dir) != null) {
+                Track connectedTrack = track.getConnected(dir);
+                connectedTrack.disconnect(dir.inverse());
+                connectedTrack.connect(dir.inverse(), fork);
+                fork.connect(dir, connectedTrack);
             }
         }
     }
@@ -694,40 +692,40 @@ public class RailTrackMaker {
 
     void mapPageDown() {
         presenter.getView().clear();
-        Point p = presenter.getView().getMapScrollPage();
-        p.setY(p.getY() + 1);
+        Point point = presenter.getView().getMapScrollPage();
+        point.setY(point.getY() + 1);
         varyCursorPosition(new Point(0, 1 * presenter.getView().getRows()));
-        presenter.getView().setMapScrollPage(p);
+        presenter.getView().setMapScrollPage(point);
         presenter.getView().clear();
 
     }
 
     void mapPageLeft() {
         presenter.getView().clear();
-        Point p = presenter.getView().getMapScrollPage();
-        p.setX(p.getX() - 1);
+        Point point = presenter.getView().getMapScrollPage();
+        point.setX(point.getX() - 1);
         varyCursorPosition(new Point((-1 * presenter.getView().getCols()), 0));
-        presenter.getView().setMapScrollPage(p);
+        presenter.getView().setMapScrollPage(point);
         presenter.getView().clear();
 
     }
 
     void mapPageUp() {
         presenter.getView().clear();
-        Point p = presenter.getView().getMapScrollPage();
-        p.setY(p.getY() - 1);
+        Point point = presenter.getView().getMapScrollPage();
+        point.setY(point.getY() - 1);
         varyCursorPosition(new Point(0, -1 * presenter.getView().getRows()));
-        presenter.getView().setMapScrollPage(p);
+        presenter.getView().setMapScrollPage(point);
         presenter.getView().clear();
 
     }
 
     void mapPageRight() {
         presenter.getView().clear();
-        Point p = presenter.getView().getMapScrollPage();
-        p.setX(p.getX() + 1);
+        Point point = presenter.getView().getMapScrollPage();
+        point.setX(point.getX() + 1);
         varyCursorPosition(new Point((1 * presenter.getView().getCols()), 0));
-        presenter.getView().setMapScrollPage(p);
+        presenter.getView().setMapScrollPage(point);
         presenter.getView().clear();
 
     }

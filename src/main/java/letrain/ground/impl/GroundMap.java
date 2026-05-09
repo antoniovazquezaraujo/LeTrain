@@ -7,15 +7,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.PerlinNoise;
 import letrain.map.Point;
 import letrain.visitor.Visitor;
-import letrain.economy.EconomyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class GroundMap implements letrain.ground.GroundMap, Serializable {
@@ -105,8 +105,8 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         return -1;
     }
 
-    public void setValueAt(Point p, Integer value) {
-        setValueAt(p.getX(), p.getY(), value);
+    public void setValueAt(Point point, Integer value) {
+        setValueAt(point.getX(), point.getY(), value);
     }
 
     @Override
@@ -122,8 +122,8 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         }
     }
 
-    public Integer removeValueAt(Point p) {
-        return removeValueAt(p.getX(), p.getY());
+    public Integer removeValueAt(Point point) {
+        return removeValueAt(point.getX(), point.getY());
     }
 
     public Integer removeValueAt(int row, int col) {

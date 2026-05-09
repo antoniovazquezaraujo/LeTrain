@@ -1,12 +1,11 @@
 package letrain.mvp.impl;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import letrain.core.segments.RailwayGraph;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import letrain.core.segments.TopologyService;
 import letrain.core.segments.impl.TopologyServiceImpl;
 import letrain.economy.EconomyManager;
@@ -243,8 +242,8 @@ public class Model implements letrain.mvp.Model {
 
     @Override public RailMap getRailMap() { return map; }
 
-    @Override public void addTrack(Point p, RailTrack track) {
-        map.addTrack(p, track);
+    @Override public void addTrack(Point point, RailTrack track) {
+        map.addTrack(point, track);
         if (track instanceof ForkRailTrack) {
             addFork((ForkRailTrack) track);
         }
@@ -261,8 +260,8 @@ public class Model implements letrain.mvp.Model {
         mapChanged = true;
     }
 
-    @Override public RailTrack removeTrack(Point p) {
-        RailTrack track = map.getTrackAt(p);
+    @Override public RailTrack removeTrack(Point point) {
+        RailTrack track = map.getTrackAt(point);
         if (track != null) {
             if (track.getSensor() != null) {
                 if (track.getSensor() instanceof Station) {
@@ -277,7 +276,7 @@ public class Model implements letrain.mvp.Model {
             if (track instanceof ForkRailTrack) {
                 removeFork((ForkRailTrack) track);
             }
-            map.removeTrack(p);
+            map.removeTrack(point);
             mapChanged = true;
         }
         return track;
@@ -610,17 +609,17 @@ public class Model implements letrain.mvp.Model {
         });
     }
 
-    @Override public void removeStation(Station Station) {
-        if (stations.remove(Station)) {
-            if (Station.getTrack() != null) {
-                Station.getTrack().setSensor(null);
+    @Override public void removeStation(Station station) {
+        if (stations.remove(station)) {
+            if (station.getTrack() != null) {
+                station.getTrack().setSensor(null);
             }
             getEconomyManager().onStationDestroyed();
             mapChanged = true;
         }
     }
     @Override public Station getStation(int id) {
-        for (Station Station : getStations()) { if (Station.getId() == id) return Station; }
+        for (Station station : getStations()) { if (station.getId() == id) return station; }
         return null;
     }
 
