@@ -771,13 +771,13 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void onCrash(letrain.vehicle.impl.rail.Train train, Point pos, int speed) {
-        audioController.playOneShot("link", pos.getX(), pos.getY());
+        audioController.playOneShot("contact", pos.getX(), pos.getY());
     }
 
     @Override
     public void onContact(letrain.vehicle.impl.rail.Train train, Point pos, int speed) {
         if (audioController != null && pos != null) {
-            audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
+            audioController.playOneShot("contact", (float) pos.getX(), (float) pos.getY());
             // Immediately stop audio for all locomotives in the train that hit something
             // This forces them to 'stall' and stop moving sounds instantly.
             for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {

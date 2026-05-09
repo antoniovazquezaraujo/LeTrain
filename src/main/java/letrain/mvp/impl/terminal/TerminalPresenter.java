@@ -1121,7 +1121,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, letrain.vehicle
     @Override
     public void onContact(Train train, letrain.map.Point pos, int speed) {
         if (audioController != null && pos != null) {
-            audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
+            audioController.playOneShot("contact", (float) pos.getX(), (float) pos.getY());
             // Immediately stop audio for locomotives involved in the contact
             for (Locomotive loco : model.getLocomotives()) {
                 if (loco.getTrain() != null && (loco.getSpeed() > 0 || loco.getTargetSpeed() > 0)) {
@@ -1162,7 +1162,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, letrain.vehicle
     @Override
     public void onCrash(Train train, letrain.map.Point pos, int speed) {
         if (audioController != null && pos != null) {
-            audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
+            audioController.playOneShot("contact", (float) pos.getX(), (float) pos.getY());
             // Immediately stop audio for all locomotives involved in the crash
             for (Locomotive loco : model.getLocomotives()) {
                 if (loco.isDestroying()) {
