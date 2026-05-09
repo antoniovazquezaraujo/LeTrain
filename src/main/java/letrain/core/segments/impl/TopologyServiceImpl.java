@@ -105,10 +105,15 @@ public class TopologyServiceImpl implements TopologyService {
 
     private CrawlResult crawl(RailTrack startTrack, Dir startDir, Map<RailTrack, RailNodeImpl> trackToNode) {
         List<RailTrack> visited = new ArrayList<>();
+        java.util.Set<RailTrack> seen = new java.util.HashSet<>();
         RailTrack currentTrack = (RailTrack) startTrack.getConnected(startDir);
         Dir incomingDir = startDir.inverse();
 
         while (currentTrack != null && !trackToNode.containsKey(currentTrack)) {
+            if (!seen.add(currentTrack)) {
+                // Cycle detected — circuit with no fork nodes. Break to avoid infinite loop.
+                return null;
+            }
             visited.add(currentTrack);
             Dir nextDir = currentTrack.getDir(incomingDir);
             if (nextDir == null) return null;
