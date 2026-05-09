@@ -79,36 +79,6 @@ public class AmbientSource implements AudioSource {
         }
     }
 
-        int len = buffer.length;
-        boolean hitEnd = false;
-        for (int i = 0; i < len; i++) {
-            if ((int) cursor >= sample.getLength()) {
-                if (looping) {
-                    cursor = 0;
-                    hitEnd = true;
-                } else {
-                    active = false;
-                    for (int j = i; j < len; j++)
-                        buffer[j] = 0;
-                    return true;
-                }
-            }
-
-            float raw = sample.getSample((int) cursor);
-            float smoothed = (filterAmount == 0.0f) ? raw : lastVal + (raw - lastVal) * (1.0f - filterAmount);
-            lastVal = smoothed;
-
-            buffer[i] = smoothed * volume;
-
-            float rateRatio = sample.getSampleRate() / AudioMixer.SAMPLE_RATE;
-            cursor += rateRatio;
-        }
-        if (hitEnd) {
-            // Logged once per loop for debugging
-        }
-        return true;
-    }
-
     private float filterSensitivity = 1.0f;
 
     @Override
