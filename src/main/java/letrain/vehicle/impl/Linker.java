@@ -9,6 +9,11 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
+/**
+ * Abstract base for any vehicle that can be linked into a train
+ * (locomotives, wagons, cursors). Tracks its current position,
+ * direction, previous cell, and the train it belongs to.
+ */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     @JsonSubTypes.Type(value = letrain.vehicle.impl.rail.Locomotive.class, name = "Locomotive"),

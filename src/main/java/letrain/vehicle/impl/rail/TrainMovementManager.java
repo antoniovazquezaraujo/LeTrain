@@ -24,6 +24,19 @@ import letrain.vehicle.impl.Tractor;
  * Handles the two-pass linker movement logic, collision detection (train-to-train
  * and dead-end), and crash handling.
  */
+/**
+ * Handles the two-pass linker movement logic, collision detection
+ * (train-to-train and dead-end), and crash handling — extracted from
+ * {@link Train} to keep that class focused.
+ *
+ * <p>Movement uses a two-pass approach:
+ * <ol>
+ *   <li><b>Validation</b> — check all linkers can move to their target tracks</li>
+ *   <li><b>Execution</b> — physically move linkers with rollback on failure</li>
+ * </ol>
+ * After a successful move, an immediate post-move check detects
+ * train-to-train collisions and dead-end impacts.
+ */
 public class TrainMovementManager {
     private static final Logger log = LoggerFactory.getLogger(TrainMovementManager.class);
 
