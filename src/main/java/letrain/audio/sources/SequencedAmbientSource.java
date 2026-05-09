@@ -40,7 +40,7 @@ public class SequencedAmbientSource implements AudioSource {
      * Creates a looping ambient source that plays the entire sample with no
      * start/end sequencing. The sound starts immediately and loops forever.
      */
-    public SequencedAmbientSource(AudioSample sample, boolean unused) {
+    public SequencedAmbientSource(AudioSample sample, boolean simpleLoop) {
         this.sample = sample;
         int totalFrames = sample.getLength();
         this.startStart = 0;
@@ -75,9 +75,15 @@ public class SequencedAmbientSource implements AudioSource {
     private float lastVal = 0.0f;
     private float filterSensitivity = 1.0f;
 
+    private boolean debugLogged = false;
+
     @Override
     public boolean read(float[] buffer) {
         if (state == State.IDLE || sample == null) {
+            if (!debugLogged && sample != null) {
+                System.out.println("SeqAmbient state=IDLE, desiredActive=" + desiredActive);
+                debugLogged = true;
+            }
             return false;
         }
 
