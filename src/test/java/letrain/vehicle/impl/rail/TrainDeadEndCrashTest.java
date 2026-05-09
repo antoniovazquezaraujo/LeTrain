@@ -3,6 +3,7 @@ package letrain.vehicle.impl.rail;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -123,12 +124,15 @@ class TrainDeadEndCrashTest {
         // --- Assert ---
         // 1. notifyCrash was invoked (via listener.onCrash)
         verify(listener).onCrash(eq(train), any(Point.class), eq(8));
-        // 2. loco.destroy() was called
+        // 2. Acoustic/idle state is reset so engine goes to idle immediately
+        verify(loco).setAcousticSpeedSignal(-1);
+        verify(loco).setEngineTransitioning(false);
+        // 3. loco.destroy() was called
         verify(loco).destroy();
-        // 3. Train is stalled
+        // 4. Train is stalled
         assertTrue(train.isStalled(),
                 "Train should be stalled after high-speed dead-end crash");
-        // 4. notifyContact should NOT be called
+        // 5. notifyContact should NOT be called
         verify(listener, never()).onContact(any(Train.class), any(Point.class), anyInt());
     }
 
@@ -217,16 +221,19 @@ class TrainDeadEndCrashTest {
         // --- Assert ---
         // 1. notifyContact was invoked (via listener.onContact)
         verify(listener).onContact(eq(train), any(Point.class), eq(3));
-        // 2. Speed was set to 0 on the tractors (called by both notifyContact and the
+        // 2. Acoustic/idle state is reset so engine goes to idle immediately
+        verify(loco).setAcousticSpeedSignal(-1);
+        verify(loco).setEngineTransitioning(false);
+        // 3. Speed was set to 0 on the tractors (called by both notifyContact and the
         //    dead-end handler, consistent with existing train-to-train contact logic)
         verify(loco, org.mockito.Mockito.atLeast(1)).setCurrentSpeed(0);
         verify(loco, org.mockito.Mockito.atLeast(1)).setTargetSpeed(0);
-        // 3. Train is stalled
+        // 4. Train is stalled
         assertTrue(train.isStalled(),
                 "Train should be stalled after low-speed dead-end contact");
-        // 4. notifyCrash should NOT be called
+        // 5. notifyCrash should NOT be called
         verify(listener, never()).onCrash(any(Train.class), any(Point.class), anyInt());
-        // 5. destroy() should NOT be called on linkers
+        // 6. destroy() should NOT be called on linkers
         verify(loco, never()).destroy();
     }
 
@@ -323,5 +330,102 @@ class TrainDeadEndCrashTest {
         // 4. Train should NOT be stalled (normal movement)
         assertFalse(train.isStalled(),
                 "Train should not be stalled after normal movement");
+    }
+
+    // ================================================================
+    //  Test 4: Reverse (marcha atrás) into dead-end → engine goes idle
+    // ================================================================
+
+    @Test
+    @DisplayName("should go idle when reversing into a dead-end")
+    void shouldContact_When_DeadEndInReverse() {
+        // --- Arrange ---
+        Train train = new Train(1);
+        Locomotive loco = mock(Locomotive.class);
+        Track trackA = mock(Track.class); // dead-end behind
+        Track trackB = mock(Track.class); // current position
+
+        AtomicReference<Linker> linkerOnA = new AtomicReference<>(null);
+        AtomicReference<Linker> linkerOnB = new AtomicReference<>(loco);
+        AtomicReference<Track> locoTrack = new AtomicReference<>(trackB);
+
+        // Loco heading WEST (backward / marcha atrás)
+        when(loco.getDir()).thenReturn(Dir.W);
+        when(loco.getTrain()).thenReturn(train);
+        when(loco.getPosition()).thenReturn(new Point(0, 0));
+        when(loco.getRailsSinceStop()).thenReturn(0);
+        when(loco.getSpeed()).thenReturn(3); // low speed < 5
+
+        when(loco.getTrack()).thenAnswer(inv -> locoTrack.get());
+        doAnswer(inv -> { locoTrack.set(inv.getArgument(0)); return null; })
+                .when(loco).setTrack(any(Track.class));
+
+        doNothing().when(loco).setPreviousTrack(any(Track.class));
+        doNothing().when(loco).setPreviousDir(any(Dir.class));
+        doNothing().when(loco).setEntryDir(any(Dir.class));
+        doNothing().when(loco).setDir(any(Dir.class));
+        doNothing().when(loco).setPosition(any(Point.class));
+        doNothing().when(loco).setRailsSinceStop(anyInt());
+        doNothing().when(loco).setCurrentSpeed(anyInt());
+        doNothing().when(loco).setTargetSpeed(anyInt());
+        doNothing().when(loco).setAcousticSpeedSignal(anyInt());
+        doNothing().when(loco).setEngineTransitioning(anyBoolean());
+
+        // Track B → Track A (moving WEST), but A is dead-end (no connection W)
+        when(trackB.getPosition()).thenReturn(new Point(1, 0));
+        when(trackA.getPosition()).thenReturn(new Point(0, 0));
+        when(trackB.getConnected(Dir.W)).thenReturn(trackA);
+        when(trackA.getConnected(Dir.W)).thenReturn(null); // dead-end behind
+
+        when(trackB.getSensor()).thenReturn(null);
+        when(trackB.getSemaphore()).thenReturn(null);
+        when(trackA.getSensor()).thenReturn(null);
+        when(trackA.getSemaphore()).thenReturn(null);
+
+        doNothing().when(trackB).setReservation(any(Linker.class));
+        doNothing().when(trackA).setReservation(any(Linker.class));
+        when(trackB.getReservation()).thenReturn(null);
+        when(trackA.getReservation()).thenReturn(null);
+
+        when(trackB.getLinker()).thenAnswer(inv -> linkerOnB.get());
+        when(trackA.getLinker()).thenAnswer(inv -> linkerOnA.get());
+        when(trackA.canEnter(any(Dir.class), any(Linker.class))).thenReturn(true);
+
+        doAnswer(inv -> {
+            linkerOnB.set(null);
+            return loco;
+        }).when(trackB).removeLinker();
+
+        doAnswer(inv -> {
+            Linker v = inv.getArgument(1);
+            locoTrack.set(trackA);
+            linkerOnA.set(v);
+            return true;
+        }).when(trackA).enterLinkerFromDir(any(Dir.class), any(Linker.class));
+
+        train.getLinkers().add(loco);
+        train.setDirectorLinker(loco);
+
+        TrainEventListener listener = mock(TrainEventListener.class);
+        train.addTrainEventListener(listener);
+
+        // --- Act ---
+        train.moveLinkers(false);
+
+        // --- Assert ---
+        // 1. Contact notification (low speed + dead-end = contact, not crash)
+        verify(listener).onContact(eq(train), any(Point.class), eq(3));
+        // 2. Engine goes idle: acoustic signals reset
+        verify(loco).setAcousticSpeedSignal(-1);
+        verify(loco).setEngineTransitioning(false);
+        // 3. Speed set to 0
+        verify(loco, org.mockito.Mockito.atLeast(1)).setCurrentSpeed(0);
+        verify(loco, org.mockito.Mockito.atLeast(1)).setTargetSpeed(0);
+        // 4. Train is stalled
+        assertTrue(train.isStalled(),
+                "Train should be stalled after reversing into dead-end");
+        // 5. No crash
+        verify(listener, never()).onCrash(any(Train.class), any(Point.class), anyInt());
+        verify(loco, never()).destroy();
     }
 }
