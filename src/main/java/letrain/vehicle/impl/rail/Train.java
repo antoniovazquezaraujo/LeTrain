@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 public class Train implements Trailer<RailTrack>, Renderable, Transportable {
-    private static final int MAX_LOADING_COUNT = 80; // 4.0 seconds at 20fps per wagon
     private static final Logger log = LoggerFactory.getLogger(Train.class);
     @com.fasterxml.jackson.annotation.JsonProperty("linkers")
     @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = java.util.LinkedList.class)
@@ -1150,28 +1149,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     public Deque<Linker> getLinkersToRemove() {
         return this.linkersToRemove;
-    }
-
-    // Devuelve la dirección en la que hay un linker que no pertenece al tren
-    Dir getLinkDir2(Linker linker) {
-        Dir linkerDir = linker.getDir();
-        Dir resultDir = linkerDir;
-        Train train = getAdjacentTrain(linker, linkerDir);
-        try {
-            if (train != this) {
-                return resultDir;
-            }
-            resultDir = linker.getTrack().getDir(resultDir);
-            train = getAdjacentTrain(linker, resultDir);
-            if (train != this) {
-                return resultDir;
-            }
-            log.error("Error getting link dir:" + resultDir + " train:" + train);
-            return null;
-        } catch (Exception e) {
-            log.error("Error getting link dir", e);
-            return null;
-        }
     }
 
     Dir getLinkDir(Linker linker) {

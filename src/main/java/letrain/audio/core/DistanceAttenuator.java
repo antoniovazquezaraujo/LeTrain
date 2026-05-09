@@ -30,18 +30,11 @@ public class DistanceAttenuator {
         while (angleRelative < -Math.PI)
             angleRelative += 2 * Math.PI;
 
-        // Simple pan: when angle is -PI/2 (Left), Left=1, Right=0.
-        // When 0 (Ahead), Left=1, Right=1. (Or 0.707 for constant power)
+        // Simple linear pan: -PI/2 (left) → pan=-1, 0 (ahead) → pan=0, +PI/2 (right) → pan=+1
+        float pan = (float) Math.sin(angleRelative);
 
-        float pan = (float) Math.sin(angleRelative); // -1 (Left) to 1 (Right)
-
-        // Constant power panning approx
-        float left = (float) ((Math.sqrt(2) / 2.0) * (Math.cos(angleRelative) + Math.sin(angleRelative))); // This is
-                                                                                                           // wrong
-                                                                                                           // formula
-        // Let's use simple linear for now
-
-        float p = (pan + 1.0f) / 2.0f; // 0 (Left) to 1 (Right)
+        // Map pan [-1, 1] to [0, 1] for left/right volume
+        float p = (pan + 1.0f) / 2.0f;
         return new float[] { 1.0f - p, p };
     }
 }

@@ -514,8 +514,7 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitEconomyManager(EconomyManager economyManager) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitEconomyManager'");
+        // Not rendered in terminal mode
     }
 
 }

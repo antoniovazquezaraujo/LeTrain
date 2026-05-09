@@ -241,20 +241,17 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitBridgeGateRailTrack'");
+        // No extra info in terminal mode
     }
 
     @Override
     public void visitBridgeRailTrack(BridgeRailTrack bridgeRailTrack) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitBridgeRailTrack'");
+        // No extra info in terminal mode
     }
 
     @Override
     public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitTunnelGateRailTrack'");
+        // No extra info in terminal mode
     }
 
     @Override
@@ -265,8 +262,7 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitCursor(Cursor cursor) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitCursor'");
+        // No extra info in terminal mode
     }
 
 }
