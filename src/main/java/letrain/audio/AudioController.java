@@ -24,6 +24,8 @@ public class AudioController {
     private final AudioMixer mixer;
     private boolean enabled = true;
     private letrain.audio.sources.SequencedAmbientSource jackhammerSource;
+    private letrain.audio.sources.SequencedAmbientSource birdsSource;
+    private letrain.audio.sources.SequencedAmbientSource windSource;
 
     // 1 Game Unit = 20 Real Meters (Approx length of a train car)
     private static final float SCALE_FACTOR = 20.0f;
@@ -77,6 +79,8 @@ public class AudioController {
         loadSample("explosion", "train-explosion.wav");
         loadSample("fork", "fork.wav");
         loadSample("hammer", "hammer.wav");
+        loadSample("birds", "birds.wav");
+        loadSample("wind", "wind.wav");
     }
 
     private void loadSample(String name, String filename) {
@@ -261,11 +265,89 @@ public class AudioController {
         }
     }
 
+    /**
+     * Updates ambient sounds based on camera mode and zoom level.
+     * Birds play in perspective/orbit mode, wind in top-down/map mode.
+     * Volume increases with camera distance (zoom out = louder).
+     *
+     * @param isTopDown true for MAP/cenital mode, false for ORBIT/CAB
+     * @param zoomFactor 0.0 (close) to 1.0 (far)
+     * @param listenerX  camera X position in world units
+     * @param listenerY  camera Y position in world units
+     * @param listenerZ  camera Z position in world units
+     */
+    public void updateAmbient(boolean isTopDown, float zoomFactor,
+            float listenerX, float listenerY, float listenerZ) {
+        if (!enabled)
+            return;
+
+        float targetBirdsVol = isTopDown ? 0.0f : 0.3f + zoomFactor * 0.5f;
+        float targetWindVol = isTopDown ? 0.2f + zoomFactor * 0.4f : 0.0f;
+
+        // Birds
+        if (targetBirdsVol > 0.01f) {
+            if (birdsSource == null) {
+                AudioSample sample = samples.get("birds");
+                if (sample != null) {
+                    birdsSource = new letrain.audio.sources.SequencedAmbientSource(sample, true);
+                    birdsSource.setVolume(0.5f);
+                    birdsSource.setRange(2.0f * SCALE_FACTOR, 100.0f * SCALE_FACTOR);
+                    mixer.addSource(birdsSource);
+                } else {
+                    log.warn("Birds sample not found");
+                }
+            }
+            if (birdsSource != null) {
+                birdsSource.setActive(true);
+                birdsSource.setVolume(targetBirdsVol);
+                birdsSource.setPosition(listenerX * SCALE_FACTOR, listenerY * SCALE_FACTOR, listenerZ * SCALE_FACTOR);
+            }
+        } else {
+            if (birdsSource != null) {
+                birdsSource.setActive(false);
+            }
+        }
+
+        // Wind
+        if (targetWindVol > 0.01f) {
+            if (windSource == null) {
+                AudioSample sample = samples.get("wind");
+                if (sample != null) {
+                    windSource = new letrain.audio.sources.SequencedAmbientSource(sample, true);
+                    windSource.setVolume(0.5f);
+                    windSource.setRange(2.0f * SCALE_FACTOR, 100.0f * SCALE_FACTOR);
+                    mixer.addSource(windSource);
+                } else {
+                    log.warn("Wind sample not found");
+                }
+            }
+            if (windSource != null) {
+                windSource.setActive(true);
+                windSource.setVolume(targetWindVol);
+                windSource.setPosition(listenerX * SCALE_FACTOR, listenerY * SCALE_FACTOR, listenerZ * SCALE_FACTOR);
+            }
+        } else {
+            if (windSource != null) {
+                windSource.setActive(false);
+            }
+        }
+    }
+
     public void stop() {
         mixer.stop();
         if (jackhammerSource != null) {
             mixer.removeSource(jackhammerSource);
             jackhammerSource = null;
+        }
+        if (birdsSource != null) {
+            birdsSource.setActive(false);
+            mixer.removeSource(birdsSource);
+            birdsSource = null;
+        }
+        if (windSource != null) {
+            windSource.setActive(false);
+            mixer.removeSource(windSource);
+            windSource = null;
         }
         for (TrainSynthesizer synth : synthesizers.values()) {
             synth.stopAudio();

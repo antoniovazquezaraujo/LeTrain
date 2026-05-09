@@ -28,6 +28,10 @@ public class AmbientSource implements AudioSource {
         this.volume = volume;
     }
 
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     private float filterAmount = 0.0f;
     private float lastVal = 0.0f;
 
