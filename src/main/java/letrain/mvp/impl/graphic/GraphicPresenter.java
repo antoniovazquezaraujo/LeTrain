@@ -771,7 +771,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void onCrash(letrain.vehicle.impl.rail.Train train, Point pos, int speed) {
-        audioController.playOneShot("contact", pos.getX(), pos.getY());
+        audioController.playOneShot("explosion", pos.getX(), pos.getY());
     }
 
     @Override

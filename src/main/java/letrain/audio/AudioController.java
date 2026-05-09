@@ -74,6 +74,7 @@ public class AudioController {
     private void loadSamples() {
         loadSample("link", "train-link.wav");
         loadSample("contact", "train-contact.wav");
+        loadSample("explosion", "train-explosion.wav");
         loadSample("fork", "fork.wav");
         loadSample("hammer", "hammer.wav");
     }
