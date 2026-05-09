@@ -132,7 +132,7 @@ public class TrainLogisticsManager {
         int wagonTick = (currentTickInTotal - 1) % MAX_LOADING_COUNT;
 
         if (station.getRole() == CargoTypes.StationRole.PRODUCER) {
-            int targetCargo = ((wagonTick + 1) * 50) / MAX_LOADING_COUNT;
+            int targetCargo = ((wagonTick + 1) * Wagon.MAX_CARGO_CAPACITY) / MAX_LOADING_COUNT;
             if (wagon.getCargoAmount() < targetCargo && !wagon.isFull()) {
                 int toLoad = targetCargo - wagon.getCargoAmount();
                 int taken = station.takeExportCargo(toLoad);
@@ -144,7 +144,7 @@ public class TrainLogisticsManager {
                 }
             }
         } else if (station.getRole() == CargoTypes.StationRole.CONSUMER) {
-            int targetRemaining = 50 - ((wagonTick + 1) * 50) / MAX_LOADING_COUNT;
+            int targetRemaining = Wagon.MAX_CARGO_CAPACITY - ((wagonTick + 1) * Wagon.MAX_CARGO_CAPACITY) / MAX_LOADING_COUNT;
             if (wagon.getCargoAmount() > targetRemaining && wagon.getCargoType() == station.getCargoType()) {
                 int toUnload = wagon.getCargoAmount() - targetRemaining;
                 wagon.unload(toUnload);

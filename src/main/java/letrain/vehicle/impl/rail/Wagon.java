@@ -5,6 +5,8 @@ import letrain.vehicle.impl.Linker;
 import letrain.visitor.Visitor;
 
 public class Wagon extends Linker {
+    public static final int MAX_CARGO_CAPACITY = 50;
+    private static final int MAX_DESTROY_TURNS = 200;
     String aspect;
     float brakes;
     boolean destroying = false;
@@ -42,7 +44,7 @@ public class Wagon extends Linker {
     @Override
     public void destroy() {
         this.destroying = true;
-        this.destroyingTurns = 200;
+        this.destroyingTurns = MAX_DESTROY_TURNS;
     }
 
     @Override
@@ -62,7 +64,7 @@ public class Wagon extends Linker {
     }
 
     private int cargoAmount = 0;
-    private int maxCapacity = 50;
+    private int maxCapacity = MAX_CARGO_CAPACITY;
     private CargoTypes cargoType = CargoTypes.NONE;
     private CargoTypes exclusiveCargoType = CargoTypes.NONE;
     private letrain.map.Point loadingPoint = null;

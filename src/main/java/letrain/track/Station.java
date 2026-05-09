@@ -15,6 +15,14 @@ import letrain.visitor.Visitor;
 @com.fasterxml.jackson.annotation.JsonTypeName("Station")
 public class Station extends Sensor implements TrainEventListener {
 
+    private static final int BASE_MAX_STORAGE = 500;
+    private static final int STORAGE_PER_INDUSTRY = 100;
+    private static final int BASE_REGEN_RATE = 1;
+    private static final int REGEN_RATE_PER_INDUSTRY_DIVISOR = 2;
+    private static final double CONSUMER_CONSUMPTION_CHANCE = 0.1;
+    private static final int BASE_TRANSFER_RATE = 1;
+    private static final int TRANSFER_RATE_PER_INDUSTRY_DIVISOR = 3;
+
     @JsonIgnore
     private transient List<StationEventListener> stationListeners = new ArrayList<>();
     @JsonIgnore
@@ -268,7 +276,7 @@ public class Station extends Sensor implements TrainEventListener {
     public void setIndustryCount(int industryCount) {
         this.industryCount = industryCount;
         // Base max storage 500 + 100 per additional industry block
-        this.maxStorage = 500 + (industryCount * 100);
+        this.maxStorage = BASE_MAX_STORAGE + (industryCount * STORAGE_PER_INDUSTRY);
     }
 
     public int getStorage() {
@@ -302,7 +310,7 @@ public class Station extends Sensor implements TrainEventListener {
     public void regenerateCargo() {
         if (role == CargoTypes.StationRole.PRODUCER && storage < maxStorage) {
             // Regeneration scales with density: Base + bonus per block
-            int increment = 1 + (industryCount / 2);
+            int increment = BASE_REGEN_RATE + (industryCount / REGEN_RATE_PER_INDUSTRY_DIVISOR);
             storage += increment;
             if (storage > maxStorage)
                 storage = maxStorage;
@@ -314,7 +322,7 @@ public class Station extends Sensor implements TrainEventListener {
         // Wait, storage for consumer = current STOCK received.
         // If storage is high, they are "full".
         if (role == CargoTypes.StationRole.CONSUMER && storage > 0) {
-            if (Math.random() < 0.1) {
+            if (Math.random() < CONSUMER_CONSUMPTION_CHANCE) {
                 storage--;
             }
         }
@@ -340,7 +348,7 @@ public class Station extends Sensor implements TrainEventListener {
     @JsonIgnore
     public int getTransferRate() {
         // Base transfer rate of 1, plus 1 for every 3 industry blocks
-        return 1 + (industryCount / 3);
+        return BASE_TRANSFER_RATE + (industryCount / TRANSFER_RATE_PER_INDUSTRY_DIVISOR);
     }
 
     @Override
