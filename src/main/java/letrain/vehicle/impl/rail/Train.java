@@ -39,6 +39,8 @@ import org.slf4j.LoggerFactory;
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 public class Train implements Trailer<RailTrack>, Renderable, Transportable {
+    private static final int CRASH_SPEED_THRESHOLD = 5;
+    private static final int MAX_LOADING_COUNT = 80; // 4.0 seconds at 20fps per wagon
     private static final Logger log = LoggerFactory.getLogger(Train.class);
     @com.fasterxml.jackson.annotation.JsonProperty("linkers")
     @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = java.util.LinkedList.class)
@@ -673,7 +675,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 if (occupyingL.getTrain() != this) {
                     int speed = getSpeed();
 
-                    if (Math.abs(speed) >= 5) {
+                    if (Math.abs(speed) >= CRASH_SPEED_THRESHOLD) {
                         crash(occupyingL, speed);
                     } else {
                         letrain.map.Point collisionPos = occupyingL.getPosition();
@@ -772,11 +774,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             Linker blockingLinker = nextAfterMove.getLinker();
             if (blockingLinker != null && blockingLinker.getTrain() != this) {
                 int speed = getSpeed();
-                if (Math.abs(speed) >= 5) {
-                    crash(blockingLinker, speed);
-                    this.setStalled(true);
-                } else {
-                    letrain.map.Point collisionPos = blockingLinker.getPosition();
+                    if (Math.abs(speed) >= CRASH_SPEED_THRESHOLD) {
+                        crash(blockingLinker, speed);
+                        this.setStalled(true);
+                    } else {
+                        letrain.map.Point collisionPos = blockingLinker.getPosition();
                     notifyContact(collisionPos, speed);
                     getTractors().forEach(t -> {
                         t.setCurrentSpeed(0);
