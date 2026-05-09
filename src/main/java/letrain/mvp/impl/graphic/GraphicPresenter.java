@@ -269,6 +269,9 @@ public class GraphicPresenter extends ApplicationAdapter
         float camAngle = cameraController.getListenerAngle();
         audioController.setListenerPosition(cam.position.x, cam.position.z, cam.position.y, camAngle);
         audioController.update();
+        audioController.updateAmbient(
+                cameraController.getMode() == CameraController.CameraMode.MAP,
+                cameraController.getZoomFactor());
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);

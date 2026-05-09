@@ -104,6 +104,16 @@ public class CameraController {
         return (float) Math.atan2(cam.direction.z, cam.direction.x);
     }
 
+    /**
+     * Returns a normalized zoom factor [0, 1] where 0 = closest and 1 = farthest.
+     */
+    public float getZoomFactor() {
+        if (cameraMode == CameraMode.MAP) {
+            return (mapCameraHeight - 3f) / (100f - 3f);
+        }
+        return (targetCameraDistance - 3f) / (40f - 3f);
+    }
+
     public void resize(int width, int height) {
         if (cam == null) {
             return;

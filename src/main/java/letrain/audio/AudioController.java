@@ -24,6 +24,8 @@ public class AudioController {
     private final AudioMixer mixer;
     private boolean enabled = true;
     private letrain.audio.sources.SequencedAmbientSource jackhammerSource;
+    private letrain.audio.sources.AmbientSource birdsSource;
+    private letrain.audio.sources.AmbientSource windSource;
 
     // 1 Game Unit = 20 Real Meters (Approx length of a train car)
     private static final float SCALE_FACTOR = 20.0f;
@@ -77,6 +79,8 @@ public class AudioController {
         loadSample("explosion", "train-explosion.wav");
         loadSample("fork", "fork.wav");
         loadSample("hammer", "hammer.wav");
+        loadSample("birds", "birds.wav");
+        loadSample("wind", "wind.wav");
     }
 
     private void loadSample(String name, String filename) {
@@ -261,11 +265,77 @@ public class AudioController {
         }
     }
 
+    /**
+     * Updates ambient sounds based on camera mode and zoom level.
+     * Birds play in perspective/orbit mode, wind in top-down/map mode.
+     * Volume increases with camera distance (zoom out = louder).
+     *
+     * @param isTopDown true for MAP/cenital mode, false for ORBIT/CAB
+     * @param zoomFactor 0.0 (close) to 1.0 (far)
+     */
+    public void updateAmbient(boolean isTopDown, float zoomFactor) {
+        if (!enabled)
+            return;
+
+        float targetBirdsVol = isTopDown ? 0.0f : 0.2f + zoomFactor * 0.4f;
+        float targetWindVol = isTopDown ? 0.15f + zoomFactor * 0.35f : 0.0f;
+
+        // Birds
+        if (targetBirdsVol > 0.01f) {
+            if (birdsSource == null) {
+                AudioSample sample = samples.get("birds");
+                if (sample != null) {
+                    birdsSource = new letrain.audio.sources.AmbientSource(sample);
+                    birdsSource.setLooping(true);
+                    birdsSource.setVolume(targetBirdsVol);
+                    mixer.addSource(birdsSource);
+                }
+            }
+            if (birdsSource != null) {
+                birdsSource.setActive(true);
+                birdsSource.setVolume(targetBirdsVol);
+            }
+        } else {
+            if (birdsSource != null) {
+                birdsSource.setActive(false);
+            }
+        }
+
+        // Wind
+        if (targetWindVol > 0.01f) {
+            if (windSource == null) {
+                AudioSample sample = samples.get("wind");
+                if (sample != null) {
+                    windSource = new letrain.audio.sources.AmbientSource(sample);
+                    windSource.setLooping(true);
+                    windSource.setVolume(targetWindVol);
+                    mixer.addSource(windSource);
+                }
+            }
+            if (windSource != null) {
+                windSource.setActive(true);
+                windSource.setVolume(targetWindVol);
+            }
+        } else {
+            if (windSource != null) {
+                windSource.setActive(false);
+            }
+        }
+    }
+
     public void stop() {
         mixer.stop();
         if (jackhammerSource != null) {
             mixer.removeSource(jackhammerSource);
             jackhammerSource = null;
+        }
+        if (birdsSource != null) {
+            mixer.removeSource(birdsSource);
+            birdsSource = null;
+        }
+        if (windSource != null) {
+            mixer.removeSource(windSource);
+            windSource = null;
         }
         for (TrainSynthesizer synth : synthesizers.values()) {
             synth.stopAudio();
