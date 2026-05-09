@@ -122,7 +122,8 @@ public class Locomotive extends Linker implements Tractor {
             // But if we are parked at 0, we can safely apply it immediately to jumpstart
             // the motor.
             if (currentSpeed == 0 && acousticSpeedSignal != -1) {
-                if (currentSpeed != acousticSpeedSignal) {
+                if (currentSpeed != acousticSpeedSignal
+                        && (getTrain() == null || !getTrain().isStalled())) {
                     setCurrentSpeed(acousticSpeedSignal);
                 }
                 acousticSpeedSignal = -1;
@@ -146,7 +147,8 @@ public class Locomotive extends Linker implements Tractor {
                     // Apply mid-movement acoustic gear shifts exactly on rail boundaries
                     // to prevent visual interpolation snapping (jumping backwards)
                     if (acousticSpeedSignal != -1) {
-                        if (currentSpeed != acousticSpeedSignal) {
+                        if (currentSpeed != acousticSpeedSignal
+                                && (getTrain() == null || !getTrain().isStalled())) {
                             setCurrentSpeed(acousticSpeedSignal);
                         }
                         acousticSpeedSignal = -1;

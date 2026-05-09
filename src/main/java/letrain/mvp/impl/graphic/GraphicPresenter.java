@@ -781,10 +781,8 @@ public class GraphicPresenter extends ApplicationAdapter
             // Immediately stop audio for all locomotives in the train that hit something
             // This forces them to 'stall' and stop moving sounds instantly.
             for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
-                if (loco.getTrain() != null && (loco.getSpeed() > 0 || loco.getTargetSpeed() > 0)) {
-                    if (Point.distance(loco.getPosition(), pos) < 2.0) {
-                        audioController.stopSynthesizer(loco.getId());
-                    }
+                if (loco.getTrain() != null && Point.distance(loco.getPosition(), pos) < 2.0) {
+                    audioController.stopSynthesizer(loco.getId());
                 }
             }
         }
