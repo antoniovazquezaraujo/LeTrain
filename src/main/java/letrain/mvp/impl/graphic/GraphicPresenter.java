@@ -910,7 +910,8 @@ public class GraphicPresenter extends ApplicationAdapter
         com.badlogic.gdx.graphics.g3d.decals.Decal d = getGlyphDecal(text.charAt(0));
         if (d != null) {
             d.setPosition(x, y, z);
-            d.setScale(0.4f); 
+            d.setScale(0.4f);
+            d.setColor(com.badlogic.gdx.graphics.Color.WHITE);
             // Flat on the compass floor, North is -Z
             d.lookAt(new com.badlogic.gdx.math.Vector3(x, y + 1, z), new com.badlogic.gdx.math.Vector3(0, 0, -1));
             decalBatch.add(d);
