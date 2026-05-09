@@ -535,11 +535,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         setDirTowedLinkers(normalSense);
         boolean moved = moveLinkers(normalSense);
 
-        if (!moved) {
-            // Movement failed — restore original directions.
-            // Without this, setDirTowedLinkers leaves wagons pointing
-            // forward, causing the renderer to interpolate them into
-            // the locomotive when the train has actually stopped.
+        if (!moved || isStalled()) {
+            // Movement failed or train crashed/stalled — restore original
+            // directions. Without this, setDirTowedLinkers leaves wagons
+            // pointing forward, causing the renderer to interpolate them
+            // into the locomotive when the train has actually stopped.
             for (Linker l : getLinkers()) {
                 letrain.map.Dir savedDir = savedDirs.get(l);
                 letrain.map.Dir savedEntry = savedEntryDirs.get(l);
