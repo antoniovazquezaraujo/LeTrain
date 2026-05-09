@@ -722,7 +722,17 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             linkerToMove.setPreviousTrack(currentTrack);
             linkerToMove.setPreviousDir(linkerToMove.getDir());
             currentTrack.removeLinker();
-            nextTrackOfLinker.enterLinkerFromDir(entryDirOfLinker, linkerToMove);
+            if (!nextTrackOfLinker.enterLinkerFromDir(entryDirOfLinker, linkerToMove)) {
+                // Rollback: the linker was removed from currentTrack but could not enter
+                // nextTrack (e.g. another linker from the same train still occupies it).
+                // Restore the linker to its previous track to avoid linkers with null track.
+                linkerToMove.setTrack(currentTrack);
+                currentTrack.setLinker(linkerToMove);
+                linkerToMove.setPreviousTrack(null);
+                linkerToMove.setPreviousDir(null);
+                clearReservations(targetTracks);
+                return false;
+            }
             linkerToMove.setRailsSinceStop(linkerToMove.getRailsSinceStop() + 1);
 
             nextTrackOfLinker.setReservation(null);
@@ -743,7 +753,13 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         // ahead is blocked by another train. If so, trigger collision NOW
         // instead of waiting for the next advance() cycle (which would add
         // up to 2.5s of delay before the crash sound plays).
-        Track nextAfterMove = firstLinker.getTrack().getConnected(firstLinker.getDir());
+        Track currentFirstTrack = firstLinker.getTrack();
+        if (currentFirstTrack == null) {
+            log.warn("First linker has no track after move sequence — cannot check next cell for collisions");
+            clearReservations(targetTracks);
+            return false;
+        }
+        Track nextAfterMove = currentFirstTrack.getConnected(firstLinker.getDir());
         if (nextAfterMove != null) {
             Linker blockingLinker = nextAfterMove.getLinker();
             if (blockingLinker != null && blockingLinker.getTrain() != this) {
