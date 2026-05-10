@@ -576,6 +576,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     }
 
     public void refreshLinkersDirection() {
+        if (getDirectorLinker() == null || ((Locomotive) getDirectorLinker()).getTrack() == null) {
+            return;
+        }
         boolean normalSense = true;
         if (getDirectorLinker().isReversed()) {
             normalSense = false;
