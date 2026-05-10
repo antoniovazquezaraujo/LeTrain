@@ -122,7 +122,7 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
 
         ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
-        instance.transform.setToTranslation(renderX, 0.6f, renderY);
+        instance.transform.setToTranslation(renderX, 0.61f, renderY);
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
 
@@ -134,12 +134,12 @@ public class VehicleRenderer extends BaseSubRenderer {
             float dxL = v1.x;
             float dzL = v1.z;
             float lineOffset = 0.25f;
-            selectionLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.01f, renderY + dzL * lineOffset);
+            selectionLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.02f, renderY + dzL * lineOffset);
             selectionLine.transform.rotate(0, 1, 0, angle);
             instances.add(selectionLine);
         }
         if (locomotive.isDestroying()) {
-            drawFire(renderX, 0.6f, renderY, animationAlpha + locomotive.getId());
+            drawFire(renderX, 0.61f, renderY, animationAlpha + locomotive.getId());
         }
 
         // Locomotive labels
@@ -148,7 +148,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             float dxL = v1.x;
             float dzL = v1.z;
 
-            v1.set(renderX, 1.01f, renderY);
+            v1.set(renderX, 1.02f, renderY);
             v2.set(0, 1, 0);
             v3.set(dxL, 0, dzL).nor();
             addLabel(v1, "" + locomotive.getId(), v2, v3, Color.WHITE, 1.0f);
@@ -156,11 +156,11 @@ public class VehicleRenderer extends BaseSubRenderer {
             float perpXL = dzL * 0.42f;
             float perpZL = -dxL * 0.42f;
 
-            v1.set(renderX + perpXL, 0.4f, renderY + perpZL);
+            v1.set(renderX + perpXL, 0.55f, renderY + perpZL);
             v2.set(perpXL, 0, perpZL).nor();
             addLabel(v1, locomotive.getAspect(), v2);
 
-            v1.set(renderX - perpXL, 0.4f, renderY - perpZL);
+            v1.set(renderX - perpXL, 0.55f, renderY - perpZL);
             v2.set(-perpXL, 0, -perpZL).nor();
             addLabel(v1, locomotive.getAspect(), v2);
         }
@@ -284,10 +284,10 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
 
         if (wagon.isDestroying()) {
-            drawFire(renderX, 0.45f, renderY, animationAlpha + wagon.hashCode());
+            drawFire(renderX, 0.46f, renderY, animationAlpha + wagon.hashCode());
         }
 
-        instance.transform.setToTranslation(renderX, 0.45f, renderY);
+        instance.transform.setToTranslation(renderX, 0.46f, renderY);
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
 
@@ -302,7 +302,7 @@ public class VehicleRenderer extends BaseSubRenderer {
 
             ModelInstance jewelBlock = resourceContext.getModelInstance(resourceContext.wagonJewelModel);
             jewelBlock.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(cargoColor));
-            float jewelY = 0.25f + (currentHeight / 2f);
+            float jewelY = 0.26f + (currentHeight / 2f);
             jewelBlock.transform.setToTranslation(renderX, jewelY, renderY);
             jewelBlock.transform.rotate(0, 1, 0, angle);
             jewelBlock.transform.scale(0.6f, currentHeight, 0.6f);
@@ -317,11 +317,11 @@ public class VehicleRenderer extends BaseSubRenderer {
             float perpXW = dzW * 0.42f;
             float perpZW = -dxW * 0.42f;
 
-            v1.set(renderX + perpXW, 0.4f, renderY + perpZW);
+            v1.set(renderX + perpXW, 0.5f, renderY + perpZW);
             v2.set(perpXW, 0, perpZW).nor();
             addLabel(v1, wagon.getAspect(), v2);
 
-            v1.set(renderX - perpXW, 0.4f, renderY - perpZW);
+            v1.set(renderX - perpXW, 0.5f, renderY - perpZW);
             v2.set(-perpXW, 0, -perpZW).nor();
             addLabel(v1, wagon.getAspect(), v2);
         }
