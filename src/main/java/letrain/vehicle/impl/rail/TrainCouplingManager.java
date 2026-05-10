@@ -378,18 +378,33 @@ public class TrainCouplingManager {
         if (adjacentLinker != null && adjacentLinker.getTrain() != train) {
             return linkerDir;
         }
-        // If the adjacent linker belongs to the same train, walk through
-        // the train's linkers following track directions to find the exit
-        // where a different train might be. This handles multi-linker
-        // trains where the end linker points toward the train center.
+        // If no adjacent linker or it's from our own train, try the opposite
+        // direction via the track router. This handles the case where the loco
+        // faces backward after reversing, but the wagons are forward.
+        if (adjacentLinker == null && linker.getEntryDir() != null) {
+            Dir oppositeDir = linker.getTrack().getDir(linker.getEntryDir());
+            log.info("[GETLINKDIR] dead-end at {}, trying opposite: entryDir={} oppositeDir={}",
+                    linkerDir, linker.getEntryDir(), oppositeDir);
+            if (oppositeDir != null) {
+                Linker oppositeLinker = getAdjacentLinker(linker, oppositeDir);
+                if (oppositeLinker != null && oppositeLinker.getTrain() != train) {
+                    return oppositeDir;
+                }
+            }
+        }
+        // Walk through same-train linkers
+        // Walk through same-train linkers using track router to find
+        // the exit where a different train might be.
         if (adjacentLinker != null && adjacentLinker.getTrain() == train) {
             Track currentTrack = linker.getTrack().getConnected(linkerDir);
             Linker nextLinker = adjacentLinker;
+            Dir entryDir = linkerDir.inverse();
             while (currentTrack != null && nextLinker != null && nextLinker.getTrain() == train) {
-                Dir nextDir = currentTrack.getDir(nextLinker.getDir());
+                Dir nextDir = currentTrack.getDir(entryDir);
                 if (nextDir == null) break;
                 Track nextTrack = currentTrack.getConnected(nextDir);
                 if (nextTrack == null) break;
+                entryDir = nextDir.inverse();
                 currentTrack = nextTrack;
                 nextLinker = currentTrack.getLinker();
             }
