@@ -90,26 +90,37 @@ public class TrainCouplingManager {
         } else if (train.getLinkers().size() > 1) {
             if (forwardDirection) {
                 lastLinker = train.getLinkers().getFirst();
-                if (lastLinker != null) {
-                    dir = getLinkDir(lastLinker);
-                    linkerJoinSense = Train.LinkersSense.FRONT;
-                }
+                linkerJoinSense = Train.LinkersSense.FRONT;
+                dir = ((Locomotive) train.getDirectorLinker()).getTrack()
+                        .getDir(((Locomotive) train.getDirectorLinker()).getEntryDir());
             } else {
                 lastLinker = train.getLinkers().getLast();
-                if (lastLinker != null) {
-                    dir = getLinkDir(lastLinker);
-                    linkerJoinSense = Train.LinkersSense.BACK;
-                }
+                linkerJoinSense = Train.LinkersSense.BACK;
+                dir = lastLinker.getEntryDir();
             }
-            log.info("[LINK] multi-linker forward={} lastLinker={} linkDir={}", forwardDirection, lastLinker, dir);
+            log.info("[LINK] multi-linker forward={} lastLinker={} lastEntryDir={} linkDir={}",
+                    forwardDirection, lastLinker, lastLinker.getEntryDir(), dir);
         }
         if (lastLinker != null && lastLinker.getTrack() != null && dir != null) {
             Track nextTrack = lastLinker.getTrack().getConnected(dir);
             log.info("[LINK] nextTrack from dir={} is {}", dir, nextTrack);
             if (nextTrack != null) {
-                // We enter nextTrack from direction 'dir'
-                // RailIterator expects: current track and entry direction
                 RailIterator iterator = new RailIterator(nextTrack, dir);
+                // Fix initial direction for curves: find actual exit from nextTrack
+                // using physical connections, not the router
+                Dir entryPort = null;
+                for (Dir conn : nextTrack.getConnections()) {
+                    if (nextTrack.getConnected(conn) == lastLinker.getTrack()) {
+                        entryPort = conn;
+                        break;
+                    }
+                }
+                if (entryPort != null) {
+                    Dir exitDir = nextTrack.getDir(entryPort);
+                    if (exitDir != null) {
+                        iterator.setDir(exitDir);
+                    }
+                }
                 Linker nextLinker = iterator.getTrack().getLinker();
                 log.info("[LINK] firstLinker={} train={}",
                         nextLinker, nextLinker != null ? nextLinker.getTrain() : null);
