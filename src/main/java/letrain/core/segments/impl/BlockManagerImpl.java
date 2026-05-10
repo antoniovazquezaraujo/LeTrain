@@ -158,6 +158,13 @@ public class BlockManagerImpl implements BlockManager {
     public void clearAll() {
         segmentOwners.clear();
         trainSegments.clear();
+        // Release all fork locks when topology is rebuilt
+        for (letrain.core.segments.RailNode node : forkOwnershipCounts.keySet()) {
+            if (node.getTrack() instanceof letrain.track.rail.ForkRailTrack) {
+                ((letrain.track.rail.ForkRailTrack) node.getTrack()).setLocked(false);
+            }
+        }
+        forkOwnershipCounts.clear();
     }
 
     private void registerTrainSegment(Train train, Segment segment) {
