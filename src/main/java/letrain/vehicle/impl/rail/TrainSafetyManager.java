@@ -159,7 +159,8 @@ public class TrainSafetyManager {
         
         if (nextSteps == null || nextSteps.isEmpty()) {
             RailIterator it = new RailIterator(headTrack, exitDir);
-            while (it.advance()) {
+            int maxIterations = 10000; // Safety guard against infinite loops on circuits
+            while (it.advance() && maxIterations-- > 0) {
                 Track t = it.getTrack();
                 Segment nextS = graph.getSegment((RailTrack) t);
                 if (nextS != null && !nextS.equals(s)) return nextS;
