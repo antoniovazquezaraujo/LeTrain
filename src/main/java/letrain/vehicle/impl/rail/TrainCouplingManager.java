@@ -69,12 +69,16 @@ public class TrainCouplingManager {
 
         if (train.getLinkers().size() == 1) {
             lastLinker = (Linker) train.getDirectorLinker();
+            Dir entryDir = lastLinker.getEntryDir();
+            if (entryDir == null) {
+                entryDir = lastLinker.getRealDir().inverse();
+            }
             if (forwardDirection) {
                 linkerJoinSense = Train.LinkersSense.FRONT;
-                dir = lastLinker.getRealDir();
+                dir = lastLinker.getTrack().getDir(entryDir);
             } else {
                 linkerJoinSense = Train.LinkersSense.BACK;
-                dir = lastLinker.getTrack().getDir(lastLinker.getRealDir());
+                dir = entryDir;
             }
         } else if (train.getLinkers().size() > 1) {
             if (forwardDirection) {
@@ -104,7 +108,7 @@ public class TrainCouplingManager {
                             linkersToJoin.add(nextLinker);
                         }
                         if (!iterator.advance()) {
-                            break; // Stop if we reach a dead end or error
+                            break;
                         }
                         nextLinker = iterator.getTrack().getLinker();
                     }
