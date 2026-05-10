@@ -398,13 +398,17 @@ public class TrainCouplingManager {
         if (adjacentLinker != null && adjacentLinker.getTrain() == train) {
             Track currentTrack = linker.getTrack().getConnected(linkerDir);
             Linker nextLinker = adjacentLinker;
-            Dir entryDir = linkerDir.inverse();
             while (currentTrack != null && nextLinker != null && nextLinker.getTrain() == train) {
-                Dir nextDir = currentTrack.getDir(entryDir);
-                if (nextDir == null) break;
-                Track nextTrack = currentTrack.getConnected(nextDir);
+                // Find the physical connection from currentTrack to nextLinker's track
+                Track nextLinkerTrack = nextLinker.getTrack();
+                Track nextTrack = null;
+                for (Dir conn : currentTrack.getConnections()) {
+                    if (currentTrack.getConnected(conn) == nextLinkerTrack) {
+                        nextTrack = nextLinkerTrack;
+                        break;
+                    }
+                }
                 if (nextTrack == null) break;
-                entryDir = nextDir.inverse();
                 currentTrack = nextTrack;
                 nextLinker = currentTrack.getLinker();
             }
