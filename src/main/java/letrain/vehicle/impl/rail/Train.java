@@ -997,6 +997,25 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         if (adjacentLinker != null && adjacentLinker.getTrain() != this) {
             return linkerDir;
         }
+        // If the adjacent linker belongs to the same train, walk through
+        // the train's linkers following track directions to find the exit
+        // where a different train might be. This handles multi-linker
+        // trains where the end linker points toward the train center.
+        if (adjacentLinker != null && adjacentLinker.getTrain() == this) {
+            Track currentTrack = linker.getTrack().getConnected(linkerDir);
+            Linker nextLinker = adjacentLinker;
+            while (currentTrack != null && nextLinker != null && nextLinker.getTrain() == this) {
+                Dir nextDir = currentTrack.getDir(nextLinker.getDir());
+                if (nextDir == null) break;
+                Track nextTrack = currentTrack.getConnected(nextDir);
+                if (nextTrack == null) break;
+                currentTrack = nextTrack;
+                nextLinker = currentTrack.getLinker();
+            }
+            if (nextLinker != null && nextLinker.getTrain() != this) {
+                return linkerDir;
+            }
+        }
         return null;
     }
 
