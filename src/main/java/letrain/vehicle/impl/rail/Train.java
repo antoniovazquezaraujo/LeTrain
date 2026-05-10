@@ -637,7 +637,17 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         Track oldTrack = ((Locomotive) tractor).getTrack();
         while (iterator.hasNext()) {
             Linker next = iterator.next();
-            Dir nextDir = next.getPosition().locate(oldTrack.getPosition());
+            // Find the actual physical connection from oldTrack to the wagon's track,
+            // instead of using geometric Point.locate() which gives diagonal directions
+            // on curves that don't match any track router entry.
+            Dir nextDir = null;
+            Track wagonTrack = next.getTrack();
+            for (Dir conn : oldTrack.getConnections()) {
+                if (oldTrack.getConnected(conn) == wagonTrack) {
+                    nextDir = conn.inverse(); // direction from wagon toward oldTrack
+                    break;
+                }
+            }
             if (nextDir == null) {
                 break;
             }
