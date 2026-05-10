@@ -160,7 +160,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     public void setModel(letrain.mvp.Model model) {
         this.model = model;
     }
-    public List<TrainEventListener> getTrainListeners(){
+    @JsonIgnore
+    List<TrainEventListener> getTrainListeners() {
         return this.trainListeners;
     }
     public Model getModel(){

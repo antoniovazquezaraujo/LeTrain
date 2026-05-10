@@ -72,12 +72,13 @@ class ShuntingAutomationOperationsTest {
         // Setup the linking state in Train A
         trainA.getLinkersToJoin().add(locoB);
         try {
-            java.lang.reflect.Field f = Train.class.getDeclaredField("numLinkersToJoin");
+            TrainCouplingManager mgr = trainA.trainCouplingManager;
+            java.lang.reflect.Field f = TrainCouplingManager.class.getDeclaredField("numLinkersToJoin");
             f.setAccessible(true);
-            f.set(trainA, 1);
-            java.lang.reflect.Field f2 = Train.class.getDeclaredField("linkerJoinSense");
+            f.set(mgr, 1);
+            java.lang.reflect.Field f2 = TrainCouplingManager.class.getDeclaredField("linkerJoinSense");
             f2.setAccessible(true);
-            f2.set(trainA, Train.LinkersSense.BACK);
+            f2.set(mgr, Train.LinkersSense.BACK);
         } catch (Exception e) {
             fail(e);
         }
