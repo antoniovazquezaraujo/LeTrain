@@ -157,6 +157,8 @@ public class TrainCouplingManager {
             linkersToJoin.clear();
             joined = true;
             if (linkersActuallyAdded) {
+                train.refreshLinkersDirection();
+                train.setStalled(false);
                 train.notifyLink();
             }
         }
@@ -308,6 +310,8 @@ public class TrainCouplingManager {
         train.rebind();
         linkersToRemove.clear();
         numLinkersToRemove = 0;
+        train.refreshLinkersDirection();
+        train.setStalled(false);
         train.notifyUnlink();
     }
 
