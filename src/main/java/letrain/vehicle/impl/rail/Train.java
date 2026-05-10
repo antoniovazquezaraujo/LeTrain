@@ -1,7 +1,6 @@
 package letrain.vehicle.impl.rail;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -18,17 +17,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import letrain.map.Dir;
+import letrain.mvp.Model;
 import letrain.track.CargoTypes;
-import letrain.track.Sensor;
 import letrain.track.Track;
-import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
-import letrain.vehicle.Destructible;
 import letrain.vehicle.Transportable;
 import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.RailIterator;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;
 import letrain.visitor.Renderable;
@@ -50,28 +46,19 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     /** Speed threshold above which a collision destroys both trains. */
     static final int CRASH_SPEED_THRESHOLD = 5;
     private static final int MAX_LOADING_COUNT = 80; // 4.0 seconds at 20fps per wagon
-    private static final Logger log = LoggerFactory.getLogger(Train.class);
+    static final Logger log = LoggerFactory.getLogger(Train.class);
+    protected final TrainCouplingManager trainCouplingManager = new TrainCouplingManager(this);
     @com.fasterxml.jackson.annotation.JsonProperty("linkers")
     @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = java.util.LinkedList.class)
     protected Deque<Linker> linkers;
 
-    @com.fasterxml.jackson.annotation.JsonProperty("linkersToJoin")
-    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = java.util.LinkedList.class)
-    protected Deque<Linker> linkersToJoin;
-    private int numLinkersToRemove = 0;
-    private int numLinkersToJoin = 0;
-
     public int getNumLinkersToJoin() {
-        return numLinkersToJoin;
+        return trainCouplingManager.getNumLinkersToJoin();
     }
 
     public int getNumLinkersToRemove() {
-        return numLinkersToRemove;
+        return trainCouplingManager.getNumLinkersToRemove();
     }
-
-    @com.fasterxml.jackson.annotation.JsonProperty("linkersToRemove")
-    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = java.util.LinkedList.class)
-    protected Deque<Linker> linkersToRemove;
 
     @com.fasterxml.jackson.annotation.JsonUnwrapped
     private TrainLogisticsManager logisticsManager = new TrainLogisticsManager();
@@ -157,9 +144,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         FRONT, BACK
     };
 
-    LinkersSense linkerJoinSense;
-    LinkersSense linkerDivisionSense;
-    boolean joined = false;
     @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = letrain.vehicle.impl.rail.Locomotive.class)
     protected Tractor directorLinker;
     private int loadingCount;
@@ -175,6 +159,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     public void setModel(letrain.mvp.Model model) {
         this.model = model;
+    }
+    public List<TrainEventListener> getTrainListeners(){
+        return this.trainListeners;
+    }
+    public Model getModel(){
+        return this.model;
     }
 
     public void addTrainEventListener(TrainEventListener listener) {
@@ -256,8 +246,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
         this.linkers = new LinkedList<>();
-        this.linkersToJoin = new LinkedList<>();
-        this.linkersToRemove = new LinkedList<>();
+        this.trainCouplingManager.linkersToJoin = new LinkedList<>();
+        this.trainCouplingManager.linkersToRemove = new LinkedList<>();
     }
 
     /**
@@ -265,8 +255,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
      */
     protected Train() {
         this.linkers = new LinkedList<>();
-        this.linkersToJoin = new LinkedList<>();
-        this.linkersToRemove = new LinkedList<>();
+        this.trainCouplingManager.linkersToJoin = new LinkedList<>();
+        this.trainCouplingManager.linkersToRemove = new LinkedList<>();
     }
 
     public int getId() {
@@ -324,34 +314,31 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     @JsonIgnore
     public void initLinkersToJoin(boolean forwardDirection) {
         if (forwardDirection) {
-            this.linkerJoinSense = LinkersSense.FRONT;
+            this.trainCouplingManager.linkerJoinSense = LinkersSense.FRONT;
         } else {
-            this.linkerJoinSense = LinkersSense.BACK;
+            this.trainCouplingManager.linkerJoinSense = LinkersSense.BACK;
         }
     }
 
     public void addLinkerToJoin() {
-        if (numLinkersToJoin < linkersToJoin.size()) {
-            numLinkersToJoin++;
+        if (trainCouplingManager.getNumLinkersToJoin() < trainCouplingManager.linkersToJoin.size()) {
+            trainCouplingManager.numLinkersToJoin = trainCouplingManager.getNumLinkersToJoin() + 1;
         }
     }
 
     public void removeLinkerToJoin() {
-        if (numLinkersToJoin > 0) {
-            numLinkersToJoin--;
+        if (trainCouplingManager.getNumLinkersToJoin() > 0) {
+            trainCouplingManager.numLinkersToJoin = trainCouplingManager.getNumLinkersToJoin() - 1;
         }
     }
 
     @JsonIgnore
     public List<Linker> getSelectedLinkersToJoin() {
-        if (linkersToJoin.isEmpty() || numLinkersToJoin == 0)
-            return new ArrayList<>();
         // Convert deque to list to slice it
-        List<Linker> all = new ArrayList<>(linkersToJoin);
         // Logic might differ based on iteration order of deque vs join sense
         // linkersToJoin is populated in order of distance from train.
         // so we just take the first N.
-        return all.subList(0, numLinkersToJoin);
+        return trainCouplingManager.getSelectedLinkersToJoin();
     }
 
     public void setId(int id) {
@@ -369,7 +356,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     @Override
     public Deque<Linker> getLinkersToJoin() {
-        return this.linkersToJoin;
+        return this.trainCouplingManager.linkersToJoin;
     }
 
     @Override
@@ -697,326 +684,76 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
      */
     @JsonIgnore
     public void updateLinkersToJoin(boolean forwardDirection) {
-        linkersToJoin.clear();
-        joined = false;
-        Linker lastLinker = null;
-        Dir dir = Dir.E;
 
-        if (getLinkers().size() == 1) {
-            lastLinker = (Linker) getDirectorLinker();
-            if (forwardDirection) {
-                linkerJoinSense = LinkersSense.FRONT;
-                dir = lastLinker.getRealDir();
-            } else {
-                linkerJoinSense = LinkersSense.BACK;
-                dir = lastLinker.getTrack().getDir(lastLinker.getRealDir());
-            }
-        } else if (getLinkers().size() > 1) {
-            if (forwardDirection) {
-                lastLinker = getLinkers().getFirst();
-                if (lastLinker != null) {
-                    dir = getLinkDir(lastLinker);
-                    linkerJoinSense = LinkersSense.FRONT;
-                }
-            } else {
-                lastLinker = getLinkers().getLast();
-                if (lastLinker != null) {
-                    dir = getLinkDir(lastLinker);
-                    linkerJoinSense = LinkersSense.BACK;
-                }
-            }
-        }
-        if (lastLinker != null && lastLinker.getTrack() != null && dir != null) {
-            Track nextTrack = lastLinker.getTrack().getConnected(dir);
-            if (nextTrack != null) {
-                // We enter nextTrack from direction 'dir'
-                // RailIterator expects: current track and entry direction
-                RailIterator iterator = new RailIterator(nextTrack, dir);
-                Linker nextLinker = iterator.getTrack().getLinker();
-                if (nextLinker != null && this != nextLinker.getTrain()) {
-                    while (nextLinker != null) {
-                        if (nextLinker.getTrain() != this) {
-                            linkersToJoin.add(nextLinker);
-                        }
-                        if (!iterator.advance()) {
-                            break; // Stop if we reach a dead end or error
-                        }
-                        nextLinker = iterator.getTrack().getLinker();
-                    }
-                }
-            }
-        }
-        numLinkersToJoin = linkersToJoin.size();
+        trainCouplingManager.updateLinkersToJoin(forwardDirection);
     }
 
     public void joinLinkers() {
-        if (!joined) {
-            int count = 0;
-            boolean linkersActuallyAdded = false;
-            Set<Train> affectedOldTrains = new HashSet<>();
-            for (Linker linkerToJoin : linkersToJoin) {
-                if (count >= numLinkersToJoin)
-                    break;
-
-                if (linkerJoinSense == LinkersSense.FRONT) {
-                    this.linkers.addFirst(linkerToJoin);
-                } else {
-                    this.linkers.addLast(linkerToJoin);
-                }
-
-                Train oldTrain = linkerToJoin.getTrain();
-                if (oldTrain != null && oldTrain != this) {
-                    oldTrain.getLinkers().remove(linkerToJoin);
-                    affectedOldTrains.add(oldTrain);
-                }
-                
-                linkerToJoin.setTrain(this);
-                count++;
-                linkersActuallyAdded = true;
-            }
-
-            // Cleanup affected old trains
-            for (Train oldTrain : affectedOldTrains) {
-                oldTrain.assignDefaultDirectorLinker();
-                if (oldTrain.getDirectorLinker() == null || oldTrain.getLinkers().isEmpty()) {
-                    log.info("Cleaning up dead train {}", oldTrain.getId());
-                    // If no locomotives left or no linkers at all, the train is dead
-                    oldTrain.getLinkers().forEach(linker -> linker.setTrain(null));
-                    oldTrain.getLinkers().clear();
-                    if (model != null) {
-                        model.getBlockManager().releaseAll(oldTrain);
-                    }
-                }
-            }
-
-            linkersToJoin.clear();
-            joined = true;
-            if (linkersActuallyAdded) {
-                notifyLink();
-            }
-        }
+        trainCouplingManager.joinLinkers();
     }
 
     public void prepareLink(boolean forward, int count) {
-        updateLinkersToJoin(forward);
-        if (count > 0 && count < linkersToJoin.size()) {
-            numLinkersToJoin = count;
-        } else {
-            numLinkersToJoin = linkersToJoin.size();
-        }
+        trainCouplingManager.prepareLink(forward, count);
     }
 
     public void prepareUnlink(boolean forward, int count) {
-        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
-            return;
-        }
 
-        if (forward) {
-            linkerDivisionSense = LinkersSense.FRONT;
-        } else {
-            linkerDivisionSense = LinkersSense.BACK;
-        }
-
-        int maxRemovable = Math.max(0, getLinkers().size() - 1);
-        if (maxRemovable == 0) {
-            numLinkersToRemove = 0;
-        } else if (count <= 0) {
-            numLinkersToRemove = 1;
-        } else {
-            numLinkersToRemove = Math.min(Math.max(1, count), maxRemovable);
-        }
-
-        updateLinkersToRemove();
+        trainCouplingManager.prepareUnlink(forward, count);
     }
 
-    private int calcInitialUnlinkCount() {
+    int calcInitialUnlinkCount() {
         int maxRemovable = Math.max(0, getLinkers().size() - 1);
         return maxRemovable == 0 ? 0 : 1;
     }
 
     public void setFrontDivisionSense() {
-        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
-            return;
-        }
-        linkerDivisionSense = LinkersSense.FRONT;
-        numLinkersToRemove = calcInitialUnlinkCount();
-        updateLinkersToRemove();
+        trainCouplingManager.setFrontDivisionSense();
     }
 
     public void setBackDivisionSense() {
-        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
-            return;
-        }
-        linkerDivisionSense = LinkersSense.BACK;
-        numLinkersToRemove = calcInitialUnlinkCount();
-        updateLinkersToRemove();
+        trainCouplingManager.setBackDivisionSense();
     }
 
     public void resetUnlinkState() {
-        if (!linkers.isEmpty() && linkers.peekLast() == getDirectorLinker()) {
-            linkerDivisionSense = LinkersSense.FRONT;
-        } else {
-            linkerDivisionSense = LinkersSense.BACK;
-        }
-        numLinkersToRemove = calcInitialUnlinkCount();
-        updateLinkersToRemove();
+        trainCouplingManager.resetUnlinkState();
     }
 
     public void resetLinkState() {
-        numLinkersToJoin = 0;
-        linkersToJoin.clear();
+        trainCouplingManager.resetLinkState();
     }
 
     public void selectNextDivisionLink() {
-        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
-            return;
-        }
-        if (numLinkersToRemove < getLinkers().size() - 1) {
-            numLinkersToRemove++;
-        }
-        updateLinkersToRemove();
+        trainCouplingManager.selectNextDivisionLink();
     }
 
     public void selectPrevDivisionLink() {
-        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
-            return;
-        }
-        if (numLinkersToRemove > 0) {
-            numLinkersToRemove--;
-        }
-        updateLinkersToRemove();
+        trainCouplingManager.selectPrevDivisionLink();
     }
 
     private void updateLinkersToRemove() {
-        linkersToRemove.clear();
-        Iterator<Linker> linkerIterator = getLinkers().iterator();
-        if (linkerDivisionSense == LinkersSense.FRONT) {
-            linkerIterator = getLinkers().iterator();
-        } else {
-            linkerIterator = getLinkers().descendingIterator();
-        }
-        for (int n = 0; n < numLinkersToRemove; n++) {
-            if (linkerIterator.hasNext()) {
-                Linker next = linkerIterator.next();
-                if (next != getDirectorLinker()) {
-                    linkersToRemove.addLast(next);
-                } else {
-                    // Si nos topamos con el director, no podemos desvincularlo, así que ajustamos
-                    // la cuenta al número actual de elementos válidos y paramos.
-                    numLinkersToRemove = n;
-                    return;
-                }
-            } else {
-                // Si no hay más elementos en el iterador, ajustamos la cuenta al número real
-                // encontrado.
-                numLinkersToRemove = n;
-                break;
-            }
-        }
+        trainCouplingManager.updateLinkersToRemove();
     }
 
     public void divideTrain(Supplier<Integer> nextTrainIdSupplier) {
-        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
-            return;
-        }
 
-        int toRemove = linkersToRemove.size();
-        if (toRemove > 0) {
-            Train newTrain = new Train(nextTrainIdSupplier.get());
-            newTrain.setModel(this.model);
-            for (TrainEventListener listener : trainListeners) {
-                newTrain.addTrainEventListener(listener);
-            }
-
-            for (int n = 0; n < toRemove; n++) {
-                Linker linkerToRemove;
-                if (linkerDivisionSense == LinkersSense.BACK) {
-                    linkerToRemove = getLinkers().removeLast();
-                    newTrain.getLinkers().addFirst(linkerToRemove);
-                } else {
-                    linkerToRemove = getLinkers().removeFirst();
-                    newTrain.getLinkers().addLast(linkerToRemove);
-                }
-                linkerToRemove.setTrain(newTrain);
-                log.info("Train {}: unlinked {} to new Train {}", this.id, linkerToRemove, newTrain.getId());
-            }
-            newTrain.assignDefaultDirectorLinker();
-            newTrain.rebind();
-        }
-
-        assignDefaultDirectorLinker();
-        rebind();
-        linkersToRemove.clear();
-        numLinkersToRemove = 0;
-        notifyUnlink();
+        trainCouplingManager.divideTrain(nextTrainIdSupplier);
     }
 
     public List<Linker> destroyLinkers(Supplier<Integer> nextTrainIdSupplier) {
-        if (getDirectorLinker() != null && getDirectorLinker().getSpeed() > 0) {
-            return new ArrayList<>();
-        }
 
-        List<Linker> linkersToDestroy = new ArrayList<>();
-        if (numLinkersToRemove > 0) {
-            Train newTrain = new Train(nextTrainIdSupplier.get());
-            newTrain.setModel(this.model);
-            for (TrainEventListener listener : trainListeners) {
-                newTrain.addTrainEventListener(listener);
-            }
-
-            for (int n = 0; n < numLinkersToRemove; n++) {
-                Linker linkerToRemove;
-                if (linkerDivisionSense == LinkersSense.BACK) {
-                    linkerToRemove = getLinkers().removeLast();
-                    newTrain.getLinkers().addFirst(linkerToRemove);
-                } else {
-                    linkerToRemove = getLinkers().removeFirst();
-                    newTrain.getLinkers().addLast(linkerToRemove);
-                }
-                linkerToRemove.setTrain(newTrain);
-                linkersToDestroy.add(linkerToRemove);
-            }
-            newTrain.assignDefaultDirectorLinker();
-            newTrain.rebind();
-        }
-
-        assignDefaultDirectorLinker();
-        rebind();
-        linkersToRemove.clear();
-        numLinkersToRemove = 0;
-        return linkersToDestroy;
+        return trainCouplingManager.destroyLinkers(nextTrainIdSupplier);
     }
 
     public Deque<Linker> getLinkersToRemove() {
-        return this.linkersToRemove;
+        return this.trainCouplingManager.linkersToRemove;
     }
 
     Dir getLinkDir(Linker linker) {
-        Dir linkerDir = linker.getDir();
-        Linker adjacentLinker = getAdjacentLinker(linker, linkerDir);
-        if (adjacentLinker != null && adjacentLinker.getTrain() != this) {
-            return linkerDir;
-        }
         // If the adjacent linker belongs to the same train, walk through
         // the train's linkers following track directions to find the exit
         // where a different train might be. This handles multi-linker
         // trains where the end linker points toward the train center.
-        if (adjacentLinker != null && adjacentLinker.getTrain() == this) {
-            Track currentTrack = linker.getTrack().getConnected(linkerDir);
-            Linker nextLinker = adjacentLinker;
-            while (currentTrack != null && nextLinker != null && nextLinker.getTrain() == this) {
-                Dir nextDir = currentTrack.getDir(nextLinker.getDir());
-                if (nextDir == null) break;
-                Track nextTrack = currentTrack.getConnected(nextDir);
-                if (nextTrack == null) break;
-                currentTrack = nextTrack;
-                nextLinker = currentTrack.getLinker();
-            }
-            if (nextLinker != null && nextLinker.getTrain() != this) {
-                return linkerDir;
-            }
-        }
-        return null;
+        return trainCouplingManager.getLinkDir(linker);
     }
 
     @JsonIgnore
@@ -1025,10 +762,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     }
 
     Linker getAdjacentLinker(Linker linker, Dir dir) {
-        if (linker.getTrack().getConnected(dir) != null) {
-            return linker.getTrack().getConnected(dir).getLinker();
-        }
-        return null;
+        return trainCouplingManager.getAdjacentLinker(linker, dir);
     }
 
     Train getAdjacentTrain(Linker linker, Dir dir) {
