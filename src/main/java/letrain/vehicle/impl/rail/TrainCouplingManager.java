@@ -11,7 +11,11 @@ import letrain.vehicle.impl.RailIterator;
 import java.util.*;
 import java.util.function.Supplier;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TrainCouplingManager {
+    private static final Logger log = LoggerFactory.getLogger(TrainCouplingManager.class);
     private final Train train;
     @JsonProperty("linkersToJoin")
     @JsonDeserialize(as = LinkedList.class)
@@ -80,6 +84,9 @@ public class TrainCouplingManager {
                 linkerJoinSense = Train.LinkersSense.BACK;
                 dir = entryDir;
             }
+            log.info("[LINK] single-linker forward={} pos={} entryDir={} realDir={} usedEntry={} linkDir={}",
+                    forwardDirection, lastLinker.getPosition(), lastLinker.getEntryDir(),
+                    lastLinker.getRealDir(), entryDir, dir);
         } else if (train.getLinkers().size() > 1) {
             if (forwardDirection) {
                 lastLinker = train.getLinkers().getFirst();
@@ -94,20 +101,27 @@ public class TrainCouplingManager {
                     linkerJoinSense = Train.LinkersSense.BACK;
                 }
             }
+            log.info("[LINK] multi-linker forward={} lastLinker={} linkDir={}", forwardDirection, lastLinker, dir);
         }
         if (lastLinker != null && lastLinker.getTrack() != null && dir != null) {
             Track nextTrack = lastLinker.getTrack().getConnected(dir);
+            log.info("[LINK] nextTrack from dir={} is {}", dir, nextTrack);
             if (nextTrack != null) {
                 // We enter nextTrack from direction 'dir'
                 // RailIterator expects: current track and entry direction
                 RailIterator iterator = new RailIterator(nextTrack, dir);
                 Linker nextLinker = iterator.getTrack().getLinker();
+                log.info("[LINK] firstLinker={} train={}",
+                        nextLinker, nextLinker != null ? nextLinker.getTrain() : null);
                 if (nextLinker != null && train != nextLinker.getTrain()) {
                     while (nextLinker != null) {
                         if (nextLinker.getTrain() != train) {
                             linkersToJoin.add(nextLinker);
+                            log.info("[LINK]   added {} at {}", nextLinker, nextLinker.getPosition());
                         }
-                        if (!iterator.advance()) {
+                        boolean advanced = iterator.advance();
+                        log.info("[LINK]   advance={} track={}", advanced, advanced ? iterator.getTrack() : null);
+                        if (!advanced) {
                             break;
                         }
                         nextLinker = iterator.getTrack().getLinker();
@@ -358,6 +372,9 @@ public class TrainCouplingManager {
     Dir getLinkDir(Linker linker) {
         Dir linkerDir = linker.getDir();
         Linker adjacentLinker = getAdjacentLinker(linker, linkerDir);
+        log.info("[GETLINKDIR] linker={} pos={} dir={} adjacent={} adjTrain={}",
+                linker, linker.getPosition(), linkerDir, adjacentLinker,
+                adjacentLinker != null ? adjacentLinker.getTrain() : null);
         if (adjacentLinker != null && adjacentLinker.getTrain() != train) {
             return linkerDir;
         }

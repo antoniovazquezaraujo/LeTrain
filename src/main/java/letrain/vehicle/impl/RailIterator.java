@@ -45,6 +45,8 @@ public class RailIterator implements Transportable, Trackable, Rotatable, Mappab
 
         // 3. Determine the exit direction of the next track
         Dir nextExitDir = (entryPort != null) ? nextTrack.getDir(entryPort) : null;
+        log.info("[RAILITER] from {} dir={} to {} entryPort={} exitDir={}",
+                currentTrack.getPosition(), movementDir, nextTrack.getPosition(), entryPort, nextExitDir);
 
         if (nextExitDir == null) {
             // Fallback: If the track router doesn't have a route for this entry port
