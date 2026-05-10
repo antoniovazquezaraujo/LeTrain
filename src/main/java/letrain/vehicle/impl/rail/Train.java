@@ -653,7 +653,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             }
             next.setDir(nextDir);
             Dir nextEntry = next.getTrack().getDir(next.getDir());
-            log.info("[SETDIR] {} pos={} dir={} entryDir={}", next, next.getPosition(), nextDir, nextEntry);
             if (nextEntry == null) {
                 break;
             }

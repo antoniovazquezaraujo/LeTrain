@@ -84,9 +84,6 @@ public class TrainCouplingManager {
                 linkerJoinSense = Train.LinkersSense.BACK;
                 dir = entryDir;
             }
-            log.info("[LINK] single-linker forward={} pos={} entryDir={} realDir={} usedEntry={} linkDir={}",
-                    forwardDirection, lastLinker.getPosition(), lastLinker.getEntryDir(),
-                    lastLinker.getRealDir(), entryDir, dir);
         } else if (train.getLinkers().size() > 1) {
             if (forwardDirection) {
                 lastLinker = train.getLinkers().getFirst();
@@ -98,12 +95,9 @@ public class TrainCouplingManager {
                 linkerJoinSense = Train.LinkersSense.BACK;
                 dir = lastLinker.getEntryDir();
             }
-            log.info("[LINK] multi-linker forward={} lastLinker={} lastEntryDir={} linkDir={}",
-                    forwardDirection, lastLinker, lastLinker.getEntryDir(), dir);
         }
         if (lastLinker != null && lastLinker.getTrack() != null && dir != null) {
             Track nextTrack = lastLinker.getTrack().getConnected(dir);
-            log.info("[LINK] nextTrack from dir={} is {}", dir, nextTrack);
             if (nextTrack != null) {
                 RailIterator iterator = new RailIterator(nextTrack, dir);
                 // Fix initial direction for curves: find actual exit from nextTrack
@@ -122,17 +116,12 @@ public class TrainCouplingManager {
                     }
                 }
                 Linker nextLinker = iterator.getTrack().getLinker();
-                log.info("[LINK] firstLinker={} train={}",
-                        nextLinker, nextLinker != null ? nextLinker.getTrain() : null);
                 if (nextLinker != null && train != nextLinker.getTrain()) {
                     while (nextLinker != null) {
                         if (nextLinker.getTrain() != train) {
                             linkersToJoin.add(nextLinker);
-                            log.info("[LINK]   added {} at {}", nextLinker, nextLinker.getPosition());
                         }
-                        boolean advanced = iterator.advance();
-                        log.info("[LINK]   advance={} track={}", advanced, advanced ? iterator.getTrack() : null);
-                        if (!advanced) {
+                        if (!iterator.advance()) {
                             break;
                         }
                         nextLinker = iterator.getTrack().getLinker();
@@ -383,9 +372,6 @@ public class TrainCouplingManager {
     Dir getLinkDir(Linker linker) {
         Dir linkerDir = linker.getDir();
         Linker adjacentLinker = getAdjacentLinker(linker, linkerDir);
-        log.info("[GETLINKDIR] linker={} pos={} dir={} adjacent={} adjTrain={}",
-                linker, linker.getPosition(), linkerDir, adjacentLinker,
-                adjacentLinker != null ? adjacentLinker.getTrain() : null);
         if (adjacentLinker != null && adjacentLinker.getTrain() != train) {
             return linkerDir;
         }
@@ -394,8 +380,6 @@ public class TrainCouplingManager {
         // faces backward after reversing, but the wagons are forward.
         if (adjacentLinker == null && linker.getEntryDir() != null) {
             Dir oppositeDir = linker.getTrack().getDir(linker.getEntryDir());
-            log.info("[GETLINKDIR] dead-end at {}, trying opposite: entryDir={} oppositeDir={}",
-                    linkerDir, linker.getEntryDir(), oppositeDir);
             if (oppositeDir != null) {
                 Linker oppositeLinker = getAdjacentLinker(linker, oppositeDir);
                 if (oppositeLinker != null && oppositeLinker.getTrain() != train) {
