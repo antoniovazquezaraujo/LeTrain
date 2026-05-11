@@ -563,6 +563,23 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             normalSense = false;
         }
 
+        // Auto-correct direction if the linker faces a dead-end.
+        // This can happen after a crash on a curve where the router set
+        // a direction that doesn't match any physical connection.
+        if (!getLinkers().isEmpty()) {
+            Linker first = getLinkers().getFirst();
+            Track t = first.getTrack();
+            Dir d = first.getDir();
+            if (t != null && t.getConnected(d) == null) {
+                for (Dir conn : t.getConnections()) {
+                    if (conn != d.inverse() && t.getConnected(conn) != null) {
+                        first.setDir(conn);
+                        break;
+                    }
+                }
+            }
+        }
+
         // Save linker directions before attempting to move.
         // If moveLinkers fails (collision, blocked), we must restore them
         // so the renderer draws wagons at their correct positions.
