@@ -98,7 +98,9 @@ public class TrainCouplingManager {
             } else {
                 lastLinker = train.getLinkers().getLast();
                 linkerJoinSense = Train.LinkersSense.BACK;
-                dir = lastLinker.getEntryDir();
+                // entryDir points toward train interior. We need the opposite
+                // (exterior) to find wagons behind the train.
+                dir = lastLinker.getTrack().getDir(lastLinker.getEntryDir());
             }
         }
         if (lastLinker != null && lastLinker.getTrack() != null && dir != null) {
