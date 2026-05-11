@@ -294,7 +294,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             } else {
                 log.warn("Train {} rebind: linker {} track is not RailTrack: {}", id, linker, linker.getTrack());
             }
+        }
 
+        // Lock the segments we found
         for (letrain.core.segments.Segment segment : segmentsToClaim) {
             if (!blockManager.tryLock(this, segment)) {
                 // Si falla el bloqueo normal tras una Tabula Rasa, es que hay convivencia forzada
