@@ -516,9 +516,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         // Diagnostic log for direction corruption bug
         if (getDirectorLinker() != null) {
             Linker d = (Linker) getDirectorLinker();
-            log.info("[ADVANCE] train={} dir={} entryDir={} reversed={} stalled={}",
+            log.info("[ADVANCE] train={} CALLED dir={} entryDir={} reversed={} stalled={} position={}",
                     id, d.getDir(), d.getEntryDir(),
-                    getDirectorLinker().isReversed(), isStalled());
+                    getDirectorLinker().isReversed(), isStalled(),
+                    d.getPosition());
         }
         // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
         if (isLoading()) {
