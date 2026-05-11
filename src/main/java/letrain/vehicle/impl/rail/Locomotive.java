@@ -75,13 +75,9 @@ public class Locomotive extends Linker implements Tractor {
         }
         Dir currentDir = getDir();
         Dir currentEntry = getEntryDir();
-        Train.log.info("[TOGGLE] loco={} before: dir={} entryDir={} reversed={}",
-                id, currentDir, currentEntry, isReversed());
         setEntryDir(currentDir);
         setDir(currentEntry);
         setReversed(!isReversed());
-        Train.log.info("[TOGGLE] loco={} after:  dir={} entryDir={} reversed={}",
-                id, getDir(), getEntryDir(), isReversed());
         if (getTrain() != null) {
             getTrain().setStalled(false);
         }
