@@ -75,6 +75,13 @@ public class TrainCouplingManager {
         joined = false;
         Linker lastLinker = null;
         Dir dir = Dir.E;
+
+        if (train.getLinkers().size() == 1) {
+            lastLinker = (Linker) train.getDirectorLinker();
+            Dir entryDir = lastLinker.getEntryDir();
+            if (entryDir == null) {
+                entryDir = lastLinker.getRealDir().inverse();
+            }
             if (forwardDirection) {
                 linkerJoinSense = Train.LinkersSense.FRONT;
                 dir = lastLinker.getTrack().getDir(entryDir);
@@ -86,8 +93,7 @@ public class TrainCouplingManager {
             if (forwardDirection) {
                 lastLinker = train.getLinkers().getFirst();
                 linkerJoinSense = Train.LinkersSense.FRONT;
-                dir = ((Locomotive) train.getDirectorLinker()).getTrack()
-                        .getDir(((Locomotive) train.getDirectorLinker()).getEntryDir());
+                dir = getLinkDir(lastLinker);
             } else {
                 lastLinker = train.getLinkers().getLast();
                 linkerJoinSense = Train.LinkersSense.BACK;
