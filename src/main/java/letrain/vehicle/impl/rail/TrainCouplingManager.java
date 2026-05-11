@@ -75,13 +75,6 @@ public class TrainCouplingManager {
         joined = false;
         Linker lastLinker = null;
         Dir dir = Dir.E;
-
-        if (train.getLinkers().size() == 1) {
-            lastLinker = (Linker) train.getDirectorLinker();
-            Dir entryDir = lastLinker.getEntryDir();
-            if (entryDir == null) {
-                entryDir = lastLinker.getRealDir().inverse();
-            }
             if (forwardDirection) {
                 linkerJoinSense = Train.LinkersSense.FRONT;
                 dir = lastLinker.getTrack().getDir(entryDir);
