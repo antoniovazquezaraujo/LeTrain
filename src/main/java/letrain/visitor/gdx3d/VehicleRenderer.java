@@ -122,6 +122,10 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
 
         ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
+        if (!highlight && !unlinkHighlight) {
+            instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(
+                    locomotive.getDiagnosticColor()));
+        }
         instance.transform.setToTranslation(renderX, 0.61f, renderY);
         instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);

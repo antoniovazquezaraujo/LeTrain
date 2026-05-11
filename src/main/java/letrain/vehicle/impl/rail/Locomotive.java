@@ -260,6 +260,13 @@ public class Locomotive extends Linker implements Tractor {
 
     private volatile int acousticSpeedSignal = -1;
 
+    /** Returns a deterministic bright color based on locomotive ID (for diagnostics). */
+    public com.badlogic.gdx.graphics.Color getDiagnosticColor() {
+        int hash = (int) (id * 2654435761L); // Knuth's multiplicative hash
+        float hue = ((hash & 0xFFFF) / 65535.0f);
+        return new com.badlogic.gdx.graphics.Color().fromHsv(hue * 360f, 0.8f, 0.9f);
+    }
+
     private boolean forceIdleSound = false;
 
     public void setForceIdleSound(boolean force) {

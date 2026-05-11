@@ -87,6 +87,7 @@ public class GraphicPresenter extends ApplicationAdapter
     private com.badlogic.gdx.graphics.g3d.Model groundModel;
     private com.badlogic.gdx.graphics.g3d.Model gridModel;
     private com.badlogic.gdx.graphics.g3d.Model boxModel;
+    private com.badlogic.gdx.graphics.g3d.Model segmentOverlayModel; // LAB: colored segment overlay
     private RailTrackMaker trackMaker;
 
     private letrain.visitor.gdx3d.Gdx3DResourceContext resourceContext;
@@ -211,6 +212,16 @@ public class GraphicPresenter extends ApplicationAdapter
         boxModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
                 new com.badlogic.gdx.graphics.g3d.Material(
                         ColorAttribute.createDiffuse(Color.FOREST)),
+                Usage.Position | Usage.Normal);
+
+        // LAB: flat square for segment overlay (0.9x0.9 at Y=0.025)
+        segmentOverlayModel = modelBuilder.createRect(
+                0.05f, 0.025f, 0.05f,
+                0.05f, 0.025f, -0.95f,
+                -0.95f, 0.025f, -0.95f,
+                -0.95f, 0.025f, 0.05f,
+                0, 1, 0,
+                new com.badlogic.gdx.graphics.g3d.Material(ColorAttribute.createDiffuse(Color.WHITE)),
                 Usage.Position | Usage.Normal);
 
         spriteBatch = new SpriteBatch();
@@ -381,6 +392,35 @@ public class GraphicPresenter extends ApplicationAdapter
             // Reset states
             Gdx.gl.glDepthMask(true);
             Gdx.gl.glDepthFunc(GL20.GL_LESS);
+        }
+
+        // LAB: render colored segment overlays for each train's owned segments
+        if (segmentOverlayModel != null) {
+            letrain.core.segments.BlockManager bm = model.getBlockManager();
+            if (bm != null) {
+                for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
+                    if (loco.getTrain() == null) continue;
+                    letrain.vehicle.impl.rail.Train train = loco.getTrain();
+                    com.badlogic.gdx.graphics.Color color = loco.getDiagnosticColor();
+                    color.a = 0.3f; // semi-transparent
+                    for (letrain.core.segments.Segment seg : bm.getOwnedSegments(train)) {
+                        letrain.map.Point startPos = seg.getSteps().getFirst().getRailNode().getTrack().getPosition();
+                        letrain.map.Point endPos = seg.getSteps().getSecond().getRailNode().getTrack().getPosition();
+                        float cx = (startPos.getX() + endPos.getX()) / 2f + 0.5f;
+                        float cz = (startPos.getY() + endPos.getY()) / 2f + 0.5f;
+                        float dx = endPos.getX() - startPos.getX();
+                        float dy = endPos.getY() - startPos.getY();
+                        float length = (float) Math.sqrt(dx * dx + dy * dy) + 1f;
+
+                        ModelInstance overlay = new ModelInstance(segmentOverlayModel);
+                        overlay.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
+                        overlay.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.3f));
+                        overlay.transform.setToTranslation(cx, 0.03f, cz);
+                        overlay.transform.scale(length, 1, 1);
+                        modelBatch.render(overlay);
+                    }
+                }
+            }
         }
 
         spriteBatch.begin();
