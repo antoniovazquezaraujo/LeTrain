@@ -513,6 +513,13 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
      * @return true if the train moved, false otherwise
      */
     public boolean advance() {
+        // Diagnostic log for direction corruption bug
+        if (getDirectorLinker() != null) {
+            Linker d = (Linker) getDirectorLinker();
+            log.info("[ADVANCE] train={} dir={} entryDir={} reversed={} stalled={}",
+                    id, d.getDir(), d.getEntryDir(),
+                    getDirectorLinker().isReversed(), isStalled());
+        }
         // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
         if (isLoading()) {
             return false;
