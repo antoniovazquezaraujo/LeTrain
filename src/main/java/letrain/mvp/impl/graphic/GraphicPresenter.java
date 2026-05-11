@@ -214,13 +214,8 @@ public class GraphicPresenter extends ApplicationAdapter
                         ColorAttribute.createDiffuse(Color.FOREST)),
                 Usage.Position | Usage.Normal);
 
-        // LAB: flat square for segment overlay (0.9x0.9 at Y=0.025)
-        segmentOverlayModel = modelBuilder.createRect(
-                0.05f, 0.025f, 0.05f,
-                0.05f, 0.025f, -0.95f,
-                -0.95f, 0.025f, -0.95f,
-                -0.95f, 0.025f, 0.05f,
-                0, 1, 0,
+        // LAB: flat box for segment overlay
+        segmentOverlayModel = modelBuilder.createBox(0.9f, 0.02f, 0.9f,
                 new com.badlogic.gdx.graphics.g3d.Material(ColorAttribute.createDiffuse(Color.WHITE)),
                 Usage.Position | Usage.Normal);
 
@@ -408,8 +403,7 @@ public class GraphicPresenter extends ApplicationAdapter
                         letrain.map.Point p = l.getPosition();
                         ModelInstance overlay = new ModelInstance(segmentOverlayModel);
                         overlay.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
-                        overlay.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
-                        overlay.transform.setToTranslation(p.getX() + 0.5f, 0.03f, p.getY() + 0.5f);
+                        overlay.transform.setToTranslation(p.getX() + 0.5f, 0.02f, p.getY() + 0.5f);
                         modelBatch.render(overlay);
                     }
                 }
