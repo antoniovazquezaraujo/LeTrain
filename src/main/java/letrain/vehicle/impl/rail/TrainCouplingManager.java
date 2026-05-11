@@ -93,8 +93,7 @@ public class TrainCouplingManager {
             if (forwardDirection) {
                 lastLinker = train.getLinkers().getFirst();
                 linkerJoinSense = Train.LinkersSense.FRONT;
-                dir = ((Locomotive) train.getDirectorLinker()).getTrack()
-                        .getDir(((Locomotive) train.getDirectorLinker()).getEntryDir());
+                dir = getLinkDir(lastLinker);
             } else {
                 lastLinker = train.getLinkers().getLast();
                 linkerJoinSense = Train.LinkersSense.BACK;
@@ -123,6 +122,12 @@ public class TrainCouplingManager {
                     }
                 }
                 Linker nextLinker = iterator.getTrack().getLinker();
+                // Skip linkers belonging to our own train (they're between us
+                // and the wagons we want to link).
+                while (nextLinker != null && nextLinker.getTrain() == train) {
+                    if (!iterator.advance()) break;
+                    nextLinker = iterator.getTrack().getLinker();
+                }
                 if (nextLinker != null && train != nextLinker.getTrain()) {
                     while (nextLinker != null) {
                         if (nextLinker.getTrain() != train) {
