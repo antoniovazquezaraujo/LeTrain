@@ -34,8 +34,14 @@ public class RailIterator implements Transportable, Trackable, Rotatable, Mappab
             return false;
         }
 
-        // 2. Determine the physical entry port of the next track
-        Dir entryPort = nextTrack.getPosition().locate(currentTrack.getPosition());
+        // 2. Find which physical connection of nextTrack points back to currentTrack
+        Dir entryPort = null;
+        for (Dir conn : nextTrack.getConnections()) {
+            if (nextTrack.getConnected(conn) == currentTrack) {
+                entryPort = conn;
+                break;
+            }
+        }
 
         // 3. Determine the exit direction of the next track
         Dir nextExitDir = (entryPort != null) ? nextTrack.getDir(entryPort) : null;

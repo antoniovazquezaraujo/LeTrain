@@ -277,12 +277,22 @@ public class Gdx3DInputHandler implements InputProcessor {
                             model.setMode(Model.GameMode.TRAINS);
                         return;
                     case 'l':
-                        if (!model.getLocomotives().isEmpty())
+                        if (!model.getLocomotives().isEmpty()) {
                             model.setMode(Model.GameMode.LINK);
+                            if (model.getSelectedLocomotive() != null
+                                    && model.getSelectedLocomotive().getTrain() != null) {
+                                model.getSelectedLocomotive().getTrain().resetLinkState();
+                            }
+                        }
                         return;
                     case 'u':
-                        if (!model.getLocomotives().isEmpty())
+                        if (!model.getLocomotives().isEmpty()) {
                             model.setMode(Model.GameMode.UNLINK);
+                            if (model.getSelectedLocomotive() != null
+                                    && model.getSelectedLocomotive().getTrain() != null) {
+                                model.getSelectedLocomotive().getTrain().resetUnlinkState();
+                            }
+                        }
                         return;
                     case 'n':
                         if (!model.getStations().isEmpty())
