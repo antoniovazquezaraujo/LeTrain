@@ -288,11 +288,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
                 letrain.core.segments.Segment segment = graph.getSegment((letrain.track.rail.RailTrack) linker.getTrack());
                 if (segment != null) {
                     segmentsToClaim.add(segment);
-                } else {
-                    log.warn("Train {} rebind: no segment for track {} (linker {})", id, linker.getTrack().getPosition(), linker);
                 }
-            } else {
-                log.warn("Train {} rebind: linker {} track is not RailTrack: {}", id, linker, linker.getTrack());
             }
         }
 

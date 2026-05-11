@@ -76,12 +76,6 @@ public class TrainCouplingManager {
         Linker lastLinker = null;
         Dir dir = Dir.E;
 
-        log.info("[LINK] === start forward={} trainSize={} ===", forwardDirection, train.getLinkers().size());
-        for (Linker l : train.getLinkers()) {
-            log.info("[LINK]   linker={} pos={} dir={} entryDir={} track={}",
-                    l, l.getPosition(), l.getDir(), l.getEntryDir(), l.getTrack() != null ? l.getTrack().getPosition() : null);
-        }
-
         if (train.getLinkers().size() == 1) {
             lastLinker = (Linker) train.getDirectorLinker();
             Dir entryDir = lastLinker.getEntryDir();
@@ -120,8 +114,6 @@ public class TrainCouplingManager {
         }
         if (lastLinker != null && lastLinker.getTrack() != null && dir != null) {
             Track nextTrack = lastLinker.getTrack().getConnected(dir);
-            log.info("[LINK] lastLinker={} dir={} nextTrack={}", lastLinker, dir,
-                    nextTrack != null ? nextTrack.getPosition() : null);
             if (nextTrack != null) {
                 RailIterator iterator = new RailIterator(nextTrack, dir);
                 // Fix initial direction for curves: find actual exit from nextTrack
@@ -142,23 +134,18 @@ public class TrainCouplingManager {
                 Linker nextLinker = iterator.getTrack().getLinker();
                 // Skip linkers belonging to our own train
                 while (nextLinker != null && nextLinker.getTrain() == train) {
-                    log.info("[LINK]   skipping same-train {} at {}", nextLinker, nextLinker.getPosition());
                     if (!iterator.advance()) break;
                     nextLinker = iterator.getTrack().getLinker();
                 }
-                log.info("[LINK]   after skip: nextLinker={}", nextLinker);
                 if (nextLinker != null && train != nextLinker.getTrain()) {
                     while (nextLinker != null) {
                         if (nextLinker.getTrain() != train) {
                             linkersToJoin.add(nextLinker);
-                            log.info("[LINK]   added {}", nextLinker);
                         }
                         if (!iterator.advance()) {
-                            log.info("[LINK]   advance=false, done");
                             break;
                         }
                         nextLinker = iterator.getTrack().getLinker();
-                        log.info("[LINK]   next after advance: {}", nextLinker);
                     }
                 }
             }
@@ -406,9 +393,6 @@ public class TrainCouplingManager {
     Dir getLinkDir(Linker linker) {
         Dir linkerDir = linker.getDir();
         Linker adjacentLinker = getAdjacentLinker(linker, linkerDir);
-        log.info("[GETLINKDIR] linker={} pos={} dir={} adjacent={} adjTrain={}",
-                linker, linker.getPosition(), linkerDir, adjacentLinker,
-                adjacentLinker != null ? adjacentLinker.getTrain() : null);
         if (adjacentLinker != null && adjacentLinker.getTrain() != train) {
             return linkerDir;
         }
