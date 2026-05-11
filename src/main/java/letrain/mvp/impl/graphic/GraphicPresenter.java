@@ -402,21 +402,15 @@ public class GraphicPresenter extends ApplicationAdapter
                     if (loco.getTrain() == null) continue;
                     letrain.vehicle.impl.rail.Train train = loco.getTrain();
                     com.badlogic.gdx.graphics.Color color = loco.getDiagnosticColor();
-                    color.a = 0.3f; // semi-transparent
-                    for (letrain.core.segments.Segment seg : bm.getOwnedSegments(train)) {
-                        letrain.map.Point startPos = seg.getSteps().getFirst().getRailNode().getTrack().getPosition();
-                        letrain.map.Point endPos = seg.getSteps().getSecond().getRailNode().getTrack().getPosition();
-                        float cx = (startPos.getX() + endPos.getX()) / 2f + 0.5f;
-                        float cz = (startPos.getY() + endPos.getY()) / 2f + 0.5f;
-                        float dx = endPos.getX() - startPos.getX();
-                        float dy = endPos.getY() - startPos.getY();
-                        float length = (float) Math.sqrt(dx * dx + dy * dy) + 1f;
-
+                    color.a = 0.3f;
+                    java.util.List<letrain.core.segments.Segment> owned = bm.getOwnedSegments(train);
+                    // Also render the train's current position as a visible square
+                    for (letrain.vehicle.impl.Linker l : train.getLinkers()) {
+                        letrain.map.Point p = l.getPosition();
                         ModelInstance overlay = new ModelInstance(segmentOverlayModel);
                         overlay.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
-                        overlay.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.3f));
-                        overlay.transform.setToTranslation(cx, 0.03f, cz);
-                        overlay.transform.scale(length, 1, 1);
+                        overlay.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
+                        overlay.transform.setToTranslation(p.getX() + 0.5f, 0.03f, p.getY() + 0.5f);
                         modelBatch.render(overlay);
                     }
                 }
