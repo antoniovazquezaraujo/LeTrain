@@ -20,6 +20,15 @@ public class RailSemaphore implements Renderable, Serializable {
     private Point position;
     private boolean open;
     private letrain.map.Dir creationDir = letrain.map.Dir.E;
+    private int forkId = -1; // -1 = no fork linked
+
+    @JsonIgnore
+    public letrain.track.rail.ForkRailTrack getFork() {
+        return null; // resolved by Model via forkId
+    }
+
+    public int getForkId() { return forkId; }
+    public void setForkId(int forkId) { this.forkId = forkId; }
 
     public boolean isOpen() {
         return open;

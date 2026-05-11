@@ -498,7 +498,12 @@ public class Model implements letrain.mvp.Model {
         this.semaphores.add(semaphore);
         getEconomyManager().onSemaphoreConstructed(semaphore);
         RailTrack track = map.getTrackAt(semaphore.getPosition());
-        if (track != null) track.setSemaphore(semaphore);
+        if (track != null) {
+            track.setSemaphore(semaphore);
+            if (track instanceof letrain.track.rail.ForkRailTrack) {
+                semaphore.setForkId(((letrain.track.rail.ForkRailTrack) track).getId());
+            }
+        }
         setupSemaphoreSystemListeners(semaphore);
         mapChanged = true;
     }
