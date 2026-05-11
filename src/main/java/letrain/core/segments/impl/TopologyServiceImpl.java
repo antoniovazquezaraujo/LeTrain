@@ -111,7 +111,12 @@ public class TopologyServiceImpl implements TopologyService {
 
         while (currentTrack != null && !trackToNode.containsKey(currentTrack)) {
             if (!seen.add(currentTrack)) {
-                // Cycle detected — circuit with no fork nodes. Break to avoid infinite loop.
+                // Cycle detected — circuit with no intermediate fork nodes.
+                // The entire loop forms one segment from start node back to itself.
+                RailNodeImpl startNode = trackToNode.get(startTrack);
+                if (startNode != null) {
+                    return new CrawlResult(startNode, incomingDir, visited);
+                }
                 return null;
             }
             visited.add(currentTrack);
