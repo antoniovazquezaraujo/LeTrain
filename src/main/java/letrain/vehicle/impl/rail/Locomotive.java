@@ -70,16 +70,18 @@ public class Locomotive extends Linker implements Tractor {
     @Override
     public void toggleReversed() {
         if (currentSpeed > 0) {
-            // No permitir invertir marcha en movimiento (opcional, pero realista)
-            // Por ahora solo ponemos targetSpeed a 0
             setTargetSpeed(0);
             return;
         }
         Dir currentDir = getDir();
         Dir currentEntry = getEntryDir();
+        log.info("[TOGGLE] loco={} before: dir={} entryDir={} reversed={}",
+                id, currentDir, currentEntry, isReversed());
         setEntryDir(currentDir);
         setDir(currentEntry);
         setReversed(!isReversed());
+        log.info("[TOGGLE] loco={} after:  dir={} entryDir={} reversed={}",
+                id, getDir(), getEntryDir(), isReversed());
         if (getTrain() != null) {
             getTrain().setStalled(false);
         }
