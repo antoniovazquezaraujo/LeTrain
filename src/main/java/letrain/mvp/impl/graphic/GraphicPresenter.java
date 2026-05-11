@@ -396,6 +396,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // LAB: render colored segment overlays for each train's owned segments
         if (segmentOverlayModel != null) {
+            modelBatch.begin(cam);
             letrain.core.segments.BlockManager bm = model.getBlockManager();
             if (bm != null) {
                 for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
@@ -403,8 +404,6 @@ public class GraphicPresenter extends ApplicationAdapter
                     letrain.vehicle.impl.rail.Train train = loco.getTrain();
                     com.badlogic.gdx.graphics.Color color = loco.getDiagnosticColor();
                     color.a = 0.3f;
-                    java.util.List<letrain.core.segments.Segment> owned = bm.getOwnedSegments(train);
-                    // Also render the train's current position as a visible square
                     for (letrain.vehicle.impl.Linker l : train.getLinkers()) {
                         letrain.map.Point p = l.getPosition();
                         ModelInstance overlay = new ModelInstance(segmentOverlayModel);
@@ -415,6 +414,7 @@ public class GraphicPresenter extends ApplicationAdapter
                     }
                 }
             }
+            modelBatch.end();
         }
 
         spriteBatch.begin();
