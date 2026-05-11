@@ -188,7 +188,9 @@ public class TrainMovementManager {
             Linker blockingLinker = nextAfterMove.getLinker();
             if (blockingLinker != null && blockingLinker.getTrain() != train) {
                 int speed = train.getSpeed();
-                if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD) {
+                // In shunting mode, never crash — always treat as contact.
+                // Two trains sharing a segment should not destroy each other.
+                if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD && !train.isShuntingMode()) {
                     crash(blockingLinker, speed);
                     train.setStalled(true);
                 } else {
