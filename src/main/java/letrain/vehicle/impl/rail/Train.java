@@ -19,9 +19,7 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import letrain.map.Dir;
 import letrain.mvp.Model;
 import letrain.track.CargoTypes;
-import letrain.track.RailSemaphore;
 import letrain.track.Track;
-import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
@@ -573,36 +571,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
         setDirPushedLinkers(normalSense);
         setDirTowedLinkers(normalSense);
-
-        // Semaphore rerouting: if the next track has a semaphore linked to a fork,
-        // and the segment ahead is blocked, flip the fork to redirect the train.
-        if (model != null && !getLinkers().isEmpty()) {
-            Linker first = getLinkers().getFirst();
-            Track nextTrack = first.getTrack().getConnected(first.getDir());
-            if (nextTrack != null && nextTrack.getSemaphore() != null) {
-                RailSemaphore sem = nextTrack.getSemaphore();
-                if (sem.getForkId() >= 0) {
-                    letrain.track.rail.ForkRailTrack fork = model.getFork(sem.getForkId());
-                    if (fork != null && !fork.isLocked() && fork.getLinker() == null) {
-                        // Check if the current route's segment is blocked
-                        letrain.core.segments.RailwayGraph graph = model.getRailwayGraph();
-                        if (graph != null && nextTrack instanceof letrain.track.rail.RailTrack) {
-                            letrain.core.segments.Segment seg = graph.getSegment((letrain.track.rail.RailTrack) nextTrack);
-                            if (seg != null) {
-                                letrain.core.segments.BlockManager bm = model.getBlockManager();
-                                java.util.List<letrain.core.segments.Segment> owned = bm.getOwnedSegments(this);
-                                if (!owned.contains(seg) && !bm.getOwners(seg).isEmpty()) {
-                                    // Segment ahead is blocked by another train — flip fork
-                                    log.info("Train {}: semaphore reroute — flipping fork {}", id, sem.getForkId());
-                                    fork.flipRoute();
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         boolean moved = moveLinkers(normalSense);
 
         if (!moved || isStalled()) {

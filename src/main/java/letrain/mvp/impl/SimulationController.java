@@ -45,5 +45,29 @@ public class SimulationController {
 
         // 5. Cleanup destroyed trains
         simulationService.cleanupEntities();
+
+        // 6. Update semaphores: red if next segment occupied, green if free
+        updateSemaphores();
+    }
+
+    private void updateSemaphores() {
+        letrain.core.segments.RailwayGraph graph = model.getRailwayGraph();
+        letrain.core.segments.BlockManager bm = model.getBlockManager();
+        if (graph == null || bm == null) return;
+
+        for (letrain.track.RailSemaphore sem : model.getSemaphores()) {
+            letrain.track.Track track = model.getRailMap().getTrackAt(sem.getPosition());
+            if (track == null) continue;
+
+            letrain.map.Dir dir = sem.getCreationDir();
+            letrain.track.Track nextTrack = track.getConnected(dir);
+            if (nextTrack instanceof letrain.track.rail.RailTrack) {
+                letrain.core.segments.Segment seg = graph.getSegment((letrain.track.rail.RailTrack) nextTrack);
+                if (seg != null) {
+                    boolean occupied = !bm.getOwners(seg).isEmpty();
+                    sem.setOpen(!occupied);
+                }
+            }
+        }
     }
 }
