@@ -389,24 +389,37 @@ public class GraphicPresenter extends ApplicationAdapter
             Gdx.gl.glDepthFunc(GL20.GL_LESS);
         }
 
-        // LAB: render colored segment overlays for each train's owned segments
+        // LAB: render colored rail overlays for each train's owned segments
         if (segmentOverlayModel != null) {
             modelBatch.begin(cam);
+            letrain.core.segments.RailwayGraph graph = model.getRailwayGraph();
             letrain.core.segments.BlockManager bm = model.getBlockManager();
-            if (bm != null) {
+            if (graph != null && bm != null) {
+                // Build segment→color map from all trains
+                java.util.Map<letrain.core.segments.Segment, com.badlogic.gdx.graphics.Color> segColors = new java.util.HashMap<>();
                 for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
                     if (loco.getTrain() == null) continue;
-                    letrain.vehicle.impl.rail.Train train = loco.getTrain();
-                    com.badlogic.gdx.graphics.Color color = loco.getDiagnosticColor();
-                    color.a = 0.3f;
-                    for (letrain.vehicle.impl.Linker l : train.getLinkers()) {
-                        letrain.map.Point p = l.getPosition();
-                        ModelInstance overlay = new ModelInstance(segmentOverlayModel);
-                        overlay.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
-                        overlay.transform.setToTranslation(p.getX() + 0.5f, 0.02f, p.getY() + 0.5f);
-                        modelBatch.render(overlay);
+                    com.badlogic.gdx.graphics.Color c = loco.getDiagnosticColor();
+                    for (letrain.core.segments.Segment seg : bm.getOwnedSegments(loco.getTrain())) {
+                        segColors.putIfAbsent(seg, c);
                     }
                 }
+                // Color all tracks belonging to owned segments
+                model.getRailMap().forEach(obj -> {
+                    if (obj instanceof letrain.track.rail.RailTrack) {
+                        letrain.track.rail.RailTrack rt = (letrain.track.rail.RailTrack) obj;
+                        letrain.core.segments.Segment seg = graph.getSegment(rt);
+                        if (seg != null) {
+                            com.badlogic.gdx.graphics.Color c = segColors.get(seg);
+                            if (c != null) {
+                                ModelInstance overlay = new ModelInstance(segmentOverlayModel);
+                                overlay.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(c));
+                                overlay.transform.setToTranslation(rt.getPosition().getX() + 0.5f, 0.04f, rt.getPosition().getY() + 0.5f);
+                                modelBatch.render(overlay);
+                            }
+                        }
+                    }
+                });
             }
             modelBatch.end();
         }
