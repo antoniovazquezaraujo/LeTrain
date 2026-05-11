@@ -138,6 +138,24 @@ public class VehicleRenderer extends BaseSubRenderer {
             selectionLine.transform.rotate(0, 1, 0, angle);
             instances.add(selectionLine);
         }
+
+        // Blinking red line for shunting locomotives
+        if (train != null && train.isShuntingMode()) {
+            // Blink: toggle every ~500ms
+            boolean blinkOn = (System.currentTimeMillis() / 500) % 2 == 0;
+            if (blinkOn) {
+                ModelInstance shuntLine = resourceContext.getModelInstance(resourceContext.selectionLineModel);
+                shuntLine.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(
+                        com.badlogic.gdx.graphics.Color.RED));
+                v1.set(renderTangent).nor();
+                float dxL = v1.x;
+                float dzL = v1.z;
+                float lineOffset = 0.25f;
+                shuntLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.04f, renderY + dzL * lineOffset);
+                shuntLine.transform.rotate(0, 1, 0, angle);
+                instances.add(shuntLine);
+            }
+        }
         if (locomotive.isDestroying()) {
             drawFire(renderX, 0.61f, renderY, animationAlpha + locomotive.getId());
         }
