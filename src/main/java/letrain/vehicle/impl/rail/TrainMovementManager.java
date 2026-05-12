@@ -83,9 +83,15 @@ public class TrainMovementManager {
             Track nextTrackOfLinker = currentTrack.getConnected(exitDir);
 
             if (nextTrackOfLinker == null) {
-                log.debug("Pass 1: nextTrack is null for {}", linkerToMove);
-                clearReservations(targetTracks);
-                return false;
+                // Auto-correct: the linker's direction doesn't match any connection
+                correctDirection(linkerToMove);
+                exitDir = linkerToMove.getDir();
+                nextTrackOfLinker = currentTrack.getConnected(exitDir);
+                if (nextTrackOfLinker == null) {
+                    log.debug("Pass 1: nextTrack is null for {}", linkerToMove);
+                    clearReservations(targetTracks);
+                    return false;
+                }
             }
 
             Linker occupyingL = nextTrackOfLinker.getLinker();
@@ -261,11 +267,11 @@ public class TrainMovementManager {
         Track t = linker.getTrack();
         Dir d = linker.getDir();
         if (t == null || t.getConnected(d) != null) return; // direction is valid
-        // Find the actual connected exit (skip the entry port)
+        // Find the first connection that actually has a track
         for (Dir conn : t.getConnections()) {
-            if (conn != d.inverse() && t.getConnected(conn) != null) {
+            if (t.getConnected(conn) != null) {
                 linker.setDir(conn);
-                break;
+                return;
             }
         }
     }
