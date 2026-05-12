@@ -212,7 +212,10 @@ public class TrainMovementManager {
                     train.setStalled(true);
                     Train otherTrain = blockingLinker.getTrain();
                     if (otherTrain != null) {
-                        otherTrain.notifyContact(collisionPos, speed);
+                        otherTrain.getTractors().forEach(t -> {
+                            t.setCurrentSpeed(0);
+                            t.setTargetSpeed(0);
+                        });
                     }
                 }
                 // After collision, correct direction to match physical track connections
@@ -256,7 +259,6 @@ public class TrainMovementManager {
                 });
                 train.setStalled(true);
             }
-            correctDirection(firstLinker);
         }
 
         return true;
