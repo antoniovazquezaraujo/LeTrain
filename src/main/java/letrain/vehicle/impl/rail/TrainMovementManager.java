@@ -313,22 +313,13 @@ public class TrainMovementManager {
             train.setStalled(true);
             // Release segments so other trains can use them
             if (train.getModel() != null) {
-                // Derailment: scatter destroyed linkers to random adjacent positions
+                // Derailment: scatter destroyed linkers around the crash site
                 for (Linker l : train.getLinkers()) {
-                    letrain.track.Track oldTrack = l.getTrack();
-                    if (oldTrack == null) continue;
-                    oldTrack.removeLinker();
-                    l.setDir(letrain.map.Dir.values()[(int)(Math.random() * 8)]); // random direction
-                    // Try up to 3 random adjacent positions
-                    for (int attempt = 0; attempt < 3; attempt++) {
-                        letrain.map.Dir randomDir = letrain.map.Dir.values()[
-                            (int) (Math.random() * 8)];
-                        letrain.track.Track scatterTrack = oldTrack.getConnected(randomDir);
-                        if (scatterTrack != null && scatterTrack.getLinker() == null) {
-                            scatterTrack.enterLinkerFromDir(randomDir.inverse(), l);
-                            break;
-                        }
-                    }
+                    l.setDir(letrain.map.Dir.values()[(int)(Math.random() * 8)]);
+                    letrain.map.Dir d = letrain.map.Dir.values()[(int)(Math.random() * 8)];
+                    letrain.map.Point p = new letrain.map.Point(l.getPosition());
+                    p.move(d);
+                    l.setPosition(p);
                 }
                 train.getModel().getBlockManager().releaseAll(train);
             }
@@ -355,20 +346,12 @@ public class TrainMovementManager {
                 });
                 linker.getTrain().setStalled(true);
                 if (linker.getTrain().getModel() != null) {
-                    // Derailment for the other train too
                     for (Linker l : linker.getTrain().getLinkers()) {
-                        letrain.track.Track oldTrack = l.getTrack();
-                        if (oldTrack == null) continue;
-                        oldTrack.removeLinker();
                         l.setDir(letrain.map.Dir.values()[(int)(Math.random() * 8)]);
-                        for (int attempt = 0; attempt < 3; attempt++) {
-                            letrain.map.Dir randomDir = letrain.map.Dir.values()[(int)(Math.random() * 8)];
-                            letrain.track.Track scatterTrack = oldTrack.getConnected(randomDir);
-                            if (scatterTrack != null && scatterTrack.getLinker() == null) {
-                                scatterTrack.enterLinkerFromDir(randomDir.inverse(), l);
-                                break;
-                            }
-                        }
+                        letrain.map.Dir d = letrain.map.Dir.values()[(int)(Math.random() * 8)];
+                        letrain.map.Point p = new letrain.map.Point(l.getPosition());
+                        p.move(d);
+                        l.setPosition(p);
                     }
                     linker.getTrain().getModel().getBlockManager().releaseAll(linker.getTrain());
                 }
