@@ -35,9 +35,9 @@ public class TrackDirector<T extends Track> {
         Dir exitDir = track.getRouter().getDir(dir);
         if (exitDir != null && track.getConnected(exitDir) != null) {
             vehicle.setDir(exitDir);
-        } else {
-            // Router gave invalid or unconnected direction — find actual
-            // physical exit (skip the entry port we came from).
+        } else if (track.getConnections().size() > 1) {
+            // Router gave invalid direction but track has multiple connections.
+            // Find the physical exit (skip the entry port we came from).
             Dir entryPort = dir.inverse();
             for (Dir conn : track.getConnections()) {
                 if (conn != entryPort && track.getConnected(conn) != null) {
@@ -46,6 +46,7 @@ public class TrackDirector<T extends Track> {
                 }
             }
         }
+        // If only one connection → dead-end → keep current direction (stuck)
         track.setLinker(vehicle);
         return true;
     }
