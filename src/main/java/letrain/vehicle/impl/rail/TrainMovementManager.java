@@ -283,9 +283,6 @@ public class TrainMovementManager {
             }
         }
     }
-        }
-        log.info("[CORRECT]   -> no valid connection found");
-    }
 
     // ── moved from Train.clearReservations() ────────────────────────────
 
