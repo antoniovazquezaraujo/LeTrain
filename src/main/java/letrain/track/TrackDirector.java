@@ -33,11 +33,18 @@ public class TrackDirector<T extends Track> {
         vehicle.setPosition(track.getPosition());
         vehicle.setEntryDir(dir);
         Dir exitDir = track.getRouter().getDir(dir);
-        if (exitDir != null) {
+        if (exitDir != null && track.getConnected(exitDir) != null) {
             vehicle.setDir(exitDir);
         } else {
-            log.error("No exit direction found for track at {} entering from {}. Keeping current vehicle dir: {}.",
-                    track.getPosition(), dir, vehicle.getDir());
+            // Router gave invalid or unconnected direction — find actual
+            // physical exit (skip the entry port we came from).
+            Dir entryPort = dir.inverse();
+            for (Dir conn : track.getConnections()) {
+                if (conn != entryPort && track.getConnected(conn) != null) {
+                    vehicle.setDir(conn);
+                    break;
+                }
+            }
         }
         track.setLinker(vehicle);
         return true;

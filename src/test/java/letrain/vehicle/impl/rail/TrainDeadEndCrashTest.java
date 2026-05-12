@@ -230,9 +230,9 @@ class TrainDeadEndCrashTest {
         //    dead-end handler, consistent with existing train-to-train contact logic)
         verify(loco, org.mockito.Mockito.atLeast(1)).setCurrentSpeed(0);
         verify(loco, org.mockito.Mockito.atLeast(1)).setTargetSpeed(0);
-        // 4. Train is stalled
-        assertTrue(train.isStalled(),
-                "Train should be stalled after low-speed dead-end contact");
+        // 4. Train is NOT stalled (contacts no longer block)
+        assertFalse(train.isStalled(),
+                "Train should not be stalled after low-speed dead-end contact");
         // 5. notifyCrash should NOT be called
         verify(listener, never()).onCrash(any(Train.class), any(Point.class), anyInt());
         // 6. destroy() should NOT be called on linkers
@@ -424,9 +424,9 @@ class TrainDeadEndCrashTest {
         // 3. Speed set to 0
         verify(loco, org.mockito.Mockito.atLeast(1)).setCurrentSpeed(0);
         verify(loco, org.mockito.Mockito.atLeast(1)).setTargetSpeed(0);
-        // 4. Train is stalled
-        assertTrue(train.isStalled(),
-                "Train should be stalled after reversing into dead-end");
+        // 4. Train is NOT stalled (contacts no longer block)
+        assertFalse(train.isStalled(),
+                "Train should not be stalled after reversing into dead-end");
         // 5. No crash
         verify(listener, never()).onCrash(any(Train.class), any(Point.class), anyInt());
         verify(loco, never()).destroy();

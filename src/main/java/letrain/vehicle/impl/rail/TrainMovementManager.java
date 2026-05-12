@@ -103,10 +103,12 @@ public class TrainMovementManager {
                             t.setCurrentSpeed(0);
                             t.setTargetSpeed(0);
                         });
-                        train.setStalled(true);
                         Train otherTrain = occupyingL.getTrain();
                         if (otherTrain != null) {
-                            otherTrain.notifyContact(collisionPos, speed);
+                            otherTrain.getTractors().forEach(t -> {
+                                t.setCurrentSpeed(0);
+                                t.setTargetSpeed(0);
+                            });
                         }
                     }
                     clearReservations(targetTracks);
@@ -203,12 +205,16 @@ public class TrainMovementManager {
                             ((Locomotive) t).setForceIdleSound(true);
                         }
                     });
-                    train.setStalled(true);
                     Train otherTrain = blockingLinker.getTrain();
                     if (otherTrain != null) {
-                        otherTrain.notifyContact(collisionPos, speed);
+                        otherTrain.getTractors().forEach(t -> {
+                            t.setCurrentSpeed(0);
+                            t.setTargetSpeed(0);
+                        });
                     }
                 }
+                // After collision, correct direction to match physical track connections
+                correctDirection(firstLinker);
             }
         } else {
             int speed = train.getSpeed();
@@ -246,11 +252,32 @@ public class TrainMovementManager {
                         ((Locomotive) t).setForceIdleSound(true);
                     }
                 });
-                train.setStalled(true);
             }
         }
 
         return true;
+    }
+
+    private void correctDirection(Linker linker) {
+        if (linker == null) return;
+        Track t = linker.getTrack();
+        Dir d = linker.getDir();
+        if (t == null || t.getConnected(d) != null) return;
+        // Skip the entry direction (where we came from) — pick the exit
+        Dir entryDir = linker.getEntryDir();
+        for (Dir conn : t.getConnections()) {
+            if (conn != entryDir && t.getConnected(conn) != null) {
+                linker.setDir(conn);
+                return;
+            }
+        }
+        // Fallback: just pick any connected direction
+        for (Dir conn : t.getConnections()) {
+            if (t.getConnected(conn) != null) {
+                linker.setDir(conn);
+                return;
+            }
+        }
     }
 
     // ── moved from Train.clearReservations() ────────────────────────────

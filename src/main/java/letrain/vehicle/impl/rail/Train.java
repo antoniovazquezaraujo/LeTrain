@@ -460,10 +460,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
      * Stalls the train and sets all tractor speeds to 0.
      */
     public void notifyContact(letrain.map.Point pos, int speed) {
-        this.stalled = true;
-        // Immediately stop all locomotives — the caller may rely on this
-        // for the current train, but callers of the *other* train's
-        // notifyContact (head-on collision) don't call setCurrentSpeed(0).
+        // Immediately stop all locomotives
         getTractors().forEach(t -> {
             t.setCurrentSpeed(0);
             t.setTargetSpeed(0);
@@ -513,6 +510,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
      * @return true if the train moved, false otherwise
      */
     public boolean advance() {
+        // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
+        if (isLoading()) {
+            return false;
+        }
         // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
         if (isLoading()) {
             return false;
@@ -578,7 +579,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             // directions. Without this, setDirTowedLinkers leaves wagons
             // pointing forward, causing the renderer to interpolate them
             // into the locomotive when the train has actually stopped.
+            // Exception: the first linker's direction was already corrected
+            // by moveLinkers() for the new position. Restoring it would
+            // break the direction on curves after a crash.
+            Linker first = getLinkers().isEmpty() ? null : getLinkers().getFirst();
             for (Linker l : getLinkers()) {
+                if (isStalled() && l == first) continue; // skip first linker on crash
                 letrain.map.Dir savedDir = savedDirs.get(l);
                 letrain.map.Dir savedEntry = savedEntryDirs.get(l);
                 if (savedDir != null) {

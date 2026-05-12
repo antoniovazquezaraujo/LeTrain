@@ -70,8 +70,6 @@ public class Locomotive extends Linker implements Tractor {
     @Override
     public void toggleReversed() {
         if (currentSpeed > 0) {
-            // No permitir invertir marcha en movimiento (opcional, pero realista)
-            // Por ahora solo ponemos targetSpeed a 0
             setTargetSpeed(0);
             return;
         }
