@@ -435,15 +435,6 @@ public class TrainCouplingManager {
                 return linkerDir;
             }
         }
-                }
-                if (nextTrack == null) break;
-                currentTrack = nextTrack;
-                nextLinker = currentTrack.getLinker();
-            }
-            if (nextLinker != null && nextLinker.getTrain() != train) {
-                return linkerDir;
-            }
-        }
         return null;
     }
 
