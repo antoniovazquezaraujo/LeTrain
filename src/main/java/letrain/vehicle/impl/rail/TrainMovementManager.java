@@ -311,6 +311,10 @@ public class TrainMovementManager {
                 l.destroy();
             });
             train.setStalled(true);
+            // Release segments so other trains can use them
+            if (train.getModel() != null) {
+                train.getModel().getBlockManager().releaseAll(train);
+            }
         }
 
         // Also handle the other linker/train
@@ -333,6 +337,9 @@ public class TrainMovementManager {
                     l.destroy();
                 });
                 linker.getTrain().setStalled(true);
+                if (linker.getTrain().getModel() != null) {
+                    linker.getTrain().getModel().getBlockManager().releaseAll(linker.getTrain());
+                }
             }
         } else {
             log.info("crash: Destroying loose linker {} at crash position {}", linker, crashPos);
