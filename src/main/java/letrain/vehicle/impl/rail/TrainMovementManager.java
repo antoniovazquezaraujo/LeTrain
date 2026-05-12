@@ -112,7 +112,10 @@ public class TrainMovementManager {
                         train.setStalled(true);
                         Train otherTrain = occupyingL.getTrain();
                         if (otherTrain != null) {
-                            otherTrain.notifyContact(collisionPos, speed);
+                            otherTrain.getTractors().forEach(t -> {
+                                t.setCurrentSpeed(0);
+                                t.setTargetSpeed(0);
+                            });
                         }
                     }
                     clearReservations(targetTracks);
