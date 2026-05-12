@@ -582,7 +582,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             // directions. Without this, setDirTowedLinkers leaves wagons
             // pointing forward, causing the renderer to interpolate them
             // into the locomotive when the train has actually stopped.
+            // Exception: the first linker's direction was already corrected
+            // by moveLinkers() for the new position. Restoring it would
+            // break the direction on curves after a crash.
+            Linker first = getLinkers().isEmpty() ? null : getLinkers().getFirst();
             for (Linker l : getLinkers()) {
+                if (isStalled() && l == first) continue; // skip first linker on crash
                 letrain.map.Dir savedDir = savedDirs.get(l);
                 letrain.map.Dir savedEntry = savedEntryDirs.get(l);
                 if (savedDir != null) {
