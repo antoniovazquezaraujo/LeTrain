@@ -217,6 +217,8 @@ public class TrainMovementManager {
                 correctDirection(firstLinker);
             }
         } else {
+            log.info("[DEADEND] train={} speed={} pos={} dir={}",
+                    train.getId(), train.getSpeed(), firstLinker.getPosition(), firstLinker.getDir());
             int speed = train.getSpeed();
             Point impactPos = firstLinker.getPosition();
             if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD) {
