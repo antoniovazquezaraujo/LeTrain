@@ -124,6 +124,12 @@ public class VehicleRenderer extends BaseSubRenderer {
         ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
         instance.transform.setToTranslation(renderX, 0.61f, renderY);
         instance.transform.rotate(0, 1, 0, angle);
+        if (locomotive.isDestroying()) {
+            // Random tilt for derailed look (stable per vehicle via hashCode)
+            int seed = locomotive.hashCode();
+            instance.transform.rotate(1, 0, 0, (seed % 60) - 30);  // X tilt ±30°
+            instance.transform.rotate(0, 0, 1, ((seed >> 8) % 60) - 30); // Z tilt ±30°
+        }
         instances.add(instance);
 
         // Green line (direction marker) - ONLY for selected locomotive
@@ -307,6 +313,11 @@ public class VehicleRenderer extends BaseSubRenderer {
 
         instance.transform.setToTranslation(renderX, 0.46f, renderY);
         instance.transform.rotate(0, 1, 0, angle);
+        if (wagon.isDestroying()) {
+            int seed = wagon.hashCode();
+            instance.transform.rotate(1, 0, 0, (seed % 60) - 30);
+            instance.transform.rotate(0, 0, 1, ((seed >> 8) % 60) - 30);
+        }
         instances.add(instance);
 
         // NO green line for wagons, as per user's mandate.
