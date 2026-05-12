@@ -133,7 +133,9 @@ public class SimulationService {
                     train.getLinkers().remove(locomotive);
                     train.assignDefaultDirectorLinker();
                 }
-                locomotive.getTrack().removeLinker();
+                if (locomotive.getTrack() != null) {
+                    locomotive.getTrack().removeLinker();
+                }
                 removed.set(true);
                 return true;
             }
@@ -148,7 +150,9 @@ public class SimulationService {
                     affectedTrains.add(train);
                     train.getLinkers().remove(wagon);
                 }
-                wagon.getTrack().removeLinker();
+                if (wagon.getTrack() != null) {
+                    wagon.getTrack().removeLinker();
+                }
                 return true;
             }
             return false;
