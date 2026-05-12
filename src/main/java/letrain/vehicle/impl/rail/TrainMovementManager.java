@@ -267,15 +267,22 @@ public class TrainMovementManager {
         Track t = linker.getTrack();
         Dir d = linker.getDir();
         if (t == null || t.getConnected(d) != null) return;
-        // Find the first connection that actually has a track
-        log.info("[CORRECT] linker at {} dir={} connections={}", linker.getPosition(), d, t.getConnections());
+        // Skip the entry direction (where we came from) — pick the exit
+        Dir entryDir = linker.getEntryDir();
         for (Dir conn : t.getConnections()) {
-            log.info("[CORRECT]   conn={} connected={}", conn, t.getConnected(conn));
-            if (t.getConnected(conn) != null) {
+            if (conn != entryDir && t.getConnected(conn) != null) {
                 linker.setDir(conn);
-                log.info("[CORRECT]   -> corrected to {}", conn);
                 return;
             }
+        }
+        // Fallback: just pick any connected direction
+        for (Dir conn : t.getConnections()) {
+            if (t.getConnected(conn) != null) {
+                linker.setDir(conn);
+                return;
+            }
+        }
+    }
         }
         log.info("[CORRECT]   -> no valid connection found");
     }
