@@ -209,6 +209,8 @@ public class TrainMovementManager {
                         otherTrain.notifyContact(collisionPos, speed);
                     }
                 }
+                // After collision, correct direction to match physical track connections
+                correctDirection(firstLinker);
             }
         } else {
             int speed = train.getSpeed();
@@ -248,25 +250,24 @@ public class TrainMovementManager {
                 });
                 train.setStalled(true);
             }
-        }
-
-        // Auto-correct direction if the first linker faces a dead-end.
-        // This can happen after a crash on a curve where the router set
-        // a direction that doesn't match any physical connection.
-        if (firstLinker != null) {
-            Track t = firstLinker.getTrack();
-            Dir d = firstLinker.getDir();
-            if (t != null && t.getConnected(d) == null) {
-                for (Dir conn : t.getConnections()) {
-                    if (conn != d.inverse() && t.getConnected(conn) != null) {
-                        firstLinker.setDir(conn);
-                        break;
-                    }
-                }
-            }
+            correctDirection(firstLinker);
         }
 
         return true;
+    }
+
+    private void correctDirection(Linker linker) {
+        if (linker == null) return;
+        Track t = linker.getTrack();
+        Dir d = linker.getDir();
+        if (t == null || t.getConnected(d) != null) return; // direction is valid
+        // Find the actual connected exit (skip the entry port)
+        for (Dir conn : t.getConnections()) {
+            if (conn != d.inverse() && t.getConnected(conn) != null) {
+                linker.setDir(conn);
+                break;
+            }
+        }
     }
 
     // ── moved from Train.clearReservations() ────────────────────────────
