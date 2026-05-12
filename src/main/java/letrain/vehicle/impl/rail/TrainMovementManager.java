@@ -250,6 +250,22 @@ public class TrainMovementManager {
             }
         }
 
+        // Auto-correct direction if the first linker faces a dead-end.
+        // This can happen after a crash on a curve where the router set
+        // a direction that doesn't match any physical connection.
+        if (firstLinker != null) {
+            Track t = firstLinker.getTrack();
+            Dir d = firstLinker.getDir();
+            if (t != null && t.getConnected(d) == null) {
+                for (Dir conn : t.getConnections()) {
+                    if (conn != d.inverse() && t.getConnected(conn) != null) {
+                        firstLinker.setDir(conn);
+                        break;
+                    }
+                }
+            }
+        }
+
         return true;
     }
 
