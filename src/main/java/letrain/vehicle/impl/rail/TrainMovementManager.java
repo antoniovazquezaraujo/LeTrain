@@ -186,6 +186,9 @@ public class TrainMovementManager {
             return false;
         }
         Track nextAfterMove = currentFirstTrack.getConnected(firstLinker.getDir());
+        log.info("[POSTMOVE] train={} pos={} dir={} nextAfterMove={}",
+                train.getId(), currentFirstTrack.getPosition(), firstLinker.getDir(),
+                nextAfterMove != null ? nextAfterMove.getPosition() : null);
         if (nextAfterMove != null) {
             Linker blockingLinker = nextAfterMove.getLinker();
             if (blockingLinker != null && blockingLinker.getTrain() != train) {
