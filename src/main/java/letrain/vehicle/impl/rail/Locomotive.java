@@ -317,8 +317,6 @@ public class Locomotive extends Linker implements Tractor {
 
     @Override
     public void setCurrentSpeed(int speed) {
-        Train.log.info("[SPEED] loco={} setCurrentSpeed {} (was {}) target={}",
-                id, speed, currentSpeed, targetSpeed);
         int effectiveSpeed = speed;
         if (getTrain() != null && getTrain().isShuntingMode()) {
             effectiveSpeed = Math.min(speed, SHUNTING_SPEED_LIMIT);

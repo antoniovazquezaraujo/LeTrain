@@ -186,9 +186,6 @@ public class TrainMovementManager {
             return false;
         }
         Track nextAfterMove = currentFirstTrack.getConnected(firstLinker.getDir());
-        log.info("[POSTMOVE] train={} pos={} dir={} nextAfterMove={}",
-                train.getId(), currentFirstTrack.getPosition(), firstLinker.getDir(),
-                nextAfterMove != null ? nextAfterMove.getPosition() : null);
         if (nextAfterMove != null) {
             Linker blockingLinker = nextAfterMove.getLinker();
             if (blockingLinker != null && blockingLinker.getTrain() != train) {
@@ -220,8 +217,6 @@ public class TrainMovementManager {
                 correctDirection(firstLinker);
             }
         } else {
-            log.info("[DEADEND] train={} speed={} pos={} dir={}",
-                    train.getId(), train.getSpeed(), firstLinker.getPosition(), firstLinker.getDir());
             int speed = train.getSpeed();
             Point impactPos = firstLinker.getPosition();
             if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD) {
