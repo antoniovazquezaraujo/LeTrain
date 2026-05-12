@@ -460,10 +460,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
      * Stalls the train and sets all tractor speeds to 0.
      */
     public void notifyContact(letrain.map.Point pos, int speed) {
-        this.stalled = true;
-        // Immediately stop all locomotives — the caller may rely on this
-        // for the current train, but callers of the *other* train's
-        // notifyContact (head-on collision) don't call setCurrentSpeed(0).
+        // Immediately stop all locomotives
         getTractors().forEach(t -> {
             t.setCurrentSpeed(0);
             t.setTargetSpeed(0);
