@@ -412,17 +412,29 @@ public class TrainCouplingManager {
         // Walk through same-train linkers using track router to find
         // the exit where a different train might be.
         if (adjacentLinker != null && adjacentLinker.getTrain() == train) {
+            // Walk through same-train linkers following track connections outward.
             Track currentTrack = linker.getTrack().getConnected(linkerDir);
+            Track prevTrack = linker.getTrack(); // skip the track we came from
             Linker nextLinker = adjacentLinker;
             while (currentTrack != null && nextLinker != null && nextLinker.getTrain() == train) {
-                // Find the physical connection from currentTrack to nextLinker's track
-                Track nextLinkerTrack = nextLinker.getTrack();
+                // Walk one hop: find a connection that doesn't go back
                 Track nextTrack = null;
                 for (Dir conn : currentTrack.getConnections()) {
-                    if (currentTrack.getConnected(conn) == nextLinkerTrack) {
-                        nextTrack = nextLinkerTrack;
+                    Track t = currentTrack.getConnected(conn);
+                    if (t != null && t != prevTrack) {
+                        nextTrack = t;
                         break;
                     }
+                }
+                if (nextTrack == null) break;
+                prevTrack = currentTrack;
+                currentTrack = nextTrack;
+                nextLinker = currentTrack.getLinker();
+            }
+            if (nextLinker != null && nextLinker.getTrain() != train) {
+                return linkerDir;
+            }
+        }
                 }
                 if (nextTrack == null) break;
                 currentTrack = nextTrack;
