@@ -109,7 +109,6 @@ public class TrainMovementManager {
                             t.setCurrentSpeed(0);
                             t.setTargetSpeed(0);
                         });
-                        train.setStalled(true);
                         Train otherTrain = occupyingL.getTrain();
                         if (otherTrain != null) {
                             otherTrain.getTractors().forEach(t -> {
@@ -212,7 +211,6 @@ public class TrainMovementManager {
                             ((Locomotive) t).setForceIdleSound(true);
                         }
                     });
-                    train.setStalled(true);
                     Train otherTrain = blockingLinker.getTrain();
                     if (otherTrain != null) {
                         otherTrain.getTractors().forEach(t -> {
@@ -260,7 +258,6 @@ public class TrainMovementManager {
                         ((Locomotive) t).setForceIdleSound(true);
                     }
                 });
-                train.setStalled(true);
             }
         }
 
