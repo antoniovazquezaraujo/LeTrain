@@ -52,12 +52,12 @@ public class GroundRenderer extends BaseSubRenderer {
             float x = ground.getPosition().getX() + 0.5f;
             float z = ground.getPosition().getY() + 0.5f;
 
-            ModelInstance jewelBlock = resourceContext.getModelInstance(resourceContext.wagonJewelModel);
-            jewelBlock.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(tempColor));
+            ModelInstance consumerBox = resourceContext.getModelInstance(resourceContext.wagonModel);
+            consumerBox.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(tempColor));
             float h = 0.3f;
-            jewelBlock.transform.setToTranslation(x, h / 2f, z);
-            jewelBlock.transform.scale(0.7f, h, 0.7f);
-            instances.add(jewelBlock);
+            consumerBox.transform.setToTranslation(x, h / 2f, z);
+            consumerBox.transform.scale(0.7f, h, 0.7f);
+            instances.add(consumerBox);
             model = resourceContext.groundModel;
             yPosition = 0.0f;
         } else {
