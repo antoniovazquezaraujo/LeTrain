@@ -627,6 +627,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                     System.out.println("[ITINERARY] Saved: " + itineraryBuilder.getName() + " → Train " + train.getId());
                 }
                 itineraryBuilder.clear();
+                editingItinerary = false;
+                System.out.println("[ITINERARY] Editor OFF — press 'a' to activate AutoPilot");
             } else {
                 System.out.println("[ITINERARY] Need at least 2 stations and a selected locomotive");
             }
