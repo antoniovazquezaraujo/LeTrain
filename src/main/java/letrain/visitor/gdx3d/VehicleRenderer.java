@@ -182,7 +182,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             v3.set(dxL, 0, dzL).nor();
             addLabel(v1, "" + locomotive.getId(), v2, v3, Color.WHITE, 1.0f);
 
-            float perpXL = dzL * 0.42f;
+            float perpXL = dzL * 0.46f;
             float perpZL = -dxL * 0.42f;
 
             v1.set(renderX + perpXL, 0.55f, renderY + perpZL);
@@ -351,8 +351,8 @@ public class VehicleRenderer extends BaseSubRenderer {
             v1.set(renderTangent).nor();
             float dxW = v1.x;
             float dzW = v1.z;
-            float perpXW = dzW * 0.42f;
-            float perpZW = -dxW * 0.42f;
+            float perpXW = dzW * 0.46f;
+            float perpZW = -dxW * 0.46f;
 
             v1.set(renderX + perpXW, 0.5f, renderY + perpZW);
             v2.set(perpXW, 0, perpZW).nor();
