@@ -78,6 +78,7 @@ public class TopologyServiceImpl implements TopologyService {
     }
 
     private void registerElements(RailwayGraphImpl graph, Segment segment, RailTrack track) {
+        graph.registerTrack(segment, track); // register the track itself (needed for getSegment(RailTrack))
         letrain.track.Sensor sensor = track.getSensor();
         if (sensor != null) {
             if (sensor instanceof letrain.track.Station) {
