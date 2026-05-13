@@ -122,8 +122,19 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
 
         ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
-        instance.transform.setToTranslation(renderX, 0.61f, renderY);
-        instance.transform.rotate(0, 1, 0, angle);
+        if (locomotive.isDestroying()) {
+            // Derailed: random offset + tilt
+            int seed = locomotive.hashCode();
+            float ox = ((seed & 0xFF) / 255f) * 0.6f - 0.3f;
+            float oz = (((seed >> 8) & 0xFF) / 255f) * 0.6f - 0.3f;
+            instance.transform.setToTranslation(renderX + ox, 0.61f, renderY + oz);
+            instance.transform.rotate(0, 1, 0, angle);
+            instance.transform.rotate(1, 0, 0, (seed % 60) - 30);
+            instance.transform.rotate(0, 0, 1, ((seed >> 16) % 60) - 30);
+        } else {
+            instance.transform.setToTranslation(renderX, 0.61f, renderY);
+            instance.transform.rotate(0, 1, 0, angle);
+        }
         instances.add(instance);
 
         // Green line (direction marker) - ONLY for selected locomotive
@@ -303,10 +314,18 @@ public class VehicleRenderer extends BaseSubRenderer {
 
         if (wagon.isDestroying()) {
             drawFire(renderX, 0.46f, renderY, animationAlpha + wagon.hashCode());
+            // Derailed: random offset + tilt
+            int seed = wagon.hashCode();
+            float ox = ((seed & 0xFF) / 255f) * 0.6f - 0.3f;
+            float oz = (((seed >> 8) & 0xFF) / 255f) * 0.6f - 0.3f;
+            instance.transform.setToTranslation(renderX + ox, 0.46f, renderY + oz);
+            instance.transform.rotate(0, 1, 0, angle);
+            instance.transform.rotate(1, 0, 0, (seed % 60) - 30);
+            instance.transform.rotate(0, 0, 1, ((seed >> 16) % 60) - 30);
+        } else {
+            instance.transform.setToTranslation(renderX, 0.46f, renderY);
+            instance.transform.rotate(0, 1, 0, angle);
         }
-
-        instance.transform.setToTranslation(renderX, 0.46f, renderY);
-        instance.transform.rotate(0, 1, 0, angle);
         instances.add(instance);
 
         // NO green line for wagons, as per user's mandate.
