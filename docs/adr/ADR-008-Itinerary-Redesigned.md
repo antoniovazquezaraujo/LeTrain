@@ -85,6 +85,21 @@ Arista = (Segment A, Segment B) si comparten un RailNode (fork)
 - **Restricción de entrada**: si el waypoint destino tiene `entryDir`, solo se aceptan rutas cuyo último segmento tenga conexión física en esa dirección
 - **Resultado**: lista ordenada de `Segment` desde el actual hasta el destino
 
+### Separación estricta de responsabilidades
+
+El pathfinder es una **función pura**. No controla velocidad, no escucha eventos, no ejecuta comandos, no sabe de trenes:
+
+```
+Pathfinder.find(fromSegment, toSegment, entryDir?) → List<Segment>
+```
+
+El `AutoPilot` es el que **ejecuta**: recibe la ruta del pathfinder y se encarga de:
+- Seguir la secuencia de segmentos
+- Controlar velocidad y frenado
+- Cambiar forks necesarios
+- Detectar llegada al waypoint
+- Ejecutar comandos del waypoint (LOAD, UNLOAD, REVERSE...)
+
 ### Tramos independientes (REVERSE)
 
 Un `REVERSE` parte el itinerario en tramos. Cada tramo se resuelve por separado:
@@ -208,12 +223,12 @@ Transición AUTO → MANUAL:
 
 | Fase | Qué | Prioridad |
 |------|-----|-----------|
-| 1 | `Waypoint`, `WaypointCommand`, `Itinerary` (datos) | Alta |
-| 2 | `SegmentPathfinder` (A*) | Alta |
-| 3 | `AutoPilot` (navegación básica: seguir ruta, cambiar forks, velocidad) | Alta |
+| 1 | `Waypoint`, `WaypointCommand`, `Itinerary` (datos puros) | Alta |
+| 2 | `SegmentPathfinder.find()` — función pura, solo A* | Alta |
+| 3 | `AutoPilot` — ejecuta la ruta: sigue segmentos, cambia forks, controla velocidad | Alta |
 | 4 | Modo dual (MANUAL/AUTO) en Train + UI | Alta |
 | 5 | Comandos REVERSE, WAIT, SPEED | Media |
-| 6 | Fallback y replanificación | Media |
+| 6 | Fallback, replanificación, detección de llegada a waypoint | Media |
 | 7 | Editor visual de itinerarios | Baja |
 
 ---
