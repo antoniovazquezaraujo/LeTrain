@@ -80,8 +80,9 @@ Arista = (Segment A, Segment B) si comparten un RailNode (fork)
 
 ### Algoritmo A*
 
-- **Heurística**: distancia Manhattan entre los centros de los segmentos (o entre sus nodos extremo)
-- **Coste de arista**: número de `RailTrack`s que contiene el segmento (longitud real)
+- **Heurística h(n)**: distancia Manhattan desde el nodo de salida del segmento actual hasta el nodo de entrada del segmento destino, más la distancia desde ese nodo hasta el track concreto del destino (estación/sensor)
+- **Coste de arista g(n)**: número de `RailTrack`s que contiene el segmento (longitud real)
+- **Coste inicial g(0)**: distancia desde el track actual del tren hasta el nodo de salida de su segmento
 - **Restricción de entrada**: si el waypoint destino tiene `entryDir`, solo se aceptan rutas cuyo último segmento tenga conexión física en esa dirección
 - **Resultado**: lista ordenada de `Segment` desde el actual hasta el destino
 
