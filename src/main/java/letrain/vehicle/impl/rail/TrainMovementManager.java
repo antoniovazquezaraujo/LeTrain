@@ -313,13 +313,9 @@ public class TrainMovementManager {
             train.setStalled(true);
             // Release segments so other trains can use them
             if (train.getModel() != null) {
-                // Derailment: scatter destroyed linkers around the crash site
+                // Derailment: random direction for destroyed linkers (tilted renderer handles the look)
                 for (Linker l : train.getLinkers()) {
                     l.setDir(letrain.map.Dir.values()[(int)(Math.random() * 8)]);
-                    letrain.map.Dir d = letrain.map.Dir.values()[(int)(Math.random() * 8)];
-                    letrain.map.Point p = new letrain.map.Point(l.getPosition());
-                    p.move(d);
-                    l.setPosition(p);
                 }
                 train.getModel().getBlockManager().releaseAll(train);
             }
@@ -348,10 +344,6 @@ public class TrainMovementManager {
                 if (linker.getTrain().getModel() != null) {
                     for (Linker l : linker.getTrain().getLinkers()) {
                         l.setDir(letrain.map.Dir.values()[(int)(Math.random() * 8)]);
-                        letrain.map.Dir d = letrain.map.Dir.values()[(int)(Math.random() * 8)];
-                        letrain.map.Point p = new letrain.map.Point(l.getPosition());
-                        p.move(d);
-                        l.setPosition(p);
                     }
                     linker.getTrain().getModel().getBlockManager().releaseAll(linker.getTrain());
                 }
