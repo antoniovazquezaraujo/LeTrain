@@ -182,35 +182,146 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         if (track == null) {
             track = modelRef.getRailMap().getTrackAt(station.getPosition());
         }
-        if (track == null) return;
 
-        Point pos = station.getPosition();
-        float x = pos.getX() + 0.5f;
-        float z = pos.getY() + 0.5f;
+        if (track == null)
+            return;
 
-        Color cargoColor = (station.getCargoType() != null) ? station.getCargoType().getColor().cpy() : Color.WHITE.cpy();
-        boolean selected = (modelRef != null && modelRef.getSelectedStation() == station);
+        drawStation(station, station.getPosition(), station.getCargoType(), station.getRole(), track,
+                station.getId(), station.getName(), (modelRef != null && modelRef.getSelectedStation() == station),
+                1.0f);
+    }
 
-        // Low colored box at the station position (like a short wagon)
-        ModelInstance box = resourceContext.getModelInstance(resourceContext.wagonModel);
-        box.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(cargoColor));
-        box.transform.setToTranslation(x, 0.15f, z);
-        box.transform.scale(0.8f, 0.3f, 0.8f);
-        instances.add(box);
+    private void drawStation(Station station, Point pos, CargoTypes cargo,
+            CargoTypes.StationRole role,
+            letrain.track.rail.RailTrack track, int id, String name, boolean selected, float alpha) {
 
-        // Station ID label on top
-        String idText = (station.getId() >= 0) ? String.valueOf(station.getId()) : "?";
-        labels.add(new Gdx3DRenderer.VehicleLabel(
-                new Vector3(x, 0.35f, z), idText,
-                new Vector3(0, 1, 0), Color.WHITE));
+        float xIndex = pos.getX();
+        float zIndex = pos.getY();
 
-        // Selection highlight
-        if (selected) {
-            ModelInstance hl = resourceContext.getModelInstance(resourceContext.selectionLineModel);
-            hl.transform.setToTranslation(x, 0.35f, z);
-            hl.transform.scale(1.2f, 0.05f, 1.2f);
-            instances.add(hl);
+        Dir rightDir = (station != null && station.getSideDir() != null)
+                ? station.getSideDir()
+                : getValidOrientation(track).turnRight().turnRight();
+        Dir orientation = (station != null && station.getSideDir() != null)
+                ? station.getSideDir().turnLeft().turnLeft()
+                : getValidOrientation(track);
+
+        float perpX = PathGeometry.getDirX(rightDir);
+        float perpZ = PathGeometry.getDirZ(rightDir);
+        float lenPerp = (float) Math.sqrt(perpX * perpX + perpZ * perpZ);
+        if (lenPerp > 0) {
+            perpX /= lenPerp;
+            perpZ /= lenPerp;
         }
+
+        float paraX = PathGeometry.getDirX(orientation);
+        float paraZ = PathGeometry.getDirZ(orientation);
+        float lenPara = (float) Math.sqrt(paraX * paraX + paraZ * paraZ);
+        if (lenPara > 0) {
+            paraX /= lenPara;
+            paraZ /= lenPara;
+        }
+
+        float distPlatform = 0.65f;
+        float centerX = xIndex + 0.5f + perpX * distPlatform;
+        float centerZ = zIndex + 0.5f + perpZ * distPlatform;
+
+        float mastHeight = 1.2f;
+        if (selected) {
+            mastHeight = 2.0f;
+        }
+
+        Color structureColor = (cargo != null) ? cargo.getColor().cpy()
+                : Color.WHITE.cpy();
+        structureColor.a = alpha;
+
+        boolean isActionActive = false;
+        if (modelRef != null && station != null) {
+            for (letrain.vehicle.impl.rail.Locomotive loc : modelRef.getLocomotives()) {
+                letrain.vehicle.impl.rail.Train train = loc.getTrain();
+                if (train != null && train.isLoading()) {
+                    if (train.getStationAtTrain() == station) {
+                        isActionActive = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        Color boardColor = structureColor.cpy();
+        if (isActionActive) {
+            if (System.currentTimeMillis() % 400 < 200) {
+                boardColor = Color.WHITE.cpy();
+                boardColor.a = alpha;
+            }
+        }
+
+        Color mastColor = Color.GRAY.cpy();
+        mastColor.a = alpha;
+
+        float plateLengthPerp = distPlatform + 0.5f;
+        float plateWidth = 1.0f;
+        float plateMidX = xIndex + 0.5f + perpX * (distPlatform / 2f);
+        float plateMidZ = zIndex + 0.5f + perpZ * (distPlatform / 2f);
+        float plateAngle = (float) Math.atan2(perpX, perpZ) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+
+        ModelInstance plate = resourceContext.getModelInstance(resourceContext.wagonJewelModel);
+        plate.materials.get(0)
+                .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(structureColor));
+        plate.transform.setToTranslation(plateMidX, 0.05f, plateMidZ);
+        plate.transform.rotate(0, 1, 0, plateAngle);
+        plate.transform.scale(plateLengthPerp, 0.01f, plateWidth);
+        if (alpha < 1.0f) {
+            plate.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
+        }
+        instances.add(plate);
+
+        ModelInstance mast = resourceContext.getModelInstance(resourceContext.cylinderModel);
+        mast.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(mastColor));
+        mast.transform.setToTranslation(centerX, mastHeight / 2f, centerZ);
+        mast.transform.rotate(0, 1, 0, plateAngle);
+        mast.transform.scale(0.15f, mastHeight, 0.15f);
+        if (alpha < 1.0f) {
+            mast.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
+        }
+        instances.add(mast);
+
+        float boardSize = 0.5f;
+        ModelInstance board = resourceContext.getModelInstance(resourceContext.wagonJewelModel);
+        board.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(boardColor));
+        board.transform.setToTranslation(centerX, mastHeight + (boardSize / 2f), centerZ);
+        board.transform.rotate(0, 1, 0, plateAngle);
+        board.transform.scale(boardSize, boardSize, boardSize);
+        if (alpha < 1.0f) {
+            board.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
+        }
+        instances.add(board);
+
+        float boardCenterY = mastHeight + (boardSize / 2f);
+        Color labelColor = Color.WHITE.cpy();
+        labelColor.a = alpha;
+
+        String idText = (id >= 0) ? String.valueOf(id) : "?";
+        float labelOffset = boardSize / 2f + 0.08f;
+
+        labels.add(new Gdx3DRenderer.VehicleLabel(
+                new Vector3(centerX + perpX * labelOffset, boardCenterY,
+                        centerZ + perpZ * labelOffset),
+                idText, new Vector3(perpX, 0, perpZ), labelColor));
+
+        labels.add(new Gdx3DRenderer.VehicleLabel(
+                new Vector3(centerX - perpX * labelOffset, boardCenterY,
+                        centerZ - perpZ * labelOffset),
+                idText, new Vector3(-perpX, 0, -perpZ), labelColor));
+
+        labels.add(new Gdx3DRenderer.VehicleLabel(
+                new Vector3(centerX + paraX * labelOffset, boardCenterY,
+                        centerZ + paraZ * labelOffset),
+                idText, new Vector3(paraX, 0, paraZ), labelColor));
+
+        labels.add(new Gdx3DRenderer.VehicleLabel(
+                new Vector3(centerX - paraX * labelOffset, boardCenterY,
+                        centerZ - paraZ * labelOffset),
+                idText, new Vector3(-paraX, 0, -paraZ), labelColor));
     }
 
     @Override
