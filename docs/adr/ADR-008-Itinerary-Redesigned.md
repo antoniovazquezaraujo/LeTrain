@@ -19,7 +19,18 @@ ADR-004 definió las bases de los itinerarios (secuencia de estaciones + AutoPil
 
 ### Waypoint
 
-Un `Waypoint` es un punto de paso en el itinerario:
+Un `Waypoint` es un punto de paso en el itinerario. Opcionalmente puede especificar la **dirección de entrada** deseada:
+
+```
+Waypoint {
+    targetType:  STATION | SENSOR
+    targetId:    int
+    entryDir:    Dir | null     // dirección por la que debe entrar (ej: SW, N)
+    commands:    List<WaypointCommand>
+}
+```
+
+Si `entryDir` no es null, el pathfinder solo considerará rutas que lleguen al segmento del destino por esa dirección de entrada. Si es null, cualquier entrada es válida.
 
 ```
 Waypoint {
@@ -41,6 +52,8 @@ Acción a ejecutar al llegar al waypoint:
 | `WAIT(n)` | Esperar n ticks |
 | `SPEED(n)` | Fijar velocidad objetivo a n |
 | `NONE` | Solo pasar (sensor de orientación) |
+
+Las acciones de carga y descarga sobre un sensor no tendrán efecto alguno.
 
 ### Ejemplo
 
@@ -69,7 +82,23 @@ Arista = (Segment A, Segment B) si comparten un RailNode (fork)
 
 - **Heurística**: distancia Manhattan entre centros de segmento
 - **Coste**: 1 por segmento (todos los segmentos pesan igual)
+- **Restricción de entrada**: si el waypoint destino tiene `entryDir`, solo se aceptan rutas cuyo último segmento tenga conexión física en esa dirección
 - **Resultado**: lista ordenada de `Segment` desde el actual hasta el destino
+
+### Tramos independientes (REVERSE)
+
+Un `REVERSE` parte el itinerario en tramos. Cada tramo se resuelve por separado:
+
+```
+[Est 3] → [Sensor 7] → [Sensor 2 REVERSE] → [Est 5]
+
+Tramo 1: posición actual → Sensor 2       [A* normal]
+Tramo 2: Sensor 2 (invertido) → Est 5     [A* nuevo]
+```
+
+- El pathfinder solo calcula de waypoint a waypoint dentro del mismo tramo
+- Si un tramo pasa dos veces por el mismo segmento (ida y vuelta), son tramos distintos → sin conflicto
+- Al ejecutar REVERSE, el AutoPilot invierte la marcha y recalcula desde cero
 
 ### Replanificación
 
