@@ -49,6 +49,10 @@ public class Gdx3DInputHandler implements InputProcessor {
     private long stationInputTimeout = 0;
     private long locomotiveInputTimeout = 0;
 
+    // Itinerary editor state (Phase 5)
+    private boolean editingItinerary = false;
+    private letrain.itinerary.ItineraryBuilder itineraryBuilder;
+
     public Gdx3DInputHandler(Model model, GraphicPresenter view, CameraController cameraController,
                              RailTrackMaker trackMaker, AudioController audioController) {
         this.model = model;
@@ -127,6 +131,10 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
 
         // 2. Resto de caracteres -> view.onChar
+        if (character == 'i' || character == 'I') {
+            toggleItineraryEditor();
+            return true;
+        }
         boolean ctrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)
                 || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
         boolean altPressed = Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)
@@ -383,6 +391,12 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private void handleDriveInput(KeyStroke stroke) {
+        // If editing itinerary, redirect to itinerary handler
+        if (editingItinerary) {
+            handleItineraryInput(stroke);
+            return;
+        }
+
         if (stroke.getKeyType() == KeyType.ArrowUp) {
             Locomotive loco = model.getSelectedLocomotive();
             if (loco != null && loco.isEngineOn() && !loco.getTrain().isLoading()) {
@@ -569,20 +583,64 @@ public class Gdx3DInputHandler implements InputProcessor {
             RailSemaphore s = model.getSelectedSemaphore();
             if (s != null) {
                 s.setOpen(!s.isOpen());
-                audioController.playOneShot("construction",
-                        (float) s.getPosition().getX(),
-                        (float) s.getPosition().getY());
             }
-        } else if (stroke.getKeyType() == KeyType.Character &&
-                Character.isDigit(stroke.getCharacter())) {
-            semaphoreIdAccumulator = semaphoreIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
-            model.selectSemaphore(semaphoreIdAccumulator);
-            semaphoreInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == KeyType.Backspace) {
-            semaphoreIdAccumulator = semaphoreIdAccumulator / 10;
-            model.selectSemaphore(semaphoreIdAccumulator);
-            semaphoreInputTimeout = System.currentTimeMillis() + 1000;
         }
+    }
+
+    // ── Itinerary editor ──────────────────────────────────────────────
+
+    private void toggleItineraryEditor() {
+        editingItinerary = !editingItinerary;
+        if (editingItinerary) {
+            itineraryBuilder = new letrain.itinerary.ItineraryBuilder(() -> java.util.Optional.ofNullable(model.getRailwayGraph()));
+            System.out.println("[ITINERARY] Editor ON — select stations with arrows, SPACE to add, ENTER to save");
+        } else {
+            itineraryBuilder = null;
+            System.out.println("[ITINERARY] Editor OFF");
+        }
+    }
+
+    private void handleItineraryInput(KeyStroke stroke) {
+        if (itineraryBuilder == null) return;
+
+        if (stroke.getKeyType() == KeyType.ArrowLeft) {
+            model.selectPrevStation();
+            showItineraryStatus();
+        } else if (stroke.getKeyType() == KeyType.ArrowRight) {
+            model.selectNextStation();
+            showItineraryStatus();
+        } else if (stroke.getKeyType() == KeyType.Character && stroke.getCharacter() == ' ') {
+            letrain.track.Station st = model.getSelectedStation();
+            if (st != null) {
+                itineraryBuilder.addStation(st);
+                System.out.println("[ITINERARY] Added: " + st.getId() + " (" + itineraryBuilder.waypoints().size() + " total)");
+            }
+        } else if (stroke.getKeyType() == KeyType.Backspace) {
+            itineraryBuilder.removeLast();
+            System.out.println("[ITINERARY] Removed last (" + itineraryBuilder.waypoints().size() + " total)");
+        } else if (stroke.getKeyType() == KeyType.Enter) {
+            if (itineraryBuilder.isValid() && model.getSelectedLocomotive() != null) {
+                letrain.itinerary.Itinerary it = itineraryBuilder.build();
+                letrain.vehicle.impl.rail.Train train = model.getSelectedLocomotive().getTrain();
+                if (train != null) {
+                    train.getAutopilot().setItinerary(it);
+                    System.out.println("[ITINERARY] Saved: " + itineraryBuilder.getName() + " → Train " + train.getId());
+                }
+                itineraryBuilder.clear();
+            } else {
+                System.out.println("[ITINERARY] Need at least 2 stations and a selected locomotive");
+            }
+            showItineraryStatus();
+        }
+    }
+
+    private void showItineraryStatus() {
+        if (itineraryBuilder == null) return;
+        String name = itineraryBuilder.getName();
+        int count = itineraryBuilder.waypoints().size();
+        letrain.track.Station st = model.getSelectedStation();
+        String sel = st != null ? " (selected: Station " + st.getId() + ")" : "";
+        System.out.println("[ITINERARY] " + name + " [" + count + "]" + sel);
     }
 
     private void handleStationInput(KeyStroke stroke) {
