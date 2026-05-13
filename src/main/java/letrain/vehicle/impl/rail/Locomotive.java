@@ -154,6 +154,19 @@ public class Locomotive extends Linker implements Tractor {
                 resetTurns();
             }
 
+            // Autonomous mode: always tick the AutoPilot, not just when isTimeToMove
+            if (getTrain() != null && getTrain().isAutoMode()) {
+                if (getTrain().advance()) {
+                    moved = true;
+                    incDistanceTraveled();
+                    updateInertia();
+                    resetTurns();
+                    updateLimitedSpeed();
+                    this.previousSpeed = this.currentSpeed;
+                }
+                return moved;
+            }
+
             if (currentSpeed > 0) {
                 consumeTurn();
             }
