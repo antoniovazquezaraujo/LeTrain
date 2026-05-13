@@ -201,7 +201,7 @@ Transición AUTO → MANUAL:
 | `WaypointCommand` | Enum: LOAD, UNLOAD, REVERSE, WAIT, SPEED, NONE |
 | `AutoPilot` | Lógica de navegación por tick |
 | `SegmentPathfinder` | A* sobre RailwayGraph |
-| `Itinerary` (refactor) | Lista de Waypoints + estado actual |
+| `Itinerary` (refactor) | `List<Waypoint>` + `currentIndex` + `state` (ACTIVE/PAUSED/DONE). Sustituye al actual `List<Stop>` |
 
 ### Modificaciones
 
@@ -211,6 +211,7 @@ Transición AUTO → MANUAL:
 | `Locomotive.update()` | Si AUTO → delegar en AutoPilot |
 | `ForkRailTrack.flipRoute()` | Si el tren está en AUTO → permitir aunque esté locked |
 | `Gdx3DInputHandler` | Tecla para toggle MANUAL/AUTO |
+| `Itinerary` | Refactorizar: `List<Waypoint>` + estado en vez de `List<Stop>` |
 
 ### UI
 
