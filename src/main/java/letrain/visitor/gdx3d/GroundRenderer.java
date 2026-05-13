@@ -48,16 +48,15 @@ public class GroundRenderer extends BaseSubRenderer {
             yPosition = 0.0f;
         } else if (type >= 20 && type <= 29) {
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            tempColor.set((cargo != null) ? cargo.getColor() : Color.WHITE);
+            com.badlogic.gdx.graphics.g3d.Model consumerModelToUse = resourceContext.coalConsumerModel;
+            if (cargo == CargoTypes.GOLD) consumerModelToUse = resourceContext.goldConsumerModel;
+            else if (cargo == CargoTypes.RUBY) consumerModelToUse = resourceContext.rubyConsumerModel;
+
             float x = ground.getPosition().getX() + 0.5f;
             float z = ground.getPosition().getY() + 0.5f;
-
-            ModelInstance consumerBox = resourceContext.getModelInstance(resourceContext.wagonModel);
-            consumerBox.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(tempColor));
-            float h = 0.25f;
-            consumerBox.transform.setToTranslation(x, h / 2f, z);
-            consumerBox.transform.scale(0.85f, h, 0.85f);
-            instances.add(consumerBox);
+            ModelInstance instance = resourceContext.getModelInstance(consumerModelToUse);
+            instance.transform.setToTranslation(x, 0.01f, z);
+            instances.add(instance);
             model = resourceContext.groundModel;
             yPosition = 0.0f;
         } else {
