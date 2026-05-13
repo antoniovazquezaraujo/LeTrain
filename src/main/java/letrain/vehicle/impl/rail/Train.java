@@ -154,6 +154,28 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     @JsonIgnore
     private transient List<Wagon> currentCapableWagons = null;
 
+    // ── Autonomous driving (ADR-008) ──────────────────────────────
+    @JsonIgnore
+    private transient letrain.itinerary.AutoPilot autopilot;
+    @JsonIgnore
+    private transient boolean autoMode = false;
+
+    public boolean isAutoMode() { return autoMode; }
+
+    public void setAutoMode(boolean on) { this.autoMode = on; }
+
+    public void toggleAutoMode() {
+        if (autoMode) {
+            autoMode = false;
+            if (autopilot != null) autopilot.deactivate();
+        } else if (autopilot != null && autopilot.itinerary().isPresent()) {
+            autoMode = autopilot.activate();
+        }
+    }
+
+    public void setAutopilot(letrain.itinerary.AutoPilot ap) { this.autopilot = ap; }
+    public letrain.itinerary.AutoPilot getAutopilot() { return autopilot; }
+
     @JsonIgnore
     private transient letrain.mvp.Model model;
 
@@ -510,6 +532,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
      * @return true if the train moved, false otherwise
      */
     public boolean advance() {
+        // AutoPilot mode — delegate to the autonomous driver
+        if (autoMode && autopilot != null) {
+            return autopilot.tick();
+        }
+
         // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
         if (isLoading()) {
             return false;
