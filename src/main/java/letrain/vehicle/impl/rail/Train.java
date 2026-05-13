@@ -181,6 +181,13 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     public void setModel(letrain.mvp.Model model) {
         this.model = model;
+        // Wire up AutoPilot when the train is placed in the world
+        if (autopilot == null && model != null) {
+            var ctx = new TrainAutoPilotContext(this);
+            var ap = new letrain.itinerary.impl.AutoPilotImpl(ctx);
+            ap.setPathfinder(new letrain.itinerary.AStarPathfinder(model.getRailwayGraph()));
+            this.autopilot = ap;
+        }
     }
     @JsonIgnore
     List<TrainEventListener> getTrainListeners() {

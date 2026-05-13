@@ -409,6 +409,15 @@ public class Gdx3DInputHandler implements InputProcessor {
                     model.getSelectedLocomotive().toggleReversed();
                 }
             }
+        } else if (stroke.getKeyType() == KeyType.Character
+                && (stroke.getCharacter() == 'a' || stroke.getCharacter() == 'A')) {
+            // Toggle autonomous mode
+            if (model.getSelectedLocomotive() != null) {
+                Train t = model.getSelectedLocomotive().getTrain();
+                if (t != null) {
+                    t.toggleAutoMode();
+                }
+            }
         } else if (stroke.getKeyType() == KeyType.Character &&
                 Character.isDigit(stroke.getCharacter())) {
             locomotiveIdAccumulator = locomotiveIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
