@@ -135,9 +135,13 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     private boolean followRoute() {
-        if (currentRoute.size() <= 1) return false; // already at destination
+        if (currentRoute.isEmpty()) return false;
 
-        Segment nextSeg = currentRoute.get(1); // next segment to enter
+        // Same segment — just move forward until arrival
+        if (currentRoute.size() <= 1) {
+            ctx.setTargetSpeed(3);
+            return true;
+        }
         if (nextSeg == null) return false;
 
         // Check if next segment is free
