@@ -103,25 +103,25 @@ El `AutoPilot` es el que **ejecuta**: recibe la ruta del pathfinder y se encarga
 
 ### Tramos independientes (REVERSE)
 
-Un `REVERSE` parte el itinerario en tramos. Cada tramo se resuelve por separado:
+El pathfinder **nunca calcula el itinerario completo de golpe**. Siempre lo hace entre waypoints consecutivos:
 
-```
-[Est 3] → [Sensor 7] → [Sensor 2 REVERSE] → [Est 5]
+**En creación** (modo edición):
+- Validar que cada par `waypoint[i] → waypoint[i+1]` es alcanzable
+- Si algún par falla → el itinerario no se puede crear
 
-Tramo 1: posición actual → Sensor 2       [A* normal]
-Tramo 2: Sensor 2 (invertido) → Est 5     [A* nuevo]
-```
+**En ejecución** (modo AutoPilot):
+- Calcular ruta al waypoint actual → recorrerla → llegar → siguiente waypoint
+- El pathfinder se llama de nuevo para cada tramo (la topología pudo cambiar)
 
-- El pathfinder solo calcula de waypoint a waypoint dentro del mismo tramo
-- Si un tramo pasa dos veces por el mismo segmento (ida y vuelta), son tramos distintos → sin conflicto
-- Al ejecutar REVERSE, el AutoPilot invierte la marcha y recalcula desde cero
+Un `REVERSE` simplemente invierte la marcha y recalcula desde la nueva orientación al siguiente waypoint. No requiere estructura de datos especial.
 
 ### Replanificación
 
 Si la ruta se bloquea (segmento ocupado por otro tren), el AutoPilot:
-1. Espera N ticks (configurable)
+1. Espera N ticks (configurable, ej. 300 = 15 segundos)
 2. Recalcula la ruta desde la posición actual
-3. Si no hay ruta alternativa → frena y devuelve control a MANUAL
+3. Si sigue bloqueado → vuelve a esperar y reintenta
+4. Solo pasa a MANUAL si la ruta es **estructuralmente imposible** (topología cambió, waypoint desapareció, el tren descarriló)
 
 ---
 
@@ -162,11 +162,12 @@ Al ejecutar `REVERSE`:
 
 ### Fallback a manual
 
-El AutoPilot devuelve el control a MANUAL si:
-- No encuentra ruta al siguiente waypoint
-- La ruta está bloqueada más de N ticks sin alternativa
+El AutoPilot solo devuelve el control a MANUAL si:
+- La ruta es estructuralmente imposible (topología cambió, el waypoint ya no existe)
 - El tren sufre un choque o descarrilamiento
 - El jugador pulsa la tecla de modo manual
+
+Un bloqueo temporal NUNCA provoca fallback — solo espera y reintenta.
 
 ---
 
@@ -180,14 +181,24 @@ Cada tren tiene un flag `mode: MANUAL | AUTOMÁTICO`.
 | Dirección | Jugador | AutoPilot |
 | Forks | Jugador (si no bloqueados) | Sistema (sin restricción) |
 | Link/Unlink | Jugador | Bloqueado |
-| Colisión | Contacto/Crash normal | Frenada emergencia + fallback manual |
+| Colisión | Contacto/Crash normal | Frenada emergencia + reintento |
 
 Transición MANUAL → AUTO:
+- El jugador pulsa una tecla en modo DRIVE
+- Solo si el tren tiene un itinerario asignado
 - Solo si existe ruta válida al primer waypoint
 - Solo si el tren está parado (speed=0)
 
 Transición AUTO → MANUAL:
-- Siempre permitida (jugador o fallback)
+- El jugador pulsa la tecla de modo
+- El jugador cambia la velocidad manualmente (incSpeed/decSpeed)
+- Choque o descarrilamiento
+
+### Asignación de itinerarios
+
+- En el editor de itinerarios, se asigna un itinerario a uno o varios trenes (relación 1:N)
+- Un tren con itinerario asignado NO está en automático hasta que el jugador lo active
+- El jugador decide cuándo arrancar cada tren en automático desde el modo DRIVE
 
 ---
 
@@ -210,7 +221,7 @@ Transición AUTO → MANUAL:
 | `Train` | Añadir `mode` (MANUAL/AUTO) y `AutoPilot` |
 | `Locomotive.update()` | Si AUTO → delegar en AutoPilot |
 | `ForkRailTrack.flipRoute()` | Si el tren está en AUTO → permitir aunque esté locked |
-| `Gdx3DInputHandler` | Tecla para toggle MANUAL/AUTO |
+| `Gdx3DInputHandler` | Tecla en modo DRIVE para toggle MANUAL/AUTO; cambio de velocidad → AUTO→MANUAL |
 | `Itinerary` | Refactorizar: `List<Waypoint>` + estado en vez de `List<Stop>` |
 
 ### UI
@@ -231,7 +242,7 @@ Transición AUTO → MANUAL:
 | 4 | Modo dual (MANUAL/AUTO) en Train + UI | Alta |
 | 5 | Comandos REVERSE, WAIT, SPEED | Media |
 | 6 | Fallback, replanificación, detección de llegada a waypoint | Media |
-| 7 | Editor visual de itinerarios | Baja |
+| 7 | Editor visual de itinerarios (ver `ADR-009-Itinerary-Editor`) | Baja |
 
 ---
 
