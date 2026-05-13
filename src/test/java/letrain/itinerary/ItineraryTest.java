@@ -1,5 +1,7 @@
 package letrain.itinerary;
 
+import letrain.itinerary.impl.ItineraryImpl;
+import letrain.itinerary.impl.WaypointImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -13,7 +15,7 @@ class ItineraryTest {
     @Test
     @DisplayName("should create empty itinerary")
     void emptyItinerary() {
-        Itinerary it = new Itinerary();
+        Itinerary it = new ItineraryImpl();
         assertTrue(it.waypoints().isEmpty());
         assertEquals(Itinerary.State.CREATED, it.state());
     }
@@ -21,10 +23,10 @@ class ItineraryTest {
     @Test
     @DisplayName("should add waypoints")
     void addWaypoints() {
-        Itinerary it = new Itinerary();
-        it.addWaypoint(new Waypoint(Waypoint.Type.STATION, 1, List.of(WaypointCommand.LOAD)));
-        it.addWaypoint(new Waypoint(Waypoint.Type.SENSOR, 7, List.of()));
-        it.addWaypoint(new Waypoint(Waypoint.Type.STATION, 5, List.of(WaypointCommand.UNLOAD)));
+        Itinerary it = new ItineraryImpl();
+        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.LOAD)));
+        it.addWaypoint(new WaypointImpl(Waypoint.Type.SENSOR, 7, List.of()));
+        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 5, List.of(WaypointCommand.UNLOAD)));
 
         assertEquals(3, it.waypoints().size());
         assertEquals(1, it.waypoints().get(0).targetId());
@@ -35,26 +37,26 @@ class ItineraryTest {
     @Test
     @DisplayName("should not be valid with less than 2 waypoints")
     void needsTwoWaypoints() {
-        Itinerary it = new Itinerary();
-        it.addWaypoint(new Waypoint(Waypoint.Type.STATION, 1, List.of()));
+        Itinerary it = new ItineraryImpl();
+        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 1, List.of()));
         assertFalse(it.isValid());
     }
 
     @Test
     @DisplayName("should be valid with 2 or more waypoints")
     void validWithTwoWaypoints() {
-        Itinerary it = new Itinerary();
-        it.addWaypoint(new Waypoint(Waypoint.Type.STATION, 1, List.of()));
-        it.addWaypoint(new Waypoint(Waypoint.Type.STATION, 2, List.of()));
+        Itinerary it = new ItineraryImpl();
+        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 1, List.of()));
+        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 2, List.of()));
         assertTrue(it.isValid());
     }
 
     @Test
     @DisplayName("should track current waypoint index")
     void currentIndex() {
-        Itinerary it = new Itinerary();
-        it.addWaypoint(new Waypoint(Waypoint.Type.STATION, 1, List.of()));
-        it.addWaypoint(new Waypoint(Waypoint.Type.STATION, 2, List.of()));
+        Itinerary it = new ItineraryImpl();
+        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 1, List.of()));
+        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 2, List.of()));
 
         assertEquals(0, it.currentIndex());
         it.advance();
@@ -67,9 +69,9 @@ class ItineraryTest {
     @Test
     @DisplayName("should be done when all waypoints visited")
     void doneWhenAllVisited() {
-        Itinerary it = new Itinerary();
-        it.addWaypoint(new Waypoint(Waypoint.Type.STATION, 1, List.of()));
-        it.addWaypoint(new Waypoint(Waypoint.Type.STATION, 2, List.of()));
+        Itinerary it = new ItineraryImpl();
+        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 1, List.of()));
+        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 2, List.of()));
 
         it.advance();
         it.advance();
@@ -79,9 +81,9 @@ class ItineraryTest {
     @Test
     @DisplayName("should return current waypoint")
     void currentWaypoint() {
-        Itinerary it = new Itinerary();
-        Waypoint wp1 = new Waypoint(Waypoint.Type.STATION, 1, List.of());
-        Waypoint wp2 = new Waypoint(Waypoint.Type.STATION, 2, List.of());
+        Itinerary it = new ItineraryImpl();
+        Waypoint wp1 = new WaypointImpl(Waypoint.Type.STATION, 1, List.of());
+        Waypoint wp2 = new WaypointImpl(Waypoint.Type.STATION, 2, List.of());
         it.addWaypoint(wp1);
         it.addWaypoint(wp2);
 
@@ -93,7 +95,7 @@ class ItineraryTest {
     @Test
     @DisplayName("should allow assigning to multiple trains")
     void multipleTrains() {
-        Itinerary it = new Itinerary();
+        Itinerary it = new ItineraryImpl();
         it.assignTrain(1);
         it.assignTrain(2);
         it.assignTrain(3);
@@ -107,7 +109,7 @@ class ItineraryTest {
     @Test
     @DisplayName("should allow unassigning trains")
     void unassignTrain() {
-        Itinerary it = new Itinerary();
+        Itinerary it = new ItineraryImpl();
         it.assignTrain(1);
         it.assignTrain(2);
         it.unassignTrain(1);

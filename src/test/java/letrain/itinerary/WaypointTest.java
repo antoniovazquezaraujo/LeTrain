@@ -1,5 +1,6 @@
 package letrain.itinerary;
 
+import letrain.itinerary.impl.WaypointImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -12,7 +13,7 @@ class WaypointTest {
     @Test
     @DisplayName("should create station waypoint with id")
     void stationWaypoint() {
-        Waypoint wp = new Waypoint(Waypoint.Type.STATION, 3, List.of(WaypointCommand.LOAD));
+        Waypoint wp = new WaypointImpl(Waypoint.Type.STATION, 3, List.of(WaypointCommand.LOAD));
 
         assertEquals(Waypoint.Type.STATION, wp.type());
         assertEquals(3, wp.targetId());
@@ -22,7 +23,7 @@ class WaypointTest {
     @Test
     @DisplayName("should create sensor waypoint without commands")
     void sensorWaypoint() {
-        Waypoint wp = new Waypoint(Waypoint.Type.SENSOR, 7, List.of());
+        Waypoint wp = new WaypointImpl(Waypoint.Type.SENSOR, 7, List.of());
 
         assertEquals(Waypoint.Type.SENSOR, wp.type());
         assertEquals(7, wp.targetId());
@@ -32,7 +33,7 @@ class WaypointTest {
     @Test
     @DisplayName("should allow optional entry direction")
     void withEntryDir() {
-        Waypoint wp = new Waypoint(Waypoint.Type.STATION, 5, letrain.map.Dir.SW, List.of());
+        Waypoint wp = new WaypointImpl(Waypoint.Type.STATION, 5, letrain.map.Dir.SW, List.of());
 
         assertEquals(letrain.map.Dir.SW, wp.entryDir().orElse(null));
     }
@@ -40,7 +41,7 @@ class WaypointTest {
     @Test
     @DisplayName("should have empty entryDir when not specified")
     void withoutEntryDir() {
-        Waypoint wp = new Waypoint(Waypoint.Type.STATION, 5, List.of());
+        Waypoint wp = new WaypointImpl(Waypoint.Type.STATION, 5, List.of());
 
         assertTrue(wp.entryDir().isEmpty());
     }
@@ -48,7 +49,7 @@ class WaypointTest {
     @Test
     @DisplayName("should allow REVERSE command on sensor waypoint")
     void sensorWithReverse() {
-        Waypoint wp = new Waypoint(Waypoint.Type.SENSOR, 2, List.of(WaypointCommand.REVERSE));
+        Waypoint wp = new WaypointImpl(Waypoint.Type.SENSOR, 2, List.of(WaypointCommand.REVERSE));
 
         assertTrue(wp.commands().contains(WaypointCommand.REVERSE));
     }
@@ -56,7 +57,7 @@ class WaypointTest {
     @Test
     @DisplayName("should allow WAIT with ticks")
     void withWaitCommand() {
-        Waypoint wp = new Waypoint(Waypoint.Type.SENSOR, 1, List.of(WaypointCommand.waitTicks(300)));
+        Waypoint wp = new WaypointImpl(Waypoint.Type.SENSOR, 1, List.of(WaypointCommand.waitTicks(300)));
 
         assertEquals(300, wp.commands().get(0).ticks());
     }
