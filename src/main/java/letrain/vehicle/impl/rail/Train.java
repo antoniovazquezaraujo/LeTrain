@@ -165,11 +165,20 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     public void setAutoMode(boolean on) { this.autoMode = on; }
 
     public void toggleAutoMode() {
+        log.info("[AUTO] toggle: autoMode={} autopilot={} hasItinerary={} speed={}",
+                autoMode, autopilot != null,
+                autopilot != null && autopilot.itinerary().isPresent(),
+                getSpeed());
         if (autoMode) {
             autoMode = false;
             if (autopilot != null) autopilot.deactivate();
+            log.info("[AUTO] deactivated");
         } else if (autopilot != null && autopilot.itinerary().isPresent()) {
-            autoMode = autopilot.activate();
+            boolean ok = autopilot.activate();
+            autoMode = ok;
+            log.info("[AUTO] activate result={}", ok);
+        } else {
+            log.info("[AUTO] cannot activate: no autopilot or no itinerary");
         }
     }
 
@@ -187,6 +196,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             var ap = new letrain.itinerary.impl.AutoPilotImpl(ctx);
             ap.setPathfinder(new letrain.itinerary.AStarPathfinder(model.getRailwayGraph()));
             this.autopilot = ap;
+            log.info("[AUTO] autopilot wired for train {}", id);
         }
     }
     @JsonIgnore
