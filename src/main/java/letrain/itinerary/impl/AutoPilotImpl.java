@@ -59,6 +59,8 @@ public class AutoPilotImpl implements AutoPilot {
         if (mode == Mode.IDLE || mode == Mode.ERROR) return false;
         if (itinerary == null) { mode = Mode.ERROR; return false; }
 
+        System.out.println("[AP] tick mode=" + mode + " wpIdx=" + waypointIndex + " routeSize=" + currentRoute.size());
+
         // Handle WAIT command
         if (mode == Mode.WAITING) {
             waitTicks--;
@@ -109,15 +111,26 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     private boolean calculateRoute() {
-        if (pathfinder == null || itinerary == null) return false;
+        if (pathfinder == null || itinerary == null) {
+            System.out.println("[AP] calculateRoute: no pathfinder or itinerary");
+            return false;
+        }
         Optional<Waypoint> wp = itinerary.currentWaypoint();
-        if (wp.isEmpty()) return false;
+        if (wp.isEmpty()) {
+            System.out.println("[AP] calculateRoute: no current waypoint");
+            return false;
+        }
 
         Segment currentSeg = ctx.currentSegment();
         Segment targetSeg = ctx.targetSegment(wp.get());
-        if (currentSeg == null || targetSeg == null) return false;
+        System.out.println("[AP] calculateRoute: from " + currentSeg + " to " + targetSeg);
+        if (currentSeg == null || targetSeg == null) {
+            System.out.println("[AP] calculateRoute: null segment");
+            return false;
+        }
 
         currentRoute = pathfinder.find(currentSeg, targetSeg, wp.get().entryDir());
+        System.out.println("[AP] calculateRoute: result size=" + currentRoute.size());
         return !currentRoute.isEmpty();
     }
 
