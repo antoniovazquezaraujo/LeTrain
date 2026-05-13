@@ -342,7 +342,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             float jewelY = 0.26f + (currentHeight / 2f);
             jewelBlock.transform.setToTranslation(renderX, jewelY, renderY);
             jewelBlock.transform.rotate(0, 1, 0, angle);
-            jewelBlock.transform.scale(0.6f, currentHeight, 0.6f);
+            jewelBlock.transform.scale(0.55f, currentHeight, 0.55f);
             instances.add(jewelBlock);
         }
 
