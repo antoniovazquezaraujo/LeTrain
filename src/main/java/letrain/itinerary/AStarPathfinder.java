@@ -7,13 +7,15 @@ import letrain.map.Dir;
 
 import java.util.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * A* pathfinder over the railway segment graph.
- * Cost = number of RailTracks in each segment (real length).
- * Heuristic = Manhattan distance between segment entry nodes.
  */
 public class AStarPathfinder implements SegmentPathfinder {
 
+    private static final Logger log = LoggerFactory.getLogger(AStarPathfinder.class);
     private final RailwayGraph graph;
 
     public AStarPathfinder(RailwayGraph graph) {
@@ -27,15 +29,25 @@ public class AStarPathfinder implements SegmentPathfinder {
 
         Map<Segment, Integer> gScore = new HashMap<>();
         Map<Segment, Segment> cameFrom = new HashMap<>();
-        PriorityQueue<Segment> openSet = new PriorityQueue<>(
-            Comparator.comparingInt(s -> gScore.getOrDefault(s, Integer.MAX_VALUE) + heuristic(s, to)));
+        Set<Segment> closed = new HashSet<>();
 
+        // Open set: map segment → f-score. Pick lowest f each iteration.
+        Map<Segment, Integer> openMap = new HashMap<>();
         gScore.put(from, 0);
-        openSet.add(from);
+        openMap.put(from, heuristic(from, to));
         int explored = 0;
 
-        while (!openSet.isEmpty()) {
-            Segment current = openSet.poll();
+        while (!openMap.isEmpty()) {
+            // Find segment with lowest f-score
+            Segment current = null;
+            int bestF = Integer.MAX_VALUE;
+            for (var entry : openMap.entrySet()) {
+                if (entry.getValue() < bestF) {
+                    bestF = entry.getValue();
+                    current = entry.getKey();
+                }
+            }
+            openMap.remove(current);
             explored++;
 
             if (current.equals(to)) {
@@ -45,25 +57,25 @@ public class AStarPathfinder implements SegmentPathfinder {
                         continue;
                     }
                 }
-                System.out.println("[A*] FOUND route " + from.getId() + "→" + to.getId()
-                    + " explored=" + explored + " path=" + reconstructPath(cameFrom, current).size());
+                log.info("[A*] FOUND {}→{} explored={} path={}",
+                    from.getId(), to.getId(), explored, reconstructPath(cameFrom, current).size());
                 return reconstructPath(cameFrom, current);
             }
 
+            if (!closed.add(current)) continue;
+
             for (Segment neighbor : getNeighbors(current)) {
+                if (closed.contains(neighbor)) continue;
                 int tentativeG = gScore.get(current) + segmentCost(neighbor);
                 if (tentativeG < gScore.getOrDefault(neighbor, Integer.MAX_VALUE)) {
                     cameFrom.put(neighbor, current);
                     gScore.put(neighbor, tentativeG);
-                    if (!openSet.contains(neighbor)) {
-                        openSet.add(neighbor);
-                    }
+                    openMap.put(neighbor, tentativeG + heuristic(neighbor, to));
                 }
             }
         }
 
-        System.out.println("[A*] NO ROUTE " + from.getId() + "→" + to.getId()
-            + " explored=" + explored + " segments");
+        log.warn("[A*] NO ROUTE {}→{} explored={}", from.getId(), to.getId(), explored);
         return List.of();
     }
 
@@ -79,15 +91,26 @@ public class AStarPathfinder implements SegmentPathfinder {
     }
 
     private int heuristic(Segment a, Segment b) {
-        // Manhattan distance between the segment entry nodes
-        var aPos = a.getSteps().getFirst().getRailNode().getTrack().getPosition();
-        var bPos = b.getSteps().getFirst().getRailNode().getTrack().getPosition();
-        return Math.abs(aPos.getX() - bPos.getX()) + Math.abs(aPos.getY() - bPos.getY());
+        try {
+            var aPair = a.getSteps();
+            var bPair = b.getSteps();
+            if (aPair == null || bPair == null) return 0;
+            var aNode = aPair.getFirst();
+            var bNode = bPair.getFirst();
+            if (aNode == null || bNode == null) return 0;
+            var aTrack = aNode.getRailNode();
+            var bTrack = bNode.getRailNode();
+            if (aTrack == null || bTrack == null) return 0;
+            var aPos = aTrack.getTrack().getPosition();
+            var bPos = bTrack.getTrack().getPosition();
+            if (aPos == null || bPos == null) return 0;
+            return Math.abs(aPos.getX() - bPos.getX()) + Math.abs(aPos.getY() - bPos.getY());
+        } catch (NullPointerException e) {
+            return 0;
+        }
     }
 
     private int segmentCost(Segment s) {
-        // Cost = 1 for now (we don't have track count easily available)
-        // TODO: use actual track count when available
         return 1;
     }
 

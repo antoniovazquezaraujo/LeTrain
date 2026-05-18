@@ -115,7 +115,7 @@ class AutoPilotIntegrationTest {
     // ═══════════════════════════════════════════════════════════════════
 
     @Test
-    @Disabled("A* route not found on fork layouts — bug to fix")
+    @Disabled("RailwayGraph.getSegment(track) returns wrong segment for fork layouts")
     @DisplayName("4.1 Fork: Madrid → Zaragoza, autopilot changes fork")
     void fork_autoChangesRoute() {
         /*
@@ -131,10 +131,12 @@ class AutoPilotIntegrationTest {
         RailTrack t1 = makeTrack(1, 0, Dir.W, Dir.E);
         ForkRailTrack fork = new ForkRailTrack(1);
         fork.setPosition(new Point(2, 0));
-        fork.addRoute(Dir.W, Dir.E);   // straight
-        fork.addRoute(Dir.E, Dir.W);
-        fork.addRoute(Dir.W, Dir.N);   // branch (north to Zaragoza)
-        fork.addRoute(Dir.N, Dir.W);
+        fork.addRoute(Dir.W, Dir.E);   // straight W→E
+        fork.addRoute(Dir.E, Dir.W);   // straight E→W
+        fork.addRoute(Dir.W, Dir.N);   // branch W→N
+        fork.addRoute(Dir.N, Dir.W);   // branch N→W
+        fork.addRoute(Dir.E, Dir.N);   // branch E→N (needed for A*)
+        fork.addRoute(Dir.N, Dir.E);   // branch N→E
         fork.setNormalRoute();
         railMap().addTrack(new Point(2, 0), fork);
         model.addFork(fork);
@@ -165,6 +167,16 @@ class AutoPilotIntegrationTest {
             """.formatted(madrid.getId(), zaragoza.getId(), train.getId(), train.getId()));
 
         assertTrue(train.isAutoMode());
+        assertFalse(fork.isUsingAlternativeRoute(), "fork starts in normal position");
+
+        // Debug: dump graph structure
+        if (model.getRailwayGraph() != null) {
+            System.out.println("[TEST] GRAPH:\n" + model.getRailwayGraph());
+            // Show which segment the train is on
+            var seg = model.getRailwayGraph().getSegment(
+                (letrain.track.rail.RailTrack) train.getLinkers().getFirst().getTrack());
+            System.out.println("[TEST] Train is on segment: " + (seg != null ? seg.getId() : "null"));
+        }
 
         runTicks(300);
 
