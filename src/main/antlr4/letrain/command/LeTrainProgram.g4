@@ -38,8 +38,7 @@ sensorRef  : STRING | NUMBER ;
 
 direction : dir ;
 
-action : 'PASO' | 'PARADA' | 'CARGA' | 'DESCARGA' | 'REVERSE'
-       | 'LOAD' | 'UNLOAD'
+action : 'LOAD' | 'UNLOAD' | 'REVERSE' | 'STOP'
        | 'WAIT' NUMBER
        | 'SPEED' NUMBER
        ;

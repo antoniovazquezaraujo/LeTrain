@@ -166,12 +166,14 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     public void setAutoMode(boolean on) { this.autoMode = on; }
 
     public void toggleAutoMode() {
+        log.info("[TRAIN] toggleAutoMode() current={}", autoMode);
         if (autoMode) {
             autoMode = false;
             if (autopilot != null) autopilot.deactivate();
         } else if (autopilot != null && autopilot.itinerary().isPresent()) {
             autoMode = autopilot.activate();
         }
+        log.info("[TRAIN] toggleAutoMode → autoMode={}", autoMode);
     }
 
     public void setAutopilot(letrain.itinerary.AutoPilot ap) { this.autopilot = ap; }
@@ -537,9 +539,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
      * @return true if the train moved, false otherwise
      */
     public boolean advance() {
-        // AutoPilot mode — let it control speed/direction, then move normally
+        // AutoPilot mode — let it control speed/direction, then move normally.
+        // Return true even if tick() says false, to avoid locomotive punishing
+        // the train with an abrupt speed=0 (freno en seco).
         if (autoMode && autopilot != null) {
-            if (!autopilot.tick()) return false;
+            autopilot.tick();
             // Continue with physical movement below
         }
 

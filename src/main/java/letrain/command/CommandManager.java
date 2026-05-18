@@ -496,6 +496,10 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                 new letrain.itinerary.AStarPathfinder(model.getRailwayGraph()));
         }
         train.getAutopilot().setItinerary(it);
+        // Re-activate if autopilot was on (itinerary change resets to IDLE)
+        if (train.isAutoMode()) {
+            train.getAutopilot().activate();
+        }
         log.info("[DSL] Itinerary '{}' assigned to Train {}", itName, train.getId());
         return null;
     }
@@ -552,17 +556,14 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     private List<WaypointCommand> toCommands(LeTrainProgramParser.ActionContext ctx) {
         String text = ctx.getText().toUpperCase();
         return switch (text) {
-            case "PASO"     -> List.of();
-            case "PARADA"   -> List.of(WaypointCommand.waitTicks(100));
-            case "CARGA"    -> List.of(WaypointCommand.LOAD);
-            case "DESCARGA" -> List.of(WaypointCommand.UNLOAD);
-            case "REVERSE"  -> List.of(WaypointCommand.REVERSE);
             case "LOAD"     -> List.of(WaypointCommand.LOAD);
             case "UNLOAD"   -> List.of(WaypointCommand.UNLOAD);
+            case "REVERSE"  -> List.of(WaypointCommand.REVERSE);
+            case "STOP"     -> List.of(WaypointCommand.speed(0));
             default -> {
                 if (text.startsWith("WAIT")) {
-                    int ticks = Integer.parseInt(ctx.NUMBER().getText());
-                    yield List.of(WaypointCommand.waitTicks(ticks));
+                    int seconds = Integer.parseInt(ctx.NUMBER().getText());
+                    yield List.of(WaypointCommand.waitTicks(seconds * WaypointCommand.TICKS_PER_SECOND));
                 } else if (text.startsWith("SPEED")) {
                     int speed = Integer.parseInt(ctx.NUMBER().getText());
                     yield List.of(WaypointCommand.speed(speed));

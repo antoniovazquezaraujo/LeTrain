@@ -38,7 +38,7 @@ train "Expreso" set autopilot true;
 - Las estaciones/sensores/trenes se referencian por **nombre** o por **ID numérico**
 - Cada waypoint acepta **múltiples acciones** (`LOAD REVERSE`, `PARADA UNLOAD`)
 - La dirección de entrada es opcional (`N`, `S`, `E`, `W`, `NE`, `NW`, `SE`, `SW`)
-- Acciones disponibles: `PASO`, `PARADA`, `CARGA`, `DESCARGA`, `REVERSE`, `LOAD`, `UNLOAD`, `WAIT N`, `SPEED N`
+- Acciones disponibles: `LOAD`, `UNLOAD`, `REVERSE`, `WAIT N`, `SPEED N`
 - En modo DRIVE, `↑`/`↓` desactivan el autopilot; `a` lo reactiva
 
 ### Implementación

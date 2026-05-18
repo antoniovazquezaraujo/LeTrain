@@ -13,6 +13,7 @@ public interface Itinerary {
     boolean isValid();
     int currentIndex();
     void advance();
+    void reset();
     Optional<Waypoint> currentWaypoint();
     void assignTrain(int trainId);
     void unassignTrain(int trainId);

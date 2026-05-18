@@ -186,10 +186,14 @@ public class Locomotive extends Linker implements Tractor {
                     getTrain().getTractors().stream()
                             .filter(t -> t instanceof Locomotive && t != this)
                             .forEach(t -> ((Locomotive) t).resetTurns());
-                } else {
-                    // Blocked/Collision - Stop the train
+                } else if (getTrain() == null || !getTrain().isAutoMode()) {
+                    // Blocked/Collision — stop the train (only in manual mode)
                     setCurrentSpeed(0);
                     setTargetSpeed(0);
+                } else {
+                    // Auto mode: don't punish, but let inertia brake
+                    updateInertia();
+                    resetTurns();
                 }
             }
         } else {

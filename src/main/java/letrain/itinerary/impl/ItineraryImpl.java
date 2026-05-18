@@ -46,6 +46,12 @@ public class ItineraryImpl implements Itinerary {
     }
 
     @Override
+    public void reset() {
+        state = State.CREATED;
+        currentIndex = 0;
+    }
+
+    @Override
     public Optional<Waypoint> currentWaypoint() {
         if (currentIndex < waypoints.size()) {
             return Optional.of(waypoints.get(currentIndex));
