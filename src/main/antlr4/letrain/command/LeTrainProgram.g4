@@ -2,13 +2,55 @@ grammar LeTrainProgram;
 
 start : statement+;
 
-statement : trigger commandBlock;
+statement : trigger commandBlock          // event-driven automation
+          | createItinerary               // } is the terminator, no ; needed
+          | directCommand ';'             // other immediate commands need ;
+          ;
 
-trigger : 
-      sensorSelector    'on' trainSelector trainEvent  
-    | forkSelector      'on' trainSelector trainEvent 
-    | semaphoreSelector 'on' trainSelector trainEvent 
-    | stationSelector   'on' (trainSelector trainEvent | trainEvent trainSelector) 
+// ── Direct commands (execute once when Apply is pressed) ──
+
+directCommand : assignItinerary
+              | setAutopilot
+              | setNameCommand
+              ;
+
+createItinerary : 'create' 'itinerary' STRING '{' waypoint* '}' ;
+
+assignItinerary : 'assign' 'itinerary' STRING 'to' 'train' trainRef ;
+
+setAutopilot : 'train' trainRef 'set' 'autopilot' bool ;
+
+setNameCommand : 'station' NUMBER 'set' 'name' STRING
+               | 'sensor'  NUMBER 'set' 'name' STRING
+               | 'train'   NUMBER 'set' 'name' STRING
+               ;
+
+bool : 'true' | 'false' ;
+
+trainRef : NUMBER | STRING ;
+
+waypoint : 'add' 'station' stationRef direction? action*
+         | 'add' 'sensor'  sensorRef  direction? action*
+         ;
+
+stationRef : STRING | NUMBER ;
+sensorRef  : STRING | NUMBER ;
+
+direction : dir ;
+
+action : 'PASO' | 'PARADA' | 'CARGA' | 'DESCARGA' | 'REVERSE'
+       | 'LOAD' | 'UNLOAD'
+       | 'WAIT' NUMBER
+       | 'SPEED' NUMBER
+       ;
+
+// ── Trigger-based automation (existing) ──
+
+trigger :
+      sensorSelector    'on' trainSelector trainEvent
+    | forkSelector      'on' trainSelector trainEvent
+    | semaphoreSelector 'on' trainSelector trainEvent
+    | stationSelector   'on' (trainSelector trainEvent | trainEvent trainSelector)
     | trainSelector     'on' ('crash' | 'contact') (sense)?
     ;
 
@@ -24,8 +66,8 @@ commandBlock : '{' commandItem* '}';
 
 commandItem : (
       semaphoreSelector  semaphoreAction
-    | forkSelector       forkAction 
-    | (trainSelector|trainExtractor) trainAction     
+    | forkSelector       forkAction
+    | (trainSelector|trainExtractor) trainAction
     )
     ';'
     ;
@@ -45,6 +87,8 @@ trainSense      : 'forward' | 'backward';
 trainSpeed      : NUMBER;
 
 sense : 'forward' | 'backward';
-dir   : 'E'| 'NE' | 'N' | 'NW' | 'W' | 'SW' | 'S' | 'SE'; 
+dir   : 'E'| 'NE' | 'N' | 'NW' | 'W' | 'SW' | 'S' | 'SE';
+
 NUMBER : [0-9]+;
+STRING : '"' ~["]* '"' ;
 WS : [ \t\r\n]+ -> skip;

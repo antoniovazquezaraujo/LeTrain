@@ -623,6 +623,24 @@ public class Model implements letrain.mvp.Model {
         return null;
     }
 
+    @Override public Station findStationByName(String name) {
+        for (Station s : getStations()) { if (name.equals(s.getName())) return s; }
+        return null;
+    }
+
+    @Override public Sensor findSensorByName(String name) {
+        for (Sensor s : getSensors()) { if (name.equals(s.getName())) return s; }
+        return null;
+    }
+
+    @Override public Train findTrainByName(String name) {
+        for (Locomotive l : getLocomotives()) {
+            Train t = l.getTrain();
+            if (t != null && name.equals(t.getName())) return t;
+        }
+        return null;
+    }
+
     @Override public Station getSelectedStation() { return selectedStation; }
     @Override public void setSelectedStation(Station selectedStation) { this.selectedStation = selectedStation; }
 

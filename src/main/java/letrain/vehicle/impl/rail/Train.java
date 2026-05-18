@@ -68,6 +68,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     int railStationId = 0;
     private boolean stalled = false;
     int id;
+    private String name;
 
     public boolean isShuntingMode() {
         if (model == null) return false;
@@ -285,6 +286,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     public int getId() {
         return this.id;
     }
+
+    public String getName() { return name; }
+
+    public void setName(String name) { this.name = name; }
 
     @JsonIgnore
     public void rebind() {
@@ -532,9 +537,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
      * @return true if the train moved, false otherwise
      */
     public boolean advance() {
-        // AutoPilot mode — delegate to the autonomous driver
+        // AutoPilot mode — let it control speed/direction, then move normally
         if (autoMode && autopilot != null) {
-            return autopilot.tick();
+            if (!autopilot.tick()) return false;
+            // Continue with physical movement below
         }
 
         // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.

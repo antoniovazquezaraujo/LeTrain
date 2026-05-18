@@ -19,6 +19,7 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 
 ## 🧭 Navegación y Automatización
 - [[navigation/AStarPathfinder|Navegación Autónoma (Funcionalidad Planificada)]]
+- [[adr/ADR-009-Itinerary-Editor|ADR-009: Editor de Itinerarios (DSL)]]
 
 ## 🎨 Interfaz y Visualización
 - [[ui/RenderingDeepDive|Profundización en el Motor de Renderizado]]

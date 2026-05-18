@@ -122,7 +122,13 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     private boolean followRoute() {
-        if (currentRoute.size() <= 1) return false; // already at destination
+        if (currentRoute.isEmpty()) return false;
+
+        // Single segment: just move forward, no fork to set
+        if (currentRoute.size() == 1) {
+            ctx.setTargetSpeed(5);
+            return true;
+        }
 
         Segment nextSeg = currentRoute.get(1); // next segment to enter
         if (nextSeg == null) return false;
@@ -139,9 +145,9 @@ public class AutoPilotImpl implements AutoPilot {
         // Control speed: slow down when approaching destination
         int remaining = currentRoute.size() - 1;
         if (remaining <= 2) {
-            ctx.setTargetSpeed(Math.min(2, ctx.targetSpeed()));
+            ctx.setTargetSpeed(2);
         } else {
-            ctx.setTargetSpeed(Math.min(5, ctx.targetSpeed()));
+            ctx.setTargetSpeed(5);
         }
 
         return true; // train movement happens via the normal Locomotive.update()

@@ -1,13 +1,23 @@
 package letrain.command;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+import letrain.itinerary.Itinerary;
+import letrain.itinerary.Waypoint;
+import letrain.itinerary.WaypointCommand;
+import letrain.itinerary.impl.ItineraryImpl;
+import letrain.itinerary.impl.WaypointImpl;
+import letrain.map.Dir;
 import letrain.mvp.Model;
 import letrain.track.ForkEventListener;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.SensorEventListener;
+import letrain.track.Station;
 import letrain.track.StationEventListener;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.impl.rail.Locomotive;
@@ -19,6 +29,11 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     static Logger log = LoggerFactory.getLogger(CommandManager.class);
     Model model;
 
+    /** Stores itineraries created during parsing, keyed by name. */
+    private final Map<String, Itinerary> itineraries = new HashMap<>();
+    /** Current itinerary being constructed. */
+    private ItineraryImpl currentItinerary;
+
     public CommandManager(Model model) {
         this.model = model;
     }
@@ -27,11 +42,35 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         void execute(Train contextTrain);
     }
 
+    // ── Statement dispatch ─────────────────────────────────────────
+
+    @Override
+    public Object visitStart(LeTrainProgramParser.StartContext ctx) {
+        itineraries.clear();
+        currentItinerary = null;
+        return super.visitStart(ctx);
+    }
+
     @Override
     public Object visitStatement(LeTrainProgramParser.StatementContext ctx) {
-        List<ExecutableCommand> commands = (List<ExecutableCommand>) visit(ctx.commandBlock());
-        setupTrigger(ctx.trigger(), commands);
+        if (ctx.trigger() != null) {
+            // Existing: event-driven
+            List<ExecutableCommand> commands = (List<ExecutableCommand>) visit(ctx.commandBlock());
+            setupTrigger(ctx.trigger(), commands);
+        } else if (ctx.createItinerary() != null) {
+            // create itinerary block — } is the terminator
+            visit(ctx.createItinerary());
+        } else if (ctx.directCommand() != null) {
+            // Other direct commands (assign, autopilot, name)
+            visit(ctx.directCommand());
+        }
         return null;
+    }
+
+    // Direct commands dispatch (assign, autopilot, name)
+    @Override
+    public Object visitDirectCommand(LeTrainProgramParser.DirectCommandContext ctx) {
+        return visitChildren(ctx);
     }
 
     @Override
@@ -378,6 +417,166 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         }
         return (ExecutableCommand) (ct) -> {
         };
+    }
+
+    // ── Direct command visitors ──────────────────────────────────────
+
+    @Override
+    public Object visitCreateItinerary(LeTrainProgramParser.CreateItineraryContext ctx) {
+        String name = stripQuotes(ctx.STRING().getText());
+        currentItinerary = new ItineraryImpl();
+        for (LeTrainProgramParser.WaypointContext wp : ctx.waypoint()) {
+            visit(wp);
+        }
+        if (currentItinerary.isValid()) {
+            itineraries.put(name, currentItinerary);
+            log.info("[DSL] Created itinerary '{}' with {} waypoints", name, currentItinerary.waypoints().size());
+        } else {
+            log.warn("[DSL] Itinerary '{}' is invalid (<2 waypoints)", name);
+        }
+        currentItinerary = null;
+        return null;
+    }
+
+    @Override
+    public Object visitWaypoint(LeTrainProgramParser.WaypointContext ctx) {
+        if (currentItinerary == null) return null;
+
+        Waypoint wp;
+        if (ctx.stationRef() != null) {
+            Station st = resolveStation(ctx.stationRef());
+            if (st == null) return null;
+            wp = new WaypointImpl(Waypoint.Type.STATION, st.getId(), resolveDir(ctx), resolveCommands(ctx));
+        } else if (ctx.sensorRef() != null) {
+            Sensor se = resolveSensor(ctx.sensorRef());
+            if (se == null) return null;
+            wp = new WaypointImpl(Waypoint.Type.SENSOR, se.getId(), resolveDir(ctx), resolveCommands(ctx));
+        } else {
+            return null;
+        }
+        currentItinerary.addWaypoint(wp);
+        return null;
+    }
+
+    private Dir resolveDir(LeTrainProgramParser.WaypointContext ctx) {
+        if (ctx.direction() != null && ctx.direction().dir() != null) {
+            return Dir.valueOf(ctx.direction().dir().getText());
+        }
+        return Dir.E; // default
+    }
+
+    private List<WaypointCommand> resolveCommands(LeTrainProgramParser.WaypointContext ctx) {
+        List<WaypointCommand> all = new ArrayList<>();
+        for (var act : ctx.action()) {
+            all.addAll(toCommands(act));
+        }
+        return all;
+    }
+
+    @Override
+    public Object visitAssignItinerary(LeTrainProgramParser.AssignItineraryContext ctx) {
+        String itName = stripQuotes(ctx.STRING().getText());
+        Itinerary it = itineraries.get(itName);
+        if (it == null) {
+            log.warn("[DSL] Itinerary '{}' not found", itName);
+            return null;
+        }
+        Train train = resolveTrain(ctx.trainRef());
+        if (train == null) {
+            log.warn("[DSL] Train not found for '{}'", ctx.trainRef().getText());
+            return null;
+        }
+        // Ensure autopilot exists and has a pathfinder
+        if (train.getAutopilot() == null) {
+            train.setAutopilot(new letrain.itinerary.impl.AutoPilotImpl(
+                new letrain.vehicle.impl.rail.TrainAutoPilotContext(train)));
+        }
+        if (model.getRailwayGraph() != null) {
+            train.getAutopilot().setPathfinder(
+                new letrain.itinerary.AStarPathfinder(model.getRailwayGraph()));
+        }
+        train.getAutopilot().setItinerary(it);
+        log.info("[DSL] Itinerary '{}' assigned to Train {}", itName, train.getId());
+        return null;
+    }
+
+    @Override
+    public Object visitSetAutopilot(LeTrainProgramParser.SetAutopilotContext ctx) {
+        Train train = resolveTrain(ctx.trainRef());
+        if (train != null) {
+            boolean on = "true".equals(ctx.bool().getText());
+            if (on != train.isAutoMode()) train.toggleAutoMode();
+            log.info("[DSL] Train {} autopilot = {}", train.getId(), on);
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitSetNameCommand(LeTrainProgramParser.SetNameCommandContext ctx) {
+        String name = stripQuotes(ctx.STRING().getText());
+        int id = Integer.parseInt(ctx.NUMBER().getText());
+        if (ctx.getChild(0).getText().equals("station")) {
+            Station s = model.getStation(id);
+            if (s != null) { s.setName(name); log.info("[DSL] Station {} named '{}'", id, name); }
+        } else if (ctx.getChild(0).getText().equals("sensor")) {
+            Sensor s = model.getSensor(id);
+            if (s != null) { s.setName(name); log.info("[DSL] Sensor {} named '{}'", id, name); }
+        } else if (ctx.getChild(0).getText().equals("train")) {
+            Train t = model.getTrainFromLocomotiveId(id);
+            if (t != null) { t.setName(name); log.info("[DSL] Train {} named '{}'", id, name); }
+        }
+        return null;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────
+
+    private Station resolveStation(LeTrainProgramParser.StationRefContext ctx) {
+        if (ctx.STRING() != null)
+            return model.findStationByName(stripQuotes(ctx.STRING().getText()));
+        return model.getStation(Integer.parseInt(ctx.NUMBER().getText()));
+    }
+
+    private Sensor resolveSensor(LeTrainProgramParser.SensorRefContext ctx) {
+        if (ctx.STRING() != null)
+            return model.findSensorByName(stripQuotes(ctx.STRING().getText()));
+        return model.getSensor(Integer.parseInt(ctx.NUMBER().getText()));
+    }
+
+    private Train resolveTrain(LeTrainProgramParser.TrainRefContext ctx) {
+        if (ctx.STRING() != null)
+            return model.findTrainByName(stripQuotes(ctx.STRING().getText()));
+        int id = Integer.parseInt(ctx.NUMBER().getText());
+        return model.getTrainFromLocomotiveId(id);
+    }
+
+    private List<WaypointCommand> toCommands(LeTrainProgramParser.ActionContext ctx) {
+        String text = ctx.getText().toUpperCase();
+        return switch (text) {
+            case "PASO"     -> List.of();
+            case "PARADA"   -> List.of(WaypointCommand.waitTicks(100));
+            case "CARGA"    -> List.of(WaypointCommand.LOAD);
+            case "DESCARGA" -> List.of(WaypointCommand.UNLOAD);
+            case "REVERSE"  -> List.of(WaypointCommand.REVERSE);
+            case "LOAD"     -> List.of(WaypointCommand.LOAD);
+            case "UNLOAD"   -> List.of(WaypointCommand.UNLOAD);
+            default -> {
+                if (text.startsWith("WAIT")) {
+                    int ticks = Integer.parseInt(ctx.NUMBER().getText());
+                    yield List.of(WaypointCommand.waitTicks(ticks));
+                } else if (text.startsWith("SPEED")) {
+                    int speed = Integer.parseInt(ctx.NUMBER().getText());
+                    yield List.of(WaypointCommand.speed(speed));
+                }
+                yield List.of();
+            }
+        };
+    }
+
+    private static String stripQuotes(String s) {
+        if (s == null) return null;
+        if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2)
+            return s.substring(1, s.length() - 1);
+        return s;
     }
 
     private Train findTrainAtPlace(LeTrainProgramParser.PlaceSelectorContext ctx) {

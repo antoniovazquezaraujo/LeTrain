@@ -70,6 +70,12 @@ public interface Model {
 
     Station getStation(int id);
 
+    Station findStationByName(String name);
+
+    Sensor findSensorByName(String name);
+
+    Train findTrainByName(String name);
+
     Station getSelectedStation();
 
     void setSelectedStation(Station selectedStation);
