@@ -73,7 +73,8 @@ public class TrainAutoPilotContext implements AutoPilotContext {
     public boolean isSegmentFree(Segment seg) {
         if (train.getModel() == null) return false;
         BlockManager bm = train.getModel().getBlockManager();
-        return bm.getOwners(seg).isEmpty();
+        var owners = bm.getOwners(seg);
+        return owners.isEmpty() || (owners.size() == 1 && owners.contains(train));
     }
 
     @Override

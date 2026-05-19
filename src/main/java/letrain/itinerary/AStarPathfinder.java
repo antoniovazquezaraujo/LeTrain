@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A* pathfinder over the railway segment graph.
+ * Explores neighbors from both ends of each segment (circuits).
  */
 public class AStarPathfinder implements SegmentPathfinder {
 
@@ -27,18 +28,24 @@ public class AStarPathfinder implements SegmentPathfinder {
         if (from == null || to == null) return List.of();
         if (from.equals(to)) return List.of(from);
 
+        // Fast path: if to is a direct neighbor of from, no need for full A*
+        for (Segment n : getNeighbors(from)) {
+            if (n.equals(to)) {
+                log.info("[A*] direct neighbor {}→{}", from.getId(), to.getId());
+                return List.of(from, to);
+            }
+        }
+
         Map<Segment, Integer> gScore = new HashMap<>();
         Map<Segment, Segment> cameFrom = new HashMap<>();
         Set<Segment> closed = new HashSet<>();
 
-        // Open set: map segment → f-score. Pick lowest f each iteration.
         Map<Segment, Integer> openMap = new HashMap<>();
         gScore.put(from, 0);
         openMap.put(from, heuristic(from, to));
         int explored = 0;
 
         while (!openMap.isEmpty()) {
-            // Find segment with lowest f-score
             Segment current = null;
             int bestF = Integer.MAX_VALUE;
             for (var entry : openMap.entrySet()) {
@@ -57,8 +64,7 @@ public class AStarPathfinder implements SegmentPathfinder {
                         continue;
                     }
                 }
-                log.info("[A*] FOUND {}→{} explored={} path={}",
-                    from.getId(), to.getId(), explored, reconstructPath(cameFrom, current).size());
+                log.info("[A*] FOUND {}→{} explored={}", from.getId(), to.getId(), explored);
                 return reconstructPath(cameFrom, current);
             }
 
@@ -117,12 +123,15 @@ public class AStarPathfinder implements SegmentPathfinder {
     private List<Segment> getNeighbors(Segment s) {
         if (graph == null) return List.of();
         List<Segment> neighbors = new ArrayList<>();
-        PathStep exitStep = s.getSteps().getSecond();
-        if (exitStep == null) return neighbors;
-        for (PathStep next : graph.getNextSteps(exitStep)) {
-            Segment neighbor = graph.getSegment(next);
-            if (neighbor != null && !neighbor.equals(s)) {
-                neighbors.add(neighbor);
+        var steps = s.getSteps();
+        if (steps == null) return neighbors;
+        for (PathStep exitStep : new PathStep[]{steps.getFirst(), steps.getSecond()}) {
+            if (exitStep == null) continue;
+            for (PathStep next : graph.getNextSteps(exitStep)) {
+                Segment neighbor = graph.getSegment(next);
+                if (neighbor != null && !neighbor.equals(s)) {
+                    neighbors.add(neighbor);
+                }
             }
         }
         return neighbors;

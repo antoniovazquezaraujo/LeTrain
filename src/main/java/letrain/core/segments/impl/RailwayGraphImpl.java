@@ -48,7 +48,7 @@ public class RailwayGraphImpl implements RailwayGraph {
     }
 
     public void registerTrack(Segment segment, letrain.track.rail.RailTrack track) {
-        trackToSegment.put(track, segment);
+        trackToSegment.putIfAbsent(track, segment);
     }
 
     @Override
