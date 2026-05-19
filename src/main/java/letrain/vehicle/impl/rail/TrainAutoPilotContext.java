@@ -89,11 +89,10 @@ public class TrainAutoPilotContext implements AutoPilotContext {
         var node = exitStep.getRailNode();
         if (node == null || !(node.getTrack() instanceof ForkRailTrack fork)) return;
 
-        // Find which direction goes to 'to'
-        for (var step : graph.getNextSteps(exitStep)) {
+        // Use the fork node's outSteps directly (getNextSteps goes to wrong node)
+        for (var step : node.getOutSteps()) {
             Segment nextSeg = graph.getSegment(step);
             if (nextSeg != null && nextSeg.equals(to)) {
-                // Set fork to the route that goes in this direction
                 if (fork.isUsingAlternativeRoute() != isAlternativeRouteNeeded(fork, step.getDir())) {
                     fork.flipRoute();
                 }
