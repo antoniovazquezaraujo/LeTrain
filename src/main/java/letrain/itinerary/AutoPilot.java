@@ -38,4 +38,6 @@ public interface AutoPilot {
 
     /** Set the pathfinder to use for route calculation. */
     void setPathfinder(SegmentPathfinder pathfinder);
+
+    default void onForkEntered(letrain.track.rail.ForkRailTrack fork) {}
 }

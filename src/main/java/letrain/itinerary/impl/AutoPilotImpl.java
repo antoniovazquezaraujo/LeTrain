@@ -5,6 +5,7 @@ import letrain.itinerary.*;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import letrain.track.rail.ForkRailTrack;
 
 /**
  * Real AutoPilot implementation. Controls a train automatically along an itinerary.
@@ -59,6 +60,12 @@ public class AutoPilotImpl implements AutoPilot {
         itinerary.reset();
         log.info("[AP] activate → FOLLOWING");
         return true;
+    }
+
+    @Override
+    public void onForkEntered(letrain.track.rail.ForkRailTrack fork) {
+        if (mode != Mode.FOLLOWING || currentRoute.size() <= 1) return;
+        ctx.ensureForkRoute(currentRoute.get(0), currentRoute.get(1));
     }
 
     @Override
@@ -169,13 +176,10 @@ public class AutoPilotImpl implements AutoPilot {
         if (nextSeg == null) return false;
 
         if (!ctx.isSegmentFree(nextSeg)) {
-            log.info("[AP] followRoute BLOCKED → speed=0");
             ctx.setTargetSpeed(0);
             return false;
         }
 
-        ctx.ensureForkRoute(currentRoute.get(0), nextSeg);
-        log.info("[AP] followRoute " + currentRoute.size() + " segs → speed=" + cruiseSpeed);
         ctx.setTargetSpeed(cruiseSpeed);
         return true;
     }

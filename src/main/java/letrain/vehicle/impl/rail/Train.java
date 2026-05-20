@@ -179,6 +179,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     public void setAutopilot(letrain.itinerary.AutoPilot ap) { this.autopilot = ap; }
     public letrain.itinerary.AutoPilot getAutopilot() { return autopilot; }
 
+    public void notifyForkEntry(letrain.track.rail.ForkRailTrack fork) {
+        if (autopilot != null) autopilot.onForkEntered(fork);
+    }
+
     @JsonIgnore
     private transient letrain.mvp.Model model;
 
