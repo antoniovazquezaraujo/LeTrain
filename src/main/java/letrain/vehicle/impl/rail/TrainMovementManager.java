@@ -153,6 +153,10 @@ public class TrainMovementManager {
             linkerToMove.setPreviousTrack(currentTrack);
             linkerToMove.setPreviousDir(linkerToMove.getDir());
             currentTrack.removeLinker();
+            // AutoPilot: if entering a fork, notify to flip it for the route
+            if (nextTrackOfLinker instanceof ForkRailTrack) {
+                train.notifyForkEntry((ForkRailTrack) nextTrackOfLinker);
+            }
             if (!nextTrackOfLinker.enterLinkerFromDir(entryDirOfLinker, linkerToMove)) {
                 // Rollback: restore linker to its previous track
                 linkerToMove.setTrack(currentTrack);
