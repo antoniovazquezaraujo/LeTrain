@@ -156,8 +156,8 @@ class AutoPilotIntegrationTest {
 
             Station mainSt = makeStation(t3, "Main");
             Station branchSt = makeStation(branch, "Branch");
-            // Train on t1, NOT at any station, fork in NORMAL (straight) position
-            Train t = makeTrainNoStation(t1, Dir.E);
+            // Train on t1, facing East toward fork
+            Train t = makeTrainNoStation(t1, Dir.W);
             assertFalse(fork.isUsingAlternativeRoute(), "fork starts straight");
 
             model.setProgram("""
