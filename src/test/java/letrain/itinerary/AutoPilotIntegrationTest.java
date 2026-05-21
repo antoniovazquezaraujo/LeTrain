@@ -139,7 +139,6 @@ class AutoPilotIntegrationTest {
     @DisplayName("4. Fork")
     class Fork {
 
-    @Disabled("Flaky: works in game, test layout has connection issues")
     @Test
     @DisplayName("4.1 Fork flipped: train on main line enters branch station")
         void forkFlipped_trainEntersBranch() {

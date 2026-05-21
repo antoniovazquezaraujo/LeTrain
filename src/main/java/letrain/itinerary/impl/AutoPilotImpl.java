@@ -64,8 +64,12 @@ public class AutoPilotImpl implements AutoPilot {
 
     @Override
     public void onForkEntered(letrain.track.rail.ForkRailTrack fork) {
-        if (mode != Mode.FOLLOWING || currentRoute.size() <= 1) return;
-        ctx.ensureForkRoute(currentRoute.get(0), currentRoute.get(1));
+        // No-op: fork is now oriented proactively by TrainSafetyManager when it locks nextSegment.
+    }
+
+    @Override
+    public void ensureForkRoute(letrain.core.segments.Segment from, letrain.core.segments.Segment to) {
+        ctx.ensureForkRoute(from, to);
     }
 
     @Override

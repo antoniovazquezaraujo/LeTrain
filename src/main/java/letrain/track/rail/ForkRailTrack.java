@@ -201,18 +201,9 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     @Override
     public boolean flipRoute() {
-        // ADR-005 Mandamiento 6: Bloqueo de Agujas
-        // 1. Bloqueo Físico: Prohibido si hay cualquier vehículo encima.
+        // ADR-005 Mandamiento 6: Bloqueo Físico de Agujas.
+        // Prohibido girar si hay cualquier vehículo físicamente encima del fork.
         if (getLinker() != null) {
-            return false;
-        }
-
-        // 2. Bloqueo Lógico (Anclaje): Prohibido si algún tren tiene bloqueado un segmento que depende de este Fork.
-        // Necesitamos acceso al BlockManager para esto. 
-        // Como no queremos pasar el Model a cada RailTrack, lo gestionamos a través de los systemListeners
-        // o permitiendo que el llamador lo verifique.
-        // Sin embargo, para cumplir el ADR, el Fork debe ser capaz de denegar el cambio.
-        if (isLocked()) {
             return false;
         }
 

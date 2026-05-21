@@ -40,4 +40,7 @@ public interface AutoPilot {
     void setPathfinder(SegmentPathfinder pathfinder);
 
     default void onForkEntered(letrain.track.rail.ForkRailTrack fork) {}
+
+    /** Ensure the fork between 'from' and 'to' segments is oriented correctly. */
+    default void ensureForkRoute(letrain.core.segments.Segment from, letrain.core.segments.Segment to) {}
 }
