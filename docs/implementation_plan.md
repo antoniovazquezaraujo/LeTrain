@@ -1,67 +1,87 @@
-# Implementation Plan - Phase B Part 2: Pathfinder & Test Cleanup
+# Implementation Plan - Decouple Actions from AutoPilotContext
 
-This plan describes the proposed changes to align the segment pathfinder (`AStarPathfinder`) with the design specified in ADR-008, and clean up the `AutoPilot` test suite by removing the redundant `AutoPilotStub` and making `AutoPilotTest` verify the real implementation.
+This plan details the refactoring to separate read-only queries from action/mutation operations in the Autopilot module. Specifically, we will migrate actions from `AutoPilotContext` (and its implementation `TrainAutoPilotContext`) to `TrainActionManager` (implemented by `Train`), leaving `AutoPilotContext` as a clean, read-only interface.
 
 ## User Review Required
 
 > [!NOTE]
-> All changes are backward-compatible and do not change public APIs.
-> We add a new default method `getTrackCount(Segment segment)` to the `RailwayGraph` interface, returning `0` by default. This avoids breaking existing mocks.
+> All changes are backward-compatible. `Train` already implements `TrainActionManager`, so adding the action methods there is highly aligned with its existing role.
+> The tests will be updated to verify action execution on the `TrainActionManager` mock instead of the context mock.
 
 ---
 
 ## Proposed Changes
 
-### Navigation & Graph
+### Navigation & Autopilot Interfaces
 
-#### [MODIFY] [RailwayGraph.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/segments/RailwayGraph.java)
-- Add a new default method:
-  ```java
-  default int getTrackCount(Segment segment) {
-      return 0;
-  }
-  ```
+#### [MODIFY] [AutoPilotContext.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/AutoPilotContext.java)
+- Remove action/mutation method declarations:
+  - `void ensureForkRoute(Segment from, Segment to);`
+  - `void notifySegmentOccupied(Segment segment);`
+  - `void forceSegmentReset();`
+- This leaves the context with only read-only/query methods.
 
-#### [MODIFY] [RailwayGraphImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/segments/impl/RailwayGraphImpl.java)
-- Add a tracking map for segment tracks:
-  ```java
-  private final Map<Segment, Set<letrain.track.rail.RailTrack>> segmentToTracks = new HashMap<>();
-  ```
-- Update `registerTrack(Segment segment, RailTrack track)` to populate `segmentToTracks`:
-  ```java
-  public void registerTrack(Segment segment, letrain.track.rail.RailTrack track) {
-      trackToSegment.putIfAbsent(track, segment);
-      segmentToTracks.computeIfAbsent(segment, k -> new HashSet<>()).add(track);
-  }
-  ```
-- Override `getTrackCount(Segment segment)` to return the size of the set from `segmentToTracks`.
+#### [MODIFY] [TrainActionManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/TrainActionManager.java)
+- Add the action method declarations removed from `AutoPilotContext`:
+  - `void ensureForkRoute(letrain.segments.Segment from, letrain.segments.Segment to);`
+  - `void notifySegmentOccupied(letrain.segments.Segment segment);`
+  - `void forceSegmentReset();`
 
-#### [MODIFY] [AStarPathfinder.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/AStarPathfinder.java)
-- Implement `segmentCost(Segment s)` to use the actual physical track count:
-  ```java
-  private int segmentCost(Segment s) {
-      int count = graph.getTrackCount(s);
-      return count > 0 ? count : 1;
-  }
-  ```
-- Restore the `entryDir` check. In the neighbor iteration, if `neighbor.equals(to)` and `entryDir.isPresent()`, find the `PathStep` representing the transition from the current segment to the neighbor segment. If the direction of the transition step (`next.getDir()`) does not match `entryDir.get()`, discard the neighbor.
+---
 
-### Autopilot & Tests
+### Implementation Classes
 
-#### [MODIFY] [AutoPilotTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/AutoPilotTest.java)
-- Remove import and instantiation of `AutoPilotStub`.
-- Mock `AutoPilotContext` using Mockito.
-- Instantiate `AutoPilotImpl` and verify the test assertions directly against the real implementation.
+#### [MODIFY] [TrainAutoPilotContext.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/TrainAutoPilotContext.java)
+- Remove overridden implementations of the 3 action methods:
+  - `ensureForkRoute(Segment from, Segment to)`
+  - `notifySegmentOccupied(Segment segment)`
+  - `forceSegmentReset()`
+- Remove the private helper method `isAlternativeRouteNeeded(ForkRailTrack fork, letrain.map.Dir targetDir)`.
 
-#### [DELETE] [AutoPilotStub.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotStub.java)
-- Delete the redundant stub class.
+#### [MODIFY] [Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/Train.java)
+- Import:
+  - `letrain.segments.Segment`
+  - `letrain.segments.RailwayGraph`
+  - `letrain.segments.RailNode`
+  - `letrain.track.rail.ForkRailTrack`
+- Add `@Override` to the existing methods:
+  - `public void forceSegmentReset()`
+  - `public void notifySegmentOccupied(letrain.segments.Segment segment)`
+- Implement `public void ensureForkRoute(Segment from, Segment to)` containing the logic moved from `TrainAutoPilotContext.java`.
+- Implement `private boolean isAlternativeRouteNeeded(ForkRailTrack fork, letrain.map.Dir targetDir)` helper in `Train.java`.
+
+#### [MODIFY] [AutoPilotImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java)
+- Update code to call actions on `actionManager` (with null checks) instead of `ctx`:
+  - In `activate()`:
+    ```java
+    if (actionManager != null) {
+        actionManager.forceSegmentReset();
+    }
+    ```
+  - In `ensureForkRoute(Segment from, Segment to)`:
+    ```java
+    if (actionManager != null) {
+        actionManager.ensureForkRoute(from, to);
+    }
+    ```
+  - In `tick()` when next segment is occupied:
+    ```java
+    if (actionManager != null) {
+        actionManager.notifySegmentOccupied(nextSeg);
+    }
+    ```
+
+---
+
+### Tests
+
+#### [MODIFY] [AutoPilotImplTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/AutoPilotImplTest.java)
+- Update `setUp()` to mock `TrainActionManager` and pass it to the constructor of `AutoPilotImpl`.
+- Update verifications to assert action calls (`ensureForkRoute`, `notifySegmentOccupied`) on the `actionManager` mock rather than on `ctx`.
 
 ---
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `mvn clean test` to verify all 326 tests pass successfully.
-- Write new unit tests in [SegmentPathfinderTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/SegmentPathfinderTest.java) to verify:
-  1. That the pathfinder correctly calculates costs using track counts.
-  2. That the `entryDir` constraint successfully filters out paths entering from incorrect directions.
+- Run `mvn clean test` to compile and verify all unit and integration tests.

@@ -12,4 +12,13 @@ public interface TrainActionManager {
      * @param command the command to execute
      */
     void executeCommand(WaypointCommand command);
+
+    /** Ensure the fork between current and next segment is set correctly. */
+    void ensureForkRoute(letrain.segments.Segment from, letrain.segments.Segment to);
+
+    /** Notify that a segment is occupied. */
+    void notifySegmentOccupied(letrain.segments.Segment segment);
+
+    /** Force a segment entry reset in safety manager. */
+    void forceSegmentReset();
 }

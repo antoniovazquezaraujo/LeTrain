@@ -31,6 +31,10 @@ import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 import letrain.itinerary.TrainActionManager;
 import letrain.itinerary.WaypointCommand;
+import letrain.segments.Segment;
+import letrain.segments.RailwayGraph;
+import letrain.segments.RailNode;
+import letrain.track.rail.ForkRailTrack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +103,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         safetyManager.resetSafetyTimer();
     }
 
+    @Override
     public void forceSegmentReset() {
         if (safetyManager != null) {
             safetyManager.forceSegmentReset();
@@ -246,6 +251,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         }
     }
 
+    @Override
     public void notifySegmentOccupied(letrain.segments.Segment segment) {
         if (trainListeners != null) {
             trainListeners.forEach(l -> l.onSegmentOccupied(this, segment));
@@ -956,5 +962,66 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             default:
                 break;
         }
+    }
+
+    @Override
+    public void ensureForkRoute(Segment from, Segment to) {
+        if (getModel() == null) return;
+        RailwayGraph graph = getModel().getRailwayGraph();
+        if (graph == null) return;
+
+        // Find the fork between 'from' and 'to' and set the correct route
+        var fromSteps = from.getSteps();
+        var toSteps = to.getSteps();
+        if (fromSteps == null || toSteps == null) return;
+
+        var f1 = fromSteps.getFirst();
+        var f2 = fromSteps.getSecond();
+        var t1 = toSteps.getFirst();
+        var t2 = toSteps.getSecond();
+
+        RailNode node = null;
+        if (f1 != null && f1.getRailNode() != null) {
+            var n1 = f1.getRailNode();
+            if ((t1 != null && n1.equals(t1.getRailNode())) || (t2 != null && n1.equals(t2.getRailNode()))) {
+                node = n1;
+            }
+        }
+        if (node == null && f2 != null && f2.getRailNode() != null) {
+            var n2 = f2.getRailNode();
+            if ((t1 != null && n2.equals(t1.getRailNode())) || (t2 != null && n2.equals(t2.getRailNode()))) {
+                node = n2;
+            }
+        }
+
+        if (node == null) {
+            log.warn("[FORK] ensureForkRoute {}->{}: no shared node found", from.getId(), to.getId());
+            return;
+        }
+        if (!(node.getTrack() instanceof ForkRailTrack fork)) {
+            log.debug("[FORK] ensureForkRoute {}->{}: shared node is not a fork ({})", from.getId(), to.getId(), node.getTrack());
+            return;
+        }
+
+        // Use the fork node's outSteps directly (getNextSteps goes to wrong node)
+        for (var step : node.getOutSteps()) {
+            Segment nextSeg = graph.getSegment(step);
+            log.debug("[FORK] ensureForkRoute {}->{}: outStep dir={} seg={}", from.getId(), to.getId(), step.getDir(), nextSeg != null ? nextSeg.getId() : "null");
+            if (nextSeg != null && nextSeg.equals(to)) {
+                boolean altNeeded = isAlternativeRouteNeeded(fork, step.getDir());
+                log.info("[FORK] ensureForkRoute {}->{}: MATCH fork={} altNeeded={} currentAlt={}", from.getId(), to.getId(), fork.getId(), altNeeded, fork.isUsingAlternativeRoute());
+                if (fork.isUsingAlternativeRoute() != altNeeded) {
+                    fork.flipRoute();
+                }
+                return;
+            }
+        }
+        log.warn("[FORK] ensureForkRoute {}->{}: no outStep leads to target seg", from.getId(), to.getId());
+    }
+
+    private boolean isAlternativeRouteNeeded(ForkRailTrack fork, letrain.map.Dir targetDir) {
+        // Check if the targetDir is the alternative route of the fork
+        var alt = fork.getRouter().getAlternativeRoute();
+        return alt != null && alt.getValue() == targetDir;
     }
 }

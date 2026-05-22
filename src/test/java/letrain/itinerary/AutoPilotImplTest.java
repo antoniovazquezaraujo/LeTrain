@@ -24,6 +24,7 @@ class AutoPilotImplTest {
 
     private AutoPilot autopilot;
     private AutoPilotContext ctx;
+    private TrainActionManager actionManager;
     private SegmentPathfinder pathfinder;
     private Itinerary itinerary;
     private Segment segA, segB;
@@ -31,8 +32,9 @@ class AutoPilotImplTest {
     @BeforeEach
     void setUp() {
         ctx = mock(AutoPilotContext.class);
+        actionManager = mock(TrainActionManager.class);
         pathfinder = mock(SegmentPathfinder.class);
-        autopilot = new AutoPilotImpl(ctx);
+        autopilot = new AutoPilotImpl(ctx, actionManager);
         autopilot.setPathfinder(pathfinder);
 
         segA = mock(Segment.class);
@@ -75,7 +77,7 @@ class AutoPilotImplTest {
         autopilot.tick();
 
         verify(pathfinder).find(eq(segA), eq(segB), any());
-        verify(ctx).ensureForkRoute(segA, segB);
+        verify(actionManager).ensureForkRoute(segA, segB);
     }
 
     @Test
@@ -92,8 +94,8 @@ class AutoPilotImplTest {
         autopilot.activate();
         autopilot.tick();
 
-        verify(ctx).ensureForkRoute(segA, segB);
-        verify(ctx).notifySegmentOccupied(segB);
+        verify(actionManager).ensureForkRoute(segA, segB);
+        verify(actionManager).notifySegmentOccupied(segB);
     }
 
     @Test
@@ -190,6 +192,7 @@ class AutoPilotImplTest {
         autopilot.tick();
 
         // Assert
+        verify(actionManager).forceSegmentReset();
         verify(actionManager).executeCommand(cmdSpeed);
         verify(actionManager).executeCommand(cmdLoad);
         assertEquals(AutoPilot.Mode.FOLLOWING, autopilot.mode()); // Advanced to the next waypoint, still following
@@ -224,6 +227,7 @@ class AutoPilotImplTest {
 
         // Act & Assert 1: First tick arrives at target, executes STOP, hits WAIT, transitions to WAITING mode
         assertFalse(autopilot.tick());
+        verify(actionManager).forceSegmentReset();
         verify(actionManager).executeCommand(cmdStop);
         org.mockito.Mockito.verifyNoMoreInteractions(actionManager);
         assertEquals(AutoPilot.Mode.WAITING, autopilot.mode());

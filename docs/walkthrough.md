@@ -1,49 +1,30 @@
-# Walkthrough - Pathfinder & Test Cleanup (Phase B Part 2)
+# Walkthrough - Decouple Actions from AutoPilotContext
 
-We have successfully aligned the segment pathfinder (`AStarPathfinder`) with ADR-008, updated the test suite to verify the real autopilot class, and discarded the redundant test stub.
+We successfully refactored `AutoPilotContext` to make it a strictly read-only interface containing queries. All action/mutation operations have been migrated to the `TrainActionManager` interface.
 
 ## Changes Made
 
-### 1. Physical Segment Cost Tracking
-* **Files:**
-  - [RailwayGraph.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/segments/RailwayGraph.java)
-  - [RailwayGraphImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/segments/impl/RailwayGraphImpl.java)
-* **Design:**
-  - Added a new default method `getTrackCount(Segment segment)` to the `RailwayGraph` interface, which returns `0` by default.
-  - Implemented set-based tracking of tracks per segment in `RailwayGraphImpl` via a new map `segmentToTracks`. Updated `registerTrack` to populate this map.
-  - Overrode `getTrackCount` to return the count of physical tracks associated with the segment.
+### 1. Navigation & Autopilot Interfaces
+- **[AutoPilotContext.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/AutoPilotContext.java)**: Removed `ensureForkRoute`, `notifySegmentOccupied`, and `forceSegmentReset`.
+- **[TrainActionManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/TrainActionManager.java)**: Added the signatures for `ensureForkRoute`, `notifySegmentOccupied`, and `forceSegmentReset`.
 
-### 2. Physical Cost & Entry Direction in A*
-* **File:** [AStarPathfinder.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/AStarPathfinder.java)
-* **Design:**
-  - Updated `segmentCost(Segment s)` to retrieve the track count using `graph.getTrackCount(s)`. This ensures edge weights in A* correspond to actual track lengths instead of a flat cost of 1.
-  - Restored and implemented the `entryDir` constraint check. When transitioning from the current segment to the target segment `to`, we verify that the transition step direction (`next.getDir()`) matches the specified `entryDir`. If not, the transition is skipped.
+### 2. Implementations
+- **[TrainAutoPilotContext.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/TrainAutoPilotContext.java)**: Removed implementation of the action methods and the helper `isAlternativeRouteNeeded`.
+- **[Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/Train.java)**: 
+  - Added `@Override` to `forceSegmentReset` and `notifySegmentOccupied`.
+  - Implemented `ensureForkRoute` (moved from `TrainAutoPilotContext`).
+  - Added the helper `isAlternativeRouteNeeded`.
+- **[AutoPilotImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java)**: Updated to execute the actions (`forceSegmentReset`, `ensureForkRoute`, and `notifySegmentOccupied`) on `actionManager` (with null-safety checks) rather than `ctx`.
 
-### 3. Autopilot Test Suite Refactoring
-* **Files:**
-  - [AutoPilotTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/AutoPilotTest.java)
-  - [AutoPilotStub.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotStub.java) [DELETED]
-* **Design:**
-  - Deleted `AutoPilotStub.java` to remove redundant/dead test code.
-  - Refactored `AutoPilotTest.java` to test the real implementation (`AutoPilotImpl`) using Mockito to mock `AutoPilotContext`.
-
-### 4. Pathfinder Enhancements Testing
-* **File:** [SegmentPathfinderTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/SegmentPathfinderTest.java)
-* **Design:**
-  - Added a new unit test `physicalTrackCost` verifying that the pathfinder correctly chooses a path with fewer physical tracks even if it has the same number of segment transitions.
-  - Added a new unit test `entryDirConstraint` verifying that the pathfinder filters out paths that do not arrive in the requested `entryDir` direction, while still finding valid paths when the direction matches or is not specified.
+### 3. Tests
+- **[AutoPilotImplTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/AutoPilotImplTest.java)**: Mocked `TrainActionManager` and updated assertions to verify that actions are correctly requested from the action manager rather than the read-only context.
 
 ---
 
-## Validation Results
+## Verification Results
 
-Running the full Maven clean and test cycle compiles cleanly and passes all 328 tests:
-
-```bash
-mvn clean test
-```
-
-### Output Summary
+### Automated Tests
+Ran `mvn clean test` successfully:
 ```
 [INFO] Results:
 [INFO]
@@ -53,4 +34,4 @@ mvn clean test
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
 ```
-All unit and integration tests are fully green.
+All 328 unit and integration tests compile and pass successfully.

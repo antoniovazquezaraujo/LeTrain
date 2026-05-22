@@ -20,15 +20,6 @@ public interface AutoPilotContext {
     /** Is the given segment free (not occupied by another train)? */
     boolean isSegmentFree(Segment seg);
 
-    /** Ensure the fork between current and next segment is set correctly. */
-    void ensureForkRoute(Segment from, Segment to);
-
     /** Is the train at the target waypoint? */
     boolean isAtTarget(Waypoint wp);
-
-    /** Notify that a segment is occupied. */
-    void notifySegmentOccupied(Segment segment);
-
-    /** Force a segment entry reset in safety manager. */
-    void forceSegmentReset();
 }
