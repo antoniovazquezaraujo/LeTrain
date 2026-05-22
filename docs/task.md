@@ -1,9 +1,11 @@
-# Tasks - Rename vehicle-specific Itinerary to Trip
+# Task — Waypoint Command Execution
 
-- [x] Create `Trip.java` in `letrain.vehicle.impl.rail`
-- [x] Delete `Itinerary.java` in `letrain.vehicle.impl.rail`
-- [x] Update `Train.java` to use `Trip`
-- [x] Update `SimulationService.java` to use `Trip`
-- [x] Update `TerminalPresenter.java` to use `Trip`
-- [x] Create unit tests in `TripTest.java`
-- [x] Verify everything compiles and all tests pass
+Implement and verify the execution of itinerary waypoint commands (LOAD, UNLOAD, REVERSE, SPEED, and WAIT) in the autopilot.
+
+- [x] Define `TrainActionManager` interface to decouple AutoPilot from Train internals
+- [x] Modify `Train` to implement `TrainActionManager` and execute commands on the physical locomotive and wagons
+- [x] Update `CommandManager` to pass `Train` to the `AutoPilotImpl` constructor
+- [x] Implement execution queue (`pendingCommands`) and `WAITING` state machine in `AutoPilotImpl`
+- [x] Add unit tests in `AutoPilotImplTest` for command execution and wait handling
+- [x] Fix the wait tick transition logic in `AutoPilotImpl.java` and align with test assertions
+- [x] Run `mvn clean test` to ensure all 326 tests pass successfully

@@ -10,6 +10,8 @@ import letrain.itinerary.SegmentPathfinder;
 import letrain.itinerary.Waypoint;
 import letrain.segments.Segment;
 import letrain.track.rail.ForkRailTrack;
+import letrain.itinerary.TrainActionManager;
+import letrain.itinerary.WaypointCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,9 +32,17 @@ public class AutoPilotImpl implements AutoPilot {
     private static final int ROUTE_RETRY_TICKS = 100;
 
     private final AutoPilotContext ctx;
+    private final TrainActionManager actionManager;
+    private final List<WaypointCommand> pendingCommands = new java.util.ArrayList<>();
+    private int waitTicks = 0;
 
     public AutoPilotImpl(AutoPilotContext ctx) {
+        this(ctx, null);
+    }
+
+    public AutoPilotImpl(AutoPilotContext ctx, TrainActionManager actionManager) {
         this.ctx = ctx;
+        this.actionManager = actionManager;
         log.info("[AP] created");
     }
 
@@ -69,6 +79,8 @@ public class AutoPilotImpl implements AutoPilot {
         this.currentRoute = List.of();
         this.lastSegment = null;
         this.routeRetryCooldown = 0;
+        this.waitTicks = 0;
+        this.pendingCommands.clear();
     }
 
     @Override
@@ -83,6 +95,8 @@ public class AutoPilotImpl implements AutoPilot {
         currentRoute = List.of();
         lastSegment = null;
         routeRetryCooldown = 0;
+        waitTicks = 0;
+        pendingCommands.clear();
         itinerary.reset();
         ctx.forceSegmentReset();
         log.info("[AP] activate → FOLLOWING");
@@ -105,6 +119,8 @@ public class AutoPilotImpl implements AutoPilot {
     public void deactivate() {
         log.info("[AP] deactivate → IDLE");
         mode = Mode.IDLE;
+        waitTicks = 0;
+        pendingCommands.clear();
     }
 
     @Override
@@ -115,6 +131,40 @@ public class AutoPilotImpl implements AutoPilot {
         if (itinerary == null) {
             mode = Mode.ERROR;
             return false;
+        }
+
+        if (mode == Mode.WAITING) {
+            if (waitTicks > 0) {
+                waitTicks--;
+            }
+            if (waitTicks == 0) {
+                // Wait finished! Run any remaining commands for this waypoint
+                while (!pendingCommands.isEmpty()) {
+                    WaypointCommand cmd = pendingCommands.remove(0);
+                    if (cmd.kind() == WaypointCommand.Kind.WAIT) {
+                        this.waitTicks = cmd.ticks();
+                        // remain in Mode.WAITING
+                        return false;
+                    } else {
+                        if (actionManager != null) {
+                            actionManager.executeCommand(cmd);
+                        }
+                    }
+                }
+                // No more commands/waits for this waypoint: resume following and advance itinerary
+                mode = Mode.FOLLOWING;
+                itinerary.advance();
+                currentRoute = List.of();
+                lastSegment = null;
+
+                if (itinerary.state() == Itinerary.State.DONE || itinerary.currentWaypoint().isEmpty()) {
+                    log.info("[AP] itinerary DONE → IDLE");
+                    mode = Mode.IDLE;
+                    return false;
+                }
+            } else {
+                return false;
+            }
         }
 
         Segment currentSeg = ctx.currentSegment();
@@ -133,6 +183,29 @@ public class AutoPilotImpl implements AutoPilot {
 
         if (ctx.isAtTarget(wp)) {
             log.info("[AP] ARRIVED at wp {}", wp.targetId());
+
+            // Initialize pending commands for the arrived waypoint
+            pendingCommands.clear();
+            pendingCommands.addAll(wp.commands());
+
+            // Run commands until we hit a WAIT or exhaust the list
+            while (!pendingCommands.isEmpty()) {
+                WaypointCommand cmd = pendingCommands.remove(0);
+                if (cmd.kind() == WaypointCommand.Kind.WAIT) {
+                    this.waitTicks = cmd.ticks();
+                    this.mode = Mode.WAITING;
+                    break;
+                } else {
+                    if (actionManager != null) {
+                        actionManager.executeCommand(cmd);
+                    }
+                }
+            }
+
+            if (mode == Mode.WAITING) {
+                return false;
+            }
+
             itinerary.advance();
             currentRoute = List.of();
             lastSegment = null;

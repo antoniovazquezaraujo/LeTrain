@@ -507,7 +507,8 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         // Ensure autopilot exists and has a pathfinder
         if (train.getAutopilot() == null) {
             train.setAutopilot(new letrain.itinerary.impl.AutoPilotImpl(
-                new letrain.vehicle.impl.rail.TrainAutoPilotContext(train)));
+                new letrain.vehicle.impl.rail.TrainAutoPilotContext(train),
+                train));
         }
         if (model.getRailwayGraph() != null) {
             train.getAutopilot().setPathfinder(

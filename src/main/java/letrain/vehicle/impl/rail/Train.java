@@ -29,6 +29,8 @@ import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
+import letrain.itinerary.TrainActionManager;
+import letrain.itinerary.WaypointCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +44,7 @@ import org.slf4j.LoggerFactory;
  */
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-public class Train implements Trailer<RailTrack>, Renderable, Transportable {
+public class Train implements Trailer<RailTrack>, Renderable, Transportable, TrainActionManager {
     /** Speed threshold above which a collision destroys both trains. */
     static final int CRASH_SPEED_THRESHOLD = 5;
     private static final int MAX_LOADING_COUNT = 80; // 4.0 seconds at 20fps per wagon
@@ -919,5 +921,40 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     @JsonIgnore
     public CargoTypes getTrainCargoType() {
         return logisticsManager.getTrainCargoType(this);
+    }
+
+    @Override
+    public void executeCommand(WaypointCommand command) {
+        if (command == null) {
+            return;
+        }
+        switch (command.kind()) {
+            case LOAD:
+                letrain.track.Station loadStation = getStationAtTrain();
+                if (loadStation != null) {
+                    startLoadProcess(loadStation);
+                }
+                break;
+            case UNLOAD:
+                letrain.track.Station unloadStation = getStationAtTrain();
+                if (unloadStation != null) {
+                    startUnloadProcess(unloadStation);
+                }
+                break;
+            case REVERSE:
+                Tractor dirLinker = getDirectorLinker();
+                if (dirLinker != null) {
+                    dirLinker.toggleReversed();
+                }
+                break;
+            case SPEED:
+                Tractor speedLinker = getDirectorLinker();
+                if (speedLinker != null) {
+                    speedLinker.setSpeed(command.targetSpeed());
+                }
+                break;
+            default:
+                break;
+        }
     }
 }

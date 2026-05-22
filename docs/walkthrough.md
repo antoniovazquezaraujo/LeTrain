@@ -1,28 +1,51 @@
-# Walkthrough - Rename vehicle Itinerary to Trip
+# Walkthrough - Waypoint Command Execution
 
-We have renamed the legacy `letrain.vehicle.impl.rail.Itinerary` class to `Trip` to resolve the naming conflict with the DSL-based autopilot route interface `letrain.itinerary.Itinerary`.
+We have implemented dynamic execution of itinerary waypoint commands (`LOAD`, `UNLOAD`, `REVERSE`, `SPEED`, and `WAIT`) in the autopilot system.
 
 ## Changes Made
 
-### Core Logic
-1. **`Trip.java`**: Created as a direct rename and refactor of `Itinerary.java` in `letrain.vehicle.impl.rail`. Renamed the class to `Trip` and its state enum to `TripState`. Maintained Jackson serialization compatibility by using annotations to map JSON properties.
-2. **`Itinerary.java` (Legacy)**: Deleted the old `letrain/vehicle/impl/rail/Itinerary.java` file.
-3. **`Train.java`**:
-   - Renamed field `Itinerary itinerary;` to `Trip trip;`, annotating it with `@com.fasterxml.jackson.annotation.JsonProperty("itinerary")` to ensure existing save games read/write the JSON property correctly.
-   - Renamed the getter `getItinerary()` to `getTrip()`.
-   - Updated `recordStopAtStation()` to construct and use `Trip` instead of `Itinerary`.
-4. **`SimulationService.java`**: Updated `calculateDistanceSinceLastStop` to invoke `train.getTrip()` instead of `train.getItinerary()`.
-5. **`TerminalPresenter.java`**: Updated commented-out legacy code that referenced `train.getItinerary()` to call `train.getTrip()`.
+### 1. Decoupled Interface: `TrainActionManager`
+* **File:** [TrainActionManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/TrainActionManager.java)
+* **Design:** Introduced a clean interface that decouples the `AutoPilot` module (which resides in the logical `letrain.itinerary` package) from physical train and carriage details (in `letrain.vehicle`). It defines a single method:
+  ```java
+  void executeCommand(WaypointCommand command);
+  ```
 
-### Documentation
-1. **`ClassIndex.md`**: Updated the class index to reference `letrain.vehicle.impl.rail.Trip` instead of `letrain.vehicle.impl.rail.Itinerary`.
+### 2. Physical Execution: `Train.java`
+* **File:** [Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/Train.java)
+* **Logic:** Implemented the `TrainActionManager` interface on `Train`. Added `executeCommand(...)` which:
+  - Triggers station loading (`startLoadProcess`) or unloading (`startUnloadProcess`) for `LOAD` and `UNLOAD` commands.
+  - Toggles the reverse state of the train's director linker for the `REVERSE` command.
+  - Sets the speed on the director linker for the `SPEED` command.
 
-### Verification and Tests
-1. **`TripTest.java`**: Created new unit tests verifying `Trip` initialization, state transitions (`CONSTRUCTED` -> `STARTING` -> `STOPPING` -> `AT_END`) upon recording station stops, and list resetting via `restart()`.
+### 3. Autopilot Instantiation: `CommandManager.java`
+* **File:** [CommandManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/command/CommandManager.java)
+* **Logic:** Updated the autopilot creation call to pass the `Train` instance as the `TrainActionManager` parameter:
+  ```java
+  train.setAutopilot(new letrain.itinerary.impl.AutoPilotImpl(
+      new letrain.vehicle.impl.rail.TrainAutoPilotContext(train),
+      train));
+  ```
+
+### 4. Queue & WAITING State Machine: `AutoPilotImpl.java`
+* **File:** [AutoPilotImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java)
+* **Logic:**
+  - Added a queue `pendingCommands` to store the commands of the current waypoint.
+  - On arrival at a waypoint, we populate `pendingCommands` and execute them in sequence.
+  - When we hit a `WAIT` command, we pause execution, set `waitTicks`, and transition the autopilot mode to `Mode.WAITING`.
+  - On subsequent `tick()` calls while in `Mode.WAITING`, we decrement `waitTicks`. Once `waitTicks` reaches 0, we resume executing the remaining commands in the queue (or transition back to `Mode.FOLLOWING` and advance the itinerary).
+
+### 5. Robust Unit Testing: `AutoPilotImplTest.java`
+* **File:** [AutoPilotImplTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/AutoPilotImplTest.java)
+* **Logic:**
+  - Added `should_ExecuteCommands_When_WaypointReached` to verify immediate command sequences.
+  - Added `should_HandleWaitCommand_When_WaypointReached` to verify wait state handling, decrement timing, and resume execution.
+
+---
 
 ## Validation Results
 
-Running the full Maven clean and test cycle compiles cleanly and passes all 321 tests:
+Running the full Maven clean and test cycle compiles cleanly and passes all 326 tests:
 
 ```bash
 mvn clean test
@@ -32,7 +55,7 @@ mvn clean test
 ```
 [INFO] Results:
 [INFO]
-[INFO] Tests run: 321, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 326, Failures: 0, Errors: 0, Skipped: 0
 [INFO]
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
