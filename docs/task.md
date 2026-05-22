@@ -1,10 +1,12 @@
-# Task — Pathfinder & Test Cleanup (Phase B Part 2)
+# Task — Decouple Actions from AutoPilotContext
 
-Align AStarPathfinder with ADR-008 segment costs and entryDir constraints, and clean up the AutoPilot test suite.
+Move action/mutation methods from `AutoPilotContext` to `TrainActionManager`, implement them in `Train`, update `AutoPilotImpl`, and adapt test cases.
 
-- [x] Implement physical track count tracking in `RailwayGraph` / `RailwayGraphImpl`
-- [x] Refactor `AStarPathfinder.java` to use segment track count for edge costs
-- [x] Restore and implement `entryDir` constraint check in `AStarPathfinder.java`
-- [x] Refactor `AutoPilotTest.java` to verify `AutoPilotImpl` directly and delete `AutoPilotStub.java`
-- [x] Write new unit tests in `SegmentPathfinderTest.java` verifying pathfinder cost and entryDir logic
-- [x] Run `mvn clean test` to ensure all tests pass
+- [x] Create git branch `feature/autopilot-actions-refactor`
+- [x] Modify `AutoPilotContext.java` to remove action declarations
+- [x] Modify `TrainActionManager.java` to add action declarations
+- [x] Modify `TrainAutoPilotContext.java` to remove action implementations
+- [x] Modify `Train.java` to implement `ensureForkRoute` and annotate action overrides
+- [x] Modify `AutoPilotImpl.java` to execute actions via `actionManager`
+- [x] Update `AutoPilotImplTest.java` to mock and verify actions on `TrainActionManager`
+- [x] Run `mvn clean test` to verify all tests compile and pass successfully

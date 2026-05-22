@@ -98,7 +98,9 @@ public class AutoPilotImpl implements AutoPilot {
         waitTicks = 0;
         pendingCommands.clear();
         itinerary.reset();
-        ctx.forceSegmentReset();
+        if (actionManager != null) {
+            actionManager.forceSegmentReset();
+        }
         log.info("[AP] activate → FOLLOWING");
         return true;
     }
@@ -112,7 +114,9 @@ public class AutoPilotImpl implements AutoPilot {
 
     @Override
     public void ensureForkRoute(Segment from, Segment to) {
-        ctx.ensureForkRoute(from, to);
+        if (actionManager != null) {
+            actionManager.ensureForkRoute(from, to);
+        }
     }
 
     @Override
@@ -247,11 +251,15 @@ public class AutoPilotImpl implements AutoPilot {
 
             if (index != -1 && index + 1 < currentRoute.size()) {
                 Segment nextSeg = currentRoute.get(index + 1);
-                ctx.ensureForkRoute(currentSeg, nextSeg);
+                if (actionManager != null) {
+                    actionManager.ensureForkRoute(currentSeg, nextSeg);
+                }
 
                 if (!ctx.isSegmentFree(nextSeg)) {
                     log.info("[AP] next segment {} is occupied, firing event", nextSeg.getId());
-                    ctx.notifySegmentOccupied(nextSeg);
+                    if (actionManager != null) {
+                        actionManager.notifySegmentOccupied(nextSeg);
+                    }
                 }
             }
         }
