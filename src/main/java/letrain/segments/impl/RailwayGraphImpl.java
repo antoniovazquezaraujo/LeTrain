@@ -3,6 +3,8 @@ package letrain.segments.impl;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.Queue;
 import java.util.LinkedList;
@@ -19,6 +21,7 @@ public class RailwayGraphImpl implements RailwayGraph {
     private final Map<Segment, List<letrain.track.Station>> segmentToStations = new HashMap<>();
     private final Map<Segment, List<letrain.track.Sensor>> segmentToSensors = new HashMap<>();
     private final Map<letrain.track.rail.RailTrack, Segment> trackToSegment = new HashMap<>();
+    private final Map<Segment, Set<letrain.track.rail.RailTrack>> segmentToTracks = new HashMap<>();
 
     @Override
     public Segment getSegment(PathStep step) {
@@ -40,6 +43,12 @@ public class RailwayGraphImpl implements RailwayGraph {
         return trackToSegment.get(track);
     }
 
+    @Override
+    public int getTrackCount(Segment segment) {
+        Set<letrain.track.rail.RailTrack> tracks = segmentToTracks.get(segment);
+        return tracks != null ? tracks.size() : 0;
+    }
+
     public void registerStation(Segment segment, letrain.track.Station station) {
         segmentToStations.computeIfAbsent(segment, k -> new ArrayList<>()).add(station);
     }
@@ -50,6 +59,7 @@ public class RailwayGraphImpl implements RailwayGraph {
 
     public void registerTrack(Segment segment, letrain.track.rail.RailTrack track) {
         trackToSegment.putIfAbsent(track, segment);
+        segmentToTracks.computeIfAbsent(segment, k -> new HashSet<>()).add(track);
     }
 
     @Override

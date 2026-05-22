@@ -1,11 +1,10 @@
-# Task — Waypoint Command Execution
+# Task — Pathfinder & Test Cleanup (Phase B Part 2)
 
-Implement and verify the execution of itinerary waypoint commands (LOAD, UNLOAD, REVERSE, SPEED, and WAIT) in the autopilot.
+Align AStarPathfinder with ADR-008 segment costs and entryDir constraints, and clean up the AutoPilot test suite.
 
-- [x] Define `TrainActionManager` interface to decouple AutoPilot from Train internals
-- [x] Modify `Train` to implement `TrainActionManager` and execute commands on the physical locomotive and wagons
-- [x] Update `CommandManager` to pass `Train` to the `AutoPilotImpl` constructor
-- [x] Implement execution queue (`pendingCommands`) and `WAITING` state machine in `AutoPilotImpl`
-- [x] Add unit tests in `AutoPilotImplTest` for command execution and wait handling
-- [x] Fix the wait tick transition logic in `AutoPilotImpl.java` and align with test assertions
-- [x] Run `mvn clean test` to ensure all 326 tests pass successfully
+- [x] Implement physical track count tracking in `RailwayGraph` / `RailwayGraphImpl`
+- [x] Refactor `AStarPathfinder.java` to use segment track count for edge costs
+- [x] Restore and implement `entryDir` constraint check in `AStarPathfinder.java`
+- [x] Refactor `AutoPilotTest.java` to verify `AutoPilotImpl` directly and delete `AutoPilotStub.java`
+- [x] Write new unit tests in `SegmentPathfinderTest.java` verifying pathfinder cost and entryDir logic
+- [x] Run `mvn clean test` to ensure all tests pass

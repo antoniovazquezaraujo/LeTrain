@@ -1,47 +1,67 @@
-# Implementation Plan - Phase A Bug Fixes & Pull Request
+# Implementation Plan - Phase B Part 2: Pathfinder & Test Cleanup
 
-This plan describes the proposed changes to address the critical bugs identified in Phase A of the system analysis, specifically targetting null safety, casting issues, and performance bottlenecks in the Itinerary and AutoPilot systems.
+This plan describes the proposed changes to align the segment pathfinder (`AStarPathfinder`) with the design specified in ADR-008, and clean up the `AutoPilot` test suite by removing the redundant `AutoPilotStub` and making `AutoPilotTest` verify the real implementation.
 
 ## User Review Required
 
 > [!NOTE]
 > All changes are backward-compatible and do not change public APIs.
-> A 100-tick (5-second) cooldown is introduced in `AutoPilotImpl` when pathfinding fails, avoiding CPU thrashing while allowing automatic recovery when track layout changes.
+> We add a new default method `getTrackCount(Segment segment)` to the `RailwayGraph` interface, returning `0` by default. This avoids breaking existing mocks.
 
 ---
 
 ## Proposed Changes
 
-### Itinerary & DSL Parser
+### Navigation & Graph
 
-#### [MODIFY] [CommandManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/command/CommandManager.java)
-- In `buildTrainAction(...)`, eliminate direct casts to `Locomotive` for speed and direction changes.
-- Use the `Tractor` interface directly, since it already defines `setSpeed`, `incSpeed`, `decSpeed`, `isReversed`, and `toggleReversed`.
-- Add null checks for `t.getDirectorLinker()` to prevent `NullPointerException`s when a train has no active director linker.
+#### [MODIFY] [RailwayGraph.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/segments/RailwayGraph.java)
+- Add a new default method:
+  ```java
+  default int getTrackCount(Segment segment) {
+      return 0;
+  }
+  ```
 
-#### [MODIFY] [Trip.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/Trip.java)
-- Add null-safety guards in `addStop`, `getFirstStop`, and `getStops` (return empty stream if `stops` is null).
-- In `setStops(...)`, ensure that passing `null` defaults to an empty list.
-- Prevent potential NPEs after Jackson deserializes a `Trip` with missing/null stops.
+#### [MODIFY] [RailwayGraphImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/segments/impl/RailwayGraphImpl.java)
+- Add a tracking map for segment tracks:
+  ```java
+  private final Map<Segment, Set<letrain.track.rail.RailTrack>> segmentToTracks = new HashMap<>();
+  ```
+- Update `registerTrack(Segment segment, RailTrack track)` to populate `segmentToTracks`:
+  ```java
+  public void registerTrack(Segment segment, letrain.track.rail.RailTrack track) {
+      trackToSegment.putIfAbsent(track, segment);
+      segmentToTracks.computeIfAbsent(segment, k -> new HashSet<>()).add(track);
+  }
+  ```
+- Override `getTrackCount(Segment segment)` to return the size of the set from `segmentToTracks`.
 
-#### [MODIFY] [AutoPilotImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java)
-- Introduce a `routeRetryCooldown` counter (default `0`).
-- If `calculateRoute()` fails inside `tick()`, set the cooldown to `100` ticks (approx. 5 seconds at 20fps) and return `false`, instead of retrying every tick.
-- Reset the cooldown to `0` in `activate()` and `setItinerary()`.
+#### [MODIFY] [AStarPathfinder.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/AStarPathfinder.java)
+- Implement `segmentCost(Segment s)` to use the actual physical track count:
+  ```java
+  private int segmentCost(Segment s) {
+      int count = graph.getTrackCount(s);
+      return count > 0 ? count : 1;
+  }
+  ```
+- Restore the `entryDir` check. In the neighbor iteration, if `neighbor.equals(to)` and `entryDir.isPresent()`, find the `PathStep` representing the transition from the current segment to the neighbor segment. If the direction of the transition step (`next.getDir()`) does not match `entryDir.get()`, discard the neighbor.
 
-#### [MODIFY] [Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/Train.java)
-- Clean up redundant casts to `(Tractor)` on line 467.
-- Replace verbose reflection in `getTractors()` with clean `instanceof` check and `Stream.toList()`.
-- Add null-safety checks when casting director linkers to `Locomotive`/`Linker`.
+### Autopilot & Tests
+
+#### [MODIFY] [AutoPilotTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/AutoPilotTest.java)
+- Remove import and instantiation of `AutoPilotStub`.
+- Mock `AutoPilotContext` using Mockito.
+- Instantiate `AutoPilotImpl` and verify the test assertions directly against the real implementation.
+
+#### [DELETE] [AutoPilotStub.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotStub.java)
+- Delete the redundant stub class.
 
 ---
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `mvn clean test` to ensure all 321 tests pass, including `AutoPilotImplTest` and `AutoPilotIntegrationTest`.
-- Create a new unit test in [AutoPilotImplTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/AutoPilotImplTest.java) to verify that route calculation failures trigger the cooldown and do not invoke the pathfinder on every tick.
-- Create a unit test verifying `Trip` null stops deserialization behavior.
-
-### Manual Verification
-- Verify code compilation and checkstyle limits.
+- Run `mvn clean test` to verify all 326 tests pass successfully.
+- Write new unit tests in [SegmentPathfinderTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/SegmentPathfinderTest.java) to verify:
+  1. That the pathfinder correctly calculates costs using track counts.
+  2. That the `entryDir` constraint successfully filters out paths entering from incorrect directions.

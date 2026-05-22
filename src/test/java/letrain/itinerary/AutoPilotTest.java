@@ -1,6 +1,6 @@
 package letrain.itinerary;
 
-import letrain.itinerary.impl.AutoPilotStub;
+import letrain.itinerary.impl.AutoPilotImpl;
 import letrain.itinerary.impl.ItineraryImpl;
 import letrain.itinerary.impl.WaypointImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,16 +10,19 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @DisplayName("AutoPilot")
 class AutoPilotTest {
 
     private AutoPilot autopilot;
+    private AutoPilotContext ctx;
     private Itinerary itinerary;
 
     @BeforeEach
     void setUp() {
-        autopilot = new AutoPilotStub();
+        ctx = mock(AutoPilotContext.class);
+        autopilot = new AutoPilotImpl(ctx);
         itinerary = new ItineraryImpl();
         itinerary.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 1, List.of()));
         itinerary.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 2, List.of()));
@@ -47,6 +50,7 @@ class AutoPilotTest {
     @Test
     @DisplayName("should activate with itinerary and pathfinder")
     void activates() {
+        when(ctx.currentSpeed()).thenReturn(0);
         autopilot.setItinerary(itinerary);
         autopilot.setPathfinder(new AStarPathfinder(null));
         assertTrue(autopilot.activate());
