@@ -306,8 +306,11 @@ public class Locomotive extends Linker implements Tractor {
             return;
         }
         this.targetSpeed = speed;
-        if (this.targetSpeed > 0 && getTrain() != null) {
-            getTrain().setStalled(false);
+        if (this.targetSpeed > 0) {
+            this.engineOn = true;
+            if (getTrain() != null) {
+                getTrain().setStalled(false);
+            }
         }
         limitTargetSpeed();
 

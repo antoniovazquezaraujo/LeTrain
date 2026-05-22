@@ -337,60 +337,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                 }
             };
         } else if (ctx.trainAction() != null) {
-            String actionText = ctx.trainAction().getText();
-            ExecutableCommand baseAction;
-
-            if (ctx.trainAction().trainSpeed() != null) {
-                int speed = Integer.parseInt(ctx.trainAction().trainSpeed().getText());
-                int clampedSpeed = Math.max(1, Math.min(10, speed));
-                baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).setSpeed(clampedSpeed);
-            } else if (actionText.contains("accelerate")) {
-                baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).incSpeed();
-            } else if (actionText.contains("decelerate")) {
-                baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).decSpeed();
-            } else if (ctx.trainAction().trainSense() != null) {
-                boolean forward = "forward".equals(ctx.trainAction().trainSense().getText());
-                baseAction = (t) -> {
-                    Locomotive l = (Locomotive) t.getDirectorLinker();
-                    if (l.isReversed() == forward)
-                        l.toggleReversed();
-                };
-            } else if (actionText.contains("stop")) {
-                baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).setSpeed(0);
-            } else if (actionText.contains("invert")) {
-                baseAction = (t) -> ((Locomotive) t.getDirectorLinker()).toggleReversed();
-            } else if (ctx.trainAction().linkAction() != null) {
-                LeTrainProgramParser.LinkActionContext lCtx = ctx.trainAction().linkAction();
-                boolean forward = "forward".equals(lCtx.sense().getText());
-                int count = lCtx.NUMBER() != null ? Integer.parseInt(lCtx.NUMBER().getText()) : 0;
-                baseAction = (t) -> {
-                    t.prepareLink(forward, count);
-                    t.joinLinkers();
-                };
-            } else if (ctx.trainAction().unlinkAction() != null) {
-                LeTrainProgramParser.UnlinkActionContext uCtx = ctx.trainAction().unlinkAction();
-                boolean forward = "forward".equals(uCtx.sense().getText());
-                int count = uCtx.NUMBER() != null ? Integer.parseInt(uCtx.NUMBER().getText()) : 1;
-                baseAction = (t) -> {
-                    t.prepareUnlink(forward, count);
-                    t.divideTrain(() -> model.nextTrainId());
-                };
-            } else if (actionText.contains("unload")) {
-                baseAction = (t) -> {
-                    letrain.track.Station s = t.getStationAtTrain();
-                    if (s != null)
-                        t.startUnloadProcess(s);
-                };
-            } else if (actionText.contains("load")) {
-                baseAction = (t) -> {
-                    letrain.track.Station s = t.getStationAtTrain();
-                    if (s != null)
-                        t.startLoadProcess(s);
-                };
-            } else {
-                baseAction = (t) -> {
-                };
-            }
+            ExecutableCommand baseAction = buildTrainAction(ctx.trainAction());
 
             if (ctx.trainSelector() != null) {
                 if (ctx.trainSelector().NUMBER() != null) {
@@ -417,6 +364,61 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         }
         return (ExecutableCommand) (ct) -> {
         };
+    }
+
+    private ExecutableCommand buildTrainAction(LeTrainProgramParser.TrainActionContext ctx) {
+        String actionText = ctx.getText();
+        if (ctx.trainSpeed() != null) {
+            int speed = Integer.parseInt(ctx.trainSpeed().getText());
+            int clampedSpeed = Math.max(0, Math.min(10, speed));
+            return (t) -> ((Locomotive) t.getDirectorLinker()).setSpeed(clampedSpeed);
+        } else if (actionText.contains("accelerate")) {
+            return (t) -> ((Locomotive) t.getDirectorLinker()).incSpeed();
+        } else if (actionText.contains("decelerate")) {
+            return (t) -> ((Locomotive) t.getDirectorLinker()).decSpeed();
+        } else if (ctx.trainSense() != null) {
+            boolean forward = "forward".equals(ctx.trainSense().getText());
+            return (t) -> {
+                Locomotive l = (Locomotive) t.getDirectorLinker();
+                if (l.isReversed() == forward)
+                    l.toggleReversed();
+            };
+        } else if (actionText.contains("stop")) {
+            return (t) -> ((Locomotive) t.getDirectorLinker()).setSpeed(0);
+        } else if (actionText.contains("invert")) {
+            return (t) -> ((Locomotive) t.getDirectorLinker()).toggleReversed();
+        } else if (ctx.linkAction() != null) {
+            LeTrainProgramParser.LinkActionContext lCtx = ctx.linkAction();
+            boolean forward = "forward".equals(lCtx.sense().getText());
+            int count = lCtx.NUMBER() != null ? Integer.parseInt(lCtx.NUMBER().getText()) : 0;
+            return (t) -> {
+                t.prepareLink(forward, count);
+                t.joinLinkers();
+            };
+        } else if (ctx.unlinkAction() != null) {
+            LeTrainProgramParser.UnlinkActionContext uCtx = ctx.unlinkAction();
+            boolean forward = "forward".equals(uCtx.sense().getText());
+            int count = uCtx.NUMBER() != null ? Integer.parseInt(uCtx.NUMBER().getText()) : 1;
+            return (t) -> {
+                t.prepareUnlink(forward, count);
+                t.divideTrain(() -> model.nextTrainId());
+            };
+        } else if (actionText.contains("unload")) {
+            return (t) -> {
+                letrain.track.Station s = t.getStationAtTrain();
+                if (s != null)
+                    t.startUnloadProcess(s);
+            };
+        } else if (actionText.contains("load")) {
+            return (t) -> {
+                letrain.track.Station s = t.getStationAtTrain();
+                if (s != null)
+                    t.startLoadProcess(s);
+            };
+        } else {
+            return (t) -> {
+            };
+        }
     }
 
     // ── Direct command visitors ──────────────────────────────────────
@@ -462,7 +464,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         if (ctx.direction() != null && ctx.direction().dir() != null) {
             return Dir.valueOf(ctx.direction().dir().getText());
         }
-        return Dir.E; // default
+        return null; // default
     }
 
     private List<WaypointCommand> resolveCommands(LeTrainProgramParser.WaypointContext ctx) {
@@ -511,6 +513,19 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             boolean on = "true".equals(ctx.bool().getText());
             if (on != train.isAutoMode()) train.toggleAutoMode();
             log.info("[DSL] Train {} autopilot = {}", train.getId(), on);
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitDirectTrainCommand(LeTrainProgramParser.DirectTrainCommandContext ctx) {
+        Train train = resolveTrain(ctx.trainRef());
+        if (train != null) {
+            ExecutableCommand action = buildTrainAction(ctx.trainAction());
+            action.execute(train);
+            log.info("[DSL] Direct command executed on Train {}", train.getId());
+        } else {
+            log.warn("[DSL] Direct command failed: Train not found for '{}'", ctx.trainRef().getText());
         }
         return null;
     }

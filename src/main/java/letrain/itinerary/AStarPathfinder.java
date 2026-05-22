@@ -1,6 +1,7 @@
 package letrain.itinerary;
 
 import letrain.core.segments.PathStep;
+import letrain.core.segments.RailNode;
 import letrain.core.segments.RailwayGraph;
 import letrain.core.segments.Segment;
 import letrain.map.Dir;
@@ -29,10 +30,12 @@ public class AStarPathfinder implements SegmentPathfinder {
         if (from.equals(to)) return List.of(from);
 
         // Fast path: if to is a direct neighbor of from, no need for full A*
-        for (Segment n : getNeighbors(from)) {
-            if (n.equals(to)) {
-                log.info("[A*] direct neighbor {}→{}", from.getId(), to.getId());
-                return List.of(from, to);
+        if (entryDir.isEmpty()) {
+            for (Segment n : getNeighbors(from)) {
+                if (n.equals(to)) {
+                    log.info("[A*] direct neighbor {}→{}", from.getId(), to.getId());
+                    return List.of(from, to);
+                }
             }
         }
 
@@ -58,12 +61,7 @@ public class AStarPathfinder implements SegmentPathfinder {
             explored++;
 
             if (current.equals(to)) {
-                if (entryDir.isPresent()) {
-                    PathStep entryStep = current.getSteps().getFirst();
-                    if (entryStep.getDir() != entryDir.get().inverse()) {
-                        continue;
-                    }
-                }
+                // Entry direction constraint removed for simplicity.
                 log.info("[A*] FOUND {}→{} explored={}", from.getId(), to.getId(), explored);
                 return reconstructPath(cameFrom, current);
             }

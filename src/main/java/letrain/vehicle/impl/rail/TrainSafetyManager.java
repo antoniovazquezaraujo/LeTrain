@@ -76,6 +76,11 @@ public class TrainSafetyManager {
             permissionToMove = false;
             nextSegment = findNextSegment(head, graph);
             safetyRetryTimer = 0; // Try immediately
+
+            letrain.itinerary.AutoPilot ap = train.getAutopilot();
+            if (ap != null && nextSegment != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+                ap.ensureForkRoute(currentSegment, nextSegment);
+            }
         }
 
         // 2. If no permission, try to acquire it (lock Sn+1)
@@ -96,11 +101,6 @@ public class TrainSafetyManager {
                         log.info("Train {} granted permission to move into {}. Next segment {} locked (Shunting: {}).",
                             train.getId(), currentSegment.getId(), nextSegment.getId(), train.isShuntingMode());
                         permissionToMove = true;
-                        // Orient the fork BEFORE the train reaches it, while it's still free.
-                        letrain.itinerary.AutoPilot ap = train.getAutopilot();
-                        if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
-                            ap.ensureForkRoute(currentSegment, nextSegment);
-                        }
                     } else {
                         log.debug("Train {} denied permission. Segment {} occupied. Retrying in 15s.",
                             train.getId(), nextSegment.getId());
@@ -195,5 +195,9 @@ public class TrainSafetyManager {
         }
 
         return null;
+    }
+
+    public void forceSegmentReset() {
+        this.currentSegment = null;
     }
 }

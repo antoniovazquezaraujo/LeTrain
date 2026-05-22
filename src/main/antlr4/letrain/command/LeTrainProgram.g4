@@ -12,7 +12,10 @@ statement : trigger commandBlock          // event-driven automation
 directCommand : assignItinerary
               | setAutopilot
               | setNameCommand
+              | directTrainCommand
               ;
+
+directTrainCommand : 'train' trainRef trainAction ;
 
 createItinerary : 'create' 'itinerary' STRING '{' waypoint* '}' ;
 

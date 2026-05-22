@@ -8,7 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -20,10 +20,9 @@ class AutoPilotImplTest {
     private AutoPilotContext ctx;
     private SegmentPathfinder pathfinder;
     private Itinerary itinerary;
-    private Segment segA, segB, segC;
+    private Segment segA, segB;
 
     @BeforeEach
-    @SuppressWarnings("unchecked")
     void setUp() {
         ctx = mock(AutoPilotContext.class);
         pathfinder = mock(SegmentPathfinder.class);
@@ -32,7 +31,6 @@ class AutoPilotImplTest {
 
         segA = mock(Segment.class);
         segB = mock(Segment.class);
-        segC = mock(Segment.class);
 
         itinerary = new ItineraryImpl();
         itinerary.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 1, List.of()));
@@ -57,14 +55,13 @@ class AutoPilotImplTest {
     }
 
     @Test
-    @DisplayName("should calculate route on first tick")
-    void calculatesRoute() {
+    @DisplayName("should calculate route on first tick and orient fork if segment changed")
+    void calculatesRouteAndOrientsFork() {
         when(ctx.currentSpeed()).thenReturn(0);
         when(ctx.currentSegment()).thenReturn(segA);
         when(ctx.targetSegment(any())).thenReturn(segB);
         when(ctx.isAtTarget(any())).thenReturn(false);
         when(ctx.isSegmentFree(any())).thenReturn(true);
-        when(ctx.targetSpeed()).thenReturn(0);
         when(pathfinder.find(any(), any(), any())).thenReturn(List.of(segA, segB));
 
         autopilot.setItinerary(itinerary);
@@ -72,30 +69,30 @@ class AutoPilotImplTest {
         autopilot.tick();
 
         verify(pathfinder).find(eq(segA), eq(segB), any());
+        verify(ctx).ensureForkRoute(segA, segB);
     }
 
     @Test
-    @DisplayName("should execute WAIT command")
-    void executesWait() {
-        // Setup: one waypoint with WAIT command
-        itinerary = new ItineraryImpl();
-        itinerary.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.waitTicks(5))));
-        itinerary.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 2, List.of()));
-
+    @DisplayName("should notify when next segment is occupied")
+    void firesSegmentOccupied() {
         when(ctx.currentSpeed()).thenReturn(0);
-        when(ctx.isAtTarget(any())).thenReturn(true); // arrived immediately
+        when(ctx.currentSegment()).thenReturn(segA);
+        when(ctx.targetSegment(any())).thenReturn(segB);
+        when(ctx.isAtTarget(any())).thenReturn(false);
+        when(pathfinder.find(any(), any(), any())).thenReturn(List.of(segA, segB));
+        when(ctx.isSegmentFree(segB)).thenReturn(false);
 
         autopilot.setItinerary(itinerary);
         autopilot.activate();
-        autopilot.tick(); // should enter WAITING
+        autopilot.tick();
 
-        assertEquals(AutoPilot.Mode.WAITING, autopilot.mode());
-        verify(ctx).setTargetSpeed(0);
+        verify(ctx).ensureForkRoute(segA, segB);
+        verify(ctx).notifySegmentOccupied(segB);
     }
 
     @Test
-    @DisplayName("should enter ERROR if route calculation fails")
-    void errorOnNoRoute() {
+    @DisplayName("should keep mode FOLLOWING but return false if route calculation fails")
+    void failsRoutingGracefully() {
         when(ctx.currentSpeed()).thenReturn(0);
         when(ctx.currentSegment()).thenReturn(segA);
         when(ctx.targetSegment(any())).thenReturn(segB);
@@ -104,9 +101,25 @@ class AutoPilotImplTest {
 
         autopilot.setItinerary(itinerary);
         autopilot.activate();
+        assertFalse(autopilot.tick());
+        assertEquals(AutoPilot.Mode.FOLLOWING, autopilot.mode());
+    }
+
+    @Test
+    @DisplayName("should calculate route immediately after executing waypoint if itinerary not done")
+    void calculatesRouteAfterWaypoint() {
+        when(ctx.currentSpeed()).thenReturn(0);
+        when(ctx.currentSegment()).thenReturn(segA);
+        when(ctx.targetSegment(any())).thenReturn(segB);
+        when(ctx.isAtTarget(any())).thenReturn(true);
+        when(pathfinder.find(any(), any(), any())).thenReturn(List.of(segA, segB));
+
+        autopilot.setItinerary(itinerary);
+        autopilot.activate();
         autopilot.tick();
 
-        assertEquals(AutoPilot.Mode.ERROR, autopilot.mode());
+        verify(pathfinder).find(eq(segA), eq(segB), any());
+        assertEquals(List.of(segA, segB), autopilot.currentRoute());
     }
 
     @Test
@@ -114,6 +127,5 @@ class AutoPilotImplTest {
     void deactivatesCleanly() {
         autopilot.deactivate();
         assertEquals(AutoPilot.Mode.IDLE, autopilot.mode());
-        verify(ctx).setTargetSpeed(0);
     }
 }

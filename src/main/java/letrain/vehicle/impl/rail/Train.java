@@ -97,6 +97,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         safetyManager.resetSafetyTimer();
     }
 
+    public void forceSegmentReset() {
+        if (safetyManager != null) {
+            safetyManager.forceSegmentReset();
+        }
+    }
+
     public int getStationId() {
         return railStationId;
     }
@@ -234,6 +240,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     public void notifyUnlink() {
         if (trainListeners != null) {
             trainListeners.forEach(l -> l.onUnlink(this));
+        }
+    }
+
+    public void notifySegmentOccupied(letrain.core.segments.Segment segment) {
+        if (trainListeners != null) {
+            trainListeners.forEach(l -> l.onSegmentOccupied(this, segment));
         }
     }
 
@@ -546,10 +558,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         // AutoPilot mode — let it control speed/direction, then move normally.
         // Return true even if tick() says false, to avoid locomotive punishing
         // the train with an abrupt speed=0 (freno en seco).
-        if (autoMode && autopilot != null) {
-            autopilot.tick();
-            // Continue with physical movement below
-        }
+        // AutoPilot tick is handled in Locomotive.update; skip here to avoid double processing.
 
         // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
         if (isLoading()) {

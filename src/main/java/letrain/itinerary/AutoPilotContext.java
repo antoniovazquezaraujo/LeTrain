@@ -11,15 +11,6 @@ public interface AutoPilotContext {
     /** Current speed of the train (0-10). */
     int currentSpeed();
 
-    /** Desired speed set by AutoPilot. */
-    int targetSpeed();
-
-    /** Set desired speed. */
-    void setTargetSpeed(int speed);
-
-    /** Reverse the train's direction. */
-    void reverse();
-
     /** Current segment where the train's first linker is. */
     Segment currentSegment();
 
@@ -35,9 +26,9 @@ public interface AutoPilotContext {
     /** Is the train at the target waypoint? */
     boolean isAtTarget(Waypoint wp);
 
-    /** Load cargo at current station. */
-    void load();
+    /** Notify that a segment is occupied. */
+    void notifySegmentOccupied(Segment segment);
 
-    /** Unload cargo at current station. */
-    void unload();
+    /** Force a segment entry reset in safety manager. */
+    void forceSegmentReset();
 }
