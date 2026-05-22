@@ -624,8 +624,8 @@ public class GraphicPresenter extends ApplicationAdapter
         this.inputHandler = new Gdx3DInputHandler(model, this, cameraController, trackMaker, audioController);
         this.simulationController = new SimulationController(model, audioController, trackMaker);
         this.renderer = new letrain.visitor.gdx3d.Gdx3DRenderer(resourceContext);
-        this.decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(
-                new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam));
+        this.cameraGroupStrategy = new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam);
+        this.decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(cameraGroupStrategy);
 
         // Re-initialize HUD with new model
         this.hud = new Gdx3DHud(model, this);
