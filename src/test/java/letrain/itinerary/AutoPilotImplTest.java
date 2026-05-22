@@ -128,10 +128,35 @@ class AutoPilotImplTest {
         assertEquals(List.of(segA, segB), autopilot.currentRoute());
     }
 
+
     @Test
     @DisplayName("should deactivate cleanly")
     void deactivatesCleanly() {
         autopilot.deactivate();
         assertEquals(AutoPilot.Mode.IDLE, autopilot.mode());
+    }
+
+    @Test
+    @DisplayName("should not call pathfinder on every tick after a route failure (cooldown)")
+    void routeFailureCooldownSuppressesRetries() {
+        when(ctx.currentSpeed()).thenReturn(0);
+        when(ctx.currentSegment()).thenReturn(segA);
+        when(ctx.targetSegment(any())).thenReturn(segB);
+        when(ctx.isAtTarget(any())).thenReturn(false);
+        when(pathfinder.find(any(), any(), any())).thenReturn(List.of());
+
+        autopilot.setItinerary(itinerary);
+        autopilot.activate();
+
+        // First tick: route fails, cooldown starts
+        assertFalse(autopilot.tick());
+
+        // Next ticks within cooldown window: pathfinder must NOT be called again
+        autopilot.tick();
+        autopilot.tick();
+
+        // pathfinder was called exactly once (on the first tick)
+        org.mockito.Mockito.verify(pathfinder, org.mockito.Mockito.times(1))
+                .find(any(), any(), any());
     }
 }

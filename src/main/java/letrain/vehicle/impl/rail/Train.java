@@ -461,11 +461,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     }
 
     public void assignDefaultDirectorLinker() {
-        setDirectorLinker(getTractors() != null
-                &&
-                !getTractors().isEmpty()
-                        ? (Tractor) getTractors().get(0)
-                        : null);
+        List<Tractor> tractors = getTractors();
+        setDirectorLinker(tractors.isEmpty() ? null : tractors.get(0));
     }
 
     @Override
@@ -496,9 +493,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     @com.fasterxml.jackson.annotation.JsonIgnore
     public List<Tractor> getTractors() {
         return linkers.stream()
-                .filter(t -> Tractor.class.isAssignableFrom(t.getClass()))
-                .map(t -> (Tractor) t)
-                .collect(Collectors.toList());
+                .filter(l -> l instanceof Tractor)
+                .map(l -> (Tractor) l)
+                .toList();
     }
 
     /**

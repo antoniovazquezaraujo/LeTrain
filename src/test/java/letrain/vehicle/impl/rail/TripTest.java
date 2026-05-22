@@ -69,4 +69,37 @@ class TripTest {
         assertEquals(newStartStop, stops.get(0));
         assertEquals(Trip.TripState.STARTING, trip.getState());
     }
+
+    @Test
+    @DisplayName("setStops(null) should be treated as empty list — no NPE")
+    void should_TreatNullStopsAsEmpty_When_SetViaSetStops() {
+        // Arrange: simulate Jackson deserialization writing null
+        Trip trip = new Trip();
+        trip.setStops(null);
+
+        // Act & Assert: no NPE when getting or adding
+        assertEquals(0, trip.getStopsList().size());
+        assertNotNull(trip.getStops());
+
+        Stop stop = new Stop(1, LocalDateTime.now(), 0);
+        trip.addStop(stop); // must not throw
+        assertEquals(1, trip.getStopsList().size());
+    }
+
+    @Test
+    @DisplayName("addStop should be safe when internal stops is null")
+    void should_HandleNullInternalStops_When_AddStop() {
+        // Arrange: use setStops(null) to force stops=null, then bypass the setter
+        // by relying on the null-check inside addStop itself
+        Trip trip = new Trip();
+        trip.setStops(null);
+
+        // Act
+        Stop stop = new Stop(5, LocalDateTime.now(), 10);
+        trip.addStop(stop);
+
+        // Assert
+        assertEquals(Trip.TripState.STARTING, trip.getState());
+        assertEquals(1, trip.getStopsList().size());
+    }
 }

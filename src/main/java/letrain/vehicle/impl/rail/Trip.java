@@ -25,7 +25,7 @@ public class Trip {
     }
 
     public void setStops(List<Stop> stops) {
-        this.stops = stops;
+        this.stops = stops != null ? stops : new ArrayList<>();
     }
 
     public void setState(TripState state) {
@@ -41,6 +41,9 @@ public class Trip {
     }
 
     public void addStop(Stop stop) {
+        if (stops == null) {
+            stops = new ArrayList<>();
+        }
         if (getStops()
                 .map(Stop::stationId)
                 .filter(t -> t == stop.stationId())
@@ -74,6 +77,9 @@ public class Trip {
 
     @com.fasterxml.jackson.annotation.JsonIgnore
     public Stream<Stop> getStops() {
+        if (stops == null) {
+            stops = new ArrayList<>();
+        }
         return stops.stream();
     }
 

@@ -20,6 +20,7 @@ import letrain.track.SensorEventListener;
 import letrain.track.Station;
 import letrain.track.StationEventListener;
 import letrain.track.rail.ForkRailTrack;
+import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import org.slf4j.Logger;
@@ -371,22 +372,37 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         if (ctx.trainSpeed() != null) {
             int speed = Integer.parseInt(ctx.trainSpeed().getText());
             int clampedSpeed = Math.max(0, Math.min(10, speed));
-            return (t) -> ((Locomotive) t.getDirectorLinker()).setSpeed(clampedSpeed);
+            return (t) -> {
+                Tractor tractor = t.getDirectorLinker();
+                if (tractor != null) tractor.setSpeed(clampedSpeed);
+            };
         } else if (actionText.contains("accelerate")) {
-            return (t) -> ((Locomotive) t.getDirectorLinker()).incSpeed();
+            return (t) -> {
+                Tractor tractor = t.getDirectorLinker();
+                if (tractor != null) tractor.incSpeed();
+            };
         } else if (actionText.contains("decelerate")) {
-            return (t) -> ((Locomotive) t.getDirectorLinker()).decSpeed();
+            return (t) -> {
+                Tractor tractor = t.getDirectorLinker();
+                if (tractor != null) tractor.decSpeed();
+            };
         } else if (ctx.trainSense() != null) {
             boolean forward = "forward".equals(ctx.trainSense().getText());
             return (t) -> {
-                Locomotive l = (Locomotive) t.getDirectorLinker();
-                if (l.isReversed() == forward)
-                    l.toggleReversed();
+                Tractor tractor = t.getDirectorLinker();
+                if (tractor != null && tractor.isReversed() == forward)
+                    tractor.toggleReversed();
             };
         } else if (actionText.contains("stop")) {
-            return (t) -> ((Locomotive) t.getDirectorLinker()).setSpeed(0);
+            return (t) -> {
+                Tractor tractor = t.getDirectorLinker();
+                if (tractor != null) tractor.setSpeed(0);
+            };
         } else if (actionText.contains("invert")) {
-            return (t) -> ((Locomotive) t.getDirectorLinker()).toggleReversed();
+            return (t) -> {
+                Tractor tractor = t.getDirectorLinker();
+                if (tractor != null) tractor.toggleReversed();
+            };
         } else if (ctx.linkAction() != null) {
             LeTrainProgramParser.LinkActionContext lCtx = ctx.linkAction();
             boolean forward = "forward".equals(lCtx.sense().getText());
