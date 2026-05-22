@@ -145,7 +145,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         return getSpeed() == 0;
     }
 
-    Itinerary itinerary;
+    @com.fasterxml.jackson.annotation.JsonProperty("itinerary")
+    Trip trip;
 
     enum LinkersSense {
         FRONT, BACK
@@ -900,15 +901,15 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     public Stop recordStopAtStation() {
         Stop stop = new Stop(railStationId, LocalDateTime.now(), getDistanceTraveled());
-        if (this.itinerary == null) {
-            this.itinerary = new Itinerary();
+        if (this.trip == null) {
+            this.trip = new Trip();
         }
-        this.itinerary.addStop(stop);
+        this.trip.addStop(stop);
         return stop;
     }
 
-    public Itinerary getItinerary() {
-        return this.itinerary;
+    public Trip getTrip() {
+        return this.trip;
     }
 
     public void syncLinkersPosition() {

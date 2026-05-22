@@ -104,7 +104,7 @@ Esta lista se genera automáticamente a partir de los archivos fuente presentes 
 - `letrain.vehicle.impl.Tracker`
 - `letrain.vehicle.impl.Tractor`
 - `letrain.vehicle.impl.Trailer`
-- `letrain.vehicle.impl.rail.Itinerary`
+- `letrain.vehicle.impl.rail.Trip`
 - `letrain.vehicle.impl.rail.Locomotive`
 - `letrain.vehicle.impl.rail.Stop`
 - `letrain.vehicle.impl.rail.Train`

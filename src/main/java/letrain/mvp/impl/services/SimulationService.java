@@ -109,8 +109,8 @@ public class SimulationService {
     }
 
     private int calculateDistanceSinceLastStop(Train train) {
-        if (train.getItinerary() == null) return 0;
-        List<Stop> stops = train.getItinerary().getStopsList();
+        if (train.getTrip() == null) return 0;
+        List<Stop> stops = train.getTrip().getStopsList();
         if (stops.isEmpty()) return 0;
         
         Stop lastStop = stops.get(stops.size() - 1);

@@ -352,7 +352,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, letrain.vehicle
                      * Linker linker = selectedStation.getTrack().getLinker();
                      * if (linker != null) {
                      * Train train = linker.getTrain();
-                     * train.getItinerary().restart(actualStop);
+                     * train.getTrip().restart(actualStop);
                      * }
                      * }
                      * }

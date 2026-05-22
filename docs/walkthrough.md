@@ -1,23 +1,28 @@
-# Walkthrough - AutoPilot Simplification
+# Walkthrough - Rename vehicle Itinerary to Trip
 
-We have simplified the `AutoPilot` system to satisfy the requirements in ADR-012, removing complex logic such as speed control, wait times, reversing, and loading/unloading, and focusing it solely on segment fork routing and occupied segment event dispatching.
+We have renamed the legacy `letrain.vehicle.impl.rail.Itinerary` class to `Trip` to resolve the naming conflict with the DSL-based autopilot route interface `letrain.itinerary.Itinerary`.
 
 ## Changes Made
 
 ### Core Logic
-1. **`AutoPilotImpl.java`**: Simplified to remove all speed-limit adjustment, waiting timers, automatic reversing, and waypoint action executions. It now tracks the itinerary, calculates paths between waypoints, flips segment forks on segment entrance, and dispatches occupied segment warnings if target segments are not clear.
-2. **`TrainAutoPilotContext.java`**: Removed the segment fallback check from `isAtTarget`, ensuring waypoint stations are only flagged as reached when a train linker is physically on the station track.
-3. **`TrainEventListener.java` & `Train.java`**: Added the `onSegmentOccupied` event mechanism to broadcast occupied warnings.
+1. **`Trip.java`**: Created as a direct rename and refactor of `Itinerary.java` in `letrain.vehicle.impl.rail`. Renamed the class to `Trip` and its state enum to `TripState`. Maintained Jackson serialization compatibility by using annotations to map JSON properties.
+2. **`Itinerary.java` (Legacy)**: Deleted the old `letrain/vehicle/impl/rail/Itinerary.java` file.
+3. **`Train.java`**:
+   - Renamed field `Itinerary itinerary;` to `Trip trip;`, annotating it with `@com.fasterxml.jackson.annotation.JsonProperty("itinerary")` to ensure existing save games read/write the JSON property correctly.
+   - Renamed the getter `getItinerary()` to `getTrip()`.
+   - Updated `recordStopAtStation()` to construct and use `Trip` instead of `Itinerary`.
+4. **`SimulationService.java`**: Updated `calculateDistanceSinceLastStop` to invoke `train.getTrip()` instead of `train.getItinerary()`.
+5. **`TerminalPresenter.java`**: Updated commented-out legacy code that referenced `train.getItinerary()` to call `train.getTrip()`.
+
+### Documentation
+1. **`ClassIndex.md`**: Updated the class index to reference `letrain.vehicle.impl.rail.Trip` instead of `letrain.vehicle.impl.rail.Itinerary`.
 
 ### Verification and Tests
-1. **`AutoPilotIntegrationTest.java`**:
-   - Adjusted `CircuitFromSave.madridToBarcelona` to run for `1200` ticks instead of `500` to allow the train to physically reach the Barcelona station track (as the segment-level arrival fallback was removed).
-   - Ensured manual speed is set during setup so the autopilot does not manage it.
-2. **`AutoPilotImplTest.java`**: Simplified unit tests to match the new autopilot scope (route/itinerary updates and occupied segment checking, ignoring removed speed/wait controls).
+1. **`TripTest.java`**: Created new unit tests verifying `Trip` initialization, state transitions (`CONSTRUCTED` -> `STARTING` -> `STOPPING` -> `AT_END`) upon recording station stops, and list resetting via `restart()`.
 
 ## Validation Results
 
-Running the full Maven clean and test cycle compiles cleanly and passes all 317 tests:
+Running the full Maven clean and test cycle compiles cleanly and passes all 321 tests:
 
 ```bash
 mvn clean test
@@ -27,24 +32,10 @@ mvn clean test
 ```
 [INFO] Results:
 [INFO]
-[INFO] Tests run: 317, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 321, Failures: 0, Errors: 0, Skipped: 0
 [INFO]
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
 ```
 All integration and unit tests are fully green.
-
-## Direct Train Commands
-
-We added support for direct train commands (e.g. `train 1 set speed 3;`) in DSL programs so train movement can be controlled by scripts when the simplified AutoPilot is active.
-
-### Changes Made
-
-1. **`LeTrainProgram.g4`**: Added `directTrainCommand` to `directCommand`.
-2. **`CommandManager.java`**: Extracted train action parsing logic into `buildTrainAction(...)` and implemented `visitDirectTrainCommand(ctx)`.
-3. **`AutoPilotContext` & `TrainAutoPilotContext`**: Removed unused methods (`targetSpeed`, `setTargetSpeed`, `reverse`, `load`, `unload`) to simplify the API and ensure code cleanliness.
-4. **`AutoPilotIntegrationTest.java`**:
-   - Modified train placement helper to initialize train target speed to 0.
-   - Updated integration test programs to start trains using direct DSL commands (e.g., `train %d set speed 3;`), validating grammar and executor integration.
-

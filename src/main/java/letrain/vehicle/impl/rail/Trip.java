@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-public class Itinerary {
+public class Trip {
     @com.fasterxml.jackson.annotation.JsonProperty("stops")
-    List<Stop> stops;
+    private List<Stop> stops;
 
-    public enum ItineraryState {
+    public enum TripState {
         CONSTRUCTED,
         STARTING,
         STOPPING,
@@ -17,24 +17,26 @@ public class Itinerary {
     }
 
     @com.fasterxml.jackson.annotation.JsonProperty("state")
-    ItineraryState state;
+    private TripState state;
 
-    public Itinerary() {
+    public Trip() {
         this.stops = new ArrayList<>();
-        this.state = ItineraryState.CONSTRUCTED;
+        this.state = TripState.CONSTRUCTED;
     }
 
     public void setStops(List<Stop> stops) {
         this.stops = stops;
     }
 
-    public void setState(ItineraryState state) {
+    public void setState(TripState state) {
         this.state = state;
     }
 
     @com.fasterxml.jackson.annotation.JsonIgnore
     public Stop getFirstStop() {
-        if (stops == null || stops.isEmpty()) return null;
+        if (stops == null || stops.isEmpty()) {
+            return null;
+        }
         return stops.get(0);
     }
 
@@ -45,12 +47,12 @@ public class Itinerary {
                 .findFirst()
                 .isPresent()) {
             stops.add(stop);
-            this.state = ItineraryState.AT_END;
+            this.state = TripState.AT_END;
         } else {
             if (stops.isEmpty()) {
-                this.state = ItineraryState.STARTING;
+                this.state = TripState.STARTING;
             } else {
-                this.state = ItineraryState.STOPPING;
+                this.state = TripState.STOPPING;
             }
             stops.add(stop);
         }
@@ -75,8 +77,7 @@ public class Itinerary {
         return stops.stream();
     }
 
-    public ItineraryState getState() {
+    public TripState getState() {
         return this.state;
     }
-
 }
