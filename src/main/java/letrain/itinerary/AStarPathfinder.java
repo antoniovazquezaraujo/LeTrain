@@ -75,6 +75,30 @@ public class AStarPathfinder implements SegmentPathfinder {
 
             for (Segment neighbor : getNeighbors(current)) {
                 if (closed.contains(neighbor)) continue;
+
+                // Entry direction constraint check
+                if (neighbor.equals(to) && entryDir.isPresent()) {
+                    boolean validEntry = false;
+                    var steps = current.getSteps();
+                    if (steps != null) {
+                        for (letrain.segments.PathStep exitStep : new letrain.segments.PathStep[]{steps.getFirst(), steps.getSecond()}) {
+                            if (exitStep == null) continue;
+                            for (letrain.segments.PathStep next : graph.getNextSteps(exitStep)) {
+                                if (neighbor.equals(graph.getSegment(next))) {
+                                    if (next.getDir() == entryDir.get()) {
+                                        validEntry = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (validEntry) break;
+                        }
+                    }
+                    if (!validEntry) {
+                        continue;
+                    }
+                }
+
                 int tentativeG = gScore.get(current) + segmentCost(neighbor);
                 if (tentativeG < gScore.getOrDefault(neighbor, Integer.MAX_VALUE)) {
                     cameFrom.put(neighbor, current);
@@ -120,7 +144,8 @@ public class AStarPathfinder implements SegmentPathfinder {
     }
 
     private int segmentCost(Segment s) {
-        return 1;
+        int count = graph.getTrackCount(s);
+        return count > 0 ? count : 1;
     }
 
     private List<Segment> getNeighbors(Segment s) {

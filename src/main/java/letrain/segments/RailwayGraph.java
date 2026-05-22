@@ -36,4 +36,11 @@ public interface RailwayGraph {
      * Devuelve el segmento al que pertenece un raíl físico (si está mapeado).
      */
     Segment getSegment(letrain.track.rail.RailTrack track);
+
+    /**
+     * Devuelve el número de vías físicas en un segmento.
+     */
+    default int getTrackCount(Segment segment) {
+        return 0;
+    }
 }
