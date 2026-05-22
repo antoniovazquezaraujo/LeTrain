@@ -159,4 +159,83 @@ class AutoPilotImplTest {
         org.mockito.Mockito.verify(pathfinder, org.mockito.Mockito.times(1))
                 .find(any(), any(), any());
     }
+
+    @Test
+    @DisplayName("should execute waypoint commands when target is reached")
+    void should_ExecuteCommands_When_WaypointReached() {
+        // Arrange
+        TrainActionManager actionManager = mock(TrainActionManager.class);
+        autopilot = new AutoPilotImpl(ctx, actionManager);
+        autopilot.setPathfinder(pathfinder);
+
+        WaypointCommand cmdSpeed = WaypointCommand.speed(5);
+        WaypointCommand cmdLoad = WaypointCommand.LOAD;
+        Waypoint wp = new letrain.itinerary.impl.WaypointImpl(
+                Waypoint.Type.STATION, 1, List.of(cmdSpeed, cmdLoad));
+        Waypoint wp2 = new letrain.itinerary.impl.WaypointImpl(
+                Waypoint.Type.STATION, 2, List.of());
+
+        Itinerary multiWpItin = new letrain.itinerary.impl.ItineraryImpl();
+        multiWpItin.addWaypoint(wp);
+        multiWpItin.addWaypoint(wp2);
+
+        when(ctx.currentSpeed()).thenReturn(0);
+        when(ctx.currentSegment()).thenReturn(segA);
+        when(ctx.isAtTarget(wp)).thenReturn(true);
+
+        autopilot.setItinerary(multiWpItin);
+        assertTrue(autopilot.activate());
+
+        // Act
+        autopilot.tick();
+
+        // Assert
+        verify(actionManager).executeCommand(cmdSpeed);
+        verify(actionManager).executeCommand(cmdLoad);
+        assertEquals(AutoPilot.Mode.FOLLOWING, autopilot.mode()); // Advanced to the next waypoint, still following
+    }
+
+    @Test
+    @DisplayName("should pause and wait when WAIT command is present, then execute remaining commands")
+    void should_HandleWaitCommand_When_WaypointReached() {
+        // Arrange
+        TrainActionManager actionManager = mock(TrainActionManager.class);
+        autopilot = new AutoPilotImpl(ctx, actionManager);
+        autopilot.setPathfinder(pathfinder);
+
+        WaypointCommand cmdStop = WaypointCommand.speed(0);
+        WaypointCommand cmdWait = WaypointCommand.waitTicks(2);
+        WaypointCommand cmdSpeed = WaypointCommand.speed(3);
+        Waypoint wp = new letrain.itinerary.impl.WaypointImpl(
+                Waypoint.Type.STATION, 1, List.of(cmdStop, cmdWait, cmdSpeed));
+        Waypoint wp2 = new letrain.itinerary.impl.WaypointImpl(
+                Waypoint.Type.STATION, 2, List.of());
+
+        Itinerary multiWpItin = new letrain.itinerary.impl.ItineraryImpl();
+        multiWpItin.addWaypoint(wp);
+        multiWpItin.addWaypoint(wp2);
+
+        when(ctx.currentSpeed()).thenReturn(0);
+        when(ctx.currentSegment()).thenReturn(segA);
+        when(ctx.isAtTarget(wp)).thenReturn(true);
+
+        autopilot.setItinerary(multiWpItin);
+        assertTrue(autopilot.activate());
+
+        // Act & Assert 1: First tick arrives at target, executes STOP, hits WAIT, transitions to WAITING mode
+        assertFalse(autopilot.tick());
+        verify(actionManager).executeCommand(cmdStop);
+        org.mockito.Mockito.verifyNoMoreInteractions(actionManager);
+        assertEquals(AutoPilot.Mode.WAITING, autopilot.mode());
+
+        // Act & Assert 2: Next tick, wait timer decrements from 2 to 1 (still waiting)
+        assertFalse(autopilot.tick());
+        assertEquals(AutoPilot.Mode.WAITING, autopilot.mode());
+
+        // Act & Assert 3: Wait timer decrements from 1 to 0. It executes remaining commands (SPEED 3) and advances itinerary
+        assertFalse(autopilot.tick());
+        verify(actionManager).executeCommand(cmdSpeed);
+        assertEquals(AutoPilot.Mode.FOLLOWING, autopilot.mode()); // Advanced to wp2, back to FOLLOWING
+    }
 }
+
