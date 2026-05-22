@@ -434,7 +434,12 @@ public class TerminalView implements letrain.mvp.View {
                 { "  fork curved", "fork 1 set curved;" },
                 { "  fork dir", "fork 1 set E;" },
                 { "  semaphore open", "semaphore 1 set open;" },
-                { "  semaphore closed", "semaphore 1 set closed;" }
+                { "  semaphore closed", "semaphore 1 set closed;" },
+                { "", "" },
+                { "SET NAMES", "" },
+                { "  station name", "station 1 set name \"Madrid\";" },
+                { "  sensor name", "sensor 1 set name \"S1\";" },
+                { "  train name", "train 1 set name \"Express\";" }
         };
         for (String[] r : refs) {
             String label = r[0];

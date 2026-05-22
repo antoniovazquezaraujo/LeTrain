@@ -655,7 +655,12 @@ public class Gdx3DHud {
                     { "  fork set flip", "fork 1 set flip;" },
                     { "  fork set dir", "fork 1 set E;" },
                     { "  semaphore set open", "semaphore 1 set open;" },
-                    { "  semaphore set closed", "semaphore 1 set closed;" }
+                    { "  semaphore set closed", "semaphore 1 set closed;" },
+                    { "", "" },
+                    { "SET NAMES", "" },
+                    { "  station name", "station 1 set name \"Madrid\";" },
+                    { "  sensor name", "sensor 1 set name \"S1\";" },
+                    { "  train name", "train 1 set name \"Express\";" }
             };
 
             for (String[] r : refs) {
