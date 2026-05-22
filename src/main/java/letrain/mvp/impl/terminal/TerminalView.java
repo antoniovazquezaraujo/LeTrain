@@ -545,17 +545,44 @@ public class TerminalView implements letrain.mvp.View {
     @Override
     public void showReferenceGuide() {
         String guide = "LeTrain Automation Reference:\n\n" +
-                "Triggers:\n" +
-                "  sensor [ID] on train (enter|exit) { actions }\n" +
-                "  station [ID] on train (enter|exit) { actions }\n" +
-                "  train [ID] on (enter|exit|link|unlink|crash|contact) { actions }\n\n" +
-                "Actions:\n" +
-                "  train set speed [0-100]\n" +
-                "  train invert\n" +
-                "  train load / train unload\n" +
-                "  train unlink (front|back) [count]\n" +
-                "  fork [ID] set (straight|curved|flip)\n\n" +
+                "── Itinerary DSL (auto-navigation) ──\n" +
+                "  create itinerary \"name\" {\n" +
+                "    add station \"A\" [cmd] [cmd] ...\n" +
+                "    add sensor \"S1\" [cmd] ...\n" +
+                "  }\n" +
+                "  assign itinerary \"name\" to train ID;\n" +
+                "  train ID set autopilot true|false;\n" +
+                "  Waypoint commands: LOAD UNLOAD REVERSE STOP\n" +
+                "                     WAIT n   SPEED n\n\n" +
+                "── Triggers (event-based) ──\n" +
+                "  sensor ID on train enter|exit { actions }\n" +
+                "  station ID on train enter|exit { actions }\n" +
+                "  fork ID on train enter|exit { actions }\n" +
+                "  semaphore ID on train enter|exit { actions }\n" +
+                "  train ID on enter|exit|link|unlink|crash|contact { actions }\n\n" +
+                "── Actions ──\n" +
+                "  train set speed N      train stop\n" +
+                "  train accelerate        train decelerate\n" +
+                "  train invert            train set forward|backward\n" +
+                "  train load              train unload\n" +
+                "  train link fwd|back [N] train unlink fwd|back [N]\n" +
+                "  fork ID set straight|curved|flip|dir\n" +
+                "  semaphore ID set open|closed\n" +
+                "  train at station ID     train at sensor ID\n" +
+                "  train at fork ID        train at semaphore ID\n\n" +
+                "── Set names ──\n" +
+                "  station ID set name \"...\"\n" +
+                "  sensor  ID set name \"...\"\n" +
+                "  train   ID set name \"...\"\n\n" +
                 "Examples:\n" +
+                "  create itinerary \"Ruta\" {\n" +
+                "    add station \"Madrid\" LOAD\n" +
+                "    add station \"Barcelona\" UNLOAD\n" +
+                "  }\n" +
+                "  assign itinerary \"Ruta\" to train 1;\n" +
+                "  train 1 set autopilot true;\n" +
+                "  train 1 set speed 3;\n" +
+                "  ---\n" +
                 "  station 1 on train enter { train load; train unlink back 1; }\n" +
                 "  train 1 on crash { train set speed 0; }";
         showMessage("Automation Cheat Sheet", guide);
