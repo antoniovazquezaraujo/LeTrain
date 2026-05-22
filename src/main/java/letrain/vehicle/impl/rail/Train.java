@@ -68,11 +68,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     int railStationId = 0;
     private boolean stalled = false;
     int id;
+    private String name;
 
     public boolean isShuntingMode() {
         if (model == null) return false;
-        List<letrain.core.segments.Segment> owned = model.getBlockManager().getOwnedSegments(this);
-        for (letrain.core.segments.Segment s : owned) {
+        List<letrain.segments.Segment> owned = model.getBlockManager().getOwnedSegments(this);
+        for (letrain.segments.Segment s : owned) {
             if (model.getBlockManager().getOwners(s).size() > 1) {
                 return true;
             }
@@ -80,11 +81,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         return false;
     }
 
-    public letrain.core.segments.Segment getCurrentSegment() {
+    public letrain.segments.Segment getCurrentSegment() {
         return safetyManager.getCurrentSegment();
     }
 
-    public letrain.core.segments.Segment getNextSegment() {
+    public letrain.segments.Segment getNextSegment() {
         return safetyManager.getNextSegment();
     }
 
@@ -94,6 +95,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     public void wakeUp() {
         safetyManager.resetSafetyTimer();
+    }
+
+    public void forceSegmentReset() {
+        if (safetyManager != null) {
+            safetyManager.forceSegmentReset();
+        }
     }
 
     public int getStationId() {
@@ -138,7 +145,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         return getSpeed() == 0;
     }
 
-    Itinerary itinerary;
+    @com.fasterxml.jackson.annotation.JsonProperty("itinerary")
+    Trip trip;
 
     enum LinkersSense {
         FRONT, BACK
@@ -153,6 +161,34 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     private transient List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
     @JsonIgnore
     private transient List<Wagon> currentCapableWagons = null;
+
+    // ── Autonomous driving (ADR-008) ──────────────────────────────
+    @JsonIgnore
+    private transient letrain.itinerary.AutoPilot autopilot;
+    @JsonIgnore
+    private transient boolean autoMode = false;
+
+    public boolean isAutoMode() { return autoMode; }
+
+    public void setAutoMode(boolean on) { this.autoMode = on; }
+
+    public void toggleAutoMode() {
+        log.info("[TRAIN] toggleAutoMode() current={}", autoMode);
+        if (autoMode) {
+            autoMode = false;
+            if (autopilot != null) autopilot.deactivate();
+        } else if (autopilot != null && autopilot.itinerary().isPresent()) {
+            autoMode = autopilot.activate();
+        }
+        log.info("[TRAIN] toggleAutoMode → autoMode={}", autoMode);
+    }
+
+    public void setAutopilot(letrain.itinerary.AutoPilot ap) { this.autopilot = ap; }
+    public letrain.itinerary.AutoPilot getAutopilot() { return autopilot; }
+
+    public void notifyForkEntry(letrain.track.rail.ForkRailTrack fork) {
+        if (autopilot != null) autopilot.onForkEntered(fork);
+    }
 
     @JsonIgnore
     private transient letrain.mvp.Model model;
@@ -205,6 +241,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
     public void notifyUnlink() {
         if (trainListeners != null) {
             trainListeners.forEach(l -> l.onUnlink(this));
+        }
+    }
+
+    public void notifySegmentOccupied(letrain.segments.Segment segment) {
+        if (trainListeners != null) {
+            trainListeners.forEach(l -> l.onSegmentOccupied(this, segment));
         }
     }
 
@@ -264,6 +306,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         return this.id;
     }
 
+    public String getName() { return name; }
+
+    public void setName(String name) { this.name = name; }
+
     @JsonIgnore
     public void rebind() {
         if (model == null) {
@@ -271,8 +317,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             return;
         }
 
-        letrain.core.segments.RailwayGraph graph = model.getRailwayGraph();
-        letrain.core.segments.BlockManager blockManager = model.getBlockManager();
+        letrain.segments.RailwayGraph graph = model.getRailwayGraph();
+        letrain.segments.BlockManager blockManager = model.getBlockManager();
 
         if (graph == null || blockManager == null) {
             return;
@@ -282,10 +328,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         // Liberamos primero lo que tengamos para evitar dejar basura en el BlockManager
         blockManager.releaseAll(this);
 
-        Set<letrain.core.segments.Segment> segmentsToClaim = new HashSet<>();
+        Set<letrain.segments.Segment> segmentsToClaim = new HashSet<>();
         for (Linker linker : linkers) {
             if (linker.getTrack() instanceof letrain.track.rail.RailTrack) {
-                letrain.core.segments.Segment segment = graph.getSegment((letrain.track.rail.RailTrack) linker.getTrack());
+                letrain.segments.Segment segment = graph.getSegment((letrain.track.rail.RailTrack) linker.getTrack());
                 if (segment != null) {
                     segmentsToClaim.add(segment);
                 }
@@ -293,7 +339,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         }
 
         // Lock the segments we found
-        for (letrain.core.segments.Segment segment : segmentsToClaim) {
+        for (letrain.segments.Segment segment : segmentsToClaim) {
             if (!blockManager.tryLock(this, segment)) {
                 // Si falla el bloqueo normal tras una Tabula Rasa, es que hay convivencia forzada
                 // El modo Shunting se detectará dinámicamente.
@@ -510,6 +556,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
      * @return true if the train moved, false otherwise
      */
     public boolean advance() {
+        // AutoPilot mode — let it control speed/direction, then move normally.
+        // Return true even if tick() says false, to avoid locomotive punishing
+        // the train with an abrupt speed=0 (freno en seco).
+        // AutoPilot tick is handled in Locomotive.update; skip here to avoid double processing.
+
         // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
         if (isLoading()) {
             return false;
@@ -532,8 +583,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         // we must stop to avoid collisions. This prevents the TOCTOU bug where a
         // stopped co-owner accelerates after a shunting lock was granted.
         if (model != null && isShuntingMode()) {
-            letrain.core.segments.BlockManager bm = model.getBlockManager();
-            for (letrain.core.segments.Segment s : bm.getOwnedSegments(this)) {
+            letrain.segments.BlockManager bm = model.getBlockManager();
+            for (letrain.segments.Segment s : bm.getOwnedSegments(this)) {
                 for (Train owner : bm.getOwners(s)) {
                     if (owner != this && owner.getSpeed() != 0) {
                         if (directorLinker != null) {
@@ -850,15 +901,15 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     public Stop recordStopAtStation() {
         Stop stop = new Stop(railStationId, LocalDateTime.now(), getDistanceTraveled());
-        if (this.itinerary == null) {
-            this.itinerary = new Itinerary();
+        if (this.trip == null) {
+            this.trip = new Trip();
         }
-        this.itinerary.addStop(stop);
+        this.trip.addStop(stop);
         return stop;
     }
 
-    public Itinerary getItinerary() {
-        return this.itinerary;
+    public Trip getTrip() {
+        return this.trip;
     }
 
     public void syncLinkersPosition() {

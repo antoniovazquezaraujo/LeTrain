@@ -242,8 +242,8 @@ Transición AUTO → MANUAL:
 | 4 | Modo dual (MANUAL/AUTO) en Train + UI | Alta |
 | 5 | Comandos REVERSE, WAIT, SPEED | Media |
 | 6 | Fallback, replanificación, detección de llegada a waypoint | Media |
-| 7 | Editor visual de itinerarios (ver `ADR-009-Itinerary-Editor`) | Baja |
+| 7 | Editor de itinerarios vía DSL (ver `ADR-009-Itinerary-Editor`) | Implementado |
 
 ---
 
-*Última actualización: 2026-05-13*
+*Última actualización: 2026-05-18*

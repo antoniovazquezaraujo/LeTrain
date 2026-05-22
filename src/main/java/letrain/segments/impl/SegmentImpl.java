@@ -1,7 +1,7 @@
-package letrain.core.segments.impl;
+package letrain.segments.impl;
 
-import letrain.core.segments.PathStep;
-import letrain.core.segments.Segment;
+import letrain.segments.PathStep;
+import letrain.segments.Segment;
 import letrain.utils.Pair;
 
 public class SegmentImpl implements Segment {
@@ -33,9 +33,10 @@ public class SegmentImpl implements Segment {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         SegmentImpl segment = (SegmentImpl) o;
-        // Identidad basada en el conjunto de pasos (orden-independiente)
+        // Same ID → same logical segment
+        if (id != null && id.equals(segment.id)) return true;
+        // Fallback: compare by steps (order-independent)
         if (steps == null || segment.steps == null) return false;
-        
         return (java.util.Objects.equals(steps.getFirst(), segment.steps.getFirst()) && 
                 java.util.Objects.equals(steps.getSecond(), segment.steps.getSecond())) ||
                (java.util.Objects.equals(steps.getFirst(), segment.steps.getSecond()) && 

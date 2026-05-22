@@ -1,9 +1,10 @@
-package letrain.core.segments.impl;
+package letrain.segments.impl;
 
-import letrain.core.segments.PathStep;
-import letrain.core.segments.RailNode;
-import letrain.map.Dir;
 import java.util.Objects;
+
+import letrain.map.Dir;
+import letrain.segments.PathStep;
+import letrain.segments.RailNode;
 
 public class PathStepImpl implements PathStep {
     private final RailNode node;

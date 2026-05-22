@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class Sensor implements Renderable {
     private int id;
+    private String name;
     Track track;
     @JsonIgnore
     transient List<SensorEventListener> listeners = new ArrayList<>();
@@ -73,6 +74,10 @@ public class Sensor implements Renderable {
     public int getId() {
         return this.id;
     }
+
+    public String getName() { return name; }
+
+    public void setName(String name) { this.name = name; }
 
     public Dir getSideDir() {
         return sideDir;

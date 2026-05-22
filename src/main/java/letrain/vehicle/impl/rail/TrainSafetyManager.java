@@ -1,12 +1,16 @@
 package letrain.vehicle.impl.rail;
 
-import letrain.core.segments.BlockManager;
-import letrain.core.segments.RailwayGraph;
-import letrain.core.segments.Segment;
-import letrain.core.segments.impl.PathStepImpl;
-import letrain.core.segments.impl.RailNodeImpl;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import letrain.map.Dir;
 import letrain.mvp.impl.Model;
+import letrain.segments.BlockManager;
+import letrain.segments.RailwayGraph;
+import letrain.segments.Segment;
+import letrain.segments.impl.PathStepImpl;
+import letrain.segments.impl.RailNodeImpl;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
@@ -14,10 +18,6 @@ import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.RailIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Encapsulates the safety and block management logic for a Train.
@@ -56,10 +56,10 @@ public class TrainSafetyManager {
     public boolean checkSafety(Model model) {
         BlockManager bm = model.getBlockManager();
         RailwayGraph graph = model.getRailwayGraph();
-        
+
         Linker head = (Linker) train.getDirectorLinker();
         if (head == null || !(head.getTrack() instanceof RailTrack)) return true;
-        
+
         RailTrack headTrack = (RailTrack) head.getTrack();
         Segment headS = graph.getSegment(headTrack);
         if (headS == null) return true;
@@ -73,14 +73,22 @@ public class TrainSafetyManager {
                     bm.tryShuntingLock(train, currentSegment);
                 }
             }
-            permissionToMove = false; 
-            nextSegment = findNextSegmentTopological(head, graph);
+            permissionToMove = false;
+            nextSegment = findNextSegment(head, graph);
             safetyRetryTimer = 0; // Try immediately
+
+            letrain.itinerary.AutoPilot ap = train.getAutopilot();
+            if (ap != null && nextSegment != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+                ap.ensureForkRoute(currentSegment, nextSegment);
+            }
         }
 
         // 2. If no permission, try to acquire it (lock Sn+1)
         if (!permissionToMove) {
             if (safetyRetryTimer <= 0) {
+                // Refresh nextSegment from autopilot route if available
+                nextSegment = findNextSegment(head, graph);
+
                 if (nextSegment == null || nextSegment.equals(currentSegment)) {
                     permissionToMove = true; // No next segment, move freely
                 } else {
@@ -88,13 +96,13 @@ public class TrainSafetyManager {
                     if (!locked) {
                         locked = bm.tryShuntingLock(train, nextSegment);
                     }
-                    
+
                     if (locked) {
-                        log.info("Train {} granted permission to move into {}. Next segment {} locked (Shunting: {}).", 
+                        log.info("Train {} granted permission to move into {}. Next segment {} locked (Shunting: {}).",
                             train.getId(), currentSegment.getId(), nextSegment.getId(), train.isShuntingMode());
                         permissionToMove = true;
                     } else {
-                        log.debug("Train {} denied permission. Segment {} occupied. Retrying in 15s.", 
+                        log.debug("Train {} denied permission. Segment {} occupied. Retrying in 15s.",
                             train.getId(), nextSegment.getId());
                         safetyRetryTimer = SAFETY_RETRY_TICKS;
                     }
@@ -127,6 +135,23 @@ public class TrainSafetyManager {
         return true;
     }
 
+    /**
+     * Finds the next segment the train should enter.
+     * When the autopilot is active, uses its planned route for correct fork routing.
+     * Otherwise falls back to topological inference.
+     */
+    private Segment findNextSegment(Linker head, RailwayGraph graph) {
+        letrain.itinerary.AutoPilot ap = train.getAutopilot();
+        if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+            List<Segment> route = ap.currentRoute();
+            int index = route.indexOf(currentSegment);
+            if (index >= 0 && index + 1 < route.size()) {
+                return route.get(index + 1);
+            }
+        }
+        return findNextSegmentTopological(head, graph);
+    }
+
     private void releaseOldSegments(BlockManager bm, RailwayGraph graph) {
         Set<Segment> physicallyOccupied = new HashSet<>();
         for (Linker l : train.getLinkers()) {
@@ -135,7 +160,7 @@ public class TrainSafetyManager {
                 if (s != null) physicallyOccupied.add(s);
             }
         }
-        
+
         List<Segment> owned = bm.getOwnedSegments(train);
         for (Segment s : owned) {
             if (!physicallyOccupied.contains(s)) {
@@ -154,9 +179,9 @@ public class TrainSafetyManager {
         if (s == null) return null;
 
         Dir exitDir = head.getDir();
-        List<letrain.core.segments.PathStep> nextSteps = graph.getNextSteps(new PathStepImpl(
+        List<letrain.segments.PathStep> nextSteps = graph.getNextSteps(new PathStepImpl(
             new RailNodeImpl(headTrack), exitDir));
-        
+
         if (nextSteps == null || nextSteps.isEmpty()) {
             RailIterator it = new RailIterator(headTrack, exitDir);
             int maxIterations = 10000; // Safety guard against infinite loops on circuits
@@ -170,5 +195,9 @@ public class TrainSafetyManager {
         }
 
         return null;
+    }
+
+    public void forceSegmentReset() {
+        this.currentSegment = null;
     }
 }

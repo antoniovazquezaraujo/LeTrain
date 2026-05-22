@@ -1,17 +1,19 @@
 package letrain.core.segments;
 
-import letrain.core.segments.BlockManager;
-import letrain.core.segments.Segment;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+
+import letrain.map.Dir;
+import letrain.map.Point;
 import letrain.mvp.impl.Model;
+import letrain.segments.BlockManager;
+import letrain.segments.Segment;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
-import letrain.map.Point;
-import letrain.map.Dir;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.List;
 
 public class BlockReleaseIntegrationTest {
     @Test

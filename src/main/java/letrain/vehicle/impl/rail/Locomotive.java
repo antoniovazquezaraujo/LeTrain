@@ -126,6 +126,11 @@ public class Locomotive extends Linker implements Tractor {
                 return moved;
             }
 
+            // AutoPilot: let it compute routes and set target speed even when stopped
+            if (getTrain() != null && getTrain().isAutoMode() && getTrain().getAutopilot() != null) {
+                getTrain().getAutopilot().tick();
+            }
+
             // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
             if (getTrain() != null && getTrain().isLoading()) {
                 return moved;
@@ -181,10 +186,14 @@ public class Locomotive extends Linker implements Tractor {
                     getTrain().getTractors().stream()
                             .filter(t -> t instanceof Locomotive && t != this)
                             .forEach(t -> ((Locomotive) t).resetTurns());
-                } else {
-                    // Blocked/Collision - Stop the train
+                } else if (getTrain() == null || !getTrain().isAutoMode()) {
+                    // Blocked/Collision — stop the train (only in manual mode)
                     setCurrentSpeed(0);
                     setTargetSpeed(0);
+                } else {
+                    // Auto mode: don't punish, but let inertia brake
+                    updateInertia();
+                    resetTurns();
                 }
             }
         } else {
@@ -274,14 +283,21 @@ public class Locomotive extends Linker implements Tractor {
 
     public void incSpeed() {
         // Do not increase speed while stalled from a collision.
-        // The player must reverse first to recover.
         if (getTrain() != null && getTrain().isStalled()) {
             return;
+        }
+        // Speed change in auto mode → switch to manual
+        if (getTrain() != null && getTrain().isAutoMode()) {
+            getTrain().setAutoMode(false);
         }
         setTargetSpeed(this.targetSpeed + 1);
     }
 
     public void decSpeed() {
+        // Speed change in auto mode → switch to manual
+        if (getTrain() != null && getTrain().isAutoMode()) {
+            getTrain().setAutoMode(false);
+        }
         setTargetSpeed(this.targetSpeed - 1);
     }
 
@@ -290,8 +306,11 @@ public class Locomotive extends Linker implements Tractor {
             return;
         }
         this.targetSpeed = speed;
-        if (this.targetSpeed > 0 && getTrain() != null) {
-            getTrain().setStalled(false);
+        if (this.targetSpeed > 0) {
+            this.engineOn = true;
+            if (getTrain() != null) {
+                getTrain().setStalled(false);
+            }
         }
         limitTargetSpeed();
 

@@ -1,18 +1,18 @@
 package letrain.core.segments;
 
-import letrain.core.segments.impl.TopologyServiceImpl;
-import letrain.core.segments.impl.RailwayGraphImpl;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
-import letrain.track.rail.RailTrack;
+import letrain.segments.PathStep;
+import letrain.segments.RailwayGraph;
+import letrain.segments.TopologyService;
+import letrain.segments.impl.TopologyServiceImpl;
 import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.RailTrack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class TopologyServiceTest {
     private RailMap railMap;
@@ -51,7 +51,7 @@ class TopologyServiceTest {
         assertNotNull(graph);
         
         // Buscamos el nodo de t1. Como sabemos que es un nodo con salida E:
-        PathStep step1 = new letrain.core.segments.impl.PathStepImpl(null, Dir.E); // Placeholder para búsqueda
+        PathStep step1 = new letrain.segments.impl.PathStepImpl(null, Dir.E); // Placeholder para búsqueda
         // En una implementación real de test, tendríamos que buscar en el grafo.
         // Dado que el grafo es una caja negra, vamos a verificar que al menos hay segmentos.
         

@@ -18,6 +18,6 @@ public record WaypointImpl(
     }
 
     public WaypointImpl(Waypoint.Type type, int targetId, Dir entryDir, List<WaypointCommand> commands) {
-        this(type, targetId, Optional.of(entryDir), commands);
+        this(type, targetId, Optional.ofNullable(entryDir), commands);
     }
 }

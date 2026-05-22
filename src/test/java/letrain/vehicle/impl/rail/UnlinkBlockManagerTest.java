@@ -1,21 +1,22 @@
 package letrain.vehicle.impl.rail;
 
-import letrain.core.segments.BlockManager;
-import letrain.core.segments.RailwayGraph;
-import letrain.core.segments.Segment;
-import letrain.core.segments.impl.BlockManagerImpl;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
+
 import letrain.mvp.impl.Model;
+import letrain.segments.BlockManager;
+import letrain.segments.RailwayGraph;
+import letrain.segments.Segment;
+import letrain.segments.impl.BlockManagerImpl;
 import letrain.track.rail.RailTrack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class UnlinkBlockManagerTest {
     private Model model;
@@ -40,10 +41,10 @@ class UnlinkBlockManagerTest {
         
         when(segment1.getId()).thenReturn("S1");
         // BlockManagerImpl.updateForkLocks requires segments to have steps
-        letrain.core.segments.PathStep ps1 = mock(letrain.core.segments.PathStep.class);
-        letrain.core.segments.PathStep ps2 = mock(letrain.core.segments.PathStep.class);
-        letrain.core.segments.RailNode rn1 = mock(letrain.core.segments.RailNode.class);
-        letrain.core.segments.RailNode rn2 = mock(letrain.core.segments.RailNode.class);
+        letrain.segments.PathStep ps1 = mock(letrain.segments.PathStep.class);
+        letrain.segments.PathStep ps2 = mock(letrain.segments.PathStep.class);
+        letrain.segments.RailNode rn1 = mock(letrain.segments.RailNode.class);
+        letrain.segments.RailNode rn2 = mock(letrain.segments.RailNode.class);
         when(ps1.getRailNode()).thenReturn(rn1);
         when(ps2.getRailNode()).thenReturn(rn2);
         when(rn1.getTrack()).thenReturn(mock(letrain.track.Track.class));

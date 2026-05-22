@@ -387,11 +387,18 @@ public class Gdx3DInputHandler implements InputProcessor {
             Locomotive loco = model.getSelectedLocomotive();
             if (loco != null && loco.isEngineOn() && !loco.getTrain().isLoading()) {
                 loco.incSpeed();
+                // Manual acceleration disengages autopilot
+                if (loco.getTrain() != null && loco.getTrain().isAutoMode()) {
+                    loco.getTrain().toggleAutoMode();
+                }
             }
         } else if (stroke.getKeyType() == KeyType.ArrowDown) {
             Locomotive loco = model.getSelectedLocomotive();
             if (loco != null && loco.isEngineOn() && !loco.getTrain().isLoading()) {
                 loco.decSpeed();
+                if (loco.getTrain() != null && loco.getTrain().isAutoMode()) {
+                    loco.getTrain().toggleAutoMode();
+                }
             }
         } else if (stroke.getKeyType() == KeyType.ArrowLeft) {
             model.selectPrevLocomotive();
@@ -414,6 +421,13 @@ public class Gdx3DInputHandler implements InputProcessor {
             locomotiveIdAccumulator = locomotiveIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
             model.selectLocomotive(locomotiveIdAccumulator);
             locomotiveInputTimeout = System.currentTimeMillis() + 1000;
+        } else if (stroke.getKeyType() == KeyType.Character
+                && (stroke.getCharacter() == 'a' || stroke.getCharacter() == 'A')) {
+            // Toggle autopilot
+            if (model.getSelectedLocomotive() != null) {
+                Train t = model.getSelectedLocomotive().getTrain();
+                if (t != null) t.toggleAutoMode();
+            }
         } else if (stroke.getKeyType() == KeyType.Backspace) {
             locomotiveIdAccumulator = locomotiveIdAccumulator / 10;
             model.selectLocomotive(locomotiveIdAccumulator);

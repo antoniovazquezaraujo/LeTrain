@@ -153,6 +153,9 @@ public class TrainMovementManager {
             linkerToMove.setPreviousTrack(currentTrack);
             linkerToMove.setPreviousDir(linkerToMove.getDir());
             currentTrack.removeLinker();
+            if (nextTrackOfLinker instanceof ForkRailTrack && linkerToMove == firstLinker) {
+                train.notifyForkEntry((ForkRailTrack) nextTrackOfLinker);
+            }
             if (!nextTrackOfLinker.enterLinkerFromDir(entryDirOfLinker, linkerToMove)) {
                 // Rollback: restore linker to its previous track
                 linkerToMove.setTrack(currentTrack);

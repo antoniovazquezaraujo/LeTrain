@@ -70,6 +70,12 @@ public interface Model {
 
     Station getStation(int id);
 
+    Station findStationByName(String name);
+
+    Sensor findSensorByName(String name);
+
+    Train findTrainByName(String name);
+
     Station getSelectedStation();
 
     void setSelectedStation(Station selectedStation);
@@ -224,7 +230,7 @@ public interface Model {
     boolean isMapChanged();
     void setMapChanged(boolean mapChanged);
 
-    letrain.core.segments.BlockManager getBlockManager();
+    letrain.segments.BlockManager getBlockManager();
 
-    letrain.core.segments.RailwayGraph getRailwayGraph();
+    letrain.segments.RailwayGraph getRailwayGraph();
 }

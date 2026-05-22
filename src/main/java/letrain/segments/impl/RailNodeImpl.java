@@ -1,10 +1,11 @@
-package letrain.core.segments.impl;
+package letrain.segments.impl;
 
-import letrain.core.segments.PathStep;
-import letrain.core.segments.RailNode;
-import letrain.track.Track;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+
+import letrain.segments.PathStep;
+import letrain.segments.RailNode;
+import letrain.track.Track;
 
 public class RailNodeImpl implements RailNode {
     private final List<PathStep> outSteps = new ArrayList<>();

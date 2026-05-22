@@ -1,4 +1,4 @@
-package letrain.core.segments;
+package letrain.segments;
 
 import letrain.utils.Pair;
 
