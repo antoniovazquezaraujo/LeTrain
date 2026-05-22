@@ -1,13 +1,18 @@
 package letrain.itinerary;
 
-import letrain.core.segments.PathStep;
-import letrain.core.segments.RailNode;
-import letrain.core.segments.RailwayGraph;
-import letrain.core.segments.Segment;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 import letrain.map.Dir;
-
-import java.util.*;
-
+import letrain.segments.PathStep;
+import letrain.segments.RailwayGraph;
+import letrain.segments.Segment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,12 +1,16 @@
 package letrain.vehicle.impl.rail;
 
-import letrain.core.segments.BlockManager;
-import letrain.core.segments.RailwayGraph;
-import letrain.core.segments.Segment;
-import letrain.core.segments.impl.PathStepImpl;
-import letrain.core.segments.impl.RailNodeImpl;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import letrain.map.Dir;
 import letrain.mvp.impl.Model;
+import letrain.segments.BlockManager;
+import letrain.segments.RailwayGraph;
+import letrain.segments.Segment;
+import letrain.segments.impl.PathStepImpl;
+import letrain.segments.impl.RailNodeImpl;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
@@ -14,10 +18,6 @@ import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.RailIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Encapsulates the safety and block management logic for a Train.
@@ -179,7 +179,7 @@ public class TrainSafetyManager {
         if (s == null) return null;
 
         Dir exitDir = head.getDir();
-        List<letrain.core.segments.PathStep> nextSteps = graph.getNextSteps(new PathStepImpl(
+        List<letrain.segments.PathStep> nextSteps = graph.getNextSteps(new PathStepImpl(
             new RailNodeImpl(headTrack), exitDir));
 
         if (nextSteps == null || nextSteps.isEmpty()) {

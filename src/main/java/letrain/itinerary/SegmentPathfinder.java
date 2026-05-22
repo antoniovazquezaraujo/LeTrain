@@ -1,9 +1,10 @@
 package letrain.itinerary;
 
-import letrain.core.segments.Segment;
-import letrain.map.Dir;
 import java.util.List;
 import java.util.Optional;
+
+import letrain.map.Dir;
+import letrain.segments.Segment;
 
 /**
  * Pure function: finds a path between two segments on the railway graph.

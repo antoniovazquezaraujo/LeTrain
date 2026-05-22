@@ -1,13 +1,4 @@
-package letrain.core.segments.impl;
-
-import letrain.core.segments.PathStep;
-import letrain.core.segments.RailwayGraph;
-import letrain.core.segments.Segment;
-import letrain.core.segments.TopologyService;
-import letrain.map.Dir;
-import letrain.map.RailMap;
-import letrain.track.rail.ForkRailTrack;
-import letrain.track.rail.RailTrack;
+package letrain.segments.impl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +7,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import letrain.map.Dir;
+import letrain.map.RailMap;
+import letrain.segments.PathStep;
+import letrain.segments.RailwayGraph;
+import letrain.segments.Segment;
+import letrain.segments.TopologyService;
+import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.RailTrack;
 
 public class TopologyServiceImpl implements TopologyService {
 

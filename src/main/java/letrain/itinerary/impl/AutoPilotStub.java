@@ -1,8 +1,12 @@
 package letrain.itinerary.impl;
 
-import letrain.core.segments.Segment;
-import letrain.itinerary.*;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+
+import letrain.itinerary.AutoPilot;
+import letrain.itinerary.Itinerary;
+import letrain.itinerary.SegmentPathfinder;
+import letrain.segments.Segment;
 
 public class AutoPilotStub implements AutoPilot {
     private Itinerary itinerary;

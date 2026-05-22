@@ -230,7 +230,7 @@ public interface Model {
     boolean isMapChanged();
     void setMapChanged(boolean mapChanged);
 
-    letrain.core.segments.BlockManager getBlockManager();
+    letrain.segments.BlockManager getBlockManager();
 
-    letrain.core.segments.RailwayGraph getRailwayGraph();
+    letrain.segments.RailwayGraph getRailwayGraph();
 }

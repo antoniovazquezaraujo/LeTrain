@@ -1,6 +1,6 @@
 package letrain.itinerary;
 
-import letrain.core.segments.Segment;
+import letrain.segments.Segment;
 
 /**
  * Bridge between AutoPilot and the real train/locomotive/world.

@@ -1,8 +1,9 @@
 package letrain.itinerary;
 
-import letrain.core.segments.Segment;
 import java.util.List;
 import java.util.Optional;
+
+import letrain.segments.Segment;
 
 /**
  * Drives a train automatically along an itinerary.
@@ -42,5 +43,5 @@ public interface AutoPilot {
     default void onForkEntered(letrain.track.rail.ForkRailTrack fork) {}
 
     /** Ensure the fork between 'from' and 'to' segments is oriented correctly. */
-    default void ensureForkRoute(letrain.core.segments.Segment from, letrain.core.segments.Segment to) {}
+    default void ensureForkRoute(letrain.segments.Segment from, letrain.segments.Segment to) {}
 }

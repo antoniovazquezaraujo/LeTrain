@@ -1,6 +1,7 @@
-package letrain.core.segments;
+package letrain.segments;
 
 import java.util.List;
+
 import letrain.track.Track;
 
 /**

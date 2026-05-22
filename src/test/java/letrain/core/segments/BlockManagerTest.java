@@ -1,16 +1,22 @@
 package letrain.core.segments;
 
-import letrain.vehicle.impl.rail.Train;
-import letrain.core.segments.impl.BlockManagerImpl;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import letrain.segments.BlockManager;
+import letrain.segments.PathStep;
+import letrain.segments.RailNode;
+import letrain.segments.Segment;
+import letrain.segments.impl.BlockManagerImpl;
+import letrain.vehicle.impl.rail.Train;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class BlockManagerTest {
     private BlockManager blockManager;

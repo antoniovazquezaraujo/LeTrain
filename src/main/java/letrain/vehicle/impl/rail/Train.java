@@ -72,8 +72,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
 
     public boolean isShuntingMode() {
         if (model == null) return false;
-        List<letrain.core.segments.Segment> owned = model.getBlockManager().getOwnedSegments(this);
-        for (letrain.core.segments.Segment s : owned) {
+        List<letrain.segments.Segment> owned = model.getBlockManager().getOwnedSegments(this);
+        for (letrain.segments.Segment s : owned) {
             if (model.getBlockManager().getOwners(s).size() > 1) {
                 return true;
             }
@@ -81,11 +81,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         return false;
     }
 
-    public letrain.core.segments.Segment getCurrentSegment() {
+    public letrain.segments.Segment getCurrentSegment() {
         return safetyManager.getCurrentSegment();
     }
 
-    public letrain.core.segments.Segment getNextSegment() {
+    public letrain.segments.Segment getNextSegment() {
         return safetyManager.getNextSegment();
     }
 
@@ -244,7 +244,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         }
     }
 
-    public void notifySegmentOccupied(letrain.core.segments.Segment segment) {
+    public void notifySegmentOccupied(letrain.segments.Segment segment) {
         if (trainListeners != null) {
             trainListeners.forEach(l -> l.onSegmentOccupied(this, segment));
         }
@@ -317,8 +317,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
             return;
         }
 
-        letrain.core.segments.RailwayGraph graph = model.getRailwayGraph();
-        letrain.core.segments.BlockManager blockManager = model.getBlockManager();
+        letrain.segments.RailwayGraph graph = model.getRailwayGraph();
+        letrain.segments.BlockManager blockManager = model.getBlockManager();
 
         if (graph == null || blockManager == null) {
             return;
@@ -328,10 +328,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         // Liberamos primero lo que tengamos para evitar dejar basura en el BlockManager
         blockManager.releaseAll(this);
 
-        Set<letrain.core.segments.Segment> segmentsToClaim = new HashSet<>();
+        Set<letrain.segments.Segment> segmentsToClaim = new HashSet<>();
         for (Linker linker : linkers) {
             if (linker.getTrack() instanceof letrain.track.rail.RailTrack) {
-                letrain.core.segments.Segment segment = graph.getSegment((letrain.track.rail.RailTrack) linker.getTrack());
+                letrain.segments.Segment segment = graph.getSegment((letrain.track.rail.RailTrack) linker.getTrack());
                 if (segment != null) {
                     segmentsToClaim.add(segment);
                 }
@@ -339,7 +339,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         }
 
         // Lock the segments we found
-        for (letrain.core.segments.Segment segment : segmentsToClaim) {
+        for (letrain.segments.Segment segment : segmentsToClaim) {
             if (!blockManager.tryLock(this, segment)) {
                 // Si falla el bloqueo normal tras una Tabula Rasa, es que hay convivencia forzada
                 // El modo Shunting se detectará dinámicamente.
@@ -583,8 +583,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable {
         // we must stop to avoid collisions. This prevents the TOCTOU bug where a
         // stopped co-owner accelerates after a shunting lock was granted.
         if (model != null && isShuntingMode()) {
-            letrain.core.segments.BlockManager bm = model.getBlockManager();
-            for (letrain.core.segments.Segment s : bm.getOwnedSegments(this)) {
+            letrain.segments.BlockManager bm = model.getBlockManager();
+            for (letrain.segments.Segment s : bm.getOwnedSegments(this)) {
                 for (Train owner : bm.getOwners(s)) {
                     if (owner != this && owner.getSpeed() != 0) {
                         if (directorLinker != null) {

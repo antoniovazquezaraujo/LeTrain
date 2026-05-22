@@ -1,13 +1,15 @@
 package letrain.itinerary;
 
-import letrain.core.segments.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
+import java.util.List;
+import java.util.Optional;
+
+import letrain.segments.Segment;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @DisplayName("SegmentPathfinder contract")
 class SegmentPathfinderTest {

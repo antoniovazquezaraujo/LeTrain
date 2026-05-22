@@ -1,8 +1,4 @@
-package letrain.core.segments.impl;
-
-import letrain.core.segments.BlockManager;
-import letrain.core.segments.Segment;
-import letrain.vehicle.impl.rail.Train;
+package letrain.segments.impl;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,6 +7,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import letrain.segments.BlockManager;
+import letrain.segments.Segment;
+import letrain.vehicle.impl.rail.Train;
 
 public class BlockManagerImpl implements BlockManager {
     // Mapa de segmento -> lista de trenes dueños

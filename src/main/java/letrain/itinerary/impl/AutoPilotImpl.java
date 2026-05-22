@@ -1,14 +1,15 @@
 package letrain.itinerary.impl;
 
-import letrain.core.segments.Segment;
+import java.util.List;
+import java.util.Optional;
+
 import letrain.itinerary.AutoPilot;
 import letrain.itinerary.AutoPilotContext;
 import letrain.itinerary.Itinerary;
 import letrain.itinerary.SegmentPathfinder;
 import letrain.itinerary.Waypoint;
+import letrain.segments.Segment;
 import letrain.track.rail.ForkRailTrack;
-import java.util.List;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

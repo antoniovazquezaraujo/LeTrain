@@ -1,19 +1,22 @@
 package letrain.itinerary;
 
-import letrain.core.segments.*;
-import letrain.core.segments.impl.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.List;
+
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
+import letrain.segments.RailwayGraph;
+import letrain.segments.Segment;
+import letrain.segments.TopologyService;
+import letrain.segments.impl.TopologyServiceImpl;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("SegmentPathfinder with real topology (fixed trackToSegment)")
 class SegmentPathfinderIntegrationTest {

@@ -6,11 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import letrain.core.segments.Segment;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
 import letrain.mvp.impl.Model;
+import letrain.segments.Segment;
 import letrain.track.Station;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;

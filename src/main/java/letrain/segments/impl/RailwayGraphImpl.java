@@ -1,9 +1,5 @@
-package letrain.core.segments.impl;
+package letrain.segments.impl;
 
-import letrain.core.segments.PathStep;
-import letrain.core.segments.RailwayGraph;
-import letrain.core.segments.Segment;
-import letrain.core.segments.RailNode;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -11,6 +7,11 @@ import java.util.ArrayList;
 import java.util.Queue;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
+
+import letrain.segments.PathStep;
+import letrain.segments.RailNode;
+import letrain.segments.RailwayGraph;
+import letrain.segments.Segment;
 
 public class RailwayGraphImpl implements RailwayGraph {
     private final Map<PathStep, Segment> stepToSegment = new HashMap<>();

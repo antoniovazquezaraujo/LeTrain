@@ -6,8 +6,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import letrain.core.segments.TopologyService;
-import letrain.core.segments.impl.TopologyServiceImpl;
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -15,6 +13,8 @@ import letrain.map.Point;
 import letrain.map.impl.RailMap;
 import letrain.mvp.impl.services.AutomationEngine;
 import letrain.mvp.impl.services.SimulationService;
+import letrain.segments.TopologyService;
+import letrain.segments.impl.TopologyServiceImpl;
 import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
@@ -39,10 +39,10 @@ public class Model implements letrain.mvp.Model {
     EventLogManager eventLogManager;
 
     @JsonIgnore
-    private letrain.core.segments.BlockManager blockManager;
+    private letrain.segments.BlockManager blockManager;
 
     @JsonIgnore
-    private transient letrain.core.segments.RailwayGraph currentGraph;
+    private transient letrain.segments.RailwayGraph currentGraph;
 
     private transient boolean mapChanged = false;
 
@@ -118,7 +118,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     public Model() {
-        letrain.core.segments.impl.BlockManagerImpl bmi = new letrain.core.segments.impl.BlockManagerImpl();
+        letrain.segments.impl.BlockManagerImpl bmi = new letrain.segments.impl.BlockManagerImpl();
         bmi.setOnReleaseListener(() -> {
             for (Locomotive loco : locomotives) {
                 if (loco.getTrain() != null) {
@@ -169,7 +169,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     public void postLoadInit() {
-        this.blockManager = new letrain.core.segments.impl.BlockManagerImpl();
+        this.blockManager = new letrain.segments.impl.BlockManagerImpl();
         if (this.trainEventListeners == null) {
             this.trainEventListeners = new ArrayList<>();
         } else {
@@ -414,7 +414,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     @JsonIgnore
-    public letrain.core.segments.RailwayGraph getRailwayGraph() {
+    public letrain.segments.RailwayGraph getRailwayGraph() {
         if (currentGraph == null) {
             log.info("Discovering railway topology...");
             TopologyService topologyService = new TopologyServiceImpl();
@@ -742,8 +742,8 @@ public class Model implements letrain.mvp.Model {
                 processedTrains.add(train);
                 sb.append("Train ID: ").append(train.getId()).append("\n");
                 sb.append("  Segments Owned: ");
-                java.util.List<letrain.core.segments.Segment> owned = getBlockManager().getOwnedSegments(train);
-                for (letrain.core.segments.Segment s : owned) sb.append(s.getId()).append(" ");
+                java.util.List<letrain.segments.Segment> owned = getBlockManager().getOwnedSegments(train);
+                for (letrain.segments.Segment s : owned) sb.append(s.getId()).append(" ");
                 sb.append("\n");
                 
                 sb.append("  Current Segment: ").append(train.getCurrentSegment() != null ? train.getCurrentSegment().getId() : "None").append("\n");
@@ -796,13 +796,13 @@ public class Model implements letrain.mvp.Model {
         sb.append(getRailwayGraph().toString());
         
         sb.append("\n\n--- SEGMENT OWNERSHIP ---\n");
-        letrain.core.segments.BlockManager bm = getBlockManager();
-        java.util.Set<letrain.core.segments.Segment> segments = bm.getAllLockedSegments();
+        letrain.segments.BlockManager bm = getBlockManager();
+        java.util.Set<letrain.segments.Segment> segments = bm.getAllLockedSegments();
         
         if (segments.isEmpty()) {
             sb.append("No active segment locks.\n");
         } else {
-            for (letrain.core.segments.Segment s : segments) {
+            for (letrain.segments.Segment s : segments) {
                 java.util.List<letrain.vehicle.impl.rail.Train> owners = bm.getOwners(s);
                 if (!owners.isEmpty()) {
                     sb.append("Segment ").append(s.getId()).append(" owned by: ");
@@ -838,7 +838,7 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     @JsonIgnore
-    public letrain.core.segments.BlockManager getBlockManager() {
+    public letrain.segments.BlockManager getBlockManager() {
         return blockManager;
     }
 }

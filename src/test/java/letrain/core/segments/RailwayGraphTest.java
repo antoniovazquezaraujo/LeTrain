@@ -1,16 +1,25 @@
 package letrain.core.segments;
 
-import letrain.core.segments.impl.*;
-import letrain.map.Dir;
-import letrain.map.Point;
-import letrain.track.rail.RailTrack;
-import letrain.track.rail.ForkRailTrack;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import letrain.map.Dir;
+import letrain.map.Point;
+import letrain.segments.PathStep;
+import letrain.segments.Segment;
+import letrain.segments.impl.PathStepImpl;
+import letrain.segments.impl.RailNodeImpl;
+import letrain.segments.impl.RailwayGraphImpl;
+import letrain.segments.impl.SegmentImpl;
+import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.RailTrack;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class RailwayGraphTest {
     private RailwayGraphImpl graph;

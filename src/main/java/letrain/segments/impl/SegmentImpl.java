@@ -1,7 +1,7 @@
-package letrain.core.segments.impl;
+package letrain.segments.impl;
 
-import letrain.core.segments.PathStep;
-import letrain.core.segments.Segment;
+import letrain.segments.PathStep;
+import letrain.segments.Segment;
 import letrain.utils.Pair;
 
 public class SegmentImpl implements Segment {
