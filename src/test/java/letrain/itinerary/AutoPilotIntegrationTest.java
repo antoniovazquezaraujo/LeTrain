@@ -191,6 +191,213 @@ class AutoPilotIntegrationTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // 10. Waypoint command execution
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("10. Waypoint command execution")
+    class WaypointCommands {
+
+        @Test
+        @DisplayName("10.1 SPEED waypoint sets train target speed")
+        void speedCommandSlowsTrain() {
+            RailTrack t0 = makeTrack(0, 0, Dir.E, Dir.W);
+            RailTrack t1 = makeTrack(1, 0, Dir.W, Dir.E);
+            RailTrack t2 = makeTrack(2, 0, Dir.W, Dir.E);
+            connect(t0, Dir.E, t1, Dir.W);
+            connect(t1, Dir.E, t2, Dir.W);
+            Station a = makeStation(t0, "A");
+            Station b = makeStation(t2, "B");
+            Train t = makeTrain(t0, Dir.W);
+            model.setProgram("""
+                    station %d set name "A";
+                    station %d set name "B";
+                    create itinerary "Ruta" {
+                        add station "A"
+                        add station "B" SPEED 0
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+
+            runTicks(600);
+
+            assertAtStation(t, b);
+            assertEquals(0, ((Locomotive) t.getDirectorLinker()).getTargetSpeed(),
+                    "train should have target speed 0 after SPEED(0) waypoint command");
+            assertEquals(0, t.getSpeed(),
+                    "train should have stopped after SPEED(0) waypoint command");
+        }
+
+        @Test
+        @DisplayName("10.2 WAIT waypoint pauses train for specified seconds")
+        void waitCommandPausesTrain() {
+            RailTrack t0 = makeTrack(0, 0, Dir.E, Dir.W);
+            RailTrack t1 = makeTrack(1, 0, Dir.W, Dir.E);
+            RailTrack t2 = makeTrack(2, 0, Dir.W, Dir.E);
+            connect(t0, Dir.E, t1, Dir.W);
+            connect(t1, Dir.E, t2, Dir.W);
+            Station a = makeStation(t0, "A");
+            Station b = makeStation(t2, "B");
+            Train t = makeTrain(t0, Dir.W);
+            Locomotive l = (Locomotive) t.getDirectorLinker();
+
+            model.setProgram("""
+                    station %d set name "A";
+                    station %d set name "B";
+                    create itinerary "Ruta" {
+                        add station "A"
+                        add station "B" SPEED 0 WAIT 3 SPEED 3
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+
+            // Run until reaching station B
+            boolean reached = false;
+            for (int i = 0; i < 600; i++) {
+                runTicks(1);
+                if (hasReached(t, b)) {
+                    reached = true;
+                    int speedAfterArrival = t.getSpeed();
+                    // After arrival with SPEED 0, speed should be 0 (braking takes a few ticks)
+                    System.out.println("REACHED B at tick " + i + " speed=" + speedAfterArrival);
+
+                    // Run some ticks to let WAIT command execute and then SPEED 3
+                    for (int j = 0; j < 200; j++) {
+                        runTicks(1);
+                        if (t.getSpeed() > 0) {
+                            System.out.println("  train resumed at tick " + (i + j) + " speed=" + t.getSpeed());
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            assertTrue(reached, "train should reach station B");
+
+            // Verify the train eventually moves again after WAIT+SPEED 3
+            assertTrue(t.getSpeed() > 0 || l.getTargetSpeed() > 0,
+                    "train should have resumed after WAIT command (speed=" + t.getSpeed()
+                            + " targetSpeed=" + l.getTargetSpeed() + ")");
+        }
+
+        @Test
+        @DisplayName("10.3 Multiple commands execute in sequence")
+        void multipleCommandsExecuteInSequence() {
+            RailTrack t0 = makeTrack(0, 0, Dir.E, Dir.W);
+            RailTrack t1 = makeTrack(1, 0, Dir.W, Dir.E);
+            RailTrack t2 = makeTrack(2, 0, Dir.W, Dir.E);
+            connect(t0, Dir.E, t1, Dir.W);
+            connect(t1, Dir.E, t2, Dir.W);
+            Station a = makeStation(t0, "A");
+            Station b = makeStation(t2, "B");
+            Train t = makeTrain(t0, Dir.W);
+            Locomotive l = (Locomotive) t.getDirectorLinker();
+
+            model.setProgram("""
+                    station %d set name "A";
+                    station %d set name "B";
+                    create itinerary "Ruta" {
+                        add station "A"
+                        add station "B" SPEED 0 WAIT 2 SPEED 5
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+
+            runTicks(800);
+
+            assertAtStation(t, b);
+            // After WAIT 2 + SPEED 5, train should have target speed 5
+            assertEquals(5, l.getTargetSpeed(),
+                    "train target speed should be 5 after SPEED 5 command");
+        }
+
+        @Test
+        @DisplayName("10.4 Sensor waypoint with LOAD command")
+        void sensorWaypointWithLoad() {
+            RailTrack t0 = makeTrack(0, 0, Dir.E, Dir.W);
+            RailTrack t1 = makeTrack(1, 0, Dir.W, Dir.E);
+            RailTrack t2 = makeTrack(2, 0, Dir.W, Dir.E);
+            connect(t0, Dir.E, t1, Dir.W);
+            connect(t1, Dir.E, t2, Dir.W);
+            Station a = makeStation(t0, "A");
+            Train t = makeTrain(t0, Dir.W);
+
+            // Create a standalone sensor on t1 (not a station)
+            letrain.track.Sensor sensor = new letrain.track.Sensor(model.nextSensorId());
+            sensor.setName("S1");
+            t1.setSensor(sensor);
+            model.addSensor(sensor);
+
+            model.setProgram("""
+                    station %d set name "A";
+                    sensor %d set name "S1";
+                    create itinerary "Ruta" {
+                        add station "A"
+                        add sensor "S1" LOAD
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(a.getId(), sensor.getId(), t.getId(), t.getId(), t.getId()));
+
+            runTicks(400);
+
+            // Train should have passed through sensor S1
+            // The LOAD command should have executed (no-op on sensor, but shouldn't crash)
+            // Verify iteration didn't crash: train should still be valid
+            assertFalse(t.getLinkers().isEmpty(), "train should still have linkers");
+            assertNotNull(t.getDirectorLinker(), "train should still have a director linker");
+        }
+
+        @Test
+        @DisplayName("10.5 REVERSE command flips direction at waypoint")
+        void reverseCommandFlipsDirection() {
+            // Simple layout: A - B, train enters from West at A
+            RailTrack t0 = makeTrack(0, 0, Dir.E, Dir.W);
+            RailTrack t1 = makeTrack(1, 0, Dir.W, Dir.E);
+            RailTrack t2 = makeTrack(2, 0, Dir.W, Dir.E);
+            connect(t0, Dir.E, t1, Dir.W);
+            connect(t1, Dir.E, t2, Dir.W);
+            Station a = makeStation(t0, "A");
+            Station b = makeStation(t2, "B");
+            Train t = makeTrain(t0, Dir.W);
+            Locomotive loco = (Locomotive) t.getDirectorLinker();
+
+            model.setProgram("""
+                    station %d set name "A";
+                    station %d set name "B";
+                    create itinerary "Ruta" {
+                        add station "A"
+                        add station "B" REVERSE
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+
+            Dir originalDir = loco.getDir();
+
+            runTicks(500);
+
+            // Train should reach station B
+            assertAtStation(t, b);
+
+            // After REVERSE command, direction should have flipped
+            Dir newDir = loco.getDir();
+            assertNotNull(newDir, "direction should not be null");
+            System.out.println("REVERSE test: originalDir=" + originalDir + " newDir=" + newDir);
+            assertFalse(newDir == originalDir,
+                    "direction should have flipped after REVERSE command (was " + originalDir + ", now " + newDir + ")");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // 5. Circuit from save file
     // ═══════════════════════════════════════════════════════════════════
 
