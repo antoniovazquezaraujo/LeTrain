@@ -12,9 +12,6 @@ import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import letrain.map.Dir;
 import letrain.mvp.Model;
@@ -46,16 +43,12 @@ import org.slf4j.LoggerFactory;
  * Logistics are handled by {@link TrainLogisticsManager}.
  * Block-segment safety is managed by {@link TrainSafetyManager}.
  */
-@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
-@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 public class Train implements Trailer<RailTrack>, Renderable, Transportable, TrainActionManager {
     /** Speed threshold above which a collision destroys both trains. */
     static final int CRASH_SPEED_THRESHOLD = 5;
     private static final int MAX_LOADING_COUNT = 80; // 4.0 seconds at 20fps per wagon
     static final Logger log = LoggerFactory.getLogger(Train.class);
     protected final TrainCouplingManager trainCouplingManager = new TrainCouplingManager(this);
-    @com.fasterxml.jackson.annotation.JsonProperty("linkers")
-    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = java.util.LinkedList.class)
     protected Deque<Linker> linkers;
 
     public int getNumLinkersToJoin() {
@@ -66,7 +59,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return trainCouplingManager.getNumLinkersToRemove();
     }
 
-    @com.fasterxml.jackson.annotation.JsonUnwrapped
     private TrainLogisticsManager logisticsManager = new TrainLogisticsManager();
 
     private final transient TrainMovementManager movementManager = new TrainMovementManager(this);
@@ -152,28 +144,21 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return getSpeed() == 0;
     }
 
-    @com.fasterxml.jackson.annotation.JsonProperty("itinerary")
     Trip trip;
 
     enum LinkersSense {
         FRONT, BACK
     };
 
-    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = letrain.vehicle.impl.rail.Locomotive.class)
     protected Tractor directorLinker;
     private int loadingCount;
-    @JsonIgnore
     private transient boolean isNotifying = false;
-    @JsonIgnore
     private transient List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
-    @JsonIgnore
     private transient List<Wagon> currentCapableWagons = null;
 
     // ── Autonomous driving (ADR-008) ──────────────────────────────
-    @JsonIgnore
-    private transient letrain.itinerary.AutoPilot autopilot;
-    @JsonIgnore
-    private transient boolean autoMode = false;
+    private letrain.itinerary.AutoPilot autopilot;
+    private boolean autoMode = false;
 
     public boolean isAutoMode() { return autoMode; }
 
@@ -197,13 +182,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         if (autopilot != null) autopilot.onForkEntered(fork);
     }
 
-    @JsonIgnore
     private transient letrain.mvp.Model model;
 
     public void setModel(letrain.mvp.Model model) {
         this.model = model;
     }
-    @JsonIgnore
     List<TrainEventListener> getTrainListeners() {
         return this.trainListeners;
     }
@@ -318,7 +301,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
 
     public void setName(String name) { this.name = name; }
 
-    @JsonIgnore
     public void rebind() {
         if (model == null) {
             log.warn("Cannot rebind train {}: model is null", id);
@@ -365,9 +347,18 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         if (this.safetyManager == null) {
             this.safetyManager = new TrainSafetyManager(this);
         }
+        if (this.autopilot != null) {
+            if (this.autopilot instanceof letrain.itinerary.impl.AutoPilotImpl) {
+                ((letrain.itinerary.impl.AutoPilotImpl) this.autopilot).reinitialize(
+                    new TrainAutoPilotContext(this), this);
+            }
+            if (getModel() != null && getModel().getRailwayGraph() != null) {
+                this.autopilot.setPathfinder(
+                    new letrain.itinerary.AStarPathfinder(getModel().getRailwayGraph()));
+            }
+        }
     }
 
-    @JsonIgnore
     public void initLinkersToJoin(boolean forwardDirection) {
         if (forwardDirection) {
             this.trainCouplingManager.linkerJoinSense = LinkersSense.FRONT;
@@ -388,7 +379,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         }
     }
 
-    @JsonIgnore
     public List<Linker> getSelectedLinkersToJoin() {
         // Convert deque to list to slice it
         // Logic might differ based on iteration order of deque vs join sense
@@ -430,7 +420,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     }
 
     @Override
-    @JsonIgnore
     public Linker getFront() {
         return linkers.isEmpty() ? null : linkers.getFirst();
     }
@@ -451,19 +440,16 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     }
 
     @Override
-    @JsonIgnore
     public Linker getBack() {
         return linkers.isEmpty() ? null : linkers.getLast();
     }
 
     @Override
-    @JsonIgnore
     public boolean isEmpty() {
         return linkers.isEmpty();
     }
 
     @Override
-    @JsonIgnore
     public int size() {
         return linkers.size();
     }
@@ -498,11 +484,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     }
 
     @Override
-    @com.fasterxml.jackson.annotation.JsonIgnore
     public List<Tractor> getTractors() {
         return linkers.stream()
-                .filter(l -> l instanceof Tractor)
-                .map(l -> (Tractor) l)
+                .filter(Tractor.class::isInstance)
+                .map(Tractor.class::cast)
                 .toList();
     }
 
@@ -745,12 +730,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return movementManager.moveLinkers(isNormalSense);
     }
 
-    @JsonIgnore
     public Linker getFirstLinker() {
         return linkers.isEmpty() ? null : linkers.getFirst();
     }
 
-    @JsonIgnore
     public Linker getLastLinker() {
         return linkers.isEmpty() ? null : linkers.getLast();
     }
@@ -776,7 +759,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
      * - Si el tren está invertido es lo contrario, la que hay que invertir es la
      * primera.
      */
-    @JsonIgnore
     public void updateLinkersToJoin(boolean forwardDirection) {
 
         trainCouplingManager.updateLinkersToJoin(forwardDirection);
@@ -850,7 +832,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return trainCouplingManager.getLinkDir(linker);
     }
 
-    @JsonIgnore
     public letrain.track.Station getStationAtTrain() {
         return logisticsManager.getStationAtTrain(this);
     }
@@ -896,7 +877,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return logisticsManager.performIndustrialAction(this, station);
     }
 
-    @JsonIgnore
     public int getDistanceTraveled() {
         if (getDirectorLinker() == null) {
             return 0;
@@ -924,7 +904,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     }
 
     // Método auxiliar para determinar el tipo de carga general del tren
-    @JsonIgnore
     public CargoTypes getTrainCargoType() {
         return logisticsManager.getTrainCargoType(this);
     }

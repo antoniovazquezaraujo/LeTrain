@@ -595,7 +595,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             default -> {
                 if (text.startsWith("WAIT")) {
                     int seconds = Integer.parseInt(ctx.NUMBER().getText());
-                    yield List.of(WaypointCommand.waitTicks(seconds * WaypointCommand.TICKS_PER_SECOND));
+                    yield List.of(WaypointCommand.waitSeconds(seconds));
                 } else if (text.startsWith("SPEED")) {
                     int speed = Integer.parseInt(ctx.NUMBER().getText());
                     yield List.of(WaypointCommand.speed(speed));

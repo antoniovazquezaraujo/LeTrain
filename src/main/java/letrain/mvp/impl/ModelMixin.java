@@ -26,10 +26,10 @@ import java.util.List;
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonAutoDetect(
-    fieldVisibility = JsonAutoDetect.Visibility.NONE, 
-    getterVisibility = JsonAutoDetect.Visibility.NONE, 
-    setterVisibility = JsonAutoDetect.Visibility.NONE, 
-    isGetterVisibility = JsonAutoDetect.Visibility.NONE, 
+    fieldVisibility = JsonAutoDetect.Visibility.ANY,
+    getterVisibility = JsonAutoDetect.Visibility.NONE,
+    setterVisibility = JsonAutoDetect.Visibility.NONE,
+    isGetterVisibility = JsonAutoDetect.Visibility.NONE,
     creatorVisibility = JsonAutoDetect.Visibility.NONE
 )
 public abstract class ModelMixin {

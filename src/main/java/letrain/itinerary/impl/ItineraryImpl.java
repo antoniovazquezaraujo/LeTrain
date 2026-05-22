@@ -15,6 +15,20 @@ public class ItineraryImpl implements Itinerary {
     private State state = State.CREATED;
     private int currentIndex = 0;
 
+    public ItineraryImpl() {
+    }
+
+    public ItineraryImpl(List<Waypoint> waypoints, Set<Integer> assignedTrains, State state, int currentIndex) {
+        if (waypoints != null) {
+            this.waypoints.addAll(waypoints);
+        }
+        if (assignedTrains != null) {
+            this.assignedTrains.addAll(assignedTrains);
+        }
+        this.state = state;
+        this.currentIndex = currentIndex;
+    }
+
     @Override
     public void addWaypoint(Waypoint wp) {
         waypoints.add(wp);

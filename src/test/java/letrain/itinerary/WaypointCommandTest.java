@@ -15,16 +15,16 @@ class WaypointCommandTest {
     }
 
     @Test
-    @DisplayName("should have reverse command with no ticks")
-    void reverseHasNoTicks() {
-        assertEquals(0, WaypointCommand.REVERSE.ticks());
+    @DisplayName("should have reverse command with no seconds")
+    void reverseHasNoSeconds() {
+        assertEquals(0, WaypointCommand.REVERSE.seconds());
     }
 
     @Test
-    @DisplayName("WAIT should store ticks")
-    void waitStoresTicks() {
-        WaypointCommand wait = WaypointCommand.waitTicks(300);
-        assertEquals(300, wait.ticks());
+    @DisplayName("WAIT should store seconds")
+    void waitStoresSeconds() {
+        WaypointCommand wait = WaypointCommand.waitSeconds(15);
+        assertEquals(15, wait.seconds());
     }
 
     @Test
@@ -37,7 +37,7 @@ class WaypointCommandTest {
     @Test
     @DisplayName("NONE should have no parameters")
     void noneHasNoParams() {
-        assertEquals(0, WaypointCommand.NONE.ticks());
+        assertEquals(0, WaypointCommand.NONE.seconds());
         assertEquals(0, WaypointCommand.NONE.targetSpeed());
     }
 
