@@ -25,6 +25,9 @@ public class AutoPilotImpl implements AutoPilot {
     private SegmentPathfinder pathfinder;
     private List<Segment> currentRoute = List.of();
     private Segment lastSegment;
+    private int routeRetryCooldown = 0;
+
+    private static final int ROUTE_RETRY_TICKS = 100;
 
     private final AutoPilotContext ctx;
 
@@ -65,6 +68,7 @@ public class AutoPilotImpl implements AutoPilot {
         this.mode = Mode.IDLE;
         this.currentRoute = List.of();
         this.lastSegment = null;
+        this.routeRetryCooldown = 0;
     }
 
     @Override
@@ -78,6 +82,7 @@ public class AutoPilotImpl implements AutoPilot {
         mode = Mode.FOLLOWING;
         currentRoute = List.of();
         lastSegment = null;
+        routeRetryCooldown = 0;
         itinerary.reset();
         ctx.forceSegmentReset();
         log.info("[AP] activate → FOLLOWING");
@@ -142,9 +147,14 @@ public class AutoPilotImpl implements AutoPilot {
         }
 
         if (currentRoute.isEmpty()) {
+            if (routeRetryCooldown > 0) {
+                routeRetryCooldown--;
+                return false;
+            }
             log.info("[AP] calculating route to wp {}...", wp.targetId());
             if (!calculateRoute()) {
-                log.warn("[AP] calculateRoute failed, retrying next tick");
+                log.warn("[AP] calculateRoute failed, retrying in {} ticks", ROUTE_RETRY_TICKS);
+                routeRetryCooldown = ROUTE_RETRY_TICKS;
                 return false;
             }
         }
