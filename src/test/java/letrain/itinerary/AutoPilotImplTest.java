@@ -207,7 +207,7 @@ class AutoPilotImplTest {
         autopilot.setPathfinder(pathfinder);
 
         WaypointCommand cmdStop = WaypointCommand.speed(0);
-        WaypointCommand cmdWait = WaypointCommand.waitTicks(2);
+        WaypointCommand cmdWait = WaypointCommand.waitSeconds(2);
         WaypointCommand cmdSpeed = WaypointCommand.speed(3);
         Waypoint wp = new letrain.itinerary.impl.WaypointImpl(
                 Waypoint.Type.STATION, 1, List.of(cmdStop, cmdWait, cmdSpeed));
@@ -232,9 +232,11 @@ class AutoPilotImplTest {
         org.mockito.Mockito.verifyNoMoreInteractions(actionManager);
         assertEquals(AutoPilot.Mode.WAITING, autopilot.mode());
 
-        // Act & Assert 2: Next tick, wait timer decrements from 2 to 1 (still waiting)
-        assertFalse(autopilot.tick());
-        assertEquals(AutoPilot.Mode.WAITING, autopilot.mode());
+        // Act & Assert 2: Next ticks, wait timer decrements (still waiting)
+        for (int i = 0; i < 39; i++) {
+            assertFalse(autopilot.tick());
+            assertEquals(AutoPilot.Mode.WAITING, autopilot.mode());
+        }
 
         // Act & Assert 3: Wait timer decrements from 1 to 0. It executes remaining commands (SPEED 3) and advances itinerary
         assertFalse(autopilot.tick());

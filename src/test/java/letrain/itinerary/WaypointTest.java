@@ -55,10 +55,10 @@ class WaypointTest {
     }
 
     @Test
-    @DisplayName("should allow WAIT with ticks")
+    @DisplayName("should allow WAIT with seconds")
     void withWaitCommand() {
-        Waypoint wp = new WaypointImpl(Waypoint.Type.SENSOR, 1, List.of(WaypointCommand.waitTicks(300)));
+        Waypoint wp = new WaypointImpl(Waypoint.Type.SENSOR, 1, List.of(WaypointCommand.waitSeconds(15)));
 
-        assertEquals(300, wp.commands().get(0).ticks());
+        assertEquals(15, wp.commands().get(0).seconds());
     }
 }

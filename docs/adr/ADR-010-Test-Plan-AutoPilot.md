@@ -103,7 +103,7 @@ y verifica el resultado.
 | # | Itinerario | Esperado |
 |---|-----------|----------|
 | 7.1 | Madrid → Sensor(REVERSE) → Barcelona | Invierte en el sensor |
-| 7.2 | Madrid → Sensor(WAIT 10) → Barcelona | Espera 10 ticks (~0.5s) |
+| 7.2 | Madrid → Sensor(WAIT 10) → Barcelona | Espera 10 segundos |
 
 ### 8. Múltiples acciones por waypoint
 
@@ -115,7 +115,7 @@ y verifica el resultado.
 |---|-------------------|----------|
 | 8.1 | LOAD REVERSE | Carga e invierte |
 | 8.2 | LOAD WAIT 5 SPEED 5 | Carga, espera 5s, sale a 5 |
-| 8.3 | WAIT 10 STOP | Espera 10 ticks y para |
+| 8.3 | WAIT 10 STOP | Espera 10 segundos y para |
 
 ### 9. Estados del AutoPilot
 

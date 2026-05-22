@@ -16,6 +16,19 @@ public class GameSaveService {
 
     private static final Logger log = LoggerFactory.getLogger(GameSaveService.class);
 
+    private void configureObjectMapper(ObjectMapper mapper) {
+        mapper.registerModule(new JavaTimeModule());
+        mapper.addMixIn(letrain.mvp.Model.class, ModelMixin.class);
+        mapper.addMixIn(letrain.vehicle.impl.rail.Train.class, TrainMixin.class);
+        mapper.addMixIn(letrain.itinerary.Waypoint.class, WaypointMixin.class);
+        mapper.addMixIn(letrain.itinerary.impl.WaypointImpl.class, WaypointMixin.class);
+        mapper.addMixIn(letrain.itinerary.Itinerary.class, ItineraryMixin.class);
+        mapper.addMixIn(letrain.itinerary.impl.ItineraryImpl.class, ItineraryMixin.class);
+        mapper.addMixIn(letrain.itinerary.AutoPilot.class, AutoPilotMixin.class);
+        mapper.addMixIn(letrain.itinerary.impl.AutoPilotImpl.class, AutoPilotMixin.class);
+        mapper.addMixIn(letrain.itinerary.WaypointCommand.class, WaypointCommandMixin.class);
+    }
+
     public boolean save(letrain.mvp.Model model, File file) {
         if (file == null) {
             log.warn("Ignoring save request with null file");
@@ -23,8 +36,7 @@ public class GameSaveService {
         }
         try {
             ObjectMapper mapper = new ObjectMapper();
-            mapper.registerModule(new JavaTimeModule());
-            mapper.addMixIn(Model.class, ModelMixin.class);
+            configureObjectMapper(mapper);
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
             mapper.writeValue(file, model);
             log.info("Game saved successfully to {} (JSON)", file.getAbsolutePath());
@@ -57,8 +69,7 @@ public class GameSaveService {
 
         try {
             ObjectMapper mapper = new ObjectMapper();
-            mapper.registerModule(new JavaTimeModule());
-            mapper.addMixIn(Model.class, ModelMixin.class);
+            configureObjectMapper(mapper);
             letrain.mvp.impl.Model loadedModel = mapper.readValue(file, letrain.mvp.impl.Model.class);
             loadedModel.postLoadInit();
             log.info("Game loaded successfully from {} (JSON)", file.getAbsolutePath());

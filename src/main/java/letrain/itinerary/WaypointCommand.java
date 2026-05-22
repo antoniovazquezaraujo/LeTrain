@@ -17,21 +17,21 @@ public class WaypointCommand {
     public static final WaypointCommand NONE    = new WaypointCommand(Kind.NONE);
 
     private final Kind kind;
-    private final int ticks;
+    private final int seconds;
     private final int targetSpeed;
 
     private WaypointCommand(Kind kind) {
         this(kind, 0, 0);
     }
 
-    private WaypointCommand(Kind kind, int ticks, int targetSpeed) {
+    private WaypointCommand(Kind kind, int seconds, int targetSpeed) {
         this.kind = kind;
-        this.ticks = ticks;
+        this.seconds = seconds;
         this.targetSpeed = targetSpeed;
     }
 
-    public static WaypointCommand waitTicks(int ticks) {
-        return new WaypointCommand(Kind.WAIT, ticks, 0);
+    public static WaypointCommand waitSeconds(int seconds) {
+        return new WaypointCommand(Kind.WAIT, seconds, 0);
     }
 
     public static WaypointCommand speed(int targetSpeed) {
@@ -39,7 +39,7 @@ public class WaypointCommand {
     }
 
     public Kind kind()        { return kind; }
-    public int ticks()        { return ticks; }
+    public int seconds()      { return seconds; }
     public int targetSpeed()  { return targetSpeed; }
 
     public boolean isReverse() { return kind == Kind.REVERSE; }
@@ -47,16 +47,16 @@ public class WaypointCommand {
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof WaypointCommand c)) return false;
-        return kind == c.kind && ticks == c.ticks && targetSpeed == c.targetSpeed;
+        return kind == c.kind && seconds == c.seconds && targetSpeed == c.targetSpeed;
     }
 
     @Override
-    public int hashCode() { return kind.hashCode() ^ ticks ^ targetSpeed; }
+    public int hashCode() { return kind.hashCode() ^ seconds ^ targetSpeed; }
 
     @Override
     public String toString() {
         return switch (kind) {
-            case WAIT -> "WAIT(" + ticks + ")";
+            case WAIT -> "WAIT(" + seconds + ")";
             case SPEED -> "SPEED(" + targetSpeed + ")";
             default -> kind.name();
         };

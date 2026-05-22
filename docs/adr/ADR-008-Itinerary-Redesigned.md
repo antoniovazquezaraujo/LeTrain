@@ -49,7 +49,7 @@ Acción a ejecutar al llegar al waypoint:
 | `LOAD` | Cargar mercancía disponible |
 | `UNLOAD` | Descargar mercancía |
 | `REVERSE` | Invertir marcha (para cambiar de sentido) |
-| `WAIT(n)` | Esperar n ticks |
+| `WAIT(n)` | Esperar n segundos |
 | `SPEED(n)` | Fijar velocidad objetivo a n |
 | `NONE` | Solo pasar (sensor de orientación) |
 

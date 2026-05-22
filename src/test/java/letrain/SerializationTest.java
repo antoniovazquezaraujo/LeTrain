@@ -38,12 +38,25 @@ class SerializationTest {
     void tearDown() throws IOException {
     }
 
+    private void registerMixins(ObjectMapper mapper) {
+        mapper.addMixIn(letrain.mvp.Model.class, letrain.mvp.impl.ModelMixin.class);
+        mapper.addMixIn(letrain.vehicle.impl.rail.Train.class, letrain.mvp.impl.TrainMixin.class);
+        mapper.addMixIn(letrain.itinerary.Waypoint.class, letrain.mvp.impl.WaypointMixin.class);
+        mapper.addMixIn(letrain.itinerary.impl.WaypointImpl.class, letrain.mvp.impl.WaypointMixin.class);
+        mapper.addMixIn(letrain.itinerary.Itinerary.class, letrain.mvp.impl.ItineraryMixin.class);
+        mapper.addMixIn(letrain.itinerary.impl.ItineraryImpl.class, letrain.mvp.impl.ItineraryMixin.class);
+        mapper.addMixIn(letrain.itinerary.AutoPilot.class, letrain.mvp.impl.AutoPilotMixin.class);
+        mapper.addMixIn(letrain.itinerary.impl.AutoPilotImpl.class, letrain.mvp.impl.AutoPilotMixin.class);
+        mapper.addMixIn(letrain.itinerary.WaypointCommand.class, letrain.mvp.impl.WaypointCommandMixin.class);
+    }
+
     /**
      * Serialize an object to bytes using Jackson.
      */
     private byte[] serialize(Object obj) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
+        registerMixins(mapper);
         return mapper.writeValueAsBytes(obj);
     }
 
@@ -53,6 +66,7 @@ class SerializationTest {
     private <T> T deserialize(byte[] data, Class<T> clazz) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
+        registerMixins(mapper);
         T result = mapper.readValue(data, clazz);
         if (result instanceof Model) {
             ((Model) result).postLoadInit();
@@ -314,5 +328,80 @@ class SerializationTest {
         assertTrue(train.getLinkers().contains(backWagon));
         assertNotNull(frontWagon.getTrain(), "Front-side wagon should belong to a new train");
         assertEquals(501, frontWagon.getTrain().getId());
+    }
+
+    @Test
+    @DisplayName("Train AutoPilot serialization preserves itinerary and configuration")
+    void testTrainAutoPilotSerialization() throws IOException {
+        Train original = new Train(777);
+
+        // Build Itinerary
+        letrain.itinerary.impl.ItineraryImpl itinerary = new letrain.itinerary.impl.ItineraryImpl();
+        java.util.List<letrain.itinerary.WaypointCommand> cmds1 = java.util.List.of(letrain.itinerary.WaypointCommand.LOAD);
+        java.util.List<letrain.itinerary.WaypointCommand> cmds2 = java.util.List.of(
+            letrain.itinerary.WaypointCommand.waitSeconds(5),
+            letrain.itinerary.WaypointCommand.speed(8)
+        );
+        itinerary.addWaypoint(new letrain.itinerary.impl.WaypointImpl(
+            letrain.itinerary.Waypoint.Type.STATION, 10, java.util.Optional.of(letrain.map.Dir.N), cmds1
+        ));
+        itinerary.addWaypoint(new letrain.itinerary.impl.WaypointImpl(
+            letrain.itinerary.Waypoint.Type.SENSOR, 20, java.util.Optional.empty(), cmds2
+        ));
+        itinerary.assignTrain(777);
+
+        // Build AutoPilot
+        letrain.itinerary.impl.AutoPilotImpl ap = new letrain.itinerary.impl.AutoPilotImpl(
+            new letrain.vehicle.impl.rail.TrainAutoPilotContext(original), original
+        );
+        ap.setItinerary(itinerary);
+        ap.setWaitTicks(42);
+        ap.setPendingCommands(java.util.List.of(letrain.itinerary.WaypointCommand.speed(5)));
+
+        original.setAutopilot(ap);
+        original.setAutoMode(true);
+
+        // Serialize and Deserialize
+        byte[] data = serialize(original);
+        assertNotNull(data);
+
+        Train restored = deserialize(data, Train.class);
+        assertNotNull(restored);
+        assertEquals(777, restored.getId());
+        assertTrue(restored.isAutoMode());
+
+        letrain.itinerary.AutoPilot restoredAp = restored.getAutopilot();
+        assertNotNull(restoredAp);
+        assertEquals(letrain.itinerary.AutoPilot.Mode.IDLE, restoredAp.mode());
+
+        letrain.itinerary.Itinerary restoredItin = restoredAp.itinerary().orElse(null);
+        assertNotNull(restoredItin);
+        assertEquals(2, restoredItin.waypoints().size());
+        assertEquals(letrain.itinerary.Itinerary.State.CREATED, restoredItin.state());
+        assertTrue(restoredItin.assignedTrains().contains(777));
+
+        letrain.itinerary.Waypoint wp1 = restoredItin.waypoints().get(0);
+        assertEquals(letrain.itinerary.Waypoint.Type.STATION, wp1.type());
+        assertEquals(10, wp1.targetId());
+        assertEquals(letrain.map.Dir.N, wp1.entryDir().orElse(null));
+        assertEquals(1, wp1.commands().size());
+        assertEquals(letrain.itinerary.WaypointCommand.LOAD, wp1.commands().get(0));
+
+        letrain.itinerary.Waypoint wp2 = restoredItin.waypoints().get(1);
+        assertEquals(letrain.itinerary.Waypoint.Type.SENSOR, wp2.type());
+        assertEquals(20, wp2.targetId());
+        assertTrue(wp2.entryDir().isEmpty());
+        assertEquals(2, wp2.commands().size());
+        assertEquals(letrain.itinerary.WaypointCommand.Kind.WAIT, wp2.commands().get(0).kind());
+        assertEquals(5, wp2.commands().get(0).seconds());
+        assertEquals(letrain.itinerary.WaypointCommand.Kind.SPEED, wp2.commands().get(1).kind());
+        assertEquals(8, wp2.commands().get(1).targetSpeed());
+
+        if (restoredAp instanceof letrain.itinerary.impl.AutoPilotImpl impl) {
+            assertEquals(42, impl.getWaitTicks());
+            assertEquals(1, impl.getPendingCommands().size());
+            assertEquals(letrain.itinerary.WaypointCommand.Kind.SPEED, impl.getPendingCommands().get(0).kind());
+            assertEquals(5, impl.getPendingCommands().get(0).targetSpeed());
+        }
     }
 }

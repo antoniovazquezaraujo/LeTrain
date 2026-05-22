@@ -31,10 +31,16 @@ public class AutoPilotImpl implements AutoPilot {
 
     private static final int ROUTE_RETRY_TICKS = 100;
 
-    private final AutoPilotContext ctx;
-    private final TrainActionManager actionManager;
+    private AutoPilotContext ctx;
+    private TrainActionManager actionManager;
     private final List<WaypointCommand> pendingCommands = new java.util.ArrayList<>();
     private int waitTicks = 0;
+
+    public AutoPilotImpl() {
+        this.ctx = null;
+        this.actionManager = null;
+        log.info("[AP] created empty");
+    }
 
     public AutoPilotImpl(AutoPilotContext ctx) {
         this(ctx, null);
@@ -44,6 +50,43 @@ public class AutoPilotImpl implements AutoPilot {
         this.ctx = ctx;
         this.actionManager = actionManager;
         log.info("[AP] created");
+    }
+
+    public AutoPilotImpl(Itinerary itinerary, Mode mode, int waitTicks, List<WaypointCommand> pendingCommands) {
+        this.ctx = null;
+        this.actionManager = null;
+        this.itinerary = itinerary;
+        this.mode = mode;
+        this.waitTicks = waitTicks;
+        if (pendingCommands != null) {
+            this.pendingCommands.addAll(pendingCommands);
+        }
+        log.info("[AP] created from deserialization");
+    }
+
+    public void reinitialize(AutoPilotContext ctx, TrainActionManager actionManager) {
+        this.ctx = ctx;
+        this.actionManager = actionManager;
+        log.info("[AP] reinitialized");
+    }
+
+    public int getWaitTicks() {
+        return waitTicks;
+    }
+
+    public void setWaitTicks(int waitTicks) {
+        this.waitTicks = waitTicks;
+    }
+
+    public List<WaypointCommand> getPendingCommands() {
+        return pendingCommands;
+    }
+
+    public void setPendingCommands(List<WaypointCommand> pendingCommands) {
+        this.pendingCommands.clear();
+        if (pendingCommands != null) {
+            this.pendingCommands.addAll(pendingCommands);
+        }
     }
 
     @Override
@@ -146,7 +189,7 @@ public class AutoPilotImpl implements AutoPilot {
                 while (!pendingCommands.isEmpty()) {
                     WaypointCommand cmd = pendingCommands.remove(0);
                     if (cmd.kind() == WaypointCommand.Kind.WAIT) {
-                        this.waitTicks = cmd.ticks();
+                        this.waitTicks = cmd.seconds() * WaypointCommand.TICKS_PER_SECOND;
                         // remain in Mode.WAITING
                         return false;
                     } else {
@@ -196,7 +239,7 @@ public class AutoPilotImpl implements AutoPilot {
             while (!pendingCommands.isEmpty()) {
                 WaypointCommand cmd = pendingCommands.remove(0);
                 if (cmd.kind() == WaypointCommand.Kind.WAIT) {
-                    this.waitTicks = cmd.ticks();
+                    this.waitTicks = cmd.seconds() * WaypointCommand.TICKS_PER_SECOND;
                     this.mode = Mode.WAITING;
                     break;
                 } else {
