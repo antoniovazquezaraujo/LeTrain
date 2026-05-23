@@ -17,6 +17,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.SplitPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
+import com.badlogic.gdx.scenes.scene2d.ui.Tree;
 import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
@@ -112,9 +113,9 @@ public class Gdx3DHud {
 
         // TextButton Style (Menu Buttons)
         TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle();
-        textButtonStyle.up = null; // Transparent by default
+        textButtonStyle.up = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.2f, 1f));
         textButtonStyle.down = skin.newDrawable("white", Color.CYAN);
-        textButtonStyle.checked = skin.newDrawable("white", Color.BLACK); // Black background for selected
+        textButtonStyle.checked = textButtonStyle.up;
         textButtonStyle.over = skin.newDrawable("white", new Color(0.15f, 0.15f, 0.15f, 1f));
         textButtonStyle.font = skin.getFont("default");
         textButtonStyle.fontColor = Color.WHITE;
@@ -606,97 +607,173 @@ public class Gdx3DHud {
             refTitle.setColor(Color.YELLOW);
             refTable.add(refTitle).pad(5).row();
 
-            Table refScrollContent = new Table();
-            refScrollContent.top().left();
+            com.badlogic.gdx.scenes.scene2d.ui.Tree.TreeStyle treeStyle = new com.badlogic.gdx.scenes.scene2d.ui.Tree.TreeStyle();
+            treeStyle.plus = skin.newDrawable("white", new Color(0.6f, 0.6f, 0.6f, 1f));
+            treeStyle.minus = skin.newDrawable("white", new Color(0.6f, 0.6f, 0.6f, 1f));
+            Tree refTree = new Tree(treeStyle);
+            refTree.setPadding(5f);
+            refTree.setIconSpacing(6f, 0);
+            refTree.setIndentSpacing(12f);
 
-            String[][] refs = {
-                    { "ITINERARY DSL", "" },
-                    { "  create itinerary", "create itinerary \"Ruta\" {\n  add station \"A\"\n}" },
-                    { "  add station with cmd", "add station \"A\" LOAD UNLOAD" },
-                    { "  add sensor with cmd", "add sensor \"S1\" WAIT 5" },
-                    { "  waypoint cmds", "LOAD | UNLOAD | REVERSE | STOP" },
-                    { "  waypoint cmds", "WAIT n | SPEED n" },
-                    { "  assign itinerary", "assign itinerary \"Ruta\" to train 1;" },
-                    { "  set autopilot", "train 1 set autopilot true;" },
-                    { "", "" },
-                    { "TRIGGERS", "" },
-                    { "  sensor on train enter", "sensor 1 on train enter {\n  \n}" },
-                    { "  sensor on train exit", "sensor 1 on train exit {\n  \n}" },
-                    { "  fork on train enter", "fork 1 on train enter {\n  \n}" },
-                    { "  fork on train exit", "fork 1 on train exit {\n  \n}" },
-                    { "  semaphore on train enter", "semaphore 1 on train enter {\n  \n}" },
-                    { "  semaphore on train exit", "semaphore 1 on train exit {\n  \n}" },
-                    { "  station on train enter", "station 1 on train enter {\n  \n}" },
-                    { "  station on train exit", "station 1 on train exit {\n  \n}" },
-                    { "  train on enter", "train 1 on enter {\n  \n}" },
-                    { "  train on exit", "train 1 on exit {\n  \n}" },
-                    { "  train on link", "train 1 on link {\n  \n}" },
-                    { "  train on unlink", "train 1 on unlink {\n  \n}" },
-                    { "  train on crash", "train 1 on crash {\n  \n}" },
-                    { "  train on contact", "train 1 on contact {\n  \n}" },
-                    { "", "" },
-                    { "ACTIONS", "" },
-                    { "  train set speed", "train 1 set speed 5;" },
-                    { "  train set forward", "train 1 set forward;" },
-                    { "  train set backward", "train 1 set backward;" },
-                    { "  train accelerate", "train 1 accelerate;" },
-                    { "  train decelerate", "train 1 decelerate;" },
-                    { "  train stop", "train 1 stop;" },
-                    { "  train invert", "train 1 invert;" },
-                    { "  train load", "train 1 load;" },
-                    { "  train unload", "train 1 unload;" },
-                    { "  train link", "train 1 link forward 1;" },
-                    { "  train unlink", "train 1 unlink backward 1;" },
-                    { "  train at station", "train at station 1 stop;" },
-                    { "  train at sensor", "train at sensor 1 stop;" },
-                    { "  train at fork", "train at fork 1 stop;" },
-                    { "  fork set straight", "fork 1 set straight;" },
-                    { "  fork set curved", "fork 1 set curved;" },
-                    { "  fork set flip", "fork 1 set flip;" },
-                    { "  fork set dir", "fork 1 set E;" },
-                    { "  semaphore set open", "semaphore 1 set open;" },
-                    { "  semaphore set closed", "semaphore 1 set closed;" },
-                    { "", "" },
-                    { "SET NAMES", "" },
-                    { "  station name", "station 1 set name \"Madrid\";" },
-                    { "  sensor name", "sensor 1 set name \"S1\";" },
-                    { "  train name", "train 1 set name \"Express\";" }
+            // Helper: creates a clickable leaf node that inserts a snippet on click
+            java.util.function.BiFunction<String, String, Tree.Node> leaf = (labelText, snippet) -> {
+                Label l = new Label("   " + labelText, skin, "monospace");
+                Tree.Node n = new Tree.Node(l) {};
+                n.setValue(snippet);
+                l.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+                    @Override
+                    public void clicked(InputEvent event, float x, float y) {
+                        insertAtCursor(textArea, snippet + "\n");
+                        event.stop();
+                    }
+                });
+                return n;
+            };
+            // Helper: section heading (non-clickable, orange)
+            java.util.function.Function<String, Tree.Node> heading = (text) -> {
+                Label l = new Label(text, skin, "monospace");
+                l.setColor(Color.ORANGE);
+                return new Tree.Node(l) {};
+            };
+            // Helper: creates a parent node (click to expand/collapse, toggles +/-)
+            java.util.function.Function<String, Tree.Node> parent = (text) -> {
+                Label l = new Label(text, skin, "monospace");
+                Tree.Node n = new Tree.Node(l) {};
+                l.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+                    @Override
+                    public void clicked(InputEvent event, float x, float y) {
+                        n.setExpanded(!n.isExpanded());
+                        l.setText(n.isExpanded()
+                            ? text.replace("[+]", "[-]")
+                            : text.replace("[-]", "[+]"));
+                        event.stop();
+                    }
+                });
+                return n;
             };
 
-            for (String[] r : refs) {
-                if (r[0].isEmpty()) {
-                    refScrollContent.add(new Label("", skin)).row();
-                    continue;
-                }
-                if (r[1].isEmpty()) {
-                    Label l = new Label(r[0], skin, "monospace");
-                    l.setColor(Color.ORANGE);
-                    refScrollContent.add(l).left().pad(5).row();
-                } else {
-                    Table row = new Table();
-                    Label l = new Label(r[0], skin, "monospace");
-                    // Create a button with the green triangle
-                    // Create a button with white/green triangle hover behavior
-                    com.badlogic.gdx.scenes.scene2d.ui.Button.ButtonStyle bs = new com.badlogic.gdx.scenes.scene2d.ui.Button.ButtonStyle();
-                    bs.up = skin.getDrawable("white-triangle");
-                    bs.over = skin.getDrawable("green-triangle");
-                    bs.down = skin.getDrawable("green-triangle");
-                    com.badlogic.gdx.scenes.scene2d.ui.Button addBtn = new com.badlogic.gdx.scenes.scene2d.ui.Button(
-                            bs);
+            // ── BUILD TREE ──
+            refTree.add(heading.apply("ITINERARY DSL"));
+            var itin = parent.apply("  [+] create itinerary");
+            itin.add(leaf.apply("template", "create itinerary \"\" {\n  add station \"\"\n}"));
+            itin.setExpanded(true);
+            refTree.add(itin);
 
-                    addBtn.addListener(new ChangeListener() {
-                        @Override
-                        public void changed(ChangeEvent event, Actor actor) {
-                            insertAtCursor(textArea, r[1] + "\n");
-                        }
-                    });
-                    row.add(addBtn).left().size(16, 16).padRight(10);
-                    row.add(l).left().expandX();
-                    refScrollContent.add(row).growX().padLeft(10).padRight(5).row();
-                }
-            }
+            var addSt = parent.apply("  [+] add station [cmd]");
+            addSt.add(leaf.apply("LOAD", "add station # LOAD"));
+            addSt.add(leaf.apply("UNLOAD", "add station # UNLOAD"));
+            addSt.add(leaf.apply("REVERSE", "add station # REVERSE"));
+            addSt.add(leaf.apply("STOP", "add station # STOP"));
+            addSt.add(leaf.apply("WAIT n", "add station # WAIT #"));
+            addSt.add(leaf.apply("SPEED n", "add station # SPEED #"));
+            refTree.add(addSt);
 
-            ScrollPane refScroll = new ScrollPane(refScrollContent, skin);
+            var addSe = parent.apply("  [+] add sensor [cmd]");
+            addSe.add(leaf.apply("LOAD", "add sensor # LOAD"));
+            addSe.add(leaf.apply("UNLOAD", "add sensor # UNLOAD"));
+            addSe.add(leaf.apply("WAIT n", "add sensor # WAIT #"));
+            refTree.add(addSe);
+
+            refTree.add(leaf.apply("assign", "assign itinerary \"\" to train #;"));
+            refTree.add(leaf.apply("autopilot", "train # set autopilot true;"));
+
+            // ── TRIGGERS ──
+            refTree.add(heading.apply("TRIGGERS"));
+
+            var sensor = parent.apply("  [+] sensor");
+            var snOn = parent.apply("    [+] on train");
+            snOn.add(leaf.apply("enter", "sensor # on train enter {\n  \n}"));
+            snOn.add(leaf.apply("exit", "sensor # on train exit {\n  \n}"));
+            snOn.add(leaf.apply("enter fwd", "sensor # on train enter forward {\n  \n}"));
+            snOn.add(leaf.apply("exit bwd", "sensor # on train exit backward {\n  \n}"));
+            snOn.setExpanded(true);
+            sensor.add(snOn);
+            refTree.add(sensor);
+
+            var station = parent.apply("  [+] station");
+            var stOn = parent.apply("    [+] on train");
+            stOn.add(leaf.apply("enter", "station # on train enter {\n  \n}"));
+            stOn.add(leaf.apply("exit", "station # on train exit {\n  \n}"));
+            stOn.add(leaf.apply("enter fwd", "station # on train enter forward {\n  \n}"));
+            stOn.add(leaf.apply("exit bwd", "station # on train exit backward {\n  \n}"));
+            stOn.setExpanded(true);
+            station.add(stOn);
+            refTree.add(station);
+
+            var fork = parent.apply("  [+] fork");
+            var fkOn = parent.apply("    [+] on train");
+            fkOn.add(leaf.apply("enter", "fork # on train enter {\n  \n}"));
+            fkOn.add(leaf.apply("exit", "fork # on train exit {\n  \n}"));
+            fork.add(fkOn);
+            refTree.add(fork);
+
+            var semaphore = parent.apply("  [+] semaphore");
+            var smOn = parent.apply("    [+] on train");
+            smOn.add(leaf.apply("enter", "semaphore # on train enter {\n  \n}"));
+            smOn.add(leaf.apply("exit", "semaphore # on train exit {\n  \n}"));
+            semaphore.add(smOn);
+            refTree.add(semaphore);
+
+            var trainTrig = parent.apply("  [+] train");
+            var trOn = parent.apply("    [+] on");
+            trOn.add(leaf.apply("enter", "train # on enter {\n  \n}"));
+            trOn.add(leaf.apply("exit", "train # on exit {\n  \n}"));
+            trOn.add(leaf.apply("link", "train # on link {\n  \n}"));
+            trOn.add(leaf.apply("unlink", "train # on unlink {\n  \n}"));
+            trOn.add(leaf.apply("crash", "train # on crash {\n  \n}"));
+            trOn.add(leaf.apply("contact", "train # on contact {\n  \n}"));
+            trOn.add(leaf.apply("crash fwd", "train # on crash forward {\n  \n}"));
+            trOn.add(leaf.apply("contact bwd", "train # on contact backward {\n  \n}"));
+            trOn.setExpanded(true);
+            trainTrig.add(trOn);
+            refTree.add(trainTrig);
+
+            // ── ACTIONS ──
+            refTree.add(heading.apply("ACTIONS"));
+
+            var trainAct = parent.apply("  [+] train");
+            trainAct.add(leaf.apply("set speed", "train # set speed #;"));
+            trainAct.add(leaf.apply("accelerate", "train # accelerate;"));
+            trainAct.add(leaf.apply("decelerate", "train # decelerate;"));
+            trainAct.add(leaf.apply("stop", "train # stop;"));
+            trainAct.add(leaf.apply("invert", "train # invert;"));
+            trainAct.add(leaf.apply("set forward", "train # set forward;"));
+            trainAct.add(leaf.apply("set backward", "train # set backward;"));
+            trainAct.add(leaf.apply("load", "train # load;"));
+            trainAct.add(leaf.apply("unload", "train # unload;"));
+            trainAct.add(leaf.apply("link", "train # link forward #;"));
+            trainAct.add(leaf.apply("unlink", "train # unlink backward #;"));
+            trainAct.setExpanded(true);
+            refTree.add(trainAct);
+
+            var trainAt = parent.apply("  [+] train at");
+            trainAt.add(leaf.apply("station", "train at station # stop;"));
+            trainAt.add(leaf.apply("sensor", "train at sensor # stop;"));
+            trainAt.add(leaf.apply("fork", "train at fork # stop;"));
+            trainAt.add(leaf.apply("semaphore", "train at semaphore # stop;"));
+            refTree.add(trainAt);
+
+            var forkAct = parent.apply("  [+] fork");
+            forkAct.add(leaf.apply("straight", "fork # set straight;"));
+            forkAct.add(leaf.apply("curved", "fork # set curved;"));
+            forkAct.add(leaf.apply("flip", "fork # set flip;"));
+            forkAct.add(leaf.apply("dir...", "fork # set E;"));
+            forkAct.setExpanded(true);
+            refTree.add(forkAct);
+
+            var semAct = parent.apply("  [+] semaphore");
+            semAct.add(leaf.apply("open", "semaphore # set open;"));
+            semAct.add(leaf.apply("closed", "semaphore # set closed;"));
+            semAct.setExpanded(true);
+            refTree.add(semAct);
+
+            // ── SET NAMES ──
+            refTree.add(heading.apply("SET NAMES"));
+            refTree.add(leaf.apply("station", "station # set name \"\";"));
+            refTree.add(leaf.apply("sensor", "sensor # set name \"\";"));
+            refTree.add(leaf.apply("train", "train # set name \"\";"));
+
+            ScrollPane refScroll = new ScrollPane(refTree, skin);
             refTable.add(refScroll).grow().pad(5);
 
             // 2. Objects
@@ -748,8 +825,36 @@ public class Gdx3DHud {
             final Table errorTable = new Table();
             errorTable.setBackground(skin.newDrawable("white", Color.MAROON));
             final Label errorLabel = new Label("", skin, "monospace");
+            errorLabel.setWrap(true);
             errorTable.add(new Label("ERRORS:", skin, "monospace")).left().padLeft(5).row();
-            errorTable.add(errorLabel).left().padLeft(15).padBottom(5);
+            errorLabel.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    String text = textArea.getText();
+                    String[] errorLines = errorLabel.getText().toString().split("\n");
+                    for (String err : errorLines) {
+                        java.util.regex.Matcher m = java.util.regex.Pattern.compile("line (\\d+):(\\d+)").matcher(err);
+                        if (m.find()) {
+                            int lineNum = Integer.parseInt(m.group(1));
+                            int colNum = Integer.parseInt(m.group(2));
+                            // Convert line:col to character position in the text area
+                            int pos = 0;
+                            String[] srcLines = text.split("\n", -1);
+                            for (int i = 0; i < Math.min(lineNum - 1, srcLines.length); i++) {
+                                pos += srcLines[i].length() + 1; // +1 for the newline
+                            }
+                            pos += Math.max(0, colNum - 1);
+                            textArea.setCursorPosition(Math.min(pos, text.length()));
+                            textArea.getStage().setKeyboardFocus(textArea);
+                            break;
+                        }
+                    }
+                }
+            });
+            ScrollPane errorScroll = new ScrollPane(errorLabel, skin);
+            errorScroll.setFadeScrollBars(false);
+            errorScroll.setScrollingDisabled(true, false);
+            errorTable.add(errorScroll).left().padLeft(15).padBottom(5).growX().minHeight(100f);
             errorTable.setVisible(false);
 
             // Footer
@@ -757,10 +862,13 @@ public class Gdx3DHud {
             TextButton applyBtn = new TextButton(" APPLY ", skin, "monospace-button");
             TextButton saveBtn = new TextButton(" SAVE ", skin, "monospace-button");
             TextButton loadBtn = new TextButton(" LOAD ", skin, "monospace-button");
+            TextButton okBtn = new TextButton(" OK ", skin, "monospace-button");
+            okBtn.setColor(Color.GREEN);
             TextButton cancelBtn = new TextButton(" CANCEL ", skin, "monospace-button");
             footer.add(applyBtn).pad(5);
             footer.add(saveBtn).pad(5);
             footer.add(loadBtn).pad(5);
+            footer.add(okBtn).pad(5);
             footer.add(cancelBtn).pad(5);
 
             // ASSEMBLY & VISIBILITY SYNC
@@ -880,6 +988,25 @@ public class Gdx3DHud {
                     window.remove();
                     model.setMode(letrain.mvp.Model.GameMode.RAILS);
                     view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
+                }
+            });
+
+            okBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    List<String> errors = model.setProgram(textArea.getText());
+                    if (errors != null && !errors.isEmpty()) {
+                        errorLabel.setText(String.join("\n", errors));
+                        errorTable.setVisible(true);
+                    } else {
+                        errorTable.setVisible(false);
+                        ideWindow = null;
+                        ideLogContent = null;
+                        ideObjsContent = null;
+                        window.remove();
+                        model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                        view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
+                    }
                 }
             });
 
