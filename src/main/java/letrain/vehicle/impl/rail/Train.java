@@ -569,18 +569,18 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             return false;
         }
 
-        // Shunting safety: if we share segments with another train that is moving,
-        // we must stop to avoid collisions. This prevents the TOCTOU bug where a
-        // stopped co-owner accelerates after a shunting lock was granted.
+        // Shunting safety: if another co-owner is moving, slow to minimum speed
+        // (1) instead of stopping. This lets both trains creep apart after a collision
+        // instead of blocking each other indefinitely.
         if (model != null && isShuntingMode()) {
             letrain.segments.BlockManager bm = model.getBlockManager();
             for (letrain.segments.Segment s : bm.getOwnedSegments(this)) {
                 for (Train owner : bm.getOwners(s)) {
                     if (owner != this && owner.getSpeed() != 0) {
-                        if (directorLinker != null) {
-                            directorLinker.setTargetSpeed(0);
+                        if (directorLinker != null && directorLinker.getTargetSpeed() > 1) {
+                            directorLinker.setTargetSpeed(1);
                         }
-                        return false;
+                        break;
                     }
                 }
             }
