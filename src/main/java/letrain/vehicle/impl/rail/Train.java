@@ -569,30 +569,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             return false;
         }
 
-        // Block movement only if the shared segment is NOT the one we physically
-        // occupy. If we share the current segment (shunting), allow creeping apart.
-        if (model != null && isShuntingMode()) {
-            letrain.segments.RailwayGraph graph = model.getRailwayGraph();
-            // Use the director linker's track to determine the current physical segment
-            if (getDirectorLinker() instanceof letrain.vehicle.impl.Linker dirLinker) {
-                letrain.track.Track headTrack = dirLinker.getTrack();
-                letrain.segments.Segment currentSeg = (headTrack instanceof letrain.track.rail.RailTrack rt && graph != null)
-                    ? graph.getSegment(rt) : null;
-                letrain.segments.BlockManager bm = model.getBlockManager();
-                for (letrain.segments.Segment s : bm.getOwnedSegments(this)) {
-                    if (s.equals(currentSeg)) continue;
-                    for (Train owner : bm.getOwners(s)) {
-                        if (owner != this && owner.getSpeed() != 0) {
-                            if (directorLinker != null) {
-                                directorLinker.setTargetSpeed(0);
-                            }
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-
         if (model != null) {
             if (!safetyManager.checkSafety((letrain.mvp.impl.Model) model)) {
                 // Si la seguridad falla, forzamos el frenado.

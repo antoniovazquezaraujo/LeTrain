@@ -69,9 +69,10 @@ public class TrainSafetyManager {
             currentSegment = headS;
             // Ensure ownership of current segment (Mandatory 1: To step is to own)
             if (!bm.getOwnedSegments(train).contains(currentSegment)) {
-                if (!bm.tryLock(train, currentSegment)) {
-                    bm.tryShuntingLock(train, currentSegment);
-                }
+                boolean curLocked = bm.tryLock(train, currentSegment);
+                log.info("[LOCK] {} tryLock(current={}) = {} (owned={})",
+                    train.getId(), currentSegment.getId(), curLocked,
+                    bm.getOwners(currentSegment).stream().map(t -> String.valueOf(t.getId())).toList());
             }
             permissionToMove = false;
             nextSegment = findNextSegment(head, graph);
@@ -93,17 +94,32 @@ public class TrainSafetyManager {
                     permissionToMove = true; // No next segment, move freely
                 } else {
                     boolean locked = bm.tryLock(train, nextSegment);
+                    log.info("[LOCK] {} tryLock({}) = {} (owners={})",
+                        train.getId(), nextSegment.getId(), locked,
+                        bm.getOwners(nextSegment).stream().map(t -> String.valueOf(t.getId())).toList());
+
                     if (!locked) {
-                        locked = bm.tryShuntingLock(train, nextSegment);
+                        Segment alt = findAlternativeSegment(head, graph, nextSegment);
+                        if (alt != null) {
+                            log.info("[LOCK] {} alternative seg {} found, owners={}",
+                                train.getId(), alt.getId(),
+                                bm.getOwners(alt).stream().map(t -> String.valueOf(t.getId())).toList());
+                            boolean altLocked = bm.tryLock(train, alt);
+                            if (altLocked) {
+                                log.info("[LOCK] {} rerouted to alternative seg {}", train.getId(), alt.getId());
+                                nextSegment = alt;
+                                locked = true;
+                            }
+                        }
                     }
 
                     if (locked) {
-                        log.info("Train {} granted permission to move into {}. Next segment {} locked (Shunting: {}).",
-                            train.getId(), currentSegment.getId(), nextSegment.getId(), train.isShuntingMode());
+                        log.info("Train {} granted permission to move into {}.",
+                            train.getId(), nextSegment.getId());
                         permissionToMove = true;
                     } else {
-                        log.debug("Train {} denied permission. Segment {} occupied. Retrying in 15s.",
-                            train.getId(), nextSegment.getId());
+                        log.debug("Train {} denied permission. Retrying in 15s.",
+                            train.getId());
                         safetyRetryTimer = SAFETY_RETRY_TICKS;
                     }
                 }
@@ -122,14 +138,7 @@ public class TrainSafetyManager {
             }
 
             // If physically crossed boundary without permission: ILLEGAL ENTRY
-            Track nextTrack = headTrack.getConnected(head.getDir());
-            if (nextTrack != null && (nextTrack instanceof ForkRailTrack || graph.getSegment((RailTrack)nextTrack) != headS)) {
-                if (nextSegment != null) {
-                    log.warn("Train {} ENTERED ILLEGALLY into segment {}. Forcing segment shunting.", train.getId(), nextSegment.getId());
-                    bm.tryShuntingLock(train, nextSegment);
-                    permissionToMove = true; // Force permission
-                }
-            }
+            // No shunting fallback — train will crash via physical collision.
         }
 
         return true;
@@ -194,6 +203,46 @@ public class TrainSafetyManager {
             return graph.getSegment(nextSteps.get(0));
         }
 
+        return null;
+    }
+
+    /** Find an alternative branch that leads to the same downstream node (siding). */
+    private Segment findAlternativeSegment(Linker head, RailwayGraph graph, Segment occupiedSeg) {
+        RailTrack headTrack = (RailTrack) head.getTrack();
+        letrain.segments.PathStep currentStep = new letrain.segments.impl.PathStepImpl(
+            new letrain.segments.impl.RailNodeImpl(headTrack), head.getDir());
+        List<letrain.segments.PathStep> outSteps = graph.getNextSteps(currentStep);
+        if (outSteps == null || outSteps.size() < 2) return null; // no fork / no alternative
+
+        // Find the far-end node of the occupied segment (the node that is NOT the fork)
+        letrain.segments.RailNode farNode = findFarNode(occupiedSeg, headTrack);
+        if (farNode == null) return null;
+
+        // Look for another outStep whose segment shares that same far node
+        for (letrain.segments.PathStep step : outSteps) {
+            Segment altSeg = graph.getSegment(step);
+            if (altSeg == null || altSeg.equals(occupiedSeg)) continue;
+            if (farNode.equals(findFarNode(altSeg, headTrack))) {
+                return altSeg; // same destination, different route
+            }
+        }
+        return null;
+    }
+
+    /** Returns the RailNode at the FAR end of a segment (not the one containing headTrack). */
+    private letrain.segments.RailNode findFarNode(Segment seg, RailTrack forkTrack) {
+        var steps = seg.getSteps();
+        if (steps == null) return null;
+        letrain.segments.PathStep s1 = steps.getFirst();
+        letrain.segments.PathStep s2 = steps.getSecond();
+        if (s1 != null) {
+            letrain.track.Track t = s1.getRailNode() != null ? s1.getRailNode().getTrack() : null;
+            if (t != forkTrack) return s1.getRailNode();
+        }
+        if (s2 != null) {
+            letrain.track.Track t = s2.getRailNode() != null ? s2.getRailNode().getTrack() : null;
+            if (t != forkTrack) return s2.getRailNode();
+        }
         return null;
     }
 
