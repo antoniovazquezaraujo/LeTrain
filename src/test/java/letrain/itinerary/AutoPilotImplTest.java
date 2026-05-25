@@ -243,5 +243,14 @@ class AutoPilotImplTest {
         verify(actionManager).executeCommand(cmdSpeed);
         assertEquals(AutoPilot.Mode.FOLLOWING, autopilot.mode()); // Advanced to wp2, back to FOLLOWING
     }
+
+    @Test
+    @DisplayName("should activate even if train is moving when force is true")
+    void activatesWhenMovingIfForced() {
+        when(ctx.currentSpeed()).thenReturn(5);
+        autopilot.setItinerary(itinerary);
+        assertTrue(autopilot.activate(true));
+        assertEquals(AutoPilot.Mode.FOLLOWING, autopilot.mode());
+    }
 }
 

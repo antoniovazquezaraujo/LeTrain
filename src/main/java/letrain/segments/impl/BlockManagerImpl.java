@@ -17,6 +17,8 @@ public class BlockManagerImpl implements BlockManager {
     private final Map<Segment, List<Train>> segmentOwners = new ConcurrentHashMap<>();
     // Mapa inverso para optimizar consultas de trenes
     private final Map<Train, List<Segment>> trainSegments = new ConcurrentHashMap<>();
+    // Mapa de segmento -> lista de trenes esperando liberación
+    private final Map<Segment, List<Train>> waitingTrains = new ConcurrentHashMap<>();
 
     private Runnable onReleaseListener;
 
@@ -67,6 +69,13 @@ public class BlockManagerImpl implements BlockManager {
                     if (onReleaseListener != null) {
                         onReleaseListener.run();
                     }
+                    // Notificar a los trenes que esperan este segmento
+                    List<Train> waiting = waitingTrains.remove(segment);
+                    if (waiting != null) {
+                        for (Train t : waiting) {
+                            t.onSegmentReleased(segment);
+                        }
+                    }
                 }
             }
         }
@@ -116,6 +125,7 @@ public class BlockManagerImpl implements BlockManager {
     public void clearAll() {
         segmentOwners.clear();
         trainSegments.clear();
+        waitingTrains.clear();
     }
 
     private void registerTrainSegment(Train train, Segment segment) {
@@ -130,5 +140,24 @@ public class BlockManagerImpl implements BlockManager {
     @Override
     public Set<Segment> getAllLockedSegments() {
         return segmentOwners.keySet();
+    }
+
+    @Override
+    public void registerWaiting(Train train, Segment segment) {
+        List<Train> waiting = waitingTrains.computeIfAbsent(segment, k -> new CopyOnWriteArrayList<>());
+        if (!waiting.contains(train)) {
+            waiting.add(train);
+        }
+    }
+
+    @Override
+    public void unregisterWaiting(Train train, Segment segment) {
+        List<Train> waiting = waitingTrains.get(segment);
+        if (waiting != null) {
+            waiting.remove(train);
+            if (waiting.isEmpty()) {
+                waitingTrains.remove(segment);
+            }
+        }
     }
 }

@@ -126,10 +126,16 @@ public class Locomotive extends Linker implements Tractor {
                 return moved;
             }
 
+            // Check safety and retry blocking on every tick even when stopped
+            if (getTrain() != null && getTrain().getModel() != null) {
+                getTrain().getSafetyManager().checkSafety((letrain.mvp.impl.Model) getTrain().getModel());
+            }
+
             // AutoPilot: let it compute routes and set target speed even when stopped
             if (getTrain() != null && getTrain().isAutoMode() && getTrain().getAutopilot() != null) {
                 getTrain().getAutopilot().tick();
             }
+
 
             // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
             if (getTrain() != null && getTrain().isLoading()) {

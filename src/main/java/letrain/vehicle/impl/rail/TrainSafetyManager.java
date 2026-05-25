@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Set;
 
 import letrain.map.Dir;
-import letrain.mvp.impl.Model;
+import letrain.mvp.Model;
 import letrain.segments.BlockManager;
+import letrain.segments.PathStep;
+import letrain.segments.RailNode;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.segments.impl.PathStepImpl;
@@ -25,13 +27,12 @@ import org.slf4j.LoggerFactory;
  */
 public class TrainSafetyManager {
     private static final Logger log = LoggerFactory.getLogger(TrainSafetyManager.class);
-    private static final int SAFETY_RETRY_TICKS = 300; // 15s at 20fps
 
     private final Train train;
     private Segment currentSegment;
     private Segment nextSegment;
     private boolean permissionToMove = true;
-    private int safetyRetryTimer = 0;
+    private boolean overshot = false;
 
     public TrainSafetyManager(Train train) {
         this.train = train;
@@ -50,7 +51,14 @@ public class TrainSafetyManager {
     }
 
     public void resetSafetyTimer() {
-        this.safetyRetryTimer = 0;
+        this.overshot = false;
+    }
+
+    private void setNextSegment(BlockManager bm, Segment next) {
+        if (nextSegment != null && !nextSegment.equals(next)) {
+            bm.unregisterWaiting(train, nextSegment);
+        }
+        this.nextSegment = next;
     }
 
     public boolean checkSafety(Model model) {
@@ -61,34 +69,38 @@ public class TrainSafetyManager {
         if (head == null || !(head.getTrack() instanceof RailTrack)) return true;
 
         RailTrack headTrack = (RailTrack) head.getTrack();
-        Segment headS = graph.getSegment(headTrack);
-        if (headS == null) return true;
+        Segment headS = resolveSegment(graph, headTrack, head.getDir());
 
         // 1. Detect segment change to reset permission
-        if (currentSegment == null || !headS.equals(currentSegment)) {
-            currentSegment = headS;
-            // Ensure ownership of current segment (Mandatory 1: To step is to own)
-            if (!bm.getOwnedSegments(train).contains(currentSegment)) {
-                boolean curLocked = bm.tryLock(train, currentSegment);
-                log.info("[LOCK] {} tryLock(current={}) = {} (owned={})",
-                    train.getId(), currentSegment.getId(), curLocked,
-                    bm.getOwners(currentSegment).stream().map(t -> String.valueOf(t.getId())).toList());
-            }
-            permissionToMove = false;
-            nextSegment = findNextSegment(head, graph);
-            safetyRetryTimer = 0; // Try immediately
+        if (headS != null && (currentSegment == null || !headS.equals(currentSegment))) {
+            if (currentSegment != null && !permissionToMove) {
+                // Overshot! We left currentSegment without permission
+                overshot = true;
+                currentSegment = headS;
+                permissionToMove = false;
+                log.warn("Train {} overshot into segment {} without permission! Braking and stopping retries.",
+                    train.getId(), headS.getId());
+                // Even on overshoot, we must try to lock the segment we are physically occupying to notify other trains
+                bm.tryLock(train, currentSegment);
+                train.deactivateAutoModeAndStop();
+            } else {
+                currentSegment = headS;
+                overshot = false;
+                // Ensure ownership of current segment (Mandatory 1: To step is to own)
+                if (!bm.getOwnedSegments(train).contains(currentSegment)) {
+                    boolean curLocked = bm.tryLock(train, currentSegment);
+                    log.info("[LOCK] {} tryLock(current={}) = {} (owned={})",
+                        train.getId(), currentSegment.getId(), curLocked,
+                        bm.getOwners(currentSegment).stream().map(t -> String.valueOf(t.getId())).toList());
+                }
+                permissionToMove = false;
+                Segment next = findNextSegment(head, graph);
+                setNextSegment(bm, next);
 
-            letrain.itinerary.AutoPilot ap = train.getAutopilot();
-            if (ap != null && nextSegment != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
-                ap.ensureForkRoute(currentSegment, nextSegment);
-            }
-        }
-
-        // 2. If no permission, try to acquire it (lock Sn+1)
-        if (!permissionToMove) {
-            if (safetyRetryTimer <= 0) {
-                // Refresh nextSegment from autopilot route if available
-                nextSegment = findNextSegment(head, graph);
+                letrain.itinerary.AutoPilot ap = train.getAutopilot();
+                if (ap != null && nextSegment != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+                    ap.ensureForkRoute(currentSegment, nextSegment);
+                }
 
                 if (nextSegment == null || nextSegment.equals(currentSegment)) {
                     permissionToMove = true; // No next segment, move freely
@@ -100,14 +112,16 @@ public class TrainSafetyManager {
 
                     if (!locked) {
                         Segment alt = findAlternativeSegment(head, graph, nextSegment);
-                        if (alt != null) {
-                            log.info("[LOCK] {} alternative seg {} found, owners={}",
-                                train.getId(), alt.getId(),
-                                bm.getOwners(alt).stream().map(t -> String.valueOf(t.getId())).toList());
+                        if (alt != null && !train.containsWaypointElement(nextSegment)) {
+                            log.info("[LOCK] {} alternative seg {} found, checking if we can detour",
+                                train.getId(), alt.getId());
+                            if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+                                ap.ensureForkRoute(currentSegment, alt);
+                            }
                             boolean altLocked = bm.tryLock(train, alt);
                             if (altLocked) {
                                 log.info("[LOCK] {} rerouted to alternative seg {}", train.getId(), alt.getId());
-                                nextSegment = alt;
+                                setNextSegment(bm, alt);
                                 locked = true;
                             }
                         }
@@ -118,37 +132,74 @@ public class TrainSafetyManager {
                             train.getId(), nextSegment.getId());
                         permissionToMove = true;
                     } else {
-                        log.debug("Train {} denied permission. Retrying in 15s.",
-                            train.getId());
-                        safetyRetryTimer = SAFETY_RETRY_TICKS;
+                        log.info("Train {} denied permission to move into {}. Registering as waiting.",
+                            train.getId(), nextSegment.getId());
+                        bm.registerWaiting(train, nextSegment);
+                        train.deactivateAutoModeAndStop();
                     }
                 }
-            } else {
-                safetyRetryTimer--;
             }
-        }
-
-        // 3. Release old segments
-        releaseOldSegments(bm, graph);
-
-        // 4. Proactive braking logic (Mandatory 3)
-        if (!permissionToMove) {
-            if (train.getDirectorLinker() != null) {
-                train.getDirectorLinker().setTargetSpeed(0);
-            }
-
-            // If physically crossed boundary without permission: ILLEGAL ENTRY
-            // No shunting fallback — train will crash via physical collision.
         }
 
         return true;
     }
 
-    /**
-     * Finds the next segment the train should enter.
-     * When the autopilot is active, uses its planned route for correct fork routing.
-     * Otherwise falls back to topological inference.
-     */
+    public void onNextSegmentReleased(Model model, Segment segment) {
+        if (segment.equals(nextSegment) && !permissionToMove && !overshot) {
+            BlockManager bm = model.getBlockManager();
+            letrain.itinerary.AutoPilot ap = train.getAutopilot();
+            if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+                ap.ensureForkRoute(currentSegment, nextSegment);
+            }
+            boolean locked = bm.tryLock(train, nextSegment);
+            if (!locked) {
+                Linker head = (Linker) train.getDirectorLinker();
+                if (head != null) {
+                    Segment alt = findAlternativeSegment(head, model.getRailwayGraph(), nextSegment);
+                    if (alt != null && !train.containsWaypointElement(nextSegment)) {
+                        if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+                            ap.ensureForkRoute(currentSegment, alt);
+                        }
+                        boolean altLocked = bm.tryLock(train, alt);
+                        if (altLocked) {
+                            bm.unregisterWaiting(train, nextSegment);
+                            setNextSegment(bm, alt);
+                            locked = true;
+                        }
+                    }
+                }
+            }
+            if (locked) {
+                log.info("Train {} granted permission into {} via release event.", train.getId(), nextSegment.getId());
+                permissionToMove = true;
+            } else {
+                bm.registerWaiting(train, nextSegment);
+            }
+        }
+    }
+
+    public void releaseOldSegmentsOnForkExit(Model model) {
+        BlockManager bm = model.getBlockManager();
+        RailwayGraph graph = model.getRailwayGraph();
+        Set<Segment> physicallyOccupied = new HashSet<>();
+        for (Linker l : train.getLinkers()) {
+            if (l.getTrack() instanceof RailTrack) {
+                RailTrack track = (RailTrack) l.getTrack();
+                Segment s = resolveSegment(graph, track, l.getDir());
+                if (s != null) physicallyOccupied.add(s);
+            }
+        }
+
+        List<Segment> owned = new java.util.ArrayList<>(bm.getOwnedSegments(train));
+        for (Segment s : owned) {
+            if (physicallyOccupied.contains(s) || s.equals(currentSegment) || s.equals(nextSegment)) {
+                continue;
+            }
+            bm.release(train, s);
+            log.info("Train {} released segment {} on fork exit (physically empty).", train.getId(), s.getId());
+        }
+    }
+
     private Segment findNextSegment(Linker head, RailwayGraph graph) {
         letrain.itinerary.AutoPilot ap = train.getAutopilot();
         if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
@@ -161,68 +212,77 @@ public class TrainSafetyManager {
         return findNextSegmentTopological(head, graph);
     }
 
-    private void releaseOldSegments(BlockManager bm, RailwayGraph graph) {
-        Set<Segment> physicallyOccupied = new HashSet<>();
-        for (Linker l : train.getLinkers()) {
-            if (l.getTrack() instanceof RailTrack) {
-                Segment s = graph.getSegment((RailTrack) l.getTrack());
-                if (s != null) physicallyOccupied.add(s);
-            }
-        }
+    private Segment findNextSegmentTopological(Linker head, RailwayGraph graph) {
+        RailTrack headTrack = (RailTrack) head.getTrack();
+        Segment s = resolveSegment(graph, headTrack, head.getDir());
 
-        List<Segment> owned = bm.getOwnedSegments(train);
-        for (Segment s : owned) {
-            if (!physicallyOccupied.contains(s)) {
-                Segment sNext = findNextSegmentTopological((Linker)train.getDirectorLinker(), graph);
-                if (sNext == null || !s.equals(sNext)) {
-                    bm.release(train, s);
-                    log.debug("Train {} released segment {}", train.getId(), s.getId());
+        Dir exitDir = head.getDir();
+        RailIterator it = new RailIterator(headTrack, exitDir);
+        int maxIterations = 10000; // Safety guard against infinite loops on circuits
+        while (it.advance() && maxIterations-- > 0) {
+            Track t = it.getTrack();
+            if (t instanceof RailTrack) {
+                Segment nextS = graph.getSegment((RailTrack) t);
+                if (nextS != null && !nextS.equals(s)) {
+                    return nextS;
                 }
             }
         }
-    }
-
-    private Segment findNextSegmentTopological(Linker head, RailwayGraph graph) {
-        RailTrack headTrack = (RailTrack) head.getTrack();
-        Segment s = graph.getSegment(headTrack);
-        if (s == null) return null;
-
-        Dir exitDir = head.getDir();
-        List<letrain.segments.PathStep> nextSteps = graph.getNextSteps(new PathStepImpl(
-            new RailNodeImpl(headTrack), exitDir));
-
-        if (nextSteps == null || nextSteps.isEmpty()) {
-            RailIterator it = new RailIterator(headTrack, exitDir);
-            int maxIterations = 10000; // Safety guard against infinite loops on circuits
-            while (it.advance() && maxIterations-- > 0) {
-                Track t = it.getTrack();
-                Segment nextS = graph.getSegment((RailTrack) t);
-                if (nextS != null && !nextS.equals(s)) return nextS;
-            }
-        } else {
-            return graph.getSegment(nextSteps.get(0));
-        }
-
         return null;
     }
 
-    /** Find an alternative branch that leads to the same downstream node (siding). */
-    private Segment findAlternativeSegment(Linker head, RailwayGraph graph, Segment occupiedSeg) {
+    private RailNode getApproachingNode(Linker head, RailwayGraph graph) {
         RailTrack headTrack = (RailTrack) head.getTrack();
-        letrain.segments.PathStep currentStep = new letrain.segments.impl.PathStepImpl(
-            new letrain.segments.impl.RailNodeImpl(headTrack), head.getDir());
-        List<letrain.segments.PathStep> outSteps = graph.getNextSteps(currentStep);
-        if (outSteps == null || outSteps.size() < 2) return null; // no fork / no alternative
+        Segment s = resolveSegment(graph, headTrack, head.getDir());
+        if (s == null) return null;
+
+        Dir exitDir = head.getDir();
+        RailIterator it = new RailIterator(headTrack, exitDir);
+        int maxIterations = 10000;
+        while (it.advance() && maxIterations-- > 0) {
+            Track t = it.getTrack();
+            if (t instanceof RailTrack) {
+                if (s.getSteps() != null) {
+                    letrain.segments.PathStep s1 = s.getSteps().getFirst();
+                    letrain.segments.PathStep s2 = s.getSteps().getSecond();
+                    if (s1 != null && s1.getRailNode() != null && s1.getRailNode().getTrack() == t) {
+                        return s1.getRailNode();
+                    }
+                    if (s2 != null && s2.getRailNode() != null && s2.getRailNode().getTrack() == t) {
+                        return s2.getRailNode();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private Segment findAlternativeSegment(Linker head, RailwayGraph graph, Segment occupiedSeg) {
+        RailNode approachingNode = getApproachingNode(head, graph);
+        if (approachingNode == null || !(approachingNode.getTrack() instanceof ForkRailTrack)) {
+            return null;
+        }
+
+        List<PathStep> outSteps = approachingNode.getOutSteps().stream()
+            .filter(step -> {
+                Segment seg = graph.getSegment(step);
+                return seg != null && !seg.equals(currentSegment);
+            })
+            .collect(java.util.stream.Collectors.toList());
+
+        if (outSteps.size() < 2) {
+            return null;
+        }
 
         // Find the far-end node of the occupied segment (the node that is NOT the fork)
-        letrain.segments.RailNode farNode = findFarNode(occupiedSeg, headTrack);
+        RailNode farNode = findFarNode(occupiedSeg, approachingNode.getTrack());
         if (farNode == null) return null;
 
         // Look for another outStep whose segment shares that same far node
-        for (letrain.segments.PathStep step : outSteps) {
+        for (PathStep step : outSteps) {
             Segment altSeg = graph.getSegment(step);
             if (altSeg == null || altSeg.equals(occupiedSeg)) continue;
-            if (farNode.equals(findFarNode(altSeg, headTrack))) {
+            if (farNode.equals(findFarNode(altSeg, approachingNode.getTrack()))) {
                 return altSeg; // same destination, different route
             }
         }
@@ -230,23 +290,35 @@ public class TrainSafetyManager {
     }
 
     /** Returns the RailNode at the FAR end of a segment (not the one containing headTrack). */
-    private letrain.segments.RailNode findFarNode(Segment seg, RailTrack forkTrack) {
+    private RailNode findFarNode(Segment seg, Track forkTrack) {
         var steps = seg.getSteps();
         if (steps == null) return null;
-        letrain.segments.PathStep s1 = steps.getFirst();
-        letrain.segments.PathStep s2 = steps.getSecond();
+        PathStep s1 = steps.getFirst();
+        PathStep s2 = steps.getSecond();
         if (s1 != null) {
-            letrain.track.Track t = s1.getRailNode() != null ? s1.getRailNode().getTrack() : null;
+            Track t = s1.getRailNode() != null ? s1.getRailNode().getTrack() : null;
             if (t != forkTrack) return s1.getRailNode();
         }
         if (s2 != null) {
-            letrain.track.Track t = s2.getRailNode() != null ? s2.getRailNode().getTrack() : null;
+            Track t = s2.getRailNode() != null ? s2.getRailNode().getTrack() : null;
             if (t != forkTrack) return s2.getRailNode();
         }
         return null;
     }
 
     public void forceSegmentReset() {
+        if (train.getModel() != null && nextSegment != null) {
+            train.getModel().getBlockManager().unregisterWaiting(train, nextSegment);
+        }
+        this.nextSegment = null;
         this.currentSegment = null;
+        this.overshot = false;
+    }
+
+    private Segment resolveSegment(RailwayGraph graph, RailTrack track, Dir exitDir) {
+        if (track instanceof ForkRailTrack) {
+            return graph.getSegment(track, exitDir);
+        }
+        return graph.getSegment(track);
     }
 }

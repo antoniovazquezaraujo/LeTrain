@@ -32,10 +32,15 @@ public interface RailwayGraph {
      */
     List<letrain.track.Sensor> getSensors(Segment segment);
 
-    /**
-     * Devuelve el segmento al que pertenece un raíl físico (si está mapeado).
-     */
     Segment getSegment(letrain.track.rail.RailTrack track);
+
+    /**
+     * Devuelve el segmento al que pertenece un raíl físico dada una dirección de salida.
+     * Útil para resolver la ambigüedad en agujas (forks).
+     */
+    default Segment getSegment(letrain.track.rail.RailTrack track, letrain.map.Dir exitDir) {
+        return getSegment(track);
+    }
 
     /**
      * Devuelve el número de vías físicas en un segmento.

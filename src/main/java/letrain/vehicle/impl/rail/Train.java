@@ -91,6 +91,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return safetyManager.hasPermissionToMove();
     }
 
+    public TrainSafetyManager getSafetyManager() {
+        return safetyManager;
+    }
+
     public void wakeUp() {
         safetyManager.resetSafetyTimer();
     }
@@ -175,11 +179,33 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         log.info("[TRAIN] toggleAutoMode → autoMode={}", autoMode);
     }
 
+    public void deactivateAutoModeAndStop() {
+        this.autoMode = false;
+        if (autopilot != null) {
+            autopilot.deactivate();
+        }
+        if (getDirectorLinker() != null) {
+            getDirectorLinker().setTargetSpeed(0);
+        }
+    }
+
     public void setAutopilot(letrain.itinerary.AutoPilot ap) { this.autopilot = ap; }
     public letrain.itinerary.AutoPilot getAutopilot() { return autopilot; }
 
     public void notifyForkEntry(letrain.track.rail.ForkRailTrack fork) {
         if (autopilot != null) autopilot.onForkEntered(fork);
+    }
+
+    public void notifyForkExit(letrain.track.rail.ForkRailTrack fork) {
+        if (safetyManager != null) {
+            safetyManager.releaseOldSegmentsOnForkExit(model);
+        }
+    }
+
+    public void onSegmentReleased(Segment segment) {
+        if (safetyManager != null) {
+            safetyManager.onNextSegmentReleased(model, segment);
+        }
     }
 
     private transient letrain.mvp.Model model;
@@ -321,9 +347,23 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         Set<letrain.segments.Segment> segmentsToClaim = new HashSet<>();
         for (Linker linker : linkers) {
             if (linker.getTrack() instanceof letrain.track.rail.RailTrack) {
-                letrain.segments.Segment segment = graph.getSegment((letrain.track.rail.RailTrack) linker.getTrack());
-                if (segment != null) {
-                    segmentsToClaim.add(segment);
+                letrain.track.rail.RailTrack track = (letrain.track.rail.RailTrack) linker.getTrack();
+                if (track instanceof ForkRailTrack) {
+                    // Claim all non-null segments connected to the fork
+                    for (letrain.map.Dir dir : track.getConnections()) {
+                        letrain.track.Track conn = track.getConnected(dir);
+                        if (conn instanceof letrain.track.rail.RailTrack) {
+                            letrain.segments.Segment connSeg = graph.getSegment((letrain.track.rail.RailTrack) conn);
+                            if (connSeg != null) {
+                                segmentsToClaim.add(connSeg);
+                            }
+                        }
+                    }
+                } else {
+                    letrain.segments.Segment segment = graph.getSegment(track);
+                    if (segment != null) {
+                        segmentsToClaim.add(segment);
+                    }
                 }
             }
         }
@@ -569,14 +609,12 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             return false;
         }
 
-        if (model != null) {
-            if (!safetyManager.checkSafety((letrain.mvp.impl.Model) model)) {
-                // Si la seguridad falla, forzamos el frenado.
-                if (directorLinker != null) {
-                    directorLinker.setTargetSpeed(0);
-                }
-                return false;
+        if (isAutoMode() && safetyManager != null && !safetyManager.hasPermissionToMove()) {
+            // Si la seguridad falla, forzamos el frenado.
+            if (directorLinker != null) {
+                directorLinker.setTargetSpeed(0);
             }
+            return false;
         }
 
         boolean normalSense = true;
@@ -986,4 +1024,43 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         var alt = fork.getRouter().getAlternativeRoute();
         return alt != null && alt.getValue() == targetDir;
     }
+
+    public boolean containsWaypointElement(Segment segment) {
+        letrain.itinerary.AutoPilot ap = this.getAutopilot();
+        if (ap == null || ap.itinerary().isEmpty()) {
+            return false;
+        }
+        letrain.itinerary.Itinerary itin = ap.itinerary().get();
+        List<letrain.itinerary.Waypoint> wps = itin.waypoints();
+        int curIdx = itin.currentIndex();
+        if (curIdx < 0 || curIdx >= wps.size()) {
+            return false;
+        }
+        
+        letrain.segments.RailwayGraph graph = getModel().getRailwayGraph();
+        if (graph == null) {
+            return false;
+        }
+        List<letrain.track.Station> stations = graph.getStations(segment);
+        List<letrain.track.Sensor> sensors = graph.getSensors(segment);
+        
+        for (int i = curIdx; i < wps.size(); i++) {
+            letrain.itinerary.Waypoint wp = wps.get(i);
+            if (wp.type() == letrain.itinerary.Waypoint.Type.STATION) {
+                for (letrain.track.Station st : stations) {
+                    if (st.getId() == wp.targetId()) {
+                        return true;
+                    }
+                }
+            } else if (wp.type() == letrain.itinerary.Waypoint.Type.SENSOR) {
+                for (letrain.track.Sensor se : sensors) {
+                    if (se.getId() == wp.targetId()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 }
+

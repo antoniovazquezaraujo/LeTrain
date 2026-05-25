@@ -25,6 +25,11 @@ public interface AutoPilot {
     /** Start/activate the autopilot. Only works if a valid route exists. */
     boolean activate();
 
+    /** Start/activate the autopilot with optional force flag to bypass speed restrictions. */
+    default boolean activate(boolean force) {
+        return activate();
+    }
+
     /** Stop and return to manual control. */
     void deactivate();
 

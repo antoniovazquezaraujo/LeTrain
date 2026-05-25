@@ -148,6 +148,7 @@ public class TrainMovementManager {
             }
             if (currentTrack instanceof ForkRailTrack && linkerToMove == lastLinker) {
                 ((ForkRailTrack) currentTrack).onExitTrain(train);
+                train.notifyForkExit((ForkRailTrack) currentTrack);
             }
 
             linkerToMove.setPreviousTrack(currentTrack);

@@ -59,4 +59,14 @@ public interface BlockManager {
      * Devuelve todos los segmentos que tienen algún bloqueo activo.
      */
     java.util.Set<Segment> getAllLockedSegments();
+
+    /**
+     * Registra un tren en espera para ser notificado cuando un segmento se libere.
+     */
+    void registerWaiting(Train train, Segment segment);
+
+    /**
+     * Cancela el registro de espera de un tren para un segmento.
+     */
+    void unregisterWaiting(Train train, Segment segment);
 }

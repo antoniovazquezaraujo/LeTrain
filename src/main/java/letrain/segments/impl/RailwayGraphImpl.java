@@ -22,6 +22,7 @@ public class RailwayGraphImpl implements RailwayGraph {
     private final Map<Segment, List<letrain.track.Sensor>> segmentToSensors = new HashMap<>();
     private final Map<letrain.track.rail.RailTrack, Segment> trackToSegment = new HashMap<>();
     private final Map<Segment, Set<letrain.track.rail.RailTrack>> segmentToTracks = new HashMap<>();
+    private final Map<letrain.track.Track, RailNode> trackToNode = new HashMap<>();
 
     @Override
     public Segment getSegment(PathStep step) {
@@ -40,6 +41,20 @@ public class RailwayGraphImpl implements RailwayGraph {
 
     @Override
     public Segment getSegment(letrain.track.rail.RailTrack track) {
+        return trackToSegment.get(track);
+    }
+
+    @Override
+    public Segment getSegment(letrain.track.rail.RailTrack track, letrain.map.Dir exitDir) {
+        if (track == null) return null;
+        RailNode node = trackToNode.get(track);
+        if (node != null && exitDir != null) {
+            for (PathStep step : node.getOutSteps()) {
+                if (step.getDir() == exitDir) {
+                    return stepToSegment.get(step);
+                }
+            }
+        }
         return trackToSegment.get(track);
     }
 
@@ -138,6 +153,9 @@ public class RailwayGraphImpl implements RailwayGraph {
         stepToSegment.put(step, segment);
         RailNode node = step.getRailNode();
         nodeToSegments.computeIfAbsent(node, k -> new ArrayList<>()).add(segment);
+        if (node != null && node.getTrack() != null) {
+            trackToNode.put(node.getTrack(), node);
+        }
     }
 
     @Override

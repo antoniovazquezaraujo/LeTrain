@@ -517,7 +517,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         train.getAutopilot().setItinerary(it);
         // Re-activate if autopilot was on (itinerary change resets to IDLE)
         if (train.isAutoMode()) {
-            train.getAutopilot().activate();
+            train.getAutopilot().activate(true);
         }
         log.info("[DSL] Itinerary '{}' assigned to Train {}", itName, train.getId());
         return null;

@@ -1,21 +1,9 @@
-# Task — Phase C: Architecture & UX Improvements
+# Tareas de Implementación - Refactorización de Bloqueos Orientada a Eventos
 
-Implement itinerary and autopilot save/load persistence using Jackson Mix-ins, clean up JSON naming properties, and perform layout and redundant code refactoring.
-
-- [x] Create git branch `feature/autopilot-persistence`
-- [x] Implement domain changes
-  - [x] Add reinitialize method and non-final fields to `AutoPilotImpl.java`
-  - [x] Add deserialization constructor to `ItineraryImpl.java`
-  - [x] Remove Jackson annotations and clean up redundant code/casts in `Train.java`
-- [x] Create Jackson Mix-ins
-  - [x] Implement `TrainMixin.java` with aliases and ignored getters
-  - [x] Implement `WaypointMixin.java` with custom serializer/deserializer
-  - [x] Implement `ItineraryMixin.java` with custom serializer/deserializer
-  - [x] Implement `AutoPilotMixin.java` with custom serializer/deserializer
-  - [x] Implement `WaypointCommandMixin.java` with custom serializer/deserializer
-- [x] Register Mix-ins in `GameSaveService.java`
-- [x] Update and expand integration tests
-  - [x] Register Mix-ins on `ObjectMapper` in `SerializationTest.java`
-  - [x] Implement `testTrainAutoPilotSerialization()` in `SerializationTest.java`
-- [x] Run `mvn clean test` to verify all tests pass
-- [x] Refactor WAIT command to use and represent seconds instead of ticks across domain, serialization, and tests
+- `[x]` Paso 1: Modificar `BlockManager.java` y `BlockManagerImpl.java` para implementar registro y notificación de trenes en espera (`registerWaiting`, `unregisterWaiting` y notificación en `release`)
+- `[x]` Paso 2: Modificar `Train.java` para implementar `onSegmentReleased` y `notifyForkExit`
+- `[x]` Paso 3: Modificar `TrainMovementManager.java` para notificar `notifyForkExit` al salir del Fork
+- `[x]` Paso 4: Modificar `Locomotive.java` para aplicar el frenado proactivo (`targetSpeed = 0`) si no hay permiso de avance
+- `[x]` Paso 5: Modificar `TrainSafetyManager.java` para eliminar sondeos y velocidad en `checkSafety`, y usar eventos de liberación y desvíos
+- `[x]` Paso 6: Compilar y validar el proyecto con la suite de pruebas
+- `[x]` Paso 7: Actualizar y escribir nuevas pruebas unitarias en `TrainSafetyManagerTest.java` para validar el modelo de eventos

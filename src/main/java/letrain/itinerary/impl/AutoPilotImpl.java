@@ -128,12 +128,17 @@ public class AutoPilotImpl implements AutoPilot {
 
     @Override
     public boolean activate() {
-        log.info("[AP] activate() speed=" + ctx.currentSpeed()
+        return activate(false);
+    }
+
+    @Override
+    public boolean activate(boolean force) {
+        log.info("[AP] activate(force=" + force + ") speed=" + ctx.currentSpeed()
             + " itin=" + (itinerary != null && itinerary.isValid())
             + " pf=" + (pathfinder != null));
         if (itinerary == null || !itinerary.isValid()) return false;
         if (pathfinder == null) return false;
-        if (ctx.currentSpeed() != 0) return false;
+        if (!force && ctx.currentSpeed() != 0) return false;
         mode = Mode.FOLLOWING;
         currentRoute = List.of();
         lastSegment = null;

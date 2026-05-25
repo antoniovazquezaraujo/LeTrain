@@ -2,6 +2,7 @@ package letrain.vehicle.impl.rail;
 
 import letrain.itinerary.AutoPilotContext;
 import letrain.itinerary.Waypoint;
+import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.segments.BlockManager;
 import letrain.segments.RailNode;
@@ -36,10 +37,25 @@ public class TrainAutoPilotContext implements AutoPilotContext {
         if (train.getModel() == null) return null;
         RailwayGraph graph = train.getModel().getRailwayGraph();
         if (graph == null) return null;
-        var first = train.getLinkers().isEmpty() ? null : train.getLinkers().getFirst();
-        if (first == null || first.getTrack() == null) return null;
-        Track t = first.getTrack();
-        return t instanceof RailTrack ? graph.getSegment((RailTrack) t) : null;
+        
+        for (letrain.vehicle.impl.Linker l : train.getLinkers()) {
+            if (l.getTrack() instanceof RailTrack) {
+                RailTrack track = (RailTrack) l.getTrack();
+                Segment s = getSegment(graph, track, l.getDir());
+                if (s != null) {
+                    return s;
+                }
+            }
+        }
+        
+        if (train.getSafetyManager() != null) {
+            Segment s = train.getSafetyManager().getCurrentSegment();
+            if (s != null) {
+                return s;
+            }
+        }
+        
+        return null;
     }
 
     @Override
@@ -112,5 +128,12 @@ public class TrainAutoPilotContext implements AutoPilotContext {
                 return sensor != null ? sensor.getPosition() : null;
         }
         return null;
+    }
+
+    private Segment getSegment(RailwayGraph graph, RailTrack track, Dir exitDir) {
+        if (track instanceof ForkRailTrack) {
+            return graph.getSegment(track, exitDir);
+        }
+        return graph.getSegment(track);
     }
 }
