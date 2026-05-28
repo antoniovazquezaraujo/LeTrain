@@ -1,18 +1,19 @@
 package letrain.visitor.gdx3d;
 
 import java.util.List;
+
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import letrain.track.CargoTypes;
+import letrain.utils.PathGeometry;
 import letrain.vehicle.impl.Linker;
 import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.rail.Locomotive;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.Wagon;
-import letrain.utils.PathGeometry;
 
 public class VehicleRenderer extends BaseSubRenderer {
 
@@ -150,23 +151,6 @@ public class VehicleRenderer extends BaseSubRenderer {
             instances.add(selectionLine);
         }
 
-        // Blinking red line for shunting locomotives
-        if (train != null && train.isShuntingMode()) {
-            // Blink: toggle every ~500ms
-            boolean blinkOn = (System.currentTimeMillis() / 500) % 2 == 0;
-            if (blinkOn) {
-                ModelInstance shuntLine = resourceContext.getModelInstance(resourceContext.selectionLineModel);
-                shuntLine.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(
-                        com.badlogic.gdx.graphics.Color.RED));
-                v1.set(renderTangent).nor();
-                float dxL = v1.x;
-                float dzL = v1.z;
-                float lineOffset = 0.25f;
-                shuntLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.04f, renderY + dzL * lineOffset);
-                shuntLine.transform.rotate(0, 1, 0, angle);
-                instances.add(shuntLine);
-            }
-        }
         if (locomotive.isDestroying()) {
             drawFire(renderX, 0.61f, renderY, animationAlpha + locomotive.getId());
         }

@@ -23,8 +23,6 @@ public class Locomotive extends Linker implements Tractor {
     private static final long serialVersionUID = 1L;
     /** Maximum speed in game units (notches 0-10). */
     public static final int MAX_SPEED = 10;
-    /** Speed limit when shunting mode is active. */
-    static final int SHUNTING_SPEED_LIMIT = 2;
     final static int SPEED_CHANGE_MAX_RELUCTANCE = 2;
     int currentSpeed;
     int targetSpeed;
@@ -343,9 +341,6 @@ public class Locomotive extends Linker implements Tractor {
     @Override
     public void setCurrentSpeed(int speed) {
         int effectiveSpeed = speed;
-        if (getTrain() != null && getTrain().isShuntingMode()) {
-            effectiveSpeed = Math.min(speed, SHUNTING_SPEED_LIMIT);
-        }
         if (this.currentSpeed == effectiveSpeed) {
             return;
         }
@@ -379,11 +374,6 @@ public class Locomotive extends Linker implements Tractor {
         if (this.targetSpeed > MAX_SPEED) {
             this.targetSpeed = MAX_SPEED;
         }
-        if (getTrain() != null && getTrain().isShuntingMode()) {
-            if (this.targetSpeed > SHUNTING_SPEED_LIMIT) {
-                this.targetSpeed = SHUNTING_SPEED_LIMIT;
-            }
-        }
         if (this.targetSpeed < 0) {
             this.targetSpeed = 0;
         }
@@ -392,11 +382,6 @@ public class Locomotive extends Linker implements Tractor {
     private void limitCurrentSpeed() {
         if (this.currentSpeed > MAX_SPEED) {
             this.currentSpeed = MAX_SPEED;
-        }
-        if (getTrain() != null && getTrain().isShuntingMode()) {
-            if (this.currentSpeed > SHUNTING_SPEED_LIMIT) {
-                this.currentSpeed = SHUNTING_SPEED_LIMIT;
-            }
         }
         if (this.currentSpeed < 0) {
             this.currentSpeed = 0;

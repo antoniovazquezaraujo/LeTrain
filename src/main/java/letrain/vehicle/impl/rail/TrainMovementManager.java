@@ -7,9 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.track.Sensor;
@@ -17,7 +14,8 @@ import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.Destructible;
 import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.Tractor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Extracted from Train.java (~247 lines) to keep the train class focused.
@@ -139,6 +137,8 @@ public class TrainMovementManager {
             Track nextTrackOfLinker = targetTracks.get(i);
             Dir entryDirOfLinker = entryDirsMap.get(linkerToMove);
 
+            // Si el linker que sale de la celda es el último del tren disparamos evento onExitTrain 
+            // a sensores, semáforos y forks
             Sensor sensorExit = currentTrack.getSensor();
             if (sensorExit != null && linkerToMove == lastLinker) {
                 sensorExit.onExitTrain(train);
@@ -169,6 +169,9 @@ public class TrainMovementManager {
 
             nextTrackOfLinker.setReservation(null);
 
+            // Si el linker que sale de la celda es el primero del tren disparamos evento onEnterTrain 
+            // a sensores, semáforos y forks
+
             Sensor sensorEnter = nextTrackOfLinker.getSensor();
             if (sensorEnter != null && linkerToMove == firstLinker) {
                 sensorEnter.onEnterTrain(train);
@@ -193,9 +196,7 @@ public class TrainMovementManager {
             Linker blockingLinker = nextAfterMove.getLinker();
             if (blockingLinker != null && blockingLinker.getTrain() != train) {
                 int speed = train.getSpeed();
-                // In shunting mode, never crash — always treat as contact.
-                // Two trains sharing a segment should not destroy each other.
-                if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD && !train.isShuntingMode()) {
+                if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD ) {
                     crash(blockingLinker, speed);
                     train.setStalled(true);
                 } else {

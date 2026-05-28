@@ -7,16 +7,19 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
+import letrain.itinerary.TrainActionManager;
+import letrain.itinerary.WaypointCommand;
 import letrain.map.Dir;
 import letrain.mvp.Model;
+import letrain.segments.RailNode;
+import letrain.segments.RailwayGraph;
+import letrain.segments.Segment;
 import letrain.track.CargoTypes;
 import letrain.track.Track;
+import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
@@ -26,12 +29,6 @@ import letrain.vehicle.impl.Tractor;
 import letrain.vehicle.impl.Trailer;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
-import letrain.itinerary.TrainActionManager;
-import letrain.itinerary.WaypointCommand;
-import letrain.segments.Segment;
-import letrain.segments.RailwayGraph;
-import letrain.segments.RailNode;
-import letrain.track.rail.ForkRailTrack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,17 +36,54 @@ import org.slf4j.LoggerFactory;
  * Core train entity that groups locomotives and wagons ({@link Linker}s)
  * and orchestrates movement, collisions, loading/unloading, and safety.
  *
- * <p>Movement is delegated to {@link TrainMovementManager}.
+ * <p>
+ * Movement is delegated to {@link TrainMovementManager}.
  * Logistics are handled by {@link TrainLogisticsManager}.
  * Block-segment safety is managed by {@link TrainSafetyManager}.
  */
 public class Train implements Trailer<RailTrack>, Renderable, Transportable, TrainActionManager {
-    /** Speed threshold above which a collision destroys both trains. */
     static final int CRASH_SPEED_THRESHOLD = 5;
-    private static final int MAX_LOADING_COUNT = 80; // 4.0 seconds at 20fps per wagon
     static final Logger log = LoggerFactory.getLogger(Train.class);
-    protected final TrainCouplingManager trainCouplingManager = new TrainCouplingManager(this);
+
+    enum LinkersSense {
+        FRONT, BACK
+    };
+
+    int id;
+    private String name;
     protected Deque<Linker> linkers;
+    private transient letrain.mvp.Model model;
+    protected final TrainCouplingManager trainCouplingManager = new TrainCouplingManager(this);
+    private TrainLogisticsManager logisticsManager = new TrainLogisticsManager();
+    private final transient TrainMovementManager movementManager = new TrainMovementManager(this);
+    private transient TrainSafetyManager safetyManager = new TrainSafetyManager(this);
+    private letrain.itinerary.AutoPilot autopilot;
+    int railStationId = 0;
+    private boolean stalled = false;
+    Trip trip;
+
+    protected Tractor directorLinker;
+    private transient boolean isNotifying = false;
+    private transient List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
+    private boolean autoMode = false;
+
+    public Train(int id) {
+        this.id = ValidationUtils.requirePositive(id, "train id");
+        this.linkers = new LinkedList<>();
+        this.trainCouplingManager.linkersToJoin = new LinkedList<>();
+        this.trainCouplingManager.linkersToRemove = new LinkedList<>();
+    }
+
+    /**
+     * Protected default constructor for Jackson deserialization.
+     */
+    protected Train() {
+        this.linkers = new LinkedList<>();
+        this.trainCouplingManager.linkersToJoin = new LinkedList<>();
+        this.trainCouplingManager.linkersToRemove = new LinkedList<>();
+    }
+
+    // TrainCouplingManager //////////////////////////////////////////////////
 
     public int getNumLinkersToJoin() {
         return trainCouplingManager.getNumLinkersToJoin();
@@ -59,24 +93,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return trainCouplingManager.getNumLinkersToRemove();
     }
 
-    private TrainLogisticsManager logisticsManager = new TrainLogisticsManager();
-
-    private final transient TrainMovementManager movementManager = new TrainMovementManager(this);
-    private transient TrainSafetyManager safetyManager = new TrainSafetyManager(this);
-    int railStationId = 0;
-    private boolean stalled = false;
-    int id;
-    private String name;
-
-    public boolean isShuntingMode() {
-        if (model == null) return false;
-        List<letrain.segments.Segment> owned = model.getBlockManager().getOwnedSegments(this);
-        for (letrain.segments.Segment s : owned) {
-            if (model.getBlockManager().getOwners(s).size() > 1) {
-                return true;
-            }
-        }
-        return false;
+    // SafetyManager //////////////////////////////////////////////////////////
+    public TrainSafetyManager getSafetyManager() {
+        return safetyManager;
     }
 
     public letrain.segments.Segment getCurrentSegment() {
@@ -92,7 +111,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     }
 
     public void wakeUp() {
-        safetyManager.resetSafetyTimer();
+        if (model != null) {
+            safetyManager.wakeUp((letrain.mvp.impl.Model) model);
+        }
     }
 
     @Override
@@ -110,6 +131,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         this.railStationId = railStationId;
     }
 
+    // LogisticsManager ////////////////////////////////////////////////////
     public boolean isLoading() {
         return logisticsManager.isLoading();
     }
@@ -130,6 +152,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return logisticsManager.isUnloadingDirection();
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////
     /**
      * Returns the current speed of the director locomotive, or 0 if none.
      */
@@ -144,53 +167,52 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return getSpeed() == 0;
     }
 
-    Trip trip;
+    // AutoPilot ///////////////////////////////////////////////////////////////
+    public boolean isAutoMode() {
+        return autoMode;
+    }
 
-    enum LinkersSense {
-        FRONT, BACK
-    };
-
-    protected Tractor directorLinker;
-    private int loadingCount;
-    private transient boolean isNotifying = false;
-    private transient List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
-    private transient List<Wagon> currentCapableWagons = null;
-
-    // ── Autonomous driving (ADR-008) ──────────────────────────────
-    private letrain.itinerary.AutoPilot autopilot;
-    private boolean autoMode = false;
-
-    public boolean isAutoMode() { return autoMode; }
-
-    public void setAutoMode(boolean on) { this.autoMode = on; }
+    public void setAutoMode(boolean on) {
+        this.autoMode = on;
+        if (!on && autopilot != null) {
+            autopilot.deactivate(); // Apaga el piloto automático automáticamente si pasamos a manual
+        }
+    }
 
     public void toggleAutoMode() {
         log.info("[TRAIN] toggleAutoMode() current={}", autoMode);
         if (autoMode) {
             autoMode = false;
-            if (autopilot != null) autopilot.deactivate();
+            if (autopilot != null)
+                autopilot.deactivate();
         } else if (autopilot != null && autopilot.itinerary().isPresent()) {
             autoMode = autopilot.activate();
         }
         log.info("[TRAIN] toggleAutoMode → autoMode={}", autoMode);
     }
 
-    public void setAutopilot(letrain.itinerary.AutoPilot ap) { this.autopilot = ap; }
-    public letrain.itinerary.AutoPilot getAutopilot() { return autopilot; }
-
-    public void notifyForkEntry(letrain.track.rail.ForkRailTrack fork) {
-        if (autopilot != null) autopilot.onForkEntered(fork);
+    public void setAutopilot(letrain.itinerary.AutoPilot ap) {
+        this.autopilot = ap;
     }
 
-    private transient letrain.mvp.Model model;
+    public letrain.itinerary.AutoPilot getAutopilot() {
+        return autopilot;
+    }
+
+    public void notifyForkEntry(letrain.track.rail.ForkRailTrack fork) {
+        if (autopilot != null)
+            autopilot.onForkEntered(fork);
+    }
 
     public void setModel(letrain.mvp.Model model) {
         this.model = model;
     }
+
     List<TrainEventListener> getTrainListeners() {
         return this.trainListeners;
     }
-    public Model getModel(){
+
+    public Model getModel() {
         return this.model;
     }
 
@@ -241,7 +263,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         }
     }
 
-    public void onEnterSensor(letrain.track.Sensor sensor, boolean isForward) {
+    public void notifyEnterSensor(letrain.track.Sensor sensor, boolean isForward) {
         ValidationUtils.requireNonNull(sensor, "sensor");
         if (isNotifying)
             return;
@@ -250,7 +272,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             if (trainListeners != null) {
                 trainListeners.forEach(l -> {
                     if (l != sensor) {
-                        l.onEnterTrain(this, isForward);
+                        l.onSensorEnter(this, isForward);
                     }
                 });
             }
@@ -259,7 +281,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         }
     }
 
-    public void onExitSensor(letrain.track.Sensor sensor, boolean isForward) {
+    public void notifyExitSensor(letrain.track.Sensor sensor, boolean isForward) {
         ValidationUtils.requireNonNull(sensor, "sensor");
         if (isNotifying)
             return;
@@ -268,76 +290,36 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             if (trainListeners != null) {
                 trainListeners.forEach(l -> {
                     if (l != sensor) {
-                        l.onExitTrain(this, isForward);
+                        l.onSensorExit(this, isForward);
                     }
                 });
             }
         } finally {
             isNotifying = false;
         }
-    }
-
-    public Train(int id) {
-        this.id = ValidationUtils.requirePositive(id, "train id");
-        this.linkers = new LinkedList<>();
-        this.trainCouplingManager.linkersToJoin = new LinkedList<>();
-        this.trainCouplingManager.linkersToRemove = new LinkedList<>();
-    }
-
-    /**
-     * Protected default constructor for Jackson deserialization.
-     */
-    protected Train() {
-        this.linkers = new LinkedList<>();
-        this.trainCouplingManager.linkersToJoin = new LinkedList<>();
-        this.trainCouplingManager.linkersToRemove = new LinkedList<>();
     }
 
     public int getId() {
         return this.id;
     }
 
-    public String getName() { return name; }
+    public String getName() {
+        return name;
+    }
 
-    public void setName(String name) { this.name = name; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public void rebind() {
         if (model == null) {
             log.warn("Cannot rebind train {}: model is null", id);
             return;
         }
-
-        letrain.segments.RailwayGraph graph = model.getRailwayGraph();
-        letrain.segments.BlockManager blockManager = model.getBlockManager();
-
-        if (graph == null || blockManager == null) {
-            return;
-        }
-
-        // ADR-005: Un tren debe reclamar sus segmentos basándose en su posición física.
-        // Liberamos primero lo que tengamos para evitar dejar basura en el BlockManager
-        blockManager.releaseAll(this);
-
-        Set<letrain.segments.Segment> segmentsToClaim = new HashSet<>();
-        for (Linker linker : linkers) {
-            if (linker.getTrack() instanceof letrain.track.rail.RailTrack) {
-                letrain.segments.Segment segment = graph.getSegment((letrain.track.rail.RailTrack) linker.getTrack());
-                if (segment != null) {
-                    segmentsToClaim.add(segment);
-                }
-            }
-        }
-
-        // Lock the segments we found
-        for (letrain.segments.Segment segment : segmentsToClaim) {
-            if (!blockManager.tryLock(this, segment)) {
-                // Si falla el bloqueo normal tras una Tabula Rasa, es que hay convivencia forzada
-                // El modo Shunting se detectará dinámicamente.
-                blockManager.tryShuntingLock(this, segment);
-            }
-        }
-        log.info("Train {} rebound to {} segments (Shunting: {})", id, segmentsToClaim.size(), isShuntingMode());
+        // Delegamos enteramente la reclamación física de cantones al safetyManager
+        safetyManager.claimOccupiedSegments((letrain.mvp.impl.Model) model);
     }
+
     /**
      * Reinitializes transient fields after deserialization.
      */
@@ -350,11 +332,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         if (this.autopilot != null) {
             if (this.autopilot instanceof letrain.itinerary.impl.AutoPilotImpl) {
                 ((letrain.itinerary.impl.AutoPilotImpl) this.autopilot).reinitialize(
-                    new TrainAutoPilotContext(this), this);
+                        new TrainAutoPilotContext(this), this);
             }
             if (getModel() != null && getModel().getRailwayGraph() != null) {
                 this.autopilot.setPathfinder(
-                    new letrain.itinerary.AStarPathfinder(getModel().getRailwayGraph()));
+                        new letrain.itinerary.AStarPathfinder(getModel().getRailwayGraph()));
             }
         }
     }
@@ -492,7 +474,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     }
 
     /**
-     * Notifies listeners of a low-speed contact (speed &lt; {@link #CRASH_SPEED_THRESHOLD}).
+     * Notifies listeners of a low-speed contact (speed &lt;
+     * {@link #CRASH_SPEED_THRESHOLD}).
      * Stalls the train and sets all tractor speeds to 0.
      */
     public void notifyContact(letrain.map.Point pos, int speed) {
@@ -507,7 +490,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     }
 
     /**
-     * Notifies listeners of a high-speed crash (speed &ge; {@link #CRASH_SPEED_THRESHOLD}).
+     * Notifies listeners of a high-speed crash (speed &ge;
+     * {@link #CRASH_SPEED_THRESHOLD}).
      * Stalls the train. Actual destruction is handled by the caller or
      * {@link TrainMovementManager}.
      */
@@ -527,14 +511,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         this.stalled = stalled;
     }
 
-    /**
-     * Resetea el temporizador de reintento de seguridad.
-     * Útil cuando ocurre un evento externo (como un cambio de desvío) que podría
-     * liberar el camino del tren.
-     */
     public void resetSafetyTimer() {
-        if (safetyManager != null) {
-            safetyManager.resetSafetyTimer();
+        if (model != null) {
+            safetyManager.wakeUp((letrain.mvp.impl.Model) model);
         }
     }
 
@@ -549,7 +528,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         // AutoPilot mode — let it control speed/direction, then move normally.
         // Return true even if tick() says false, to avoid locomotive punishing
         // the train with an abrupt speed=0 (freno en seco).
-        // AutoPilot tick is handled in Locomotive.update; skip here to avoid double processing.
+        // AutoPilot tick is handled in Locomotive.update; skip here to avoid double
+        // processing.
 
         // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
         if (isLoading()) {
@@ -569,33 +549,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             return false;
         }
 
-        // Block movement only if the shared segment is NOT the one we physically
-        // occupy. If we share the current segment (shunting), allow creeping apart.
-        if (model != null && isShuntingMode()) {
-            letrain.segments.RailwayGraph graph = model.getRailwayGraph();
-            // Use the director linker's track to determine the current physical segment
-            if (getDirectorLinker() instanceof letrain.vehicle.impl.Linker dirLinker) {
-                letrain.track.Track headTrack = dirLinker.getTrack();
-                letrain.segments.Segment currentSeg = (headTrack instanceof letrain.track.rail.RailTrack rt && graph != null)
-                    ? graph.getSegment(rt) : null;
-                letrain.segments.BlockManager bm = model.getBlockManager();
-                for (letrain.segments.Segment s : bm.getOwnedSegments(this)) {
-                    if (s.equals(currentSeg)) continue;
-                    for (Train owner : bm.getOwners(s)) {
-                        if (owner != this && owner.getSpeed() != 0) {
-                            if (directorLinker != null) {
-                                directorLinker.setTargetSpeed(0);
-                            }
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-
         if (model != null) {
-            if (!safetyManager.checkSafety((letrain.mvp.impl.Model) model)) {
-                // Si la seguridad falla, forzamos el frenado.
+            if (!hasPermissionToMove()) {
+                // Si no tenemos permiso de movimiento, forzamos el frenado.
                 if (directorLinker != null) {
                     directorLinker.setTargetSpeed(0);
                 }
@@ -632,7 +588,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             // break the direction on curves after a crash.
             Linker first = getLinkers().isEmpty() ? null : getLinkers().getFirst();
             for (Linker l : getLinkers()) {
-                if (isStalled() && l == first) continue; // skip first linker on crash
+                if (isStalled() && l == first)
+                    continue; // skip first linker on crash
                 letrain.map.Dir savedDir = savedDirs.get(l);
                 letrain.map.Dir savedEntry = savedEntryDirs.get(l);
                 if (savedDir != null) {
@@ -952,14 +909,17 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
 
     @Override
     public void ensureForkRoute(Segment from, Segment to) {
-        if (getModel() == null) return;
+        if (getModel() == null)
+            return;
         RailwayGraph graph = getModel().getRailwayGraph();
-        if (graph == null) return;
+        if (graph == null)
+            return;
 
         // Find the fork between 'from' and 'to' and set the correct route
         var fromSteps = from.getSteps();
         var toSteps = to.getSteps();
-        if (fromSteps == null || toSteps == null) return;
+        if (fromSteps == null || toSteps == null)
+            return;
 
         var f1 = fromSteps.getFirst();
         var f2 = fromSteps.getSecond();
@@ -985,17 +945,20 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             return;
         }
         if (!(node.getTrack() instanceof ForkRailTrack fork)) {
-            log.debug("[FORK] ensureForkRoute {}->{}: shared node is not a fork ({})", from.getId(), to.getId(), node.getTrack());
+            log.debug("[FORK] ensureForkRoute {}->{}: shared node is not a fork ({})", from.getId(), to.getId(),
+                    node.getTrack());
             return;
         }
 
         // Use the fork node's outSteps directly (getNextSteps goes to wrong node)
         for (var step : node.getOutSteps()) {
             Segment nextSeg = graph.getSegment(step);
-            log.debug("[FORK] ensureForkRoute {}->{}: outStep dir={} seg={}", from.getId(), to.getId(), step.getDir(), nextSeg != null ? nextSeg.getId() : "null");
+            log.debug("[FORK] ensureForkRoute {}->{}: outStep dir={} seg={}", from.getId(), to.getId(), step.getDir(),
+                    nextSeg != null ? nextSeg.getId() : "null");
             if (nextSeg != null && nextSeg.equals(to)) {
                 boolean altNeeded = isAlternativeRouteNeeded(fork, step.getDir());
-                log.info("[FORK] ensureForkRoute {}->{}: MATCH fork={} altNeeded={} currentAlt={}", from.getId(), to.getId(), fork.getId(), altNeeded, fork.isUsingAlternativeRoute());
+                log.info("[FORK] ensureForkRoute {}->{}: MATCH fork={} altNeeded={} currentAlt={}", from.getId(),
+                        to.getId(), fork.getId(), altNeeded, fork.isUsingAlternativeRoute());
                 if (fork.isUsingAlternativeRoute() != altNeeded) {
                     fork.flipRoute();
                 }
