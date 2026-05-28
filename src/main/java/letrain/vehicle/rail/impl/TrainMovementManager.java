@@ -12,6 +12,7 @@ import letrain.map.Point;
 import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
+import letrain.track.rail.RailTrack;
 import letrain.vehicle.Destructible;
 import letrain.vehicle.rail.Linker;
 
@@ -25,10 +26,12 @@ import letrain.vehicle.rail.Linker;
  * (train-to-train and dead-end), and crash handling — extracted from
  * {@link Train} to keep that class focused.
  *
- * <p>Movement uses a two-pass approach:
+ * <p>
+ * Movement uses a two-pass approach:
  * <ol>
- *   <li><b>Validation</b> — check all linkers can move to their target tracks</li>
- *   <li><b>Execution</b> — physically move linkers with rollback on failure</li>
+ * <li><b>Validation</b> — check all linkers can move to their target
+ * tracks</li>
+ * <li><b>Execution</b> — physically move linkers with rollback on failure</li>
  * </ol>
  * After a successful move, an immediate post-move check detects
  * train-to-train collisions and dead-end impacts.
@@ -133,7 +136,8 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             Track nextTrackOfLinker = targetTracks.get(i);
             Dir entryDirOfLinker = entryDirsMap.get(linkerToMove);
 
-            // Si el linker que sale de la celda es el último del tren disparamos evento onExitTrain 
+            // Si el linker que sale de la celda es el último del tren disparamos evento
+            // onExitTrain
             // a sensores, semáforos y forks
             Sensor sensorExit = currentTrack.getSensor();
             if (sensorExit != null && linkerToMove == lastLinker) {
@@ -163,9 +167,24 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             }
             linkerToMove.setRailsSinceStop(linkerToMove.getRailsSinceStop() + 1);
 
+
+            // Reactivo: Si la locomotora (firstLinker) cambia de vía, notificamos al gestor
+            // de seguridad si entra en un nuevo cantón
+            if (linkerToMove == firstLinker && train.getModel() != null) {
+                letrain.mvp.Model model = train.getModel();
+                letrain.segments.RailwayGraph graph = model.getRailwayGraph();
+                if (graph != null && nextTrackOfLinker instanceof RailTrack) {
+                    letrain.segments.Segment newSegment = graph.getSegment((RailTrack) nextTrackOfLinker);
+                    letrain.vehicle.rail.TrainSafetyManager safety = train.getSafetyManager();
+                    if (newSegment != null && safety != null && !newSegment.equals(safety.getCurrentSegment())) {
+                        safety.onSegmentEntered((letrain.mvp.impl.Model) model, newSegment);
+                    }
+                }
+            }
             nextTrackOfLinker.setReservation(null);
 
-            // Si el linker que sale de la celda es el primero del tren disparamos evento onEnterTrain 
+            // Si el linker que sale de la celda es el primero del tren disparamos evento
+            // onEnterTrain
             // a sensores, semáforos y forks
 
             Sensor sensorEnter = nextTrackOfLinker.getSensor();
@@ -192,7 +211,7 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             Linker blockingLinker = nextAfterMove.getLinker();
             if (blockingLinker != null && blockingLinker.getTrain() != train) {
                 int speed = train.getSpeed();
-                if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD ) {
+                if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD) {
                     crash(blockingLinker, speed);
                     train.setStalled(true);
                 } else {
@@ -318,10 +337,12 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
     @Override
     public void correctDirection(Linker linker) {
-        if (linker == null) return;
+        if (linker == null)
+            return;
         Track t = linker.getTrack();
         Dir d = linker.getDir();
-        if (t == null || t.getConnected(d) != null) return;
+        if (t == null || t.getConnected(d) != null)
+            return;
         // Skip the entry direction (where we came from) — pick the exit
         Dir entryDir = linker.getEntryDir();
         for (Dir conn : t.getConnections()) {

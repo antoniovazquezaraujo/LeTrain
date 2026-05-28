@@ -51,7 +51,7 @@ public class AudioMixer {
         running = false;
         try {
             if (audioThread != null)
-                audioThread.join(500);
+                audioThread.join(2000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("Audio mixer stop interrupted", e);
@@ -176,7 +176,12 @@ public class AudioMixer {
                 }
             }
 
-            line.drain();
+            try {
+                line.stop();
+                line.flush();
+            } catch (Exception e) {
+                log.warn("Error stopping/flushing audio line", e);
+            }
         } catch (LineUnavailableException e) {
             log.error("AudioMixer failed to initialize audio line", e);
         } finally {
