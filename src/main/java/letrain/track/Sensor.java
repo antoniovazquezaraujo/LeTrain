@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.utils.SerializationHelper;
-import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 

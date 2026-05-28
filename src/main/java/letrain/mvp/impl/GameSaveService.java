@@ -6,6 +6,7 @@ import java.util.Optional;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,7 @@ public class GameSaveService {
     private void configureObjectMapper(ObjectMapper mapper) {
         mapper.registerModule(new JavaTimeModule());
         mapper.addMixIn(letrain.mvp.Model.class, ModelMixin.class);
-        mapper.addMixIn(letrain.vehicle.impl.rail.Train.class, TrainMixin.class);
+        mapper.addMixIn(Train.class, TrainMixin.class);
         mapper.addMixIn(letrain.itinerary.Waypoint.class, WaypointMixin.class);
         mapper.addMixIn(letrain.itinerary.impl.WaypointImpl.class, WaypointMixin.class);
         mapper.addMixIn(letrain.itinerary.Itinerary.class, ItineraryMixin.class);

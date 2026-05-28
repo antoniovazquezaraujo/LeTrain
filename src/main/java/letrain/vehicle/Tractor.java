@@ -1,4 +1,4 @@
-package letrain.vehicle.impl;
+package letrain.vehicle;
 
 import letrain.map.Reversible;
 

@@ -10,7 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import letrain.segments.BlockManager;
 import letrain.segments.Segment;
-import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.rail.impl.Train;
 
 public class BlockManagerImpl implements BlockManager {
     // Mapa de segmento -> lista de trenes dueños

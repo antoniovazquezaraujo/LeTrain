@@ -6,6 +6,7 @@ import java.io.Serializable;
 
 import letrain.map.Point;
 import letrain.utils.SerializationHelper;
+import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
@@ -111,11 +112,11 @@ public class RailSemaphore implements Renderable, Serializable {
         return this.id;
     }
 
-    public void onEnterTrain(letrain.vehicle.impl.rail.Train train) {
+    public void onEnterTrain(Train train) {
         onEnterTrain(train, calculateIsForward(train));
     }
 
-    public void onEnterTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
+    public void onEnterTrain(Train train, boolean isForward) {
         if (listeners != null) {
             for (SemaphoreEventListener listener : listeners) {
                 listener.onEnterTrain(train, isForward);
@@ -128,11 +129,11 @@ public class RailSemaphore implements Renderable, Serializable {
         }
     }
 
-    public void onExitTrain(letrain.vehicle.impl.rail.Train train) {
+    public void onExitTrain(Train train) {
         onExitTrain(train, calculateIsForward(train));
     }
 
-    public void onExitTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
+    public void onExitTrain(Train train, boolean isForward) {
         if (listeners != null) {
             for (SemaphoreEventListener listener : listeners) {
                 listener.onExitTrain(train, isForward);
@@ -145,7 +146,7 @@ public class RailSemaphore implements Renderable, Serializable {
         }
     }
 
-    private boolean calculateIsForward(letrain.vehicle.impl.rail.Train train) {
+    private boolean calculateIsForward(Train train) {
         boolean isForward = true;
         if (creationDir != null && train.getDirectorLinker() != null) {
             isForward = (train.getDirectorLinker().getRealDir() == creationDir);

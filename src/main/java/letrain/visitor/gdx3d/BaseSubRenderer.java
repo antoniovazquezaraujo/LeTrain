@@ -5,6 +5,9 @@ import java.util.List;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import letrain.mvp.Model;
+import letrain.vehicle.Cursor;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Wagon;
 import letrain.visitor.Visitor;
 
 /**
@@ -69,9 +72,9 @@ public abstract class BaseSubRenderer implements Visitor {
     @Override public void visitRailTrack(letrain.track.rail.RailTrack track) {}
     @Override public void visitForkRailTrack(letrain.track.rail.ForkRailTrack track) {}
     @Override public void visitTunnelRailTrack(letrain.track.rail.TunnelRailTrack track) {}
-    @Override public void visitLocomotive(letrain.vehicle.impl.rail.Locomotive locomotive) {}
-    @Override public void visitWagon(letrain.vehicle.impl.rail.Wagon wagon) {}
-    @Override public void visitCursor(letrain.vehicle.impl.Cursor cursor) {}
+    @Override public void visitLocomotive(Locomotive locomotive) {}
+    @Override public void visitWagon(Wagon wagon) {}
+    @Override public void visitCursor(Cursor cursor) {}
     @Override public void visitSensor(letrain.track.Sensor sensor) {}
     @Override public void visitSemaphore(letrain.track.RailSemaphore semaphore) {}
     @Override public void visitStation(letrain.track.Station station) {}

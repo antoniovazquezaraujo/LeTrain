@@ -14,8 +14,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import letrain.mvp.impl.Model;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
-import letrain.vehicle.impl.rail.Train;
-import letrain.vehicle.impl.rail.TrainEventListener;
+import letrain.vehicle.rail.impl.*;
+import letrain.vehicle.rail.TrainEventListener;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +40,7 @@ class SerializationTest {
 
     private void registerMixins(ObjectMapper mapper) {
         mapper.addMixIn(letrain.mvp.Model.class, letrain.mvp.impl.ModelMixin.class);
-        mapper.addMixIn(letrain.vehicle.impl.rail.Train.class, letrain.mvp.impl.TrainMixin.class);
+        mapper.addMixIn(Train.class, letrain.mvp.impl.TrainMixin.class);
         mapper.addMixIn(letrain.itinerary.Waypoint.class, letrain.mvp.impl.WaypointMixin.class);
         mapper.addMixIn(letrain.itinerary.impl.WaypointImpl.class, letrain.mvp.impl.WaypointMixin.class);
         mapper.addMixIn(letrain.itinerary.Itinerary.class, letrain.mvp.impl.ItineraryMixin.class);
@@ -309,9 +309,9 @@ class SerializationTest {
     @DisplayName("Unlink removes only selected side and preserves opposite side")
     void testUnlinkRespectsSideIsolation() {
         Train train = new Train(500);
-        letrain.vehicle.impl.rail.Locomotive loco = new letrain.vehicle.impl.rail.Locomotive(1, 'L');
-        letrain.vehicle.impl.rail.Wagon frontWagon = new letrain.vehicle.impl.rail.Wagon();
-        letrain.vehicle.impl.rail.Wagon backWagon = new letrain.vehicle.impl.rail.Wagon();
+        Locomotive loco = new Locomotive(1, 'L');
+        Wagon frontWagon = new Wagon();
+        Wagon backWagon = new Wagon();
 
         train.pushBack(loco);
         train.pushBack(backWagon);
@@ -352,7 +352,7 @@ class SerializationTest {
 
         // Build AutoPilot
         letrain.itinerary.impl.AutoPilotImpl ap = new letrain.itinerary.impl.AutoPilotImpl(
-            new letrain.vehicle.impl.rail.TrainAutoPilotContext(original), original
+            new TrainAutoPilotContext(original), original
         );
         ap.setItinerary(itinerary);
         ap.setWaitTicks(42);

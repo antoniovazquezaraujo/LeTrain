@@ -13,6 +13,7 @@ import letrain.map.impl.ForkRouter;
 import letrain.track.ForkEventListener;
 import letrain.utils.Pair;
 import letrain.utils.SerializationHelper;
+import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.Visitor;
 
 public class ForkRailTrack extends RailTrack implements DynamicRouter {
@@ -82,12 +83,12 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
         this.locked = locked;
     }
 
-    public void onEnterTrain(letrain.vehicle.impl.rail.Train train) {
+    public void onEnterTrain(Train train) {
         onEnterTrain(train, calculateIsForward(train));
         train.notifyForkEntry(this);
     }
 
-    public void onEnterTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
+    public void onEnterTrain(Train train, boolean isForward) {
         if (listeners != null) {
             for (ForkEventListener listener : listeners) {
                 listener.onEnterTrain(train, isForward);
@@ -100,11 +101,11 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
         }
     }
 
-    public void onExitTrain(letrain.vehicle.impl.rail.Train train) {
+    public void onExitTrain(Train train) {
         onExitTrain(train, calculateIsForward(train));
     }
 
-    public void onExitTrain(letrain.vehicle.impl.rail.Train train, boolean isForward) {
+    public void onExitTrain(Train train, boolean isForward) {
         if (listeners != null) {
             for (ForkEventListener listener : listeners) {
                 listener.onExitTrain(train, isForward);
@@ -117,7 +118,7 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
         }
     }
 
-    private boolean calculateIsForward(letrain.vehicle.impl.rail.Train train) {
+    private boolean calculateIsForward(Train train) {
         if (train.getDirectorLinker() == null) {
             return true;
         }

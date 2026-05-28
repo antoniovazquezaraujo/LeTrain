@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import letrain.mvp.Model;
 import letrain.utils.PathGeometry;
+import letrain.vehicle.rail.impl.Locomotive;
 
 /**
  * Se encarga de gestionar la cámara 3D (modos ORBIT, CAB, MAP) a partir del
@@ -134,7 +135,7 @@ public class CameraController {
                 || model.getMode() == letrain.mvp.Model.GameMode.LINK
                 || model.getMode() == letrain.mvp.Model.GameMode.UNLINK)
                 && model.getSelectedLocomotive() != null) {
-            letrain.vehicle.impl.rail.Locomotive selected = model.getSelectedLocomotive();
+            Locomotive selected = model.getSelectedLocomotive();
             Vector2 interpPos = getInterpolatedPosition(selected, alpha);
             targetX = interpPos.x + 0.5f;
             targetZ = interpPos.y + 0.5f;
@@ -172,7 +173,7 @@ public class CameraController {
     }
 
     private void updateCabCamera(float alpha) {
-        letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
+        Locomotive loco = model.getSelectedLocomotive();
         if (loco == null && !model.getLocomotives().isEmpty()) {
             loco = model.getLocomotives().get(0);
         }
@@ -225,7 +226,7 @@ public class CameraController {
         cam.up.set(0, 0, -1);
     }
 
-    private Vector2 getInterpolatedPosition(letrain.vehicle.impl.rail.Locomotive locomotive, float alpha) {
+    private Vector2 getInterpolatedPosition(Locomotive locomotive, float alpha) {
         float x = locomotive.getPosition().getX();
         float y = locomotive.getPosition().getY();
         Vector3 outPos = new Vector3();
@@ -246,7 +247,7 @@ public class CameraController {
             letrain.track.Track currentTrack = locomotive.getTrack();
             letrain.track.Track nextTrack = (currentTrack != null) ? currentTrack.getConnected(locomotive.getDir()) : null;
             if (nextTrack != null) {
-                letrain.vehicle.impl.Linker occupyingL = nextTrack.getLinker();
+                letrain.vehicle.rail.Linker occupyingL = nextTrack.getLinker();
                 if (occupyingL != null && occupyingL.getTrain() != locomotive.getTrain()) {
                     canEnterNext = false;
                 }

@@ -23,8 +23,8 @@ import letrain.track.rail.RailTrack;
 import letrain.track.rail.StationRailTrack;
 import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
-import letrain.vehicle.impl.Cursor;
-import letrain.vehicle.impl.Cursor.CursorMode;
+import letrain.vehicle.Cursor;
+import letrain.vehicle.Cursor.CursorMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -528,7 +528,7 @@ public class RailTrackMaker {
         // REGLA DE LOS 45 GRADOS: Prohibido curvas de más de 1 paso angular.
         if (oldDir != null && dir != null) {
             if (Math.abs(oldDir.inverse().angularDistance(dir)) > 1) {
-                log.warn("Illegal rail curvature attempted: > 45 degrees. Aborting placement.");
+                log.warn("Illegal rail2 curvature attempted: > 45 degrees. Aborting placement.");
                 return false;
             }
             track.addRoute(oldDir, dir);

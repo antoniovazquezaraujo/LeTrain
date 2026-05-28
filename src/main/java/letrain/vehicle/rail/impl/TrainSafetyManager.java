@@ -1,4 +1,4 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.impl;
 
 import java.util.HashSet;
 import java.util.List;
@@ -11,16 +11,14 @@ import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.impl.Linker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import letrain.vehicle.rail.Linker;
+import letrain.vehicle.rail.RailIterator;
 
 /**
  * Gestor de seguridad y cantones del tren.
  * Controla bloqueos exclusivos y paradas automáticas por invasión de segmento.
  */
-public class TrainSafetyManager {
-    private static final Logger log = LoggerFactory.getLogger(TrainSafetyManager.class);
+public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManager {
 
     private final Train train;
     private Segment currentSegment;
@@ -36,6 +34,7 @@ public class TrainSafetyManager {
      * Calcula dinámicamente si el tren tiene permiso de movimiento.
      * Un tren manual siempre tiene permiso.
      */
+    @Override
     public boolean hasPermissionToMove() {
         if (!train.isAutoMode()) {
             return true;
@@ -47,18 +46,22 @@ public class TrainSafetyManager {
         return !isWaitingForBlock;
     }
 
+    @Override
     public Segment getCurrentSegment() {
         return currentSegment;
     }
 
+    @Override
     public Segment getNextSegment() {
         return nextSegment;
     }
 
+    @Override
     public boolean isWaitingForBlock() {
         return isWaitingForBlock;
     }
 
+    @Override
     public void forceSegmentReset() {
         this.currentSegment = null;
         this.nextSegment = null;
@@ -68,6 +71,7 @@ public class TrainSafetyManager {
      * Forzado de parada de emergencia y desactivación del piloto automático
      * en caso de invasión o conflicto de segmento.
      */
+    @Override
     public void forceEmergencyStop() {
         if (train.isAutoMode()) {
             this.isWaitingForBlock = false; // Permitimos movimiento manual
@@ -85,6 +89,7 @@ public class TrainSafetyManager {
      * Reclama y reserva todos los segmentos ocupados físicamente por el tren.
      * Se llama al inicializar el mapa (Tabula Rasa) o al cargar partida.
      */
+    @Override
     public void claimOccupiedSegments(Model model) {
         BlockManager bm = model.getBlockManager();
         RailwayGraph graph = model.getRailwayGraph();
@@ -122,6 +127,7 @@ public class TrainSafetyManager {
     /**
      * Reserva el segmento actual y el siguiente al iniciar marcha.
      */
+    @Override
     public void acquireInitialLocks(Model model) {
         BlockManager bm = model.getBlockManager();
         RailwayGraph graph = model.getRailwayGraph();
@@ -188,6 +194,7 @@ public class TrainSafetyManager {
     /**
      * Entrada física a un nuevo segmento.
      */
+    @Override
     public void onSegmentEntered(Model model, Segment newSegment) {
         BlockManager bm = model.getBlockManager();
         RailwayGraph graph = model.getRailwayGraph();
@@ -243,6 +250,7 @@ public class TrainSafetyManager {
     /**
      * Despertar reactivo (Block Released).
      */
+    @Override
     public void wakeUp(Model model) {
         if (train.isAutoMode() && isWaitingForBlock && nextSegment != null) {
             BlockManager bm = model.getBlockManager();
@@ -258,6 +266,7 @@ public class TrainSafetyManager {
     /**
      * Inversión de marcha.
      */
+    @Override
     public void onReverse(Model model) {
         BlockManager bm = model.getBlockManager();
         RailwayGraph graph = model.getRailwayGraph();
@@ -292,7 +301,8 @@ public class TrainSafetyManager {
         }
     }
 
-    private Segment findNextSegment(Linker head, RailwayGraph graph) {
+    @Override
+    public Segment findNextSegment(Linker head, RailwayGraph graph) {
         letrain.itinerary.AutoPilot ap = train.getAutopilot();
         if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
             // Consultamos la ruta real planificada del piloto automático
@@ -305,7 +315,8 @@ public class TrainSafetyManager {
         return findNextSegmentTopological(head, graph);
     }
 
-    private void releaseOldSegments(BlockManager bm, RailwayGraph graph) {
+    @Override
+    public void releaseOldSegments(BlockManager bm, RailwayGraph graph) {
         Set<Segment> physicallyOccupied = new HashSet<>();
         for (Linker l : train.getLinkers()) {
             if (l.getTrack() instanceof RailTrack) {
@@ -328,7 +339,8 @@ public class TrainSafetyManager {
         }
     }
 
-    private Segment findNextSegmentTopological(Linker head, RailwayGraph graph) {
+    @Override
+    public Segment findNextSegmentTopological(Linker head, RailwayGraph graph) {
         if (!(head.getTrack() instanceof RailTrack)) {
             return null;
         }
@@ -343,7 +355,7 @@ public class TrainSafetyManager {
 
         // 2. Avanzar virtualmente por las vías físicas en la dirección del movimiento
         // hasta encontrar un cantón diferente al actual (respeta desvíos y curvas).
-        letrain.vehicle.impl.RailIterator it = new letrain.vehicle.impl.RailIterator(headTrack, exitDir);
+        RailIterator it = new RailIterator(headTrack, exitDir);
         int maxIterations = 10000; // Evita bucles infinitos en circuitos cerrados puros
         while (it.advance() && maxIterations-- > 0) {
             Track t = it.getTrack();

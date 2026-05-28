@@ -14,11 +14,11 @@ import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.impl.Cursor;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
-import letrain.vehicle.impl.rail.TrainEventListener;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.Cursor;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.impl.Wagon;
 
 public interface Model {
 

@@ -1,4 +1,4 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.impl;
 
 import java.time.LocalDateTime;
 import java.util.Deque;
@@ -24,9 +24,10 @@ import letrain.track.rail.RailTrack;
 import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
 import letrain.vehicle.Transportable;
-import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.Tractor;
-import letrain.vehicle.impl.Trailer;
+import letrain.vehicle.rail.Linker;
+import letrain.vehicle.Tractor;
+import letrain.vehicle.rail.Trailer;
+import letrain.vehicle.rail.TrainEventListener;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 import org.slf4j.Logger;
@@ -54,13 +55,13 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     protected Deque<Linker> linkers;
     private transient letrain.mvp.Model model;
     protected final TrainCouplingManager trainCouplingManager = new TrainCouplingManager(this);
-    private TrainLogisticsManager logisticsManager = new TrainLogisticsManager();
-    private final transient TrainMovementManager movementManager = new TrainMovementManager(this);
-    private transient TrainSafetyManager safetyManager = new TrainSafetyManager(this);
+    private letrain.vehicle.rail.TrainLogisticsManager logisticsManager = new TrainLogisticsManager();
+    private final transient letrain.vehicle.rail.TrainMovementManager movementManager = new TrainMovementManager(this);
+    private transient letrain.vehicle.rail.TrainSafetyManager safetyManager = new TrainSafetyManager(this);
     private letrain.itinerary.AutoPilot autopilot;
     int railStationId = 0;
     private boolean stalled = false;
-    Trip trip;
+    letrain.vehicle.rail.Trip trip;
 
     protected Tractor directorLinker;
     private transient boolean isNotifying = false;
@@ -94,7 +95,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     }
 
     // SafetyManager //////////////////////////////////////////////////////////
-    public TrainSafetyManager getSafetyManager() {
+    public letrain.vehicle.rail.TrainSafetyManager getSafetyManager() {
         return safetyManager;
     }
 
@@ -857,7 +858,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return stop;
     }
 
-    public Trip getTrip() {
+    public letrain.vehicle.rail.Trip getTrip() {
         return this.trip;
     }
 

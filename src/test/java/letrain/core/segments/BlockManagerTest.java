@@ -13,7 +13,7 @@ import letrain.segments.PathStep;
 import letrain.segments.RailNode;
 import letrain.segments.Segment;
 import letrain.segments.impl.BlockManagerImpl;
-import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

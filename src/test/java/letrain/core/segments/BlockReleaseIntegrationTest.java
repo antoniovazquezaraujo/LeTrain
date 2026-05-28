@@ -11,8 +11,8 @@ import letrain.mvp.impl.Model;
 import letrain.segments.BlockManager;
 import letrain.segments.Segment;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.Test;
 
 public class BlockReleaseIntegrationTest {

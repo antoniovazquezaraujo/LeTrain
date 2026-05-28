@@ -28,6 +28,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.utils.FontManager;
+import letrain.vehicle.rail.impl.Locomotive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -413,7 +414,7 @@ public class Gdx3DHud {
             balanceLabel.setText(String.format("%s$ %,d[]", balanceColorMark, balance));
         }
 
-        letrain.vehicle.impl.rail.Locomotive loco = model.getSelectedLocomotive();
+        Locomotive loco = model.getSelectedLocomotive();
         if (loco != null) {
             // Update Notch Lever
             notchLever.setVisible(true);

@@ -1,4 +1,4 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.rail2;
 
 import static org.mockito.Mockito.when;
 
@@ -8,6 +8,7 @@ import letrain.mvp.Model;
 import letrain.segments.BlockManager;
 import letrain.segments.Segment;
 import letrain.segments.impl.BlockManagerImpl;
+import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 

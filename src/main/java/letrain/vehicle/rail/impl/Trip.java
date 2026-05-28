@@ -1,20 +1,13 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.impl;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-public class Trip {
+public class Trip implements letrain.vehicle.rail.Trip {
     @com.fasterxml.jackson.annotation.JsonProperty("stops")
     private List<Stop> stops;
-
-    public enum TripState {
-        CONSTRUCTED,
-        STARTING,
-        STOPPING,
-        AT_END
-    }
 
     @com.fasterxml.jackson.annotation.JsonProperty("state")
     private TripState state;
@@ -24,15 +17,18 @@ public class Trip {
         this.state = TripState.CONSTRUCTED;
     }
 
+    @Override
     public void setStops(List<Stop> stops) {
         this.stops = stops != null ? stops : new ArrayList<>();
     }
 
+    @Override
     public void setState(TripState state) {
         this.state = state;
     }
 
     @com.fasterxml.jackson.annotation.JsonIgnore
+    @Override
     public Stop getFirstStop() {
         if (stops == null || stops.isEmpty()) {
             return null;
@@ -40,6 +36,7 @@ public class Trip {
         return stops.get(0);
     }
 
+    @Override
     public void addStop(Stop stop) {
         if (stops == null) {
             stops = new ArrayList<>();
@@ -61,6 +58,7 @@ public class Trip {
         }
     }
 
+    @Override
     public void restart(Stop stop) {
         if (stops != null) {
             stops.clear();
@@ -71,11 +69,13 @@ public class Trip {
     }
 
     @com.fasterxml.jackson.annotation.JsonIgnore
+    @Override
     public List<Stop> getStopsList() {
         return stops;
     }
 
     @com.fasterxml.jackson.annotation.JsonIgnore
+    @Override
     public Stream<Stop> getStops() {
         if (stops == null) {
             stops = new ArrayList<>();
@@ -83,6 +83,7 @@ public class Trip {
         return stops.stream();
     }
 
+    @Override
     public TripState getState() {
         return this.state;
     }

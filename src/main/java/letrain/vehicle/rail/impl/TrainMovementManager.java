@@ -1,4 +1,4 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.impl;
 
 import java.util.ArrayList;
 import java.util.Deque;
@@ -13,9 +13,7 @@ import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.Destructible;
-import letrain.vehicle.impl.Linker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import letrain.vehicle.rail.Linker;
 
 /**
  * Extracted from Train.java (~247 lines) to keep the train class focused.
@@ -35,8 +33,7 @@ import org.slf4j.LoggerFactory;
  * After a successful move, an immediate post-move check detects
  * train-to-train collisions and dead-end impacts.
  */
-public class TrainMovementManager {
-    private static final Logger log = LoggerFactory.getLogger(TrainMovementManager.class);
+public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementManager {
 
     private final Train train;
 
@@ -44,8 +41,7 @@ public class TrainMovementManager {
         this.train = train;
     }
 
-    // ── moved from Train.moveLinkers() ──────────────────────────────────
-
+    @Override
     public boolean moveLinkers(boolean isNormalSense) {
         Deque<Linker> linkers = train.getLinkers();
         if (linkers.isEmpty()) {
@@ -262,39 +258,8 @@ public class TrainMovementManager {
         return true;
     }
 
-    private void correctDirection(Linker linker) {
-        if (linker == null) return;
-        Track t = linker.getTrack();
-        Dir d = linker.getDir();
-        if (t == null || t.getConnected(d) != null) return;
-        // Skip the entry direction (where we came from) — pick the exit
-        Dir entryDir = linker.getEntryDir();
-        for (Dir conn : t.getConnections()) {
-            if (conn != entryDir && t.getConnected(conn) != null) {
-                linker.setDir(conn);
-                return;
-            }
-        }
-        // Fallback: just pick any connected direction
-        for (Dir conn : t.getConnections()) {
-            if (t.getConnected(conn) != null) {
-                linker.setDir(conn);
-                return;
-            }
-        }
-    }
-
-    // ── moved from Train.clearReservations() ────────────────────────────
-
-    private void clearReservations(List<Track> reservedTracks) {
-        for (Track t : reservedTracks) {
-            t.setReservation(null);
-        }
-    }
-
-    // ── moved from Train.crash() ────────────────────────────────────────
-
-    private void crash(Linker linker, int speed) {
+    @Override
+    public void crash(Linker linker, int speed) {
         Point crashPos = linker.getPosition();
         boolean alreadyDestroying = false;
         for (Linker l : train.getLinkers()) {
@@ -350,4 +315,35 @@ public class TrainMovementManager {
             linker.destroy();
         }
     }
+
+    @Override
+    public void correctDirection(Linker linker) {
+        if (linker == null) return;
+        Track t = linker.getTrack();
+        Dir d = linker.getDir();
+        if (t == null || t.getConnected(d) != null) return;
+        // Skip the entry direction (where we came from) — pick the exit
+        Dir entryDir = linker.getEntryDir();
+        for (Dir conn : t.getConnections()) {
+            if (conn != entryDir && t.getConnected(conn) != null) {
+                linker.setDir(conn);
+                return;
+            }
+        }
+        // Fallback: just pick any connected direction
+        for (Dir conn : t.getConnections()) {
+            if (t.getConnected(conn) != null) {
+                linker.setDir(conn);
+                return;
+            }
+        }
+    }
+
+    @Override
+    public void clearReservations(List<Track> reservedTracks) {
+        for (Track t : reservedTracks) {
+            t.setReservation(null);
+        }
+    }
+
 }

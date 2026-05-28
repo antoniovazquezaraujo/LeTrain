@@ -15,7 +15,7 @@ import letrain.map.Mappable;
 import letrain.map.Point;
 import letrain.map.Router;
 import letrain.utils.Pair;
-import letrain.vehicle.impl.Linker;
+import letrain.vehicle.rail.Linker;
 import letrain.visitor.Renderable;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")

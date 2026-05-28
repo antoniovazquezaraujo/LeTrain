@@ -1,4 +1,4 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.rail2;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -18,7 +18,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.track.Track;
-import letrain.vehicle.impl.Linker;
+import letrain.vehicle.rail.Linker;
+import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

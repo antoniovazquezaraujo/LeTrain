@@ -9,11 +9,11 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import letrain.track.CargoTypes;
 import letrain.utils.PathGeometry;
-import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.Tractor;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.rail.Linker;
+import letrain.vehicle.Tractor;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.Wagon;
 
 public class VehicleRenderer extends BaseSubRenderer {
 
@@ -92,7 +92,7 @@ public class VehicleRenderer extends BaseSubRenderer {
                 while (lookTrack != null) {
                     letrain.track.Track nextTrack = lookTrack.getConnected(lookDir);
                     if (nextTrack == null) break;
-                    letrain.vehicle.impl.Linker occupyingL = nextTrack.getLinker();
+                    letrain.vehicle.rail.Linker occupyingL = nextTrack.getLinker();
                     if (occupyingL == null) break; // free cell
                     if (occupyingL.getTrain() != train) {
                         canEnterNext = false; // different train blocks the chain
@@ -271,7 +271,7 @@ public class VehicleRenderer extends BaseSubRenderer {
                 while (lookTrack != null) {
                     letrain.track.Track nextTrack = lookTrack.getConnected(lookDir);
                     if (nextTrack == null) break;
-                    letrain.vehicle.impl.Linker occupyingL = nextTrack.getLinker();
+                    letrain.vehicle.rail.Linker occupyingL = nextTrack.getLinker();
                     if (occupyingL == null) break; // free cell
                     if (occupyingL.getTrain() != train) {
                         canEnterNext = false; // different train blocks the chain

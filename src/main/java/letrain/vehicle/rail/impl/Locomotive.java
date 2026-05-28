@@ -1,8 +1,8 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.impl;
 
 import letrain.map.Dir;
-import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.Tractor;
+import letrain.vehicle.rail.Linker;
+import letrain.vehicle.Tractor;
 import letrain.visitor.Visitor;
 
 /**
@@ -139,7 +139,7 @@ public class Locomotive extends Linker implements Tractor {
                 return moved;
             }
 
-            // We apply sound-driven speed primarily on rail boundaries to avoid visual jump
+            // We apply sound-driven speed primarily on rail2 boundaries to avoid visual jump
             // glitches.
             // But if we are parked at 0, we can safely apply it immediately to jumpstart
             // the motor.
@@ -166,7 +166,7 @@ public class Locomotive extends Linker implements Tractor {
                     moved = true;
                     incDistanceTraveled();
 
-                    // Apply mid-movement acoustic gear shifts exactly on rail boundaries
+                    // Apply mid-movement acoustic gear shifts exactly on rail2 boundaries
                     // to prevent visual interpolation snapping (jumping backwards)
                     if (acousticSpeedSignal != -1) {
                         if (currentSpeed != acousticSpeedSignal

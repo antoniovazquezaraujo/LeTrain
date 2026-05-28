@@ -1,4 +1,4 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.rail2;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -15,15 +15,16 @@ import static org.mockito.Mockito.when;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.track.Track;
-import letrain.vehicle.Destructible;
-import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.Tractor;
+import letrain.vehicle.rail.Linker;
 
 @DisplayName("Train.moveLinkers() — Dead-end crash/contact tests")
 class TrainDeadEndCrashTest {

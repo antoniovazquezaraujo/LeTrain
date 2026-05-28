@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import letrain.map.Dir;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.Tracker;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.rail.Linker;
+import letrain.vehicle.Tracker;
+import letrain.vehicle.rail.impl.Wagon;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

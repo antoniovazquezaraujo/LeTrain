@@ -16,7 +16,7 @@ We have successfully completed the refactoring of the LeTrain train safety syste
 *   Instead of blindly checking `head.getDir()`, the system now uses `head.getRealDir()`, which is a polymorphic method in [Tracker.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/Tracker.java#L24-L30) that dynamically retrieves the correct physical exit direction based on the locomotive's orientation and track connectivity.
 
 ### 3. Dynamic Node & Canton Detection (`RailIterator`)
-*   Reintroduced a path-crawling route estimation method using `letrain.vehicle.impl.RailIterator`.
+*   Reintroduced a path-crawling route estimation method using `letrain.vehicle.rail.RailIterator`.
 *   Removed the static and fragile fallback to logical next steps index zero (`nextSteps.get(0)`).
 *   The system now virtually crawls forward from the locomotive using the current active route and actual physical switches/junctions. It reads the real-time physical switch states (main or alternative) of desvíos/forks along the path to accurately predict the next segment the train is heading towards.
 

@@ -14,6 +14,9 @@ import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
 import letrain.utils.Pair;
 import letrain.utils.PathGeometry;
+import letrain.vehicle.Cursor;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
 
 public class InfrastructureRenderer extends BaseSubRenderer {
     private final TrackRenderer trackRenderer;
@@ -236,8 +239,8 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
         boolean isActionActive = false;
         if (modelRef != null && station != null) {
-            for (letrain.vehicle.impl.rail.Locomotive loc : modelRef.getLocomotives()) {
-                letrain.vehicle.impl.rail.Train train = loc.getTrain();
+            for (Locomotive loc : modelRef.getLocomotives()) {
+                Train train = loc.getTrain();
                 if (train != null && train.isLoading()) {
                     if (train.getStationAtTrain() == station) {
                         isActionActive = true;
@@ -345,7 +348,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
     }
 
     @Override
-    public void visitCursor(letrain.vehicle.impl.Cursor cursor) {
+    public void visitCursor(Cursor cursor) {
         com.badlogic.gdx.graphics.Color color = com.badlogic.gdx.graphics.Color.YELLOW;
         switch (cursor.getMode()) {
             case DRAWING:

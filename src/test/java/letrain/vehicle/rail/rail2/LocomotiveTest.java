@@ -1,5 +1,6 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.rail2;
 
+import letrain.vehicle.rail.impl.Locomotive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;

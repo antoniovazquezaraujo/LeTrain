@@ -1,4 +1,6 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail;
+
+import letrain.vehicle.rail.impl.Train;
 
 import java.io.Serializable;
 

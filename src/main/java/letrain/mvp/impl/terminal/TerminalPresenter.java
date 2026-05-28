@@ -31,10 +31,11 @@ import letrain.mvp.impl.SimulationController;
 import letrain.track.CargoTypes;
 import letrain.track.Station;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.rail.Linker;
+import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.Wagon;
 import letrain.visitor.terminal.InfoVisitor;
 import letrain.visitor.terminal.RenderVisitor;
 import org.antlr.v4.runtime.CharStream;
@@ -42,7 +43,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TerminalPresenter implements letrain.mvp.Presenter, letrain.vehicle.impl.rail.TrainEventListener {
+public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListener {
     Logger log = LoggerFactory.getLogger(TerminalPresenter.class);
 
     Model model;
@@ -366,7 +367,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, letrain.vehicle
                     // Unified Industrial Action (Space bar)
                     Station selectedStation = model.getSelectedStation();
                     if (selectedStation != null) {
-                        letrain.vehicle.impl.Linker linker = selectedStation.getTrack().getLinker();
+                        letrain.vehicle.rail.Linker linker = selectedStation.getTrack().getLinker();
                         if (linker != null && linker.getTrain() != null) {
                             linker.getTrain().performIndustrialAction(selectedStation);
                         }
@@ -547,11 +548,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, letrain.vehicle
 
         letrain.track.rail.RailTrack track = model.getRailMap().getTrackAt(model.getCursor().getPosition());
         if (track != null && track.getLinker() != null) {
-            letrain.vehicle.impl.Linker linker = track.getLinker();
-            if (linker instanceof letrain.vehicle.impl.rail.Locomotive) {
-                model.removeLocomotive((letrain.vehicle.impl.rail.Locomotive) linker);
-            } else if (linker instanceof letrain.vehicle.impl.rail.Wagon) {
-                model.removeWagon((letrain.vehicle.impl.rail.Wagon) linker);
+            letrain.vehicle.rail.Linker linker = track.getLinker();
+            if (linker instanceof Locomotive) {
+                model.removeLocomotive((Locomotive) linker);
+            } else if (linker instanceof Wagon) {
+                model.removeWagon((Wagon) linker);
             }
             track.removeLinker();
 
