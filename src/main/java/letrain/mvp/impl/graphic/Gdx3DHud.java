@@ -1,8 +1,11 @@
 package letrain.mvp.impl.graphic;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -28,11 +31,6 @@ import letrain.utils.FontManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-
 public class Gdx3DHud {
     private static final Logger log = LoggerFactory.getLogger(Gdx3DHud.class);
 
@@ -46,7 +44,7 @@ public class Gdx3DHud {
     private Label balanceLabel;
     private Label incomeLabel;
     private Label expensesLabel;
-    private Label shuntingLabel;
+
     private NotchLever notchLever;
     private ShapeRenderer shapeRenderer;
     private Label ideLogContent;
@@ -313,12 +311,12 @@ public class Gdx3DHud {
 
         bottomContainer.add(financeArea).width(200).left().bottom().padLeft(20).padRight(20);
 
-        shuntingLabel = new Label("[RED]SHUNTING[]", skin, "medium");
-        shuntingLabel.setVisible(false);
+
+
 
         Table labelArea = new Table();
         labelArea.add(menuTable).padBottom(5).row();
-        labelArea.add(shuntingLabel).padBottom(5).row();
+
         labelArea.add(descLabel).fillX().expandX().padBottom(2).row();
         labelArea.add(globalHelpLabel).fillX().expandX().padBottom(2).row();
 
@@ -422,11 +420,9 @@ public class Gdx3DHud {
             notchLever.setNotch(loco.getSpeed());
             notchLever.setTargetNotch(loco.getTargetSpeed());
             
-            // Show shunting indicator
-            shuntingLabel.setVisible(loco.getTrain().isShuntingMode());
         } else {
             notchLever.setVisible(false);
-            shuntingLabel.setVisible(false);
+
         }
 
         // Marcamos el botón seleccionado según el modo y actualizamos textos

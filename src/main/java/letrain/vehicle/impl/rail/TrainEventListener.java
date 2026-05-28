@@ -21,10 +21,10 @@ public interface TrainEventListener extends Serializable {
     default public void onContact(Train train, letrain.map.Point pos, int speed) {
     }
 
-    default public void onEnterTrain(Train train, boolean isForward) {
+    default public void onSensorEnter(Train train, boolean isForward) {
     }
 
-    default public void onExitTrain(Train train, boolean isForward) {
+    default public void onSensorExit(Train train, boolean isForward) {
     }
 
     default public void onSegmentOccupied(Train train, letrain.segments.Segment segment) {

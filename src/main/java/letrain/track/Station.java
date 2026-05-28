@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import letrain.utils.SerializationHelper;
 import letrain.vehicle.impl.rail.Train;
 import letrain.vehicle.impl.rail.TrainEventListener;
@@ -156,7 +156,7 @@ public class Station extends Sensor implements TrainEventListener {
 
     public Station() {
     }
- 
+
     public Station(int id) {
         super(id);
     }
@@ -173,16 +173,16 @@ public class Station extends Sensor implements TrainEventListener {
     }
 
     @Override
-    public void onEnterTrain(Train train, boolean isForward) {
-        super.onEnterTrain(train, isForward);
+    public void onSensorEnter(Train train, boolean isForward) {
+        super.onSensorEnter(train, isForward);
         train.setStationId(getId());
         train.addTrainEventListener(this);
         notifyStationEvent(train, true, isForward);
     }
 
     @Override
-    public void onExitTrain(Train train, boolean isForward) {
-        super.onExitTrain(train, isForward);
+    public void onSensorExit(Train train, boolean isForward) {
+        super.onSensorExit(train, isForward);
         train.setStationId(0);
         train.removeTrainEventListener(this);
         notifyStationEvent(train, false, isForward);

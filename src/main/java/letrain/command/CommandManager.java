@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import letrain.itinerary.Itinerary;
 import letrain.itinerary.Waypoint;
@@ -238,7 +237,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                 String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
                 model.addTrainEventListener(new letrain.vehicle.impl.rail.TrainEventListener() {
                     @Override
-                    public void onEnterTrain(Train train, boolean isForward) {
+                    public void onSensorEnter(Train train, boolean isForward) {
                         boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
                                 || (sense.equals("backward") && !isForward);
                         if ("enter".equals(event) && senseMatch
@@ -248,7 +247,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                     }
 
                     @Override
-                    public void onExitTrain(Train train, boolean isForward) {
+                    public void onSensorExit(Train train, boolean isForward) {
                         boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
                                 || (sense.equals("backward") && !isForward);
                         if ("exit".equals(event) && senseMatch

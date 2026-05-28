@@ -5,21 +5,21 @@ import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.utils.SerializationHelper;
 import letrain.vehicle.impl.rail.Train;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 @com.fasterxml.jackson.annotation.JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY, property = "@type")
 @com.fasterxml.jackson.annotation.JsonSubTypes({
-    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Sensor.class, name = "Sensor"),
-    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Station.class, name = "Station")
+        @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Sensor.class, name = "Sensor"),
+        @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Station.class, name = "Station")
 })
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class Sensor implements Renderable {
@@ -39,7 +39,7 @@ public class Sensor implements Renderable {
 
     public Sensor() {
     }
- 
+
     public void setTrack(Track track) {
         this.track = track;
     }
@@ -75,9 +75,13 @@ public class Sensor implements Renderable {
         return this.id;
     }
 
-    public String getName() { return name; }
+    public String getName() {
+        return name;
+    }
 
-    public void setName(String name) { this.name = name; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public Dir getSideDir() {
         return sideDir;
@@ -93,11 +97,11 @@ public class Sensor implements Renderable {
     }
 
     public void onEnterTrain(Train train) {
-        onEnterTrain(train, calculateIsForward(train));
+        onSensorEnter(train, calculateIsForward(train));
     }
 
-    public void onEnterTrain(Train train, boolean isForward) {
-        train.onEnterSensor(this, isForward);
+    public void onSensorEnter(Train train, boolean isForward) {
+        train.notifyEnterSensor(this, isForward);
         if (listeners != null) {
             for (SensorEventListener listener : listeners) {
                 listener.onEnterTrain(train, isForward);
@@ -111,11 +115,11 @@ public class Sensor implements Renderable {
     }
 
     public void onExitTrain(Train train) {
-        onExitTrain(train, calculateIsForward(train));
+        onSensorExit(train, calculateIsForward(train));
     }
 
-    public void onExitTrain(Train train, boolean isForward) {
-        train.onExitSensor(this, isForward);
+    public void onSensorExit(Train train, boolean isForward) {
+        train.notifyExitSensor(this, isForward);
         if (listeners != null) {
             for (SensorEventListener listener : listeners) {
                 listener.onExitTrain(train, isForward);

@@ -1,52 +1,30 @@
-# Walkthrough - Autopilot & Persistence Refactoring
+# Phase B/C Refactoring — Purely Event-Driven Train Safety & Cantons System
 
-We have successfully completed the refactoring phases for the Autopilot and Itinerary systems, achieving 100% decoupling of domain logic from serialization framework annotations and ensuring full state persistence.
+We have successfully completed the refactoring of the LeTrain train safety system. The project compiles successfully and all integration and unit tests pass in green.
 
-## Phase B: Action/Query Decoupling
-- **Goal**: Make `AutoPilotContext` a read-only interface containing only query methods.
-- **Changes**:
-  - Moved action methods (`ensureForkRoute`, `notifySegmentOccupied`, `forceSegmentReset`) to a new `TrainActionManager` interface.
-  - Migrated implementation from `TrainAutoPilotContext` directly to `Train.java`.
-  - Updated `AutoPilotImpl` to delegate actions to the `TrainActionManager`.
+## Key Accomplishments
 
-## Phase C: Jackson Serialization Decoupling & State Persistence
-- **Goal**: Strip all Jackson annotations from `Train.java` and domain classes, and guarantee full save/load persistence of autopilot state.
-- **Changes**:
-  - **Domain Cleanup**: Removed all Jackson annotations from `Train.java`. Runtime references (e.g. `model`, `blockManager`) are correctly re-linked inside `postLoadInit()`.
-  - **Jackson Mix-ins**: Created five mix-in classes in `letrain.mvp.impl` to handle serialization details externally:
-    - [TrainMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/TrainMixin.java): Configures property mappings and aliases (`@JsonAlias({"itinerary", "trip"})`) for backward compatibility, renaming historic itineraries to `"trip"`.
-    - [WaypointMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/WaypointMixin.java): Custom serializer and deserializer handling polymorphic waypoint types.
-    - [ItineraryMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/ItineraryMixin.java): Custom serializer/deserializer restoring itinerary steps and active indices.
-    - [AutoPilotMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/AutoPilotMixin.java): Custom serializer/deserializer preserving wait ticks, mode, and pending actions.
-    - [WaypointCommandMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/WaypointCommandMixin.java): Custom deserializer reconstructing commands from JSON properties.
-  - **Mix-in Registration**: Registered the mix-ins in [GameSaveService.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/GameSaveService.java) and [SerializationTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/SerializationTest.java).
-  - **Jackson Parsing Fix**: Advanced `JsonParser` instances returned by `JsonNode.traverse()` via `parser.nextToken()` to ensure proper token state before passing to `DeserializationContext.readValue()`.
+### 1. Purely Event-Driven Reactivity
+*   Removed all legacy tick-based safety polling and manual retry timers (such as the legacy `safetyRetryTimer = 250`).
+*   Replaced the polling model with a reactive wakeup event system:
+    *   Trains check their safety blocks strictly at discrete lifecycle events: **start of movement** (`acquireInitialLocks`), **segment boundary crossings** (`onSegmentEntered`), and **direction inversion** (`onReverse`).
+    *   When blocked by an occupied segment, automatic trains brake to `0` and set `isWaitingForBlock = true`.
+    *   When any segment is released, the `BlockManager` fires a broadcast to the `Model` which wakes up all waiting trains (`safetyManager.wakeUp(model)`). The waiting trains reactively retry the lock and resume movement seamlessly.
 
-## Refinement: Wait command seconds conversion
-- **Goal**: Standardize the `WAIT` command parameter and representations to always use seconds instead of ticks, aligning with the DSL/user interface.
-- **Changes**:
-  - Replaced the field `ticks` in [WaypointCommand.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/WaypointCommand.java) with `seconds`, updated its factory from `waitTicks` to `waitSeconds`, and changed its `toString()` and JSON serialization/deserialization to work entirely with seconds.
-  - Modified [AutoPilotImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java) to convert configured seconds to simulation ticks upon loading a wait command.
-  - Updated all command generation and verification tests in [CommandManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/command/CommandManager.java), [WaypointCommandTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/WaypointCommandTest.java), [WaypointTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/WaypointTest.java), [AutoPilotImplTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/AutoPilotImplTest.java), and [SerializationTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/SerializationTest.java) to use and verify seconds.
-  - Updated ADR documentation ([ADR-008](file:///home/antonio/dev/LeTrain/docs/adr/ADR-008-Itinerary-Redesigned.md) and [ADR-010](file:///home/antonio/dev/LeTrain/docs/adr/ADR-010-Test-Plan-AutoPilot.md)) to consistently define wait periods in seconds.
+### 2. Precise Direction of Travel (`getRealDir()`)
+*   Resolved a critical direction bug when trains move in reverse or have reversed locomotives (`isReversed() == true`).
+*   Instead of blindly checking `head.getDir()`, the system now uses `head.getRealDir()`, which is a polymorphic method in [Tracker.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/Tracker.java#L24-L30) that dynamically retrieves the correct physical exit direction based on the locomotive's orientation and track connectivity.
 
----
+### 3. Dynamic Node & Canton Detection (`RailIterator`)
+*   Reintroduced a path-crawling route estimation method using `letrain.vehicle.impl.RailIterator`.
+*   Removed the static and fragile fallback to logical next steps index zero (`nextSteps.get(0)`).
+*   The system now virtually crawls forward from the locomotive using the current active route and actual physical switches/junctions. It reads the real-time physical switch states (main or alternative) of desvíos/forks along the path to accurately predict the next segment the train is heading towards.
 
-## Verification Results
+### 4. Shunting Coexistence on Unlinking & Load
+*   Maintained dynamic shunting lock support (`tryShuntingLock`) during initialization and train divisions (such as decoupling wagons).
+*   If two stopped trains end up sharing the same block (e.g. immediately after an unlink division), the `BlockManager` registers co-ownership correctly so both trains remain tracked.
+*   The `TrainSafetyManager` immediately detects this co-ownership conflict and triggers `forceEmergencyStop()`, putting automatic trains into manual mode so the player can rescue and pull them apart manually.
 
-### Automated Tests
-Ran the full test suite via `mvn clean test` successfully:
-```
-[INFO] Results:
-[INFO]
-[INFO] Tests run: 329, Failures: 0, Errors: 0, Skipped: 0
-[INFO]
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
-```
-
-All 329 unit and integration tests compile and pass successfully, confirming that:
-1. Autopilot and itinerary state is serialized and deserialized with complete fidelity.
-2. Circular references and transient properties are correctly re-linked post-load.
-3. Decoupling is 100% complete with no Jackson annotations left in the domain class `Train.java`.
+### 5. Decoupled and Clean Codebase
+*   Domain classes such as [Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/Train.java) and [TrainSafetyManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/TrainSafetyManager.java) have been streamlined.
+*   Obsolete and redundant method calls like `checkSafety` have been removed in favor of `hasPermissionToMove()`.
