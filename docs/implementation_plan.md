@@ -1,93 +1,63 @@
-# Goal Description
+# Implementation Plan — Phase D: Dynamic Rerouting at Forks on Blocked Segments
 
-This implementation plan details the final phase (Phase C) of our Autopilot refactoring.
-The main goals are:
-1. **Save/Load Persistence**: Persist the autopilot state (including active itineraries, waypoint progress, wait ticks, and pending commands) across game saves/loads.
-2. **Decouple Serialization from Domain Classes**: Clean up `Train.java` by moving all Jackson annotations to a separate `TrainMixin.java` file.
-3. **JSON Property Naming Clean-up**: Rename the JSON property for the historical log from `"itinerary"` to `"trip"` in `Train`, adding alias support (`@JsonAlias`) for backward-compatibility with older save files.
-4. **Clean up Redundant Casts and Formatting**: Fix minor layout issues and unnecessary casts.
+## Goal Description
+When a train approaches a junction (Fork) and its next segment is occupied by another train, instead of coming to a full stop and waiting, the train should dynamically check if there is an alternative branch from the Fork that is free.
+*   **In Auto Mode (Autopilot)**: If the planned segment is blocked, calculate an alternative A* route starting from the alternative branch. If a valid route to the destination is found and the branch is free, flip the switch and steer the train along the new path without stopping.
+*   **In Manual Mode**: If the driver approaches a blocked segment at a Fork, automatically flip the switch to the free branch if available so the driver bypasses the occupied track.
+
+---
 
 ## User Review Required
 
-> [!NOTE]
-> **Backward Compatibility**: Older save files containing `"itinerary"` for the historic station log will still load successfully because we use `@JsonAlias({"itinerary", "trip"})` on the mix-in.
-> **AutoPilot Deserialization**: The pathfinder and context links are transient and circular. They will be automatically restored during the `postLoadInit()` lifecycle method.
+> [!IMPORTANT]
+> **Priority of Route vs Cooldown**: If the alternative A* path is significantly longer, the autopilot will still prefer it over waiting, as long as it is free.
+> **Manual Switching**: Manual trains bypass safety blocks (they don't stop). However, automatically flipping the switch for them when the current direction is blocked improves game fluidity.
 
 ---
 
 ## Proposed Changes
 
-### Core Serialization / Mix-ins
-
-#### [NEW] [TrainMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/TrainMixin.java)
-- Mirror `Train.java` structure and define all JSON serialization rules:
-  - Add `@JsonIdentityInfo` and `@JsonIgnoreProperties`.
-  - Add `@JsonProperty("linkers")` and `@JsonDeserialize(as = LinkedList.class)`.
-  - Add `@JsonUnwrapped` for `logisticsManager`.
-  - Configure `@JsonProperty("trip")` and `@JsonAlias({"itinerary", "trip"})`.
-  - Remove `@JsonIgnore` from `autopilot` and `autoMode` to persist them.
-  - Mark all query/view/getter methods with `@JsonIgnore`.
-
-#### [NEW] [WaypointMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/WaypointMixin.java)
-- Define serializer `WaypointSerializer` and deserializer `WaypointDeserializer` to handle `Waypoint` interface / `WaypointImpl` record custom serialization (including `Optional<Dir>` and command lists without requiring extra jdk8 modules).
-- Map `Waypoint` and `WaypointImpl` to use these custom serializers/deserializers.
-
-#### [NEW] [ItineraryMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/ItineraryMixin.java)
-- Define custom serializer `ItinerarySerializer` and deserializer `ItineraryDeserializer` for the `Itinerary` interface / `ItineraryImpl`.
-- Reconstruct the `ItineraryImpl` using its new package-private constructor.
-
-#### [NEW] [AutoPilotMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/AutoPilotMixin.java)
-- Define custom serializer `AutoPilotSerializer` and deserializer `AutoPilotDeserializer` for `AutoPilot` / `AutoPilotImpl` to capture waypoints, wait ticks, mode, and pending commands.
-
-#### [NEW] [WaypointCommandMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/WaypointCommandMixin.java)
-- Map JSON properties to `WaypointCommand` using a custom static `@JsonCreator` method, bypassing private constructors.
-
----
-
-### Decoupling & Adjusting Domain Classes
-
-#### [MODIFY] [Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/Train.java)
-- Remove all Jackson annotations (imports and field/method decorations).
-- In `postLoadInit()`:
-  - If `autopilot` is not null, invoke `reinitialize(new TrainAutoPilotContext(this), this)` and set up its A* pathfinder.
-- Refactor redundant code (remove the cast to `(Tractor)` at line 467, simplify `getTractors()` steam to list).
+### Autopilot Rerouting
 
 #### [MODIFY] [AutoPilotImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java)
-- Remove `final` keyword from `ctx` and `actionManager` to allow them to be reinitialized after deserialization.
-- Add getter/setter for `waitTicks` and `pendingCommands` to facilitate serialization.
-- Add constructor `public AutoPilotImpl()` initializing `ctx` and `actionManager` to `null`.
-- Add constructor `public AutoPilotImpl(Itinerary itinerary, Mode mode, int waitTicks, List<WaypointCommand> pendingCommands)` for deserializer.
-- Add `public void reinitialize(AutoPilotContext ctx, TrainActionManager actionManager)`.
-
-#### [MODIFY] [ItineraryImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/ItineraryImpl.java)
-- Add package-private constructor `ItineraryImpl(List<Waypoint> waypoints, Set<Integer> assignedTrains, State state, int currentIndex)` for deserialization.
+*   Modify `tick()` during the segment transition checks:
+    *   If the next segment in the planned route (`nextSeg`) is occupied (`!ctx.isSegmentFree(nextSeg)`):
+        *   Check if the boundary node between the current segment and `nextSeg` is a `ForkRailTrack`.
+        *   If it is a Fork, retrieve its alternative branch segments.
+        *   For each alternative segment (`altSeg`):
+            *   Verify if `ctx.isSegmentFree(altSeg)` is `true`.
+            *   If free, run `pathfinder.find(altSeg, targetSeg, entryDir)` to check if a valid path exists to the current waypoint.
+            *   If a path is found, switch the active route to this new path, align the fork to `altSeg` using `actionManager.ensureForkRoute(currentSeg, altSeg)`, and proceed.
+            *   If no alternative path is free or route recalculation fails, fall back to the original route and let the safety manager stop the train.
 
 ---
 
-### Game Save & Tests Configuration
+### Manual Mode Branch Switching
 
-#### [MODIFY] [GameSaveService.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/GameSaveService.java)
-- Register the new Mix-ins:
-  - `mapper.addMixIn(Train.class, TrainMixin.class);`
-  - `mapper.addMixIn(Waypoint.class, WaypointMixin.class);`
-  - `mapper.addMixIn(WaypointImpl.class, WaypointMixin.class);`
-  - `mapper.addMixIn(Itinerary.class, ItineraryMixin.class);`
-  - `mapper.addMixIn(ItineraryImpl.class, ItineraryMixin.class);`
-  - `mapper.addMixIn(AutoPilot.class, AutoPilotMixin.class);`
-  - `mapper.addMixIn(AutoPilotImpl.class, AutoPilotMixin.class);`
-  - `mapper.addMixIn(WaypointCommand.class, WaypointCommandMixin.class);`
-
-#### [MODIFY] [SerializationTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/SerializationTest.java)
-- Update `serialize` and `deserialize` helper methods to register all the same Mix-ins on their `ObjectMapper`.
-- Add a new integration test `testTrainAutoPilotSerialization()` that:
-  - Sets up an itinerary with waypoints and commands.
-  - Instantiates `AutoPilotImpl` and assigns it to a `Train`.
-  - Serializes and deserializes the `Model`/`Train`.
-  - Asserts that the autopilot state (mode, wait ticks, itinerary, waypoints, commands) is successfully preserved and reinitialized.
+#### [MODIFY] [TrainSafetyManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/TrainSafetyManager.java)
+*   In `acquireInitialLocks` and `onSegmentEntered`, if `train.isAutoMode()` is `false` (manual train):
+    *   If `nextSegment` is occupied (i.e., `bm.tryLock` fails):
+        *   Check if the exit track is a `ForkRailTrack`.
+        *   If it is, check if the other alternative branch segment is free in the `BlockManager`.
+        *   If the alternative branch is free:
+            *   Flip the route of the Fork (`fork.flipRoute()`).
+            *   Recalculate `nextSegment` (which will now point to the newly selected branch).
+            *   Attempt to lock the new `nextSegment` in the `BlockManager`.
 
 ---
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `mvn clean test` to compile and verify all unit/integration tests (including the new serialization integration tests).
+*   Create a new integration test class `ReroutingIntegrationTest.java` in `src/test/java/letrain/itinerary/`:
+    *   Setup a Fork connecting to two parallel segments (`SegA` and `SegB`) that merge back later.
+    *   Place a dummy train blocking `SegA`.
+    *   Configure an autopilot train heading towards the Fork with a route initially planned through `SegA`.
+    *   Assert that upon approaching the Fork:
+        *   The autopilot detects the blockage on `SegA`.
+        *   The autopilot switches the Fork to `SegB`.
+        *   The autopilot recalculates the route via `SegB`.
+        *   The train successfully reaches the destination without stopping.
+
+### Manual Verification
+*   Deploy to a test map, create a fork where one branch is blocked by a parked train, and verify both manual and automatic trains choose the free track.

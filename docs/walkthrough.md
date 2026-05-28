@@ -28,3 +28,18 @@ We have successfully completed the refactoring of the LeTrain train safety syste
 ### 5. Decoupled and Clean Codebase
 *   Domain classes such as [Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/Train.java) and [TrainSafetyManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/TrainSafetyManager.java) have been streamlined.
 *   Obsolete and redundant method calls like `checkSafety` have been removed in favor of `hasPermissionToMove()`.
+
+## Bug Fix: Resolution of AutoPilotIntegrationTest Failures
+
+During the event-driven refactoring integration phase, a copy-paste error was introduced in `TrainMovementManager.java` inside the `moveOneTrack` execution pass. 
+
+### The Problem
+*   The calls to `nextTrackOfLinker.enterLinkerFromDir(entryDirOfLinker, linkerToMove)` and `linkerToMove.setRailsSinceStop(...)` were completely duplicated.
+*   The first call moved the linker into the next track. The second call checked if the linker could enter the next track again. Since the track was now occupied by that same linker, the second call failed, triggering a rollback.
+*   This caused all train movements to fail and trains to remain stuck at station 0, resulting in the failure of all integration tests where trains were expected to travel.
+
+### The Fix
+*   Removed the duplicate code block from [TrainMovementManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/TrainMovementManager.java).
+*   Verified that all 331 tests (including the 14 `AutoPilotIntegrationTest` scenarios) now build and pass successfully in green.
+
+
