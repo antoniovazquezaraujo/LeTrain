@@ -9,8 +9,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -20,20 +18,7 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
-import com.badlogic.gdx.scenes.scene2d.Actor;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.SplitPane;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.ui.TextField;
-import com.badlogic.gdx.scenes.scene2d.ui.Window;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
-import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.googlecode.lanterna.input.KeyStroke;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
@@ -42,14 +27,16 @@ import letrain.mvp.impl.RailTrackMaker;
 import letrain.mvp.impl.SimulationController;
 import letrain.utils.FontManager;
 import letrain.utils.ValidationUtils;
+import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.gdx3d.Gdx3DRenderer;
-import letrain.vehicle.impl.rail.Locomotive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class GraphicPresenter extends ApplicationAdapter
         implements letrain.mvp.View, letrain.mvp.Presenter,
-        letrain.vehicle.impl.rail.TrainEventListener {
+        TrainEventListener {
     private static final Logger log = LoggerFactory.getLogger(GraphicPresenter.class);
     private static final String DEFAULT_SAVEGAME_FILENAME = "savegame.dat";
     private com.badlogic.gdx.graphics.PerspectiveCamera cam;
@@ -671,8 +658,8 @@ public class GraphicPresenter extends ApplicationAdapter
 
 
         // Re-attach stations as listeners to trains they are hosting
-        for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
-            letrain.vehicle.impl.rail.Train train = loco.getTrain();
+        for (Locomotive loco : model.getLocomotives()) {
+            Train train = loco.getTrain();
             if (train != null && train.getStationId() != 0) {
                 for (letrain.track.Station station : model.getStations()) {
                     if (station.getId() == train.getStationId()) {
@@ -801,17 +788,17 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     @Override
-    public void onCrash(letrain.vehicle.impl.rail.Train train, Point pos, int speed) {
+    public void onCrash(Train train, Point pos, int speed) {
         audioController.playOneShot("explosion", pos.getX(), pos.getY());
     }
 
     @Override
-    public void onContact(letrain.vehicle.impl.rail.Train train, Point pos, int speed) {
+    public void onContact(Train train, Point pos, int speed) {
         if (audioController != null && pos != null) {
             audioController.playOneShot("contact", (float) pos.getX(), (float) pos.getY());
             // Immediately stop audio for all locomotives in the train that hit something
             // This forces them to 'stall' and stop moving sounds instantly.
-            for (letrain.vehicle.impl.rail.Locomotive loco : model.getLocomotives()) {
+            for (Locomotive loco : model.getLocomotives()) {
                 if (loco.getTrain() != null && Point.distance(loco.getPosition(), pos) < 2.0) {
                     audioController.stopSynthesizer(loco.getId());
                 }
@@ -820,13 +807,13 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     @Override
-    public void onLink(letrain.vehicle.impl.rail.Train train) {
+    public void onLink(Train train) {
         audioController.playOneShot("link", model.getCursor().getPosition().getX(),
                 model.getCursor().getPosition().getY());
     }
 
     @Override
-    public void onUnlink(letrain.vehicle.impl.rail.Train train) {
+    public void onUnlink(Train train) {
         audioController.playOneShot("link", model.getCursor().getPosition().getX(),
                 model.getCursor().getPosition().getY());
     }

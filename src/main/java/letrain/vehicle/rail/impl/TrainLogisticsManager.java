@@ -1,10 +1,10 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.impl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import letrain.track.CargoTypes;
 import letrain.track.Station;
-import letrain.vehicle.impl.Linker;
+import letrain.vehicle.rail.Linker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,9 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TrainLogisticsManager {
-    private static final Logger log = LoggerFactory.getLogger(TrainLogisticsManager.class);
-    private static final int MAX_LOADING_COUNT = 80;
+public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogisticsManager {
 
     private boolean isLoading = false;
     private int loadingCount = 0;
@@ -23,30 +21,37 @@ public class TrainLogisticsManager {
     @JsonIgnore
     private transient List<Wagon> currentCapableWagons = null;
 
+    @Override
     public boolean isLoading() {
         return isLoading;
     }
 
+    @Override
     public void setLoading(boolean loading) {
         isLoading = loading;
     }
 
+    @Override
     public int getLoadingCount() {
         return loadingCount;
     }
 
+    @Override
     public void setLoadingCount(int loadingCount) {
         this.loadingCount = loadingCount;
     }
 
+    @Override
     public boolean isUnloadingDirection() {
         return isUnloadingDirection;
     }
 
+    @Override
     public void setUnloadingDirection(boolean unloadingDirection) {
         isUnloadingDirection = unloadingDirection;
     }
 
+    @Override
     public void startLoadProcess(Train train, Station station) {
         this.isLoading = true;
         this.isUnloadingDirection = false;
@@ -61,6 +66,7 @@ public class TrainLogisticsManager {
         }
     }
 
+    @Override
     public void startUnloadProcess(Train train, Station station) {
         this.isLoading = true;
         this.isUnloadingDirection = true;
@@ -75,12 +81,14 @@ public class TrainLogisticsManager {
         }
     }
 
+    @Override
     public void endLoadUnloadProcess() {
         this.isLoading = false;
         this.loadingCount = 0;
         this.currentCapableWagons = null;
     }
 
+    @Override
     public List<Wagon> getCapableWagons(Train train, Station station, boolean isUnload) {
         List<Wagon> result = new ArrayList<>();
         CargoTypes stationCargo = station.getCargoType();
@@ -102,6 +110,7 @@ public class TrainLogisticsManager {
         return result;
     }
 
+    @Override
     public boolean performIndustrialAction(Train train, Station station) {
         if (train.getDirectorLinker().getSpeed() != 0)
             return false;
@@ -167,6 +176,7 @@ public class TrainLogisticsManager {
     }
 
     @JsonIgnore
+    @Override
     public Station getStationAtTrain(Train train) {
         for (Linker linker : train.getLinkers()) {
             letrain.track.Track track = linker.getTrack();
@@ -178,6 +188,7 @@ public class TrainLogisticsManager {
     }
 
     @JsonIgnore
+    @Override
     public CargoTypes getTrainCargoType(Train train) {
         CargoTypes firstCargoType = CargoTypes.NONE;
         for (Linker linker : train.getLinkers()) {

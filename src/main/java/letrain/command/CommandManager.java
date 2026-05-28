@@ -19,9 +19,11 @@ import letrain.track.SensorEventListener;
 import letrain.track.Station;
 import letrain.track.StationEventListener;
 import letrain.track.rail.ForkRailTrack;
-import letrain.vehicle.impl.Tractor;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.Tractor;
+import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.impl.TrainAutoPilotContext;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -235,7 +237,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             if (ctx.trainEvent() != null) {
                 String event = ctx.trainEvent().getChild(0).getText();
                 String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
-                model.addTrainEventListener(new letrain.vehicle.impl.rail.TrainEventListener() {
+                model.addTrainEventListener(new TrainEventListener() {
                     @Override
                     public void onSensorEnter(Train train, boolean isForward) {
                         boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
@@ -272,7 +274,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                 });
             } else if (ctx.getChildCount() >= 3) {
                 String event = ctx.getChild(2).getText();
-                model.addTrainEventListener(new letrain.vehicle.impl.rail.TrainEventListener() {
+                model.addTrainEventListener(new TrainEventListener() {
                     @Override
                     public void onCrash(Train train, letrain.map.Point pos, int speed) {
                         if ("crash".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
@@ -506,7 +508,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         // Ensure autopilot exists and has a pathfinder
         if (train.getAutopilot() == null) {
             train.setAutopilot(new letrain.itinerary.impl.AutoPilotImpl(
-                new letrain.vehicle.impl.rail.TrainAutoPilotContext(train),
+                new TrainAutoPilotContext(train),
                 train));
         }
         if (model.getRailwayGraph() != null) {

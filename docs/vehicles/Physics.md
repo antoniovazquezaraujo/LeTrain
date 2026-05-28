@@ -3,8 +3,8 @@
 El motor de movimiento de LeTrain gestiona el avance de los trenes mediante una lógica de simulación basada en **turnos de motor** y una física de avance en dos fases.
 
 ## Símbolos Clave
-- `letrain.vehicle.impl.rail.Train`: Entidad que agrupa locomotoras y vagones (`Linkers`).
-- `letrain.vehicle.impl.rail.Locomotive`: Motor del tren, responsable de consumir los turnos de simulación.
+- `letrain.vehicle.rail.impl.Train`: Entidad que agrupa locomotoras y vagones (`Linkers`).
+- `letrain.vehicle.rail.impl.Locomotive`: Motor del tren, responsable de consumir los turnos de simulación.
 - `Train#moveLinkers(boolean)`: Lógica principal de desplazamiento.
 - `Locomotive#updateInertia()`: Gestor de aceleración y frenado gradual.
 

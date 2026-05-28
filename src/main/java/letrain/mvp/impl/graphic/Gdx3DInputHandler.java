@@ -15,15 +15,13 @@ import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
 import letrain.track.Station;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.rail.Linker;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.Wagon;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * Encapsula toda la lógica de entrada de la vista 3D.

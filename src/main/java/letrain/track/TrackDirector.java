@@ -2,7 +2,7 @@ package letrain.track;
 
 
 import letrain.map.Dir;
-import letrain.vehicle.impl.Linker;
+import letrain.vehicle.rail.Linker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

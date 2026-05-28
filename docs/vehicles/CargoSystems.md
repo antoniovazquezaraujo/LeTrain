@@ -8,7 +8,7 @@ LeTrain implementa un sistema de gestión de mercancías basado en tipos de carg
 
 ## Interfaz de Vagones
 La capacidad de transportar carga se define en la clase `Wagon`:
-- **`letrain.vehicle.impl.rail.Wagon`**: Implementa métodos como `loadCargo(amount)`, `takeCargo(amount)`, `getMaxCapacity()` y `getCargoAmount()`.
+- **`letrain.vehicle.rail.impl.Wagon`**: Implementa métodos como `loadCargo(amount)`, `takeCargo(amount)`, `getMaxCapacity()` y `getCargoAmount()`.
 - Los vagones se especializan en ciertos tipos de carga mediante el campo `cargoType`.
 
 ## Lógica de Intercambio (Estaciones)

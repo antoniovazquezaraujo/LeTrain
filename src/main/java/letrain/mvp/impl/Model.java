@@ -21,10 +21,11 @@ import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.impl.Cursor;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.Cursor;
+import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Wagon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,10 +76,10 @@ public class Model implements letrain.mvp.Model {
     int nextForkId;
     private transient CargoTypes selectedWagonType = CargoTypes.GOLD;
 
-    private transient List<letrain.vehicle.impl.rail.TrainEventListener> trainEventListeners = new ArrayList<>();
+    private transient List<TrainEventListener> trainEventListeners = new ArrayList<>();
 
     @Override
-    public void addTrainEventListener(letrain.vehicle.impl.rail.TrainEventListener listener) {
+    public void addTrainEventListener(TrainEventListener listener) {
         if (this.trainEventListeners == null) {
             this.trainEventListeners = new ArrayList<>();
         }
@@ -150,7 +151,7 @@ public class Model implements letrain.mvp.Model {
         this.stations = new ArrayList<>();
         this.map = new RailMap();
 
-        this.addTrainEventListener(new letrain.vehicle.impl.rail.TrainEventListener() {
+        this.addTrainEventListener(new TrainEventListener() {
             @Override public void onCrash(Train train, Point pos, int speed) {
                 eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
                 getEconomyManager().onTrainCrashed(train);
@@ -204,7 +205,7 @@ public class Model implements letrain.mvp.Model {
                         Station station = getStation(stationId);
                         if (station != null) train.addTrainEventListener(station);
                     }
-                    for (letrain.vehicle.impl.rail.TrainEventListener l : trainEventListeners) {
+                    for (TrainEventListener l : trainEventListeners) {
                         train.addTrainEventListener(l);
                     }
                 }
@@ -214,7 +215,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     private void setupModelTrainEventListeners() {
-        this.addTrainEventListener(new letrain.vehicle.impl.rail.TrainEventListener() {
+        this.addTrainEventListener(new TrainEventListener() {
             @Override public void onCrash(Train train, Point pos, int speed) {
                 eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
                 getEconomyManager().onTrainCrashed(train);
@@ -370,7 +371,7 @@ public class Model implements letrain.mvp.Model {
         this.locomotives.add(locomotive);
         if (locomotive.getTrain() != null) {
             locomotive.getTrain().setModel(this);
-            for (letrain.vehicle.impl.rail.TrainEventListener l : trainEventListeners) {
+            for (TrainEventListener l : trainEventListeners) {
                 locomotive.getTrain().addTrainEventListener(l);
             }
         }
@@ -694,7 +695,7 @@ public class Model implements letrain.mvp.Model {
     @Override
     public List<GameModeMenuOption> getMenuModel() {
         return Arrays.asList(
-                new GameModeMenuOption("&rails", "[Left/Right]:Rotate [Up/Down]:Move [Shift+Up]:Add rail [Ctrl+Up]:Remove rail [Ctrl/Shift+Down]:Remove rail [Ins]:Add sensor [Home]:Add semaphore [W]:Add station [#]:Steps [Space]:Reset steps", () -> true, () -> (this.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
+                new GameModeMenuOption("&rails", "[Left/Right]:Rotate [Up/Down]:Move [Shift+Up]:Add rail2 [Ctrl+Up]:Remove rail2 [Ctrl/Shift+Down]:Remove rail2 [Ins]:Add sensor [Home]:Add semaphore [W]:Add station [#]:Steps [Space]:Reset steps", () -> true, () -> (this.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
                 new GameModeMenuOption("&drive", "[Left/Right]:Select [m]:Motor On/Off [Up]:Accel [Down]:Decel [Space]:Reverse [Enter]:Load/Unload [#]:Select by ID", () -> !this.getLocomotives().isEmpty(), () -> this.getMode() == GameMode.DRIVE, () -> GameMode.DRIVE),
                 new GameModeMenuOption("&forks", "[Left/Right]:Select [Space]:Toggle [#]:Select by ID", () -> !this.getForks().isEmpty(), () -> this.getMode() == GameMode.FORKS, () -> GameMode.FORKS),
                 new GameModeMenuOption("&semaphores", "[Left/Right]:Select [Space]:Toggle [#]:Select by ID", () -> !this.getSemaphores().isEmpty(), () -> this.getMode() == GameMode.SEMAPHORES, () -> GameMode.SEMAPHORES),
@@ -749,26 +750,26 @@ public class Model implements letrain.mvp.Model {
                 sb.append("  Current Segment: ").append(train.getCurrentSegment() != null ? train.getCurrentSegment().getId() : "None").append("\n");
                 sb.append("  Next Segment: ").append(train.getNextSegment() != null ? train.getNextSegment().getId() : "None").append("\n");
                 if (!train.hasPermissionToMove() && train.getNextSegment() != null) {
-                    java.util.List<letrain.vehicle.impl.rail.Train> blockers = getBlockManager().getOwners(train.getNextSegment());
+                    java.util.List<Train> blockers = getBlockManager().getOwners(train.getNextSegment());
                     sb.append("  Permission: WAITING (Blocked by: ");
                     if (blockers.isEmpty()) sb.append("Logic/Retry Timer");
-                    else { for (letrain.vehicle.impl.rail.Train b : blockers) sb.append("Train ").append(b.getId()).append(" "); }
+                    else { for (Train b : blockers) sb.append("Train ").append(b.getId()).append(" "); }
                     sb.append(")\n");
                 } else {
                     sb.append("  Permission: ").append(train.hasPermissionToMove() ? "GRANTED" : "WAITING").append("\n");
                 }
 
                 int wagonCount = 0;
-                for (letrain.vehicle.impl.Linker l : train.getLinkers()) { if (l instanceof Wagon) wagonCount++; }
+                for (letrain.vehicle.rail.Linker l : train.getLinkers()) { if (l instanceof Wagon) wagonCount++; }
                 sb.append("  Wagons: ").append(wagonCount).append("\n");
                 if (train.getDirectorLinker() != null) {
-                    if (train.getDirectorLinker() instanceof letrain.vehicle.impl.Linker) sb.append("  Pos: ").append(((letrain.vehicle.impl.Linker) train.getDirectorLinker()).getPosition()).append("\n");
+                    if (train.getDirectorLinker() instanceof letrain.vehicle.rail.Linker) sb.append("  Pos: ").append(((letrain.vehicle.rail.Linker) train.getDirectorLinker()).getPosition()).append("\n");
                     sb.append("  Speed: ").append(train.getDirectorLinker().getSpeed()).append("\n");
                 }
                 if (train.isLoading()) sb.append("  State: LOADING at Station ").append(train.getStationAtTrain().getId()).append("\n");
                 else if (train.isStalled()) sb.append("  State: STALLED\n");
                 else sb.append("  State: CRUIZING\n");
-                for (letrain.vehicle.impl.Linker linker : train.getLinkers()) {
+                for (letrain.vehicle.rail.Linker linker : train.getLinkers()) {
                     if (linker instanceof Wagon) {
                         Wagon w = (Wagon) linker;
                         if (w.getCargoAmount() > 0) sb.append("    Wagon: ").append(w.getCargoType()).append(" (").append(w.getCargoAmount()).append("/").append(w.getMaxCapacity()).append(")\n");
@@ -803,10 +804,10 @@ public class Model implements letrain.mvp.Model {
             sb.append("No active segment locks.\n");
         } else {
             for (letrain.segments.Segment s : segments) {
-                java.util.List<letrain.vehicle.impl.rail.Train> owners = bm.getOwners(s);
+                java.util.List<Train> owners = bm.getOwners(s);
                 if (!owners.isEmpty()) {
                     sb.append("Segment ").append(s.getId()).append(" owned by: ");
-                    for (letrain.vehicle.impl.rail.Train train : owners) {
+                    for (Train train : owners) {
                         sb.append("Train ").append(train.getId()).append(" ");
                     }
                     sb.append("\n");

@@ -1,9 +1,8 @@
-package letrain.vehicle.impl;
+package letrain.vehicle;
 
 import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.track.Trackable;
-import letrain.vehicle.Vehicle;
 
 public abstract class Tracker
         extends Vehicle

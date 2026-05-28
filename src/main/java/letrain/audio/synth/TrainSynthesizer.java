@@ -340,7 +340,7 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     // =====================================================================
-    // AudioSource impl
+    // AudioSource rail
     // =====================================================================
 
     @Override

@@ -23,5 +23,5 @@ A pesar del bloqueo lógico, se mantiene una capa de seguridad física en `Train
 
 ## Símbolos Clave
 - `letrain.core.segments.BlockManager`: Gestor central de la propiedad de los segmentos.
-- `letrain.vehicle.impl.RailIterator`: Herramienta de exploración para la lógica de bloques.
+- `letrain.vehicle.rail.RailIterator`: Herramienta de exploración para la lógica de bloques.
 - `letrain.core.segments.RailwayGraph`: Representación topológica de la red en segmentos.

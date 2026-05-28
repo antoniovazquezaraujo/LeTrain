@@ -98,18 +98,18 @@ Esta lista se genera automáticamente a partir de los archivos fuente presentes 
 - `letrain.vehicle.Selectable`
 - `letrain.vehicle.Transportable`
 - `letrain.vehicle.Vehicle`
-- `letrain.vehicle.impl.Cursor`
-- `letrain.vehicle.impl.Linker`
-- `letrain.vehicle.impl.RailIterator`
-- `letrain.vehicle.impl.Tracker`
-- `letrain.vehicle.impl.Tractor`
-- `letrain.vehicle.impl.Trailer`
-- `letrain.vehicle.impl.rail.Trip`
-- `letrain.vehicle.impl.rail.Locomotive`
-- `letrain.vehicle.impl.rail.Stop`
-- `letrain.vehicle.impl.rail.Train`
-- `letrain.vehicle.impl.rail.TrainEventListener`
-- `letrain.vehicle.impl.rail.Wagon`
+- `letrain.vehicle.Cursor`
+- `letrain.vehicle.rail.Linker`
+- `letrain.vehicle.rail.RailIterator`
+- `letrain.vehicle.Tracker`
+- `letrain.vehicle.Tractor`
+- `letrain.vehicle.rail.Trailer`
+- `letrain.vehicle.rail.impl.Trip`
+- `letrain.vehicle.rail.impl.Locomotive`
+- `letrain.vehicle.rail.impl.Stop`
+- `letrain.vehicle.rail.impl.Train`
+- `letrain.vehicle.rail.TrainEventListener`
+- `letrain.vehicle.rail.impl.Wagon`
 
 ## Visualización (Visitor)
 - `letrain.visitor.Renderable`

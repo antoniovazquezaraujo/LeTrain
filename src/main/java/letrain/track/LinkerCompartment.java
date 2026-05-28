@@ -1,7 +1,7 @@
 package letrain.track;
 
 import letrain.map.Dir;
-import letrain.vehicle.impl.Linker;
+import letrain.vehicle.rail.Linker;
 
 interface LinkerCompartment<T extends Track> {
     boolean enterLinkerFromDir(Dir dir, Linker t);

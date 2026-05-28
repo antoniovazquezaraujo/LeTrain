@@ -9,10 +9,11 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import letrain.itinerary.AutoPilot;
-import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.Tractor;
-import letrain.vehicle.impl.rail.TrainLogisticsManager;
-import letrain.vehicle.impl.rail.Trip;
+import letrain.vehicle.rail.Linker;
+import letrain.vehicle.Tractor;
+import letrain.vehicle.rail.TrainLogisticsManager;
+import letrain.vehicle.rail.Trip;
+import letrain.vehicle.rail.impl.Locomotive;
 
 import java.util.Deque;
 
@@ -48,7 +49,7 @@ public abstract class TrainMixin {
     Trip trip;
 
     @JsonProperty("directorLinker")
-    @JsonDeserialize(as = letrain.vehicle.impl.rail.Locomotive.class)
+    @JsonDeserialize(as = Locomotive.class)
     Tractor directorLinker;
 
     @JsonProperty("autopilot")

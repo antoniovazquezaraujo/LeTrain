@@ -1,7 +1,7 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.impl;
 
 import letrain.track.CargoTypes;
-import letrain.vehicle.impl.Linker;
+import letrain.vehicle.rail.Linker;
 import letrain.visitor.Visitor;
 
 /**

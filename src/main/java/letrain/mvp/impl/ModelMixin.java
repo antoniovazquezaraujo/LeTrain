@@ -16,9 +16,10 @@ import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
-import letrain.vehicle.impl.Cursor;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.Cursor;
+import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Wagon;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -104,7 +105,7 @@ public abstract class ModelMixin {
     com.badlogic.gdx.graphics.Camera camera;
 
     @JsonIgnore
-    List<letrain.vehicle.impl.rail.TrainEventListener> trainEventListeners;
+    List<TrainEventListener> trainEventListeners;
 
     @JsonProperty("nextSensorId")
     int nextSensorId;

@@ -3,9 +3,7 @@ package letrain.audio;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import letrain.audio.core.AudioMixer;
 import letrain.audio.sources.WavSource;
@@ -13,7 +11,7 @@ import letrain.audio.synth.AudioSample;
 import letrain.audio.synth.TrainSynthesizer;
 import letrain.map.Point;
 import letrain.mvp.Model;
-import letrain.vehicle.impl.rail.Locomotive;
+import letrain.vehicle.rail.impl.Locomotive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +42,7 @@ public class AudioController {
      * Apaga el motor reproduciendo primero el segmento 'stop' del WAV.
      * Una vez finalizado el sonido, retira el sintetizador del mixer.
      */
-    public void stopEngineWithSound(int id, letrain.vehicle.impl.rail.Locomotive loco) {
+    public void stopEngineWithSound(int id, Locomotive loco) {
         TrainSynthesizer synth = synthesizers.get(id);
         if (synth == null)
             return;
@@ -58,7 +56,7 @@ public class AudioController {
     /**
      * Enciende el motor de una locomotora (crea su sintetizador si no existe).
      */
-    public void startEngine(letrain.vehicle.impl.rail.Locomotive loco) {
+    public void startEngine(Locomotive loco) {
         loco.setEngineOn(true);
         // El synth se creará en el próximo ciclo de update()
     }
@@ -199,7 +197,7 @@ public class AudioController {
                     continue;
                 synth = new TrainSynthesizer();
 
-                final letrain.vehicle.impl.rail.Locomotive trackedLoco = loco;
+                final Locomotive trackedLoco = loco;
                 synth.addListener(new TrainSynthesizer.SynthesizerListener() {
                     @Override
                     public void onNotchChanged(int notch) {

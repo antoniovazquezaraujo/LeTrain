@@ -2,7 +2,7 @@ package letrain.track;
 
 import java.io.Serializable;
 
-import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.rail.impl.Train;
 
 public interface SensorEventListener extends Serializable {
 

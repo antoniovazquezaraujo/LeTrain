@@ -65,7 +65,7 @@ La prevención de colisiones se basa en cantones de seguridad gestionados por el
 
 ## 2. Análisis de Train.java y sus Gestores Delegados
 
-La entidad `Train.java` (en el paquete `letrain.vehicle.impl.rail`) representa una composición ferroviaria que agrupa una o más locomotoras y múltiples vagones (eslabones de tipo `Linker`). Su diseño inicial monolítico fue refactorizado siguiendo el **Principio de Responsabilidad Única (SRP)**, delegando sus funciones críticas a gestores especializados.
+La entidad `Train.java` (en el paquete `letrain.vehicle.rail.impl`) representa una composición ferroviaria que agrupa una o más locomotoras y múltiples vagones (eslabones de tipo `Linker`). Su diseño inicial monolítico fue refactorizado siguiendo el **Principio de Responsabilidad Única (SRP)**, delegando sus funciones críticas a gestores especializados.
 
 ### 2.1. Arquitectura de Composición y Delegados
 Un objeto `Train` centraliza el estado agregando los siguientes componentes de control internos:

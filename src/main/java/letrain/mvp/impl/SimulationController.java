@@ -1,7 +1,7 @@
 package letrain.mvp.impl;
 
 import letrain.audio.AudioController;
-import letrain.vehicle.impl.rail.Locomotive;
+import letrain.vehicle.rail.impl.Locomotive;
 import letrain.mvp.impl.services.SimulationService;
 
 /**

@@ -1,15 +1,13 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.impl;
 
 import letrain.itinerary.AutoPilotContext;
 import letrain.itinerary.Waypoint;
 import letrain.map.Point;
 import letrain.segments.BlockManager;
-import letrain.segments.RailNode;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.track.Station;
 import letrain.track.Track;
-import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 
 /**

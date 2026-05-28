@@ -6,9 +6,9 @@ import letrain.track.RailSemaphore;
 import letrain.mvp.Presenter;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.Wagon;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 

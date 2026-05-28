@@ -1,9 +1,10 @@
-package letrain.vehicle.impl;
+package letrain.vehicle.rail;
 
 import java.util.Deque;
 import java.util.List;
 
 import letrain.track.Track;
+import letrain.vehicle.Tractor;
 
 public interface Trailer<T extends Track> {
     Deque<Linker> getLinkers();

@@ -4,11 +4,11 @@ import letrain.economy.EconomyManager;
 import letrain.mvp.Model;
 import letrain.track.CargoTypes;
 import letrain.track.Station;
-import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Stop;
-import letrain.vehicle.impl.rail.Train;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.rail.Linker;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Stop;
+import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.Wagon;
 
 import java.util.HashMap;
 import java.util.HashSet;

@@ -1,4 +1,4 @@
-package letrain.vehicle.impl.rail;
+package letrain.vehicle.rail.impl;
 
 import java.time.LocalDateTime;
 

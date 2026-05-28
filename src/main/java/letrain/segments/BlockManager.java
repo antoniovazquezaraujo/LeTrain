@@ -2,7 +2,7 @@ package letrain.segments;
 
 import java.util.List;
 
-import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.rail.impl.Train;
 
 /**
  * Gestor de seguridad y bloqueos por segmentos.

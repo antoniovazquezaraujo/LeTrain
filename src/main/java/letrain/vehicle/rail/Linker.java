@@ -1,9 +1,13 @@
-package letrain.vehicle.impl;
+package letrain.vehicle.rail;
 
 import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.vehicle.Linkable;
-import letrain.vehicle.impl.rail.Train;
+import letrain.vehicle.Cursor;
+import letrain.vehicle.Tracker;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Wagon;
+import letrain.vehicle.rail.impl.Train;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -16,9 +20,9 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = letrain.vehicle.impl.rail.Locomotive.class, name = "Locomotive"),
-    @JsonSubTypes.Type(value = letrain.vehicle.impl.rail.Wagon.class, name = "Wagon"),
-    @JsonSubTypes.Type(value = letrain.vehicle.impl.Cursor.class, name = "Cursor")
+    @JsonSubTypes.Type(value = Locomotive.class, name = "Locomotive"),
+    @JsonSubTypes.Type(value = Wagon.class, name = "Wagon"),
+    @JsonSubTypes.Type(value = Cursor.class, name = "Cursor")
 })
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public abstract class Linker extends Tracker implements Linkable {
@@ -86,17 +90,17 @@ public abstract class Linker extends Tracker implements Linkable {
 
     @Override
     public boolean advance() {
-        if (this.track == null) {
+        if (this.getTrack() == null) {
             return true; // de momento
         }
         Dir dir = this.getDir();
         Dir inverseDir = dir.inverse();
-        if (this.track.canExit(dir)) {
-            Track target = track.getConnected(dir);
+        if (this.getTrack().canExit(dir)) {
+            Track target = getTrack().getConnected(dir);
             if (target.canEnter(inverseDir, this)) {
-                this.previousTrack = this.track;
+                this.previousTrack = this.getTrack();
                 this.previousDir = dir;
-                Linker t = this.track.removeLinker();
+                Linker t = this.getTrack().removeLinker();
                 target.enterLinkerFromDir(inverseDir, t);
                 this.railsSinceStop++;
                 return true;

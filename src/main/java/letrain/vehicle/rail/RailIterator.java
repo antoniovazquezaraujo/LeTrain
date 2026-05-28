@@ -1,4 +1,4 @@
-package letrain.vehicle.impl;
+package letrain.vehicle.rail;
 
 import letrain.map.Dir;
 import letrain.map.Mappable;
