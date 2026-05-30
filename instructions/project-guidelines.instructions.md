@@ -15,6 +15,9 @@ This instruction enforces consistent coding standards, build commands, and proje
 - Follow the Single Responsibility Principle for classes.
 - Use the Visitor pattern for rendering.
 - Adhere to the MVP (Model-View-Presenter) architecture.
+- **Avoid Ticks**: Avoid placing logic, safety checks, or segment reservations inside periodic physics loops (`tick()`, `advance()`, or `update()`). Instead, make components reactive and **event-driven** (triggered by sensor triggers, fork transitions, or explicit startup actions).
+- Keep components separated, focused, and clear (Single Responsibility Principle).
+- **Interfaces**: Create interfaces for each class to enforce decoupling and maintain clean abstractions.
 
 ### Naming Conventions
 - **Classes**: PascalCase (e.g., `RailTrackMaker`, `GraphicPresenter`)
