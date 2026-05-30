@@ -43,6 +43,9 @@ public class Model implements letrain.mvp.Model {
     private letrain.segments.BlockManager blockManager;
 
     @JsonIgnore
+    private final transient letrain.utils.SimulationScheduler scheduler;
+
+    @JsonIgnore
     private transient letrain.segments.RailwayGraph currentGraph;
 
     private transient boolean mapChanged = false;
@@ -119,6 +122,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     public Model() {
+        this.scheduler = new letrain.utils.impl.SimulationScheduler();
         letrain.segments.impl.BlockManagerImpl bmi = new letrain.segments.impl.BlockManagerImpl();
         bmi.setOnReleaseListener(() -> {
             for (Locomotive loco : locomotives) {
@@ -200,6 +204,7 @@ public class Model implements letrain.mvp.Model {
                 if (train != null) {
                     train.setModel(this);
                     train.postLoadInit();
+                    train.rebind();
                     int stationId = train.getStationId();
                     if (stationId != 0) {
                         Station station = getStation(stationId);
@@ -371,6 +376,7 @@ public class Model implements letrain.mvp.Model {
         this.locomotives.add(locomotive);
         if (locomotive.getTrain() != null) {
             locomotive.getTrain().setModel(this);
+            locomotive.getTrain().rebind();
             for (TrainEventListener l : trainEventListeners) {
                 locomotive.getTrain().addTrainEventListener(l);
             }
@@ -841,5 +847,11 @@ public class Model implements letrain.mvp.Model {
     @JsonIgnore
     public letrain.segments.BlockManager getBlockManager() {
         return blockManager;
+    }
+
+    @Override
+    @JsonIgnore
+    public letrain.utils.SimulationScheduler getScheduler() {
+        return scheduler;
     }
 }

@@ -233,4 +233,6 @@ public interface Model {
     letrain.segments.BlockManager getBlockManager();
 
     letrain.segments.RailwayGraph getRailwayGraph();
+
+    letrain.utils.SimulationScheduler getScheduler();
 }

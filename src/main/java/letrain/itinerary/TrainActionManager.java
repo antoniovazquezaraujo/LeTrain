@@ -21,4 +21,10 @@ public interface TrainActionManager {
 
     /** Force a segment entry reset in safety manager. */
     void forceSegmentReset();
+
+    /** Schedule the autopilot to resume after ticks. */
+    void scheduleResume(int ticks);
+
+    /** Acquire initial locks when starting or resuming movement. */
+    void acquireInitialLocks();
 }

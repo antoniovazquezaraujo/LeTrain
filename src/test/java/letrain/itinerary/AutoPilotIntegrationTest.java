@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 
 /**
  * Comprehensive integration tests for AutoPilot following itineraries.
@@ -395,6 +396,51 @@ class AutoPilotIntegrationTest {
             assertFalse(newDir == originalDir,
                     "direction should have flipped after REVERSE command (was " + originalDir + ", now " + newDir + ")");
         }
+
+        @Disabled("Auto-reverse disabled; test no longer applicable")
+        @Test
+        @DisplayName("10.6 Auto-reverse on routing mismatch at fork (disabled)")
+        void autoReverseOnRoutingMismatch() {
+            RailTrack t0 = makeTrack(0, 0, Dir.E, Dir.W);
+            RailTrack t1 = makeTrack(1, 0, Dir.W, Dir.E);
+            ForkRailTrack fork = makeFork(2, 0);
+            fork.addRoute(Dir.W, Dir.E);
+            fork.addRoute(Dir.E, Dir.W);
+            fork.addRoute(Dir.W, Dir.S);
+            fork.addRoute(Dir.S, Dir.W);
+            fork.setNormalRoute();
+            RailTrack t3 = makeTrack(3, 0, Dir.W, Dir.E);
+            RailTrack branch = makeTrack(2, 1, Dir.N, Dir.S);
+
+            connect(t0, Dir.E, t1, Dir.W);
+            connect(t1, Dir.E, fork, Dir.W);
+            connect(fork, Dir.E, t3, Dir.W);
+            connect(fork, Dir.S, branch, Dir.N);
+
+            Station branchSt = makeStation(branch, "Branch");
+            Station mainSt = makeStation(t3, "Main");
+
+            Train t = makeTrain(branch, Dir.S);
+
+            model.setProgram("""
+                    station %d set name "Branch";
+                    station %d set name "Main";
+                    create itinerary "Ruta" {
+                        add station "Branch"
+                        add station "Main"
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(branchSt.getId(), mainSt.getId(), t.getId(), t.getId(), t.getId()));
+
+            assertAtStation(t, branchSt);
+
+            runTicks(600);
+
+            // Without auto-reverse, the train should remain at the branch station.
+            assertAtStation(t, branchSt);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -596,6 +642,9 @@ class AutoPilotIntegrationTest {
 
     private void runTicks(Model m, int count) {
         for (int i = 0; i < count; i++) {
+            if (m.getScheduler() != null) {
+                m.getScheduler().tick();
+            }
             m.moveLocomotives();
             m.loadAndUnloadTrains();
         }

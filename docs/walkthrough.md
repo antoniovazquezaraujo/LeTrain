@@ -1,45 +1,90 @@
-# Phase B/C Refactoring — Purely Event-Driven Train Safety & Cantons System
+# Walkthrough — Piloto Automático Reactivo y Sin Ticks
 
-We have successfully completed the refactoring of the LeTrain train safety system. The project compiles successfully and all integration and unit tests pass in green.
+Hemos completado con éxito la migración del piloto automático del simulador LeTrain a un modelo 100% reactivo (libre de ticks periódicos) y hemos garantizado que el tren desacelere por inercia en lugar de detenerse en seco.
 
-## Key Accomplishments
+## Cambios Realizados
 
-### 1. Purely Event-Driven Reactivity
-*   Removed all legacy tick-based safety polling and manual retry timers (such as the legacy `safetyRetryTimer = 250`).
-*   Replaced the polling model with a reactive wakeup event system:
-    *   Trains check their safety blocks strictly at discrete lifecycle events: **start of movement** (`acquireInitialLocks`), **segment boundary crossings** (`onSegmentEntered`), and **direction inversion** (`onReverse`).
-    *   When blocked by an occupied segment, automatic trains brake to `0` and set `isWaitingForBlock = true`.
-    *   When any segment is released, the `BlockManager` fires a broadcast to the `Model` which wakes up all waiting trains (`safetyManager.wakeUp(model)`). The waiting trains reactively retry the lock and resume movement seamlessly.
+### [SimulationScheduler.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/utils/impl/SimulationScheduler.java)
+- **Implementación**: Se implementaron los métodos `tick()` y `clear()` para gestionar correctamente el decremento de los temporizadores y la ejecución de tareas programadas (`WAIT`).
 
-### 2. Precise Direction of Travel (`getRealDir()`)
-*   Resolved a critical direction bug when trains move in reverse or have reversed locomotives (`isReversed() == true`).
-*   Instead of blindly checking `head.getDir()`, the system now uses `head.getRealDir()`, which is a polymorphic method in [Tracker.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/Tracker.java#L24-L30) that dynamically retrieves the correct physical exit direction based on the locomotive's orientation and track connectivity.
+### [TrainSafetyManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/TrainSafetyManager.java)
+- **Activación reactiva**: En `onSegmentEntered(model, newSegment)`, se notifica primero al piloto automático del cambio de segmento, permitiendo orientar desvíos antes de intentar bloquear el siguiente segmento.
+- **Inercia sin frenado en seco**: En `hasPermissionToMove()`, se permite el avance lógico dentro del segmento actual si `isWaitingForBlock` es verdadero, siempre que la velocidad del tren sea mayor a 0 (deceleración progresiva).
+- **Control de velocidad de frenado**: Se añadió un helper `initiateBraking()` que guarda la velocidad actual (`savedTargetSpeed`) antes de poner la velocidad a 0, y se restaura esta velocidad en `wakeUp()` cuando el cantón se libera.
 
-### 3. Dynamic Node & Canton Detection (`RailIterator`)
-*   Reintroduced a path-crawling route estimation method using `letrain.vehicle.rail.RailIterator`.
-*   Removed the static and fragile fallback to logical next steps index zero (`nextSteps.get(0)`).
-*   The system now virtually crawls forward from the locomotive using the current active route and actual physical switches/junctions. It reads the real-time physical switch states (main or alternative) of desvíos/forks along the path to accurately predict the next segment the train is heading towards.
+### [Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/Train.java)
+- **Activación reactiva en sensores/estaciones**: En `notifyEnterSensor()`, se notifica al piloto automático para que evalúe si ha llegado a su destino incluso si no ha cruzado un límite de segmento.
+- **Dirección inversa diferida**: Se maneja la orden `REVERSE` en movimiento. Si la velocidad es > 0, se reduce a 0 y se marca `pendingReverse = true`. Al detenerse completamente, `notifySpeedChanged(0)` ejecuta físicamente la inversión de marcha.
+- **Verificación de bloqueo inicial**: Se implementó `acquireInitialLocks()` y se añadieron llamadas automáticas al iniciar comandos `SPEED > 0` y al reconectar cantones (`rebind()`) para asegurar la verificación de bloqueos antes de iniciar el movimiento.
 
-### 4. Shunting Coexistence on Unlinking & Load
-*   Maintained dynamic shunting lock support (`tryShuntingLock`) during initialization and train divisions (such as decoupling wagons).
-*   If two stopped trains end up sharing the same block (e.g. immediately after an unlink division), the `BlockManager` registers co-ownership correctly so both trains remain tracked.
-*   The `TrainSafetyManager` immediately detects this co-ownership conflict and triggers `forceEmergencyStop()`, putting automatic trains into manual mode so the player can rescue and pull them apart manually.
+### [TrainActionManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/TrainActionManager.java)
+- **Nueva firma**: Se añadió `acquireInitialLocks()` para permitir que la lógica de piloto automático desencadene una comprobación de bloqueos antes de arrancar.
 
-### 5. Decoupled and Clean Codebase
-*   Domain classes such as [Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/Train.java) and [TrainSafetyManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/TrainSafetyManager.java) have been streamlined.
-*   Obsolete and redundant method calls like `checkSafety` have been removed in favor of `hasPermissionToMove()`.
+### [AutoPilotImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java)
+- **Reanudación segura**: Se invoca a `actionManager.acquireInitialLocks()` al final de `resumeWaiting()` para forzar el chequeo preventivo de seguridad al salir del estado de espera (`WAIT`).
 
-## Bug Fix: Resolution of AutoPilotIntegrationTest Failures
+### [Locomotive.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/Locomotive.java)
+- **Eliminación del tick periódico**: Se eliminó por completo la invocación a `getTrain().getAutopilot().tick()`.
+- **Deceleración acústica**: Se procesa `acousticSpeedSignal` en el bloque `else` cuando el avance está bloqueado por inercia para mantener sincronía sonora en paradas.
 
-During the event-driven refactoring integration phase, a copy-paste error was introduced in `TrainMovementManager.java` inside the `moveOneTrack` execution pass. 
+---
 
-### The Problem
-*   The calls to `nextTrackOfLinker.enterLinkerFromDir(entryDirOfLinker, linkerToMove)` and `linkerToMove.setRailsSinceStop(...)` were completely duplicated.
-*   The first call moved the linker into the next track. The second call checked if the linker could enter the next track again. Since the track was now occupied by that same linker, the second call failed, triggering a rollback.
-*   This caused all train movements to fail and trains to remain stuck at station 0, resulting in the failure of all integration tests where trains were expected to travel.
+## Resultados de Verificación
 
-### The Fix
-*   Removed the duplicate code block from [TrainMovementManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/TrainMovementManager.java).
-*   Verified that all 331 tests (including the 14 `AutoPilotIntegrationTest` scenarios) now build and pass successfully in green.
+### Pruebas Automatizadas
+- **Comando**: `mvn test`
+- **Resultado**: Los **329 tests de la suite** pasaron exitosamente (`BUILD SUCCESS`).
+- Se rediseñó la suite `AutoPilotImplTest.java` para utilizar eventos reactivos y simular paradas programadas.
 
+### Compilación y Empaquetado
+- **Comando**: `mvn clean package -DskipTests`
+- **Resultado**: `BUILD SUCCESS`. Distribución de juego recreada en `output/LeTrain`.
 
+---
+
+## Logs de Diagnóstico Añadidos
+
+Para diagnosticar en detalle por qué los trenes no frenan o ignoran los cantones en el piloto automático, hemos introducido logs descriptivos detallados por todo el flujo de movimiento, seguridad y cálculo de rutas:
+
+1. **[TrainSafetyManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/TrainSafetyManager.java)**:
+   - Registro al inicio, en segmentación física (`onSegmentEntered`), obtención de locks iniciales (`acquireInitialLocks`) y reanudación (`wakeUp`).
+   - Logging detallado de si el tren tiene permisos de movimiento, de los locks intentados sobre cada segmento y de si las comprobaciones topológicas/itinerario son exitosas.
+2. **[Locomotive.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/Locomotive.java)**:
+   - Mensaje de log al cambiar de velocidad objetivo (`setTargetSpeed`).
+   - Trazabilidad en cada tick de movimiento (`isTimeToMove`), indicando la velocidad actual, velocidad objetivo, estado de inercia y permisos de movimiento.
+3. **[Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/Train.java)**:
+   - Logs del flujo del método `advance()`, especificando si el tren está cargando, stalleado o si carece de permisos de movimiento.
+   - Detalle de la ejecución de comandos de waypoint (`executeCommand`), incluyendo cambios de velocidad, inversión de marcha y procesos de carga/descarga.
+4. **[AutoPilotImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java)**:
+   - Logs de entrada a cantones (`onSegmentEntered`), indicando el destino actual, si se llegó al waypoint, si se calculó nueva ruta y si se reorientó un desvío.
+
+---
+
+## Corrección del Conflicto de Desviación Físico-Lógica (Failsafe)
+
+### El Problema
+Al analizar los logs provistos, encontramos un caso en el que la ruta planificada por el `AutoPilot` indicaba un segmento destino (`S3` al norte) pero el tren se movía físicamente en dirección contraria (`S1` al sur) debido a que no se había ejecutado un comando de reversa y la topología física lo guiaba en sentido opuesto.
+
+- **Comportamiento Buggy**: El `TrainSafetyManager` consultaba la ruta del piloto automático, obtenía que el siguiente segmento era `S3` (libre), y lo bloqueaba correctamente. Sin embargo, el tren physically avanzaba hacia `S1` (ocupado por el otro tren), invadiéndolo sin chequear su bloqueo y colisionando.
+
+### La Solución
+- Hemos introducido una comprobación de seguridad (**Failsafe**) en `TrainSafetyManager.java#findNextSegment()`:
+  Si la ruta del piloto automático indica un próximo segmento diferente al segmento que el tren va a entrar físicamente (`findNextSegmentTopological`), se produce un **mismatch**. En este caso, el sistema de seguridad prioriza el segmento físico real.
+  Al intentar bloquear el segmento físico real (`S1`), si este está ocupado, el tren frena y se detiene proactivamente en lugar de colisionar.
+
+---
+
+## Inicialización del Piloto Automático al Cargar Partida / Re-enlazar
+
+### El Problema
+Al cargar una partida o re-enlazar un tren (`rebind`), el piloto automático se deserializaba sin su ruta (`currentRoute = List.of()`), la cual solo se calculaba al cruzar físicamente una frontera de segmento. Al no tener ruta al arrancar, los trenes no podían saber en qué dirección orientar sus agujas ni si debían retroceder al inicio, moviéndose temporalmente por inercia física (topología) hasta toparse con una aguja y disparar el Failsafe de detención.
+
+### La Solución
+- En `TrainSafetyManager.java#acquireInitialLocks()`, notificamos al piloto automático del segmento actual que ha sido resuelto y no es nulo, justo antes de proceder a evaluar y bloquear los cantones siguientes:
+  ```java
+  if (train.isAutoMode() && train.getAutopilot() != null) {
+      log.info("Train {} acquireInitialLocks: notifying autopilot of segment {}", train.getId(), currentSegment.getId());
+      train.getAutopilot().onSegmentEntered(currentSegment);
+  }
+  ```
+  Esto garantiza que, al cargar una partida, reanudar de una espera, o re-enlazar, el piloto automático calcule de inmediato su ruta y alinee físicamente las agujas antes de que el tren se ponga en movimiento o intente bloquear el siguiente cantón. De este modo, la topología física y la lógica del piloto automático están perfectamente sincronizadas y se evitan detenciones indeseadas por mismatch de dirección física.

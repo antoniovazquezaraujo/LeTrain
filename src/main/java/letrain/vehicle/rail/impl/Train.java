@@ -67,6 +67,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     private transient boolean isNotifying = false;
     private transient List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
     private boolean autoMode = false;
+    private transient boolean pendingReverse = false;
+    private transient int savedSpeedBeforeReverse = -1;
 
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
@@ -201,8 +203,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     }
 
     public void notifyForkEntry(letrain.track.rail.ForkRailTrack fork) {
-        if (autopilot != null)
-            autopilot.onForkEntered(fork);
+        // No-op: la actuación sobre desvíos es reactiva en onSegmentEntered.
     }
 
     public void setModel(letrain.mvp.Model model) {
@@ -215,6 +216,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
 
     public Model getModel() {
         return this.model;
+    }
+
+    public boolean isPendingReverse() {
+        return this.pendingReverse;
     }
 
     public void addTrainEventListener(TrainEventListener listener) {
@@ -230,6 +235,17 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     }
 
     public void notifySpeedChanged(int speed) {
+        if (speed == 0 && pendingReverse) {
+            pendingReverse = false;
+            Tractor dirLinker = getDirectorLinker();
+            if (dirLinker != null) {
+                dirLinker.toggleReversed();
+                if (savedSpeedBeforeReverse != -1) {
+                    dirLinker.setTargetSpeed(savedSpeedBeforeReverse);
+                    savedSpeedBeforeReverse = -1;
+                }
+            }
+        }
         if (trainListeners != null) {
             for (TrainEventListener l : trainListeners) {
                 l.onSpeedChanged(speed);
@@ -277,6 +293,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
                     }
                 });
             }
+            if (autoMode && autopilot != null) {
+                autopilot.onSegmentEntered(getCurrentSegment());
+            }
         } finally {
             isNotifying = false;
         }
@@ -319,6 +338,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         }
         // Delegamos enteramente la reclamación física de cantones al safetyManager
         safetyManager.claimOccupiedSegments((letrain.mvp.impl.Model) model);
+        if (isAutoMode()) {
+            safetyManager.acquireInitialLocks((letrain.mvp.impl.Model) model);
+        }
     }
 
     /**
@@ -526,24 +548,13 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
      * @return true if the train moved, false otherwise
      */
     public boolean advance() {
-        // AutoPilot mode — let it control speed/direction, then move normally.
-        // Return true even if tick() says false, to avoid locomotive punishing
-        // the train with an abrupt speed=0 (freno en seco).
-        // AutoPilot tick is handled in Locomotive.update; skip here to avoid double
-        // processing.
-
-        // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
         if (isLoading()) {
-            return false;
-        }
-        // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
-        if (isLoading()) {
+            log.info("Train {} advance: cannot move because train is loading", id);
             return false;
         }
 
-        // Prevent any movement while the train is stalled from a collision or dead-end.
         if (isStalled()) {
-            // Ensure tractors stay at idle when stalled.
+            log.info("Train {} advance: cannot move because train is stalled", id);
             if (directorLinker != null) {
                 directorLinker.setTargetSpeed(0);
             }
@@ -552,13 +563,15 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
 
         if (model != null) {
             if (!hasPermissionToMove()) {
-                // Si no tenemos permiso de movimiento, forzamos el frenado.
+                log.info("Train {} advance: cannot move because hasPermissionToMove is false. Forcing setTargetSpeed(0)", id);
                 if (directorLinker != null) {
                     directorLinker.setTargetSpeed(0);
                 }
                 return false;
             }
         }
+        
+        log.info("Train {} advance: proceeding to moveLinkers", id);
 
         boolean normalSense = true;
         if (getDirectorLinker().isReversed()) {
@@ -878,29 +891,48 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         if (command == null) {
             return;
         }
+        log.info("Train {} executeCommand kind={}", id, command.kind());
         switch (command.kind()) {
             case LOAD:
                 letrain.track.Station loadStation = getStationAtTrain();
+                log.info("Train {} executeCommand LOAD: station={}", id, loadStation != null ? loadStation.getId() : "null");
                 if (loadStation != null) {
                     startLoadProcess(loadStation);
                 }
                 break;
             case UNLOAD:
                 letrain.track.Station unloadStation = getStationAtTrain();
+                log.info("Train {} executeCommand UNLOAD: station={}", id, unloadStation != null ? unloadStation.getId() : "null");
                 if (unloadStation != null) {
                     startUnloadProcess(unloadStation);
                 }
                 break;
             case REVERSE:
                 Tractor dirLinker = getDirectorLinker();
+                log.info("Train {} executeCommand REVERSE: head={}", id, dirLinker != null ? dirLinker.getId() : "null");
                 if (dirLinker != null) {
-                    dirLinker.toggleReversed();
+                    if (dirLinker.getSpeed() > 0) {
+                        savedSpeedBeforeReverse = dirLinker.getTargetSpeed();
+                        dirLinker.setTargetSpeed(0);
+                        pendingReverse = true;
+                        log.info("Train {} executeCommand REVERSE: speed > 0, set target speed to 0 and pendingReverse=true", id);
+                    } else {
+                        dirLinker.toggleReversed();
+                        pendingReverse = false;
+                        log.info("Train {} executeCommand REVERSE: speed is 0, toggled reverse", id);
+                    }
                 }
                 break;
             case SPEED:
                 Tractor speedLinker = getDirectorLinker();
+                log.info("Train {} executeCommand SPEED: targetSpeed={}", id, command.targetSpeed());
                 if (speedLinker != null) {
+                    savedSpeedBeforeReverse = -1;
                     speedLinker.setSpeed(command.targetSpeed());
+                    if (command.targetSpeed() > 0 && model != null) {
+                        log.info("Train {} executeCommand SPEED > 0: acquiring initial locks", id);
+                        safetyManager.acquireInitialLocks((letrain.mvp.impl.Model) model);
+                    }
                 }
                 break;
             default:
@@ -973,5 +1005,23 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         // Check if the targetDir is the alternative route of the fork
         var alt = fork.getRouter().getAlternativeRoute();
         return alt != null && alt.getValue() == targetDir;
+    }
+
+    @Override
+    public void scheduleResume(int ticks) {
+        if (model != null && model.getScheduler() != null) {
+            model.getScheduler().schedule(ticks, () -> {
+                if (autopilot != null) {
+                    autopilot.resumeWaiting();
+                }
+            });
+        }
+    }
+
+    @Override
+    public void acquireInitialLocks() {
+        if (safetyManager != null && model != null) {
+            safetyManager.acquireInitialLocks((letrain.mvp.impl.Model) model);
+        }
     }
 }

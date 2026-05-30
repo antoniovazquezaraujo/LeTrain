@@ -1,63 +1,60 @@
-# Implementation Plan — Phase D: Dynamic Rerouting at Forks on Blocked Segments
+# Plan de Implementación — Inversión Automática y Sincronización en Desvíos (Forks)
 
-## Goal Description
-When a train approaches a junction (Fork) and its next segment is occupied by another train, instead of coming to a full stop and waiting, the train should dynamically check if there is an alternative branch from the Fork that is free.
-*   **In Auto Mode (Autopilot)**: If the planned segment is blocked, calculate an alternative A* route starting from the alternative branch. If a valid route to the destination is found and the branch is free, flip the switch and steer the train along the new path without stopping.
-*   **In Manual Mode**: If the driver approaches a blocked segment at a Fork, automatically flip the switch to the free branch if available so the driver bypasses the occupied track.
-
----
+Este plan describe la solución para evitar el bloqueo o deadlock de los trenes en piloto automático al llegar a desvíos o forks. El problema se debe a que el trazado físico a menudo requiere que el tren invierta su sentido de marcha para seguir su ruta (por ejemplo, de un ramal a otro pasando por el tronco central), pero el itinerario no contiene la orden `REVERSE` explícitamente, o el `TrainSafetyManager` no se entera de la inversión física del tren y mantiene información de bloqueos desfasada.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Priority of Route vs Cooldown**: If the alternative A* path is significantly longer, the autopilot will still prefer it over waiting, as long as it is free.
-> **Manual Switching**: Manual trains bypass safety blocks (they don't stop). However, automatically flipping the switch for them when the current direction is blocked improves game fluidity.
+> - **Inversión Automática Reactiva**: Los trenes en piloto automático ahora invertirán su marcha automáticamente si se detecta un desajuste (mismatch) entre la dirección física de avance y el siguiente segmento planificado por la ruta. Esto evita que el tren continúe en sentido contrario (lo que causaría colisiones o detenciones por failsafe).
+> - **Sincronización del Safety Manager**: Cada vez que el tren invierta su sentido física o lógicamente (por comando HUD, script o automatización), el `TrainSafetyManager` es notificado para recalcular inmediatamente los bloques de vía libre en la nueva dirección y liberar los anteriores.
+> - **Persistencia de Velocidad tras Reversa**: Al frenar para realizar una inversión, el tren guarda su velocidad anterior y la restaura automáticamente al cambiar de sentido, de forma que el piloto automático no se detenga de forma permanente.
 
----
+## Open Questions
+Ninguna en este momento. Las reglas físicas e interfaces del motor permiten una integración directa y limpia.
 
 ## Proposed Changes
 
-### Autopilot Rerouting
-
-#### [MODIFY] [AutoPilotImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java)
-*   Modify `tick()` during the segment transition checks:
-    *   If the next segment in the planned route (`nextSeg`) is occupied (`!ctx.isSegmentFree(nextSeg)`):
-        *   Check if the boundary node between the current segment and `nextSeg` is a `ForkRailTrack`.
-        *   If it is a Fork, retrieve its alternative branch segments.
-        *   For each alternative segment (`altSeg`):
-            *   Verify if `ctx.isSegmentFree(altSeg)` is `true`.
-            *   If free, run `pathfinder.find(altSeg, targetSeg, entryDir)` to check if a valid path exists to the current waypoint.
-            *   If a path is found, switch the active route to this new path, align the fork to `altSeg` using `actionManager.ensureForkRoute(currentSeg, altSeg)`, and proceed.
-            *   If no alternative path is free or route recalculation fails, fall back to the original route and let the safety manager stop the train.
+### Componente: Control de Tren y Locomotora (`letrain.vehicle.rail.impl`)
 
 ---
 
-### Manual Mode Branch Switching
+#### [MODIFY] [Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/Train.java)
+- Declarar el campo `private transient int savedSpeedBeforeReverse = -1;` para almacenar la velocidad antes de frenar para invertir la marcha.
+- Añadir el getter `public boolean isPendingReverse() { return pendingReverse; }`.
+- En `executeCommand(WaypointCommand command)` para el caso `REVERSE`: guardar la velocidad objetivo actual (`savedSpeedBeforeReverse = dirLinker.getTargetSpeed();`) antes de establecerla a 0 e iniciar el frenado.
+- En `notifySpeedChanged(int speed)`: cuando la velocidad llega a 0 y `pendingReverse` es verdadero, llamar a `dirLinker.toggleReversed()` y restaurar la velocidad guardada en `savedSpeedBeforeReverse` si esta es válida.
+
+#### [MODIFY] [Locomotive.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/Locomotive.java)
+- En `toggleReversed()`: notificar al gestor de seguridad (`TrainSafetyManager`) de la inversión física mediante la llamada a `getTrain().getSafetyManager().onReverse((Model) getTrain().getModel())`.
 
 #### [MODIFY] [TrainSafetyManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/TrainSafetyManager.java)
-*   In `acquireInitialLocks` and `onSegmentEntered`, if `train.isAutoMode()` is `false` (manual train):
-    *   If `nextSegment` is occupied (i.e., `bm.tryLock` fails):
-        *   Check if the exit track is a `ForkRailTrack`.
-        *   If it is, check if the other alternative branch segment is free in the `BlockManager`.
-        *   If the alternative branch is free:
-            *   Flip the route of the Fork (`fork.flipRoute()`).
-            *   Recalculate `nextSegment` (which will now point to the newly selected branch).
-            *   Attempt to lock the new `nextSegment` in the `BlockManager`.
+- En `findNextSegment(Linker head, RailwayGraph graph)`:
+  - Detectar si la ruta planificada (`routeNext`) discrepa del segmento físico real (`topological` es diferente de `routeNext`, o `topological` es `null` mientras `routeNext` es válido).
+  - Si hay discrepancia y el tren está en modo automático y no está ya en proceso de inversión (`!train.isPendingReverse()`), loguear el evento y disparar la inversión automática llamando a `train.executeCommand(WaypointCommand.REVERSE)`.
+  - Si la inversión se ejecuta inmediatamente (porque la velocidad era 0), volver a evaluar y retornar recursivamente `findNextSegment(head, graph)` bajo la nueva orientación física para evitar devolver un paso obsoleto (`S0` en lugar de `S4`).
 
 ---
+
+### Componente: Tests de Integración (`letrain.itinerary`)
+
+#### [MODIFY] [AutoPilotIntegrationTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/itinerary/AutoPilotIntegrationTest.java)
+- Añadir un nuevo test de integración `autoReverseOnRoutingMismatch()` que configure un trazado en Y (con un desvío que bifurca en dos ramales, A y B), ponga al tren en el ramal A mirando hacia el desvío, defina un itinerario hacia el ramal B sin comando `REVERSE`, y verifique que el tren avanza hasta el desvío/tronco, se para, invierte la marcha automáticamente y avanza con éxito hasta el ramal B.
 
 ## Verification Plan
 
 ### Automated Tests
-*   Create a new integration test class `ReroutingIntegrationTest.java` in `src/test/java/letrain/itinerary/`:
-    *   Setup a Fork connecting to two parallel segments (`SegA` and `SegB`) that merge back later.
-    *   Place a dummy train blocking `SegA`.
-    *   Configure an autopilot train heading towards the Fork with a route initially planned through `SegA`.
-    *   Assert that upon approaching the Fork:
-        *   The autopilot detects the blockage on `SegA`.
-        *   The autopilot switches the Fork to `SegB`.
-        *   The autopilot recalculates the route via `SegB`.
-        *   The train successfully reaches the destination without stopping.
+- Ejecutar la suite completa de pruebas:
+  ```bash
+  mvn clean test
+  ```
+- Ejecutar específicamente la clase de integración modificada:
+  ```bash
+  mvn clean test -Dtest=AutoPilotIntegrationTest
+  ```
 
 ### Manual Verification
-*   Deploy to a test map, create a fork where one branch is blocked by a parked train, and verify both manual and automatic trains choose the free track.
+- Iniciar el juego usando el savegame provisto por el usuario:
+  ```bash
+  java -jar target/JLeTrain-1.0-SNAPSHOT-jar-with-dependencies.jar
+  ```
+- Comprobar visualmente que los trenes ya no se detienen de forma permanente en las agujas de entrada y salida de las estaciones (desvíos/forks) y completan sus itinerarios cíclicos con éxito.

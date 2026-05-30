@@ -28,9 +28,6 @@ public interface AutoPilot {
     /** Stop and return to manual control. */
     void deactivate();
 
-    /** Called each simulation tick. Returns true if the train moved. */
-    boolean tick();
-
     /** The currently calculated route (segments from current position to next waypoint). */
     List<Segment> currentRoute();
 
@@ -40,7 +37,9 @@ public interface AutoPilot {
     /** Set the pathfinder to use for route calculation. */
     void setPathfinder(SegmentPathfinder pathfinder);
 
-    default void onForkEntered(letrain.track.rail.ForkRailTrack fork) {}
+    default void onSegmentEntered(Segment newSegment) {}
+
+    void resumeWaiting();
 
     /** Ensure the fork between 'from' and 'to' segments is oriented correctly. */
     default void ensureForkRoute(letrain.segments.Segment from, letrain.segments.Segment to) {}
