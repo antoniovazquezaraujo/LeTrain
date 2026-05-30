@@ -21,9 +21,9 @@ import letrain.track.StationEventListener;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.TrainEventListener;
-import letrain.vehicle.rail.impl.TrainAutoPilotContext;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.TrainAutoPilotContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

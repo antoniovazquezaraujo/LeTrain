@@ -376,4 +376,20 @@ class TrainMoveLinkersTest {
             return true;
         }).when(targetTrack).enterLinkerFromDir(any(Dir.class), any(Linker.class));
     }
+
+    @Test
+    @DisplayName("should return correct physical front depending on director linker reversed status")
+    void shouldReturnCorrectPhysicalFront_DependingOnReversedStatus() {
+        setupTwoLinkerScenario();
+        letrain.vehicle.Tractor mockLoco = mock(letrain.vehicle.Tractor.class);
+        train.setDirectorLinker(mockLoco);
+
+        // When not reversed, physical front is firstLinker (getFront())
+        when(mockLoco.isReversed()).thenReturn(false);
+        org.junit.jupiter.api.Assertions.assertEquals(firstLinker, train.getPhysicalFront());
+
+        // When reversed, physical front is secondLinker (getBack())
+        when(mockLoco.isReversed()).thenReturn(true);
+        org.junit.jupiter.api.Assertions.assertEquals(secondLinker, train.getPhysicalFront());
+    }
 }

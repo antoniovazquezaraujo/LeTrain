@@ -43,7 +43,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         if (!train.isAutoMode()) {
             return true;
         }
-        Linker head = (Linker) train.getDirectorLinker();
+        Linker head = train.getPhysicalFront();
         if (head == null || head.getTrack() == null) {
             log.debug("Train {} hasPermissionToMove: false (head or track is null)", train.getId());
             return false;
@@ -94,18 +94,9 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     }
 
     @Override
-    public void forceEmergencyStop() {
-        if (train.isAutoMode()) {
-            this.isWaitingForBlock = false; // Permitimos movimiento manual
-            train.setAutoMode(false); // <--- Una sola llamada. El tren se encarga del resto.
-
-            if (train.getDirectorLinker() != null) {
-                train.getDirectorLinker().setTargetSpeed(0);
-            }
-            savedTargetSpeed = -1;
-            log.warn("Train {} deactivated autopilot and stopped due to segment conflict.",
-                    train.getId());
-        }
+    public void onEmergencyStop() {
+        this.isWaitingForBlock = false; // Permitimos movimiento manual
+        this.savedTargetSpeed = -1;
     }
 
     /**
@@ -135,10 +126,10 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 // Si falla el bloqueo exclusivo, intentamos shunting (coexistencia permitida)
                 if (bm.tryShuntingLock(train, segment)) {
                     // Conflicto físico al inicializar: si algún tren es automático, se para
-                    forceEmergencyStop();
+                    train.forceEmergencyStop();
                     for (Train owner : bm.getOwners(segment)) {
                         if (owner != train) {
-                            owner.getSafetyManager().forceEmergencyStop();
+                            owner.forceEmergencyStop();
                         }
                     }
                 }
@@ -156,7 +147,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         RailwayGraph graph = model.getRailwayGraph();
         savedTargetSpeed = -1;
 
-        Linker head = (Linker) train.getDirectorLinker();
+        Linker head = train.getPhysicalFront();
         log.info("Train {} acquireInitialLocks starting", train.getId());
         if (head == null || head.getTrack() == null) {
             if (train.isAutoMode()) {
@@ -177,11 +168,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             return;
         }
 
-        // Notify autopilot of the current segment to initialize route calculation and align forks BEFORE locking segments
-        if (train.isAutoMode() && train.getAutopilot() != null) {
-            log.info("Train {} acquireInitialLocks: notifying autopilot of segment {}", train.getId(), currentSegment.getId());
-            train.getAutopilot().onSegmentEntered(currentSegment);
-        }
+
 
         // 1. Asegurar posesión del segmento actual
         if (!bm.getOwnedSegments(train).contains(currentSegment)) {
@@ -190,11 +177,11 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             if (!currentLocked) {
                 // Hay otro tren: Si somos automáticos, parada de emergencia
                 log.warn("Train {} acquireInitialLocks: failed lock on current segment {}. Forcing emergency stop.", train.getId(), currentSegment.getId());
-                forceEmergencyStop();
+                train.forceEmergencyStop();
                 for (Train owner : bm.getOwners(currentSegment)) {
                     if (owner != train) {
                         log.warn("Train {} acquireInitialLocks: also forcing emergency stop on owner {}", train.getId(), owner.getId());
-                        owner.getSafetyManager().forceEmergencyStop();
+                        owner.forceEmergencyStop();
                     }
                 }
                 if (!train.isAutoMode()) {
@@ -205,25 +192,42 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         }
 
         // 2. Intentar bloquear el siguiente segmento
-        nextSegment = findNextSegment(head, graph);
-        log.info("Train {} acquireInitialLocks: nextSegment is {}", train.getId(), nextSegment != null ? nextSegment.getId() : "null");
-        if (nextSegment == null || nextSegment.equals(currentSegment)) {
+        boolean shouldLockNext = true;
+        if (train.isAutoMode()) {
+            letrain.itinerary.AutoPilot ap = train.getAutopilot();
+            if (ap == null || ap.mode() == letrain.itinerary.AutoPilot.Mode.WAITING || ap.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
+                shouldLockNext = false;
+            }
+        }
+        if (train.getDirectorLinker() != null && train.getDirectorLinker().getTargetSpeed() == 0) {
+            shouldLockNext = false;
+        }
+
+        if (!shouldLockNext) {
+            nextSegment = null;
             isWaitingForBlock = false;
-            log.info("Train {} acquireInitialLocks: nextSegment is null or equals current, isWaitingForBlock = false", train.getId());
+            log.info("Train {} acquireInitialLocks: skipping next segment lock (train is stopping or waiting), isWaitingForBlock = false", train.getId());
         } else {
-            boolean locked = bm.tryLock(train, nextSegment);
-            log.info("Train {} acquireInitialLocks: tryLock nextSegment {} returned {}", train.getId(), nextSegment.getId(), locked);
-            if (locked) {
+            nextSegment = findNextSegment(head, graph);
+            log.info("Train {} acquireInitialLocks: nextSegment is {}", train.getId(), nextSegment != null ? nextSegment.getId() : "null");
+            if (nextSegment == null || nextSegment.equals(currentSegment)) {
                 isWaitingForBlock = false;
-                log.info("Train {} initially locked current segment {} and next segment {}",
-                        train.getId(), currentSegment.getId(), nextSegment.getId());
+                log.info("Train {} acquireInitialLocks: nextSegment is null or equals current, isWaitingForBlock = false", train.getId());
             } else {
-                if (train.isAutoMode()) {
-                    initiateBraking();
-                    log.info("Train {} (AUTO) failed to lock next segment {}. Initiating  braking.", train.getId(),
-                            nextSegment.getId());
-                } else {
+                boolean locked = bm.tryLock(train, nextSegment);
+                log.info("Train {} acquireInitialLocks: tryLock nextSegment {} returned {}", train.getId(), nextSegment.getId(), locked);
+                if (locked) {
                     isWaitingForBlock = false;
+                    log.info("Train {} initially locked current segment {} and next segment {}",
+                            train.getId(), currentSegment.getId(), nextSegment.getId());
+                } else {
+                    if (train.isAutoMode()) {
+                        initiateBraking();
+                        log.info("Train {} (AUTO) failed to lock next segment {}. Initiating  braking.", train.getId(),
+                                nextSegment.getId());
+                    } else {
+                        isWaitingForBlock = false;
+                    }
                 }
             }
         }
@@ -236,17 +240,14 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     public void onSegmentEntered(Model model, Segment newSegment) {
         BlockManager bm = model.getBlockManager();
         RailwayGraph graph = model.getRailwayGraph();
-        Linker head = (Linker) train.getDirectorLinker();
+        Linker head = train.getPhysicalFront();
 
         log.info("Train {} onSegmentEntered: newSegment={}", train.getId(), newSegment != null ? newSegment.getId() : "null");
         currentSegment = newSegment;
         isWaitingForBlock = false;
         savedTargetSpeed = -1;
 
-        if (train.isAutoMode() && train.getAutopilot() != null) {
-            log.info("Train {} onSegmentEntered: notifying autopilot", train.getId());
-            train.getAutopilot().onSegmentEntered(newSegment);
-        }
+
 
         // 1. Asegurar posesión del segmento al que acabamos de entrar
         if (!bm.getOwnedSegments(train).contains(currentSegment)) {
@@ -255,11 +256,11 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             if (!entryLocked) {
                 // Invasión de segmento
                 log.warn("Train {} onSegmentEntered: failed lock on current segment {}. Forcing emergency stop.", train.getId(), currentSegment.getId());
-                forceEmergencyStop(); // Se para el invasor (si es automático)
+                train.forceEmergencyStop(); // Se para el invasor (si es automático)
                 for (Train owner : bm.getOwners(currentSegment)) {
                     if (owner != train) {
                         log.warn("Train {} onSegmentEntered: also forcing emergency stop on owner {}", train.getId(), owner.getId());
-                        owner.getSafetyManager().forceEmergencyStop(); // Se paran los automáticos invadidos
+                        owner.forceEmergencyStop(); // Se paran los automáticos invadidos
                     }
                 }
                 if (!train.isAutoMode()) {
@@ -269,25 +270,42 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         }
 
         // 2. Intentar reservar el siguiente segmento
-        nextSegment = findNextSegment(head, graph);
-        log.info("Train {} onSegmentEntered: nextSegment is {}", train.getId(), nextSegment != null ? nextSegment.getId() : "null");
-        if (nextSegment == null || nextSegment.equals(currentSegment)) {
+        boolean shouldLockNext = true;
+        if (train.isAutoMode()) {
+            letrain.itinerary.AutoPilot ap = train.getAutopilot();
+            if (ap == null || ap.mode() == letrain.itinerary.AutoPilot.Mode.WAITING || ap.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
+                shouldLockNext = false;
+            }
+        }
+        if (train.getDirectorLinker() != null && train.getDirectorLinker().getTargetSpeed() == 0) {
+            shouldLockNext = false;
+        }
+
+        if (!shouldLockNext) {
+            nextSegment = null;
             isWaitingForBlock = false;
-            log.info("Train {} onSegmentEntered: nextSegment is null or equals current, isWaitingForBlock = false", train.getId());
+            log.info("Train {} onSegmentEntered: skipping next segment lock (train is stopping or waiting), isWaitingForBlock = false", train.getId());
         } else {
-            boolean locked = bm.tryLock(train, nextSegment);
-            log.info("Train {} onSegmentEntered: tryLock nextSegment {} returned {}", train.getId(), nextSegment.getId(), locked);
-            if (locked) {
-                log.info("Train {} locked next segment {} upon entry to {}",
-                        train.getId(), nextSegment.getId(), currentSegment.getId());
+            nextSegment = findNextSegment(head, graph);
+            log.info("Train {} onSegmentEntered: nextSegment is {}", train.getId(), nextSegment != null ? nextSegment.getId() : "null");
+            if (nextSegment == null || nextSegment.equals(currentSegment)) {
                 isWaitingForBlock = false;
+                log.info("Train {} onSegmentEntered: nextSegment is null or equals current, isWaitingForBlock = false", train.getId());
             } else {
-                if (train.isAutoMode()) {
-                    initiateBraking();
-                    log.info("Train {} (AUTO) next segment {} is blocked. Initiating braking.  ", train.getId(),
-                            nextSegment.getId());
-                } else {
+                boolean locked = bm.tryLock(train, nextSegment);
+                log.info("Train {} onSegmentEntered: tryLock nextSegment {} returned {}", train.getId(), nextSegment.getId(), locked);
+                if (locked) {
+                    log.info("Train {} locked next segment {} upon entry to {}",
+                            train.getId(), nextSegment.getId(), currentSegment.getId());
                     isWaitingForBlock = false;
+                } else {
+                    if (train.isAutoMode()) {
+                        initiateBraking();
+                        log.info("Train {} (AUTO) next segment {} is blocked. Initiating braking.  ", train.getId(),
+                                nextSegment.getId());
+                    } else {
+                        isWaitingForBlock = false;
+                    }
                 }
             }
         }
@@ -297,13 +315,13 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     }
 
     @Override
-    public void wakeUp(Model model) {
-        log.info("Train {} wakeUp: isAutoMode={}, isWaitingForBlock={}, nextSegment={}",
+    public void onBlockReleased(Model model) {
+        log.info("Train {} onBlockReleased: isAutoMode={}, isWaitingForBlock={}, nextSegment={}",
                 train.getId(), train.isAutoMode(), isWaitingForBlock, nextSegment != null ? nextSegment.getId() : "null");
         if (train.isAutoMode() && isWaitingForBlock && nextSegment != null) {
             BlockManager bm = model.getBlockManager();
             boolean locked = bm.tryLock(train, nextSegment);
-            log.info("Train {} wakeUp: tryLock nextSegment {} returned {}", train.getId(), nextSegment.getId(), locked);
+            log.info("Train {} onBlockReleased: tryLock nextSegment {} returned {}", train.getId(), nextSegment.getId(), locked);
             if (locked) {
                 log.info("Train {} (AUTO) successfully woke up and locked segment  {}", train.getId(),
                         nextSegment.getId());
@@ -311,7 +329,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 if (savedTargetSpeed != -1) {
                     Tractor head = train.getDirectorLinker();
                     if (head != null) {
-                        log.info("Train {} wakeUp: restoring savedTargetSpeed {} to head", train.getId(), savedTargetSpeed);
+                        log.info("Train {} onBlockReleased: restoring savedTargetSpeed {} to head", train.getId(), savedTargetSpeed);
                         head.setTargetSpeed(savedTargetSpeed);
                     }
                     savedTargetSpeed = -1;
@@ -327,7 +345,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     public void onReverse(Model model) {
         BlockManager bm = model.getBlockManager();
         RailwayGraph graph = model.getRailwayGraph();
-        Linker head = (Linker) train.getDirectorLinker();
+        Linker head = train.getPhysicalFront();
 
         if (head == null)
             return;
@@ -368,7 +386,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             log.info("Train {} findNextSegment: ap={}, apMode={}, topological={}", train.getId(),
                     ap != null ? "present" : "null", ap != null ? ap.mode() : "N/A",
                     topological != null ? topological.getId() : "null");
-            if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+            if (ap != null && (ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING || ap.mode() == letrain.itinerary.AutoPilot.Mode.WAITING)) {
                 // Consultamos la ruta real planificada del piloto automático
                 List<Segment> route = ap.currentRoute();
                 int index = route.indexOf(currentSegment);
@@ -415,7 +433,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         List<Segment> owned = bm.getOwnedSegments(train);
         for (Segment s : owned) {
             if (!physicallyOccupied.contains(s)) {
-                Segment sNext = findNextSegmentTopological((Linker) train.getDirectorLinker(),
+                Segment sNext = findNextSegmentTopological(train.getPhysicalFront(),
                         graph);
                 if (sNext == null || !s.equals(sNext)) {
                     bm.release(train, s);

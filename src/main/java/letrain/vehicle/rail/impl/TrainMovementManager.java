@@ -177,7 +177,7 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                     letrain.segments.Segment newSegment = graph.getSegment((RailTrack) nextTrackOfLinker);
                     letrain.vehicle.rail.TrainSafetyManager safety = train.getSafetyManager();
                     if (newSegment != null && safety != null && !newSegment.equals(safety.getCurrentSegment())) {
-                        safety.onSegmentEntered((letrain.mvp.impl.Model) model, newSegment);
+                        train.notifySegmentEntered(newSegment);
                     }
                 }
             }

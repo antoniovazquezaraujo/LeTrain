@@ -41,6 +41,8 @@ public interface AutoPilot {
 
     void resumeWaiting();
 
+    void clearRoute();
+
     /** Ensure the fork between 'from' and 'to' segments is oriented correctly. */
     default void ensureForkRoute(letrain.segments.Segment from, letrain.segments.Segment to) {}
 }

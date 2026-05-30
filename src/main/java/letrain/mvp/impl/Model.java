@@ -124,10 +124,14 @@ public class Model implements letrain.mvp.Model {
     public Model() {
         this.scheduler = new letrain.utils.impl.SimulationScheduler();
         letrain.segments.impl.BlockManagerImpl bmi = new letrain.segments.impl.BlockManagerImpl();
-        bmi.setOnReleaseListener(() -> {
+        bmi.setOnReleaseListener((releasedSegment) -> {
             for (Locomotive loco : locomotives) {
-                if (loco.getTrain() != null) {
-                    loco.getTrain().wakeUp();
+                Train train = loco.getTrain();
+                if (train != null && train.isAutoMode()) {
+                    letrain.segments.Segment nextSeg = train.getSafetyManager().getNextSegment();
+                    if (train.getSafetyManager().isWaitingForBlock() && releasedSegment.equals(nextSeg)) {
+                        train.onBlockReleased();
+                    }
                 }
             }
         });

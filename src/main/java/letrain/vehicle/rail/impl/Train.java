@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
@@ -23,9 +24,9 @@ import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
+import letrain.vehicle.Tractor;
 import letrain.vehicle.Transportable;
 import letrain.vehicle.rail.Linker;
-import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.Trailer;
 import letrain.vehicle.rail.TrainEventListener;
 import letrain.visitor.Renderable;
@@ -69,6 +70,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     private boolean autoMode = false;
     private transient boolean pendingReverse = false;
     private transient int savedSpeedBeforeReverse = -1;
+    private final transient List<WaypointCommand> pendingCommands = new CopyOnWriteArrayList<>();
+    private transient int waitTicks = 0;
 
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
@@ -113,9 +116,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return safetyManager.hasPermissionToMove();
     }
 
-    public void wakeUp() {
+    public void onBlockReleased() {
         if (model != null) {
-            safetyManager.wakeUp((letrain.mvp.impl.Model) model);
+            safetyManager.onBlockReleased((letrain.mvp.impl.Model) model);
         }
     }
 
@@ -123,6 +126,19 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     public void forceSegmentReset() {
         if (safetyManager != null) {
             safetyManager.forceSegmentReset();
+        }
+    }
+
+    public void forceEmergencyStop() {
+        if (autoMode) {
+            setAutoMode(false);
+            if (getDirectorLinker() != null) {
+                getDirectorLinker().setTargetSpeed(0);
+            }
+            if (safetyManager != null) {
+                safetyManager.onEmergencyStop();
+            }
+            log.warn("Train {} deactivated autopilot and stopped due to segment conflict.", id);
         }
     }
 
@@ -190,6 +206,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
                 autopilot.deactivate();
         } else if (autopilot != null && autopilot.itinerary().isPresent()) {
             autoMode = autopilot.activate();
+            if (autoMode) {
+                checkWaypointArrival();
+            }
         }
         log.info("[TRAIN] toggleAutoMode → autoMode={}", autoMode);
     }
@@ -293,6 +312,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
                     }
                 });
             }
+            checkWaypointArrival();
             if (autoMode && autopilot != null) {
                 autopilot.onSegmentEntered(getCurrentSegment());
             }
@@ -488,6 +508,14 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return directorLinker;
     }
 
+    public Linker getPhysicalFront() {
+        boolean normalSense = true;
+        if (getDirectorLinker() != null && getDirectorLinker().isReversed()) {
+            normalSense = false;
+        }
+        return normalSense ? getFront() : getBack();
+    }
+
     @Override
     public List<Tractor> getTractors() {
         return linkers.stream()
@@ -536,7 +564,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
 
     public void resetSafetyTimer() {
         if (model != null) {
-            safetyManager.wakeUp((letrain.mvp.impl.Model) model);
+            safetyManager.onBlockReleased((letrain.mvp.impl.Model) model);
         }
     }
 
@@ -1011,15 +1039,104 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     public void scheduleResume(int ticks) {
         if (model != null && model.getScheduler() != null) {
             model.getScheduler().schedule(ticks, () -> {
+                this.resumeWaiting();
+            });
+        }
+    }
+
+    public void resumeWaiting() {
+        log.info("Train {} resumeWaiting from wait", id);
+        this.waitTicks = 0;
+        if (autopilot != null) {
+            autopilot.resumeWaiting();
+        }
+        runPendingCommands();
+        acquireInitialLocks();
+    }
+
+    private void runPendingCommands() {
+        while (!pendingCommands.isEmpty()) {
+            WaypointCommand cmd = pendingCommands.remove(0);
+            if (cmd.kind() == WaypointCommand.Kind.WAIT) {
+                this.waitTicks = cmd.seconds() * WaypointCommand.TICKS_PER_SECOND;
                 if (autopilot != null) {
-                    autopilot.resumeWaiting();
+                    ((letrain.itinerary.impl.AutoPilotImpl) autopilot).setMode(letrain.itinerary.AutoPilot.Mode.WAITING);
+                }
+                this.scheduleResume(this.waitTicks);
+                return;
+            } else {
+                this.executeCommand(cmd);
+            }
+        }
+
+        if (autopilot != null && autopilot.itinerary().isPresent()) {
+            letrain.itinerary.Itinerary itin = autopilot.itinerary().get();
+            itin.advance();
+            autopilot.clearRoute();
+            if (itin.state() == letrain.itinerary.Itinerary.State.DONE) {
+                log.info("Train {} itinerary DONE → IDLE", id);
+                autopilot.deactivate();
+                return;
+            }
+
+            itin.currentWaypoint().ifPresent(wp -> {
+                if (railStationId == wp.targetId()) {
+                    log.info("Train {} consecutive waypoint reached", id);
+                    pendingCommands.clear();
+                    pendingCommands.addAll(wp.commands());
+                    runPendingCommands();
                 }
             });
         }
     }
 
+    public void checkWaypointArrival() {
+        if (!autoMode || autopilot == null || autopilot.mode() != letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+            return;
+        }
+        Optional<letrain.itinerary.Itinerary> itinOpt = autopilot.itinerary();
+        if (itinOpt.isEmpty()) {
+            return;
+        }
+        letrain.itinerary.Itinerary itin = itinOpt.get();
+        Optional<letrain.itinerary.Waypoint> wpOpt = itin.currentWaypoint();
+        if (wpOpt.isEmpty()) {
+            return;
+        }
+        letrain.itinerary.Waypoint wp = wpOpt.get();
+        letrain.itinerary.AutoPilotContext ctx = new TrainAutoPilotContext(this);
+        if (ctx.isAtTarget(wp)) {
+            log.info("Train {} ARRIVED at wp {}", id, wp.targetId());
+            pendingCommands.clear();
+            pendingCommands.addAll(wp.commands());
+            runPendingCommands();
+        }
+    }
+
+    public void notifySegmentEntered(letrain.segments.Segment newSegment) {
+        checkWaypointArrival();
+        if (autoMode && autopilot != null) {
+            log.info("Train {} notifySegmentEntered: notifying autopilot", id);
+            autopilot.onSegmentEntered(newSegment);
+        }
+        if (safetyManager != null && model != null) {
+            safetyManager.onSegmentEntered((letrain.mvp.impl.Model) model, newSegment);
+        }
+    }
+
     @Override
     public void acquireInitialLocks() {
+        checkWaypointArrival();
+        if (model != null && autoMode && autopilot != null) {
+            Linker head = getPhysicalFront();
+            if (head != null && head.getTrack() instanceof RailTrack) {
+                letrain.segments.Segment currentSeg = model.getRailwayGraph().getSegment((RailTrack) head.getTrack());
+                if (currentSeg != null) {
+                    log.info("Train {} acquireInitialLocks: notifying autopilot of segment {}", id, currentSeg.getId());
+                    autopilot.onSegmentEntered(currentSeg);
+                }
+            }
+        }
         if (safetyManager != null && model != null) {
             safetyManager.acquireInitialLocks((letrain.mvp.impl.Model) model);
         }

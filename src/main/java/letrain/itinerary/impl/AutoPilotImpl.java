@@ -155,6 +155,10 @@ public class AutoPilotImpl implements AutoPilot {
         return true;
     }
 
+    public void setMode(Mode mode) {
+        this.mode = mode;
+    }
+
     @Override
     public void onSegmentEntered(Segment newSegment) {
         log.info("[AP] onSegmentEntered: newSegment={}, mode={}", newSegment != null ? newSegment.getId() : "null", mode);
@@ -175,16 +179,7 @@ public class AutoPilotImpl implements AutoPilot {
         Waypoint wp = currentWpOpt.get();
         log.info("[AP] onSegmentEntered: current target waypoint is {}", wp.targetId());
 
-        // 1. Comprobar llegada al waypoint
-        if (ctx.isAtTarget(wp)) {
-            log.info("[AP] ARRIVED at wp {}", wp.targetId());
-            pendingCommands.clear();
-            pendingCommands.addAll(wp.commands());
-            runPendingCommands();
-            return;
-        }
-
-        // 2. Si la ruta está vacía o nos desviamos, calcular ruta
+        // Si la ruta está vacía o nos desviamos, calcular ruta
         if (currentRoute.isEmpty() || !currentRoute.contains(currentSeg)) {
             log.info("[AP] calculating route to wp {}...", wp.targetId());
             if (!calculateRoute()) {
@@ -193,7 +188,7 @@ public class AutoPilotImpl implements AutoPilot {
             }
         }
 
-        // 3. Orientar las agujas para el siguiente tramo de la ruta
+        // Orientar las agujas para el siguiente tramo de la ruta
         int index = currentRoute.indexOf(currentSeg);
         log.info("[AP] onSegmentEntered: current segment index in route = {}", index);
         if (index != -1 && index + 1 < currentRoute.size()) {
@@ -201,59 +196,6 @@ public class AutoPilotImpl implements AutoPilot {
             log.info("[AP] onSegmentEntered: orienting fork for next segment {} from {}", nextSeg.getId(), currentSeg.getId());
             if (actionManager != null) {
                 actionManager.ensureForkRoute(currentSeg, nextSeg);
-            }
-        }
-    }
-
-    private void runPendingCommands() {
-        while (!pendingCommands.isEmpty()) {
-            WaypointCommand cmd = pendingCommands.remove(0);
-            if (cmd.kind() == WaypointCommand.Kind.WAIT) {
-                this.waitTicks = cmd.seconds() * WaypointCommand.TICKS_PER_SECOND;
-                this.mode = Mode.WAITING;
-                if (actionManager != null) {
-                    actionManager.scheduleResume(this.waitTicks);
-                }
-                return;
-            } else {
-                if (actionManager != null) {
-                    actionManager.executeCommand(cmd);
-                }
-            }
-        }
-
-        // No hay más comandos: avanzar itinerario
-        itinerary.advance();
-        currentRoute = List.of();
-        lastSegment = null;
-
-        Optional<Waypoint> nextWpOpt = itinerary.currentWaypoint();
-        if (itinerary.state() == Itinerary.State.DONE || nextWpOpt.isEmpty()) {
-            log.info("[AP] itinerary DONE → IDLE");
-            mode = Mode.IDLE;
-            return;
-        }
-
-        // Comprobar si ya estamos en el nuevo destino de inmediato (consecutivo)
-        Waypoint wp = nextWpOpt.get();
-        if (ctx.isAtTarget(wp)) {
-            log.info("[AP] ARRIVED at consecutive wp {}", wp.targetId());
-            pendingCommands.clear();
-            pendingCommands.addAll(wp.commands());
-            runPendingCommands();
-        } else {
-            Segment currentSeg = ctx.currentSegment();
-            if (currentSeg != null) {
-                log.info("[AP] calculating route to next wp {}...", wp.targetId());
-                if (calculateRoute()) {
-                    int index = currentRoute.indexOf(currentSeg);
-                    if (index != -1 && index + 1 < currentRoute.size()) {
-                        Segment nextSeg = currentRoute.get(index + 1);
-                        if (actionManager != null) {
-                            actionManager.ensureForkRoute(currentSeg, nextSeg);
-                        }
-                    }
-                }
             }
         }
     }
@@ -266,10 +208,12 @@ public class AutoPilotImpl implements AutoPilot {
         log.info("[AP] resumeWaiting from wait");
         this.waitTicks = 0;
         this.mode = Mode.FOLLOWING;
-        runPendingCommands();
-        if (actionManager != null) {
-            actionManager.acquireInitialLocks();
-        }
+    }
+
+    @Override
+    public void clearRoute() {
+        this.currentRoute = List.of();
+        this.lastSegment = null;
     }
 
     @Override
