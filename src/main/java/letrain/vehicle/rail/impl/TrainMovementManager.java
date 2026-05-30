@@ -252,8 +252,6 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                         if (l instanceof Locomotive) {
                             ((Locomotive) l).setCurrentSpeed(0);
                             ((Locomotive) l).setTargetSpeed(0);
-                            ((Locomotive) l).setAcousticSpeedSignal(-1);
-                            ((Locomotive) l).setEngineTransitioning(false);
                             ((Locomotive) l).setForceIdleSound(true);
                         }
                         l.destroy();
@@ -266,8 +264,6 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                     t.setCurrentSpeed(0);
                     t.setTargetSpeed(0);
                     if (t instanceof Locomotive) {
-                        ((Locomotive) t).setAcousticSpeedSignal(-1);
-                        ((Locomotive) t).setEngineTransitioning(false);
                         ((Locomotive) t).setForceIdleSound(true);
                     }
                 });

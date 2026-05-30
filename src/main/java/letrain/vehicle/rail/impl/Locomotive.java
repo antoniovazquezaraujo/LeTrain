@@ -32,7 +32,6 @@ public class Locomotive extends Linker implements Tractor {
     int railsSinceLastSpeedChange = 0;
     int previousSpeed = 0;
     int distanceTraveled = 0;
-    boolean engineStarting = false;
     int turns;
     int totalTurns;
     private String aspect;
@@ -136,14 +135,7 @@ public class Locomotive extends Linker implements Tractor {
                 return moved;
             }
 
-            // Inhibit movement if the engine is just starting sound-wise
-            if (engineStarting) {
-                return moved;
-            }
 
-            if (acousticSpeedSignal != -1) {
-                acousticSpeedSignal = -1;
-            }
 
             // Handle acceleration from 0 - allows getting unstuck from speed 0
             if (currentSpeed == 0 && targetSpeed > 0) {
@@ -164,9 +156,7 @@ public class Locomotive extends Linker implements Tractor {
                     moved = true;
                     incDistanceTraveled();
 
-                    if (acousticSpeedSignal != -1) {
-                        acousticSpeedSignal = -1;
-                    }
+
 
                     updateInertia();
                     resetTurns();
@@ -184,9 +174,7 @@ public class Locomotive extends Linker implements Tractor {
                 } else {
                     log.info("Locomotive {}: advance() failed (AUTO mode). Letting inertia brake.", id);
                     // Auto mode: don't punish, but let inertia brake
-                    if (acousticSpeedSignal != -1) {
-                        acousticSpeedSignal = -1;
-                    }
+
                     updateInertia();
                     resetTurns();
                 }
@@ -231,14 +219,6 @@ public class Locomotive extends Linker implements Tractor {
         return currentSpeed > targetSpeed && currentSpeed > 0;
     }
 
-    public void setEngineStarting(boolean starting) {
-        this.engineStarting = starting;
-    }
-
-    public boolean isEngineStarting() {
-        return engineStarting;
-    }
-
     public boolean isEngineOn() {
         return engineOn;
     }
@@ -246,18 +226,6 @@ public class Locomotive extends Linker implements Tractor {
     public void setEngineOn(boolean on) {
         this.engineOn = on;
     }
-
-    private boolean engineTransitioning = false;
-
-    public void setEngineTransitioning(boolean transitioning) {
-        this.engineTransitioning = transitioning;
-    }
-
-    public boolean isEngineTransitioning() {
-        return engineTransitioning;
-    }
-
-    private volatile int acousticSpeedSignal = -1;
 
     private boolean forceIdleSound = false;
 
@@ -267,10 +235,6 @@ public class Locomotive extends Linker implements Tractor {
 
     public boolean isForceIdleSound() {
         return forceIdleSound;
-    }
-
-    public void setAcousticSpeedSignal(int notch) {
-        this.acousticSpeedSignal = notch;
     }
 
     public void incSpeed() {
