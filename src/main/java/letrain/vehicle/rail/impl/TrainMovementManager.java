@@ -363,4 +363,18 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         }
     }
 
+    @Override
+    public void forceEmergencyStop() {
+        if (train.autoMode) {
+            train.setAutoMode(false);
+            if (train.getDirectorLinker() != null) {
+                train.getDirectorLinker().setTargetSpeed(0);
+            }
+            if (train.safetyManager != null) {
+                train.safetyManager.onEmergencyStop();
+            }
+            Train.log.warn("Train {} deactivated autopilot and stopped due to segment conflict.", train.id);
+        }
+    }
+
 }

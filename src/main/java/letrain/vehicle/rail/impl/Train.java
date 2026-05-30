@@ -45,20 +45,20 @@ import org.slf4j.LoggerFactory;
  */
 public class Train implements Trailer<RailTrack>, Renderable, Transportable, TrainActionManager {
     static final int CRASH_SPEED_THRESHOLD = 5;
-    static final Logger log = LoggerFactory.getLogger(Train.class);
+    public static final Logger log = LoggerFactory.getLogger(Train.class);
 
     enum LinkersSense {
         FRONT, BACK
     };
 
-    int id;
+    public int id;
     private String name;
     protected Deque<Linker> linkers;
     private transient letrain.mvp.Model model;
     protected final TrainCouplingManager trainCouplingManager = new TrainCouplingManager(this);
     private letrain.vehicle.rail.TrainLogisticsManager logisticsManager = new TrainLogisticsManager();
-    private final transient letrain.vehicle.rail.TrainMovementManager movementManager = new TrainMovementManager(this);
-    private transient letrain.vehicle.rail.TrainSafetyManager safetyManager = new TrainSafetyManager(this);
+    final transient letrain.vehicle.rail.TrainMovementManager movementManager = new TrainMovementManager(this);
+    public transient letrain.vehicle.rail.TrainSafetyManager safetyManager = new TrainSafetyManager(this);
     private letrain.itinerary.AutoPilot autopilot;
     int railStationId = 0;
     private boolean stalled = false;
@@ -67,7 +67,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     protected Tractor directorLinker;
     private transient boolean isNotifying = false;
     private transient List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
-    private boolean autoMode = false;
+    public boolean autoMode = false;
     private transient boolean pendingReverse = false;
     private transient int savedSpeedBeforeReverse = -1;
     private final transient List<WaypointCommand> pendingCommands = new CopyOnWriteArrayList<>();
@@ -126,39 +126,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     public void forceSegmentReset() {
         if (safetyManager != null) {
             safetyManager.forceSegmentReset();
-        }
-    }
-
-    public void forceEmergencyStop() {
-        if (autoMode) {
-            setAutoMode(false);
-            if (getDirectorLinker() != null) {
-                getDirectorLinker().setTargetSpeed(0);
-            }
-            if (safetyManager != null) {
-                safetyManager.onEmergencyStop();
-            }
-            log.warn("Train {} deactivated autopilot and stopped due to segment conflict.", id);
-        }
-    }
-
-    public void initiateBraking() {
-        Tractor head = getDirectorLinker();
-        if (head != null) {
-            int currentTargetSpeed = head.getTargetSpeed();
-            log.info("Train {} initiateBraking: target speed was {}, setting to 0", id, currentTargetSpeed);
-            if (safetyManager != null) {
-                safetyManager.onBrakingInitiated(currentTargetSpeed);
-            }
-            head.setTargetSpeed(0);
-        }
-    }
-
-    public void restoreSpeed(int speed) {
-        Tractor head = getDirectorLinker();
-        if (head != null) {
-            log.info("Train {} restoreSpeed: restoring target speed to {}", id, speed);
-            head.setTargetSpeed(speed);
         }
     }
 

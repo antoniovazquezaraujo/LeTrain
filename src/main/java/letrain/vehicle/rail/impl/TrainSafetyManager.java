@@ -12,7 +12,6 @@ import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.track.Track;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.RailIterator;
 
@@ -119,10 +118,10 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 // Si falla el bloqueo exclusivo, intentamos shunting (coexistencia permitida)
                 if (bm.tryShuntingLock(train, segment)) {
                     // Conflicto físico al inicializar: si algún tren es automático, se para
-                    train.forceEmergencyStop();
+                    train.movementManager.forceEmergencyStop();
                     for (Train owner : bm.getOwners(segment)) {
                         if (owner != train) {
-                            owner.forceEmergencyStop();
+                            owner.movementManager.forceEmergencyStop();
                         }
                     }
                 }
@@ -170,11 +169,11 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             if (!currentLocked) {
                 // Hay otro tren: Si somos automáticos, parada de emergencia
                 log.warn("Train {} acquireInitialLocks: failed lock on current segment {}. Forcing emergency stop.", train.getId(), currentSegment.getId());
-                train.forceEmergencyStop();
+                train.movementManager.forceEmergencyStop();
                 for (Train owner : bm.getOwners(currentSegment)) {
                     if (owner != train) {
                         log.warn("Train {} acquireInitialLocks: also forcing emergency stop on owner {}", train.getId(), owner.getId());
-                        owner.forceEmergencyStop();
+                        owner.movementManager.forceEmergencyStop();
                     }
                 }
                 if (!train.isAutoMode()) {
@@ -215,7 +214,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                             train.getId(), currentSegment.getId(), nextSegment.getId());
                 } else {
                     if (train.isAutoMode()) {
-                        train.initiateBraking();
+                        train.movementManager.initiateBraking(train);
                         log.info("Train {} (AUTO) failed to lock next segment {}. Initiating  braking.", train.getId(),
                                 nextSegment.getId());
                     } else {
@@ -249,11 +248,11 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             if (!entryLocked) {
                 // Invasión de segmento
                 log.warn("Train {} onSegmentEntered: failed lock on current segment {}. Forcing emergency stop.", train.getId(), currentSegment.getId());
-                train.forceEmergencyStop(); // Se para el invasor (si es automático)
+                train.movementManager.forceEmergencyStop(); // Se para el invasor (si es automático)
                 for (Train owner : bm.getOwners(currentSegment)) {
                     if (owner != train) {
                         log.warn("Train {} onSegmentEntered: also forcing emergency stop on owner {}", train.getId(), owner.getId());
-                        owner.forceEmergencyStop(); // Se paran los automáticos invadidos
+                        owner.movementManager.forceEmergencyStop(); // Se paran los automáticos invadidos
                     }
                 }
                 if (!train.isAutoMode()) {
@@ -293,7 +292,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                     isWaitingForBlock = false;
                 } else {
                     if (train.isAutoMode()) {
-                        train.initiateBraking();
+                        train.movementManager.initiateBraking(train);
                         log.info("Train {} (AUTO) next segment {} is blocked. Initiating braking.  ", train.getId(),
                                 nextSegment.getId());
                     } else {
@@ -320,7 +319,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                         nextSegment.getId());
                 isWaitingForBlock = false;
                 if (savedTargetSpeed != -1) {
-                    train.restoreSpeed(savedTargetSpeed);
+                    train.movementManager.restoreSpeed(savedTargetSpeed, train);
                     savedTargetSpeed = -1;
                 }
             }
@@ -355,7 +354,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 isWaitingForBlock = false;
             } else {
                 if (train.isAutoMode()) {
-                    train.initiateBraking();
+                    train.movementManager.initiateBraking(train);
                 } else {
                     isWaitingForBlock = false;
                 }
