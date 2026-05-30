@@ -80,7 +80,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     public void onBrakingInitiated(int speedToSave) {
         log.info("Train {} onBrakingInitiated. Saved target speed: {}", train.getId(), savedTargetSpeed == -1 ? speedToSave : savedTargetSpeed);
         this.isWaitingForBlock = true;
-        if (this.savedTargetSpeed == -1) {
+        if (this.savedTargetSpeed == -1 && speedToSave > 0) {
             this.savedTargetSpeed = speedToSave;
         }
     }
@@ -214,7 +214,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                             train.getId(), currentSegment.getId(), nextSegment.getId());
                 } else {
                     if (train.isAutoMode()) {
-                        train.movementManager.initiateBraking(train);
+                        train.movementManager.initiateBraking();
                         log.info("Train {} (AUTO) failed to lock next segment {}. Initiating  braking.", train.getId(),
                                 nextSegment.getId());
                     } else {
@@ -292,7 +292,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                     isWaitingForBlock = false;
                 } else {
                     if (train.isAutoMode()) {
-                        train.movementManager.initiateBraking(train);
+                        train.movementManager.initiateBraking();
                         log.info("Train {} (AUTO) next segment {} is blocked. Initiating braking.  ", train.getId(),
                                 nextSegment.getId());
                     } else {
@@ -319,7 +319,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                         nextSegment.getId());
                 isWaitingForBlock = false;
                 if (savedTargetSpeed != -1) {
-                    train.movementManager.restoreSpeed(savedTargetSpeed, train);
+                    train.movementManager.restoreSpeed(savedTargetSpeed);
                     savedTargetSpeed = -1;
                 }
             }
@@ -354,7 +354,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 isWaitingForBlock = false;
             } else {
                 if (train.isAutoMode()) {
-                    train.movementManager.initiateBraking(train);
+                    train.movementManager.initiateBraking();
                 } else {
                     isWaitingForBlock = false;
                 }
@@ -386,13 +386,6 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                     if (routeNext != null && (topological == null || !topological.equals(routeNext))) {
                         log.warn("Train {} findNextSegment mismatch: route next is {}, but physical next is {}. Failsafe: using physical next to prevent crash!",
                                 train.getId(), routeNext.getId(), topological != null ? topological.getId() : "null");
-                        if (train.isAutoMode() && !train.isPendingReverse() && !isMovingTowardsRoute(currentSegment, topological, routeNext, graph)) {
-                            log.info("Train {} auto-reversing due to route mismatch", train.getId());
-                            train.executeCommand(letrain.itinerary.WaypointCommand.REVERSE);
-                            // Reset flag and recompute topological segment after reversal
-                            insideFindNextSegment = false;
-                            return findNextSegmentTopological(head, graph);
-                        }
                         return topological;
                     }
                     log.info("Train {} findNextSegment: returning next segment from route: {}", train.getId(), routeNext.getId());
@@ -464,46 +457,5 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         }
         log.info("Train {} findNextSegmentTopological: next segment not found topographically", train.getId());
         return null;
-    }
-
-    private boolean isMovingTowardsRoute(Segment current, Segment topological, Segment routeNext, RailwayGraph graph) {
-        if (routeNext == null) return true;
-        var steps = current.getSteps();
-        if (steps == null) return true;
-
-        PathStep end1 = steps.getFirst();
-        PathStep end2 = steps.getSecond();
-
-        boolean routeNextAtEnd1 = isNeighborAtEnd(end1, routeNext, graph);
-        boolean routeNextAtEnd2 = isNeighborAtEnd(end2, routeNext, graph);
-
-        boolean topoAtEnd1 = topological != null && isNeighborAtEnd(end1, topological, graph);
-        boolean topoAtEnd2 = topological != null && isNeighborAtEnd(end2, topological, graph);
-
-        if (routeNextAtEnd1 && topoAtEnd1) {
-            return true; // Both route and physical next are at End1
-        }
-        if (routeNextAtEnd2 && topoAtEnd2) {
-            return true; // Both route and physical next are at End2
-        }
-
-        // If physical next (topological) is null, we should only consider moving towards route
-        // when there is also no expected route segment. If a routeNext exists, it's a mismatch.
-        if (topological == null) {
-            return routeNext == null;
-        }
-
-        return false;
-    }
-
-    private boolean isNeighborAtEnd(PathStep end, Segment target, RailwayGraph graph) {
-        if (end == null || target == null) return false;
-        for (PathStep next : graph.getNextSteps(end)) {
-            Segment n = graph.getSegment(next);
-            if (target.equals(n)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

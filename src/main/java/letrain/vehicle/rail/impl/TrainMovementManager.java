@@ -14,6 +14,7 @@ import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Destructible;
+import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.Linker;
 
 /**
@@ -377,4 +378,177 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         }
     }
 
+    @Override
+    public boolean advance() {
+        if (train.isLoading()) {
+            Train.log.info("Train {} advance: cannot move because train is loading", train.id);
+            return false;
+        }
+
+        if (train.isStalled()) {
+            Train.log.info("Train {} advance: cannot move because train is stalled", train.id);
+            if (train.getDirectorLinker() != null) {
+                train.getDirectorLinker().setTargetSpeed(0);
+            }
+            return false;
+        }
+
+        if (train.getModel() != null) {
+            if (!train.hasPermissionToMove()) {
+                Train.log.info("Train {} advance: cannot move because hasPermissionToMove is false. Forcing setTargetSpeed(0)", train.id);
+                if (train.getDirectorLinker() != null) {
+                    train.getDirectorLinker().setTargetSpeed(0);
+                }
+                return false;
+            }
+        }
+
+        Train.log.info("Train {} advance: proceeding to moveLinkers", train.id);
+
+        boolean normalSense = true;
+        if (train.getDirectorLinker() != null && train.getDirectorLinker().isReversed()) {
+            normalSense = false;
+        }
+
+        // Save linker directions before attempting to move.
+        // If moveLinkers fails (collision, blocked), we must restore them
+        // so the renderer draws wagons at their correct positions.
+        Map<Linker, Dir> savedDirs = new HashMap<>();
+        Map<Linker, Dir> savedEntryDirs = new HashMap<>();
+        for (Linker l : train.getLinkers()) {
+            savedDirs.put(l, l.getDir());
+            savedEntryDirs.put(l, l.getEntryDir());
+        }
+
+        refreshLinkersDirection(normalSense);
+        boolean moved = moveLinkers(normalSense);
+
+        if (!moved || train.isStalled()) {
+            Linker first = train.getLinkers().isEmpty() ? null : train.getLinkers().getFirst();
+            for (Linker l : train.getLinkers()) {
+                if (train.isStalled() && l == first)
+                    continue; // skip first linker on crash
+                Dir savedDir = savedDirs.get(l);
+                Dir savedEntry = savedEntryDirs.get(l);
+                if (savedDir != null) {
+                    l.setDir(savedDir);
+                }
+                if (savedEntry != null) {
+                    l.setEntryDir(savedEntry);
+                }
+            }
+        }
+
+        return moved;
+    }
+
+    @Override
+    public void refreshLinkersDirection() {
+        if (train.getDirectorLinker() == null || ((Locomotive) train.getDirectorLinker()).getTrack() == null) {
+            return;
+        }
+        boolean normalSense = true;
+        if (train.getDirectorLinker().isReversed()) {
+            normalSense = false;
+        }
+        refreshLinkersDirection(normalSense);
+    }
+
+    private void refreshLinkersDirection(boolean isNormalSense) {
+        setDirPushedLinkers(isNormalSense);
+        setDirTowedLinkers(isNormalSense);
+    }
+
+    private void setDirPushedLinkers(boolean isNormalSense) {
+        Iterator<Linker> iterator;
+        if (!isNormalSense) {
+            iterator = train.getLinkers().iterator();
+        } else {
+            iterator = train.getLinkers().descendingIterator();
+        }
+
+        Tractor tractor = train.getDirectorLinker();
+        while (iterator.hasNext()) {
+            Linker next = iterator.next();
+            if (next == tractor) {
+                break;
+            }
+        }
+        Dir pushDir = ((Locomotive) tractor).getDir();
+        while (iterator.hasNext()) {
+            Linker next = iterator.next();
+            Track nextTrack = next.getTrack();
+            if (pushDir == null) {
+                break;
+            }
+            Dir inverseEntry = pushDir.inverse();
+            next.setEntryDir(inverseEntry);
+            Dir nextDir = nextTrack.getDir(inverseEntry);
+            if (nextDir == null) {
+                break;
+            }
+            next.setDir(nextDir);
+            pushDir = next.getDir();
+        }
+    }
+
+    private void setDirTowedLinkers(boolean isNormalSense) {
+        Iterator<Linker> iterator;
+        if (isNormalSense) {
+            iterator = train.getLinkers().iterator();
+        } else {
+            iterator = train.getLinkers().descendingIterator();
+        }
+        Tractor tractor = train.getDirectorLinker();
+        while (iterator.hasNext()) {
+            Linker next = iterator.next();
+            if (next == tractor) {
+                break;
+            }
+        }
+        Track oldTrack = ((Locomotive) tractor).getTrack();
+        while (iterator.hasNext()) {
+            Linker next = iterator.next();
+            Dir nextDir = null;
+            Track wagonTrack = next.getTrack();
+            for (Dir conn : oldTrack.getConnections()) {
+                if (oldTrack.getConnected(conn) == wagonTrack) {
+                    nextDir = conn.inverse();
+                    break;
+                }
+            }
+            if (nextDir == null) {
+                break;
+            }
+            next.setDir(nextDir);
+            Dir nextEntry = next.getTrack().getDir(next.getDir());
+            if (nextEntry == null) {
+                break;
+            }
+            next.setEntryDir(nextEntry);
+            oldTrack = next.getTrack();
+        }
+    }
+
+    @Override
+    public void initiateBraking() {
+        Tractor head = train.getDirectorLinker();
+        if (head != null) {
+            int currentTargetSpeed = head.getTargetSpeed();
+            Train.log.info("Train {} initiateBraking: target speed was {}, setting to 0", train.id, currentTargetSpeed);
+            if (train.safetyManager != null) {
+                train.safetyManager.onBrakingInitiated(currentTargetSpeed);
+            }
+            head.setTargetSpeed(0);
+        }
+    }
+
+    @Override
+    public void restoreSpeed(int speed) {
+        Tractor head = train.getDirectorLinker();
+        if (head != null) {
+            Train.log.info("Train {} restoreSpeed: restoring target speed to {}", train.id, speed);
+            head.setTargetSpeed(speed);
+        }
+    }
 }
