@@ -121,7 +121,9 @@ public class Model implements letrain.mvp.Model {
         return internalSimService;
     }
 
-    private void setupBlockManagerListener(letrain.segments.impl.BlockManagerImpl bmi) {
+    public Model() {
+        this.scheduler = new letrain.utils.impl.SimulationScheduler();
+        letrain.segments.impl.BlockManagerImpl bmi = new letrain.segments.impl.BlockManagerImpl();
         bmi.setOnReleaseListener((releasedSegment) -> {
             for (Locomotive loco : locomotives) {
                 Train train = loco.getTrain();
@@ -133,12 +135,6 @@ public class Model implements letrain.mvp.Model {
                 }
             }
         });
-    }
-
-    public Model() {
-        this.scheduler = new letrain.utils.impl.SimulationScheduler();
-        letrain.segments.impl.BlockManagerImpl bmi = new letrain.segments.impl.BlockManagerImpl();
-        setupBlockManagerListener(bmi);
         this.blockManager = bmi;
         this.eventLogManager = new EventLogManager();
         this.economyManager = new letrain.economy.impl.EconomyManager(eventLogManager);
@@ -182,9 +178,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     public void postLoadInit() {
-        letrain.segments.impl.BlockManagerImpl bmi = new letrain.segments.impl.BlockManagerImpl();
-        setupBlockManagerListener(bmi);
-        this.blockManager = bmi;
+        this.blockManager = new letrain.segments.impl.BlockManagerImpl();
         if (this.trainEventListeners == null) {
             this.trainEventListeners = new ArrayList<>();
         } else {
