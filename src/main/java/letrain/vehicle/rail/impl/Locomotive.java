@@ -141,15 +141,7 @@ public class Locomotive extends Linker implements Tractor {
                 return moved;
             }
 
-            // We apply sound-driven speed primarily on rail2 boundaries to avoid visual jump
-            // glitches.
-            // But if we are parked at 0, we can safely apply it immediately to jumpstart
-            // the motor.
-            if (currentSpeed == 0 && acousticSpeedSignal != -1) {
-                if (currentSpeed != acousticSpeedSignal
-                        && (getTrain() == null || !getTrain().isStalled())) {
-                    setCurrentSpeed(acousticSpeedSignal);
-                }
+            if (acousticSpeedSignal != -1) {
                 acousticSpeedSignal = -1;
             }
 
@@ -172,14 +164,7 @@ public class Locomotive extends Linker implements Tractor {
                     moved = true;
                     incDistanceTraveled();
 
-                    // Apply mid-movement acoustic gear shifts exactly on rail2 boundaries
-                    // to prevent visual interpolation snapping (jumping backwards)
                     if (acousticSpeedSignal != -1) {
-                        if (currentSpeed != acousticSpeedSignal
-                                && (getTrain() == null || !getTrain().isStalled())) {
-                            log.info("Locomotive {}: applying acoustic speed shift from {} to {}", id, currentSpeed, acousticSpeedSignal);
-                            setCurrentSpeed(acousticSpeedSignal);
-                        }
                         acousticSpeedSignal = -1;
                     }
 
@@ -200,11 +185,6 @@ public class Locomotive extends Linker implements Tractor {
                     log.info("Locomotive {}: advance() failed (AUTO mode). Letting inertia brake.", id);
                     // Auto mode: don't punish, but let inertia brake
                     if (acousticSpeedSignal != -1) {
-                        if (currentSpeed != acousticSpeedSignal
-                                && (getTrain() == null || !getTrain().isStalled())) {
-                            log.info("Locomotive {}: applying acoustic speed shift from {} to {} during auto-advance fail", id, currentSpeed, acousticSpeedSignal);
-                            setCurrentSpeed(acousticSpeedSignal);
-                        }
                         acousticSpeedSignal = -1;
                     }
                     updateInertia();
@@ -229,12 +209,7 @@ public class Locomotive extends Linker implements Tractor {
 
         railsSinceLastSpeedChange++;
 
-        // When engine transitions are active, we relinquish speed control to the Audio
-        // Gear Syncer, unless we are actively braking (safety priority).
-        if (engineTransitioning && !isBraking()) {
-            railsSinceLastSpeedChange = 0;
-            return;
-        }
+
 
         // Factor de inercia fallback only if audio is disabled
         int factor = isBraking() ? 1 : 2;
