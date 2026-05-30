@@ -55,6 +55,14 @@ public interface TrainSafetyManager {
     void onEmergencyStop();
 
     /**
+     * Notificación cuando se inicia el frenado preventivo por bloque ocupado.
+     * Guarda la velocidad objetivo que tenía el tren antes de frenar.
+     *
+     * @param speedToSave velocidad objetivo previa al frenado.
+     */
+    void onBrakingInitiated(int speedToSave);
+
+    /**
      * Reclama y reserva todos los cantones físicamente ocupados por los vagones y locomotoras del tren.
      * Se utiliza típicamente en la inicialización o al cargar una partida.
      *

@@ -22,6 +22,7 @@ Se toman las siguientes medidas de refactorización y diseño:
      2. **Navigation Updates**: Se notifica al `AutoPilot` (`onSegmentEntered`) para que realice el cálculo de ruta al siguiente destino y oriente los desvíos correspondientes.
      3. **Safety Locks**: Se notifica al `TrainSafetyManager` (`onSegmentEntered` o `acquireInitialLocks`) para que bloquee el cantón actual, intente reservar el cantón subsiguiente, y libere los cantones abandonados por la cola del tren.
    - Asimismo, se traslada el método `forceEmergencyStop()` a `Train`. Cuando ocurre un conflicto de seguridad en el cantón, `Train` desactiva el piloto automático y frena las locomotoras física y directamente, mientras que el `TrainSafetyManager` únicamente restablece su estado de bloqueo interno (a través de `onEmergencyStop()`).
+   - Igualmente, los métodos físicos de frenado preventivo `initiateBraking()` y de restauración de velocidad `restoreSpeed(int speed)` se trasladan a `Train`. El gestor de seguridad `TrainSafetyManager` se limita a notificar y registrar el estado de parada preventiva llamando a `train.initiateBraking()` y reactivar la marcha mediante `train.restoreSpeed(speed)`.
 
 3. **Limpieza del Estado de Ruta**:
    - Se añade el método `clearRoute()` en la interfaz `AutoPilot` y su implementación en `AutoPilotImpl` para resetear el caché de ruta del piloto automático al avanzar al siguiente waypoint. De esta forma, el piloto automático recalcula de manera reactiva la ruta hacia el nuevo destino en la siguiente transición de segmento.

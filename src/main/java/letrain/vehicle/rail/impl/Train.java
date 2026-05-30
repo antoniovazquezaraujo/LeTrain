@@ -142,6 +142,26 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         }
     }
 
+    public void initiateBraking() {
+        Tractor head = getDirectorLinker();
+        if (head != null) {
+            int currentTargetSpeed = head.getTargetSpeed();
+            log.info("Train {} initiateBraking: target speed was {}, setting to 0", id, currentTargetSpeed);
+            if (safetyManager != null) {
+                safetyManager.onBrakingInitiated(currentTargetSpeed);
+            }
+            head.setTargetSpeed(0);
+        }
+    }
+
+    public void restoreSpeed(int speed) {
+        Tractor head = getDirectorLinker();
+        if (head != null) {
+            log.info("Train {} restoreSpeed: restoring target speed to {}", id, speed);
+            head.setTargetSpeed(speed);
+        }
+    }
+
     public int getStationId() {
         return railStationId;
     }

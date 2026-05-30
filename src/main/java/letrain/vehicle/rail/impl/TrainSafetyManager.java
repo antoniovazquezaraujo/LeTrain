@@ -77,19 +77,12 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         this.nextSegment = null;
     }
 
-    /**
-     * Forzado de parada de emergencia y desactivación del piloto automático
-     * en caso de invasión o conflicto de segmento.
-     */
-    private void initiateBraking() {
-        log.info("Train {} initiating braking. Target speed: 0. Saved target speed: {}", train.getId(), savedTargetSpeed == -1 ? (train.getDirectorLinker() != null ? train.getDirectorLinker().getTargetSpeed() : -1) : savedTargetSpeed);
-        isWaitingForBlock = true;
-        Tractor head = train.getDirectorLinker();
-        if (head != null) {
-            if (savedTargetSpeed == -1) {
-                savedTargetSpeed = head.getTargetSpeed();
-            }
-            head.setTargetSpeed(0);
+    @Override
+    public void onBrakingInitiated(int speedToSave) {
+        log.info("Train {} onBrakingInitiated. Saved target speed: {}", train.getId(), savedTargetSpeed == -1 ? speedToSave : savedTargetSpeed);
+        this.isWaitingForBlock = true;
+        if (this.savedTargetSpeed == -1) {
+            this.savedTargetSpeed = speedToSave;
         }
     }
 
@@ -222,7 +215,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                             train.getId(), currentSegment.getId(), nextSegment.getId());
                 } else {
                     if (train.isAutoMode()) {
-                        initiateBraking();
+                        train.initiateBraking();
                         log.info("Train {} (AUTO) failed to lock next segment {}. Initiating  braking.", train.getId(),
                                 nextSegment.getId());
                     } else {
@@ -300,7 +293,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                     isWaitingForBlock = false;
                 } else {
                     if (train.isAutoMode()) {
-                        initiateBraking();
+                        train.initiateBraking();
                         log.info("Train {} (AUTO) next segment {} is blocked. Initiating braking.  ", train.getId(),
                                 nextSegment.getId());
                     } else {
@@ -327,11 +320,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                         nextSegment.getId());
                 isWaitingForBlock = false;
                 if (savedTargetSpeed != -1) {
-                    Tractor head = train.getDirectorLinker();
-                    if (head != null) {
-                        log.info("Train {} onBlockReleased: restoring savedTargetSpeed {} to head", train.getId(), savedTargetSpeed);
-                        head.setTargetSpeed(savedTargetSpeed);
-                    }
+                    train.restoreSpeed(savedTargetSpeed);
                     savedTargetSpeed = -1;
                 }
             }
@@ -366,7 +355,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 isWaitingForBlock = false;
             } else {
                 if (train.isAutoMode()) {
-                    initiateBraking();
+                    train.initiateBraking();
                 } else {
                     isWaitingForBlock = false;
                 }
