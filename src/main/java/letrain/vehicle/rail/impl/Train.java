@@ -1,20 +1,10 @@
 package letrain.vehicle.rail.impl;
 
-import java.time.LocalDateTime;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Supplier;
-
 import letrain.itinerary.TrainActionManager;
 import letrain.itinerary.WaypointCommand;
 import letrain.map.Dir;
 import letrain.mvp.Model;
+import letrain.segments.BlockManager;
 import letrain.segments.RailNode;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
@@ -29,10 +19,20 @@ import letrain.vehicle.Transportable;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.Trailer;
 import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.TrainMovementManager;
+import letrain.vehicle.rail.TrainSafetyManager;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.LocalDateTime;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 
 /**
  * Core train entity that groups locomotives and wagons ({@link Linker}s)
@@ -43,50 +43,55 @@ import org.slf4j.LoggerFactory;
  * Logistics are handled by {@link TrainLogisticsManager}.
  * Block-segment safety is managed by {@link TrainSafetyManager}.
  */
-public class Train implements Trailer<RailTrack>, Renderable, Transportable, TrainActionManager {
+public class Train implements Trailer<RailTrack>, Renderable, Transportable, TrainActionManager, TrainMovementManager, TrainSafetyManager {
     static final int CRASH_SPEED_THRESHOLD = 5;
     public static final Logger log = LoggerFactory.getLogger(Train.class);
 
     enum LinkersSense {
         FRONT, BACK
-    };
+    }
 
-    public int id;
+    ;
+
+    private int id;
     private String name;
-    protected Deque<Linker> linkers;
-    private transient letrain.mvp.Model model;
-    protected final TrainCouplingManager trainCouplingManager = new TrainCouplingManager(this);
-    private letrain.vehicle.rail.TrainLogisticsManager logisticsManager = new TrainLogisticsManager();
-    final transient letrain.vehicle.rail.TrainMovementManager movementManager = new TrainMovementManager(this);
-    public transient letrain.vehicle.rail.TrainSafetyManager safetyManager = new TrainSafetyManager(this);
+    private final Deque<Linker> linkers;
+    private TrainCouplingManager trainCouplingManager;
+    private letrain.vehicle.rail.TrainLogisticsManager logisticsManager;
     private letrain.itinerary.AutoPilot autopilot;
-    int railStationId = 0;
+    private int railStationId = 0;
     private boolean stalled = false;
-    letrain.vehicle.rail.Trip trip;
+    private letrain.vehicle.rail.Trip trip;
 
-    protected Tractor directorLinker;
+    private Tractor directorLinker;
+    private boolean autoMode = false;
+
+    private transient letrain.mvp.Model model;
+    private transient List<TrainEventListener> trainListeners;
+    private final transient List<WaypointCommand> pendingCommands;
+    private transient letrain.vehicle.rail.TrainMovementManager movementManager;
+    private transient letrain.vehicle.rail.TrainSafetyManager safetyManager;
     private transient boolean isNotifying = false;
-    private transient List<TrainEventListener> trainListeners = new CopyOnWriteArrayList<>();
-    public boolean autoMode = false;
     private transient boolean pendingReverse = false;
     private transient int savedSpeedBeforeReverse = -1;
-    private final transient List<WaypointCommand> pendingCommands = new CopyOnWriteArrayList<>();
     private transient int waitTicks = 0;
 
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
         this.linkers = new LinkedList<>();
-        this.trainCouplingManager.linkersToJoin = new LinkedList<>();
-        this.trainCouplingManager.linkersToRemove = new LinkedList<>();
+        this.trainListeners = new CopyOnWriteArrayList<>();
+        this.pendingCommands = new CopyOnWriteArrayList<>();
+        this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager(this);
+        this.logisticsManager = new letrain.vehicle.rail.impl.TrainLogisticsManager();
+        this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
+        this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
     }
 
     /**
      * Protected default constructor for Jackson deserialization.
      */
     protected Train() {
-        this.linkers = new LinkedList<>();
-        this.trainCouplingManager.linkersToJoin = new LinkedList<>();
-        this.trainCouplingManager.linkersToRemove = new LinkedList<>();
+        this(1);
     }
 
     // TrainCouplingManager //////////////////////////////////////////////////
@@ -104,29 +109,76 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return safetyManager;
     }
 
+    @Override
     public letrain.segments.Segment getCurrentSegment() {
         return safetyManager.getCurrentSegment();
     }
 
+    @Override
     public letrain.segments.Segment getNextSegment() {
         return safetyManager.getNextSegment();
     }
 
+    @Override
+    public boolean isWaitingForBlock() {
+        return false;
+    }
+
+    @Override
     public boolean hasPermissionToMove() {
         return safetyManager.hasPermissionToMove();
     }
 
+    @Override
     public void onBlockReleased() {
         if (model != null) {
-            safetyManager.onBlockReleased((letrain.mvp.impl.Model) model);
+            safetyManager.onBlockReleased();
         }
     }
 
     @Override
+    public void onBrakingInitiated(int targetSpeed) {
+        this.safetyManager.onBrakingInitiated(targetSpeed);
+    }
+
+    @Override
+    public void claimOccupiedSegments() {
+        this.safetyManager.claimOccupiedSegments();
+    }
+
+    @Override
+    public void onSegmentEntered(Segment newSegment) {
+        this.safetyManager.onSegmentEntered(newSegment);
+    }
+
+    @Override
+    public void onReverse() {
+        this.safetyManager.onReverse();
+    }
+
+    @Override
+    public Segment findNextSegment(Linker head, RailwayGraph graph) {
+        return this.safetyManager.findNextSegment(head, graph);
+    }
+
+    @Override
+    public void releaseOldSegments(BlockManager bm, RailwayGraph graph) {
+        this.safetyManager.releaseOldSegments(bm, graph);
+    }
+
+    @Override
+    public Segment findNextSegmentTopological(Linker head, RailwayGraph graph) {
+        return this.safetyManager.findNextSegmentTopological(head, graph);
+    }
+
+    @Override
     public void forceSegmentReset() {
-        if (safetyManager != null) {
-            safetyManager.forceSegmentReset();
-        }
+        this.safetyManager.forceSegmentReset();
+    }
+
+    @Override
+    public void onEmergencyStop() {
+        this.safetyManager.onEmergencyStop();
     }
 
     public int getStationId() {
@@ -178,9 +230,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         return autoMode;
     }
 
-    public void setAutoMode(boolean on) {
-        this.autoMode = on;
-        if (!on && autopilot != null) {
+    public void setAutoMode(boolean autoMode) {
+        this.autoMode = autoMode;
+        if (!autoMode && autopilot != null) {
             autopilot.deactivate(); // Apaga el piloto automático automáticamente si pasamos a manual
         }
     }
@@ -194,6 +246,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         } else if (autopilot != null && autopilot.itinerary().isPresent()) {
             autoMode = autopilot.activate();
             if (autoMode) {
+                acquireInitialLocks();
                 checkWaypointArrival();
             }
         }
@@ -229,14 +282,10 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     }
 
     public void addTrainEventListener(TrainEventListener listener) {
-        if (trainListeners == null)
-            trainListeners = new CopyOnWriteArrayList<>();
         trainListeners.add(listener);
     }
 
     public void removeTrainEventListener(TrainEventListener listener) {
-        if (trainListeners == null)
-            trainListeners = new CopyOnWriteArrayList<>();
         trainListeners.remove(listener);
     }
 
@@ -252,53 +301,42 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
                 }
             }
         }
-        if (trainListeners != null) {
-            for (TrainEventListener l : trainListeners) {
-                l.onSpeedChanged(speed);
-            }
+        for (TrainEventListener l : trainListeners) {
+            l.onSpeedChanged(speed);
         }
     }
 
     public void notifySenseChanged(boolean forward) {
-        if (trainListeners != null) {
-            for (TrainEventListener l : trainListeners) {
-                l.onSenseChanged(forward);
-            }
+        for (TrainEventListener trainEventListener : trainListeners) {
+            trainEventListener.onSenseChanged(forward);
         }
     }
 
     public void notifyLink() {
-        if (trainListeners != null) {
-            trainListeners.forEach(l -> l.onLink(this));
-        }
+        trainListeners.forEach(l -> l.onLink(this));
     }
 
     public void notifyUnlink() {
-        if (trainListeners != null) {
-            trainListeners.forEach(l -> l.onUnlink(this));
-        }
+        trainListeners.forEach(l -> l.onUnlink(this));
     }
 
     @Override
     public void notifySegmentOccupied(letrain.segments.Segment segment) {
-        if (trainListeners != null) {
-            trainListeners.forEach(l -> l.onSegmentOccupied(this, segment));
-        }
+        trainListeners.forEach(l -> l.onSegmentOccupied(this, segment));
     }
 
     public void notifyEnterSensor(letrain.track.Sensor sensor, boolean isForward) {
         ValidationUtils.requireNonNull(sensor, "sensor");
-        if (isNotifying)
+        if (isNotifying) {
             return;
+        }
         isNotifying = true;
         try {
-            if (trainListeners != null) {
-                trainListeners.forEach(l -> {
-                    if (l != sensor) {
-                        l.onSensorEnter(this, isForward);
-                    }
-                });
-            }
+            trainListeners.forEach(l -> {
+                if (l != sensor) {
+                    l.onSensorEnter(this, isForward);
+                }
+            });
             checkWaypointArrival();
             if (autoMode && autopilot != null) {
                 autopilot.onSegmentEntered(getCurrentSegment());
@@ -310,17 +348,16 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
 
     public void notifyExitSensor(letrain.track.Sensor sensor, boolean isForward) {
         ValidationUtils.requireNonNull(sensor, "sensor");
-        if (isNotifying)
+        if (isNotifying) {
             return;
+        }
         isNotifying = true;
         try {
-            if (trainListeners != null) {
-                trainListeners.forEach(l -> {
-                    if (l != sensor) {
-                        l.onSensorExit(this, isForward);
-                    }
-                });
-            }
+            trainListeners.forEach(l -> {
+                if (l != sensor) {
+                    l.onSensorExit(this, isForward);
+                }
+            });
         } finally {
             isNotifying = false;
         }
@@ -344,9 +381,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             return;
         }
         // Delegamos enteramente la reclamación física de cantones al safetyManager
-        safetyManager.claimOccupiedSegments((letrain.mvp.impl.Model) model);
+        safetyManager.claimOccupiedSegments();
         if (isAutoMode()) {
-            safetyManager.acquireInitialLocks((letrain.mvp.impl.Model) model);
+            safetyManager.acquireInitialLocks();
         }
     }
 
@@ -356,9 +393,8 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     public void postLoadInit() {
         this.trainListeners = SerializationHelper.ensureListInitializedConcurrent(trainListeners);
         this.isNotifying = false;
-        if (this.safetyManager == null) {
-            this.safetyManager = new TrainSafetyManager(this);
-        }
+        this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
+        this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
         if (this.autopilot != null) {
             if (this.autopilot instanceof letrain.itinerary.impl.AutoPilotImpl) {
                 ((letrain.itinerary.impl.AutoPilotImpl) this.autopilot).reinitialize(
@@ -540,7 +576,9 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         }
     }
 
-    /** @return true if the train is stalled from a collision or dead-end. */
+    /**
+     * @return true if the train is stalled from a collision or dead-end.
+     */
     public boolean isStalled() {
         return stalled;
     }
@@ -551,7 +589,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
 
     public void resetSafetyTimer() {
         if (model != null) {
-            safetyManager.onBlockReleased((letrain.mvp.impl.Model) model);
+            safetyManager.onBlockReleased();
         }
     }
 
@@ -570,8 +608,41 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         movementManager.refreshLinkersDirection();
     }
 
+    @Override
+    public void initiateBraking() {
+        this.movementManager.initiateBraking();
+    }
+
+    @Override
+    public void restoreSpeed(int speed) {
+        this.movementManager.restoreSpeed(speed);
+
+    }
+
     public boolean moveLinkers(boolean isNormalSense) {
         return movementManager.moveLinkers(isNormalSense);
+    }
+
+    @Override
+    public void crash(Linker linker, int speed) {
+        this.movementManager.crash(linker, speed);
+
+    }
+
+    @Override
+    public void correctDirection(Linker linker) {
+        this.movementManager.correctDirection(linker);
+
+    }
+
+    @Override
+    public void clearReservations(List<Track> reservedTracks) {
+        this.movementManager.clearReservations(reservedTracks);
+    }
+
+    @Override
+    public void forceEmergencyStop() {
+        this.movementManager.forceEmergencyStop();
     }
 
     public Linker getFirstLinker() {
@@ -797,7 +868,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
                     speedLinker.setSpeed(command.targetSpeed());
                     if (command.targetSpeed() > 0 && model != null) {
                         log.info("Train {} executeCommand SPEED > 0: acquiring initial locks", id);
-                        safetyManager.acquireInitialLocks((letrain.mvp.impl.Model) model);
+                        safetyManager.acquireInitialLocks();
                     }
                 }
                 break;
@@ -958,7 +1029,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             autopilot.onSegmentEntered(newSegment);
         }
         if (safetyManager != null && model != null) {
-            safetyManager.onSegmentEntered((letrain.mvp.impl.Model) model, newSegment);
+            safetyManager.onSegmentEntered(newSegment);
         }
     }
 
@@ -976,7 +1047,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             }
         }
         if (safetyManager != null && model != null) {
-            safetyManager.acquireInitialLocks((letrain.mvp.impl.Model) model);
+            safetyManager.acquireInitialLocks();
         }
     }
 }

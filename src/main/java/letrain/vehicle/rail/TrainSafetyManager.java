@@ -1,6 +1,5 @@
 package letrain.vehicle.rail;
 
-import letrain.mvp.impl.Model;
 import letrain.segments.BlockManager;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
@@ -65,41 +64,32 @@ public interface TrainSafetyManager {
     /**
      * Reclama y reserva todos los cantones físicamente ocupados por los vagones y locomotoras del tren.
      * Se utiliza típicamente en la inicialización o al cargar una partida.
-     *
-     * @param model el modelo de simulación.
      */
-    void claimOccupiedSegments(Model model);
+    void claimOccupiedSegments();
 
     /**
      * Intenta bloquear y reservar los cantones iniciales (actual y el siguiente) para iniciar la marcha de forma segura.
-     *
-     * @param model el modelo de simulación.
      */
-    void acquireInitialLocks(Model model);
+    void acquireInitialLocks();
 
     /**
      * Evento reactivo que se dispara cuando el tren entra físicamente en un nuevo segmento.
      * Asegura la posesión del nuevo segmento y solicita la reserva del cantón posterior.
      *
-     * @param model el modelo de simulación.
      * @param newSegment el nuevo segmento al que se ha accedido.
      */
-    void onSegmentEntered(Model model, Segment newSegment);
+    void onSegmentEntered(Segment newSegment);
 
     /**
      * Reevalúa la disponibilidad del siguiente bloque cuando se libera un cantón y reanuda la marcha si es posible.
-     *
-     * @param model el modelo de simulación.
      */
-    void onBlockReleased(Model model);
+    void onBlockReleased();
 
     /**
      * Evento reactivo que se dispara al cambiar el sentido de la marcha.
      * Libera el segmento objetivo anterior y calcula/reserva el nuevo segmento frontal.
-     *
-     * @param model el modelo de simulación.
      */
-    void onReverse(Model model);
+    void onReverse();
 
     /**
      * Determina cuál es el siguiente segmento al que se dirige el tren.

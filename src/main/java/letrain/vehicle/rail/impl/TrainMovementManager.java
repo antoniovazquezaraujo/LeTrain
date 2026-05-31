@@ -175,8 +175,13 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                 letrain.mvp.Model model = train.getModel();
                 letrain.segments.RailwayGraph graph = model.getRailwayGraph();
                 if (graph != null && nextTrackOfLinker instanceof RailTrack) {
-                    letrain.segments.Segment newSegment = graph.getSegment((RailTrack) nextTrackOfLinker);
                     letrain.vehicle.rail.TrainSafetyManager safety = train.getSafetyManager();
+                    letrain.segments.Segment newSegment = null;
+                    if (nextTrackOfLinker instanceof letrain.track.rail.ForkRailTrack && safety != null && safety.getNextSegment() != null) {
+                        newSegment = safety.getNextSegment();
+                    } else {
+                        newSegment = graph.getSegment((RailTrack) nextTrackOfLinker);
+                    }
                     if (newSegment != null && safety != null && !newSegment.equals(safety.getCurrentSegment())) {
                         train.notifySegmentEntered(newSegment);
                     }
@@ -366,27 +371,27 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
     @Override
     public void forceEmergencyStop() {
-        if (train.autoMode) {
+        if (train.isAutoMode()) {
             train.setAutoMode(false);
             if (train.getDirectorLinker() != null) {
                 train.getDirectorLinker().setTargetSpeed(0);
             }
-            if (train.safetyManager != null) {
-                train.safetyManager.onEmergencyStop();
+            if (train.getSafetyManager() != null) {
+                train.getSafetyManager().onEmergencyStop();
             }
-            Train.log.warn("Train {} deactivated autopilot and stopped due to segment conflict.", train.id);
+            Train.log.warn("Train {} deactivated autopilot and stopped due to segment conflict.", train.getId());
         }
     }
 
     @Override
     public boolean advance() {
         if (train.isLoading()) {
-            Train.log.info("Train {} advance: cannot move because train is loading", train.id);
+            Train.log.info("Train {} advance: cannot move because train is loading", train.getId());
             return false;
         }
 
         if (train.isStalled()) {
-            Train.log.info("Train {} advance: cannot move because train is stalled", train.id);
+            Train.log.info("Train {} advance: cannot move because train is stalled", train.getId());
             if (train.getDirectorLinker() != null) {
                 train.getDirectorLinker().setTargetSpeed(0);
             }
@@ -395,7 +400,7 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
         if (train.getModel() != null) {
             if (!train.hasPermissionToMove()) {
-                Train.log.info("Train {} advance: cannot move because hasPermissionToMove is false. Forcing setTargetSpeed(0)", train.id);
+                Train.log.info("Train {} advance: cannot move because hasPermissionToMove is false. Forcing setTargetSpeed(0)", train.getId());
                 if (train.getDirectorLinker() != null) {
                     train.getDirectorLinker().setTargetSpeed(0);
                 }
@@ -403,7 +408,7 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             }
         }
 
-        Train.log.info("Train {} advance: proceeding to moveLinkers", train.id);
+        Train.log.info("Train {} advance: proceeding to moveLinkers", train.getId());
 
         boolean normalSense = true;
         if (train.getDirectorLinker() != null && train.getDirectorLinker().isReversed()) {
@@ -535,10 +540,8 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         Tractor head = train.getDirectorLinker();
         if (head != null) {
             int currentTargetSpeed = head.getTargetSpeed();
-            Train.log.info("Train {} initiateBraking: target speed was {}, setting to 0", train.id, currentTargetSpeed);
-            if (train.safetyManager != null) {
-                train.safetyManager.onBrakingInitiated(currentTargetSpeed);
-            }
+            Train.log.info("Train {} initiateBraking: target speed was {}, setting to 0", train.getId(), currentTargetSpeed);
+            train.onBrakingInitiated(currentTargetSpeed);
             head.setTargetSpeed(0);
         }
     }
@@ -547,7 +550,7 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
     public void restoreSpeed(int speed) {
         Tractor head = train.getDirectorLinker();
         if (head != null) {
-            Train.log.info("Train {} restoreSpeed: restoring target speed to {}", train.id, speed);
+            Train.log.info("Train {} restoreSpeed: restoring target speed to {}", train.getId(), speed);
             head.setTargetSpeed(speed);
         }
     }

@@ -224,6 +224,26 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     @Override
+    public void replaceRouteSegment(Segment oldSeg, Segment newSeg) {
+        if (currentRoute == null || currentRoute.isEmpty()) {
+            return;
+        }
+        List<Segment> newRoute = new java.util.ArrayList<>(currentRoute);
+        int index = newRoute.indexOf(oldSeg);
+        if (index != -1) {
+            newRoute.set(index, newSeg);
+            currentRoute = List.copyOf(newRoute);
+            log.info("[AP] replaceRouteSegment: replaced {} with {} at index {}", oldSeg.getId(), newSeg.getId(), index);
+            if (index > 0) {
+                ensureForkRoute(newRoute.get(index - 1), newSeg);
+            }
+            if (index + 1 < newRoute.size()) {
+                ensureForkRoute(newSeg, newRoute.get(index + 1));
+            }
+        }
+    }
+
+    @Override
     public void deactivate() {
         log.info("[AP] deactivate → IDLE");
         mode = Mode.IDLE;

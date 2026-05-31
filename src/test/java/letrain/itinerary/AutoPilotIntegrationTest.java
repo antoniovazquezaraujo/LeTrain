@@ -555,6 +555,95 @@ class AutoPilotIntegrationTest {
         }
     }
 
+    @Nested
+    @DisplayName("6. Siding and Alternative Segments")
+    class SidingAndAlternativeSegments {
+
+        @Test
+        @DisplayName("6.1 Alternative Segment Siding Bypass")
+        void alternativeSegmentSidingBypass() {
+            // Siding layout with parallel S1 and S2:
+            // Station A at (0, 0) -> Fork 1 at (2, 0)
+            // Fork 1 branches into:
+            //   - S1 (main line): Fork 1 at (2, 0) -> Track at (3, 0) -> Fork 2 at (4, 0)
+            //   - S2 (siding line): Fork 1 at (2, 0) -> Track at (3, 1) -> Fork 2 at (4, 0)
+            // Fork 2 connects to Station B at (6, 0)
+
+            RailTrack tA = makeTrack(0, 0, Dir.E, Dir.W);
+            RailTrack tA1 = makeTrack(1, 0, Dir.W, Dir.E);
+            connect(tA, Dir.E, tA1, Dir.W);
+
+            ForkRailTrack fork1 = makeFork(2, 0);
+            fork1.addRoute(Dir.W, Dir.E);
+            fork1.addRoute(Dir.E, Dir.W);
+            fork1.addRoute(Dir.W, Dir.S);
+            fork1.addRoute(Dir.S, Dir.W);
+            fork1.setNormalRoute();
+            connect(tA1, Dir.E, fork1, Dir.W);
+
+            // S1 (main)
+            RailTrack tMain = makeTrack(3, 0, Dir.W, Dir.E);
+            connect(fork1, Dir.E, tMain, Dir.W);
+
+            // S2 (siding/alternative)
+            RailTrack tS1 = makeTrack(2, 1, Dir.N, Dir.E);
+            connect(fork1, Dir.S, tS1, Dir.N);
+
+            RailTrack tS2 = makeTrack(3, 1, Dir.W, Dir.E);
+            connect(tS1, Dir.E, tS2, Dir.W);
+
+            RailTrack tS3 = makeTrack(4, 1, Dir.W, Dir.N);
+            connect(tS2, Dir.E, tS3, Dir.W);
+
+            // Fork 2 at (4, 0)
+            ForkRailTrack fork2 = makeFork(4, 0);
+            fork2.addRoute(Dir.W, Dir.E);
+            fork2.addRoute(Dir.E, Dir.W);
+            fork2.addRoute(Dir.S, Dir.E);
+            fork2.addRoute(Dir.E, Dir.S);
+            fork2.setNormalRoute();
+
+            connect(tMain, Dir.E, fork2, Dir.W);
+            connect(tS3, Dir.N, fork2, Dir.S);
+
+            RailTrack tB1 = makeTrack(5, 0, Dir.W, Dir.E);
+            connect(fork2, Dir.E, tB1, Dir.W);
+            RailTrack tB = makeTrack(6, 0, Dir.W, Dir.E);
+            connect(tB1, Dir.E, tB, Dir.W);
+
+            Station a = makeStation(tA, "A");
+            Station b = makeStation(tB, "B");
+
+            // Post load init to populate graph
+            model.postLoadInit();
+
+            // Train 1: The active train starting at Station A
+            Train t1 = makeTrain(tA, Dir.W);
+
+            // Train 2: The blocker parked on tMain
+            Train t2 = makeTrainNoStation(tMain, Dir.W);
+            ((Locomotive) t2.getDirectorLinker()).setEngineOn(false); // keep it parked
+
+            // Force segment registration
+            t1.getSafetyManager().claimOccupiedSegments();
+            t2.getSafetyManager().claimOccupiedSegments();
+
+            // Verify Train 2 owns tMain's segment
+            Segment mainSeg = model.getRailwayGraph().getSegment(tMain);
+            assertNotNull(mainSeg);
+            assertTrue(model.getBlockManager().getOwners(mainSeg).contains(t2));
+
+            // Now program Train 1 to go from Station A to B
+            program("A", a.getId(), "B", b.getId(), t1.getId());
+
+            // Run physics
+            runTicks(300);
+
+            // Train 1 should have bypassed tMain via the siding and reached B!
+            assertAtStation(t1, b);
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     // Helpers
     // ═══════════════════════════════════════════════════════════════════

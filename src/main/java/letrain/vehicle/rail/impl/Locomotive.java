@@ -86,7 +86,7 @@ public class Locomotive extends Linker implements Tractor {
             getTrain().refreshLinkersDirection();
             getTrain().notifySenseChanged(!isReversed());
             if (getTrain().getSafetyManager() != null && getTrain().getModel() != null) {
-                getTrain().getSafetyManager().onReverse((letrain.mvp.impl.Model) getTrain().getModel());
+                getTrain().getSafetyManager().onReverse();
             }
         }
     }
@@ -275,11 +275,16 @@ public class Locomotive extends Linker implements Tractor {
         if (this.targetSpeed == speed) {
             return;
         }
+        int oldSpeed = this.targetSpeed;
         this.targetSpeed = speed;
         if (this.targetSpeed > 0) {
             this.engineOn = true;
             if (getTrain() != null) {
                 getTrain().setStalled(false);
+                if (oldSpeed == 0) {
+                    log.info("Locomotive {}: target speed increased from 0. Acquiring initial locks.", id);
+                    getTrain().acquireInitialLocks();
+                }
             }
         }
         limitTargetSpeed();

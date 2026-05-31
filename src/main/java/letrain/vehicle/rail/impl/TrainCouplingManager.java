@@ -36,6 +36,9 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
 
     public TrainCouplingManager(Train train) {
         this.train = train;
+        this.linkersToJoin = new LinkedList<>();
+        this.linkersToRemove = new LinkedList<>();
+
     }
 
     @Override

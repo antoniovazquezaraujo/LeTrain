@@ -43,6 +43,9 @@ public interface AutoPilot {
 
     void clearRoute();
 
+    /** Replaces a segment in the current route (e.g. when bypassing a blocked segment with an alternative). */
+    void replaceRouteSegment(Segment oldSeg, Segment newSeg);
+
     /** Ensure the fork between 'from' and 'to' segments is oriented correctly. */
     default void ensureForkRoute(letrain.segments.Segment from, letrain.segments.Segment to) {}
 }

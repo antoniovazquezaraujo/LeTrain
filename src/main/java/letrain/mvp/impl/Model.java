@@ -203,12 +203,12 @@ public class Model implements letrain.mvp.Model {
 
         setupModelTrainEventListeners();
         if (locomotives != null) {
+            // Pass 1: Set model, post-load init, setup listeners, and claim physically occupied segments
             for (Locomotive loco : locomotives) {
                 Train train = loco.getTrain();
                 if (train != null) {
                     train.setModel(this);
                     train.postLoadInit();
-                    train.rebind();
                     int stationId = train.getStationId();
                     if (stationId != 0) {
                         Station station = getStation(stationId);
@@ -217,6 +217,14 @@ public class Model implements letrain.mvp.Model {
                     for (TrainEventListener l : trainEventListeners) {
                         train.addTrainEventListener(l);
                     }
+                    train.getSafetyManager().claimOccupiedSegments();
+                }
+            }
+            // Pass 2: Acquire initial lookahead locks for all active autopilot trains
+            for (Locomotive loco : locomotives) {
+                Train train = loco.getTrain();
+                if (train != null && train.isAutoMode()) {
+                    train.acquireInitialLocks();
                 }
             }
         }
