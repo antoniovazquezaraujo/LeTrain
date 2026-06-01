@@ -131,10 +131,9 @@ public class Locomotive extends Linker implements Tractor {
 
 
             // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
-            if (getTrain() != null && getTrain().isLoading()) {
+            if (getTrain() != null && getTrain().getLogisticsManager().isLoading()) {
                 return moved;
             }
-
 
 
             // Handle acceleration from 0 - allows getting unstuck from speed 0

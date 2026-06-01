@@ -823,7 +823,7 @@ public class Model implements letrain.mvp.Model {
                     if (train.getDirectorLinker() instanceof letrain.vehicle.rail.Linker) sb.append("  Pos: ").append(((letrain.vehicle.rail.Linker) train.getDirectorLinker()).getPosition()).append("\n");
                     sb.append("  Speed: ").append(train.getDirectorLinker().getSpeed()).append("\n");
                 }
-                if (train.isLoading()) sb.append("  State: LOADING at Station ").append(train.getStationAtTrain().getId()).append("\n");
+                if (train.getLogisticsManager().isLoading()) sb.append("  State: LOADING at Station ").append(train.getLogisticsManager().getStationAtTrain().getId()).append("\n");
                 else if (train.isStalled()) sb.append("  State: STALLED\n");
                 else sb.append("  State: CRUIZING\n");
                 for (letrain.vehicle.rail.Linker linker : train.getLinkers()) {

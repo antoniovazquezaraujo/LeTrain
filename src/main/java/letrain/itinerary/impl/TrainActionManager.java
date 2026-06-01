@@ -27,15 +27,15 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         }
         switch (command.kind()) {
             case LOAD:
-                letrain.track.Station loadStation = train.getStationAtTrain();
+                letrain.track.Station loadStation = train.getLogisticsManager().getStationAtTrain();
                 if (loadStation != null) {
-                    train.startLoadProcess(loadStation);
+                    train.getLogisticsManager().startLoadProcess(loadStation);
                 }
                 break;
             case UNLOAD:
-                letrain.track.Station unloadStation = train.getStationAtTrain();
+                letrain.track.Station unloadStation = train.getLogisticsManager().getStationAtTrain();
                 if (unloadStation != null) {
-                    train.startUnloadProcess(unloadStation);
+                    train.getLogisticsManager().startUnloadProcess(unloadStation);
                 }
                 break;
             case REVERSE:

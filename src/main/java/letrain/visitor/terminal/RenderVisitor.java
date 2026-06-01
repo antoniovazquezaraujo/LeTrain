@@ -305,7 +305,7 @@ public class RenderVisitor implements Visitor {
             view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), getCrashAspect());
             return;
         }
-        if (wagon.getTrain() != null && wagon.getTrain().isLoading()) {
+        if (wagon.getTrain() != null && wagon.getTrain().getLogisticsManager().isLoading()) {
             letrain.track.Station station = model.getStation(wagon.getTrain().getStationId());
             if (station != null && station.getCargoType() != letrain.track.CargoTypes.NONE &&
                     station.getCargoType() == wagon.getExclusiveCargoType()) {

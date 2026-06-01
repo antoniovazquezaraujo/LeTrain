@@ -369,7 +369,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
                     if (selectedStation != null) {
                         letrain.vehicle.rail.Linker linker = selectedStation.getTrack().getLinker();
                         if (linker != null && linker.getTrain() != null) {
-                            linker.getTrain().performIndustrialAction(selectedStation);
+                            Train train = linker.getTrain();
+                            train.getLogisticsManager().performIndustrialAction(selectedStation);
                         }
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
@@ -623,7 +624,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
             case ArrowUp:
                 if (model.getSelectedLocomotive() != null) {
                     Locomotive loco = model.getSelectedLocomotive();
-                    if (loco.isEngineOn() && !loco.getTrain().isLoading()) {
+                    if (loco.isEngineOn() && !loco.getTrain().getLogisticsManager().isLoading()) {
                         accelerateLocomotive();
                         locomotiveId = 0;
                     }
@@ -632,7 +633,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
             case ArrowDown:
                 if (model.getSelectedLocomotive() != null) {
                     Locomotive loco = model.getSelectedLocomotive();
-                    if (loco.isEngineOn() && !loco.getTrain().isLoading()) {
+                    if (loco.isEngineOn() && !loco.getTrain().getLogisticsManager().isLoading()) {
                         decelerateLocomotive();
                         locomotiveId = 0;
                     }
@@ -695,19 +696,19 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
                                                                                                               // está
                                                                                                               // detenido
                     Train train = model.getSelectedLocomotive().getTrain();
-                    Station station = train.getStationAtTrain();
+                    Station station = train.getLogisticsManager().getStationAtTrain();
                     if (station != null) {
-                        if (train.isLoading()) { // Si ya está cargando/descargando, lo termina
-                            train.endLoadUnloadProcess();
+                        if (train.getLogisticsManager().isLoading()) { // Si ya está cargando/descargando, lo termina
+                            train.getLogisticsManager().endLoadUnloadProcess();
                         } else {
-                            CargoTypes trainCargoType = train.getTrainCargoType();
+                            CargoTypes trainCargoType = train.getLogisticsManager().getTrainCargoType();
                             if (trainCargoType != CargoTypes.NONE
                                     && station.getRole() == CargoTypes.StationRole.CONSUMER) {
-                                train.startUnloadProcess(station);
+                                train.getLogisticsManager().startUnloadProcess(station);
                                 train.recordStopAtStation();
                             } else if (trainCargoType == CargoTypes.NONE
                                     && station.getRole() == CargoTypes.StationRole.PRODUCER) {
-                                train.startLoadProcess(station);
+                                train.getLogisticsManager().startLoadProcess(station);
                                 train.recordStopAtStation();
                             }
                         }

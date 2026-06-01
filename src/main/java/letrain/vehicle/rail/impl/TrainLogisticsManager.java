@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import letrain.track.CargoTypes;
 import letrain.track.Station;
 import letrain.vehicle.rail.Linker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +15,12 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
     private boolean isLoading = false;
     private int loadingCount = 0;
     private boolean isUnloadingDirection = false;
-    
+    private Train train;
+
+    public TrainLogisticsManager(Train train) {
+        this.train = train;
+    }
+
     @JsonIgnore
     private transient List<Wagon> currentCapableWagons = null;
 
@@ -28,16 +31,19 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
 
     @Override
     public void setLoading(boolean loading) {
+
         isLoading = loading;
     }
 
     @Override
     public int getLoadingCount() {
+
         return loadingCount;
     }
 
     @Override
     public void setLoadingCount(int loadingCount) {
+
         this.loadingCount = loadingCount;
     }
 
@@ -48,36 +54,37 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
 
     @Override
     public void setUnloadingDirection(boolean unloadingDirection) {
+
         isUnloadingDirection = unloadingDirection;
     }
 
     @Override
-    public void startLoadProcess(Train train, Station station) {
+    public void startLoadProcess(Station station) {
         this.isLoading = true;
         this.isUnloadingDirection = false;
-        this.currentCapableWagons = getCapableWagons(train, station, false);
+        this.currentCapableWagons = getCapableWagons(station, false);
         this.loadingCount = MAX_LOADING_COUNT * currentCapableWagons.size();
 
         if (loadingCount == 0) {
             this.isLoading = false;
             this.currentCapableWagons = null;
         } else {
-            station.notifyStartLoad(train);
+            station.notifyStartLoad(this.train);
         }
     }
 
     @Override
-    public void startUnloadProcess(Train train, Station station) {
+    public void startUnloadProcess(Station station) {
         this.isLoading = true;
         this.isUnloadingDirection = true;
-        this.currentCapableWagons = getCapableWagons(train, station, true);
+        this.currentCapableWagons = getCapableWagons(station, true);
         this.loadingCount = MAX_LOADING_COUNT * currentCapableWagons.size();
 
         if (loadingCount == 0) {
             this.isLoading = false;
             this.currentCapableWagons = null;
         } else {
-            station.notifyStartUnload(train);
+            station.notifyStartUnload(this.train);
         }
     }
 
@@ -89,10 +96,10 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
     }
 
     @Override
-    public List<Wagon> getCapableWagons(Train train, Station station, boolean isUnload) {
+    public List<Wagon> getCapableWagons(Station station, boolean isUnload) {
         List<Wagon> result = new ArrayList<>();
         CargoTypes stationCargo = station.getCargoType();
-        for (Linker linker : train.getLinkers()) {
+        for (Linker linker : this.train.getLinkers()) {
             if (linker instanceof Wagon) {
                 Wagon wagon = (Wagon) linker;
                 if (isUnload) {
@@ -111,19 +118,19 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
     }
 
     @Override
-    public boolean performIndustrialAction(Train train, Station station) {
-        if (train.getDirectorLinker().getSpeed() != 0)
+    public boolean performIndustrialAction(Station station) {
+        if (this.train.getDirectorLinker().getSpeed() != 0)
             return false;
 
         boolean anyActionTaken = false;
         double totalDistance = 0;
         int deliveryCount = 0;
 
-        if (train.getLinkers().isEmpty())
+        if (this.train.getLinkers().isEmpty())
             return false;
 
         if (currentCapableWagons == null || currentCapableWagons.isEmpty()) {
-            currentCapableWagons = getCapableWagons(train, station, isUnloadingDirection);
+            currentCapableWagons = getCapableWagons(station, isUnloadingDirection);
         }
 
         if (currentCapableWagons.isEmpty())
@@ -177,8 +184,8 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
 
     @JsonIgnore
     @Override
-    public Station getStationAtTrain(Train train) {
-        for (Linker linker : train.getLinkers()) {
+    public Station getStationAtTrain() {
+        for (Linker linker : this.train.getLinkers()) {
             letrain.track.Track track = linker.getTrack();
             if (track != null && track.getSensor() instanceof Station) {
                 return (Station) track.getSensor();
@@ -189,9 +196,9 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
 
     @JsonIgnore
     @Override
-    public CargoTypes getTrainCargoType(Train train) {
+    public CargoTypes getTrainCargoType() {
         CargoTypes firstCargoType = CargoTypes.NONE;
-        for (Linker linker : train.getLinkers()) {
+        for (Linker linker : this.train.getLinkers()) {
             if (linker instanceof Wagon) {
                 Wagon wagon = (Wagon) linker;
                 if (wagon.getCargoAmount() > 0) {

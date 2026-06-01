@@ -1,9 +1,7 @@
 package letrain.vehicle.rail.impl;
 
 import letrain.itinerary.WaypointCommand;
-import letrain.map.Dir;
 import letrain.mvp.Model;
-import letrain.track.CargoTypes;
 import letrain.track.rail.RailTrack;
 import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
@@ -37,6 +35,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Train implements Trailer<RailTrack>, Renderable {
     static final int CRASH_SPEED_THRESHOLD = 5;
     public static final Logger log = LoggerFactory.getLogger(Train.class);
+
+    public letrain.vehicle.rail.TrainLogisticsManager getLogisticsManager() {
+        return logisticsManager;
+    }
+
+    public void setLogisticsManager(letrain.vehicle.rail.TrainLogisticsManager logisticsManager) {
+        this.logisticsManager = logisticsManager;
+    }
 
     enum LinkersSense {
         FRONT, BACK
@@ -74,7 +80,7 @@ public class Train implements Trailer<RailTrack>, Renderable {
         this.coreTrainListeners = new CopyOnWriteArrayList<>();
         this.pendingCommands = new CopyOnWriteArrayList<>();
         this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager(this);
-        this.logisticsManager = new letrain.vehicle.rail.impl.TrainLogisticsManager();
+        this.setLogisticsManager(new TrainLogisticsManager(this));
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.actionManager = new letrain.itinerary.impl.TrainActionManager(this);
@@ -97,26 +103,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
 
     public void setStationId(int railStationId) {
         this.railStationId = railStationId;
-    }
-
-    public boolean isLoading() {
-        return logisticsManager.isLoading();
-    }
-
-    public void setLoading(boolean isLoading) {
-        logisticsManager.setLoading(isLoading);
-    }
-
-    public int getLoadingCount() {
-        return logisticsManager.getLoadingCount();
-    }
-
-    public void setLoadingCount(int loadingCount) {
-        logisticsManager.setLoadingCount(loadingCount);
-    }
-
-    public boolean isUnloadingDirection() {
-        return logisticsManager.isUnloadingDirection();
     }
 
     public int getSpeed() {
@@ -585,36 +571,14 @@ public class Train implements Trailer<RailTrack>, Renderable {
         return maxRemovable == 0 ? 0 : 1;
     }
 
-    public letrain.track.Station getStationAtTrain() {
-        return logisticsManager.getStationAtTrain(this);
-    }
-
     @Override
     public String toString() {
         return "Train " + getId();
     }
 
     // Punto 6: El tiempo de carga depende de la cantidad de vagones cargados.
-    public void startLoadProcess(letrain.track.Station station) {
-        logisticsManager.startLoadProcess(this, station);
-    }
-
-    public List<Wagon> getCapableWagons(letrain.track.Station station, boolean isUnload) {
-        return logisticsManager.getCapableWagons(this, station, isUnload);
-    }
 
     // Punto 9: El tiempo de descarga depende de la cantidad de vagones descargados.
-    public void startUnloadProcess(letrain.track.Station station) {
-        logisticsManager.startUnloadProcess(this, station);
-    }
-
-    public void endLoadUnloadProcess() {
-        logisticsManager.endLoadUnloadProcess();
-    }
-
-    public boolean performIndustrialAction(letrain.track.Station station) {
-        return logisticsManager.performIndustrialAction(this, station);
-    }
 
     public int getDistanceTraveled() {
         if (getDirectorLinker() == null) {
@@ -640,10 +604,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
         if (linkers != null) {
             linkers.forEach(linker -> linker.syncPosition());
         }
-    }
-
-    public CargoTypes getTrainCargoType() {
-        return logisticsManager.getTrainCargoType(this);
     }
 
 

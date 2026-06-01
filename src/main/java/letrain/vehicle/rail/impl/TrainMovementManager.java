@@ -385,7 +385,7 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
     @Override
     public boolean advance() {
-        if (train.isLoading()) {
+        if (train.getLogisticsManager().isLoading()) {
             Train.log.info("Train {} advance: cannot move because train is loading", train.getId());
             return false;
         }

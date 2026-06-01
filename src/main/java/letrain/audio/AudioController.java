@@ -255,7 +255,7 @@ public class AudioController {
 
             // Sync Loading State
             if (loco.getTrain() != null) {
-                synth.setLoading(loco.getTrain().isLoading());
+                synth.setLoading(loco.getTrain().getLogisticsManager().isLoading());
             }
         }
     }
