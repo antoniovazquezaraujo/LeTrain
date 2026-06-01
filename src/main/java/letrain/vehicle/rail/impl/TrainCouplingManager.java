@@ -17,8 +17,6 @@ import letrain.track.Track;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.RailIterator;
 import letrain.vehicle.rail.TrainEventListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingManager {
     private final Train train;
@@ -204,7 +202,7 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
             linkersToJoin.clear();
             joined = true;
             if (linkersActuallyAdded) {
-                train.refreshLinkersDirection();
+                train.movementManager.refreshLinkersDirection();
                 train.setStalled(false);
                 train.notifyLink();
             }
@@ -367,7 +365,7 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         train.rebind();
         linkersToRemove.clear();
         numLinkersToRemove = 0;
-        train.refreshLinkersDirection();
+        train.movementManager.refreshLinkersDirection();
         train.setStalled(false);
         train.notifyUnlink();
     }

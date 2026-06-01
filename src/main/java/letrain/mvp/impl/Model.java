@@ -130,7 +130,8 @@ public class Model implements letrain.mvp.Model {
                 if (train != null && train.isAutoMode()) {
                     letrain.segments.Segment nextSeg = train.getSafetyManager().getNextSegment();
                     if (train.getSafetyManager().isWaitingForBlock() && releasedSegment.equals(nextSeg)) {
-                        train.onBlockReleased();
+
+                        train.getSafetyManager().onBlockReleased();
                     }
                 }
             }
@@ -764,17 +765,17 @@ public class Model implements letrain.mvp.Model {
                 java.util.List<letrain.segments.Segment> owned = getBlockManager().getOwnedSegments(train);
                 for (letrain.segments.Segment s : owned) sb.append(s.getId()).append(" ");
                 sb.append("\n");
-                
-                sb.append("  Current Segment: ").append(train.getCurrentSegment() != null ? train.getCurrentSegment().getId() : "None").append("\n");
-                sb.append("  Next Segment: ").append(train.getNextSegment() != null ? train.getNextSegment().getId() : "None").append("\n");
-                if (!train.hasPermissionToMove() && train.getNextSegment() != null) {
-                    java.util.List<Train> blockers = getBlockManager().getOwners(train.getNextSegment());
+
+                sb.append("  Current Segment: ").append(train.getSafetyManager().getCurrentSegment() != null ? train.getSafetyManager().getCurrentSegment().getId() : "None").append("\n");
+                sb.append("  Next Segment: ").append(train.getSafetyManager().getNextSegment() != null ? train.getSafetyManager().getNextSegment().getId() : "None").append("\n");
+                if (!train.getSafetyManager().hasPermissionToMove() && train.getSafetyManager().getNextSegment() != null) {
+                    java.util.List<Train> blockers = getBlockManager().getOwners(train.getSafetyManager().getNextSegment());
                     sb.append("  Permission: WAITING (Blocked by: ");
                     if (blockers.isEmpty()) sb.append("Logic/Retry Timer");
                     else { for (Train b : blockers) sb.append("Train ").append(b.getId()).append(" "); }
                     sb.append(")\n");
                 } else {
-                    sb.append("  Permission: ").append(train.hasPermissionToMove() ? "GRANTED" : "WAITING").append("\n");
+                    sb.append("  Permission: ").append(train.getSafetyManager().hasPermissionToMove() ? "GRANTED" : "WAITING").append("\n");
                 }
 
                 int wagonCount = 0;

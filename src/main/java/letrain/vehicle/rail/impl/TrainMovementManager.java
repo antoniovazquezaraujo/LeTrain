@@ -399,7 +399,7 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         }
 
         if (train.getModel() != null) {
-            if (!train.hasPermissionToMove()) {
+            if (!train.getSafetyManager().hasPermissionToMove()) {
                 Train.log.info("Train {} advance: cannot move because hasPermissionToMove is false. Forcing setTargetSpeed(0)", train.getId());
                 if (train.getDirectorLinker() != null) {
                     train.getDirectorLinker().setTargetSpeed(0);
@@ -541,7 +541,7 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         if (head != null) {
             int currentTargetSpeed = head.getTargetSpeed();
             Train.log.info("Train {} initiateBraking: target speed was {}, setting to 0", train.getId(), currentTargetSpeed);
-            train.onBrakingInitiated(currentTargetSpeed);
+            train.getSafetyManager().onBrakingInitiated(currentTargetSpeed);
             head.setTargetSpeed(0);
         }
     }

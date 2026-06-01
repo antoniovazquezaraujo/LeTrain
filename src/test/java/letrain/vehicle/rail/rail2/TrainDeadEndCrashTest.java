@@ -120,7 +120,7 @@ class TrainDeadEndCrashTest {
         train.addTrainEventListener(listener);
 
         // --- Act ---
-        train.moveLinkers(true);
+        train.movementManager.moveLinkers(true);
 
         // --- Assert ---
         // 1. notifyCrash was invoked (via listener.onCrash)
@@ -216,7 +216,7 @@ class TrainDeadEndCrashTest {
         train.addTrainEventListener(listener);
 
         // --- Act ---
-        train.moveLinkers(true);
+        train.movementManager.moveLinkers(true);
 
         // --- Assert ---
         // 1. notifyContact was invoked (via listener.onContact)
@@ -317,7 +317,7 @@ class TrainDeadEndCrashTest {
         train.addTrainEventListener(listener);
 
         // --- Act ---
-        boolean moved = train.moveLinkers(true);
+        boolean moved = train.movementManager.moveLinkers(true);
 
         // --- Assert ---
         // 1. moveLinkers returns true (movement succeeded)
@@ -408,7 +408,7 @@ class TrainDeadEndCrashTest {
         train.addTrainEventListener(listener);
 
         // --- Act ---
-        train.moveLinkers(false);
+        train.movementManager.moveLinkers(false);
 
         // --- Assert ---
         // 1. Contact notification (low speed + dead-end = contact, not crash)

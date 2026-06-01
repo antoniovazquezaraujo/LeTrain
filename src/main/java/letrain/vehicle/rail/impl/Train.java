@@ -4,18 +4,15 @@ import letrain.itinerary.TrainActionManager;
 import letrain.itinerary.WaypointCommand;
 import letrain.map.Dir;
 import letrain.mvp.Model;
-import letrain.segments.BlockManager;
 import letrain.segments.RailNode;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.track.CargoTypes;
-import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
 import letrain.vehicle.Tractor;
-import letrain.vehicle.Transportable;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.Trailer;
 import letrain.vehicle.rail.TrainEventListener;
@@ -43,15 +40,13 @@ import java.util.function.Supplier;
  * Logistics are handled by {@link TrainLogisticsManager}.
  * Block-segment safety is managed by {@link TrainSafetyManager}.
  */
-public class Train implements Trailer<RailTrack>, Renderable, Transportable, TrainActionManager, TrainMovementManager, TrainSafetyManager {
+public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager {
     static final int CRASH_SPEED_THRESHOLD = 5;
     public static final Logger log = LoggerFactory.getLogger(Train.class);
 
     enum LinkersSense {
         FRONT, BACK
     }
-
-    ;
 
     private int id;
     private String name;
@@ -69,7 +64,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     private transient letrain.mvp.Model model;
     private transient List<TrainEventListener> trainListeners;
     private final transient List<WaypointCommand> pendingCommands;
-    private transient letrain.vehicle.rail.TrainMovementManager movementManager;
+    public transient letrain.vehicle.rail.TrainMovementManager movementManager;
     private transient letrain.vehicle.rail.TrainSafetyManager safetyManager;
     private transient boolean isNotifying = false;
     private transient boolean pendingReverse = false;
@@ -107,78 +102,6 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
     // SafetyManager //////////////////////////////////////////////////////////
     public letrain.vehicle.rail.TrainSafetyManager getSafetyManager() {
         return safetyManager;
-    }
-
-    @Override
-    public letrain.segments.Segment getCurrentSegment() {
-        return safetyManager.getCurrentSegment();
-    }
-
-    @Override
-    public letrain.segments.Segment getNextSegment() {
-        return safetyManager.getNextSegment();
-    }
-
-    @Override
-    public boolean isWaitingForBlock() {
-        return false;
-    }
-
-    @Override
-    public boolean hasPermissionToMove() {
-        return safetyManager.hasPermissionToMove();
-    }
-
-    @Override
-    public void onBlockReleased() {
-        if (model != null) {
-            safetyManager.onBlockReleased();
-        }
-    }
-
-    @Override
-    public void onBrakingInitiated(int targetSpeed) {
-        this.safetyManager.onBrakingInitiated(targetSpeed);
-    }
-
-    @Override
-    public void claimOccupiedSegments() {
-        this.safetyManager.claimOccupiedSegments();
-    }
-
-    @Override
-    public void onSegmentEntered(Segment newSegment) {
-        this.safetyManager.onSegmentEntered(newSegment);
-    }
-
-    @Override
-    public void onReverse() {
-        this.safetyManager.onReverse();
-    }
-
-    @Override
-    public Segment findNextSegment(Linker head, RailwayGraph graph) {
-        return this.safetyManager.findNextSegment(head, graph);
-    }
-
-    @Override
-    public void releaseOldSegments(BlockManager bm, RailwayGraph graph) {
-        this.safetyManager.releaseOldSegments(bm, graph);
-    }
-
-    @Override
-    public Segment findNextSegmentTopological(Linker head, RailwayGraph graph) {
-        return this.safetyManager.findNextSegmentTopological(head, graph);
-    }
-
-    @Override
-    public void forceSegmentReset() {
-        this.safetyManager.forceSegmentReset();
-    }
-
-    @Override
-    public void onEmergencyStop() {
-        this.safetyManager.onEmergencyStop();
     }
 
     public int getStationId() {
@@ -339,7 +262,7 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
             });
             checkWaypointArrival();
             if (autoMode && autopilot != null) {
-                autopilot.onSegmentEntered(getCurrentSegment());
+                autopilot.onSegmentEntered(safetyManager.getCurrentSegment());
             }
         } finally {
             isNotifying = false;
@@ -593,56 +516,11 @@ public class Train implements Trailer<RailTrack>, Renderable, Transportable, Tra
         }
     }
 
-    /**
-     * Advances the train by one cell if conditions allow.
-     * Handles direction, safety checks, and delegates movement to
-     * {@link TrainMovementManager#moveLinkers(boolean)}.
-     *
-     * @return true if the train moved, false otherwise
-     */
-    public boolean advance() {
-        return movementManager.advance();
-    }
-
-    public void refreshLinkersDirection() {
-        movementManager.refreshLinkersDirection();
-    }
-
     @Override
-    public void initiateBraking() {
-        this.movementManager.initiateBraking();
-    }
-
-    @Override
-    public void restoreSpeed(int speed) {
-        this.movementManager.restoreSpeed(speed);
-
-    }
-
-    public boolean moveLinkers(boolean isNormalSense) {
-        return movementManager.moveLinkers(isNormalSense);
-    }
-
-    @Override
-    public void crash(Linker linker, int speed) {
-        this.movementManager.crash(linker, speed);
-
-    }
-
-    @Override
-    public void correctDirection(Linker linker) {
-        this.movementManager.correctDirection(linker);
-
-    }
-
-    @Override
-    public void clearReservations(List<Track> reservedTracks) {
-        this.movementManager.clearReservations(reservedTracks);
-    }
-
-    @Override
-    public void forceEmergencyStop() {
-        this.movementManager.forceEmergencyStop();
+    public void forceSegmentReset() {
+        if (safetyManager != null) {
+            safetyManager.forceSegmentReset();
+        }
     }
 
     public Linker getFirstLinker() {

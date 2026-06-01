@@ -83,7 +83,7 @@ public class Locomotive extends Linker implements Tractor {
         }
         showingDirTurns = 5;
         if (getTrain() != null) {
-            getTrain().refreshLinkersDirection();
+            getTrain().movementManager.refreshLinkersDirection();
             getTrain().notifySenseChanged(!isReversed());
             if (getTrain().getSafetyManager() != null && getTrain().getModel() != null) {
                 getTrain().getSafetyManager().onReverse();
@@ -148,10 +148,10 @@ public class Locomotive extends Linker implements Tractor {
             }
 
             if (isTimeToMove()) {
-                boolean hasPerm = getTrain() != null && getTrain().hasPermissionToMove();
+                boolean hasPerm = getTrain() != null && getTrain().getSafetyManager().hasPermissionToMove();
                 log.info("Locomotive {}: isTimeToMove=true, currentSpeed={}, targetSpeed={}, turns={}, hasPermissionToMove={}",
                         id, currentSpeed, targetSpeed, turns, hasPerm);
-                if (getTrain().advance()) {
+                if (getTrain().movementManager.advance()) {
                     log.info("Locomotive {}: advance() succeeded", id);
                     moved = true;
                     incDistanceTraveled();

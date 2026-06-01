@@ -72,7 +72,7 @@ class TrainMoveLinkersTest {
         setupRemoveLinkerSetsTrackToNull(trackB, linkerOnTrackB, secondLinkerTrack);
 
         // --- Act ---
-        boolean result = train.moveLinkers(true);
+        boolean result = train.movementManager.moveLinkers(true);
 
         // --- Assert ---
         assertFalse(result,
@@ -123,7 +123,7 @@ class TrainMoveLinkersTest {
         when(trackC.enterLinkerFromDir(any(Dir.class), any(Linker.class))).thenReturn(true);
 
         // --- Act ---
-        boolean result = train.moveLinkers(true);
+        boolean result = train.movementManager.moveLinkers(true);
 
         // --- Assert ---
         assertFalse(result,
@@ -163,7 +163,7 @@ class TrainMoveLinkersTest {
         setupRealisticEnterLinker(trackC, linkerOnTrackC, secondLinkerTrack, secondLinker);
 
         // --- Act ---
-        boolean result = train.moveLinkers(true);
+        boolean result = train.movementManager.moveLinkers(true);
 
         // --- Assert ---
         assertTrue(result,
