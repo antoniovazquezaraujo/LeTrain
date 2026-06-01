@@ -321,9 +321,9 @@ class SerializationTest {
 
         // Unlink one vehicle from the front side (frontWagon), leaving loco+backWagon
         // intact
-        train.trainCouplingManager.setFrontDivisionSense();
+        train.trainCouplingManager.setFrontDivisionSense(train);
 
-        train.trainCouplingManager.divideTrain(() -> 501);
+        train.trainCouplingManager.divideTrain(train, () -> 501);
 
         assertEquals(2, train.getLinkers().size(), "Train should keep two linkers after unlinking one from front");
         assertTrue(train.getLinkers().contains(loco));

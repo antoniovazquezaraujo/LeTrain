@@ -279,7 +279,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                             model.setMode(Model.GameMode.LINK);
                             if (model.getSelectedLocomotive() != null
                                     && model.getSelectedLocomotive().getTrain() != null) {
-                                model.getSelectedLocomotive().getTrain().trainCouplingManager.resetLinkState();
+                                Train train = model.getSelectedLocomotive().getTrain();
+                                train.trainCouplingManager.resetLinkState(train);
                             }
                         }
                         return;
@@ -288,7 +289,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                             model.setMode(Model.GameMode.UNLINK);
                             if (model.getSelectedLocomotive() != null
                                     && model.getSelectedLocomotive().getTrain() != null) {
-                                model.getSelectedLocomotive().getTrain().trainCouplingManager.resetUnlinkState();
+                                Train train = model.getSelectedLocomotive().getTrain();
+                                train.trainCouplingManager.resetUnlinkState(train);
                             }
                         }
                         return;
@@ -480,26 +482,26 @@ public class Gdx3DInputHandler implements InputProcessor {
             if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
                 Train train = model.getSelectedLocomotive().getTrain();
 
-                train.trainCouplingManager.updateLinkersToJoin(true);
+                train.trainCouplingManager.updateLinkersToJoin(train, true);
             }
         } else if (stroke.getKeyType() == KeyType.ArrowDown) {
             if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
                 Train train = model.getSelectedLocomotive().getTrain();
 
-                train.trainCouplingManager.updateLinkersToJoin(false);
+                train.trainCouplingManager.updateLinkersToJoin(train, false);
             }
         } else if (stroke.getKeyType() == KeyType.ArrowLeft) {
             if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
                 Train train = model.getSelectedLocomotive().getTrain();
-                if (train.trainCouplingManager.getNumLinkersToJoin() > 0) {
-                    train.trainCouplingManager.setNumLinkersToJoin(train.trainCouplingManager.getNumLinkersToJoin() - 1);
+                if (train.getNumLinkersToJoin() > 0) {
+                    train.setNumLinkersToJoin(train.getNumLinkersToJoin() - 1);
                 }
             }
         } else if (stroke.getKeyType() == KeyType.ArrowRight) {
             if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
                 Train train = model.getSelectedLocomotive().getTrain();
-                if (train.trainCouplingManager.getNumLinkersToJoin() < train.trainCouplingManager.getLinkersToJoin().size()) {
-                    train.trainCouplingManager.setNumLinkersToJoin(train.trainCouplingManager.getNumLinkersToJoin() + 1);
+                if (train.getNumLinkersToJoin() < train.getLinkersToJoin().size()) {
+                    train.setNumLinkersToJoin(train.getNumLinkersToJoin() + 1);
                 }
             }
         } else if (stroke.getKeyType() == KeyType.Character
@@ -507,8 +509,8 @@ public class Gdx3DInputHandler implements InputProcessor {
             Locomotive loco = model.getSelectedLocomotive();
             if (loco != null && loco.getTrain() != null) {
                 Train train = loco.getTrain();
-                if (!train.getLinkersToJoin().isEmpty() && train.trainCouplingManager.getNumLinkersToJoin() > 0) {
-                    train.trainCouplingManager.joinLinkers();
+                if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
+                    train.trainCouplingManager.joinLinkers(train);
                 }
                 model.setMode(Model.GameMode.MENU);
             }
@@ -519,17 +521,17 @@ public class Gdx3DInputHandler implements InputProcessor {
         if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
             Train train = model.getSelectedLocomotive().getTrain();
             if (stroke.getKeyType() == KeyType.ArrowUp) {
-                train.trainCouplingManager.setFrontDivisionSense();
+                train.trainCouplingManager.setFrontDivisionSense(train);
             } else if (stroke.getKeyType() == KeyType.ArrowDown) {
-                train.trainCouplingManager.setBackDivisionSense();
+                train.trainCouplingManager.setBackDivisionSense(train);
             } else if (stroke.getKeyType() == KeyType.ArrowLeft) {
-                train.trainCouplingManager.selectPrevDivisionLink();
+                train.trainCouplingManager.selectPrevDivisionLink(train);
             } else if (stroke.getKeyType() == KeyType.ArrowRight) {
-                train.trainCouplingManager.selectNextDivisionLink();
+                train.trainCouplingManager.selectNextDivisionLink(train);
             } else if (stroke.getKeyType() == KeyType.Character
                     && stroke.getCharacter() == ' ') {
 
-                train.trainCouplingManager.divideTrain(() -> model.nextTrainId());
+                train.trainCouplingManager.divideTrain(train, () -> model.nextTrainId());
                 audioController.playOneShot("link",
                         (float) model.getSelectedLocomotive().getPosition().getX(),
                         (float) model.getSelectedLocomotive().getPosition().getY());

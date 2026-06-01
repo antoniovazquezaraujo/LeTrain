@@ -242,12 +242,12 @@ public class RenderVisitor implements Visitor {
         if (selectedLocomotive != null && selectedLocomotive.getTrain() != null) {
             Train activeTrain = selectedLocomotive.getTrain();
             boolean highlighted = false;
-            if (activeTrain.trainCouplingManager.getLinkersToRemove().contains(linker)) {
+            if (activeTrain.getLinkersToRemove().contains(linker)) {
                 highlighted = true;
             } else {
                 int count = 0;
                 for (Linker linkerToJoin : activeTrain.getLinkersToJoin()) {
-                    if (count >= activeTrain.trainCouplingManager.getNumLinkersToJoin())
+                    if (count >= activeTrain.getNumLinkersToJoin())
                         break;
                     if (linkerToJoin == linker) {
                         highlighted = true;

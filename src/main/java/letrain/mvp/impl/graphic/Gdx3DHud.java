@@ -29,6 +29,7 @@ import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.utils.FontManager;
 import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -377,12 +378,14 @@ public class Gdx3DHud {
                         if (newMode == letrain.mvp.Model.GameMode.LINK) {
                             if (model.getSelectedLocomotive() != null
                                     && model.getSelectedLocomotive().getTrain() != null) {
-                                model.getSelectedLocomotive().getTrain().trainCouplingManager.resetLinkState();
+                                Train train = model.getSelectedLocomotive().getTrain();
+                                train.trainCouplingManager.resetLinkState(train);
                             }
                         } else if (newMode == letrain.mvp.Model.GameMode.UNLINK) {
                             if (model.getSelectedLocomotive() != null
                                     && model.getSelectedLocomotive().getTrain() != null) {
-                                model.getSelectedLocomotive().getTrain().trainCouplingManager.resetUnlinkState();
+                                Train train = model.getSelectedLocomotive().getTrain();
+                                train.trainCouplingManager.resetUnlinkState(train);
                             }
                         }
                     }
