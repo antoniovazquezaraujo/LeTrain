@@ -1,9 +1,6 @@
 package letrain.vehicle.rail.impl;
 
-import letrain.itinerary.WaypointCommand;
-import letrain.map.Dir;
 import letrain.mvp.Model;
-import letrain.track.CargoTypes;
 import letrain.track.rail.RailTrack;
 import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
@@ -22,7 +19,6 @@ import java.time.LocalDateTime;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -37,6 +33,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Train implements Trailer<RailTrack>, Renderable {
     static final int CRASH_SPEED_THRESHOLD = 5;
     public static final Logger log = LoggerFactory.getLogger(Train.class);
+
+    public letrain.vehicle.rail.TrainLogisticsManager getLogisticsManager() {
+        return logisticsManager;
+    }
+
+    public void setLogisticsManager(letrain.vehicle.rail.TrainLogisticsManager logisticsManager) {
+        this.logisticsManager = logisticsManager;
+    }
 
     enum LinkersSense {
         FRONT, BACK
@@ -58,23 +62,23 @@ public class Train implements Trailer<RailTrack>, Renderable {
     private transient letrain.mvp.Model model;
     public transient List<TrainEventListener> scriptTrainListeners;
     public transient List<TrainEventListener> coreTrainListeners;
-    private final transient List<WaypointCommand> pendingCommands;
+
     public transient letrain.vehicle.rail.TrainMovementManager movementManager;
     private transient letrain.vehicle.rail.TrainSafetyManager safetyManager;
     public transient letrain.itinerary.TrainActionManager actionManager;
     private transient boolean isNotifying = false;
     public transient boolean pendingReverse = false;
 
-    private transient int waitTicks = 0;
+
 
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
         this.linkers = new LinkedList<>();
         this.scriptTrainListeners = new CopyOnWriteArrayList<>();
         this.coreTrainListeners = new CopyOnWriteArrayList<>();
-        this.pendingCommands = new CopyOnWriteArrayList<>();
+
         this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager(this);
-        this.logisticsManager = new letrain.vehicle.rail.impl.TrainLogisticsManager();
+        this.setLogisticsManager(new TrainLogisticsManager(this));
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.actionManager = new letrain.itinerary.impl.TrainActionManager(this);
@@ -97,26 +101,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
 
     public void setStationId(int railStationId) {
         this.railStationId = railStationId;
-    }
-
-    public boolean isLoading() {
-        return logisticsManager.isLoading();
-    }
-
-    public void setLoading(boolean isLoading) {
-        logisticsManager.setLoading(isLoading);
-    }
-
-    public int getLoadingCount() {
-        return logisticsManager.getLoadingCount();
-    }
-
-    public void setLoadingCount(int loadingCount) {
-        logisticsManager.setLoadingCount(loadingCount);
-    }
-
-    public boolean isUnloadingDirection() {
-        return logisticsManager.isUnloadingDirection();
     }
 
     public int getSpeed() {
@@ -150,9 +134,9 @@ public class Train implements Trailer<RailTrack>, Renderable {
         } else if (autopilot != null && autopilot.itinerary().isPresent()) {
             autoMode = autopilot.activate();
             if (autoMode) {
-                checkWaypointArrival();
+                this.actionManager.checkWaypointArrival();
                 this.actionManager.acquireInitialLocks();
-                checkWaypointArrival();
+                this.actionManager.checkWaypointArrival();
             }
         }
         log.info("[TRAIN] toggleAutoMode → autoMode={}", autoMode);
@@ -301,7 +285,7 @@ public class Train implements Trailer<RailTrack>, Renderable {
                     }
                 });
             }
-            checkWaypointArrival();
+            this.actionManager.checkWaypointArrival();
             if (autoMode && autopilot != null) {
                 autopilot.onSegmentEntered(safetyManager.getCurrentSegment());
             }
@@ -585,35 +569,9 @@ public class Train implements Trailer<RailTrack>, Renderable {
         return maxRemovable == 0 ? 0 : 1;
     }
 
-    public letrain.track.Station getStationAtTrain() {
-        return logisticsManager.getStationAtTrain(this);
-    }
-
     @Override
     public String toString() {
         return "Train " + getId();
-    }
-
-    // Punto 6: El tiempo de carga depende de la cantidad de vagones cargados.
-    public void startLoadProcess(letrain.track.Station station) {
-        logisticsManager.startLoadProcess(this, station);
-    }
-
-    public List<Wagon> getCapableWagons(letrain.track.Station station, boolean isUnload) {
-        return logisticsManager.getCapableWagons(this, station, isUnload);
-    }
-
-    // Punto 9: El tiempo de descarga depende de la cantidad de vagones descargados.
-    public void startUnloadProcess(letrain.track.Station station) {
-        logisticsManager.startUnloadProcess(this, station);
-    }
-
-    public void endLoadUnloadProcess() {
-        logisticsManager.endLoadUnloadProcess();
-    }
-
-    public boolean performIndustrialAction(letrain.track.Station station) {
-        return logisticsManager.performIndustrialAction(this, station);
     }
 
     public int getDistanceTraveled() {
@@ -642,83 +600,9 @@ public class Train implements Trailer<RailTrack>, Renderable {
         }
     }
 
-    public CargoTypes getTrainCargoType() {
-        return logisticsManager.getTrainCargoType(this);
-    }
-
-
-    public void resumeWaiting() {
-        log.info("Train {} resumeWaiting from wait", id);
-        this.waitTicks = 0;
-        if (autopilot != null) {
-            autopilot.resumeWaiting();
-        }
-        runPendingCommands();
-        checkWaypointArrival();
-        this.actionManager.acquireInitialLocks();
-    }
-
-    private void runPendingCommands() {
-        while (!pendingCommands.isEmpty()) {
-            WaypointCommand cmd = pendingCommands.remove(0);
-            if (cmd.kind() == WaypointCommand.Kind.WAIT) {
-                this.waitTicks = cmd.seconds() * WaypointCommand.TICKS_PER_SECOND;
-                if (autopilot != null) {
-                    ((letrain.itinerary.impl.AutoPilotImpl) autopilot).setMode(letrain.itinerary.AutoPilot.Mode.WAITING);
-                }
-                this.actionManager.scheduleResume(this.waitTicks);
-                return;
-            } else {
-                this.actionManager.executeCommand(cmd);
-            }
-        }
-
-        if (autopilot != null && autopilot.itinerary().isPresent()) {
-            letrain.itinerary.Itinerary itin = autopilot.itinerary().get();
-            itin.advance();
-            autopilot.clearRoute();
-            if (itin.state() == letrain.itinerary.Itinerary.State.DONE) {
-                log.info("Train {} itinerary DONE → IDLE", id);
-                autopilot.deactivate();
-                return;
-            }
-
-            itin.currentWaypoint().ifPresent(wp -> {
-                if (railStationId == wp.targetId()) {
-                    log.info("Train {} consecutive waypoint reached", id);
-                    pendingCommands.clear();
-                    pendingCommands.addAll(wp.commands());
-                    runPendingCommands();
-                }
-            });
-        }
-    }
-
-    public void checkWaypointArrival() {
-        if (!autoMode || autopilot == null || autopilot.mode() != letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
-            return;
-        }
-        Optional<letrain.itinerary.Itinerary> itinOpt = autopilot.itinerary();
-        if (itinOpt.isEmpty()) {
-            return;
-        }
-        letrain.itinerary.Itinerary itin = itinOpt.get();
-        Optional<letrain.itinerary.Waypoint> wpOpt = itin.currentWaypoint();
-        if (wpOpt.isEmpty()) {
-            return;
-        }
-        letrain.itinerary.Waypoint wp = wpOpt.get();
-        letrain.itinerary.AutoPilotContext ctx = new TrainAutoPilotContext(this);
-        if (ctx.isAtTarget(wp)) {
-            log.info("Train {} ARRIVED at wp {}", id, wp.targetId());
-            pendingCommands.clear();
-            pendingCommands.addAll(wp.commands());
-            runPendingCommands();
-        }
-    }
 
     public void notifySegmentEntered(letrain.segments.Segment newSegment) {
-        checkWaypointArrival();
+        this.actionManager.checkWaypointArrival();
         if (autoMode && autopilot != null) {
             log.info("Train {} notifySegmentEntered: notifying autopilot", id);
             autopilot.onSegmentEntered(newSegment);

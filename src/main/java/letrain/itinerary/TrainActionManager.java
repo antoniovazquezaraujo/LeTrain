@@ -31,4 +31,10 @@ public interface TrainActionManager {
     int getSavedSpeedBeforeReverse();
 
     void setSavedSpeedBeforeReverse(int savedSpeedBeforeReverse);
+
+    void resumeWaiting();
+
+    void checkWaypointArrival();
+
+    void runPendingCommands();
 }

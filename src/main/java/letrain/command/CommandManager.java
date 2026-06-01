@@ -424,15 +424,15 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             };
         } else if (actionText.contains("unload")) {
             return (t) -> {
-                letrain.track.Station s = t.getStationAtTrain();
+                letrain.track.Station s = t.getLogisticsManager().getStationAtTrain();
                 if (s != null)
-                    t.startUnloadProcess(s);
+                    t.getLogisticsManager().startUnloadProcess(s);
             };
         } else if (actionText.contains("load")) {
             return (t) -> {
-                letrain.track.Station s = t.getStationAtTrain();
+                letrain.track.Station s = t.getLogisticsManager().getStationAtTrain();
                 if (s != null)
-                    t.startLoadProcess(s);
+                    t.getLogisticsManager().startLoadProcess(s);
             };
         } else {
             return (t) -> {

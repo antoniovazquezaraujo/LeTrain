@@ -71,7 +71,7 @@ public class TrainAutoPilotContext implements AutoPilotContext {
                     return true;
                 }
                 // Additional check: train may be physically at a station (model reports it)
-                Station curSt = train.getStationAtTrain();
+                Station curSt = train.getLogisticsManager().getStationAtTrain();
                 if (curSt != null && curSt.getId() == wp.targetId()) {
                     return true;
                 }

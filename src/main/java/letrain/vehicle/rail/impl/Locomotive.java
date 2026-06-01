@@ -131,10 +131,9 @@ public class Locomotive extends Linker implements Tractor {
 
 
             // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
-            if (getTrain() != null && getTrain().isLoading()) {
+            if (getTrain() != null && getTrain().getLogisticsManager().isLoading()) {
                 return moved;
             }
-
 
 
             // Handle acceleration from 0 - allows getting unstuck from speed 0
@@ -284,7 +283,7 @@ public class Locomotive extends Linker implements Tractor {
                 if (oldSpeed == 0) {
                     log.info("Locomotive {}: target speed increased from 0. Acquiring initial locks.", id);
                     Train train = getTrain();
-                    train.checkWaypointArrival();
+                    train.actionManager.checkWaypointArrival();
                     train.actionManager.acquireInitialLocks();
                 }
             }
