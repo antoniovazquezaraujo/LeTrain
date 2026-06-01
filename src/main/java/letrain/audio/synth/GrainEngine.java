@@ -192,7 +192,7 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
             // 2. Crossfade Logic
             if (!reverse) {
                 // Forward Crossfade: Approaching End
-                if (position > endPos - crossfadeLen) {
+                if (crossfadeLen > 0 && position > endPos - crossfadeLen) {
                     double distFromEnd = endPos - position;
                     double crossfadeFactor = 1.0 - (distFromEnd / crossfadeLen);
 
@@ -203,7 +203,7 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
                 }
             } else {
                 // Reverse Crossfade: Approaching Start
-                if (position < startPos + crossfadeLen) {
+                if (crossfadeLen > 0 && position < startPos + crossfadeLen) {
                     double distFromStart = position - startPos;
                     double crossfadeFactor = 1.0 - (distFromStart / crossfadeLen);
 
@@ -215,10 +215,21 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
                 }
             }
 
+            // Sanitize raw sample to prevent NaN lock in the LPF state
+            if (Float.isNaN(raw) || Float.isInfinite(raw)) {
+                raw = 0.0f;
+            }
+            if (Float.isNaN(lastVal) || Float.isInfinite(lastVal)) {
+                lastVal = 0.0f;
+            }
+
             // 3. Simple Low Pass smoothing
             // correct LPF: output = last + alpha * (input - last)
             float alpha = 1.0f - filterAmount;
             float smoothed = lastVal + (raw - lastVal) * alpha;
+            if (Float.isNaN(smoothed) || Float.isInfinite(smoothed)) {
+                smoothed = 0.0f;
+            }
             lastVal = smoothed;
 
             buffer[i] += smoothed * volume;

@@ -15,6 +15,18 @@ public class AudioMixer {
 
     private static final Logger log = LoggerFactory.getLogger(AudioMixer.class);
 
+    private static volatile boolean shutdownInProgress = false;
+
+    static {
+        try {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                shutdownInProgress = true;
+            }, "AudioMixer-ShutdownHook"));
+        } catch (Exception e) {
+            // Ignore if JVM is already shutting down
+        }
+    }
+
     private final Collection<AudioSource> sources = new ConcurrentLinkedQueue<>();
     private volatile boolean running = false;
     private Thread audioThread;
@@ -51,7 +63,7 @@ public class AudioMixer {
         running = false;
         try {
             if (audioThread != null)
-                audioThread.join(500);
+                audioThread.join(2000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("Audio mixer stop interrupted", e);
@@ -73,7 +85,7 @@ public class AudioMixer {
         try {
             AudioFormat format = new AudioFormat(SAMPLE_RATE, 16, 2, true, true); // Stereo
             line = AudioSystem.getSourceDataLine(format);
-            line.open(format, BUFFER_SIZE * 4); // 4096 frames
+            line.open(format, BUFFER_SIZE * 16); // 4096 frames (16384 bytes)
             line.start();
 
             // Buffers
@@ -96,55 +108,60 @@ public class AudioMixer {
 
                     // Mix sources
                     for (AudioSource source : sources) {
-                        // Reset source buffer
-                        for (int i = 0; i < sourceBuffer.length; i++)
-                            sourceBuffer[i] = 0;
+                        try {
+                            // Reset source buffer
+                            for (int i = 0; i < sourceBuffer.length; i++)
+                                sourceBuffer[i] = 0;
 
-                        boolean active = source.read(sourceBuffer);
-                        if (!active) {
-                            if (source.isFinished()) {
-                                sources.remove(source);
+                            boolean active = source.read(sourceBuffer);
+                            if (!active) {
+                                if (source.isFinished()) {
+                                    sources.remove(source);
+                                }
+                                continue;
                             }
-                            continue;
-                        }
 
-                        // 2. Calculate Distance & Pan
-                        float dx = source.getX() - listenerX;
-                        float dy = source.getY() - listenerY;
-                        float dz = source.getZ() - listenerZ;
+                            // 2. Calculate Distance & Pan
+                            float dx = source.getX() - listenerX;
+                            float dy = source.getY() - listenerY;
+                            float dz = source.getZ() - listenerZ;
 
-                        float distance = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+                            float distance = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-                        // Improved Logarithmic/Inverse-Square-like Attenuation
-                        float refDist = source.getReferenceDistance();
-                        float maxDist = source.getMaxDistance();
+                            // Improved Logarithmic/Inverse-Square-like Attenuation
+                            float refDist = source.getReferenceDistance();
+                            float maxDist = source.getMaxDistance();
 
-                        float volume = 1.0f;
-                        if (distance > refDist) {
-                            volume = refDist / distance;
-                            if (distance > maxDist) {
-                                float fadeFactor = 1.0f - ((distance - maxDist) / (maxDist * 0.2f));
-                                volume *= Math.max(0.0f, fadeFactor);
+                            float volume = 1.0f;
+                            if (distance > refDist) {
+                                volume = refDist / distance;
+                                if (distance > maxDist) {
+                                    float fadeFactor = 1.0f - ((distance - maxDist) / (maxDist * 0.2f));
+                                    volume *= Math.max(0.0f, fadeFactor);
+                                }
                             }
-                        }
-                        if (volume > 1.0f)
-                            volume = 1.0f;
-                        if (volume < 0.0f)
-                            volume = 0.0f;
+                            if (volume > 1.0f)
+                                volume = 1.0f;
+                            if (volume < 0.0f)
+                                volume = 0.0f;
 
-                        // NaN protection for volume
-                        if (Float.isNaN(volume) || Float.isInfinite(volume))
-                            volume = 0;
+                            // NaN protection for volume
+                            if (Float.isNaN(volume) || Float.isInfinite(volume))
+                                volume = 0;
 
-                        // 5. Apply to Mix (Mono to Stereo)
-                        for (int i = 0; i < BUFFER_SIZE; i++) {
-                            float sample = sourceBuffer[i];
-                            // NaN protection for sample
-                            if (Float.isNaN(sample) || Float.isInfinite(sample))
-                                sample = 0;
+                            // 5. Apply to Mix (Mono to Stereo)
+                            for (int i = 0; i < BUFFER_SIZE; i++) {
+                                float sample = sourceBuffer[i];
+                                // NaN protection for sample
+                                if (Float.isNaN(sample) || Float.isInfinite(sample))
+                                    sample = 0;
 
-                            mixBuffer[i * 2] += sample * volume;
-                            mixBuffer[i * 2 + 1] += sample * volume;
+                                mixBuffer[i * 2] += sample * volume;
+                                mixBuffer[i * 2 + 1] += sample * volume;
+                            }
+                        } catch (Exception e) {
+                            log.error("Error reading/mixing source: " + source, e);
+                            sources.remove(source); // Remove faulty source to prevent blocking
                         }
                     }
 
@@ -176,13 +193,22 @@ public class AudioMixer {
                 }
             }
 
-            line.drain();
+            try {
+                line.stop();
+                line.flush();
+            } catch (Exception e) {
+                log.warn("Error stopping/flushing audio line", e);
+            }
         } catch (LineUnavailableException e) {
             log.error("AudioMixer failed to initialize audio line", e);
         } finally {
             if (line != null) {
                 try {
-                    line.close();
+                    if (!shutdownInProgress) {
+                        line.close();
+                    } else {
+                        log.info("JVM shutdown in progress; bypassing line.close() to prevent PulseAudio native crash");
+                    }
                 } catch (Exception e) {
                     log.warn("Error closing audio line", e);
                 }
