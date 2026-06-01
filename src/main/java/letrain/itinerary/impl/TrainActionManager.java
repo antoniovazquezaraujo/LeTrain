@@ -134,7 +134,7 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
 
     @Override
     public void notifySegmentOccupied(Segment segment) {
-        this.train.trainListeners.forEach(l -> l.onSegmentOccupied(this.train, segment));
+        this.train.notifySegmentOccupied(segment);
     }
 
     @Override

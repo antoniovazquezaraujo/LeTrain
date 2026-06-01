@@ -57,7 +57,8 @@ public class Train implements Trailer<RailTrack>, Renderable {
     private boolean autoMode = false;
 
     private transient letrain.mvp.Model model;
-    public transient List<TrainEventListener> trainListeners;
+    public transient List<TrainEventListener> scriptTrainListeners;
+    public transient List<TrainEventListener> coreTrainListeners;
     private final transient List<WaypointCommand> pendingCommands;
     public transient letrain.vehicle.rail.TrainMovementManager movementManager;
     private transient letrain.vehicle.rail.TrainSafetyManager safetyManager;
@@ -70,7 +71,8 @@ public class Train implements Trailer<RailTrack>, Renderable {
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
         this.linkers = new LinkedList<>();
-        this.trainListeners = new CopyOnWriteArrayList<>();
+        this.scriptTrainListeners = new CopyOnWriteArrayList<>();
+        this.coreTrainListeners = new CopyOnWriteArrayList<>();
         this.pendingCommands = new CopyOnWriteArrayList<>();
         this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager(this);
         this.logisticsManager = new letrain.vehicle.rail.impl.TrainLogisticsManager();
@@ -190,8 +192,15 @@ public class Train implements Trailer<RailTrack>, Renderable {
         this.model = model;
     }
 
-    List<TrainEventListener> getTrainListeners() {
-        return this.trainListeners;
+    public List<TrainEventListener> getScriptTrainListeners() {
+        return this.scriptTrainListeners;
+    }
+
+    public List<TrainEventListener> getCoreTrainListeners() {
+        if (this.coreTrainListeners == null) {
+            this.coreTrainListeners = new CopyOnWriteArrayList<>();
+        }
+        return this.coreTrainListeners;
     }
 
     public Model getModel() {
@@ -202,12 +211,36 @@ public class Train implements Trailer<RailTrack>, Renderable {
         return this.pendingReverse;
     }
 
-    public void addTrainEventListener(TrainEventListener listener) {
-        trainListeners.add(listener);
+    public void addScriptTrainEventListener(TrainEventListener listener) {
+        if (scriptTrainListeners == null) {
+            scriptTrainListeners = new CopyOnWriteArrayList<>();
+        }
+        scriptTrainListeners.add(listener);
     }
 
-    public void removeTrainEventListener(TrainEventListener listener) {
-        trainListeners.remove(listener);
+    public void removeScriptTrainEventListener(TrainEventListener listener) {
+        if (scriptTrainListeners != null) {
+            scriptTrainListeners.remove(listener);
+        }
+    }
+
+    public void addCoreTrainEventListener(TrainEventListener listener) {
+        if (coreTrainListeners == null) {
+            coreTrainListeners = new CopyOnWriteArrayList<>();
+        }
+        coreTrainListeners.add(listener);
+    }
+
+    public void removeCoreTrainEventListener(TrainEventListener listener) {
+        if (coreTrainListeners != null) {
+            coreTrainListeners.remove(listener);
+        }
+    }
+
+    public void removeAllScriptTrainEventListeners() {
+        if (scriptTrainListeners != null) {
+            scriptTrainListeners.clear();
+        }
     }
 
     public void notifySpeedChanged(int speed) {
@@ -222,23 +255,47 @@ public class Train implements Trailer<RailTrack>, Renderable {
                 }
             }
         }
-        for (TrainEventListener l : trainListeners) {
-            l.onSpeedChanged(speed);
+        if (scriptTrainListeners != null) {
+            for (TrainEventListener l : scriptTrainListeners) {
+                l.onSpeedChanged(speed);
+            }
+        }
+        if (coreTrainListeners != null) {
+            for (TrainEventListener l : coreTrainListeners) {
+                l.onSpeedChanged(speed);
+            }
         }
     }
 
     public void notifySenseChanged(boolean forward) {
-        for (TrainEventListener trainEventListener : trainListeners) {
-            trainEventListener.onSenseChanged(forward);
+        if (scriptTrainListeners != null) {
+            for (TrainEventListener trainEventListener : scriptTrainListeners) {
+                trainEventListener.onSenseChanged(forward);
+            }
+        }
+        if (coreTrainListeners != null) {
+            for (TrainEventListener trainEventListener : coreTrainListeners) {
+                trainEventListener.onSenseChanged(forward);
+            }
         }
     }
 
     public void notifyLink() {
-        trainListeners.forEach(l -> l.onLink(this));
+        if (scriptTrainListeners != null) {
+            scriptTrainListeners.forEach(l -> l.onLink(this));
+        }
+        if (coreTrainListeners != null) {
+            coreTrainListeners.forEach(l -> l.onLink(this));
+        }
     }
 
     public void notifyUnlink() {
-        trainListeners.forEach(l -> l.onUnlink(this));
+        if (scriptTrainListeners != null) {
+            scriptTrainListeners.forEach(l -> l.onUnlink(this));
+        }
+        if (coreTrainListeners != null) {
+            coreTrainListeners.forEach(l -> l.onUnlink(this));
+        }
     }
 
     public void notifyEnterSensor(letrain.track.Sensor sensor, boolean isForward) {
@@ -248,11 +305,20 @@ public class Train implements Trailer<RailTrack>, Renderable {
         }
         isNotifying = true;
         try {
-            trainListeners.forEach(l -> {
-                if (l != sensor) {
-                    l.onSensorEnter(this, isForward);
-                }
-            });
+            if (scriptTrainListeners != null) {
+                scriptTrainListeners.forEach(l -> {
+                    if (l != sensor) {
+                        l.onSensorEnter(this, isForward);
+                    }
+                });
+            }
+            if (coreTrainListeners != null) {
+                coreTrainListeners.forEach(l -> {
+                    if (l != sensor) {
+                        l.onSensorEnter(this, isForward);
+                    }
+                });
+            }
             checkWaypointArrival();
             if (autoMode && autopilot != null) {
                 autopilot.onSegmentEntered(safetyManager.getCurrentSegment());
@@ -269,13 +335,31 @@ public class Train implements Trailer<RailTrack>, Renderable {
         }
         isNotifying = true;
         try {
-            trainListeners.forEach(l -> {
-                if (l != sensor) {
-                    l.onSensorExit(this, isForward);
-                }
-            });
+            if (scriptTrainListeners != null) {
+                scriptTrainListeners.forEach(l -> {
+                    if (l != sensor) {
+                        l.onSensorExit(this, isForward);
+                    }
+                });
+            }
+            if (coreTrainListeners != null) {
+                coreTrainListeners.forEach(l -> {
+                    if (l != sensor) {
+                        l.onSensorExit(this, isForward);
+                    }
+                });
+            }
         } finally {
             isNotifying = false;
+        }
+    }
+
+    public void notifySegmentOccupied(letrain.segments.Segment segment) {
+        if (scriptTrainListeners != null) {
+            scriptTrainListeners.forEach(l -> l.onSegmentOccupied(this, segment));
+        }
+        if (coreTrainListeners != null) {
+            coreTrainListeners.forEach(l -> l.onSegmentOccupied(this, segment));
         }
     }
 
@@ -307,7 +391,8 @@ public class Train implements Trailer<RailTrack>, Renderable {
      * Reinitializes transient fields after deserialization.
      */
     public void postLoadInit() {
-        this.trainListeners = SerializationHelper.ensureListInitializedConcurrent(trainListeners);
+        this.scriptTrainListeners = SerializationHelper.ensureListInitializedConcurrent(scriptTrainListeners);
+        this.coreTrainListeners = SerializationHelper.ensureListInitializedConcurrent(coreTrainListeners);
         this.isNotifying = false;
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
@@ -474,8 +559,15 @@ public class Train implements Trailer<RailTrack>, Renderable {
             t.setCurrentSpeed(0);
             t.setTargetSpeed(0);
         });
-        for (TrainEventListener l : trainListeners) {
-            l.onContact(this, pos, speed);
+        if (scriptTrainListeners != null) {
+            for (TrainEventListener l : scriptTrainListeners) {
+                l.onContact(this, pos, speed);
+            }
+        }
+        if (coreTrainListeners != null) {
+            for (TrainEventListener l : coreTrainListeners) {
+                l.onContact(this, pos, speed);
+            }
         }
     }
 
@@ -487,8 +579,15 @@ public class Train implements Trailer<RailTrack>, Renderable {
      */
     public void notifyCrash(letrain.map.Point pos, int speed) {
         this.stalled = true;
-        for (TrainEventListener l : trainListeners) {
-            l.onCrash(this, pos, speed);
+        if (scriptTrainListeners != null) {
+            for (TrainEventListener l : scriptTrainListeners) {
+                l.onCrash(this, pos, speed);
+            }
+        }
+        if (coreTrainListeners != null) {
+            for (TrainEventListener l : coreTrainListeners) {
+                l.onCrash(this, pos, speed);
+            }
         }
     }
 

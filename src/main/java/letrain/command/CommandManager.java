@@ -237,7 +237,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             if (ctx.trainEvent() != null) {
                 String event = ctx.trainEvent().getChild(0).getText();
                 String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
-                model.addTrainEventListener(new TrainEventListener() {
+                model.addScriptTrainEventListener(new TrainEventListener() {
                     @Override
                     public void onSensorEnter(Train train, boolean isForward) {
                         boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
@@ -274,7 +274,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                 });
             } else if (ctx.getChildCount() >= 3) {
                 String event = ctx.getChild(2).getText();
-                model.addTrainEventListener(new TrainEventListener() {
+                model.addScriptTrainEventListener(new TrainEventListener() {
                     @Override
                     public void onCrash(Train train, letrain.map.Point pos, int speed) {
                         if ("crash".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {

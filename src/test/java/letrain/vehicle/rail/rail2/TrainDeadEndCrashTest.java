@@ -117,7 +117,7 @@ class TrainDeadEndCrashTest {
 
         // Add mock listener to verify notifyCrash
         TrainEventListener listener = mock(TrainEventListener.class);
-        train.addTrainEventListener(listener);
+        train.addScriptTrainEventListener(listener);
 
         // --- Act ---
         train.movementManager.moveLinkers(true);
@@ -213,7 +213,7 @@ class TrainDeadEndCrashTest {
 
         // Listener to verify notifyContact (and absence of notifyCrash)
         TrainEventListener listener = mock(TrainEventListener.class);
-        train.addTrainEventListener(listener);
+        train.addScriptTrainEventListener(listener);
 
         // --- Act ---
         train.movementManager.moveLinkers(true);
@@ -314,7 +314,7 @@ class TrainDeadEndCrashTest {
 
         // Listener to verify no crash/contact is triggered
         TrainEventListener listener = mock(TrainEventListener.class);
-        train.addTrainEventListener(listener);
+        train.addScriptTrainEventListener(listener);
 
         // --- Act ---
         boolean moved = train.movementManager.moveLinkers(true);
@@ -405,7 +405,7 @@ class TrainDeadEndCrashTest {
         train.setDirectorLinker(loco);
 
         TrainEventListener listener = mock(TrainEventListener.class);
-        train.addTrainEventListener(listener);
+        train.addScriptTrainEventListener(listener);
 
         // --- Act ---
         train.movementManager.moveLinkers(false);

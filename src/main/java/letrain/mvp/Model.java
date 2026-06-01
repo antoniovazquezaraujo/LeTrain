@@ -22,7 +22,11 @@ import letrain.vehicle.rail.impl.Wagon;
 
 public interface Model {
 
-    public void addTrainEventListener(TrainEventListener listener);
+    public void addScriptTrainEventListener(TrainEventListener listener);
+
+    public void addCoreTrainEventListener(TrainEventListener listener);
+
+    public void removeAllScriptTrainEventListeners();
 
     public void setShowId(boolean b);
 

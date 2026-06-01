@@ -128,7 +128,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
         this.simulationController = new SimulationController(this.model, audioController, railTrackMaker);
 
         // Register this as global listener for all present and future trains
-        this.model.addTrainEventListener(this);
+        this.model.addCoreTrainEventListener(this);
     }
 
     public void stop() {
@@ -521,7 +521,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
             Locomotive locomotive = new Locomotive(model.nextLocomotiveId(), c);
             Train train = new Train(model.nextTrainId());
             train.pushBack(locomotive);
-            train.addTrainEventListener(this);
+            train.addCoreTrainEventListener(this);
             train.setDirectorLinker(locomotive);
             model.addLocomotive(locomotive);
             model.getEconomyManager().onLocomotiveConstructed(locomotive);
@@ -992,7 +992,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
                     // Just replace the model and let the existing loop continue
                     setModel(loadedModel);
                     // View specific listener
-                    loadedModel.addTrainEventListener(this);
+                    loadedModel.addCoreTrainEventListener(this);
                 } else {
                     view.showMessage("Load Error", "Could not load game from\n" + file.getAbsolutePath());
                 }

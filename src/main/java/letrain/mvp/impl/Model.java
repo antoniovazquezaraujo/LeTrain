@@ -79,17 +79,43 @@ public class Model implements letrain.mvp.Model {
     int nextForkId;
     private transient CargoTypes selectedWagonType = CargoTypes.GOLD;
 
-    private transient List<TrainEventListener> trainEventListeners = new ArrayList<>();
+    private transient List<TrainEventListener> scriptTrainEventListeners = new ArrayList<>();
+    private transient List<TrainEventListener> coreTrainEventListeners = new ArrayList<>();
 
     @Override
-    public void addTrainEventListener(TrainEventListener listener) {
-        if (this.trainEventListeners == null) {
-            this.trainEventListeners = new ArrayList<>();
+    public void addScriptTrainEventListener(TrainEventListener listener) {
+        if (this.scriptTrainEventListeners == null) {
+            this.scriptTrainEventListeners = new ArrayList<>();
         }
-        this.trainEventListeners.add(listener);
+        this.scriptTrainEventListeners.add(listener);
         for (Locomotive loco : locomotives) {
             if (loco.getTrain() != null) {
-                loco.getTrain().addTrainEventListener(listener);
+                loco.getTrain().addScriptTrainEventListener(listener);
+            }
+        }
+    }
+
+    @Override
+    public void addCoreTrainEventListener(TrainEventListener listener) {
+        if (this.coreTrainEventListeners == null) {
+            this.coreTrainEventListeners = new ArrayList<>();
+        }
+        this.coreTrainEventListeners.add(listener);
+        for (Locomotive loco : locomotives) {
+            if (loco.getTrain() != null) {
+                loco.getTrain().addCoreTrainEventListener(listener);
+            }
+        }
+    }
+
+    @Override
+    public void removeAllScriptTrainEventListeners() {
+        if (this.scriptTrainEventListeners != null) {
+            this.scriptTrainEventListeners.clear();
+        }
+        for (Locomotive loco : locomotives) {
+            if (loco.getTrain() != null) {
+                loco.getTrain().removeAllScriptTrainEventListeners();
             }
         }
     }
@@ -160,7 +186,7 @@ public class Model implements letrain.mvp.Model {
         this.stations = new ArrayList<>();
         this.map = new RailMap();
 
-        this.addTrainEventListener(new TrainEventListener() {
+        this.addCoreTrainEventListener(new TrainEventListener() {
             @Override public void onCrash(Train train, Point pos, int speed) {
                 eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
                 getEconomyManager().onTrainCrashed(train);
@@ -180,10 +206,15 @@ public class Model implements letrain.mvp.Model {
 
     public void postLoadInit() {
         this.blockManager = new letrain.segments.impl.BlockManagerImpl();
-        if (this.trainEventListeners == null) {
-            this.trainEventListeners = new ArrayList<>();
+        if (this.scriptTrainEventListeners == null) {
+            this.scriptTrainEventListeners = new ArrayList<>();
         } else {
-            this.trainEventListeners.clear();
+            this.scriptTrainEventListeners.clear();
+        }
+        if (this.coreTrainEventListeners == null) {
+            this.coreTrainEventListeners = new ArrayList<>();
+        } else {
+            this.coreTrainEventListeners.clear();
         }
         this.selectedWagonType = CargoTypes.GOLD;
         this.automationEngine = new AutomationEngine(this);
@@ -213,10 +244,13 @@ public class Model implements letrain.mvp.Model {
                     int stationId = train.getStationId();
                     if (stationId != 0) {
                         Station station = getStation(stationId);
-                        if (station != null) train.addTrainEventListener(station);
+                        if (station != null) train.addCoreTrainEventListener(station);
                     }
-                    for (TrainEventListener l : trainEventListeners) {
-                        train.addTrainEventListener(l);
+                    for (TrainEventListener l : scriptTrainEventListeners) {
+                        train.addScriptTrainEventListener(l);
+                    }
+                    for (TrainEventListener l : coreTrainEventListeners) {
+                        train.addCoreTrainEventListener(l);
                     }
                     train.getSafetyManager().claimOccupiedSegments();
                 }
@@ -234,7 +268,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     private void setupModelTrainEventListeners() {
-        this.addTrainEventListener(new TrainEventListener() {
+        this.addCoreTrainEventListener(new TrainEventListener() {
             @Override public void onCrash(Train train, Point pos, int speed) {
                 eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
                 getEconomyManager().onTrainCrashed(train);
@@ -391,8 +425,11 @@ public class Model implements letrain.mvp.Model {
         if (locomotive.getTrain() != null) {
             locomotive.getTrain().setModel(this);
             locomotive.getTrain().rebind();
-            for (TrainEventListener l : trainEventListeners) {
-                locomotive.getTrain().addTrainEventListener(l);
+            for (TrainEventListener l : scriptTrainEventListeners) {
+                locomotive.getTrain().addScriptTrainEventListener(l);
+            }
+            for (TrainEventListener l : coreTrainEventListeners) {
+                locomotive.getTrain().addCoreTrainEventListener(l);
             }
         }
         getEconomyManager().onLocomotiveConstructed(locomotive);

@@ -341,8 +341,11 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         if (toRemove > 0) {
             Train newTrain = new Train(nextTrainIdSupplier.get());
             newTrain.setModel(train.getModel());
-            for (TrainEventListener listener : train.getTrainListeners()) {
-                newTrain.addTrainEventListener(listener);
+            for (TrainEventListener listener : train.getScriptTrainListeners()) {
+                newTrain.addScriptTrainEventListener(listener);
+            }
+            for (TrainEventListener listener : train.getCoreTrainListeners()) {
+                newTrain.addCoreTrainEventListener(listener);
             }
 
             for (int n = 0; n < toRemove; n++) {
@@ -380,8 +383,11 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         if (numLinkersToRemove > 0) {
             Train newTrain = new Train(nextTrainIdSupplier.get());
             newTrain.setModel(train.getModel());
-            for (TrainEventListener listener : train.getTrainListeners()) {
-                newTrain.addTrainEventListener(listener);
+            for (TrainEventListener listener : train.getScriptTrainListeners()) {
+                newTrain.addScriptTrainEventListener(listener);
+            }
+            for (TrainEventListener listener : train.getCoreTrainListeners()) {
+                newTrain.addCoreTrainEventListener(listener);
             }
 
             for (int n = 0; n < numLinkersToRemove; n++) {

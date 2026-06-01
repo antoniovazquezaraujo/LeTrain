@@ -122,7 +122,7 @@ class SerializationTest {
 
         // Add a listener
         AtomicBoolean listenerCalled = new AtomicBoolean(false);
-        original.addTrainEventListener(new TrainEventListener() {
+        original.addScriptTrainEventListener(new TrainEventListener() {
             @Override
             public void onSpeedChanged(int speed) {
                 listenerCalled.set(true);

@@ -114,7 +114,7 @@ public class GraphicPresenter extends ApplicationAdapter
                 getRows());
 
         // Register as listener for audio events
-        model.addTrainEventListener(this);
+        model.addCoreTrainEventListener(this);
     }
 
     public Stage getStage() {
@@ -649,7 +649,7 @@ public class GraphicPresenter extends ApplicationAdapter
         multiplexer.addProcessor(inputHandler);
 
         // Register View as listener
-        model.addTrainEventListener(this);
+        model.addCoreTrainEventListener(this);
 
         // Render initial ground around cursor
         letrain.map.Point startPos = model.getCursor().getPosition();
@@ -663,7 +663,7 @@ public class GraphicPresenter extends ApplicationAdapter
             if (train != null && train.getStationId() != 0) {
                 for (letrain.track.Station station : model.getStations()) {
                     if (station.getId() == train.getStationId()) {
-                        train.addTrainEventListener(station);
+                        train.addCoreTrainEventListener(station);
                         break;
                     }
                 }
