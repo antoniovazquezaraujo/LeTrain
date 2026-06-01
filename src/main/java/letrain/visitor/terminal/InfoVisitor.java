@@ -74,7 +74,11 @@ public class InfoVisitor implements Visitor {
                 infoBarText += "Modo: VINCULAR (LINK) [Arriba/Abajo]: Sentido [Izqu/Der]: Cantidad [Espacio]: Vincular";
                 Locomotive selected = model.getSelectedLocomotive();
                 if (selected != null && selected.getTrain() != null) {
-                    infoBarText += " Vagones: " + selected.getTrain().getSelectedLinkersToJoin().size() + "/"
+                    // Convert deque to list to slice it
+                    // Logic might differ based on iteration order of deque vs join sense
+                    // linkersToJoin is populated in order of distance from train.
+                    // so we just take the first N.
+                    infoBarText += " Vagones: " + selected.getTrain().trainCouplingManager.getSelectedLinkersToJoin().size() + "/"
                             + selected.getTrain().getLinkersToJoin().size();
                 }
                 break;

@@ -25,6 +25,11 @@ public class SimulationController {
      * Performs one simulation tick.
      */
     public void tick() {
+        // 0. Update the scheduler
+        if (model.getScheduler() != null) {
+            model.getScheduler().tick();
+        }
+
         // 1. Progress track construction if active
         if (trackMaker != null) {
             trackMaker.makeTracks();

@@ -4,6 +4,7 @@ import letrain.map.Dir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Deque;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -58,4 +59,16 @@ public interface TrainCouplingManager {
     Dir getLinkDir(Linker linker);
 
     Linker getAdjacentLinker(Linker linker, Dir dir);
+
+    void setNumLinkersToRemove(int numLinkersToRemove);
+
+    void setNumLinkersToJoin(int numLinkersToJoin);
+
+    Deque<Linker> getLinkersToJoin();
+
+    void setLinkersToJoin(Deque<Linker> linkersToJoin);
+
+    Deque<Linker> getLinkersToRemove();
+
+    void setLinkersToRemove(Deque<Linker> linkersToRemove);
 }

@@ -43,6 +43,9 @@ public class Model implements letrain.mvp.Model {
     private letrain.segments.BlockManager blockManager;
 
     @JsonIgnore
+    private final transient letrain.utils.SimulationScheduler scheduler;
+
+    @JsonIgnore
     private transient letrain.segments.RailwayGraph currentGraph;
 
     private transient boolean mapChanged = false;
@@ -76,17 +79,43 @@ public class Model implements letrain.mvp.Model {
     int nextForkId;
     private transient CargoTypes selectedWagonType = CargoTypes.GOLD;
 
-    private transient List<TrainEventListener> trainEventListeners = new ArrayList<>();
+    private transient List<TrainEventListener> scriptTrainEventListeners = new ArrayList<>();
+    private transient List<TrainEventListener> coreTrainEventListeners = new ArrayList<>();
 
     @Override
-    public void addTrainEventListener(TrainEventListener listener) {
-        if (this.trainEventListeners == null) {
-            this.trainEventListeners = new ArrayList<>();
+    public void addScriptTrainEventListener(TrainEventListener listener) {
+        if (this.scriptTrainEventListeners == null) {
+            this.scriptTrainEventListeners = new ArrayList<>();
         }
-        this.trainEventListeners.add(listener);
+        this.scriptTrainEventListeners.add(listener);
         for (Locomotive loco : locomotives) {
             if (loco.getTrain() != null) {
-                loco.getTrain().addTrainEventListener(listener);
+                loco.getTrain().addScriptTrainEventListener(listener);
+            }
+        }
+    }
+
+    @Override
+    public void addCoreTrainEventListener(TrainEventListener listener) {
+        if (this.coreTrainEventListeners == null) {
+            this.coreTrainEventListeners = new ArrayList<>();
+        }
+        this.coreTrainEventListeners.add(listener);
+        for (Locomotive loco : locomotives) {
+            if (loco.getTrain() != null) {
+                loco.getTrain().addCoreTrainEventListener(listener);
+            }
+        }
+    }
+
+    @Override
+    public void removeAllScriptTrainEventListeners() {
+        if (this.scriptTrainEventListeners != null) {
+            this.scriptTrainEventListeners.clear();
+        }
+        for (Locomotive loco : locomotives) {
+            if (loco.getTrain() != null) {
+                loco.getTrain().removeAllScriptTrainEventListeners();
             }
         }
     }
@@ -119,11 +148,17 @@ public class Model implements letrain.mvp.Model {
     }
 
     public Model() {
+        this.scheduler = new letrain.utils.impl.SimulationScheduler();
         letrain.segments.impl.BlockManagerImpl bmi = new letrain.segments.impl.BlockManagerImpl();
-        bmi.setOnReleaseListener(() -> {
+        bmi.setOnReleaseListener((releasedSegment) -> {
             for (Locomotive loco : locomotives) {
-                if (loco.getTrain() != null) {
-                    loco.getTrain().wakeUp();
+                Train train = loco.getTrain();
+                if (train != null && train.isAutoMode()) {
+                    letrain.segments.Segment nextSeg = train.getSafetyManager().getNextSegment();
+                    if (train.getSafetyManager().isWaitingForBlock() && releasedSegment.equals(nextSeg)) {
+
+                        train.getSafetyManager().onBlockReleased();
+                    }
                 }
             }
         });
@@ -151,7 +186,7 @@ public class Model implements letrain.mvp.Model {
         this.stations = new ArrayList<>();
         this.map = new RailMap();
 
-        this.addTrainEventListener(new TrainEventListener() {
+        this.addCoreTrainEventListener(new TrainEventListener() {
             @Override public void onCrash(Train train, Point pos, int speed) {
                 eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
                 getEconomyManager().onTrainCrashed(train);
@@ -171,10 +206,15 @@ public class Model implements letrain.mvp.Model {
 
     public void postLoadInit() {
         this.blockManager = new letrain.segments.impl.BlockManagerImpl();
-        if (this.trainEventListeners == null) {
-            this.trainEventListeners = new ArrayList<>();
+        if (this.scriptTrainEventListeners == null) {
+            this.scriptTrainEventListeners = new ArrayList<>();
         } else {
-            this.trainEventListeners.clear();
+            this.scriptTrainEventListeners.clear();
+        }
+        if (this.coreTrainEventListeners == null) {
+            this.coreTrainEventListeners = new ArrayList<>();
+        } else {
+            this.coreTrainEventListeners.clear();
         }
         this.selectedWagonType = CargoTypes.GOLD;
         this.automationEngine = new AutomationEngine(this);
@@ -195,6 +235,7 @@ public class Model implements letrain.mvp.Model {
 
         setupModelTrainEventListeners();
         if (locomotives != null) {
+            // Pass 1: Set model, post-load init, setup listeners, and claim physically occupied segments
             for (Locomotive loco : locomotives) {
                 Train train = loco.getTrain();
                 if (train != null) {
@@ -203,11 +244,23 @@ public class Model implements letrain.mvp.Model {
                     int stationId = train.getStationId();
                     if (stationId != 0) {
                         Station station = getStation(stationId);
-                        if (station != null) train.addTrainEventListener(station);
+                        if (station != null) train.addCoreTrainEventListener(station);
                     }
-                    for (TrainEventListener l : trainEventListeners) {
-                        train.addTrainEventListener(l);
+                    for (TrainEventListener l : scriptTrainEventListeners) {
+                        train.addScriptTrainEventListener(l);
                     }
+                    for (TrainEventListener l : coreTrainEventListeners) {
+                        train.addCoreTrainEventListener(l);
+                    }
+                    train.getSafetyManager().claimOccupiedSegments();
+                }
+            }
+            // Pass 2: Acquire initial lookahead locks for all active autopilot trains
+            for (Locomotive loco : locomotives) {
+                Train train = loco.getTrain();
+                if (train != null && train.isAutoMode()) {
+                    train.checkWaypointArrival();
+                    train.actionManager.acquireInitialLocks();
                 }
             }
         }
@@ -215,7 +268,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     private void setupModelTrainEventListeners() {
-        this.addTrainEventListener(new TrainEventListener() {
+        this.addCoreTrainEventListener(new TrainEventListener() {
             @Override public void onCrash(Train train, Point pos, int speed) {
                 eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
                 getEconomyManager().onTrainCrashed(train);
@@ -371,8 +424,12 @@ public class Model implements letrain.mvp.Model {
         this.locomotives.add(locomotive);
         if (locomotive.getTrain() != null) {
             locomotive.getTrain().setModel(this);
-            for (TrainEventListener l : trainEventListeners) {
-                locomotive.getTrain().addTrainEventListener(l);
+            locomotive.getTrain().rebind();
+            for (TrainEventListener l : scriptTrainEventListeners) {
+                locomotive.getTrain().addScriptTrainEventListener(l);
+            }
+            for (TrainEventListener l : coreTrainEventListeners) {
+                locomotive.getTrain().addCoreTrainEventListener(l);
             }
         }
         getEconomyManager().onLocomotiveConstructed(locomotive);
@@ -746,17 +803,17 @@ public class Model implements letrain.mvp.Model {
                 java.util.List<letrain.segments.Segment> owned = getBlockManager().getOwnedSegments(train);
                 for (letrain.segments.Segment s : owned) sb.append(s.getId()).append(" ");
                 sb.append("\n");
-                
-                sb.append("  Current Segment: ").append(train.getCurrentSegment() != null ? train.getCurrentSegment().getId() : "None").append("\n");
-                sb.append("  Next Segment: ").append(train.getNextSegment() != null ? train.getNextSegment().getId() : "None").append("\n");
-                if (!train.hasPermissionToMove() && train.getNextSegment() != null) {
-                    java.util.List<Train> blockers = getBlockManager().getOwners(train.getNextSegment());
+
+                sb.append("  Current Segment: ").append(train.getSafetyManager().getCurrentSegment() != null ? train.getSafetyManager().getCurrentSegment().getId() : "None").append("\n");
+                sb.append("  Next Segment: ").append(train.getSafetyManager().getNextSegment() != null ? train.getSafetyManager().getNextSegment().getId() : "None").append("\n");
+                if (!train.getSafetyManager().hasPermissionToMove() && train.getSafetyManager().getNextSegment() != null) {
+                    java.util.List<Train> blockers = getBlockManager().getOwners(train.getSafetyManager().getNextSegment());
                     sb.append("  Permission: WAITING (Blocked by: ");
                     if (blockers.isEmpty()) sb.append("Logic/Retry Timer");
                     else { for (Train b : blockers) sb.append("Train ").append(b.getId()).append(" "); }
                     sb.append(")\n");
                 } else {
-                    sb.append("  Permission: ").append(train.hasPermissionToMove() ? "GRANTED" : "WAITING").append("\n");
+                    sb.append("  Permission: ").append(train.getSafetyManager().hasPermissionToMove() ? "GRANTED" : "WAITING").append("\n");
                 }
 
                 int wagonCount = 0;
@@ -841,5 +898,11 @@ public class Model implements letrain.mvp.Model {
     @JsonIgnore
     public letrain.segments.BlockManager getBlockManager() {
         return blockManager;
+    }
+
+    @Override
+    @JsonIgnore
+    public letrain.utils.SimulationScheduler getScheduler() {
+        return scheduler;
     }
 }

@@ -34,11 +34,28 @@ public class SimulationScheduler implements letrain.utils.SimulationScheduler {
 
     @Override
     public void tick() {
-        // Por implementar
+        List<ScheduledTask> toRun = new ArrayList<>();
+        List<ScheduledTask> toKeep = new ArrayList<>();
+
+        for (ScheduledTask task : tasks) {
+            task.remainingTicks--;
+            if (task.remainingTicks <= 0) {
+                toRun.add(task);
+            } else {
+                toKeep.add(task);
+            }
+        }
+
+        tasks.clear();
+        tasks.addAll(toKeep);
+
+        for (ScheduledTask task : toRun) {
+            task.action.run();
+        }
     }
 
     @Override
     public void clear() {
-        // Por implementar
+        tasks.clear();
     }
 }

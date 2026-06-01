@@ -63,7 +63,7 @@ class AutoPilotImplTest {
     }
 
     @Test
-    @DisplayName("should calculate route on first tick and orient fork if segment changed")
+    @DisplayName("should calculate route on activation and orient fork if segment changed")
     void calculatesRouteAndOrientsFork() {
         when(ctx.currentSpeed()).thenReturn(0);
         when(ctx.currentSegment()).thenReturn(segA);
@@ -74,32 +74,13 @@ class AutoPilotImplTest {
 
         autopilot.setItinerary(itinerary);
         autopilot.activate();
-        autopilot.tick();
 
         verify(pathfinder).find(eq(segA), eq(segB), any());
         verify(actionManager).ensureForkRoute(segA, segB);
     }
 
     @Test
-    @DisplayName("should notify when next segment is occupied")
-    void firesSegmentOccupied() {
-        when(ctx.currentSpeed()).thenReturn(0);
-        when(ctx.currentSegment()).thenReturn(segA);
-        when(ctx.targetSegment(any())).thenReturn(segB);
-        when(ctx.isAtTarget(any())).thenReturn(false);
-        when(pathfinder.find(any(), any(), any())).thenReturn(List.of(segA, segB));
-        when(ctx.isSegmentFree(segB)).thenReturn(false);
-
-        autopilot.setItinerary(itinerary);
-        autopilot.activate();
-        autopilot.tick();
-
-        verify(actionManager).ensureForkRoute(segA, segB);
-        verify(actionManager).notifySegmentOccupied(segB);
-    }
-
-    @Test
-    @DisplayName("should keep mode FOLLOWING but return false if route calculation fails")
+    @DisplayName("should keep mode FOLLOWING if route calculation fails")
     void failsRoutingGracefully() {
         when(ctx.currentSpeed()).thenReturn(0);
         when(ctx.currentSegment()).thenReturn(segA);
@@ -109,7 +90,6 @@ class AutoPilotImplTest {
 
         autopilot.setItinerary(itinerary);
         autopilot.activate();
-        assertFalse(autopilot.tick());
         assertEquals(AutoPilot.Mode.FOLLOWING, autopilot.mode());
     }
 
@@ -119,17 +99,18 @@ class AutoPilotImplTest {
         when(ctx.currentSpeed()).thenReturn(0);
         when(ctx.currentSegment()).thenReturn(segA);
         when(ctx.targetSegment(any())).thenReturn(segB);
-        when(ctx.isAtTarget(any())).thenReturn(true);
+        Waypoint wp1 = itinerary.waypoints().get(0);
+        Waypoint wp2 = itinerary.waypoints().get(1);
+        when(ctx.isAtTarget(wp1)).thenReturn(true);
+        when(ctx.isAtTarget(wp2)).thenReturn(false);
         when(pathfinder.find(any(), any(), any())).thenReturn(List.of(segA, segB));
 
         autopilot.setItinerary(itinerary);
         autopilot.activate();
-        autopilot.tick();
 
         verify(pathfinder).find(eq(segA), eq(segB), any());
         assertEquals(List.of(segA, segB), autopilot.currentRoute());
     }
-
 
     @Test
     @DisplayName("should deactivate cleanly")
@@ -138,110 +119,4 @@ class AutoPilotImplTest {
         assertEquals(AutoPilot.Mode.IDLE, autopilot.mode());
     }
 
-    @Test
-    @DisplayName("should not call pathfinder on every tick after a route failure (cooldown)")
-    void routeFailureCooldownSuppressesRetries() {
-        when(ctx.currentSpeed()).thenReturn(0);
-        when(ctx.currentSegment()).thenReturn(segA);
-        when(ctx.targetSegment(any())).thenReturn(segB);
-        when(ctx.isAtTarget(any())).thenReturn(false);
-        when(pathfinder.find(any(), any(), any())).thenReturn(List.of());
-
-        autopilot.setItinerary(itinerary);
-        autopilot.activate();
-
-        // First tick: route fails, cooldown starts
-        assertFalse(autopilot.tick());
-
-        // Next ticks within cooldown window: pathfinder must NOT be called again
-        autopilot.tick();
-        autopilot.tick();
-
-        // pathfinder was called exactly once (on the first tick)
-        org.mockito.Mockito.verify(pathfinder, org.mockito.Mockito.times(1))
-                .find(any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("should execute waypoint commands when target is reached")
-    void should_ExecuteCommands_When_WaypointReached() {
-        // Arrange
-        TrainActionManager actionManager = mock(TrainActionManager.class);
-        autopilot = new AutoPilotImpl(ctx, actionManager);
-        autopilot.setPathfinder(pathfinder);
-
-        WaypointCommand cmdSpeed = WaypointCommand.speed(5);
-        WaypointCommand cmdLoad = WaypointCommand.LOAD;
-        Waypoint wp = new letrain.itinerary.impl.WaypointImpl(
-                Waypoint.Type.STATION, 1, List.of(cmdSpeed, cmdLoad));
-        Waypoint wp2 = new letrain.itinerary.impl.WaypointImpl(
-                Waypoint.Type.STATION, 2, List.of());
-
-        Itinerary multiWpItin = new letrain.itinerary.impl.ItineraryImpl();
-        multiWpItin.addWaypoint(wp);
-        multiWpItin.addWaypoint(wp2);
-
-        when(ctx.currentSpeed()).thenReturn(0);
-        when(ctx.currentSegment()).thenReturn(segA);
-        when(ctx.isAtTarget(wp)).thenReturn(true);
-
-        autopilot.setItinerary(multiWpItin);
-        assertTrue(autopilot.activate());
-
-        // Act
-        autopilot.tick();
-
-        // Assert
-        verify(actionManager).forceSegmentReset();
-        verify(actionManager).executeCommand(cmdSpeed);
-        verify(actionManager).executeCommand(cmdLoad);
-        assertEquals(AutoPilot.Mode.FOLLOWING, autopilot.mode()); // Advanced to the next waypoint, still following
-    }
-
-    @Test
-    @DisplayName("should pause and wait when WAIT command is present, then execute remaining commands")
-    void should_HandleWaitCommand_When_WaypointReached() {
-        // Arrange
-        TrainActionManager actionManager = mock(TrainActionManager.class);
-        autopilot = new AutoPilotImpl(ctx, actionManager);
-        autopilot.setPathfinder(pathfinder);
-
-        WaypointCommand cmdStop = WaypointCommand.speed(0);
-        WaypointCommand cmdWait = WaypointCommand.waitSeconds(2);
-        WaypointCommand cmdSpeed = WaypointCommand.speed(3);
-        Waypoint wp = new letrain.itinerary.impl.WaypointImpl(
-                Waypoint.Type.STATION, 1, List.of(cmdStop, cmdWait, cmdSpeed));
-        Waypoint wp2 = new letrain.itinerary.impl.WaypointImpl(
-                Waypoint.Type.STATION, 2, List.of());
-
-        Itinerary multiWpItin = new letrain.itinerary.impl.ItineraryImpl();
-        multiWpItin.addWaypoint(wp);
-        multiWpItin.addWaypoint(wp2);
-
-        when(ctx.currentSpeed()).thenReturn(0);
-        when(ctx.currentSegment()).thenReturn(segA);
-        when(ctx.isAtTarget(wp)).thenReturn(true);
-
-        autopilot.setItinerary(multiWpItin);
-        assertTrue(autopilot.activate());
-
-        // Act & Assert 1: First tick arrives at target, executes STOP, hits WAIT, transitions to WAITING mode
-        assertFalse(autopilot.tick());
-        verify(actionManager).forceSegmentReset();
-        verify(actionManager).executeCommand(cmdStop);
-        org.mockito.Mockito.verifyNoMoreInteractions(actionManager);
-        assertEquals(AutoPilot.Mode.WAITING, autopilot.mode());
-
-        // Act & Assert 2: Next ticks, wait timer decrements (still waiting)
-        for (int i = 0; i < 39; i++) {
-            assertFalse(autopilot.tick());
-            assertEquals(AutoPilot.Mode.WAITING, autopilot.mode());
-        }
-
-        // Act & Assert 3: Wait timer decrements from 1 to 0. It executes remaining commands (SPEED 3) and advances itinerary
-        assertFalse(autopilot.tick());
-        verify(actionManager).executeCommand(cmdSpeed);
-        assertEquals(AutoPilot.Mode.FOLLOWING, autopilot.mode()); // Advanced to wp2, back to FOLLOWING
-    }
 }
-

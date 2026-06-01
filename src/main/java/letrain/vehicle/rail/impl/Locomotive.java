@@ -4,6 +4,8 @@ import letrain.map.Dir;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.Tractor;
 import letrain.visitor.Visitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A locomotive (engine) that pulls or pushes a train. Implements {@link Tractor}
@@ -19,6 +21,7 @@ import letrain.visitor.Visitor;
  * </ul>
  */
 public class Locomotive extends Linker implements Tractor {
+    private static final Logger log = LoggerFactory.getLogger(Locomotive.class);
     private static final int MAX_DESTROY_TURNS = 200;
     private static final long serialVersionUID = 1L;
     /** Maximum speed in game units (notches 0-10). */
@@ -29,7 +32,6 @@ public class Locomotive extends Linker implements Tractor {
     int railsSinceLastSpeedChange = 0;
     int previousSpeed = 0;
     int distanceTraveled = 0;
-    boolean engineStarting = false;
     int turns;
     int totalTurns;
     private String aspect;
@@ -81,8 +83,11 @@ public class Locomotive extends Linker implements Tractor {
         }
         showingDirTurns = 5;
         if (getTrain() != null) {
-            getTrain().refreshLinkersDirection();
+            getTrain().movementManager.refreshLinkersDirection();
             getTrain().notifySenseChanged(!isReversed());
+            if (getTrain().getSafetyManager() != null && getTrain().getModel() != null) {
+                getTrain().getSafetyManager().onReverse();
+            }
         }
     }
 
@@ -124,32 +129,13 @@ public class Locomotive extends Linker implements Tractor {
                 return moved;
             }
 
-            // AutoPilot: let it compute routes and set target speed even when stopped
-            if (getTrain() != null && getTrain().isAutoMode() && getTrain().getAutopilot() != null) {
-                getTrain().getAutopilot().tick();
-            }
 
             // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
             if (getTrain() != null && getTrain().isLoading()) {
                 return moved;
             }
 
-            // Inhibit movement if the engine is just starting sound-wise
-            if (engineStarting) {
-                return moved;
-            }
 
-            // We apply sound-driven speed primarily on rail2 boundaries to avoid visual jump
-            // glitches.
-            // But if we are parked at 0, we can safely apply it immediately to jumpstart
-            // the motor.
-            if (currentSpeed == 0 && acousticSpeedSignal != -1) {
-                if (currentSpeed != acousticSpeedSignal
-                        && (getTrain() == null || !getTrain().isStalled())) {
-                    setCurrentSpeed(acousticSpeedSignal);
-                }
-                acousticSpeedSignal = -1;
-            }
 
             // Handle acceleration from 0 - allows getting unstuck from speed 0
             if (currentSpeed == 0 && targetSpeed > 0) {
@@ -162,19 +148,15 @@ public class Locomotive extends Linker implements Tractor {
             }
 
             if (isTimeToMove()) {
-                if (getTrain().advance()) {
+                boolean hasPerm = getTrain() != null && getTrain().getSafetyManager().hasPermissionToMove();
+                log.info("Locomotive {}: isTimeToMove=true, currentSpeed={}, targetSpeed={}, turns={}, hasPermissionToMove={}",
+                        id, currentSpeed, targetSpeed, turns, hasPerm);
+                if (getTrain().movementManager.advance()) {
+                    log.info("Locomotive {}: advance() succeeded", id);
                     moved = true;
                     incDistanceTraveled();
 
-                    // Apply mid-movement acoustic gear shifts exactly on rail2 boundaries
-                    // to prevent visual interpolation snapping (jumping backwards)
-                    if (acousticSpeedSignal != -1) {
-                        if (currentSpeed != acousticSpeedSignal
-                                && (getTrain() == null || !getTrain().isStalled())) {
-                            setCurrentSpeed(acousticSpeedSignal);
-                        }
-                        acousticSpeedSignal = -1;
-                    }
+
 
                     updateInertia();
                     resetTurns();
@@ -185,11 +167,14 @@ public class Locomotive extends Linker implements Tractor {
                             .filter(t -> t instanceof Locomotive && t != this)
                             .forEach(t -> ((Locomotive) t).resetTurns());
                 } else if (getTrain() == null || !getTrain().isAutoMode()) {
+                    log.info("Locomotive {}: advance() failed (manual mode or null train). Setting speed to 0", id);
                     // Blocked/Collision — stop the train (only in manual mode)
                     setCurrentSpeed(0);
                     setTargetSpeed(0);
                 } else {
+                    log.info("Locomotive {}: advance() failed (AUTO mode). Letting inertia brake.", id);
                     // Auto mode: don't punish, but let inertia brake
+
                     updateInertia();
                     resetTurns();
                 }
@@ -212,37 +197,26 @@ public class Locomotive extends Linker implements Tractor {
 
         railsSinceLastSpeedChange++;
 
-        // When engine transitions are active, we relinquish speed control to the Audio
-        // Gear Syncer
-        if (engineTransitioning) {
-            railsSinceLastSpeedChange = 0;
-            return;
-        }
+
 
         // Factor de inercia fallback only if audio is disabled
         int factor = isBraking() ? 1 : 2;
         int neededRails = Math.max(1, currentSpeed * factor);
 
         if (railsSinceLastSpeedChange >= neededRails) {
+            int oldSpeed = currentSpeed;
             if (currentSpeed < targetSpeed) {
                 setCurrentSpeed(currentSpeed + 1);
             } else {
                 setCurrentSpeed(currentSpeed - 1);
             }
+            log.info("Locomotive {}: inertia speed update from {} to {} (targetSpeed={})", id, oldSpeed, currentSpeed, targetSpeed);
             railsSinceLastSpeedChange = 0;
         }
     }
 
     public boolean isBraking() {
         return currentSpeed > targetSpeed && currentSpeed > 0;
-    }
-
-    public void setEngineStarting(boolean starting) {
-        this.engineStarting = starting;
-    }
-
-    public boolean isEngineStarting() {
-        return engineStarting;
     }
 
     public boolean isEngineOn() {
@@ -253,18 +227,6 @@ public class Locomotive extends Linker implements Tractor {
         this.engineOn = on;
     }
 
-    private boolean engineTransitioning = false;
-
-    public void setEngineTransitioning(boolean transitioning) {
-        this.engineTransitioning = transitioning;
-    }
-
-    public boolean isEngineTransitioning() {
-        return engineTransitioning;
-    }
-
-    private volatile int acousticSpeedSignal = -1;
-
     private boolean forceIdleSound = false;
 
     public void setForceIdleSound(boolean force) {
@@ -273,10 +235,6 @@ public class Locomotive extends Linker implements Tractor {
 
     public boolean isForceIdleSound() {
         return forceIdleSound;
-    }
-
-    public void setAcousticSpeedSignal(int notch) {
-        this.acousticSpeedSignal = notch;
     }
 
     public void incSpeed() {
@@ -306,14 +264,29 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void setTargetSpeed(int speed) {
+        if (getTrain() != null && getTrain().getSafetyManager() != null && getTrain().getSafetyManager().isWaitingForBlock()) {
+            if (speed > 0) {
+                log.info("Locomotive {}: Train is waiting for block. Intercepting setTargetSpeed({}) and saving it instead.", id, speed);
+                getTrain().getSafetyManager().onBrakingInitiated(speed);
+                speed = 0;
+            }
+        }
+        log.info("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed, speed);
         if (this.targetSpeed == speed) {
             return;
         }
+        int oldSpeed = this.targetSpeed;
         this.targetSpeed = speed;
         if (this.targetSpeed > 0) {
             this.engineOn = true;
             if (getTrain() != null) {
                 getTrain().setStalled(false);
+                if (oldSpeed == 0) {
+                    log.info("Locomotive {}: target speed increased from 0. Acquiring initial locks.", id);
+                    Train train = getTrain();
+                    train.checkWaypointArrival();
+                    train.actionManager.acquireInitialLocks();
+                }
             }
         }
         limitTargetSpeed();

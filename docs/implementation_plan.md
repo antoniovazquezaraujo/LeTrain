@@ -1,93 +1,56 @@
-# Goal Description
+# Plan de Implementación — Búsqueda de Vía Alternativa (Siding / Ramal Paralelo)
 
-This implementation plan details the final phase (Phase C) of our Autopilot refactoring.
-The main goals are:
-1. **Save/Load Persistence**: Persist the autopilot state (including active itineraries, waypoint progress, wait ticks, and pending commands) across game saves/loads.
-2. **Decouple Serialization from Domain Classes**: Clean up `Train.java` by moving all Jackson annotations to a separate `TrainMixin.java` file.
-3. **JSON Property Naming Clean-up**: Rename the JSON property for the historical log from `"itinerary"` to `"trip"` in `Train`, adding alias support (`@JsonAlias`) for backward-compatibility with older save files.
-4. **Clean up Redundant Casts and Formatting**: Fix minor layout issues and unnecessary casts.
+Este plan describe la solución para evitar bloqueos y mejorar la fluidez de tráfico en la red ferroviaria mediante la búsqueda y reserva reactiva de un ramal alternativo directo antes de detener el tren.
 
 ## User Review Required
 
-> [!NOTE]
-> **Backward Compatibility**: Older save files containing `"itinerary"` for the historic station log will still load successfully because we use `@JsonAlias({"itinerary", "trip"})` on the mix-in.
-> **AutoPilot Deserialization**: The pathfinder and context links are transient and circular. They will be automatically restored during the `postLoadInit()` lifecycle method.
-
----
+> [!IMPORTANT]
+> - **Búsqueda e Intento de Reserva Previos al Frenado**: Antes de invocar a `initiateBraking()`, si el segmento destino planificado (`nextSegment`) está bloqueado, el sistema buscará un segmento alternativo directo (`sAlt`).
+> - **Criterios de Alternativa Directa**: 
+>   1. El ramal alternativo debe conectar exactamente a los mismos dos nodos (por ejemplo, desvíos) que el segmento original.
+>   2. El segmento original que se va a sustituir no debe contener ningún waypoint pendiente en el itinerario.
+>   3. El ramal alternativo debe estar libre (bloqueable por el tren).
+> - **Actualización del Piloto Automático**: Si se encuentra y reserva con éxito la vía alternativa:
+>   - Se actualiza el `nextSegment` en el gestor de seguridad.
+>   - Se actualiza la ruta activa (`currentRoute`) del piloto automático para evitar que el tren intente volver al segmento bloqueado.
+>   - Se orientan correctamente las agujas del desvío para la nueva vía.
 
 ## Proposed Changes
 
-### Core Serialization / Mix-ins
-
-#### [NEW] [TrainMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/TrainMixin.java)
-- Mirror `Train.java` structure and define all JSON serialization rules:
-  - Add `@JsonIdentityInfo` and `@JsonIgnoreProperties`.
-  - Add `@JsonProperty("linkers")` and `@JsonDeserialize(as = LinkedList.class)`.
-  - Add `@JsonUnwrapped` for `logisticsManager`.
-  - Configure `@JsonProperty("trip")` and `@JsonAlias({"itinerary", "trip"})`.
-  - Remove `@JsonIgnore` from `autopilot` and `autoMode` to persist them.
-  - Mark all query/view/getter methods with `@JsonIgnore`.
-
-#### [NEW] [WaypointMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/WaypointMixin.java)
-- Define serializer `WaypointSerializer` and deserializer `WaypointDeserializer` to handle `Waypoint` interface / `WaypointImpl` record custom serialization (including `Optional<Dir>` and command lists without requiring extra jdk8 modules).
-- Map `Waypoint` and `WaypointImpl` to use these custom serializers/deserializers.
-
-#### [NEW] [ItineraryMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/ItineraryMixin.java)
-- Define custom serializer `ItinerarySerializer` and deserializer `ItineraryDeserializer` for the `Itinerary` interface / `ItineraryImpl`.
-- Reconstruct the `ItineraryImpl` using its new package-private constructor.
-
-#### [NEW] [AutoPilotMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/AutoPilotMixin.java)
-- Define custom serializer `AutoPilotSerializer` and deserializer `AutoPilotDeserializer` for `AutoPilot` / `AutoPilotImpl` to capture waypoints, wait ticks, mode, and pending commands.
-
-#### [NEW] [WaypointCommandMixin.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/WaypointCommandMixin.java)
-- Map JSON properties to `WaypointCommand` using a custom static `@JsonCreator` method, bypassing private constructors.
+### Componente: Control de Cantón e Itinerario (`letrain.itinerary` y `letrain.vehicle.rail.impl`)
 
 ---
 
-### Decoupling & Adjusting Domain Classes
-
-#### [MODIFY] [Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/impl/rail/Train.java)
-- Remove all Jackson annotations (imports and field/method decorations).
-- In `postLoadInit()`:
-  - If `autopilot` is not null, invoke `reinitialize(new TrainAutoPilotContext(this), this)` and set up its A* pathfinder.
-- Refactor redundant code (remove the cast to `(Tractor)` at line 467, simplify `getTractors()` steam to list).
+#### [MODIFY] [AutoPilot.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/AutoPilot.java)
+- Añadir la declaración del método `void replaceRouteSegment(Segment oldSeg, Segment newSeg);` para permitir la sustitución dinámica de un segmento en el itinerario/ruta del piloto automático.
 
 #### [MODIFY] [AutoPilotImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java)
-- Remove `final` keyword from `ctx` and `actionManager` to allow them to be reinitialized after deserialization.
-- Add getter/setter for `waitTicks` and `pendingCommands` to facilitate serialization.
-- Add constructor `public AutoPilotImpl()` initializing `ctx` and `actionManager` to `null`.
-- Add constructor `public AutoPilotImpl(Itinerary itinerary, Mode mode, int waitTicks, List<WaypointCommand> pendingCommands)` for deserializer.
-- Add `public void reinitialize(AutoPilotContext ctx, TrainActionManager actionManager)`.
+- Implementar `replaceRouteSegment(Segment oldSeg, Segment newSeg)`:
+  - Hacer una copia mutable de `currentRoute`.
+  - Buscar la posición de `oldSeg`.
+  - Si se encuentra, sustituirla por `newSeg`.
+  - Actualizar `currentRoute` con una versión inmutable.
+  - Asegurar la orientación correcta del desvío/agujas llamando a `ensureForkRoute` para el segmento modificado y sus colindantes en la ruta.
 
-#### [MODIFY] [ItineraryImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/ItineraryImpl.java)
-- Add package-private constructor `ItineraryImpl(List<Waypoint> waypoints, Set<Integer> assignedTrains, State state, int currentIndex)` for deserialization.
-
----
-
-### Game Save & Tests Configuration
-
-#### [MODIFY] [GameSaveService.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/GameSaveService.java)
-- Register the new Mix-ins:
-  - `mapper.addMixIn(Train.class, TrainMixin.class);`
-  - `mapper.addMixIn(Waypoint.class, WaypointMixin.class);`
-  - `mapper.addMixIn(WaypointImpl.class, WaypointMixin.class);`
-  - `mapper.addMixIn(Itinerary.class, ItineraryMixin.class);`
-  - `mapper.addMixIn(ItineraryImpl.class, ItineraryMixin.class);`
-  - `mapper.addMixIn(AutoPilot.class, AutoPilotMixin.class);`
-  - `mapper.addMixIn(AutoPilotImpl.class, AutoPilotMixin.class);`
-  - `mapper.addMixIn(WaypointCommand.class, WaypointCommandMixin.class);`
-
-#### [MODIFY] [SerializationTest.java](file:///home/antonio/dev/LeTrain/src/test/java/letrain/SerializationTest.java)
-- Update `serialize` and `deserialize` helper methods to register all the same Mix-ins on their `ObjectMapper`.
-- Add a new integration test `testTrainAutoPilotSerialization()` that:
-  - Sets up an itinerary with waypoints and commands.
-  - Instantiates `AutoPilotImpl` and assigns it to a `Train`.
-  - Serializes and deserializes the `Model`/`Train`.
-  - Asserts that the autopilot state (mode, wait ticks, itinerary, waypoints, commands) is successfully preserved and reinitialized.
+#### [MODIFY] [TrainSafetyManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/TrainSafetyManager.java)
+- Implementar el método privado `boolean tryAlternativeSegment(Model model)`:
+  - Validar si el tren tiene piloto automático activo y un `nextSegment` definido.
+  - Comprobar que en `nextSegment` no haya waypoints pendientes (comparando con `waypoints` de la ruta actual a partir de `currentIndex()`).
+  - Buscar en la topología (usando `RailwayGraph`) un segmento alternativo directo (`sAlt`) que comparta los dos mismos extremos (`RailNode`) que `nextSegment`.
+  - Intentar bloquearlo (`bm.tryLock(train, sAlt)`).
+  - Si es exitoso, actualizar `nextSegment` y notificar al piloto automático mediante `ap.replaceRouteSegment(oldNext, sAlt)`.
+- Modificar las secciones de reserva de bloque (`bm.tryLock(train, nextSegment)`) en `acquireInitialLocks`, `onSegmentEntered` y `onBlockReleased`:
+  - Si `tryLock` sobre `nextSegment` falla, invocar a `tryAlternativeSegment(model)` para buscar e intentar bloquear el ramal alternativo antes de proceder a la detención/frenado.
 
 ---
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `mvn clean test` to compile and verify all unit/integration tests (including the new serialization integration tests).
+- Ejecutar la suite completa de pruebas:
+  ```bash
+  mvn clean test
+  ```
+
+### Manual Verification
+- Cargar la partida provista para ver si el tren evita quedarse bloqueado ante un desvío ocupado tomando el ramal paralelo alternativo y libre.

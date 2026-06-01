@@ -18,9 +18,9 @@ public class BlockManagerImpl implements BlockManager {
     // Mapa inverso para optimizar consultas de trenes
     private final Map<Train, List<Segment>> trainSegments = new ConcurrentHashMap<>();
 
-    private Runnable onReleaseListener;
+    private java.util.function.Consumer<Segment> onReleaseListener;
 
-    public void setOnReleaseListener(Runnable listener) {
+    public void setOnReleaseListener(java.util.function.Consumer<Segment> listener) {
         this.onReleaseListener = listener;
     }
 
@@ -65,7 +65,7 @@ public class BlockManagerImpl implements BlockManager {
                 if (owners.isEmpty()) {
                     segmentOwners.remove(segment);
                     if (onReleaseListener != null) {
-                        onReleaseListener.run();
+                        onReleaseListener.accept(segment);
                     }
                 }
             }

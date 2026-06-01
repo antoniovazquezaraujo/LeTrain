@@ -197,11 +197,10 @@ public class AudioController {
                     continue;
                 synth = new TrainSynthesizer();
 
-                final Locomotive trackedLoco = loco;
                 synth.addListener(new TrainSynthesizer.SynthesizerListener() {
                     @Override
                     public void onNotchChanged(int notch) {
-                        trackedLoco.setAcousticSpeedSignal(notch);
+                        // Sound notch changed - no-op on locomotive physics
                     }
 
                     @Override
@@ -252,8 +251,6 @@ public class AudioController {
             }
 
             // Sync States
-            loco.setEngineStarting(synth.isEngineStarting());
-            loco.setEngineTransitioning(synth.isTransitioning());
             synth.setBraking(loco.isBraking());
 
             // Sync Loading State

@@ -21,9 +21,9 @@ import letrain.track.StationEventListener;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.TrainEventListener;
-import letrain.vehicle.rail.impl.TrainAutoPilotContext;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.TrainAutoPilotContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -237,7 +237,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             if (ctx.trainEvent() != null) {
                 String event = ctx.trainEvent().getChild(0).getText();
                 String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
-                model.addTrainEventListener(new TrainEventListener() {
+                model.addScriptTrainEventListener(new TrainEventListener() {
                     @Override
                     public void onSensorEnter(Train train, boolean isForward) {
                         boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
@@ -274,7 +274,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                 });
             } else if (ctx.getChildCount() >= 3) {
                 String event = ctx.getChild(2).getText();
-                model.addTrainEventListener(new TrainEventListener() {
+                model.addScriptTrainEventListener(new TrainEventListener() {
                     @Override
                     public void onCrash(Train train, letrain.map.Point pos, int speed) {
                         if ("crash".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
@@ -409,16 +409,18 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             boolean forward = "forward".equals(lCtx.sense().getText());
             int count = lCtx.NUMBER() != null ? Integer.parseInt(lCtx.NUMBER().getText()) : 0;
             return (t) -> {
-                t.prepareLink(forward, count);
-                t.joinLinkers();
+                t.trainCouplingManager.prepareLink(forward, count);
+                t.trainCouplingManager.joinLinkers();
             };
         } else if (ctx.unlinkAction() != null) {
             LeTrainProgramParser.UnlinkActionContext uCtx = ctx.unlinkAction();
             boolean forward = "forward".equals(uCtx.sense().getText());
             int count = uCtx.NUMBER() != null ? Integer.parseInt(uCtx.NUMBER().getText()) : 1;
             return (t) -> {
-                t.prepareUnlink(forward, count);
-                t.divideTrain(() -> model.nextTrainId());
+
+                t.trainCouplingManager.prepareUnlink(forward, count);
+
+                t.trainCouplingManager.divideTrain(() -> model.nextTrainId());
             };
         } else if (actionText.contains("unload")) {
             return (t) -> {
@@ -509,7 +511,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         if (train.getAutopilot() == null) {
             train.setAutopilot(new letrain.itinerary.impl.AutoPilotImpl(
                 new TrainAutoPilotContext(train),
-                train));
+                train.actionManager));
         }
         if (model.getRailwayGraph() != null) {
             train.getAutopilot().setPathfinder(

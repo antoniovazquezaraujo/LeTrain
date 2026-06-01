@@ -70,5 +70,6 @@ public class AutomationEngine {
         model.getStations().forEach(Station::removeAllStationEventListeners);
         model.getForks().forEach(ForkRailTrack::removeAllForkEventListeners);
         model.getSemaphores().forEach(RailSemaphore::removeAllSemaphoreEventListeners);
+        model.removeAllScriptTrainEventListeners();
     }
 }

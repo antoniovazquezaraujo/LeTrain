@@ -377,12 +377,12 @@ public class Gdx3DHud {
                         if (newMode == letrain.mvp.Model.GameMode.LINK) {
                             if (model.getSelectedLocomotive() != null
                                     && model.getSelectedLocomotive().getTrain() != null) {
-                                model.getSelectedLocomotive().getTrain().resetLinkState();
+                                model.getSelectedLocomotive().getTrain().trainCouplingManager.resetLinkState();
                             }
                         } else if (newMode == letrain.mvp.Model.GameMode.UNLINK) {
                             if (model.getSelectedLocomotive() != null
                                     && model.getSelectedLocomotive().getTrain() != null) {
-                                model.getSelectedLocomotive().getTrain().resetUnlinkState();
+                                model.getSelectedLocomotive().getTrain().trainCouplingManager.resetUnlinkState();
                             }
                         }
                     }

@@ -145,14 +145,75 @@ public class AutoPilotImpl implements AutoPilot {
             actionManager.forceSegmentReset();
         }
         log.info("[AP] activate → FOLLOWING");
+
+        // Actuación inicial reactiva
+        Segment currentSeg = ctx.currentSegment();
+        if (currentSeg != null) {
+            onSegmentEntered(currentSeg);
+        }
+
         return true;
     }
 
+    public void setMode(Mode mode) {
+        this.mode = mode;
+    }
+
     @Override
-    public void onForkEntered(ForkRailTrack fork) {
-        log.info("[AP] onForkEntered {}", fork.getId());
-        currentRoute = List.of();
-        lastSegment = null;
+    public void onSegmentEntered(Segment newSegment) {
+        log.info("[AP] onSegmentEntered: newSegment={}, mode={}", newSegment != null ? newSegment.getId() : "null", mode);
+        if (mode != Mode.FOLLOWING) {
+            return;
+        }
+
+        Segment currentSeg = newSegment;
+        lastSegment = currentSeg;
+
+        Optional<Waypoint> currentWpOpt = itinerary.currentWaypoint();
+        if (currentWpOpt.isEmpty()) {
+            log.info("[AP] onSegmentEntered: itinerary has no current waypoint. Setting mode to IDLE");
+            mode = Mode.IDLE;
+            return;
+        }
+
+        Waypoint wp = currentWpOpt.get();
+        log.info("[AP] onSegmentEntered: current target waypoint is {}", wp.targetId());
+
+        // Si la ruta está vacía o nos desviamos, calcular ruta
+        if (currentRoute.isEmpty() || !currentRoute.contains(currentSeg)) {
+            log.info("[AP] calculating route to wp {}...", wp.targetId());
+            if (!calculateRoute()) {
+                log.warn("[AP] calculateRoute failed");
+                return;
+            }
+        }
+
+        // Orientar las agujas para el siguiente tramo de la ruta
+        int index = currentRoute.indexOf(currentSeg);
+        log.info("[AP] onSegmentEntered: current segment index in route = {}", index);
+        if (index != -1 && index + 1 < currentRoute.size()) {
+            Segment nextSeg = currentRoute.get(index + 1);
+            log.info("[AP] onSegmentEntered: orienting fork for next segment {} from {}", nextSeg.getId(), currentSeg.getId());
+            if (actionManager != null) {
+                actionManager.ensureForkRoute(currentSeg, nextSeg);
+            }
+        }
+    }
+
+    @Override
+    public void resumeWaiting() {
+        if (mode != Mode.WAITING) {
+            return;
+        }
+        log.info("[AP] resumeWaiting from wait");
+        this.waitTicks = 0;
+        this.mode = Mode.FOLLOWING;
+    }
+
+    @Override
+    public void clearRoute() {
+        this.currentRoute = List.of();
+        this.lastSegment = null;
     }
 
     @Override
@@ -163,151 +224,31 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     @Override
+    public void replaceRouteSegment(Segment oldSeg, Segment newSeg) {
+        if (currentRoute == null || currentRoute.isEmpty()) {
+            return;
+        }
+        List<Segment> newRoute = new java.util.ArrayList<>(currentRoute);
+        int index = newRoute.indexOf(oldSeg);
+        if (index != -1) {
+            newRoute.set(index, newSeg);
+            currentRoute = List.copyOf(newRoute);
+            log.info("[AP] replaceRouteSegment: replaced {} with {} at index {}", oldSeg.getId(), newSeg.getId(), index);
+            if (index > 0) {
+                ensureForkRoute(newRoute.get(index - 1), newSeg);
+            }
+            if (index + 1 < newRoute.size()) {
+                ensureForkRoute(newSeg, newRoute.get(index + 1));
+            }
+        }
+    }
+
+    @Override
     public void deactivate() {
         log.info("[AP] deactivate → IDLE");
         mode = Mode.IDLE;
         waitTicks = 0;
         pendingCommands.clear();
-    }
-
-    @Override
-    public boolean tick() {
-        if (mode == Mode.IDLE || mode == Mode.ERROR) {
-            return false;
-        }
-        if (itinerary == null) {
-            mode = Mode.ERROR;
-            return false;
-        }
-
-        if (mode == Mode.WAITING) {
-            if (waitTicks > 0) {
-                waitTicks--;
-            }
-            if (waitTicks == 0) {
-                // Wait finished! Run any remaining commands for this waypoint
-                while (!pendingCommands.isEmpty()) {
-                    WaypointCommand cmd = pendingCommands.remove(0);
-                    if (cmd.kind() == WaypointCommand.Kind.WAIT) {
-                        this.waitTicks = cmd.seconds() * WaypointCommand.TICKS_PER_SECOND;
-                        // remain in Mode.WAITING
-                        return false;
-                    } else {
-                        if (actionManager != null) {
-                            actionManager.executeCommand(cmd);
-                        }
-                    }
-                }
-                // No more commands/waits for this waypoint: resume following and advance itinerary
-                mode = Mode.FOLLOWING;
-                itinerary.advance();
-                currentRoute = List.of();
-                lastSegment = null;
-
-                if (itinerary.state() == Itinerary.State.DONE || itinerary.currentWaypoint().isEmpty()) {
-                    log.info("[AP] itinerary DONE → IDLE");
-                    mode = Mode.IDLE;
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        }
-
-        Segment currentSeg = ctx.currentSegment();
-        if (currentSeg == null) {
-            return false;
-        }
-
-        Optional<Waypoint> currentWpOpt = itinerary.currentWaypoint();
-        if (currentWpOpt.isEmpty()) {
-            log.info("[AP] tick → no waypoints (DONE)");
-            mode = Mode.IDLE;
-            return false;
-        }
-
-        Waypoint wp = currentWpOpt.get();
-
-        if (ctx.isAtTarget(wp)) {
-            log.info("[AP] ARRIVED at wp {}", wp.targetId());
-
-            // Initialize pending commands for the arrived waypoint
-            pendingCommands.clear();
-            pendingCommands.addAll(wp.commands());
-
-            // Run commands until we hit a WAIT or exhaust the list
-            while (!pendingCommands.isEmpty()) {
-                WaypointCommand cmd = pendingCommands.remove(0);
-                if (cmd.kind() == WaypointCommand.Kind.WAIT) {
-                    this.waitTicks = cmd.seconds() * WaypointCommand.TICKS_PER_SECOND;
-                    this.mode = Mode.WAITING;
-                    break;
-                } else {
-                    if (actionManager != null) {
-                        actionManager.executeCommand(cmd);
-                    }
-                }
-            }
-
-            if (mode == Mode.WAITING) {
-                return false;
-            }
-
-            itinerary.advance();
-            currentRoute = List.of();
-            lastSegment = null;
-
-            if (itinerary.state() == Itinerary.State.DONE || itinerary.currentWaypoint().isEmpty()) {
-                log.info("[AP] itinerary DONE → IDLE");
-                mode = Mode.IDLE;
-                return false;
-            }
-
-            wp = itinerary.currentWaypoint().get();
-        }
-
-        if (currentRoute.isEmpty()) {
-            if (routeRetryCooldown > 0) {
-                routeRetryCooldown--;
-                return false;
-            }
-            log.info("[AP] calculating route to wp {}...", wp.targetId());
-            if (!calculateRoute()) {
-                log.warn("[AP] calculateRoute failed, retrying in {} ticks", ROUTE_RETRY_TICKS);
-                routeRetryCooldown = ROUTE_RETRY_TICKS;
-                return false;
-            }
-        }
-
-        if (currentSeg != lastSegment) {
-            lastSegment = currentSeg;
-
-            int index = currentRoute.indexOf(currentSeg);
-            if (index == -1) {
-                log.info("[AP] train is off-route. Recalculating...");
-                if (!calculateRoute()) {
-                    log.warn("[AP] recalculateRoute failed, retrying next tick");
-                    return false;
-                }
-                index = currentRoute.indexOf(currentSeg);
-            }
-
-            if (index != -1 && index + 1 < currentRoute.size()) {
-                Segment nextSeg = currentRoute.get(index + 1);
-                if (actionManager != null) {
-                    actionManager.ensureForkRoute(currentSeg, nextSeg);
-                }
-
-                if (!ctx.isSegmentFree(nextSeg)) {
-                    log.info("[AP] next segment {} is occupied, firing event", nextSeg.getId());
-                    if (actionManager != null) {
-                        actionManager.notifySegmentOccupied(nextSeg);
-                    }
-                }
-            }
-        }
-
-        return true;
     }
 
     private boolean calculateRoute() {
