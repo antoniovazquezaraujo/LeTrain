@@ -9,9 +9,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.vehicle.rail.Linker;
@@ -19,65 +16,27 @@ import letrain.vehicle.rail.RailIterator;
 import letrain.vehicle.rail.TrainEventListener;
 
 public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingManager {
-    private final Train train;
-    @JsonProperty("linkersToJoin")
-    @JsonDeserialize(as = LinkedList.class)
-    private Deque<Linker> linkersToJoin;
-    private int numLinkersToRemove = 0;
-    private int numLinkersToJoin = 0;
-    @JsonProperty("linkersToRemove")
-    @JsonDeserialize(as = LinkedList.class)
-    private Deque<Linker> linkersToRemove;
-    Train.LinkersSense linkerJoinSense;
-    Train.LinkersSense linkerDivisionSense;
-    boolean joined = false;
 
-    public TrainCouplingManager(Train train) {
-        this.train = train;
-        this.setLinkersToJoin(new LinkedList<>());
-        this.setLinkersToRemove(new LinkedList<>());
-
+    public TrainCouplingManager() {
+        // Stateless service constructor
     }
 
     @Override
-    public int getNumLinkersToJoin() {
-        return numLinkersToJoin;
-    }
-
-    @Override
-    public int getNumLinkersToRemove() {
-        return numLinkersToRemove;
-    }
-
-    @JsonIgnore
-    @Override
-    public List<Linker> getSelectedLinkersToJoin() {
-        if (getLinkersToJoin().isEmpty() || getNumLinkersToJoin() == 0)
+    public List<Linker> getSelectedLinkersToJoin(Train train) {
+        if (train.getLinkersToJoin().isEmpty() || train.getNumLinkersToJoin() == 0)
             return new ArrayList<Linker>();
         // Convert deque to list to slice it
-        List<Linker> all = new ArrayList<Linker>(getLinkersToJoin());
+        List<Linker> all = new ArrayList<Linker>(train.getLinkersToJoin());
         // Logic might differ based on iteration order of deque vs join sense
         // linkersToJoin is populated in order of distance from train.
         // so we just take the first N.
-        return all.subList(0, getNumLinkersToJoin());
-    }/*
-     * - Vaciamos los linkersToJoin
-     * - Si solicitan forwardDirection, lastLinker es getFirst(), si no es
-     * getLast(), es decir, que vamos agregar linkers en ese sentido seleccionado.
-     * - En dir ponemos la dirección de "salida" del tren, es decir, la que apuntará
-     * a despegarse del tren. Pero ahí necesitamos saber si el tren está invertido o
-     * no.
-     * - Si el tren no está invertido, la dirección de salida del primer linker es
-     * la correcta, pero la del último será la inversa de su track.
-     * - Si el tren está invertido es lo contrario, la que hay que invertir es la
-     * primera.
-     */
+        return all.subList(0, train.getNumLinkersToJoin());
+    }
 
-    @JsonIgnore
     @Override
-    public void updateLinkersToJoin(boolean forwardDirection) {
-        getLinkersToJoin().clear();
-        joined = false;
+    public void updateLinkersToJoin(Train train, boolean forwardDirection) {
+        train.getLinkersToJoin().clear();
+        train.setJoined(false);
         Linker lastLinker = null;
         Dir dir = Dir.E;
 
@@ -88,20 +47,20 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 entryDir = lastLinker.getRealDir().inverse();
             }
             if (forwardDirection) {
-                linkerJoinSense = Train.LinkersSense.FRONT;
+                train.setLinkerJoinSense(Train.LinkersSense.FRONT);
                 dir = lastLinker.getTrack().getDir(entryDir);
             } else {
-                linkerJoinSense = Train.LinkersSense.BACK;
+                train.setLinkerJoinSense(Train.LinkersSense.BACK);
                 dir = entryDir;
             }
         } else if (train.getLinkers().size() > 1) {
             if (forwardDirection) {
                 lastLinker = train.getLinkers().getFirst();
-                linkerJoinSense = Train.LinkersSense.FRONT;
-                dir = getLinkDir(lastLinker);
+                train.setLinkerJoinSense(Train.LinkersSense.FRONT);
+                dir = getLinkDir(train, lastLinker);
             } else {
                 lastLinker = train.getLinkers().getLast();
-                linkerJoinSense = Train.LinkersSense.BACK;
+                train.setLinkerJoinSense(Train.LinkersSense.BACK);
                 // Find the connection from the last linker that leads away
                 // from our own train (empty track or different train).
                 Track lastTrack = lastLinker.getTrack();
@@ -145,7 +104,7 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 if (nextLinker != null && train != nextLinker.getTrain()) {
                     while (nextLinker != null) {
                         if (nextLinker.getTrain() != train) {
-                            getLinkersToJoin().add(nextLinker);
+                            train.getLinkersToJoin().add(nextLinker);
                         }
                         if (!iterator.advance()) {
                             break;
@@ -155,20 +114,20 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 }
             }
         }
-        setNumLinkersToJoin(getLinkersToJoin().size());
+        train.setNumLinkersToJoin(train.getLinkersToJoin().size());
     }
 
     @Override
-    public void joinLinkers() {
-        if (!joined) {
+    public void joinLinkers(Train train) {
+        if (!train.isJoined()) {
             int count = 0;
             boolean linkersActuallyAdded = false;
             Set<Train> affectedOldTrains = new HashSet<Train>();
-            for (Linker linkerToJoin : getLinkersToJoin()) {
-                if (count >= getNumLinkersToJoin())
+            for (Linker linkerToJoin : train.getLinkersToJoin()) {
+                if (count >= train.getNumLinkersToJoin())
                     break;
 
-                if (linkerJoinSense == Train.LinkersSense.FRONT) {
+                if (train.getLinkerJoinSense() == Train.LinkersSense.FRONT) {
                     train.getLinkers().addFirst(linkerToJoin);
                 } else {
                     train.getLinkers().addLast(linkerToJoin);
@@ -199,8 +158,8 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 }
             }
 
-            getLinkersToJoin().clear();
-            joined = true;
+            train.getLinkersToJoin().clear();
+            train.setJoined(true);
             if (linkersActuallyAdded) {
                 train.movementManager.refreshLinkersDirection();
                 train.setStalled(false);
@@ -210,134 +169,134 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
     }
 
     @Override
-    public void prepareLink(boolean forward, int count) {
-        updateLinkersToJoin(forward);
-        if (count > 0 && count < getLinkersToJoin().size()) {
-            setNumLinkersToJoin(count);
+    public void prepareLink(Train train, boolean forward, int count) {
+        updateLinkersToJoin(train, forward);
+        if (count > 0 && count < train.getLinkersToJoin().size()) {
+            train.setNumLinkersToJoin(count);
         } else {
-            setNumLinkersToJoin(getLinkersToJoin().size());
+            train.setNumLinkersToJoin(train.getLinkersToJoin().size());
         }
     }
 
     @Override
-    public void prepareUnlink(boolean forward, int count) {
+    public void prepareUnlink(Train train, boolean forward, int count) {
         if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
             return;
         }
 
         if (forward) {
-            linkerDivisionSense = Train.LinkersSense.FRONT;
+            train.setLinkerDivisionSense(Train.LinkersSense.FRONT);
         } else {
-            linkerDivisionSense = Train.LinkersSense.BACK;
+            train.setLinkerDivisionSense(Train.LinkersSense.BACK);
         }
 
         int maxRemovable = Math.max(0, train.getLinkers().size() - 1);
         if (maxRemovable == 0) {
-            setNumLinkersToRemove(0);
+            train.setNumLinkersToRemove(0);
         } else if (count <= 0) {
-            setNumLinkersToRemove(1);
+            train.setNumLinkersToRemove(1);
         } else {
-            setNumLinkersToRemove(Math.min(Math.max(1, count), maxRemovable));
+            train.setNumLinkersToRemove(Math.min(Math.max(1, count), maxRemovable));
         }
 
-        updateLinkersToRemove();
+        updateLinkersToRemove(train);
     }
 
     @Override
-    public void setFrontDivisionSense() {
+    public void setFrontDivisionSense(Train train) {
         if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
             return;
         }
-        linkerDivisionSense = Train.LinkersSense.FRONT;
-        setNumLinkersToRemove(train.calcInitialUnlinkCount());
-        updateLinkersToRemove();
+        train.setLinkerDivisionSense(Train.LinkersSense.FRONT);
+        train.setNumLinkersToRemove(train.calcInitialUnlinkCount());
+        updateLinkersToRemove(train);
     }
 
     @Override
-    public void setBackDivisionSense() {
+    public void setBackDivisionSense(Train train) {
         if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
             return;
         }
-        linkerDivisionSense = Train.LinkersSense.BACK;
-        setNumLinkersToRemove(train.calcInitialUnlinkCount());
-        updateLinkersToRemove();
+        train.setLinkerDivisionSense(Train.LinkersSense.BACK);
+        train.setNumLinkersToRemove(train.calcInitialUnlinkCount());
+        updateLinkersToRemove(train);
     }
 
     @Override
-    public void resetUnlinkState() {
+    public void resetUnlinkState(Train train) {
         if (!train.getLinkers().isEmpty() && train.getLinkers().peekLast() == train.getDirectorLinker()) {
-            linkerDivisionSense = Train.LinkersSense.FRONT;
+            train.setLinkerDivisionSense(Train.LinkersSense.FRONT);
         } else {
-            linkerDivisionSense = Train.LinkersSense.BACK;
+            train.setLinkerDivisionSense(Train.LinkersSense.BACK);
         }
-        setNumLinkersToRemove(train.calcInitialUnlinkCount());
-        updateLinkersToRemove();
+        train.setNumLinkersToRemove(train.calcInitialUnlinkCount());
+        updateLinkersToRemove(train);
     }
 
     @Override
-    public void resetLinkState() {
-        setNumLinkersToJoin(0);
-        getLinkersToJoin().clear();
+    public void resetLinkState(Train train) {
+        train.setNumLinkersToJoin(0);
+        train.getLinkersToJoin().clear();
     }
 
     @Override
-    public void selectNextDivisionLink() {
+    public void selectNextDivisionLink(Train train) {
         if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
             return;
         }
-        if (getNumLinkersToRemove() < train.getLinkers().size() - 1) {
-            setNumLinkersToRemove(getNumLinkersToRemove() + 1);
+        if (train.getNumLinkersToRemove() < train.getLinkers().size() - 1) {
+            train.setNumLinkersToRemove(train.getNumLinkersToRemove() + 1);
         }
-        updateLinkersToRemove();
+        updateLinkersToRemove(train);
     }
 
     @Override
-    public void selectPrevDivisionLink() {
+    public void selectPrevDivisionLink(Train train) {
         if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
             return;
         }
-        if (getNumLinkersToRemove() > 0) {
-            setNumLinkersToRemove(getNumLinkersToRemove() - 1);
+        if (train.getNumLinkersToRemove() > 0) {
+            train.setNumLinkersToRemove(train.getNumLinkersToRemove() - 1);
         }
-        updateLinkersToRemove();
+        updateLinkersToRemove(train);
     }
 
     @Override
-    public void updateLinkersToRemove() {
-        getLinkersToRemove().clear();
+    public void updateLinkersToRemove(Train train) {
+        train.getLinkersToRemove().clear();
         Iterator<Linker> linkerIterator = train.getLinkers().iterator();
-        if (linkerDivisionSense == Train.LinkersSense.FRONT) {
+        if (train.getLinkerDivisionSense() == Train.LinkersSense.FRONT) {
             linkerIterator = train.getLinkers().iterator();
         } else {
             linkerIterator = train.getLinkers().descendingIterator();
         }
-        for (int n = 0; n < getNumLinkersToRemove(); n++) {
+        for (int n = 0; n < train.getNumLinkersToRemove(); n++) {
             if (linkerIterator.hasNext()) {
                 Linker next = linkerIterator.next();
                 if (next != train.getDirectorLinker()) {
-                    getLinkersToRemove().addLast(next);
+                    train.getLinkersToRemove().addLast(next);
                 } else {
                     // Si nos topamos con el director, no podemos desvincularlo, así que ajustamos
                     // la cuenta al número actual de elementos válidos y paramos.
-                    setNumLinkersToRemove(n);
+                    train.setNumLinkersToRemove(n);
                     return;
                 }
             } else {
                 // Si no hay más elementos en el iterador, ajustamos la cuenta al número real
                 // encontrado.
-                setNumLinkersToRemove(n);
+                train.setNumLinkersToRemove(n);
                 break;
             }
         }
     }
 
     @Override
-    public void divideTrain(Supplier<Integer> nextTrainIdSupplier) {
+    public void divideTrain(Train train, Supplier<Integer> nextTrainIdSupplier) {
         if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
             return;
         }
 
-        int toRemove = getLinkersToRemove().size();
+        int toRemove = train.getLinkersToRemove().size();
         if (toRemove > 0) {
             Train newTrain = new Train(nextTrainIdSupplier.get());
             newTrain.setModel(train.getModel());
@@ -350,7 +309,7 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
 
             for (int n = 0; n < toRemove; n++) {
                 Linker linkerToRemove;
-                if (linkerDivisionSense == Train.LinkersSense.BACK) {
+                if (train.getLinkerDivisionSense() == Train.LinkersSense.BACK) {
                     linkerToRemove = train.getLinkers().removeLast();
                     newTrain.getLinkers().addFirst(linkerToRemove);
                 } else {
@@ -366,21 +325,21 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
 
         train.assignDefaultDirectorLinker();
         train.rebind();
-        getLinkersToRemove().clear();
-        setNumLinkersToRemove(0);
+        train.getLinkersToRemove().clear();
+        train.setNumLinkersToRemove(0);
         train.movementManager.refreshLinkersDirection();
         train.setStalled(false);
         train.notifyUnlink();
     }
 
     @Override
-    public List<Linker> destroyLinkers(Supplier<Integer> nextTrainIdSupplier) {
+    public List<Linker> destroyLinkers(Train train, Supplier<Integer> nextTrainIdSupplier) {
         if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
             return new ArrayList<Linker>();
         }
 
         List<Linker> linkersToDestroy = new ArrayList<Linker>();
-        if (getNumLinkersToRemove() > 0) {
+        if (train.getNumLinkersToRemove() > 0) {
             Train newTrain = new Train(nextTrainIdSupplier.get());
             newTrain.setModel(train.getModel());
             for (TrainEventListener listener : train.getScriptTrainListeners()) {
@@ -390,9 +349,9 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 newTrain.addCoreTrainEventListener(listener);
             }
 
-            for (int n = 0; n < getNumLinkersToRemove(); n++) {
+            for (int n = 0; n < train.getNumLinkersToRemove(); n++) {
                 Linker linkerToRemove;
-                if (linkerDivisionSense == Train.LinkersSense.BACK) {
+                if (train.getLinkerDivisionSense() == Train.LinkersSense.BACK) {
                     linkerToRemove = train.getLinkers().removeLast();
                     newTrain.getLinkers().addFirst(linkerToRemove);
                 } else {
@@ -408,13 +367,13 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
 
         train.assignDefaultDirectorLinker();
         train.rebind();
-        getLinkersToRemove().clear();
-        setNumLinkersToRemove(0);
+        train.getLinkersToRemove().clear();
+        train.setNumLinkersToRemove(0);
         return linkersToDestroy;
     }
 
     @Override
-    public Dir getLinkDir(Linker linker) {
+    public Dir getLinkDir(Train train, Linker linker) {
         Dir linkerDir = linker.getDir();
         Linker adjacentLinker = getAdjacentLinker(linker, linkerDir);
         if (adjacentLinker != null && adjacentLinker.getTrain() != train) {
@@ -468,35 +427,5 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
             return linker.getTrack().getConnected(dir).getLinker();
         }
         return null;
-    }
-
-    @Override
-    public void setNumLinkersToRemove(int numLinkersToRemove) {
-        this.numLinkersToRemove = numLinkersToRemove;
-    }
-
-    @Override
-    public void setNumLinkersToJoin(int numLinkersToJoin) {
-        this.numLinkersToJoin = numLinkersToJoin;
-    }
-
-    @Override
-    public Deque<Linker> getLinkersToJoin() {
-        return linkersToJoin;
-    }
-
-    @Override
-    public void setLinkersToJoin(Deque<Linker> linkersToJoin) {
-        this.linkersToJoin = linkersToJoin;
-    }
-
-    @Override
-    public Deque<Linker> getLinkersToRemove() {
-        return linkersToRemove;
-    }
-
-    @Override
-    public void setLinkersToRemove(Deque<Linker> linkersToRemove) {
-        this.linkersToRemove = linkersToRemove;
     }
 }

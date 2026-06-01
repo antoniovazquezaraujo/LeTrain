@@ -79,12 +79,12 @@ class UnlinkBlockManagerTest {
 
         // Prepare Unlink (Back, 1 wagon)
 
-        train.trainCouplingManager.prepareUnlink(false, 1);
-        assertEquals(1, train.trainCouplingManager.getNumLinkersToRemove());
+        train.trainCouplingManager.prepareUnlink(train, false, 1);
+        assertEquals(1, train.getNumLinkersToRemove());
         
         // Divide Train
 
-        train.trainCouplingManager.divideTrain(() -> 2);
+        train.trainCouplingManager.divideTrain(train, () -> 2);
 
         // Verification:
         // 1. We should have two trains now.
