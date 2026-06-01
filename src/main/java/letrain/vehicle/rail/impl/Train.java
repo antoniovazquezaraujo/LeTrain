@@ -68,6 +68,15 @@ public class Train implements Renderable {
     private transient boolean isNotifying = false;
     public transient boolean pendingReverse = false;
 
+    // Transient coupling menu selection state
+    private transient Deque<Linker> linkersToJoin = new LinkedList<>();
+    private transient int numLinkersToJoin = 0;
+    private transient Deque<Linker> linkersToRemove = new LinkedList<>();
+    private transient int numLinkersToRemove = 0;
+    public transient LinkersSense linkerJoinSense;
+    public transient LinkersSense linkerDivisionSense;
+    public transient boolean joined = false;
+
 
 
     public Train(int id) {
@@ -76,7 +85,7 @@ public class Train implements Renderable {
         this.scriptTrainListeners = new CopyOnWriteArrayList<>();
         this.coreTrainListeners = new CopyOnWriteArrayList<>();
 
-        this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager(this);
+        this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager();
         this.setLogisticsManager(new TrainLogisticsManager(this));
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
@@ -359,7 +368,7 @@ public class Train implements Renderable {
         this.scriptTrainListeners = SerializationHelper.ensureListInitializedConcurrent(scriptTrainListeners);
         this.coreTrainListeners = SerializationHelper.ensureListInitializedConcurrent(coreTrainListeners);
         this.isNotifying = false;
-        this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager(this);
+        this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager();
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
         if (this.autopilot != null) {
@@ -387,7 +396,59 @@ public class Train implements Renderable {
     }
 
     public Deque<Linker> getLinkersToJoin() {
-        return this.trainCouplingManager.getLinkersToJoin();
+        return linkersToJoin;
+    }
+
+    public void setLinkersToJoin(Deque<Linker> linkersToJoin) {
+        this.linkersToJoin = linkersToJoin;
+    }
+
+    public Deque<Linker> getLinkersToRemove() {
+        return linkersToRemove;
+    }
+
+    public void setLinkersToRemove(Deque<Linker> linkersToRemove) {
+        this.linkersToRemove = linkersToRemove;
+    }
+
+    public int getNumLinkersToJoin() {
+        return numLinkersToJoin;
+    }
+
+    public void setNumLinkersToJoin(int numLinkersToJoin) {
+        this.numLinkersToJoin = numLinkersToJoin;
+    }
+
+    public int getNumLinkersToRemove() {
+        return numLinkersToRemove;
+    }
+
+    public void setNumLinkersToRemove(int numLinkersToRemove) {
+        this.numLinkersToRemove = numLinkersToRemove;
+    }
+
+    public LinkersSense getLinkerJoinSense() {
+        return linkerJoinSense;
+    }
+
+    public void setLinkerJoinSense(LinkersSense linkerJoinSense) {
+        this.linkerJoinSense = linkerJoinSense;
+    }
+
+    public LinkersSense getLinkerDivisionSense() {
+        return linkerDivisionSense;
+    }
+
+    public void setLinkerDivisionSense(LinkersSense linkerDivisionSense) {
+        this.linkerDivisionSense = linkerDivisionSense;
+    }
+
+    public boolean isJoined() {
+        return joined;
+    }
+
+    public void setJoined(boolean joined) {
+        this.joined = joined;
     }
 
     public void pushFront(Linker linker) {

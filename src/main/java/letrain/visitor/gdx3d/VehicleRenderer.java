@@ -37,7 +37,8 @@ public class VehicleRenderer extends BaseSubRenderer {
                     // Logic might differ based on iteration order of deque vs join sense
                     // linkersToJoin is populated in order of distance from train.
                     // so we just take the first N.
-                    for (Linker l : selected.getTrain().trainCouplingManager.getSelectedLinkersToJoin()) {
+                    Train train = selected.getTrain();
+                    for (Linker l : train.trainCouplingManager.getSelectedLinkersToJoin(train)) {
                         if (l == locomotive) {
                             highlight = true;
                             break;
@@ -47,7 +48,8 @@ public class VehicleRenderer extends BaseSubRenderer {
             } else if (modelRef.getMode() == letrain.mvp.Model.GameMode.UNLINK) {
                 Locomotive selected = modelRef.getSelectedLocomotive();
                 if (selected != null && selected.getTrain() != null) {
-                    for (Linker l : selected.getTrain().trainCouplingManager.getLinkersToRemove()) {
+                    Train train = selected.getTrain();
+                    for (Linker l : train.getLinkersToRemove()) {
                         if (l == locomotive) {
                             unlinkHighlight = true;
                             break;
@@ -196,7 +198,8 @@ public class VehicleRenderer extends BaseSubRenderer {
                     // Logic might differ based on iteration order of deque vs join sense
                     // linkersToJoin is populated in order of distance from train.
                     // so we just take the first N.
-                    for (Linker l : selected.getTrain().trainCouplingManager.getSelectedLinkersToJoin()) {
+                    Train train = selected.getTrain();
+                    for (Linker l : train.trainCouplingManager.getSelectedLinkersToJoin(train)) {
                         if (l == wagon) {
                             highlight = true;
                             break;
@@ -206,7 +209,8 @@ public class VehicleRenderer extends BaseSubRenderer {
             } else if (modelRef.getMode() == letrain.mvp.Model.GameMode.UNLINK) {
                 Locomotive selected = modelRef.getSelectedLocomotive();
                 if (selected != null && selected.getTrain() != null) {
-                    for (Linker l : selected.getTrain().trainCouplingManager.getLinkersToRemove()) {
+                    Train train = selected.getTrain();
+                    for (Linker l : train.getLinkersToRemove()) {
                         if (l == wagon) {
                             unlinkHighlight = true;
                             break;

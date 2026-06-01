@@ -23,6 +23,7 @@ import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.Cursor;
 import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.Wagon;
 import letrain.visitor.Visitor;
 
@@ -78,8 +79,9 @@ public class InfoVisitor implements Visitor {
                     // Logic might differ based on iteration order of deque vs join sense
                     // linkersToJoin is populated in order of distance from train.
                     // so we just take the first N.
-                    infoBarText += " Vagones: " + selected.getTrain().trainCouplingManager.getSelectedLinkersToJoin().size() + "/"
-                            + selected.getTrain().getLinkersToJoin().size();
+                    Train train = selected.getTrain();
+                    infoBarText += " Vagones: " + train.trainCouplingManager.getSelectedLinkersToJoin(train).size() + "/"
+                            + train.getLinkersToJoin().size();
                 }
                 break;
             case UNLINK:

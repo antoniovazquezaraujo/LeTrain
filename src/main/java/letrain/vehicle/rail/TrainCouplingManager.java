@@ -7,68 +7,44 @@ import org.slf4j.LoggerFactory;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.Supplier;
+import letrain.vehicle.rail.impl.Train;
 
+/**
+ * Service providing stateless operations for coupling and uncoupling trains.
+ * Transient state is stored directly in the Train instances.
+ */
 public interface TrainCouplingManager {
     Logger log = LoggerFactory.getLogger(letrain.vehicle.rail.impl.TrainCouplingManager.class);
 
-    int getNumLinkersToJoin();
+    List<Linker> getSelectedLinkersToJoin(Train train);
 
-    int getNumLinkersToRemove();
+    void updateLinkersToJoin(Train train, boolean forwardDirection);
 
+    void joinLinkers(Train train);
 
-    List<Linker> getSelectedLinkersToJoin()/*
-     * - Vaciamos los linkersToJoin
-     * - Si solicitan forwardDirection, lastLinker es getFirst(), si no es
-     * getLast(), es decir, que vamos agregar linkers en ese sentido seleccionado.
-     * - En dir ponemos la dirección de "salida" del tren, es decir, la que apuntará
-     * a despegarse del tren. Pero ahí necesitamos saber si el tren está invertido o
-     * no.
-     * - Si el tren no está invertido, la dirección de salida del primer linker es
-     * la correcta, pero la del último será la inversa de su track.
-     * - Si el tren está invertido es lo contrario, la que hay que invertir es la
-     * primera.
-     */;
+    void prepareLink(Train train, boolean forward, int count);
 
+    void prepareUnlink(Train train, boolean forward, int count);
 
-    void updateLinkersToJoin(boolean forwardDirection);
+    void setFrontDivisionSense(Train train);
 
-    void joinLinkers();
+    void setBackDivisionSense(Train train);
 
-    void prepareLink(boolean forward, int count);
+    void resetUnlinkState(Train train);
 
-    void prepareUnlink(boolean forward, int count);
+    void resetLinkState(Train train);
 
-    void setFrontDivisionSense();
+    void selectNextDivisionLink(Train train);
 
-    void setBackDivisionSense();
+    void selectPrevDivisionLink(Train train);
 
-    void resetUnlinkState();
+    void updateLinkersToRemove(Train train);
 
-    void resetLinkState();
+    void divideTrain(Train train, Supplier<Integer> nextTrainIdSupplier);
 
-    void selectNextDivisionLink();
+    List<Linker> destroyLinkers(Train train, Supplier<Integer> nextTrainIdSupplier);
 
-    void selectPrevDivisionLink();
-
-    void updateLinkersToRemove();
-
-    void divideTrain(Supplier<Integer> nextTrainIdSupplier);
-
-    List<Linker> destroyLinkers(Supplier<Integer> nextTrainIdSupplier);
-
-    Dir getLinkDir(Linker linker);
+    Dir getLinkDir(Train train, Linker linker);
 
     Linker getAdjacentLinker(Linker linker, Dir dir);
-
-    void setNumLinkersToRemove(int numLinkersToRemove);
-
-    void setNumLinkersToJoin(int numLinkersToJoin);
-
-    Deque<Linker> getLinkersToJoin();
-
-    void setLinkersToJoin(Deque<Linker> linkersToJoin);
-
-    Deque<Linker> getLinkersToRemove();
-
-    void setLinkersToRemove(Deque<Linker> linkersToRemove);
 }
