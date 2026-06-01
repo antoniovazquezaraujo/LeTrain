@@ -15,6 +15,18 @@ public class AudioMixer {
 
     private static final Logger log = LoggerFactory.getLogger(AudioMixer.class);
 
+    private static volatile boolean shutdownInProgress = false;
+
+    static {
+        try {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                shutdownInProgress = true;
+            }, "AudioMixer-ShutdownHook"));
+        } catch (Exception e) {
+            // Ignore if JVM is already shutting down
+        }
+    }
+
     private final Collection<AudioSource> sources = new ConcurrentLinkedQueue<>();
     private volatile boolean running = false;
     private Thread audioThread;
@@ -192,7 +204,11 @@ public class AudioMixer {
         } finally {
             if (line != null) {
                 try {
-                    line.close();
+                    if (!shutdownInProgress) {
+                        line.close();
+                    } else {
+                        log.info("JVM shutdown in progress; bypassing line.close() to prevent PulseAudio native crash");
+                    }
                 } catch (Exception e) {
                     log.warn("Error closing audio line", e);
                 }
