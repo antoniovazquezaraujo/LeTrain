@@ -244,9 +244,6 @@ public class Locomotive extends Linker implements Tractor {
         // Speed change in auto mode → switch to manual
         if (getTrain() != null && getTrain().isAutoMode()) {
             getTrain().setAutoMode(false);
-            if (getTrain().getAutopilot() != null) {
-                getTrain().getAutopilot().deactivate();
-            }
         }
         setTargetSpeed(this.targetSpeed + 1);
     }
@@ -255,9 +252,6 @@ public class Locomotive extends Linker implements Tractor {
         // Speed change in auto mode → switch to manual
         if (getTrain() != null && getTrain().isAutoMode()) {
             getTrain().setAutoMode(false);
-            if (getTrain().getAutopilot() != null) {
-                getTrain().getAutopilot().deactivate();
-            }
         }
         setTargetSpeed(this.targetSpeed - 1);
     }
