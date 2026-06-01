@@ -1,56 +1,28 @@
-# Plan de Implementación — Búsqueda de Vía Alternativa (Siding / Ramal Paralelo)
+# Plan de Implementación — Simplificación de Trailer y Mejora de TrainCouplingManager
 
-Este plan describe la solución para evitar bloqueos y mejorar la fluidez de tráfico en la red ferroviaria mediante la búsqueda y reserva reactiva de un ramal alternativo directo antes de detener el tren.
+Este plan propone limpiar el diseño del acoplamiento y estructura del tren simplificando la jerarquía de interfaces redundantes y aclarando el contrato de acoplamiento.
 
-## User Review Required
+## Cambios Propuestos
 
-> [!IMPORTANT]
-> - **Búsqueda e Intento de Reserva Previos al Frenado**: Antes de invocar a `initiateBraking()`, si el segmento destino planificado (`nextSegment`) está bloqueado, el sistema buscará un segmento alternativo directo (`sAlt`).
-> - **Criterios de Alternativa Directa**: 
->   1. El ramal alternativo debe conectar exactamente a los mismos dos nodos (por ejemplo, desvíos) que el segmento original.
->   2. El segmento original que se va a sustituir no debe contener ningún waypoint pendiente en el itinerario.
->   3. El ramal alternativo debe estar libre (bloqueable por el tren).
-> - **Actualización del Piloto Automático**: Si se encuentra y reserva con éxito la vía alternativa:
->   - Se actualiza el `nextSegment` en el gestor de seguridad.
->   - Se actualiza la ruta activa (`currentRoute`) del piloto automático para evitar que el tren intente volver al segmento bloqueado.
->   - Se orientan correctamente las agujas del desvío para la nueva vía.
+### 1. Eliminar la Interfaz Redundante `Trailer`
+La interfaz `Trailer` es un artefacto obsoleto que solo implementa la clase `Train`, y cuyos métodos de mutación (`pushFront`, `popFront`, etc.) no son consumidos fuera de `Train`.
+- **Acción**: Eliminar [Trailer.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/Trailer.java).
+- **Modificación en Train**:
+  - Quitar `implements Trailer<RailTrack>` de [Train.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/Train.java).
+  - Mantener como métodos públicos estándar en `Train` los métodos realmente útiles (como `getLinkers()`, `isEmpty()`, `size()`, `getFront()`, `getBack()`, `getDirectorLinker()`, `setDirectorLinker()`, `getTractors()`).
+  - Eliminar métodos no utilizados e innecesarios de la interfaz `Trailer` (tales como `joinTrailerBack`, `joinTrailerFront`, `pushFront`, `popFront`, `pushBack`, `popBack` que no tienen llamadas externas).
 
-## Proposed Changes
-
-### Componente: Control de Cantón e Itinerario (`letrain.itinerary` y `letrain.vehicle.rail.impl`)
+### 2. Aclarar y Documentar la Interfaz `TrainCouplingManager`
+El `TrainCouplingManager` maneja la lógica de acoplamiento y desacoplamiento, seleccionando y preparando qué vehículos (linkers) se unirán o separarán (impulsado por la UI o por lógica interna).
+- **Acción**: Documentar rigurosamente los métodos en [TrainCouplingManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/TrainCouplingManager.java) con comentarios JavaDoc para clarificar su responsabilidad.
+- **Limpieza de getters/setters internos**: Mantener la interfaz limpia y comprensible.
 
 ---
 
-#### [MODIFY] [AutoPilot.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/AutoPilot.java)
-- Añadir la declaración del método `void replaceRouteSegment(Segment oldSeg, Segment newSeg);` para permitir la sustitución dinámica de un segmento en el itinerario/ruta del piloto automático.
+## Plan de Verificación
 
-#### [MODIFY] [AutoPilotImpl.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java)
-- Implementar `replaceRouteSegment(Segment oldSeg, Segment newSeg)`:
-  - Hacer una copia mutable de `currentRoute`.
-  - Buscar la posición de `oldSeg`.
-  - Si se encuentra, sustituirla por `newSeg`.
-  - Actualizar `currentRoute` con una versión inmutable.
-  - Asegurar la orientación correcta del desvío/agujas llamando a `ensureForkRoute` para el segmento modificado y sus colindantes en la ruta.
-
-#### [MODIFY] [TrainSafetyManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/TrainSafetyManager.java)
-- Implementar el método privado `boolean tryAlternativeSegment(Model model)`:
-  - Validar si el tren tiene piloto automático activo y un `nextSegment` definido.
-  - Comprobar que en `nextSegment` no haya waypoints pendientes (comparando con `waypoints` de la ruta actual a partir de `currentIndex()`).
-  - Buscar en la topología (usando `RailwayGraph`) un segmento alternativo directo (`sAlt`) que comparta los dos mismos extremos (`RailNode`) que `nextSegment`.
-  - Intentar bloquearlo (`bm.tryLock(train, sAlt)`).
-  - Si es exitoso, actualizar `nextSegment` y notificar al piloto automático mediante `ap.replaceRouteSegment(oldNext, sAlt)`.
-- Modificar las secciones de reserva de bloque (`bm.tryLock(train, nextSegment)`) en `acquireInitialLocks`, `onSegmentEntered` y `onBlockReleased`:
-  - Si `tryLock` sobre `nextSegment` falla, invocar a `tryAlternativeSegment(model)` para buscar e intentar bloquear el ramal alternativo antes de proceder a la detención/frenado.
-
----
-
-## Verification Plan
-
-### Automated Tests
-- Ejecutar la suite completa de pruebas:
+### Pruebas Automatizadas
+- Compilar el proyecto y ejecutar los tests existentes para asegurar que no hay regresiones:
   ```bash
   mvn clean test
   ```
-
-### Manual Verification
-- Cargar la partida provista para ver si el tren evita quedarse bloqueado ante un desvío ocupado tomando el ramal paralelo alternativo y libre.
