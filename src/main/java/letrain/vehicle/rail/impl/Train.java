@@ -1,14 +1,9 @@
 package letrain.vehicle.rail.impl;
 
-import letrain.itinerary.TrainActionManager;
 import letrain.itinerary.WaypointCommand;
 import letrain.map.Dir;
 import letrain.mvp.Model;
-import letrain.segments.RailNode;
-import letrain.segments.RailwayGraph;
-import letrain.segments.Segment;
 import letrain.track.CargoTypes;
-import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
@@ -40,7 +35,7 @@ import java.util.function.Supplier;
  * Logistics are handled by {@link TrainLogisticsManager}.
  * Block-segment safety is managed by {@link TrainSafetyManager}.
  */
-public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager {
+public class Train implements Trailer<RailTrack>, Renderable {
     static final int CRASH_SPEED_THRESHOLD = 5;
     public static final Logger log = LoggerFactory.getLogger(Train.class);
 
@@ -62,13 +57,14 @@ public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager
     private boolean autoMode = false;
 
     private transient letrain.mvp.Model model;
-    private transient List<TrainEventListener> trainListeners;
+    public transient List<TrainEventListener> trainListeners;
     private final transient List<WaypointCommand> pendingCommands;
     public transient letrain.vehicle.rail.TrainMovementManager movementManager;
     private transient letrain.vehicle.rail.TrainSafetyManager safetyManager;
+    public  transient letrain.itinerary.TrainActionManager actionManager;
     private transient boolean isNotifying = false;
-    private transient boolean pendingReverse = false;
-    private transient int savedSpeedBeforeReverse = -1;
+    public transient boolean pendingReverse = false;
+
     private transient int waitTicks = 0;
 
     public Train(int id) {
@@ -80,6 +76,7 @@ public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager
         this.logisticsManager = new letrain.vehicle.rail.impl.TrainLogisticsManager();
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
+        this.actionManager = new letrain.itinerary.impl.TrainActionManager(this);
     }
 
     /**
@@ -169,7 +166,8 @@ public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager
         } else if (autopilot != null && autopilot.itinerary().isPresent()) {
             autoMode = autopilot.activate();
             if (autoMode) {
-                acquireInitialLocks();
+                checkWaypointArrival();
+                this.actionManager.acquireInitialLocks();
                 checkWaypointArrival();
             }
         }
@@ -218,9 +216,9 @@ public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager
             Tractor dirLinker = getDirectorLinker();
             if (dirLinker != null) {
                 dirLinker.toggleReversed();
-                if (savedSpeedBeforeReverse != -1) {
-                    dirLinker.setTargetSpeed(savedSpeedBeforeReverse);
-                    savedSpeedBeforeReverse = -1;
+                if (this.actionManager.getSavedSpeedBeforeReverse() != -1) {
+                    dirLinker.setTargetSpeed(this.actionManager.getSavedSpeedBeforeReverse());
+                    this.actionManager.setSavedSpeedBeforeReverse(-1);
                 }
             }
         }
@@ -241,11 +239,6 @@ public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager
 
     public void notifyUnlink() {
         trainListeners.forEach(l -> l.onUnlink(this));
-    }
-
-    @Override
-    public void notifySegmentOccupied(letrain.segments.Segment segment) {
-        trainListeners.forEach(l -> l.onSegmentOccupied(this, segment));
     }
 
     public void notifyEnterSensor(letrain.track.Sensor sensor, boolean isForward) {
@@ -321,7 +314,7 @@ public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager
         if (this.autopilot != null) {
             if (this.autopilot instanceof letrain.itinerary.impl.AutoPilotImpl) {
                 ((letrain.itinerary.impl.AutoPilotImpl) this.autopilot).reinitialize(
-                        new TrainAutoPilotContext(this), this);
+                        new TrainAutoPilotContext(this), this.actionManager);
             }
             if (getModel() != null && getModel().getRailwayGraph() != null) {
                 this.autopilot.setPathfinder(
@@ -516,13 +509,6 @@ public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager
         }
     }
 
-    @Override
-    public void forceSegmentReset() {
-        if (safetyManager != null) {
-            safetyManager.forceSegmentReset();
-        }
-    }
-
     public Linker getFirstLinker() {
         return linkers.isEmpty() ? null : linkers.getFirst();
     }
@@ -701,135 +687,6 @@ public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager
         return logisticsManager.getTrainCargoType(this);
     }
 
-    @Override
-    public void executeCommand(WaypointCommand command) {
-        if (command == null) {
-            return;
-        }
-        log.info("Train {} executeCommand kind={}", id, command.kind());
-        switch (command.kind()) {
-            case LOAD:
-                letrain.track.Station loadStation = getStationAtTrain();
-                log.info("Train {} executeCommand LOAD: station={}", id, loadStation != null ? loadStation.getId() : "null");
-                if (loadStation != null) {
-                    startLoadProcess(loadStation);
-                }
-                break;
-            case UNLOAD:
-                letrain.track.Station unloadStation = getStationAtTrain();
-                log.info("Train {} executeCommand UNLOAD: station={}", id, unloadStation != null ? unloadStation.getId() : "null");
-                if (unloadStation != null) {
-                    startUnloadProcess(unloadStation);
-                }
-                break;
-            case REVERSE:
-                Tractor dirLinker = getDirectorLinker();
-                log.info("Train {} executeCommand REVERSE: head={}", id, dirLinker != null ? dirLinker.getId() : "null");
-                if (dirLinker != null) {
-                    if (dirLinker.getSpeed() > 0) {
-                        savedSpeedBeforeReverse = dirLinker.getTargetSpeed();
-                        dirLinker.setTargetSpeed(0);
-                        pendingReverse = true;
-                        log.info("Train {} executeCommand REVERSE: speed > 0, set target speed to 0 and pendingReverse=true", id);
-                    } else {
-                        dirLinker.toggleReversed();
-                        pendingReverse = false;
-                        log.info("Train {} executeCommand REVERSE: speed is 0, toggled reverse", id);
-                    }
-                }
-                break;
-            case SPEED:
-                Tractor speedLinker = getDirectorLinker();
-                log.info("Train {} executeCommand SPEED: targetSpeed={}", id, command.targetSpeed());
-                if (speedLinker != null) {
-                    savedSpeedBeforeReverse = -1;
-                    speedLinker.setSpeed(command.targetSpeed());
-                    if (command.targetSpeed() > 0 && model != null) {
-                        log.info("Train {} executeCommand SPEED > 0: acquiring initial locks", id);
-                        safetyManager.acquireInitialLocks();
-                    }
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
-    @Override
-    public void ensureForkRoute(Segment from, Segment to) {
-        if (getModel() == null)
-            return;
-        RailwayGraph graph = getModel().getRailwayGraph();
-        if (graph == null)
-            return;
-
-        // Find the fork between 'from' and 'to' and set the correct route
-        var fromSteps = from.getSteps();
-        var toSteps = to.getSteps();
-        if (fromSteps == null || toSteps == null)
-            return;
-
-        var f1 = fromSteps.getFirst();
-        var f2 = fromSteps.getSecond();
-        var t1 = toSteps.getFirst();
-        var t2 = toSteps.getSecond();
-
-        RailNode node = null;
-        if (f1 != null && f1.getRailNode() != null) {
-            var n1 = f1.getRailNode();
-            if ((t1 != null && n1.equals(t1.getRailNode())) || (t2 != null && n1.equals(t2.getRailNode()))) {
-                node = n1;
-            }
-        }
-        if (node == null && f2 != null && f2.getRailNode() != null) {
-            var n2 = f2.getRailNode();
-            if ((t1 != null && n2.equals(t1.getRailNode())) || (t2 != null && n2.equals(t2.getRailNode()))) {
-                node = n2;
-            }
-        }
-
-        if (node == null) {
-            log.warn("[FORK] ensureForkRoute {}->{}: no shared node found", from.getId(), to.getId());
-            return;
-        }
-        if (!(node.getTrack() instanceof ForkRailTrack fork)) {
-            log.debug("[FORK] ensureForkRoute {}->{}: shared node is not a fork ({})", from.getId(), to.getId(),
-                    node.getTrack());
-            return;
-        }
-
-        // Use the fork node's outSteps directly (getNextSteps goes to wrong node)
-        for (var step : node.getOutSteps()) {
-            Segment nextSeg = graph.getSegment(step);
-            log.debug("[FORK] ensureForkRoute {}->{}: outStep dir={} seg={}", from.getId(), to.getId(), step.getDir(),
-                    nextSeg != null ? nextSeg.getId() : "null");
-            if (nextSeg != null && nextSeg.equals(to)) {
-                boolean altNeeded = isAlternativeRouteNeeded(fork, step.getDir());
-                log.info("[FORK] ensureForkRoute {}->{}: MATCH fork={} altNeeded={} currentAlt={}", from.getId(),
-                        to.getId(), fork.getId(), altNeeded, fork.isUsingAlternativeRoute());
-                if (fork.isUsingAlternativeRoute() != altNeeded) {
-                    fork.flipRoute();
-                }
-                return;
-            }
-        }
-        log.warn("[FORK] ensureForkRoute {}->{}: no outStep leads to target seg", from.getId(), to.getId());
-    }
-
-    private boolean isAlternativeRouteNeeded(ForkRailTrack fork, letrain.map.Dir targetDir) {
-        // Check if the targetDir is the alternative route of the fork
-        var alt = fork.getRouter().getAlternativeRoute();
-        return alt != null && alt.getValue() == targetDir;
-    }
-
-    @Override
-    public void scheduleResume(int ticks) {
-        if (model != null && model.getScheduler() != null) {
-            model.getScheduler().schedule(ticks, () -> {
-                this.resumeWaiting();
-            });
-        }
-    }
 
     public void resumeWaiting() {
         log.info("Train {} resumeWaiting from wait", id);
@@ -838,7 +695,8 @@ public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager
             autopilot.resumeWaiting();
         }
         runPendingCommands();
-        acquireInitialLocks();
+        checkWaypointArrival();
+        this.actionManager.acquireInitialLocks();
     }
 
     private void runPendingCommands() {
@@ -849,10 +707,10 @@ public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager
                 if (autopilot != null) {
                     ((letrain.itinerary.impl.AutoPilotImpl) autopilot).setMode(letrain.itinerary.AutoPilot.Mode.WAITING);
                 }
-                this.scheduleResume(this.waitTicks);
+                this.actionManager.scheduleResume(this.waitTicks);
                 return;
             } else {
-                this.executeCommand(cmd);
+                this.actionManager.executeCommand(cmd);
             }
         }
 
@@ -911,21 +769,4 @@ public class Train implements Trailer<RailTrack>, Renderable, TrainActionManager
         }
     }
 
-    @Override
-    public void acquireInitialLocks() {
-        checkWaypointArrival();
-        if (model != null && autoMode && autopilot != null) {
-            Linker head = getPhysicalFront();
-            if (head != null && head.getTrack() instanceof RailTrack) {
-                letrain.segments.Segment currentSeg = model.getRailwayGraph().getSegment((RailTrack) head.getTrack());
-                if (currentSeg != null) {
-                    log.info("Train {} acquireInitialLocks: notifying autopilot of segment {}", id, currentSeg.getId());
-                    autopilot.onSegmentEntered(currentSeg);
-                }
-            }
-        }
-        if (safetyManager != null && model != null) {
-            safetyManager.acquireInitialLocks();
-        }
-    }
 }

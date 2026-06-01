@@ -27,4 +27,8 @@ public interface TrainActionManager {
 
     /** Acquire initial locks when starting or resuming movement. */
     void acquireInitialLocks();
+
+    int getSavedSpeedBeforeReverse();
+
+    void setSavedSpeedBeforeReverse(int savedSpeedBeforeReverse);
 }

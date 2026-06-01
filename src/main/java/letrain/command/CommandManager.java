@@ -509,7 +509,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         if (train.getAutopilot() == null) {
             train.setAutopilot(new letrain.itinerary.impl.AutoPilotImpl(
                 new TrainAutoPilotContext(train),
-                train));
+                train.actionManager));
         }
         if (model.getRailwayGraph() != null) {
             train.getAutopilot().setPathfinder(

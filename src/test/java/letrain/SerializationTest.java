@@ -352,7 +352,7 @@ class SerializationTest {
 
         // Build AutoPilot
         letrain.itinerary.impl.AutoPilotImpl ap = new letrain.itinerary.impl.AutoPilotImpl(
-            new TrainAutoPilotContext(original), original
+            new TrainAutoPilotContext(original), original.actionManager
         );
         ap.setItinerary(itinerary);
         ap.setWaitTicks(42);

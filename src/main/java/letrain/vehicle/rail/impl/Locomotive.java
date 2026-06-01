@@ -283,7 +283,9 @@ public class Locomotive extends Linker implements Tractor {
                 getTrain().setStalled(false);
                 if (oldSpeed == 0) {
                     log.info("Locomotive {}: target speed increased from 0. Acquiring initial locks.", id);
-                    getTrain().acquireInitialLocks();
+                    Train train = getTrain();
+                    train.checkWaypointArrival();
+                    train.actionManager.acquireInitialLocks();
                 }
             }
         }
