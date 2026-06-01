@@ -78,12 +78,14 @@ class UnlinkBlockManagerTest {
         assertTrue(blockManager.getOwners(segment1).contains(train));
 
         // Prepare Unlink (Back, 1 wagon)
-        train.prepareUnlink(false, 1);
-        assertEquals(1, train.getNumLinkersToRemove());
+
+        train.trainCouplingManager.prepareUnlink(false, 1);
+        assertEquals(1, train.trainCouplingManager.getNumLinkersToRemove());
         
         // Divide Train
-        train.divideTrain(() -> 2);
-        
+
+        train.trainCouplingManager.divideTrain(() -> 2);
+
         // Verification:
         // 1. We should have two trains now.
         // 2. Both should own segment1 (Shunting coexistence is allowed since they are stopped).

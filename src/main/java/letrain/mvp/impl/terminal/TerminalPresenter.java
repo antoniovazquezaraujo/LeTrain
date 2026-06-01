@@ -293,7 +293,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
                     model.setMode(LINK);
                     if (model.getSelectedLocomotive() != null
                             && model.getSelectedLocomotive().getTrain() != null) {
-                        model.getSelectedLocomotive().getTrain().resetLinkState();
+                        model.getSelectedLocomotive().getTrain().trainCouplingManager.resetLinkState();
                     }
                     return true;
                 }
@@ -303,7 +303,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
                     model.setMode(UNLINK);
                     if (model.getSelectedLocomotive() != null
                             && model.getSelectedLocomotive().getTrain() != null) {
-                        model.getSelectedLocomotive().getTrain().resetUnlinkState();
+                        model.getSelectedLocomotive().getTrain().trainCouplingManager.resetUnlinkState();
                     }
                     return true;
                 }
@@ -470,12 +470,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
                 break;
             case ArrowLeft:
                 if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                    model.getSelectedLocomotive().getTrain().removeLinkerToJoin();
+                    Train train = model.getSelectedLocomotive().getTrain();
+                    if (train.trainCouplingManager.getNumLinkersToJoin() > 0) {
+                        train.trainCouplingManager.setNumLinkersToJoin(train.trainCouplingManager.getNumLinkersToJoin() - 1);
+                    }
                 }
                 break;
             case ArrowRight:
                 if (model.getSelectedLocomotive() != null && model.getSelectedLocomotive().getTrain() != null) {
-                    model.getSelectedLocomotive().getTrain().addLinkerToJoin();
+                    Train train = model.getSelectedLocomotive().getTrain();
+                    if (train.trainCouplingManager.getNumLinkersToJoin() < train.trainCouplingManager.getLinkersToJoin().size()) {
+                        train.trainCouplingManager.setNumLinkersToJoin(train.trainCouplingManager.getNumLinkersToJoin() + 1);
+                    }
                 }
                 break;
             case Character:
@@ -718,8 +724,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
 
     private void destroyLinkers() {
         if (model.getSelectedLocomotive() != null) {
-            List<Linker> linkersToDestroy = model.getSelectedLocomotive().getTrain()
-                    .destroyLinkers(() -> model.nextTrainId());
+            Train train = model.getSelectedLocomotive().getTrain();
+
+            List<Linker> linkersToDestroy = train.trainCouplingManager.destroyLinkers(() -> model.nextTrainId());
             for (Linker linker : linkersToDestroy) {
                 if (linker instanceof Locomotive) {
                     model.removeLocomotive((Locomotive) linker);
@@ -744,8 +751,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
             Locomotive loco = model.getSelectedLocomotive();
             if (loco.getTrain() != null) {
                 Train train = loco.getTrain();
-                if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
-                    train.joinLinkers();
+                if (!train.getLinkersToJoin().isEmpty() && train.trainCouplingManager.getNumLinkersToJoin() > 0) {
+                    train.trainCouplingManager.joinLinkers();
                 }
                 model.setMode(letrain.mvp.Model.GameMode.MENU);
             }
@@ -755,14 +762,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
     private void selectVehiclesAtBack() {
         if (model.getSelectedLocomotive() != null &&
                 model.getSelectedLocomotive().getTrain() != null) {
-            model.getSelectedLocomotive().getTrain().updateLinkersToJoin(false);
+            Train train = model.getSelectedLocomotive().getTrain();
+
+            train.trainCouplingManager.updateLinkersToJoin(false);
         }
     }
 
     private void selectVehiclesInFront() {
         if (model.getSelectedLocomotive() != null) {
             if (model.getSelectedLocomotive().getTrain() != null) {
-                model.getSelectedLocomotive().getTrain().updateLinkersToJoin(true);
+                Train train = model.getSelectedLocomotive().getTrain();
+
+                train.trainCouplingManager.updateLinkersToJoin(true);
             } else {
                 // handle error
             }
@@ -772,25 +783,27 @@ public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListe
     }
 
     private void selectFrontDivisionSense() {
-        model.getSelectedLocomotive().getTrain().setFrontDivisionSense();
+        model.getSelectedLocomotive().getTrain().trainCouplingManager.setFrontDivisionSense();
     }
 
     private void selectBackDivisionSense() {
-        model.getSelectedLocomotive().getTrain().setBackDivisionSense();
+        model.getSelectedLocomotive().getTrain().trainCouplingManager.setBackDivisionSense();
     }
 
     private void selectNextLink() {
-        model.getSelectedLocomotive().getTrain().selectNextDivisionLink();
+        model.getSelectedLocomotive().getTrain().trainCouplingManager.selectNextDivisionLink();
     }
 
     private void selectPrevLink() {
-        model.getSelectedLocomotive().getTrain().selectPrevDivisionLink();
+        model.getSelectedLocomotive().getTrain().trainCouplingManager.selectPrevDivisionLink();
     }
 
     private void divideTrain() {
         Locomotive loco = model.getSelectedLocomotive();
         if (loco != null && loco.getTrain() != null) {
-            loco.getTrain().divideTrain(() -> model.nextTrainId());
+            Train train = loco.getTrain();
+
+            train.trainCouplingManager.divideTrain(() -> model.nextTrainId());
             audioController.playOneShot("link",
                     (float) loco.getPosition().getX(),
                     (float) loco.getPosition().getY());

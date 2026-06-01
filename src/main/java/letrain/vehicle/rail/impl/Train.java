@@ -24,7 +24,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Supplier;
 
 /**
  * Core train entity that groups locomotives and wagons ({@link Linker}s)
@@ -46,7 +45,7 @@ public class Train implements Trailer<RailTrack>, Renderable {
     private int id;
     private String name;
     private final Deque<Linker> linkers;
-    private TrainCouplingManager trainCouplingManager;
+    public transient TrainCouplingManager trainCouplingManager;
     private letrain.vehicle.rail.TrainLogisticsManager logisticsManager;
     private letrain.itinerary.AutoPilot autopilot;
     private int railStationId = 0;
@@ -86,14 +85,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
      */
     protected Train() {
         this(1);
-    }
-
-    public int getNumLinkersToJoin() {
-        return trainCouplingManager.getNumLinkersToJoin();
-    }
-
-    public int getNumLinkersToRemove() {
-        return trainCouplingManager.getNumLinkersToRemove();
     }
 
     public letrain.vehicle.rail.TrainSafetyManager getSafetyManager() {
@@ -385,6 +376,7 @@ public class Train implements Trailer<RailTrack>, Renderable {
         this.scriptTrainListeners = SerializationHelper.ensureListInitializedConcurrent(scriptTrainListeners);
         this.coreTrainListeners = SerializationHelper.ensureListInitializedConcurrent(coreTrainListeners);
         this.isNotifying = false;
+        this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager(this);
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
         if (this.autopilot != null) {
@@ -397,34 +389,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
                         new letrain.itinerary.AStarPathfinder(getModel().getRailwayGraph()));
             }
         }
-    }
-
-    public void initLinkersToJoin(boolean forwardDirection) {
-        if (forwardDirection) {
-            this.trainCouplingManager.linkerJoinSense = LinkersSense.FRONT;
-        } else {
-            this.trainCouplingManager.linkerJoinSense = LinkersSense.BACK;
-        }
-    }
-
-    public void addLinkerToJoin() {
-        if (trainCouplingManager.getNumLinkersToJoin() < trainCouplingManager.linkersToJoin.size()) {
-            trainCouplingManager.numLinkersToJoin = trainCouplingManager.getNumLinkersToJoin() + 1;
-        }
-    }
-
-    public void removeLinkerToJoin() {
-        if (trainCouplingManager.getNumLinkersToJoin() > 0) {
-            trainCouplingManager.numLinkersToJoin = trainCouplingManager.getNumLinkersToJoin() - 1;
-        }
-    }
-
-    public List<Linker> getSelectedLinkersToJoin() {
-        // Convert deque to list to slice it
-        // Logic might differ based on iteration order of deque vs join sense
-        // linkersToJoin is populated in order of distance from train.
-        // so we just take the first N.
-        return trainCouplingManager.getSelectedLinkersToJoin();
     }
 
     public void setId(int id) {
@@ -442,7 +406,7 @@ public class Train implements Trailer<RailTrack>, Renderable {
 
     @Override
     public Deque<Linker> getLinkersToJoin() {
-        return this.trainCouplingManager.linkersToJoin;
+        return this.trainCouplingManager.getLinkersToJoin();
     }
 
     @Override
@@ -616,95 +580,13 @@ public class Train implements Trailer<RailTrack>, Renderable {
         visitor.visitLocomotive((Locomotive) this.getDirectorLinker());
     }
 
-    public void updateLinkersToJoin(boolean forwardDirection) {
-
-        trainCouplingManager.updateLinkersToJoin(forwardDirection);
-    }
-
-    public void joinLinkers() {
-        trainCouplingManager.joinLinkers();
-    }
-
-    public void prepareLink(boolean forward, int count) {
-        trainCouplingManager.prepareLink(forward, count);
-    }
-
-    public void prepareUnlink(boolean forward, int count) {
-
-        trainCouplingManager.prepareUnlink(forward, count);
-    }
-
     int calcInitialUnlinkCount() {
         int maxRemovable = Math.max(0, getLinkers().size() - 1);
         return maxRemovable == 0 ? 0 : 1;
     }
 
-    public void setFrontDivisionSense() {
-        trainCouplingManager.setFrontDivisionSense();
-    }
-
-    public void setBackDivisionSense() {
-        trainCouplingManager.setBackDivisionSense();
-    }
-
-    public void resetUnlinkState() {
-        trainCouplingManager.resetUnlinkState();
-    }
-
-    public void resetLinkState() {
-        trainCouplingManager.resetLinkState();
-    }
-
-    public void selectNextDivisionLink() {
-        trainCouplingManager.selectNextDivisionLink();
-    }
-
-    public void selectPrevDivisionLink() {
-        trainCouplingManager.selectPrevDivisionLink();
-    }
-
-    private void updateLinkersToRemove() {
-        trainCouplingManager.updateLinkersToRemove();
-    }
-
-    public void divideTrain(Supplier<Integer> nextTrainIdSupplier) {
-
-        trainCouplingManager.divideTrain(nextTrainIdSupplier);
-    }
-
-    public List<Linker> destroyLinkers(Supplier<Integer> nextTrainIdSupplier) {
-
-        return trainCouplingManager.destroyLinkers(nextTrainIdSupplier);
-    }
-
-    public Deque<Linker> getLinkersToRemove() {
-        return this.trainCouplingManager.linkersToRemove;
-    }
-
-    Dir getLinkDir(Linker linker) {
-        // If the adjacent linker belongs to the same train, walk through
-        // the train's linkers following track directions to find the exit
-        // where a different train might be. This handles multi-linker
-        // trains where the end linker points toward the train center.
-        return trainCouplingManager.getLinkDir(linker);
-    }
-
     public letrain.track.Station getStationAtTrain() {
         return logisticsManager.getStationAtTrain(this);
-    }
-
-    Linker getAdjacentLinker(Linker linker, Dir dir) {
-        return trainCouplingManager.getAdjacentLinker(linker, dir);
-    }
-
-    Train getAdjacentTrain(Linker linker, Dir dir) {
-        if (linker.getTrack().getConnected(dir) != null) {
-            Linker connectedLinker = linker.getTrack().getConnected(dir).getLinker();
-            if (connectedLinker != null) {
-                return connectedLinker.getTrain();
-            }
-        }
-        return null;
     }
 
     @Override

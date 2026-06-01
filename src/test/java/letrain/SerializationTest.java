@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
@@ -320,8 +321,9 @@ class SerializationTest {
 
         // Unlink one vehicle from the front side (frontWagon), leaving loco+backWagon
         // intact
-        train.setFrontDivisionSense();
-        train.divideTrain(() -> 501);
+        train.trainCouplingManager.setFrontDivisionSense();
+
+        train.trainCouplingManager.divideTrain(() -> 501);
 
         assertEquals(2, train.getLinkers().size(), "Train should keep two linkers after unlinking one from front");
         assertTrue(train.getLinkers().contains(loco));
