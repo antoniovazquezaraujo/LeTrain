@@ -1,7 +1,6 @@
 package letrain.vehicle.rail.impl;
 
 import letrain.mvp.Model;
-import letrain.track.rail.RailTrack;
 import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
 import letrain.vehicle.Tractor;
@@ -32,14 +31,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Train implements Renderable {
     static final int CRASH_SPEED_THRESHOLD = 5;
     public static final Logger log = LoggerFactory.getLogger(Train.class);
-
-    public letrain.vehicle.rail.TrainLogisticsManager getLogisticsManager() {
-        return logisticsManager;
-    }
-
-    public void setLogisticsManager(letrain.vehicle.rail.TrainLogisticsManager logisticsManager) {
-        this.logisticsManager = logisticsManager;
-    }
 
     enum LinkersSense {
         FRONT, BACK
@@ -77,8 +68,6 @@ public class Train implements Renderable {
     public transient LinkersSense linkerDivisionSense;
     public transient boolean joined = false;
 
-
-
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
         this.linkers = new LinkedList<>();
@@ -97,6 +86,13 @@ public class Train implements Renderable {
      */
     protected Train() {
         this(1);
+    }
+    public letrain.vehicle.rail.TrainLogisticsManager getLogisticsManager() {
+        return logisticsManager;
+    }
+
+    public void setLogisticsManager(letrain.vehicle.rail.TrainLogisticsManager logisticsManager) {
+        this.logisticsManager = logisticsManager;
     }
 
     public letrain.vehicle.rail.TrainSafetyManager getSafetyManager() {
@@ -492,10 +488,7 @@ public class Train implements Renderable {
     }
 
     public Linker getPhysicalFront() {
-        boolean normalSense = true;
-        if (getDirectorLinker() != null && getDirectorLinker().isReversed()) {
-            normalSense = false;
-        }
+        boolean normalSense = getDirectorLinker() == null || !getDirectorLinker().isReversed();
         return normalSense ? getFront() : getBack();
     }
 
