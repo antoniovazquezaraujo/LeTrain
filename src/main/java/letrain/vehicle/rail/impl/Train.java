@@ -6,7 +6,6 @@ import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
 import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.Linker;
-import letrain.vehicle.rail.Trailer;
 import letrain.vehicle.rail.TrainEventListener;
 import letrain.vehicle.rail.TrainMovementManager;
 import letrain.vehicle.rail.TrainSafetyManager;
@@ -30,7 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Logistics are handled by {@link TrainLogisticsManager}.
  * Block-segment safety is managed by {@link TrainSafetyManager}.
  */
-public class Train implements Trailer<RailTrack>, Renderable {
+public class Train implements Renderable {
     static final int CRASH_SPEED_THRESHOLD = 5;
     public static final Logger log = LoggerFactory.getLogger(Train.class);
 
@@ -380,64 +379,40 @@ public class Train implements Trailer<RailTrack>, Renderable {
     }
 
     /***********************************************************
-     * Trailer implementation
+     * Train physical layout and vehicle details
      **********************************************************/
 
-    @Override
     public Deque<Linker> getLinkers() {
         return linkers;
     }
 
-    @Override
     public Deque<Linker> getLinkersToJoin() {
         return this.trainCouplingManager.getLinkersToJoin();
     }
 
-    @Override
     public void pushFront(Linker linker) {
         this.linkers.addFirst(linker);
         assignDefaultDirectorLinker();
         linker.setTrain(this);
     }
 
-    @Override
-    public Linker popFront() {
-        Linker linker = linkers.removeFirst();
-        assignDefaultDirectorLinker();
-        return linker;
+    public void pushBack(Linker linker) {
+        this.linkers.addLast(linker);
+        linker.setTrain(this);
     }
 
-    @Override
     public Linker getFront() {
         return linkers.isEmpty() ? null : linkers.getFirst();
     }
 
-    @Override
-    public void pushBack(Linker linker) {
-        this.linkers.addLast(linker);
-        linker.setTrain(this);
-        // assignDefaultDirectorLinker();
-    }
-
-    @Override
-    public Linker popBack() {
-        Linker linker = linkers.removeLast();
-        // assignDefaultDirectorLinker();
-        linker.setTrain(null);
-        return linker;
-    }
-
-    @Override
     public Linker getBack() {
         return linkers.isEmpty() ? null : linkers.getLast();
     }
 
-    @Override
     public boolean isEmpty() {
         return linkers.isEmpty();
     }
 
-    @Override
     public int size() {
         return linkers.size();
     }
@@ -447,26 +422,10 @@ public class Train implements Trailer<RailTrack>, Renderable {
         setDirectorLinker(tractors.isEmpty() ? null : tractors.get(0));
     }
 
-    @Override
-    public void joinTrailerBack(Trailer t) {
-        while (!t.isEmpty()) {
-            pushBack(t.popFront());
-        }
-    }
-
-    @Override
-    public void joinTrailerFront(Trailer t) {
-        while (!t.isEmpty()) {
-            pushFront(t.popBack());
-        }
-    }
-
-    @Override
     public void setDirectorLinker(Tractor linker) {
         this.directorLinker = linker;
     }
 
-    @Override
     public Tractor getDirectorLinker() {
         return directorLinker;
     }
@@ -479,7 +438,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
         return normalSense ? getFront() : getBack();
     }
 
-    @Override
     public List<Tractor> getTractors() {
         return linkers.stream()
                 .filter(Tractor.class::isInstance)
