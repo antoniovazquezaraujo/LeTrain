@@ -62,7 +62,7 @@ public class Train implements Trailer<RailTrack>, Renderable {
     private final transient List<WaypointCommand> pendingCommands;
     public transient letrain.vehicle.rail.TrainMovementManager movementManager;
     private transient letrain.vehicle.rail.TrainSafetyManager safetyManager;
-    public  transient letrain.itinerary.TrainActionManager actionManager;
+    public transient letrain.itinerary.TrainActionManager actionManager;
     private transient boolean isNotifying = false;
     public transient boolean pendingReverse = false;
 
@@ -88,8 +88,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
         this(1);
     }
 
-    // TrainCouplingManager //////////////////////////////////////////////////
-
     public int getNumLinkersToJoin() {
         return trainCouplingManager.getNumLinkersToJoin();
     }
@@ -98,7 +96,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
         return trainCouplingManager.getNumLinkersToRemove();
     }
 
-    // SafetyManager //////////////////////////////////////////////////////////
     public letrain.vehicle.rail.TrainSafetyManager getSafetyManager() {
         return safetyManager;
     }
@@ -111,7 +108,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
         this.railStationId = railStationId;
     }
 
-    // LogisticsManager ////////////////////////////////////////////////////
     public boolean isLoading() {
         return logisticsManager.isLoading();
     }
@@ -132,10 +128,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
         return logisticsManager.isUnloadingDirection();
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////
-    /**
-     * Returns the current speed of the director locomotive, or 0 if none.
-     */
     public int getSpeed() {
         if (directorLinker != null) {
             return directorLinker.getSpeed();
@@ -147,7 +139,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
         return getSpeed() == 0;
     }
 
-    // AutoPilot ///////////////////////////////////////////////////////////////
     public boolean isAutoMode() {
         return autoMode;
     }
@@ -625,18 +616,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
         visitor.visitLocomotive((Locomotive) this.getDirectorLinker());
     }
 
-    /*
-     * - Vaciamos los linkersToJoin
-     * - Si solicitan forwardDirection, lastLinker es getFirst(), si no es
-     * getLast(), es decir, que vamos agregar linkers en ese sentido seleccionado.
-     * - En dir ponemos la dirección de "salida" del tren, es decir, la que apuntará
-     * a despegarse del tren. Pero ahí necesitamos saber si el tren está invertido o
-     * no.
-     * - Si el tren no está invertido, la dirección de salida del primer linker es
-     * la correcta, pero la del último será la inversa de su track.
-     * - Si el tren está invertido es lo contrario, la que hay que invertir es la
-     * primera.
-     */
     public void updateLinkersToJoin(boolean forwardDirection) {
 
         trainCouplingManager.updateLinkersToJoin(forwardDirection);
@@ -781,7 +760,6 @@ public class Train implements Trailer<RailTrack>, Renderable {
         }
     }
 
-    // Método auxiliar para determinar el tipo de carga general del tren
     public CargoTypes getTrainCargoType() {
         return logisticsManager.getTrainCargoType(this);
     }
