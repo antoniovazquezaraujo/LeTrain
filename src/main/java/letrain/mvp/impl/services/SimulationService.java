@@ -65,24 +65,24 @@ public class SimulationService {
     }
 
     private void processTrainLoading(Train train) {
-        if (train.isLoading()) {
-            int count = train.getLoadingCount();
+        if (train.getLogisticsManager().isLoading()) {
+            int count = train.getLogisticsManager().getLoadingCount();
             if (count > 0) {
-                train.setLoadingCount(count - 1);
-                Station station = train.getStationAtTrain();
+                train.getLogisticsManager().setLoadingCount(count - 1);
+                Station station = train.getLogisticsManager().getStationAtTrain();
                 if (station != null) {
-                    train.performIndustrialAction(station);
+                    train.getLogisticsManager().performIndustrialAction(station);
                 }
             } else {
-                Station station = train.getStationAtTrain();
+                Station station = train.getLogisticsManager().getStationAtTrain();
                 if (station != null) {
-                    if (train.isUnloadingDirection()) {
+                    if (train.getLogisticsManager().isUnloadingDirection()) {
                         station.notifyEndUnload(train);
                     } else {
                         station.notifyEndLoad(train);
                     }
                 }
-                train.endLoadUnloadProcess();
+                train.getLogisticsManager().endLoadUnloadProcess();
             }
         }
     }

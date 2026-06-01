@@ -241,8 +241,8 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         if (modelRef != null && station != null) {
             for (Locomotive loc : modelRef.getLocomotives()) {
                 Train train = loc.getTrain();
-                if (train != null && train.isLoading()) {
-                    if (train.getStationAtTrain() == station) {
+                if (train != null && train.getLogisticsManager().isLoading()) {
+                    if (train.getLogisticsManager().getStationAtTrain() == station) {
                         isActionActive = true;
                         break;
                     }

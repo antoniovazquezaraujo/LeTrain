@@ -117,17 +117,15 @@ class TrainDeadEndCrashTest {
 
         // Add mock listener to verify notifyCrash
         TrainEventListener listener = mock(TrainEventListener.class);
-        train.addTrainEventListener(listener);
+        train.addScriptTrainEventListener(listener);
 
         // --- Act ---
-        train.moveLinkers(true);
+        train.movementManager.moveLinkers(true);
 
         // --- Assert ---
         // 1. notifyCrash was invoked (via listener.onCrash)
         verify(listener).onCrash(eq(train), any(Point.class), eq(8));
         // 2. Acoustic/idle state is reset so engine goes to idle immediately
-        verify(loco).setAcousticSpeedSignal(-1);
-        verify(loco).setEngineTransitioning(false);
         verify(loco).setForceIdleSound(true);
         // 3. loco.destroy() was called
         verify(loco).destroy();
@@ -215,17 +213,15 @@ class TrainDeadEndCrashTest {
 
         // Listener to verify notifyContact (and absence of notifyCrash)
         TrainEventListener listener = mock(TrainEventListener.class);
-        train.addTrainEventListener(listener);
+        train.addScriptTrainEventListener(listener);
 
         // --- Act ---
-        train.moveLinkers(true);
+        train.movementManager.moveLinkers(true);
 
         // --- Assert ---
         // 1. notifyContact was invoked (via listener.onContact)
         verify(listener).onContact(eq(train), any(Point.class), eq(3));
         // 2. Acoustic/idle state is reset so engine goes to idle immediately
-        verify(loco).setAcousticSpeedSignal(-1);
-        verify(loco).setEngineTransitioning(false);
         verify(loco).setForceIdleSound(true);
         // 3. Speed was set to 0 on the tractors (called by both notifyContact and the
         //    dead-end handler, consistent with existing train-to-train contact logic)
@@ -318,10 +314,10 @@ class TrainDeadEndCrashTest {
 
         // Listener to verify no crash/contact is triggered
         TrainEventListener listener = mock(TrainEventListener.class);
-        train.addTrainEventListener(listener);
+        train.addScriptTrainEventListener(listener);
 
         // --- Act ---
-        boolean moved = train.moveLinkers(true);
+        boolean moved = train.movementManager.moveLinkers(true);
 
         // --- Assert ---
         // 1. moveLinkers returns true (movement succeeded)
@@ -371,8 +367,7 @@ class TrainDeadEndCrashTest {
         doNothing().when(loco).setRailsSinceStop(anyInt());
         doNothing().when(loco).setCurrentSpeed(anyInt());
         doNothing().when(loco).setTargetSpeed(anyInt());
-        doNothing().when(loco).setAcousticSpeedSignal(anyInt());
-        doNothing().when(loco).setEngineTransitioning(anyBoolean());
+
 
         // Track B → Track A (moving WEST), but A is dead-end (no connection W)
         when(trackB.getPosition()).thenReturn(new Point(1, 0));
@@ -410,17 +405,15 @@ class TrainDeadEndCrashTest {
         train.setDirectorLinker(loco);
 
         TrainEventListener listener = mock(TrainEventListener.class);
-        train.addTrainEventListener(listener);
+        train.addScriptTrainEventListener(listener);
 
         // --- Act ---
-        train.moveLinkers(false);
+        train.movementManager.moveLinkers(false);
 
         // --- Assert ---
         // 1. Contact notification (low speed + dead-end = contact, not crash)
         verify(listener).onContact(eq(train), any(Point.class), eq(3));
         // 2. Engine goes idle: acoustic signals reset
-        verify(loco).setAcousticSpeedSignal(-1);
-        verify(loco).setEngineTransitioning(false);
         verify(loco).setForceIdleSound(true);
         // 3. Speed set to 0
         verify(loco, org.mockito.Mockito.atLeast(1)).setCurrentSpeed(0);

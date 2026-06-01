@@ -174,9 +174,9 @@ public class Station extends Sensor implements TrainEventListener {
 
     @Override
     public void onSensorEnter(Train train, boolean isForward) {
-        super.onSensorEnter(train, isForward);
         train.setStationId(getId());
-        train.addTrainEventListener(this);
+        super.onSensorEnter(train, isForward);
+        train.addCoreTrainEventListener(this);
         notifyStationEvent(train, true, isForward);
     }
 
@@ -184,7 +184,7 @@ public class Station extends Sensor implements TrainEventListener {
     public void onSensorExit(Train train, boolean isForward) {
         super.onSensorExit(train, isForward);
         train.setStationId(0);
-        train.removeTrainEventListener(this);
+        train.removeCoreTrainEventListener(this);
         notifyStationEvent(train, false, isForward);
     }
 

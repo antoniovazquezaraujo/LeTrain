@@ -2,7 +2,6 @@ package letrain.vehicle.rail;
 
 import letrain.track.CargoTypes;
 import letrain.track.Station;
-import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.Wagon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,18 +24,18 @@ public interface TrainLogisticsManager {
 
     void setUnloadingDirection(boolean unloadingDirection);
 
-    void startLoadProcess(Train train, Station station);
+    void startLoadProcess(Station station);
 
-    void startUnloadProcess(Train train, Station station);
+    void startUnloadProcess(Station station);
 
     void endLoadUnloadProcess();
 
-    List<Wagon> getCapableWagons(Train train, Station station, boolean isUnload);
+    List<Wagon> getCapableWagons(Station station, boolean isUnload);
 
-    boolean performIndustrialAction(Train train, Station station);
+    boolean performIndustrialAction(Station station);
 
-    Station getStationAtTrain(Train train);
+    Station getStationAtTrain();
 
 
-    CargoTypes getTrainCargoType(Train train);
+    CargoTypes getTrainCargoType();
 }

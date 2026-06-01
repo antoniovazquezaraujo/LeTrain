@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
@@ -122,7 +123,7 @@ class SerializationTest {
 
         // Add a listener
         AtomicBoolean listenerCalled = new AtomicBoolean(false);
-        original.addTrainEventListener(new TrainEventListener() {
+        original.addScriptTrainEventListener(new TrainEventListener() {
             @Override
             public void onSpeedChanged(int speed) {
                 listenerCalled.set(true);
@@ -320,8 +321,9 @@ class SerializationTest {
 
         // Unlink one vehicle from the front side (frontWagon), leaving loco+backWagon
         // intact
-        train.setFrontDivisionSense();
-        train.divideTrain(() -> 501);
+        train.trainCouplingManager.setFrontDivisionSense();
+
+        train.trainCouplingManager.divideTrain(() -> 501);
 
         assertEquals(2, train.getLinkers().size(), "Train should keep two linkers after unlinking one from front");
         assertTrue(train.getLinkers().contains(loco));
@@ -352,7 +354,7 @@ class SerializationTest {
 
         // Build AutoPilot
         letrain.itinerary.impl.AutoPilotImpl ap = new letrain.itinerary.impl.AutoPilotImpl(
-            new TrainAutoPilotContext(original), original
+            new TrainAutoPilotContext(original), original.actionManager
         );
         ap.setItinerary(itinerary);
         ap.setWaitTicks(42);

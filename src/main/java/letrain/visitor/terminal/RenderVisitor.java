@@ -242,12 +242,12 @@ public class RenderVisitor implements Visitor {
         if (selectedLocomotive != null && selectedLocomotive.getTrain() != null) {
             Train activeTrain = selectedLocomotive.getTrain();
             boolean highlighted = false;
-            if (activeTrain.getLinkersToRemove().contains(linker)) {
+            if (activeTrain.trainCouplingManager.getLinkersToRemove().contains(linker)) {
                 highlighted = true;
             } else {
                 int count = 0;
                 for (Linker linkerToJoin : activeTrain.getLinkersToJoin()) {
-                    if (count >= activeTrain.getNumLinkersToJoin())
+                    if (count >= activeTrain.trainCouplingManager.getNumLinkersToJoin())
                         break;
                     if (linkerToJoin == linker) {
                         highlighted = true;
@@ -305,7 +305,7 @@ public class RenderVisitor implements Visitor {
             view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), getCrashAspect());
             return;
         }
-        if (wagon.getTrain() != null && wagon.getTrain().isLoading()) {
+        if (wagon.getTrain() != null && wagon.getTrain().getLogisticsManager().isLoading()) {
             letrain.track.Station station = model.getStation(wagon.getTrain().getStationId());
             if (station != null && station.getCargoType() != letrain.track.CargoTypes.NONE &&
                     station.getCargoType() == wagon.getExclusiveCargoType()) {
