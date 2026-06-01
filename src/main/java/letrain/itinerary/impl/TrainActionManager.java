@@ -13,12 +13,18 @@ import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 public class TrainActionManager implements letrain.itinerary.TrainActionManager {
     public static final Logger log = LoggerFactory.getLogger(Train.class);
     Train train;
+    private final transient List<WaypointCommand> pendingCommands;
+    private transient int waitTicks = 0;
     private int savedSpeedBeforeReverse = -1;
     public TrainActionManager(Train train){
         this.train = train;
+        this.pendingCommands = new CopyOnWriteArrayList<>();
     }
     @Override
     public void executeCommand(WaypointCommand command) {
@@ -146,10 +152,87 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     public void scheduleResume(int ticks) {
         if (train.getModel() != null && train.getModel().getScheduler() != null) {
             train.getModel().getScheduler().schedule(ticks, () -> {
-                this.train.resumeWaiting();
+                this.train.actionManager.resumeWaiting();
+                this.train.actionManager.acquireInitialLocks();
             });
         }
     }
+    @Override
+    public void resumeWaiting() {
+        this.waitTicks = 0;
+        runPendingCommands();
+        checkWaypointArrival();
+    }
+    @Override
+    public void runPendingCommands() {
+        while (!pendingCommands.isEmpty()) {
+            WaypointCommand cmd = pendingCommands.remove(0);
+            if (cmd.kind() == WaypointCommand.Kind.WAIT) {
+                this.waitTicks = cmd.seconds() * WaypointCommand.TICKS_PER_SECOND;
+                scheduleResume(this.waitTicks);
+                return;
+            } else {
+                executeCommand(cmd);
+            }
+        }
+
+//        if (autopilot != null && autopilot.itinerary().isPresent()) {
+//            letrain.itinerary.Itinerary itin = autopilot.itinerary().get();
+//            itin.advance();
+//            autopilot.clearRoute();
+//            if (itin.state() == letrain.itinerary.Itinerary.State.DONE) {
+//                log.info("Train {} itinerary DONE → IDLE", id);
+//                autopilot.deactivate();
+//                return;
+//            }
+//
+//            itin.currentWaypoint().ifPresent(wp -> {
+//                if (railStationId == wp.targetId()) {
+//                    log.info("Train {} consecutive waypoint reached", id);
+//                    pendingCommands.clear();
+//                    pendingCommands.addAll(wp.commands());
+//                    runPendingCommands();
+//                }
+//            });
+//        }
+    }
+
+    @Override
+    public void checkWaypointArrival() {
+//        if (!autoMode || autopilot == null || autopilot.mode() != letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+//            return;
+//        }
+//        Optional<Itinerary> itinOpt = autopilot.itinerary();
+//        if (itinOpt.isEmpty()) {
+//            return;
+//        }
+//        letrain.itinerary.Itinerary itin = itinOpt.get();
+//        Optional<letrain.itinerary.Waypoint> wpOpt = itin.currentWaypoint();
+//        if (wpOpt.isEmpty()) {
+//            return;
+//        }
+//        letrain.itinerary.Waypoint wp = wpOpt.get();
+//        letrain.itinerary.AutoPilotContext ctx = new TrainAutoPilotContext(this);
+//        if (ctx.isAtTarget(wp)) {
+//            pendingCommands.clear();
+//            pendingCommands.addAll(wp.commands());
+//            runPendingCommands();
+//        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     @Override
     public void acquireInitialLocks() {
