@@ -357,11 +357,11 @@ class SerializationTest {
             new TrainAutoPilotContext(original), original.actionManager
         );
         ap.setItinerary(itinerary);
+        original.setAutopilot(ap);
+        ap.setPathfinder(org.mockito.Mockito.mock(letrain.itinerary.SegmentPathfinder.class));
+        original.setAutoMode(true);
         ap.setWaitTicks(42);
         ap.setPendingCommands(java.util.List.of(letrain.itinerary.WaypointCommand.speed(5)));
-
-        original.setAutopilot(ap);
-        original.setAutoMode(true);
 
         // Serialize and Deserialize
         byte[] data = serialize(original);
@@ -374,7 +374,7 @@ class SerializationTest {
 
         letrain.itinerary.AutoPilot restoredAp = restored.getAutopilot();
         assertNotNull(restoredAp);
-        assertEquals(letrain.itinerary.AutoPilot.Mode.IDLE, restoredAp.mode());
+        assertEquals(letrain.itinerary.AutoPilot.Mode.FOLLOWING, restoredAp.mode());
 
         letrain.itinerary.Itinerary restoredItin = restoredAp.itinerary().orElse(null);
         assertNotNull(restoredItin);

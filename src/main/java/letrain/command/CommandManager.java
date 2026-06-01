@@ -505,12 +505,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             log.warn("[DSL] Train not found for '{}'", ctx.trainRef().getText());
             return null;
         }
-        // Ensure autopilot exists and has a pathfinder
-        if (train.getAutopilot() == null) {
-            train.setAutopilot(new letrain.itinerary.impl.AutoPilotImpl(
-                new TrainAutoPilotContext(train),
-                train.actionManager));
-        }
+        // Autopilot is always instantiated. Set pathfinder and assign itinerary
         if (model.getRailwayGraph() != null) {
             train.getAutopilot().setPathfinder(
                 new letrain.itinerary.AStarPathfinder(model.getRailwayGraph()));

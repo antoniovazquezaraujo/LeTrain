@@ -191,7 +191,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         boolean shouldLockNext = true;
         if (train.isAutoMode()) {
             letrain.itinerary.AutoPilot ap = train.getAutopilot();
-            if (ap == null || ap.mode() == letrain.itinerary.AutoPilot.Mode.WAITING || ap.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
+            if (ap.mode() == letrain.itinerary.AutoPilot.Mode.WAITING || ap.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
                 shouldLockNext = false;
             }
         }
@@ -274,7 +274,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         boolean shouldLockNext = true;
         if (train.isAutoMode()) {
             letrain.itinerary.AutoPilot ap = train.getAutopilot();
-            if (ap == null || ap.mode() == letrain.itinerary.AutoPilot.Mode.WAITING || ap.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
+            if (ap.mode() == letrain.itinerary.AutoPilot.Mode.WAITING || ap.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
                 shouldLockNext = false;
             }
         }
@@ -387,10 +387,9 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         try {
             Segment topological = findNextSegmentTopological(head, graph);
             letrain.itinerary.AutoPilot ap = train.getAutopilot();
-            log.info("Train {} findNextSegment: ap={}, apMode={}, topological={}", train.getId(),
-                    ap != null ? "present" : "null", ap != null ? ap.mode() : "N/A",
-                    topological != null ? topological.getId() : "null");
-            if (ap != null && (ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING || ap.mode() == letrain.itinerary.AutoPilot.Mode.WAITING)) {
+            log.info("Train {} findNextSegment: apMode={}, topological={}", train.getId(),
+                    ap.mode(), topological != null ? topological.getId() : "null");
+            if (ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING || ap.mode() == letrain.itinerary.AutoPilot.Mode.WAITING) {
                 // Consultamos la ruta real planificada del piloto automático
                 List<Segment> route = ap.currentRoute();
                 int index = route.indexOf(currentSegment);
@@ -526,9 +525,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             Segment oldNext = nextSegment;
             nextSegment = sAlt;
             letrain.itinerary.AutoPilot ap = train.getAutopilot();
-            if (ap != null) {
-                ap.replaceRouteSegment(oldNext, sAlt);
-            }
+            ap.replaceRouteSegment(oldNext, sAlt);
             return true;
         }
 
@@ -538,9 +535,6 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
 
     private boolean segmentHasPendingWaypoints(Segment segment) {
         letrain.itinerary.AutoPilot ap = train.getAutopilot();
-        if (ap == null) {
-            return false;
-        }
         java.util.Optional<letrain.itinerary.Itinerary> itinOpt = ap.itinerary();
         if (itinOpt.isEmpty()) {
             return false;

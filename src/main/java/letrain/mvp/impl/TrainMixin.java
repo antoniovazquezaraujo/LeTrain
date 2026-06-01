@@ -54,7 +54,4 @@ public abstract class TrainMixin {
 
     @JsonProperty("autopilot")
     AutoPilot autopilot;
-
-    @JsonProperty("autoMode")
-    boolean autoMode;
 }

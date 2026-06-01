@@ -47,7 +47,6 @@ public class Train implements Renderable {
     private letrain.vehicle.rail.Trip trip;
 
     private Tractor directorLinker;
-    private boolean autoMode = false;
 
     private transient letrain.mvp.Model model;
     public transient List<TrainEventListener> scriptTrainListeners;
@@ -79,6 +78,7 @@ public class Train implements Renderable {
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.actionManager = new letrain.itinerary.impl.TrainActionManager(this);
+        this.autopilot = new letrain.itinerary.impl.AutoPilotImpl(new TrainAutoPilotContext(this), this.actionManager);
     }
 
     /**
@@ -119,31 +119,31 @@ public class Train implements Renderable {
     }
 
     public boolean isAutoMode() {
-        return autoMode;
+        return autopilot.mode() != letrain.itinerary.AutoPilot.Mode.IDLE;
     }
 
     public void setAutoMode(boolean autoMode) {
-        this.autoMode = autoMode;
-        if (!autoMode && autopilot != null) {
-            autopilot.deactivate(); // Apaga el piloto automático automáticamente si pasamos a manual
+        if (autoMode) {
+            autopilot.activate();
+        } else {
+            autopilot.deactivate();
         }
     }
 
     public void toggleAutoMode() {
-        log.info("[TRAIN] toggleAutoMode() current={}", autoMode);
-        if (autoMode) {
-            autoMode = false;
-            if (autopilot != null)
-                autopilot.deactivate();
-        } else if (autopilot != null && autopilot.itinerary().isPresent()) {
-            autoMode = autopilot.activate();
-            if (autoMode) {
+        boolean currentAutoMode = isAutoMode();
+        log.info("[TRAIN] toggleAutoMode() current={}", currentAutoMode);
+        if (currentAutoMode) {
+            autopilot.deactivate();
+        } else if (autopilot.itinerary().isPresent()) {
+            boolean activated = autopilot.activate();
+            if (activated) {
                 this.actionManager.checkWaypointArrival();
                 this.actionManager.acquireInitialLocks();
                 this.actionManager.checkWaypointArrival();
             }
         }
-        log.info("[TRAIN] toggleAutoMode → autoMode={}", autoMode);
+        log.info("[TRAIN] toggleAutoMode → autoMode={}", isAutoMode());
     }
 
     public void setAutopilot(letrain.itinerary.AutoPilot ap) {
@@ -290,7 +290,7 @@ public class Train implements Renderable {
                 });
             }
             this.actionManager.checkWaypointArrival();
-            if (autoMode && autopilot != null) {
+            if (isAutoMode()) {
                 autopilot.onSegmentEntered(safetyManager.getCurrentSegment());
             }
         } finally {
@@ -367,15 +367,15 @@ public class Train implements Renderable {
         this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager();
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
-        if (this.autopilot != null) {
-            if (this.autopilot instanceof letrain.itinerary.impl.AutoPilotImpl) {
-                ((letrain.itinerary.impl.AutoPilotImpl) this.autopilot).reinitialize(
-                        new TrainAutoPilotContext(this), this.actionManager);
-            }
-            if (getModel() != null && getModel().getRailwayGraph() != null) {
-                this.autopilot.setPathfinder(
-                        new letrain.itinerary.AStarPathfinder(getModel().getRailwayGraph()));
-            }
+        if (this.autopilot == null) {
+            this.autopilot = new letrain.itinerary.impl.AutoPilotImpl(new TrainAutoPilotContext(this), this.actionManager);
+        } else if (this.autopilot instanceof letrain.itinerary.impl.AutoPilotImpl) {
+            ((letrain.itinerary.impl.AutoPilotImpl) this.autopilot).reinitialize(
+                    new TrainAutoPilotContext(this), this.actionManager);
+        }
+        if (getModel() != null && getModel().getRailwayGraph() != null) {
+            this.autopilot.setPathfinder(
+                    new letrain.itinerary.AStarPathfinder(getModel().getRailwayGraph()));
         }
     }
 
@@ -615,7 +615,7 @@ public class Train implements Renderable {
 
     public void notifySegmentEntered(letrain.segments.Segment newSegment) {
         this.actionManager.checkWaypointArrival();
-        if (autoMode && autopilot != null) {
+        if (isAutoMode()) {
             log.info("Train {} notifySegmentEntered: notifying autopilot", id);
             autopilot.onSegmentEntered(newSegment);
         }

@@ -237,7 +237,7 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     @Override
     public void acquireInitialLocks() {
 
-        if (this.train.getModel() != null && this.train.isAutoMode() && this.train.getAutopilot() != null) {
+        if (this.train.getModel() != null && this.train.isAutoMode()) {
             Linker head = this.train.getPhysicalFront();
             if (head != null && head.getTrack() instanceof RailTrack) {
                 letrain.segments.Segment currentSeg = this.train.getModel().getRailwayGraph().getSegment((RailTrack) head.getTrack());
