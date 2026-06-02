@@ -249,10 +249,6 @@ public class Train implements Renderable {
         guardNotify(() -> this.eventDispatcher.notifyExitSensor(isForward));
     }
 
-    public void notifySegmentOccupied(letrain.segments.Segment segment) {
-        guardNotify(() -> this.eventDispatcher.notifySegmentOccupied(segment));
-    }
-
     public int getId() {
         return this.id;
     }
