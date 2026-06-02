@@ -16,10 +16,9 @@ El sistema de eventos de LeTrain sigue el patrón **Observer** multicapa para de
 │  │  │ Script Listeners    │  │ Core Listeners      │            │   │
 │  │  │CopyOnWriteArrayList │  │ CopyOnWriteArrayList│            │   │
 │  │  │                     │  │                     │            │   │
-│  │  │  • CommandManager   │  │  • Model (logging)  │            │   │
-│  │  │  (automatización    │  │  • TerminalPresenter│            │   │
-│  │  │   del usuario)      │  │  • GraphicPresenter │            │   │
-│  │  │                     │  │  • Station          │            │   │
+ │  │  │  • CommandManager   │  │  • Model (logging)  │            │   │
+ │  │  │  (automatización    │  │  • TerminalPresenter│            │   │
+ │  │  │   del usuario)      │  │  • GraphicPresenter │            │   │
 │  │  └─────────────────────┘  └─────────────────────┘            │   │
 │  └──────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
@@ -46,7 +45,7 @@ El `TrainEventDispatcher` es el núcleo de la gestión de eventos de cada tren. 
 | Categoría | Tipo de Lista | Propósito | Ejemplos |
 |---|---|---|---|
 | **Script** | `CopyOnWriteArrayList<TrainEventListener>` | Automatización definida por el usuario (vía ANTLR) | `CommandManager` |
-| **Core** | `CopyOnWriteArrayList<TrainEventListener>` | Componentes internos del sistema | `Model` (logging), `TerminalPresenter` (audio), `GraphicPresenter` (audio), `Station` |
+| **Core** | `CopyOnWriteArrayList<TrainEventListener>` | Componentes internos del sistema | `Model` (logging), `TerminalPresenter` (audio), `GraphicPresenter` (audio) |
 
 ### Ciclo de Vida del Dispatcher
 
@@ -256,14 +255,12 @@ public interface StationEventListener extends Serializable {
     default void onEndLoad(Train train) {}
     default void onStartUnload(Train train) {}
     default void onEndUnload(Train train) {}
-    default void onLink(Train train) {}
-    default void onUnlink(Train train) {}
 }
 ```
 
 **Registro**: `Station.addStationListener(StationEventListener)`
 
-**Nota**: `Station` también implementa `TrainEventListener` y se registra como **core listener** del tren cuando este entra, permitiéndole reaccionar a acoplamientos/desacoplamientos dentro de sus límites.
+`Station` recibe la visita de los trenes por herencia de `Sensor` (ver eventos de Sensor). No necesita registrarse como `TrainEventListener` para enterarse de cuándo un tren entra o sale, porque `TrainMovementManager` llama directamente a `sensorEnter.onEnterTrain(train)` sobre el objeto `Station`.
 
 ### Bifurcación (Fork)
 
@@ -315,23 +312,7 @@ public void addCoreTrainEventListener(TrainEventListener listener) {
 }
 ```
 
-### Estación (autoregistro dinámico)
 
-```java
-// Station.java — se registra como core listener cuando un tren entra
-@Override
-public void onEnterTrain(Train train, boolean isForward) {
-    // ...
-    train.addCoreTrainEventListener(this);  // se suscribe a eventos del tren
-    notifyEnterTrain(train, isForward);
-}
-
-@Override
-public void onExitTrain(Train train, boolean isForward) {
-    train.removeCoreTrainEventListener(this);  // se desuscribe al salir
-    notifyExitTrain(train, isForward);
-}
-```
 
 ### Sistema de Audio (TerminalPresenter)
 
@@ -439,9 +420,7 @@ sequenceDiagram
 │                 │ + onStartLoad   │                  │                  │
 │                 │ + onEndLoad     │                  │                  │
 │                 │ + onStartUnload │                  │                  │
-│                 │ + onEndUnload   │                  │                  │
-│                 │ + onLink        │                  │                  │
-│                 │ + onUnlink      │                  │                  │
+ │                 │ + onEndUnload   │                  │                  │
 └─────────────────┴─────────────────┴──────────────────┴──────────────────┘
 ```
 
@@ -460,11 +439,11 @@ PLANO 2: Eventos de Dispositivo de Vía (Sensor/Station/Fork/Semaphore)
   Emisor: Dispositivo de vía → su propia lista de listeners
   Propósito: Notificar eventos de tráfico en puntos específicos de la red
 
-PUENTE: Sensor implementa ambas interfaces
-  - Como TrainEventListener: recibe eventos de los trenes que lo atraviesan
-    (onSensorEnter desde el dispatcher del tren)
-  - Como emisor: notifica a sus propios SensorEventListener
+PUENTE: Sensor implementa SensorEventListener
+  - Como emisor (Sensor.onSensorEnter): notifica a sus propios SensorEventListener
     (otros dispositivos interesados en ese punto de la vía)
+  - El propio sensor se excluye de la notificación vía dispatcher
+    (if (l != sensor)) para evitar auto-recibirse
 ```
 
 ---
