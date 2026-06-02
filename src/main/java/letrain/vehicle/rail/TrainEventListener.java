@@ -29,6 +29,4 @@ public interface TrainEventListener extends Serializable {
     default public void onSensorExit(Train train, boolean isForward) {
     }
 
-    default public void onSegmentOccupied(Train train, letrain.segments.Segment segment) {
-    }
 }

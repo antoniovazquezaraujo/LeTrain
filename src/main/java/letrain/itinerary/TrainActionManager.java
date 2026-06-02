@@ -17,9 +17,6 @@ public interface TrainActionManager {
     void ensureForkRoute(letrain.segments.Segment from, letrain.segments.Segment to);
 
     /** Notify that a segment is occupied. */
-    void notifySegmentOccupied(letrain.segments.Segment segment);
-
-    /** Force a segment entry reset in safety manager. */
     void forceSegmentReset();
 
     /** Schedule the autopilot to resume after ticks. */

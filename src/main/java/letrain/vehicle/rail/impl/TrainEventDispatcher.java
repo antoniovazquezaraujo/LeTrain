@@ -1,7 +1,6 @@
 package letrain.vehicle.rail.impl;
 
 import letrain.vehicle.rail.TrainEventListener;
-import letrain.segments.Segment;
 import letrain.map.Point;
 import java.util.Collections;
 import java.util.List;
@@ -109,11 +108,6 @@ public class TrainEventDispatcher {
     public void notifyExitSensor(boolean isForward) {
         scriptTrainListeners.forEach(l -> l.onSensorExit(train, isForward));
         coreTrainListeners.forEach(l -> l.onSensorExit(train, isForward));
-    }
-
-    public void notifySegmentOccupied(Segment segment) {
-        scriptTrainListeners.forEach(l -> l.onSegmentOccupied(train, segment));
-        coreTrainListeners.forEach(l -> l.onSegmentOccupied(train, segment));
     }
 
     public void notifyContact(Point pos, int speed) {

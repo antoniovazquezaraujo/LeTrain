@@ -139,11 +139,6 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     }
 
     @Override
-    public void notifySegmentOccupied(Segment segment) {
-        this.train.notifySegmentOccupied(segment);
-    }
-
-    @Override
     public void forceSegmentReset() {
         //TODO: qué hacer aquí?
     }
