@@ -4,6 +4,7 @@ import letrain.vehicle.rail.TrainEventListener;
 import letrain.track.Sensor;
 import letrain.segments.Segment;
 import letrain.map.Point;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import letrain.utils.SerializationHelper;
@@ -26,18 +27,21 @@ public class TrainEventDispatcher {
         if (scriptTrainListeners == null) {
             scriptTrainListeners = new CopyOnWriteArrayList<>();
         }
-        return scriptTrainListeners;
+        return Collections.unmodifiableList(scriptTrainListeners);
     }
 
     public List<TrainEventListener> getCoreTrainListeners() {
         if (coreTrainListeners == null) {
             coreTrainListeners = new CopyOnWriteArrayList<>();
         }
-        return coreTrainListeners;
+        return Collections.unmodifiableList(coreTrainListeners);
     }
 
     public void addScriptTrainEventListener(TrainEventListener listener) {
-        getScriptTrainListeners().add(listener);
+        if (scriptTrainListeners == null) {
+            scriptTrainListeners = new CopyOnWriteArrayList<>();
+        }
+        scriptTrainListeners.add(listener);
     }
 
     public void removeScriptTrainEventListener(TrainEventListener listener) {
@@ -47,7 +51,10 @@ public class TrainEventDispatcher {
     }
 
     public void addCoreTrainEventListener(TrainEventListener listener) {
-        getCoreTrainListeners().add(listener);
+        if (coreTrainListeners == null) {
+            coreTrainListeners = new CopyOnWriteArrayList<>();
+        }
+        coreTrainListeners.add(listener);
     }
 
     public void removeCoreTrainEventListener(TrainEventListener listener) {
