@@ -68,127 +68,79 @@ public class TrainEventDispatcher {
     }
 
     public void notifySpeedChanged(int speed) {
-        if (scriptTrainListeners != null) {
-            for (TrainEventListener l : scriptTrainListeners) {
-                l.onSpeedChanged(speed);
-            }
+        for (TrainEventListener l : scriptTrainListeners) {
+            l.onSpeedChanged(speed);
         }
-        if (coreTrainListeners != null) {
-            for (TrainEventListener l : coreTrainListeners) {
-                l.onSpeedChanged(speed);
-            }
+        for (TrainEventListener l : coreTrainListeners) {
+            l.onSpeedChanged(speed);
         }
     }
 
     public void notifySenseChanged(boolean forward) {
-        if (scriptTrainListeners != null) {
-            for (TrainEventListener l : scriptTrainListeners) {
-                l.onSenseChanged(forward);
-            }
+        for (TrainEventListener l : scriptTrainListeners) {
+            l.onSenseChanged(forward);
         }
-        if (coreTrainListeners != null) {
-            for (TrainEventListener l : coreTrainListeners) {
-                l.onSenseChanged(forward);
-            }
+        for (TrainEventListener l : coreTrainListeners) {
+            l.onSenseChanged(forward);
         }
     }
 
     public void notifyLink() {
-        if (scriptTrainListeners != null) {
-            scriptTrainListeners.forEach(l -> {
-                l.onLink(train);
-            });
-        }
-        if (coreTrainListeners != null) {
-            coreTrainListeners.forEach(l -> {
-                l.onLink(train);
-            });
-        }
+        scriptTrainListeners.forEach(l -> l.onLink(train));
+        coreTrainListeners.forEach(l -> l.onLink(train));
     }
 
     public void notifyUnlink() {
-        if (scriptTrainListeners != null) {
-            scriptTrainListeners.forEach(l -> {
-                l.onUnlink(train);
-            });
-        }
-        if (coreTrainListeners != null) {
-            coreTrainListeners.forEach(l -> {
-                l.onUnlink(train);
-            });
-        }
+        scriptTrainListeners.forEach(l -> l.onUnlink(train));
+        coreTrainListeners.forEach(l -> l.onUnlink(train));
     }
 
     public void notifyEnterSensor(Sensor sensor, boolean isForward) {
-        if (scriptTrainListeners != null) {
-            scriptTrainListeners.forEach(l -> {
-                if (l != sensor) {
-                    l.onSensorEnter(train, isForward);
-                }
-            });
-        }
-        if (coreTrainListeners != null) {
-            coreTrainListeners.forEach(l -> {
-                if (l != sensor) {
-                    l.onSensorEnter(train, isForward);
-                }
-            });
-        }
+        scriptTrainListeners.forEach(l -> {
+            if (l != sensor) {
+                l.onSensorEnter(train, isForward);
+            }
+        });
+        coreTrainListeners.forEach(l -> {
+            if (l != sensor) {
+                l.onSensorEnter(train, isForward);
+            }
+        });
     }
 
     public void notifyExitSensor(Sensor sensor, boolean isForward) {
-        if (scriptTrainListeners != null) {
-            scriptTrainListeners.forEach(l -> {
-                if (l != sensor) {
-                    l.onSensorExit(train, isForward);
-                }
-            });
-        }
-        if (coreTrainListeners != null) {
-            coreTrainListeners.forEach(l -> {
-                if (l != sensor) {
-                    l.onSensorExit(train, isForward);
-                }
-            });
-        }
+        scriptTrainListeners.forEach(l -> {
+            if (l != sensor) {
+                l.onSensorExit(train, isForward);
+            }
+        });
+        coreTrainListeners.forEach(l -> {
+            if (l != sensor) {
+                l.onSensorExit(train, isForward);
+            }
+        });
     }
 
     public void notifySegmentOccupied(Segment segment) {
-        if (scriptTrainListeners != null) {
-            scriptTrainListeners.forEach(l -> {
-                l.onSegmentOccupied(train, segment);
-            });
-        }
-        if (coreTrainListeners != null) {
-            coreTrainListeners.forEach(l -> {
-                l.onSegmentOccupied(train, segment);
-            });
-        }
+        scriptTrainListeners.forEach(l -> l.onSegmentOccupied(train, segment));
+        coreTrainListeners.forEach(l -> l.onSegmentOccupied(train, segment));
     }
 
     public void notifyContact(Point pos, int speed) {
-        if (scriptTrainListeners != null) {
-            for (TrainEventListener l : scriptTrainListeners) {
-                l.onContact(train, pos, speed);
-            }
+        for (TrainEventListener l : scriptTrainListeners) {
+            l.onContact(train, pos, speed);
         }
-        if (coreTrainListeners != null) {
-            for (TrainEventListener l : coreTrainListeners) {
-                l.onContact(train, pos, speed);
-            }
+        for (TrainEventListener l : coreTrainListeners) {
+            l.onContact(train, pos, speed);
         }
     }
 
     public void notifyCrash(Point pos, int speed) {
-        if (scriptTrainListeners != null) {
-            for (TrainEventListener l : scriptTrainListeners) {
-                l.onCrash(train, pos, speed);
-            }
+        for (TrainEventListener l : scriptTrainListeners) {
+            l.onCrash(train, pos, speed);
         }
-        if (coreTrainListeners != null) {
-            for (TrainEventListener l : coreTrainListeners) {
-                l.onCrash(train, pos, speed);
-            }
+        for (TrainEventListener l : coreTrainListeners) {
+            l.onCrash(train, pos, speed);
         }
     }
 }
