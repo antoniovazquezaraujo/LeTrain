@@ -235,10 +235,9 @@ public class Train implements Renderable {
         guardNotify(() -> this.eventDispatcher.notifyUnlink());
     }
 
-    public void notifyEnterSensor(letrain.track.Sensor sensor, boolean isForward) {
-        ValidationUtils.requireNonNull(sensor, "sensor");
+    public void notifyEnterSensor(boolean isForward) {
         guardNotify(() -> {
-            this.eventDispatcher.notifyEnterSensor(sensor, isForward);
+            this.eventDispatcher.notifyEnterSensor(isForward);
             this.actionManager.checkWaypointArrival();
             if (isAutoMode()) {
                 autopilot.onSegmentEntered(safetyManager.getCurrentSegment());
@@ -246,9 +245,8 @@ public class Train implements Renderable {
         });
     }
 
-    public void notifyExitSensor(letrain.track.Sensor sensor, boolean isForward) {
-        ValidationUtils.requireNonNull(sensor, "sensor");
-        guardNotify(() -> this.eventDispatcher.notifyExitSensor(sensor, isForward));
+    public void notifyExitSensor(boolean isForward) {
+        guardNotify(() -> this.eventDispatcher.notifyExitSensor(isForward));
     }
 
     public void notifySegmentOccupied(letrain.segments.Segment segment) {
