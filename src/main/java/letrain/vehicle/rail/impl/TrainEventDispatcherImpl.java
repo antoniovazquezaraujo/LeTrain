@@ -1,5 +1,6 @@
 package letrain.vehicle.rail.impl;
 
+import letrain.vehicle.rail.TrainEventDispatcher;
 import letrain.vehicle.rail.TrainEventListener;
 import letrain.map.Point;
 import java.util.Collections;
@@ -10,12 +11,12 @@ import letrain.utils.SerializationHelper;
 /**
  * Manages event listener registrations and broadcasts train events.
  */
-public class TrainEventDispatcher {
+public class TrainEventDispatcherImpl implements TrainEventDispatcher {
     private final Train train;
     private List<TrainEventListener> scriptTrainListeners;
     private List<TrainEventListener> coreTrainListeners;
 
-    public TrainEventDispatcher(Train train) {
+    public TrainEventDispatcherImpl(Train train) {
         this.train = train;
         this.scriptTrainListeners = new CopyOnWriteArrayList<>();
         this.coreTrainListeners = new CopyOnWriteArrayList<>();
