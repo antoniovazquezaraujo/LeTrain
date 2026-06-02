@@ -350,11 +350,9 @@ class SerializationTest {
         itinerary.addWaypoint(new letrain.itinerary.impl.WaypointImpl(
             letrain.itinerary.Waypoint.Type.SENSOR, 20, java.util.Optional.empty(), cmds2
         ));
-        itinerary.assignTrain(777);
-
         // Build AutoPilot
         letrain.itinerary.impl.AutoPilotImpl ap = new letrain.itinerary.impl.AutoPilotImpl(
-            new TrainAutoPilotContext(original), original.actionManager
+            original, original.actionManager
         );
         ap.setItinerary(itinerary);
         original.setAutopilot(ap);
@@ -379,8 +377,6 @@ class SerializationTest {
         letrain.itinerary.Itinerary restoredItin = restoredAp.itinerary().orElse(null);
         assertNotNull(restoredItin);
         assertEquals(2, restoredItin.waypoints().size());
-        assertEquals(letrain.itinerary.Itinerary.State.CREATED, restoredItin.state());
-        assertTrue(restoredItin.assignedTrains().contains(777));
 
         letrain.itinerary.Waypoint wp1 = restoredItin.waypoints().get(0);
         assertEquals(letrain.itinerary.Waypoint.Type.STATION, wp1.type());

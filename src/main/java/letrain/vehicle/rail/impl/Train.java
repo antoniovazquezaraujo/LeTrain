@@ -78,7 +78,7 @@ public class Train implements Renderable {
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.actionManager = new letrain.itinerary.impl.TrainActionManager(this);
-        this.autopilot = new letrain.itinerary.impl.AutoPilotImpl(new TrainAutoPilotContext(this), this.actionManager);
+        this.autopilot = new letrain.itinerary.impl.AutoPilotImpl(this, this.actionManager);
     }
 
     /**
@@ -368,10 +368,10 @@ public class Train implements Renderable {
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
         if (this.autopilot == null) {
-            this.autopilot = new letrain.itinerary.impl.AutoPilotImpl(new TrainAutoPilotContext(this), this.actionManager);
+            this.autopilot = new letrain.itinerary.impl.AutoPilotImpl(this, this.actionManager);
         } else if (this.autopilot instanceof letrain.itinerary.impl.AutoPilotImpl) {
             ((letrain.itinerary.impl.AutoPilotImpl) this.autopilot).reinitialize(
-                    new TrainAutoPilotContext(this), this.actionManager);
+                    this, this.actionManager);
         }
         if (getModel() != null && getModel().getRailwayGraph() != null) {
             this.autopilot.setPathfinder(

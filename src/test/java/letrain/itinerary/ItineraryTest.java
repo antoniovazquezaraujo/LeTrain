@@ -6,7 +6,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @DisplayName("Itinerary")
@@ -17,7 +16,6 @@ class ItineraryTest {
     void emptyItinerary() {
         Itinerary it = new ItineraryImpl();
         assertTrue(it.waypoints().isEmpty());
-        assertEquals(Itinerary.State.CREATED, it.state());
     }
 
     @Test
@@ -49,72 +47,5 @@ class ItineraryTest {
         it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 1, List.of()));
         it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 2, List.of()));
         assertTrue(it.isValid());
-    }
-
-    @Test
-    @DisplayName("should track current waypoint index")
-    void currentIndex() {
-        Itinerary it = new ItineraryImpl();
-        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 1, List.of()));
-        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 2, List.of()));
-
-        assertEquals(0, it.currentIndex());
-        it.advance();
-        assertEquals(1, it.currentIndex());
-        it.advance();
-        assertEquals(2, it.currentIndex());
-        assertEquals(Itinerary.State.DONE, it.state());
-    }
-
-    @Test
-    @DisplayName("should be done when all waypoints visited")
-    void doneWhenAllVisited() {
-        Itinerary it = new ItineraryImpl();
-        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 1, List.of()));
-        it.addWaypoint(new WaypointImpl(Waypoint.Type.STATION, 2, List.of()));
-
-        it.advance();
-        it.advance();
-        assertEquals(Itinerary.State.DONE, it.state());
-    }
-
-    @Test
-    @DisplayName("should return current waypoint")
-    void currentWaypoint() {
-        Itinerary it = new ItineraryImpl();
-        Waypoint wp1 = new WaypointImpl(Waypoint.Type.STATION, 1, List.of());
-        Waypoint wp2 = new WaypointImpl(Waypoint.Type.STATION, 2, List.of());
-        it.addWaypoint(wp1);
-        it.addWaypoint(wp2);
-
-        assertEquals(wp1, it.currentWaypoint().orElse(null));
-        it.advance();
-        assertEquals(wp2, it.currentWaypoint().orElse(null));
-    }
-
-    @Test
-    @DisplayName("should allow assigning to multiple trains")
-    void multipleTrains() {
-        Itinerary it = new ItineraryImpl();
-        it.assignTrain(1);
-        it.assignTrain(2);
-        it.assignTrain(3);
-
-        assertTrue(it.assignedTrains().contains(1));
-        assertTrue(it.assignedTrains().contains(2));
-        assertTrue(it.assignedTrains().contains(3));
-        assertEquals(3, it.assignedTrains().size());
-    }
-
-    @Test
-    @DisplayName("should allow unassigning trains")
-    void unassignTrain() {
-        Itinerary it = new ItineraryImpl();
-        it.assignTrain(1);
-        it.assignTrain(2);
-        it.unassignTrain(1);
-
-        assertFalse(it.assignedTrains().contains(1));
-        assertTrue(it.assignedTrains().contains(2));
     }
 }

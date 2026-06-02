@@ -4,29 +4,18 @@ import letrain.itinerary.Itinerary;
 import letrain.itinerary.Waypoint;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 public class ItineraryImpl implements Itinerary {
     private final List<Waypoint> waypoints = new ArrayList<>();
-    private final Set<Integer> assignedTrains = new HashSet<>();
-    private State state = State.CREATED;
-    private int currentIndex = 0;
 
     public ItineraryImpl() {
     }
 
-    public ItineraryImpl(List<Waypoint> waypoints, Set<Integer> assignedTrains, State state, int currentIndex) {
+    public ItineraryImpl(List<Waypoint> waypoints) {
         if (waypoints != null) {
             this.waypoints.addAll(waypoints);
         }
-        if (assignedTrains != null) {
-            this.assignedTrains.addAll(assignedTrains);
-        }
-        this.state = state;
-        this.currentIndex = currentIndex;
     }
 
     @Override
@@ -40,51 +29,7 @@ public class ItineraryImpl implements Itinerary {
     }
 
     @Override
-    public State state() { return state; }
-
-    @Override
     public boolean isValid() {
         return waypoints.size() >= 2;
-    }
-
-    @Override
-    public int currentIndex() { return currentIndex; }
-
-    @Override
-    public void advance() {
-        currentIndex++;
-        if (currentIndex >= waypoints.size()) {
-            state = State.DONE;
-            currentIndex = waypoints.size();
-        }
-    }
-
-    @Override
-    public void reset() {
-        state = State.CREATED;
-        currentIndex = 0;
-    }
-
-    @Override
-    public Optional<Waypoint> currentWaypoint() {
-        if (currentIndex < waypoints.size()) {
-            return Optional.of(waypoints.get(currentIndex));
-        }
-        return Optional.empty();
-    }
-
-    @Override
-    public void assignTrain(int trainId) {
-        assignedTrains.add(trainId);
-    }
-
-    @Override
-    public void unassignTrain(int trainId) {
-        assignedTrains.remove(trainId);
-    }
-
-    @Override
-    public Set<Integer> assignedTrains() {
-        return Collections.unmodifiableSet(assignedTrains);
     }
 }

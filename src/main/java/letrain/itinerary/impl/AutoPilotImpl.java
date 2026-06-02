@@ -4,12 +4,12 @@ import java.util.List;
 import java.util.Optional;
 
 import letrain.itinerary.AutoPilot;
-import letrain.itinerary.AutoPilotContext;
 import letrain.itinerary.Itinerary;
 import letrain.itinerary.SegmentPathfinder;
 import letrain.itinerary.Waypoint;
 import letrain.segments.Segment;
 import letrain.track.rail.ForkRailTrack;
+import letrain.vehicle.rail.impl.Train;
 import letrain.itinerary.TrainActionManager;
 import letrain.itinerary.WaypointCommand;
 import org.slf4j.Logger;
@@ -29,31 +29,32 @@ public class AutoPilotImpl implements AutoPilot {
     private Segment lastSegment;
     private int routeRetryCooldown = 0;
 
+    private int currentIndex = 0;
     private static final int ROUTE_RETRY_TICKS = 100;
 
-    private AutoPilotContext ctx;
+    private Train train;
     private TrainActionManager actionManager;
     private final List<WaypointCommand> pendingCommands = new java.util.ArrayList<>();
     private int waitTicks = 0;
 
     public AutoPilotImpl() {
-        this.ctx = null;
+        this.train = null;
         this.actionManager = null;
         log.info("[AP] created empty");
     }
 
-    public AutoPilotImpl(AutoPilotContext ctx) {
-        this(ctx, null);
+    public AutoPilotImpl(Train train) {
+        this(train, null);
     }
 
-    public AutoPilotImpl(AutoPilotContext ctx, TrainActionManager actionManager) {
-        this.ctx = ctx;
+    public AutoPilotImpl(Train train, TrainActionManager actionManager) {
+        this.train = train;
         this.actionManager = actionManager;
         log.info("[AP] created");
     }
 
-    public AutoPilotImpl(Itinerary itinerary, Mode mode, int waitTicks, List<WaypointCommand> pendingCommands) {
-        this.ctx = null;
+    public AutoPilotImpl(Itinerary itinerary, Mode mode, int waitTicks, List<WaypointCommand> pendingCommands, int currentIndex) {
+        this.train = null;
         this.actionManager = null;
         this.itinerary = itinerary;
         this.mode = mode;
@@ -61,11 +62,12 @@ public class AutoPilotImpl implements AutoPilot {
         if (pendingCommands != null) {
             this.pendingCommands.addAll(pendingCommands);
         }
+        this.currentIndex = currentIndex;
         log.info("[AP] created from deserialization");
     }
 
-    public void reinitialize(AutoPilotContext ctx, TrainActionManager actionManager) {
-        this.ctx = ctx;
+    public void reinitialize(Train train, TrainActionManager actionManager) {
+        this.train = train;
         this.actionManager = actionManager;
         log.info("[AP] reinitialized");
     }
@@ -105,8 +107,26 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     @Override
+    public Optional<Waypoint> currentWaypoint() {
+        if (itinerary != null && currentIndex < itinerary.waypoints().size()) {
+            return Optional.of(itinerary.waypoints().get(currentIndex));
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public void advanceWaypoint() {
+        if (itinerary == null) return;
+        currentIndex++;
+        if (currentIndex >= itinerary.waypoints().size()) {
+            mode = Mode.IDLE;
+            currentIndex = itinerary.waypoints().size();
+        }
+    }
+
+    @Override
     public int currentWaypointIndex() {
-        return itinerary != null ? itinerary.currentIndex() : 0;
+        return currentIndex;
     }
 
     @Override
@@ -124,35 +144,73 @@ public class AutoPilotImpl implements AutoPilot {
         this.routeRetryCooldown = 0;
         this.waitTicks = 0;
         this.pendingCommands.clear();
+        this.currentIndex = 0;
     }
 
     @Override
     public boolean activate() {
-        log.info("[AP] activate() speed=" + ctx.currentSpeed()
+        if (train == null) return false;
+        log.info("[AP] activate() speed=" + getTrainSpeed()
             + " itin=" + (itinerary != null && itinerary.isValid())
             + " pf=" + (pathfinder != null));
         if (itinerary == null || !itinerary.isValid()) return false;
         if (pathfinder == null) return false;
-        if (ctx.currentSpeed() != 0) return false;
+        if (getTrainSpeed() != 0) return false;
         mode = Mode.FOLLOWING;
         currentRoute = List.of();
         lastSegment = null;
         routeRetryCooldown = 0;
         waitTicks = 0;
         pendingCommands.clear();
-        itinerary.reset();
+        currentIndex = 0;
         if (actionManager != null) {
             actionManager.forceSegmentReset();
         }
         log.info("[AP] activate → FOLLOWING");
 
         // Actuación inicial reactiva
-        Segment currentSeg = ctx.currentSegment();
+        Segment currentSeg = getTrainCurrentSegment();
         if (currentSeg != null) {
             onSegmentEntered(currentSeg);
         }
 
         return true;
+    }
+
+    private int getTrainSpeed() {
+        return train != null ? train.getSpeed() : 0;
+    }
+
+    private Segment getTrainCurrentSegment() {
+        if (train == null || train.getModel() == null) return null;
+        letrain.segments.RailwayGraph graph = train.getModel().getRailwayGraph();
+        if (graph == null) return null;
+        var first = train.getLinkers().isEmpty() ? null : train.getLinkers().getFirst();
+        if (first == null || first.getTrack() == null) return null;
+        letrain.track.Track t = first.getTrack();
+        return t instanceof letrain.track.rail.RailTrack ? graph.getSegment((letrain.track.rail.RailTrack) t) : null;
+    }
+
+    private Segment getTrainTargetSegment(Waypoint wp) {
+        if (train == null || train.getModel() == null) return null;
+        letrain.segments.RailwayGraph graph = train.getModel().getRailwayGraph();
+        if (graph == null) return null;
+
+        letrain.map.Point pos = null;
+        switch (wp.type()) {
+            case STATION:
+                letrain.track.Station st = train.getModel().getStation(wp.targetId());
+                pos = st != null ? st.getPosition() : null;
+                break;
+            case SENSOR:
+                var sensor = train.getModel().getSensor(wp.targetId());
+                pos = sensor != null ? sensor.getPosition() : null;
+                break;
+        }
+        if (pos == null) return null;
+
+        letrain.track.rail.RailTrack track = train.getModel().getRailMap().getTrackAt(pos);
+        return track != null ? graph.getSegment(track) : null;
     }
 
     public void setMode(Mode mode) {
@@ -169,7 +227,7 @@ public class AutoPilotImpl implements AutoPilot {
         Segment currentSeg = newSegment;
         lastSegment = currentSeg;
 
-        Optional<Waypoint> currentWpOpt = itinerary.currentWaypoint();
+        Optional<Waypoint> currentWpOpt = currentWaypoint();
         if (currentWpOpt.isEmpty()) {
             log.info("[AP] onSegmentEntered: itinerary has no current waypoint. Setting mode to IDLE");
             mode = Mode.IDLE;
@@ -253,11 +311,11 @@ public class AutoPilotImpl implements AutoPilot {
 
     private boolean calculateRoute() {
         if (pathfinder == null || itinerary == null) return false;
-        Waypoint wp = itinerary.currentWaypoint().orElse(null);
+        Waypoint wp = currentWaypoint().orElse(null);
         if (wp == null) return false;
 
-        Segment currentSeg = ctx.currentSegment();
-        Segment targetSeg = ctx.targetSegment(wp);
+        Segment currentSeg = getTrainCurrentSegment();
+        Segment targetSeg = getTrainTargetSegment(wp);
         log.info("[AP] calcRoute currentSeg={} targetSeg={}",
                 currentSeg != null ? currentSeg.getId() : "null",
                 targetSeg != null ? targetSeg.getId() : "null");
