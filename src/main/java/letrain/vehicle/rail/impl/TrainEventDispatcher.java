@@ -1,7 +1,6 @@
 package letrain.vehicle.rail.impl;
 
 import letrain.vehicle.rail.TrainEventListener;
-import letrain.track.Sensor;
 import letrain.segments.Segment;
 import letrain.map.Point;
 import java.util.Collections;
@@ -102,30 +101,14 @@ public class TrainEventDispatcher {
         coreTrainListeners.forEach(l -> l.onUnlink(train));
     }
 
-    public void notifyEnterSensor(Sensor sensor, boolean isForward) {
-        scriptTrainListeners.forEach(l -> {
-            if (l != sensor) {
-                l.onSensorEnter(train, isForward);
-            }
-        });
-        coreTrainListeners.forEach(l -> {
-            if (l != sensor) {
-                l.onSensorEnter(train, isForward);
-            }
-        });
+    public void notifyEnterSensor(boolean isForward) {
+        scriptTrainListeners.forEach(l -> l.onSensorEnter(train, isForward));
+        coreTrainListeners.forEach(l -> l.onSensorEnter(train, isForward));
     }
 
-    public void notifyExitSensor(Sensor sensor, boolean isForward) {
-        scriptTrainListeners.forEach(l -> {
-            if (l != sensor) {
-                l.onSensorExit(train, isForward);
-            }
-        });
-        coreTrainListeners.forEach(l -> {
-            if (l != sensor) {
-                l.onSensorExit(train, isForward);
-            }
-        });
+    public void notifyExitSensor(boolean isForward) {
+        scriptTrainListeners.forEach(l -> l.onSensorExit(train, isForward));
+        coreTrainListeners.forEach(l -> l.onSensorExit(train, isForward));
     }
 
     public void notifySegmentOccupied(Segment segment) {
