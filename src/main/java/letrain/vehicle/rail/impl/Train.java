@@ -196,65 +196,63 @@ public class Train implements Renderable {
         this.eventDispatcher.removeAllScriptTrainEventListeners();
     }
 
+    private void guardNotify(Runnable block) {
+        if (isNotifying) return;
+        isNotifying = true;
+        try {
+            block.run();
+        } finally {
+            isNotifying = false;
+        }
+    }
+
     public void notifySpeedChanged(int speed) {
-        if (speed == 0 && pendingReverse) {
-            pendingReverse = false;
-            Tractor dirLinker = getDirectorLinker();
-            if (dirLinker != null) {
-                dirLinker.toggleReversed();
-                if (this.actionManager.getSavedSpeedBeforeReverse() != -1) {
-                    dirLinker.setTargetSpeed(this.actionManager.getSavedSpeedBeforeReverse());
-                    this.actionManager.setSavedSpeedBeforeReverse(-1);
+        guardNotify(() -> {
+            if (speed == 0 && pendingReverse) {
+                pendingReverse = false;
+                Tractor dirLinker = getDirectorLinker();
+                if (dirLinker != null) {
+                    dirLinker.toggleReversed();
+                    if (this.actionManager.getSavedSpeedBeforeReverse() != -1) {
+                        dirLinker.setTargetSpeed(this.actionManager.getSavedSpeedBeforeReverse());
+                        this.actionManager.setSavedSpeedBeforeReverse(-1);
+                    }
                 }
             }
-        }
-        this.eventDispatcher.notifySpeedChanged(speed);
+            this.eventDispatcher.notifySpeedChanged(speed);
+        });
     }
 
     public void notifySenseChanged(boolean forward) {
-        this.eventDispatcher.notifySenseChanged(forward);
+        guardNotify(() -> this.eventDispatcher.notifySenseChanged(forward));
     }
 
     public void notifyLink() {
-        this.eventDispatcher.notifyLink();
+        guardNotify(() -> this.eventDispatcher.notifyLink());
     }
 
     public void notifyUnlink() {
-        this.eventDispatcher.notifyUnlink();
+        guardNotify(() -> this.eventDispatcher.notifyUnlink());
     }
 
     public void notifyEnterSensor(letrain.track.Sensor sensor, boolean isForward) {
         ValidationUtils.requireNonNull(sensor, "sensor");
-        if (isNotifying) {
-            return;
-        }
-        isNotifying = true;
-        try {
+        guardNotify(() -> {
             this.eventDispatcher.notifyEnterSensor(sensor, isForward);
             this.actionManager.checkWaypointArrival();
             if (isAutoMode()) {
                 autopilot.onSegmentEntered(safetyManager.getCurrentSegment());
             }
-        } finally {
-            isNotifying = false;
-        }
+        });
     }
 
     public void notifyExitSensor(letrain.track.Sensor sensor, boolean isForward) {
         ValidationUtils.requireNonNull(sensor, "sensor");
-        if (isNotifying) {
-            return;
-        }
-        isNotifying = true;
-        try {
-            this.eventDispatcher.notifyExitSensor(sensor, isForward);
-        } finally {
-            isNotifying = false;
-        }
+        guardNotify(() -> this.eventDispatcher.notifyExitSensor(sensor, isForward));
     }
 
     public void notifySegmentOccupied(letrain.segments.Segment segment) {
-        this.eventDispatcher.notifySegmentOccupied(segment);
+        guardNotify(() -> this.eventDispatcher.notifySegmentOccupied(segment));
     }
 
     public int getId() {
@@ -431,12 +429,13 @@ public class Train implements Renderable {
      * Stalls the train and sets all tractor speeds to 0.
      */
     public void notifyContact(letrain.map.Point pos, int speed) {
-        // Immediately stop all locomotives
-        getTractors().forEach(t -> {
-            t.setCurrentSpeed(0);
-            t.setTargetSpeed(0);
+        guardNotify(() -> {
+            getTractors().forEach(t -> {
+                t.setCurrentSpeed(0);
+                t.setTargetSpeed(0);
+            });
+            this.eventDispatcher.notifyContact(pos, speed);
         });
-        this.eventDispatcher.notifyContact(pos, speed);
     }
 
     /**
@@ -446,8 +445,10 @@ public class Train implements Renderable {
      * {@link TrainMovementManager}.
      */
     public void notifyCrash(letrain.map.Point pos, int speed) {
-        this.stalled = true;
-        this.eventDispatcher.notifyCrash(pos, speed);
+        guardNotify(() -> {
+            this.stalled = true;
+            this.eventDispatcher.notifyCrash(pos, speed);
+        });
     }
 
     /**
