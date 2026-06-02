@@ -26,9 +26,6 @@ public abstract class ItineraryMixin {
         public void serialize(Itinerary value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
             gen.writeStartObject();
             serializers.defaultSerializeField("waypoints", value.waypoints(), gen);
-            serializers.defaultSerializeField("assignedTrains", value.assignedTrains(), gen);
-            gen.writeStringField("state", value.state().name());
-            gen.writeNumberField("currentIndex", value.currentIndex());
             gen.writeEndObject();
         }
     }
@@ -45,24 +42,7 @@ public abstract class ItineraryMixin {
                 waypoints = ctxt.readValue(parser, ctxt.getTypeFactory().constructCollectionType(List.class, Waypoint.class));
             }
 
-            Set<Integer> assignedTrains = null;
-            if (node.has("assignedTrains")) {
-                JsonParser parser = node.get("assignedTrains").traverse(p.getCodec());
-                parser.nextToken();
-                assignedTrains = ctxt.readValue(parser, ctxt.getTypeFactory().constructCollectionType(Set.class, Integer.class));
-            }
-
-            Itinerary.State state = Itinerary.State.CREATED;
-            if (node.has("state")) {
-                state = Itinerary.State.valueOf(node.get("state").asText());
-            }
-
-            int currentIndex = 0;
-            if (node.has("currentIndex")) {
-                currentIndex = node.get("currentIndex").asInt();
-            }
-
-            return new ItineraryImpl(waypoints, assignedTrains, state, currentIndex);
+            return new ItineraryImpl(waypoints);
         }
     }
 }

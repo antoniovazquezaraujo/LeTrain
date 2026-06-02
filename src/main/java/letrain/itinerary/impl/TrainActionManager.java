@@ -176,48 +176,79 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             }
         }
 
-//        if (autopilot != null && autopilot.itinerary().isPresent()) {
-//            letrain.itinerary.Itinerary itin = autopilot.itinerary().get();
-//            itin.advance();
-//            autopilot.clearRoute();
-//            if (itin.state() == letrain.itinerary.Itinerary.State.DONE) {
-//                log.info("Train {} itinerary DONE → IDLE", id);
-//                autopilot.deactivate();
-//                return;
-//            }
-//
-//            itin.currentWaypoint().ifPresent(wp -> {
-//                if (railStationId == wp.targetId()) {
-//                    log.info("Train {} consecutive waypoint reached", id);
-//                    pendingCommands.clear();
-//                    pendingCommands.addAll(wp.commands());
-//                    runPendingCommands();
-//                }
-//            });
-//        }
+        letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
+        if (autopilot != null && autopilot.itinerary().isPresent()) {
+            autopilot.advanceWaypoint();
+            autopilot.clearRoute();
+            if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
+                log.info("Train {} itinerary DONE → IDLE", train.getId());
+                train.setAutoMode(false);
+                return;
+            }
+
+            autopilot.currentWaypoint().ifPresent(wp -> {
+                if (train.getStationId() == wp.targetId()) {
+                    log.info("Train {} consecutive waypoint reached", train.getId());
+                    pendingCommands.clear();
+                    pendingCommands.addAll(wp.commands());
+                    runPendingCommands();
+                }
+            });
+        }
     }
 
     @Override
     public void checkWaypointArrival() {
-//        if (!autoMode || autopilot == null || autopilot.mode() != letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
-//            return;
-//        }
-//        Optional<Itinerary> itinOpt = autopilot.itinerary();
-//        if (itinOpt.isEmpty()) {
-//            return;
-//        }
-//        letrain.itinerary.Itinerary itin = itinOpt.get();
-//        Optional<letrain.itinerary.Waypoint> wpOpt = itin.currentWaypoint();
-//        if (wpOpt.isEmpty()) {
-//            return;
-//        }
-//        letrain.itinerary.Waypoint wp = wpOpt.get();
-//        letrain.itinerary.AutoPilotContext ctx = new TrainAutoPilotContext(this);
-//        if (ctx.isAtTarget(wp)) {
-//            pendingCommands.clear();
-//            pendingCommands.addAll(wp.commands());
-//            runPendingCommands();
-//        }
+        if (!train.isAutoMode()) {
+            return;
+        }
+        letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
+        if (autopilot == null || autopilot.mode() != letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+            return;
+        }
+        java.util.Optional<letrain.itinerary.Waypoint> wpOpt = autopilot.currentWaypoint();
+        if (wpOpt.isEmpty()) {
+            return;
+        }
+        letrain.itinerary.Waypoint wp = wpOpt.get();
+        if (isAtTarget(wp)) {
+            pendingCommands.clear();
+            pendingCommands.addAll(wp.commands());
+            runPendingCommands();
+        }
+    }
+
+    private boolean isAtTarget(letrain.itinerary.Waypoint wp) {
+        if (train.getModel() == null) return false;
+        switch (wp.type()) {
+            case STATION:
+                if (train.getStationId() == wp.targetId()) {
+                    return true;
+                }
+                letrain.track.Station curSt = train.getLogisticsManager().getStationAtTrain();
+                if (curSt != null && curSt.getId() == wp.targetId()) {
+                    return true;
+                }
+                letrain.track.Station st = train.getModel().getStation(wp.targetId());
+                if (st != null) {
+                    for (var linker : train.getLinkers()) {
+                        letrain.track.Track t = linker.getTrack();
+                        if (t != null && t.equals(st.getTrack())) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            case SENSOR:
+                for (var linker : train.getLinkers()) {
+                    letrain.track.Track t = linker.getTrack();
+                    if (t != null && t.getSensor() != null && t.getSensor().getId() == wp.targetId()) {
+                        return true;
+                    }
+                }
+                return false;
+        }
+        return false;
     }
 
 

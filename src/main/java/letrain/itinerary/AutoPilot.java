@@ -28,6 +28,12 @@ public interface AutoPilot {
     /** Stop and return to manual control. */
     void deactivate();
 
+    /** The currently targeted waypoint. */
+    Optional<Waypoint> currentWaypoint();
+
+    /** Advances to the next waypoint in the itinerary. */
+    void advanceWaypoint();
+
     /** The currently calculated route (segments from current position to next waypoint). */
     List<Segment> currentRoute();
 

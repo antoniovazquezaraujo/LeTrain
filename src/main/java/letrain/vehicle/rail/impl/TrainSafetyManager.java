@@ -540,7 +540,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             return false;
         }
         letrain.itinerary.Itinerary itin = itinOpt.get();
-        int currentIndex = itin.currentIndex();
+        int currentIndex = ap.currentWaypointIndex();
         List<letrain.itinerary.Waypoint> waypoints = itin.waypoints();
         for (int i = currentIndex; i < waypoints.size(); i++) {
             letrain.itinerary.Waypoint wp = waypoints.get(i);
