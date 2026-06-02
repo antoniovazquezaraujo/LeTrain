@@ -28,10 +28,4 @@ public interface StationEventListener extends Serializable {
 
     default public void onEndUnload(Train train) {
     }
-
-    default public void onLink(Train train) {
-    }
-
-    default public void onUnlink(Train train) {
-    }
 }

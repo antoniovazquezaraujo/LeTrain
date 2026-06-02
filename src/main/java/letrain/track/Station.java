@@ -8,12 +8,11 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import letrain.utils.SerializationHelper;
 import letrain.vehicle.rail.impl.Train;
-import letrain.vehicle.rail.TrainEventListener;
 import letrain.visitor.Visitor;
 
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 @com.fasterxml.jackson.annotation.JsonTypeName("Station")
-public class Station extends Sensor implements TrainEventListener {
+public class Station extends Sensor {
 
     private static final int BASE_MAX_STORAGE = 500;
     private static final int STORAGE_PER_INDUSTRY = 100;
@@ -128,32 +127,6 @@ public class Station extends Sensor implements TrainEventListener {
         }
     }
 
-    public void notifyLink(Train train) {
-        if (stationListeners != null) {
-            for (StationEventListener l : stationListeners) {
-                l.onLink(train);
-            }
-        }
-        if (systemStationListeners != null) {
-            for (StationEventListener l : systemStationListeners) {
-                l.onLink(train);
-            }
-        }
-    }
-
-    public void notifyUnlink(Train train) {
-        if (stationListeners != null) {
-            for (StationEventListener l : stationListeners) {
-                l.onUnlink(train);
-            }
-        }
-        if (systemStationListeners != null) {
-            for (StationEventListener l : systemStationListeners) {
-                l.onUnlink(train);
-            }
-        }
-    }
-
     public Station() {
     }
 
@@ -176,7 +149,6 @@ public class Station extends Sensor implements TrainEventListener {
     public void onSensorEnter(Train train, boolean isForward) {
         train.setStationId(getId());
         super.onSensorEnter(train, isForward);
-        train.addCoreTrainEventListener(this);
         notifyStationEvent(train, true, isForward);
     }
 
@@ -184,7 +156,6 @@ public class Station extends Sensor implements TrainEventListener {
     public void onSensorExit(Train train, boolean isForward) {
         super.onSensorExit(train, isForward);
         train.setStationId(0);
-        train.removeCoreTrainEventListener(this);
         notifyStationEvent(train, false, isForward);
     }
 
@@ -205,32 +176,6 @@ public class Station extends Sensor implements TrainEventListener {
                     l.onExitTrain(train, isForward);
             }
         }
-    }
-
-    @Override
-    public void onSpeedChanged(int speed) {
-    }
-
-    @Override
-    public void onSenseChanged(boolean forward) {
-    }
-
-    @Override
-    public void onLink(Train train) {
-        notifyLink(train);
-    }
-
-    @Override
-    public void onUnlink(Train train) {
-        notifyUnlink(train);
-    }
-
-    @Override
-    public void onCrash(Train train, letrain.map.Point pos, int speed) {
-    }
-
-    @Override
-    public void onContact(Train train, letrain.map.Point pos, int speed) {
     }
 
     @Override

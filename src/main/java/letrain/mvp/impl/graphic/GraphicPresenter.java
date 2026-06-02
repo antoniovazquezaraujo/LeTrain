@@ -657,18 +657,6 @@ public class GraphicPresenter extends ApplicationAdapter
                 getRows());
 
 
-        // Re-attach stations as listeners to trains they are hosting
-        for (Locomotive loco : model.getLocomotives()) {
-            Train train = loco.getTrain();
-            if (train != null && train.getStationId() != 0) {
-                for (letrain.track.Station station : model.getStations()) {
-                    if (station.getId() == train.getStationId()) {
-                        train.addCoreTrainEventListener(station);
-                        break;
-                    }
-                }
-            }
-        }
     }
 
     @Override

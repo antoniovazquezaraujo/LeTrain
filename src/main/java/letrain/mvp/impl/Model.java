@@ -241,11 +241,6 @@ public class Model implements letrain.mvp.Model {
                 if (train != null) {
                     train.setModel(this);
                     train.postLoadInit();
-                    int stationId = train.getStationId();
-                    if (stationId != 0) {
-                        Station station = getStation(stationId);
-                        if (station != null) train.addCoreTrainEventListener(station);
-                    }
                     for (TrainEventListener l : scriptTrainEventListeners) {
                         train.addScriptTrainEventListener(l);
                     }
@@ -658,8 +653,6 @@ public class Model implements letrain.mvp.Model {
             @Override public void onExitTrain(Train train, boolean isForward) { eventLogManager.addEntry("Train " + train.getId() + " exited Station " + id); }
             @Override public void onLoad(Train train) {}
             @Override public void onUnload(Train train) {}
-            @Override public void onLink(Train train) { eventLogManager.addEntry("Train " + train.getId() + " linked at Station " + id); }
-            @Override public void onUnlink(Train train) { eventLogManager.addEntry("Train " + train.getId() + " unlinked at Station " + id); }
             @Override public void onStartLoad(Train train) { eventLogManager.addEntry("Train " + train.getId() + " starting Load at Station " + id); }
             @Override public void onEndLoad(Train train) { eventLogManager.addEntry("Train " + train.getId() + " ended Load at Station " + id); }
             @Override public void onStartUnload(Train train) { eventLogManager.addEntry("Train " + train.getId() + " starting Unload at Station " + id); }
