@@ -5,6 +5,7 @@ import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
 import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.Linker;
+import letrain.vehicle.rail.TrainEventDispatcher;
 import letrain.vehicle.rail.TrainEventListener;
 import letrain.vehicle.rail.TrainMovementManager;
 import letrain.vehicle.rail.TrainSafetyManager;
@@ -69,7 +70,7 @@ public class Train implements Renderable {
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
         this.linkers = new LinkedList<>();
-        this.eventDispatcher = new TrainEventDispatcher(this);
+        this.eventDispatcher = new TrainEventDispatcherImpl(this);
 
         this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager();
         this.setLogisticsManager(new TrainLogisticsManager(this));
@@ -278,7 +279,7 @@ public class Train implements Renderable {
      */
     public void postLoadInit() {
         if (this.eventDispatcher == null) {
-            this.eventDispatcher = new TrainEventDispatcher(this);
+        this.eventDispatcher = new TrainEventDispatcherImpl(this);
         }
         this.eventDispatcher.postLoadInit();
         this.isNotifying = false;
