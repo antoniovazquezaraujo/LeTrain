@@ -182,12 +182,21 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     private Segment getTrainCurrentSegment() {
-        if (train == null || train.getModel() == null) return null;
+        if (train == null || train.getModel() == null) {
+            return null;
+        }
+
         letrain.segments.RailwayGraph graph = train.getModel().getRailwayGraph();
-        if (graph == null) return null;
-        var first = train.getLinkers().isEmpty() ? null : train.getLinkers().getFirst();
-        if (first == null || first.getTrack() == null) return null;
-        letrain.track.Track t = first.getTrack();
+        if (graph == null){
+            return null;
+        }
+
+        var physicalFront = train.getPhysicalFront();
+        if (physicalFront == null || physicalFront.getTrack() == null) {
+            return null;
+        }
+
+        letrain.track.Track t = physicalFront.getTrack();
         return t instanceof letrain.track.rail.RailTrack ? graph.getSegment((letrain.track.rail.RailTrack) t) : null;
     }
 

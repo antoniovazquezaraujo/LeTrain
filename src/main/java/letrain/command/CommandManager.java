@@ -145,20 +145,6 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                                 commands.forEach(c -> c.execute(train));
                             }
                         }
-
-                        @Override
-                        public void onLink(Train train) {
-                            if ("link".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
-                            }
-                        }
-
-                        @Override
-                        public void onUnlink(Train train) {
-                            if ("unlink".equals(event) && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
-                            }
-                        }
                     });
                 }
             }

@@ -17,6 +17,9 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 - [[vehicles/Physics|Física de Movimiento y Colisiones]]
 - [[vehicles/CargoSystems|Sistema de Carga y Economía]]
 
+## ⚡ Sistema de Eventos
+- [[events/TrainEvents|Eventos de Tren y TrainEventDispatcher]]
+
 ## 🧭 Navegación y Automatización
 - [[navigation/AStarPathfinder|Navegación Autónoma (Funcionalidad Planificada)]]
 - [[adr/ADR-009-Itinerary-Editor|ADR-009: Editor de Itinerarios (DSL)]]
