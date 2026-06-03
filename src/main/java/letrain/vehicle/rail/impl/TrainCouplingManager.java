@@ -11,9 +11,10 @@ import java.util.function.Supplier;
 
 import letrain.map.Dir;
 import letrain.track.Track;
+import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.RailIterator;
-import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.ScriptTrainEventListener;
 
 public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingManager {
 
@@ -300,10 +301,10 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         if (toRemove > 0) {
             Train newTrain = new Train(nextTrainIdSupplier.get());
             newTrain.setModel(train.getModel());
-            for (TrainEventListener listener : train.getScriptTrainListeners()) {
+            for (ScriptTrainEventListener listener : train.getScriptTrainListeners()) {
                 newTrain.addScriptTrainEventListener(listener);
             }
-            for (TrainEventListener listener : train.getCoreTrainListeners()) {
+            for (CoreTrainEventListener listener : train.getCoreTrainListeners()) {
                 newTrain.addCoreTrainEventListener(listener);
             }
 
@@ -342,10 +343,10 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         if (train.getNumLinkersToRemove() > 0) {
             Train newTrain = new Train(nextTrainIdSupplier.get());
             newTrain.setModel(train.getModel());
-            for (TrainEventListener listener : train.getScriptTrainListeners()) {
+            for (ScriptTrainEventListener listener : train.getScriptTrainListeners()) {
                 newTrain.addScriptTrainEventListener(listener);
             }
-            for (TrainEventListener listener : train.getCoreTrainListeners()) {
+            for (CoreTrainEventListener listener : train.getCoreTrainListeners()) {
                 newTrain.addCoreTrainEventListener(listener);
             }
 

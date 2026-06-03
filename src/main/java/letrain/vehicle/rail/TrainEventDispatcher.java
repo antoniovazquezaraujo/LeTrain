@@ -1,5 +1,7 @@
 package letrain.vehicle.rail;
 
+import java.util.List;
+
 import letrain.map.Point;
 
 /**
@@ -7,17 +9,17 @@ import letrain.map.Point;
  */
 public interface TrainEventDispatcher {
 
-    java.util.List<TrainEventListener> getScriptTrainListeners();
+    List<ScriptTrainEventListener> getScriptTrainListeners();
 
-    java.util.List<TrainEventListener> getCoreTrainListeners();
+    List<CoreTrainEventListener> getCoreTrainListeners();
 
-    void addScriptTrainEventListener(TrainEventListener listener);
+    void addScriptTrainEventListener(ScriptTrainEventListener listener);
 
-    void removeScriptTrainEventListener(TrainEventListener listener);
+    void removeScriptTrainEventListener(ScriptTrainEventListener listener);
 
-    void addCoreTrainEventListener(TrainEventListener listener);
+    void addCoreTrainEventListener(CoreTrainEventListener listener);
 
-    void removeCoreTrainEventListener(TrainEventListener listener);
+    void removeCoreTrainEventListener(CoreTrainEventListener listener);
 
     void removeAllScriptTrainEventListeners();
 

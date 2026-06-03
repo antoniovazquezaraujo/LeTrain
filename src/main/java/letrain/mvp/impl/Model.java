@@ -22,6 +22,8 @@ import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Cursor;
+import letrain.vehicle.rail.CoreTrainEventListener;
+import letrain.vehicle.rail.ScriptTrainEventListener;
 import letrain.vehicle.rail.TrainEventListener;
 import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.Locomotive;
@@ -79,32 +81,29 @@ public class Model implements letrain.mvp.Model {
     int nextForkId;
     private transient CargoTypes selectedWagonType = CargoTypes.GOLD;
 
-    private transient List<TrainEventListener> scriptTrainEventListeners = new ArrayList<>();
-    private transient List<TrainEventListener> coreTrainEventListeners = new ArrayList<>();
+    private transient List<ScriptTrainEventListener> scriptTrainEventListeners = new ArrayList<>();
+    private transient List<CoreTrainEventListener> coreTrainEventListeners = new ArrayList<>();
 
     @Override
-    public void addScriptTrainEventListener(TrainEventListener listener) {
+    public void addScriptTrainEventListener(ScriptTrainEventListener listener) {
         if (this.scriptTrainEventListeners == null) {
             this.scriptTrainEventListeners = new ArrayList<>();
         }
         this.scriptTrainEventListeners.add(listener);
         for (Locomotive loco : locomotives) {
-            if (loco.getTrain() != null) {
+            if (loco.getTrain() != null)
                 loco.getTrain().addScriptTrainEventListener(listener);
-            }
         }
     }
 
-    @Override
-    public void addCoreTrainEventListener(TrainEventListener listener) {
+    public void addCoreTrainEventListener(CoreTrainEventListener listener) {
         if (this.coreTrainEventListeners == null) {
             this.coreTrainEventListeners = new ArrayList<>();
         }
         this.coreTrainEventListeners.add(listener);
         for (Locomotive loco : locomotives) {
-            if (loco.getTrain() != null) {
+            if (loco.getTrain() != null)
                 loco.getTrain().addCoreTrainEventListener(listener);
-            }
         }
     }
 
@@ -186,7 +185,7 @@ public class Model implements letrain.mvp.Model {
         this.stations = new ArrayList<>();
         this.map = new RailMap();
 
-        this.addCoreTrainEventListener(new TrainEventListener() {
+        this.addCoreTrainEventListener(new CoreTrainEventListener() {
             @Override public void onCrash(Train train, Point pos, int speed) {
                 eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
                 getEconomyManager().onTrainCrashed(train);
@@ -241,10 +240,10 @@ public class Model implements letrain.mvp.Model {
                 if (train != null) {
                     train.setModel(this);
                     train.postLoadInit();
-                    for (TrainEventListener l : scriptTrainEventListeners) {
+                    for (ScriptTrainEventListener l : scriptTrainEventListeners) {
                         train.addScriptTrainEventListener(l);
                     }
-                    for (TrainEventListener l : coreTrainEventListeners) {
+                    for (CoreTrainEventListener l : coreTrainEventListeners) {
                         train.addCoreTrainEventListener(l);
                     }
                     train.getSafetyManager().claimOccupiedSegments();
@@ -263,7 +262,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     private void setupModelTrainEventListeners() {
-        this.addCoreTrainEventListener(new TrainEventListener() {
+        this.addCoreTrainEventListener(new CoreTrainEventListener() {
             @Override public void onCrash(Train train, Point pos, int speed) {
                 eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
                 getEconomyManager().onTrainCrashed(train);
@@ -420,10 +419,10 @@ public class Model implements letrain.mvp.Model {
         if (locomotive.getTrain() != null) {
             locomotive.getTrain().setModel(this);
             locomotive.getTrain().rebind();
-            for (TrainEventListener l : scriptTrainEventListeners) {
+            for (ScriptTrainEventListener l : scriptTrainEventListeners) {
                 locomotive.getTrain().addScriptTrainEventListener(l);
             }
-            for (TrainEventListener l : coreTrainEventListeners) {
+            for (CoreTrainEventListener l : coreTrainEventListeners) {
                 locomotive.getTrain().addCoreTrainEventListener(l);
             }
         }

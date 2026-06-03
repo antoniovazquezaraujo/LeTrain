@@ -16,7 +16,7 @@ import letrain.mvp.impl.Model;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.rail.impl.*;
-import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.ScriptTrainEventListener;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -123,7 +123,7 @@ class SerializationTest {
 
         // Add a listener
         AtomicBoolean listenerCalled = new AtomicBoolean(false);
-        original.addScriptTrainEventListener(new TrainEventListener() {
+        original.addScriptTrainEventListener(new ScriptTrainEventListener() {
             @Override
             public void onSpeedChanged(int speed) {
                 listenerCalled.set(true);

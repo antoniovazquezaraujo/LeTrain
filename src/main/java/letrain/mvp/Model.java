@@ -17,14 +17,15 @@ import letrain.track.rail.RailTrack;
 import letrain.vehicle.Cursor;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
-import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.CoreTrainEventListener;
+import letrain.vehicle.rail.ScriptTrainEventListener;
 import letrain.vehicle.rail.impl.Wagon;
 
 public interface Model {
 
-    public void addScriptTrainEventListener(TrainEventListener listener);
+    public void addScriptTrainEventListener(ScriptTrainEventListener listener);
 
-    public void addCoreTrainEventListener(TrainEventListener listener);
+    public void addCoreTrainEventListener(CoreTrainEventListener listener);
 
     public void removeAllScriptTrainEventListeners();
 
