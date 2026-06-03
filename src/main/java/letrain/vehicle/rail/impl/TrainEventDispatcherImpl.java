@@ -1,20 +1,23 @@
 package letrain.vehicle.rail.impl;
 
-import letrain.vehicle.rail.TrainEventDispatcher;
-import letrain.vehicle.rail.TrainEventListener;
-import letrain.map.Point;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import letrain.map.Point;
 import letrain.utils.SerializationHelper;
+import letrain.vehicle.rail.CoreTrainEventListener;
+import letrain.vehicle.rail.ScriptTrainEventListener;
+import letrain.vehicle.rail.TrainEventDispatcher;
+import letrain.vehicle.rail.TrainEventListener;
 
 /**
  * Manages event listener registrations and broadcasts train events.
  */
 public class TrainEventDispatcherImpl implements TrainEventDispatcher {
     private final Train train;
-    private List<TrainEventListener> scriptTrainListeners;
-    private List<TrainEventListener> coreTrainListeners;
+    private List<ScriptTrainEventListener> scriptTrainListeners;
+    private List<CoreTrainEventListener> coreTrainListeners;
 
     public TrainEventDispatcherImpl(Train train) {
         this.train = train;
@@ -23,7 +26,7 @@ public class TrainEventDispatcherImpl implements TrainEventDispatcher {
     }
 
     @Override
-    public List<TrainEventListener> getScriptTrainListeners() {
+    public List<ScriptTrainEventListener> getScriptTrainListeners() {
         if (scriptTrainListeners == null) {
             scriptTrainListeners = new CopyOnWriteArrayList<>();
         }
@@ -31,7 +34,7 @@ public class TrainEventDispatcherImpl implements TrainEventDispatcher {
     }
 
     @Override
-    public List<TrainEventListener> getCoreTrainListeners() {
+    public List<CoreTrainEventListener> getCoreTrainListeners() {
         if (coreTrainListeners == null) {
             coreTrainListeners = new CopyOnWriteArrayList<>();
         }
@@ -39,7 +42,7 @@ public class TrainEventDispatcherImpl implements TrainEventDispatcher {
     }
 
     @Override
-    public void addScriptTrainEventListener(TrainEventListener listener) {
+    public void addScriptTrainEventListener(ScriptTrainEventListener listener) {
         if (scriptTrainListeners == null) {
             scriptTrainListeners = new CopyOnWriteArrayList<>();
         }
@@ -47,14 +50,14 @@ public class TrainEventDispatcherImpl implements TrainEventDispatcher {
     }
 
     @Override
-    public void removeScriptTrainEventListener(TrainEventListener listener) {
+    public void removeScriptTrainEventListener(ScriptTrainEventListener listener) {
         if (scriptTrainListeners != null) {
             scriptTrainListeners.remove(listener);
         }
     }
 
     @Override
-    public void addCoreTrainEventListener(TrainEventListener listener) {
+    public void addCoreTrainEventListener(CoreTrainEventListener listener) {
         if (coreTrainListeners == null) {
             coreTrainListeners = new CopyOnWriteArrayList<>();
         }
@@ -62,7 +65,7 @@ public class TrainEventDispatcherImpl implements TrainEventDispatcher {
     }
 
     @Override
-    public void removeCoreTrainEventListener(TrainEventListener listener) {
+    public void removeCoreTrainEventListener(CoreTrainEventListener listener) {
         if (coreTrainListeners != null) {
             coreTrainListeners.remove(listener);
         }

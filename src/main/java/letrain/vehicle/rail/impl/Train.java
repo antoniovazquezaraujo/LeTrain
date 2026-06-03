@@ -5,8 +5,9 @@ import letrain.utils.SerializationHelper;
 import letrain.utils.ValidationUtils;
 import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.Linker;
+import letrain.vehicle.rail.CoreTrainEventListener;
+import letrain.vehicle.rail.ScriptTrainEventListener;
 import letrain.vehicle.rail.TrainEventDispatcher;
-import letrain.vehicle.rail.TrainEventListener;
 import letrain.vehicle.rail.TrainMovementManager;
 import letrain.vehicle.rail.TrainSafetyManager;
 import letrain.visitor.Renderable;
@@ -161,11 +162,11 @@ public class Train implements Renderable {
         this.model = model;
     }
 
-    public List<TrainEventListener> getScriptTrainListeners() {
+    public List<ScriptTrainEventListener> getScriptTrainListeners() {
         return this.eventDispatcher.getScriptTrainListeners();
     }
 
-    public List<TrainEventListener> getCoreTrainListeners() {
+    public List<CoreTrainEventListener> getCoreTrainListeners() {
         return this.eventDispatcher.getCoreTrainListeners();
     }
 
@@ -177,19 +178,19 @@ public class Train implements Renderable {
         return this.pendingReverse;
     }
 
-    public void addScriptTrainEventListener(TrainEventListener listener) {
+    public void addScriptTrainEventListener(ScriptTrainEventListener listener) {
         this.eventDispatcher.addScriptTrainEventListener(listener);
     }
 
-    public void removeScriptTrainEventListener(TrainEventListener listener) {
+    public void removeScriptTrainEventListener(ScriptTrainEventListener listener) {
         this.eventDispatcher.removeScriptTrainEventListener(listener);
     }
 
-    public void addCoreTrainEventListener(TrainEventListener listener) {
+    public void addCoreTrainEventListener(CoreTrainEventListener listener) {
         this.eventDispatcher.addCoreTrainEventListener(listener);
     }
 
-    public void removeCoreTrainEventListener(TrainEventListener listener) {
+    public void removeCoreTrainEventListener(CoreTrainEventListener listener) {
         this.eventDispatcher.removeCoreTrainEventListener(listener);
     }
 

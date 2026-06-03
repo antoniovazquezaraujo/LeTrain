@@ -32,7 +32,7 @@ import letrain.track.CargoTypes;
 import letrain.track.Station;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.rail.Linker;
-import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.Wagon;
@@ -43,7 +43,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TerminalPresenter implements letrain.mvp.Presenter, TrainEventListener {
+public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventListener {
     Logger log = LoggerFactory.getLogger(TerminalPresenter.class);
 
     Model model;

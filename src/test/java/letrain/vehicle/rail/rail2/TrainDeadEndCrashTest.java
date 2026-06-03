@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.ScriptTrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.DisplayName;
@@ -116,7 +116,7 @@ class TrainDeadEndCrashTest {
         train.setDirectorLinker(loco);
 
         // Add mock listener to verify notifyCrash
-        TrainEventListener listener = mock(TrainEventListener.class);
+        ScriptTrainEventListener listener = mock(ScriptTrainEventListener.class);
         train.addScriptTrainEventListener(listener);
 
         // --- Act ---
@@ -212,7 +212,7 @@ class TrainDeadEndCrashTest {
         train.setDirectorLinker(loco);
 
         // Listener to verify notifyContact (and absence of notifyCrash)
-        TrainEventListener listener = mock(TrainEventListener.class);
+        ScriptTrainEventListener listener = mock(ScriptTrainEventListener.class);
         train.addScriptTrainEventListener(listener);
 
         // --- Act ---
@@ -313,7 +313,7 @@ class TrainDeadEndCrashTest {
         train.getLinkers().add(linker);
 
         // Listener to verify no crash/contact is triggered
-        TrainEventListener listener = mock(TrainEventListener.class);
+        ScriptTrainEventListener listener = mock(ScriptTrainEventListener.class);
         train.addScriptTrainEventListener(listener);
 
         // --- Act ---
@@ -404,7 +404,7 @@ class TrainDeadEndCrashTest {
         train.getLinkers().add(loco);
         train.setDirectorLinker(loco);
 
-        TrainEventListener listener = mock(TrainEventListener.class);
+        ScriptTrainEventListener listener = mock(ScriptTrainEventListener.class);
         train.addScriptTrainEventListener(listener);
 
         // --- Act ---

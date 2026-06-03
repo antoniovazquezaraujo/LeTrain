@@ -27,7 +27,7 @@ import letrain.mvp.impl.RailTrackMaker;
 import letrain.mvp.impl.SimulationController;
 import letrain.utils.FontManager;
 import letrain.utils.ValidationUtils;
-import letrain.vehicle.rail.TrainEventListener;
+import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.gdx3d.Gdx3DRenderer;
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 public class GraphicPresenter extends ApplicationAdapter
         implements letrain.mvp.View, letrain.mvp.Presenter,
-        TrainEventListener {
+        CoreTrainEventListener {
     private static final Logger log = LoggerFactory.getLogger(GraphicPresenter.class);
     private static final String DEFAULT_SAVEGAME_FILENAME = "savegame.dat";
     private com.badlogic.gdx.graphics.PerspectiveCamera cam;
