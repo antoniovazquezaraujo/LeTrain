@@ -67,6 +67,7 @@ public class Train implements Renderable {
     public transient LinkersSense linkerJoinSense;
     public transient LinkersSense linkerDivisionSense;
     public transient boolean joined = false;
+    private int savedSpeedBeforeReverse = -1;
 
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
@@ -139,7 +140,7 @@ public class Train implements Renderable {
             boolean activated = autopilot.activate();
             if (activated) {
                 this.actionManager.checkWaypointArrival();
-                this.actionManager.acquireInitialLocks();
+                this.safetyManager.acquireInitialLocks();
                 this.actionManager.checkWaypointArrival();
             }
         }
@@ -208,6 +209,10 @@ public class Train implements Renderable {
         }
     }
 
+    public void setSavedSpeedBeforeReverse(int speed) {
+        this.savedSpeedBeforeReverse = speed;
+    }
+
     public void notifySpeedChanged(int speed) {
         guardNotify(() -> {
             if (speed == 0 && pendingReverse) {
@@ -215,9 +220,9 @@ public class Train implements Renderable {
                 Tractor dirLinker = getDirectorLinker();
                 if (dirLinker != null) {
                     dirLinker.toggleReversed();
-                    if (this.actionManager.getSavedSpeedBeforeReverse() != -1) {
-                        dirLinker.setTargetSpeed(this.actionManager.getSavedSpeedBeforeReverse());
-                        this.actionManager.setSavedSpeedBeforeReverse(-1);
+                    if (this.savedSpeedBeforeReverse != -1) {
+                        dirLinker.setTargetSpeed(this.savedSpeedBeforeReverse);
+                        this.savedSpeedBeforeReverse = -1;
                     }
                 }
             }
