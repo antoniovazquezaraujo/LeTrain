@@ -10,42 +10,54 @@ El sistema de eventos de LeTrain sigue el patrón **Observer** multicapa para de
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         Train                                       │
 │  ┌──────────────────────────────────────────────────────────────┐   │
-│  │                  TrainEventDispatcher                        │   │
+│  │               TrainEventDispatcher (interfaz)                 │   │
+│  │               TrainEventDispatcherImpl (impl)                 │   │
 │  │                                                              │   │
-│  │  ┌─────────────────────┐  ┌─────────────────────┐            │   │
-│  │  │ Script Listeners    │  │ Core Listeners      │            │   │
-│  │  │CopyOnWriteArrayList │  │ CopyOnWriteArrayList│            │   │
-│  │  │                     │  │                     │            │   │
- │  │  │  • CommandManager   │  │  • Model (logging)  │            │   │
- │  │  │  (automatización    │  │  • TerminalPresenter│            │   │
- │  │  │   del usuario)      │  │  • GraphicPresenter │            │   │
-│  │  └─────────────────────┘  └─────────────────────┘            │   │
+│  │  ┌─────────────────────────┐  ┌─────────────────────────┐    │   │
+│  │  │ ScriptTrainEventListener│  │ CoreTrainEventListener  │    │   │
+│  │  │ (CopyOnWriteArrayList)  │  │ (CopyOnWriteArrayList)  │    │   │
+│  │  │                         │  │                         │    │   │
+│  │  │  • CommandManager       │  │  • Model (logging/econ) │    │   │
+│  │  │  (automatización        │  │  • TerminalPresenter    │    │   │
+│  │  │   del usuario)          │  │  • GraphicPresenter     │    │   │
+│  │  └─────────────────────────┘  └─────────────────────────┘    │   │
 │  └──────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
                               │
                               │ notifica a través de
                               ▼
-                    ┌──────────────────┐
-                    │TrainEventListener│
-                    │(interfaz con     │
-                    │ métodos default) │
-                    └──────────────────┘
+              ┌──────────────────────────────────┐
+              │   TrainEventListener (base)      │
+              │   ├── CoreTrainEventListener     │
+              │   └── ScriptTrainEventListener   │
+              └──────────────────────────────────┘
 ```
 
 **Principio fundamental**: Los eventos **NO** se procesan en `tick()` ni `advance()`. El sistema es reactivo y event-driven: las acciones del tren (movimiento, colisiones, acoplamiento) disparan notificaciones que los listeners procesan fuera del bucle de física.
 
+## Jerarquía de Interfaces
+
+Las interfaces de listener están organizadas en una jerarquía de tipos que **el compilador valida**:
+
+- **`TrainEventListener`** — Base común con todos los métodos de evento (default methods)
+- **`CoreTrainEventListener extends TrainEventListener`** — Para componentes del sistema (Model, presenters)
+- **`ScriptTrainEventListener extends TrainEventListener`** — Para scripts de automatización del usuario
+
+Esto evita errores en runtime: `addCoreTrainEventListener()` solo acepta `CoreTrainEventListener`, y `addScriptTrainEventListener()` solo acepta `ScriptTrainEventListener`. Si un componente del sistema se registra por error como script, no compila.
+
 ## TrainEventDispatcher
 
-**Ubicación**: `src/main/java/letrain/vehicle/rail/impl/TrainEventDispatcher.java`
+**Interfaz**: `src/main/java/letrain/vehicle/rail/TrainEventDispatcher.java`
+**Implementación**: `src/main/java/letrain/vehicle/rail/impl/TrainEventDispatcherImpl.java`
 
-El `TrainEventDispatcher` es el núcleo de la gestión de eventos de cada tren. Centraliza el registro y la notificación de eventos, separando los listeners en dos categorías:
+El `TrainEventDispatcher` es el núcleo de la gestión de eventos de cada tren. Centraliza el registro y la notificación de eventos, separando los listeners en dos categorías mediante tipos diferenciados.
 
 ### Listener de Doble Nivel
 
-| Categoría | Tipo de Lista | Propósito | Ejemplos |
+| Categoría | Tipo | Propósito | Ejemplos |
 |---|---|---|---|
-| **Script** | `CopyOnWriteArrayList<TrainEventListener>` | Automatización definida por el usuario (vía ANTLR) | `CommandManager` |
-| **Core** | `CopyOnWriteArrayList<TrainEventListener>` | Componentes internos del sistema | `Model` (logging), `TerminalPresenter` (audio), `GraphicPresenter` (audio) |
+| **Script** | `ScriptTrainEventListener` | Automatización definida por el usuario (vía ANTLR) | `CommandManager` |
+| **Core** | `CoreTrainEventListener` | Componentes internos del sistema | `Model` (logging), `TerminalPresenter` (audio), `GraphicPresenter` (audio) |
 
 ### Ciclo de Vida del Dispatcher
 
@@ -53,7 +65,7 @@ El `TrainEventDispatcher` es el núcleo de la gestión de eventos de cada tren. 
 Creación del Tren
        │
        ▼
-new TrainEventDispatcher(train)
+new TrainEventDispatcherImpl(train)
        │
        ▼
 Registro de listeners (addScriptTrainEventListener / addCoreTrainEventListener)
@@ -64,29 +76,30 @@ Registro de listeners (addScriptTrainEventListener / addCoreTrainEventListener)
 Evento    Serialización (Jackson)
   │         │
   ▼         ▼
-notifyXxx()  postLoadInit()
+notifyAll()  postLoadInit()
   │         │
   ▼         ▼
 Recorre listas  Re-inicializa listas
-y llama a cada  (CopyOnWriteArrayList)
-listener       si son null
+(script→core)  (CopyOnWriteArrayList)
+       │       si son null
+       ▼
+TrainEventListener.onXxx()
 ```
 
-### Métodos de Notificación del Dispatcher
+### Métodos de Notificación
 
-Cada método recorre **ambas** listas (script y core) en orden:
+Cada método delega en `notifyAll(Consumer<TrainEventListener>)` que recorre **script primero, core después** — orden intencional y documentado:
 
 | Método | Evento | Método en TrainEventListener |
 |---|---|---|
 | `notifySpeedChanged(int speed)` | Cambio de velocidad | `onSpeedChanged(speed)` |
-| `notifySenseChanged(boolean forward)` | Cambio de dirección (marcha atrás) | `onSenseChanged(forward)` |
-| `notifyLink()` | Acoplamiento con otro tren | `onLink(train)` |
+| `notifySenseChanged(boolean forward)` | Cambio de dirección | `onSenseChanged(forward)` |
+| `notifyLink()` | Acoplamiento | `onLink(train)` |
 | `notifyUnlink()` | Desacoplamiento | `onUnlink(train)` |
-| `notifyEnterSensor(Sensor, boolean)` | Entrada a sensor | `onSensorEnter(train, isForward)` |
-| `notifyExitSensor(Sensor, boolean)` | Salida de sensor | `onSensorExit(train, isForward)` |
-| `notifySegmentOccupied(Segment)` | Ocupación de segmento de vía | `onSegmentOccupied(train, segment)` |
-| `notifyContact(Point, int)` | Contacto a baja velocidad (< 5) | `onContact(train, pos, speed)` |
-| `notifyCrash(Point, int)` | Colisión a alta velocidad (>= 5) | `onCrash(train, pos, speed)` |
+| `notifyEnterSensor(boolean)` | Entrada a sensor | `onSensorEnter(train, isForward)` |
+| `notifyExitSensor(boolean)` | Salida de sensor | `onSensorExit(train, isForward)` |
+| `notifyContact(Point, int)` | Contacto (speed < 5) | `onContact(train, pos, speed)` |
+| `notifyCrash(Point, int)` | Colisión (speed >= 5) | `onCrash(train, pos, speed)` |
 
 ---
 
@@ -104,7 +117,6 @@ public interface TrainEventListener extends Serializable {
     default void onContact(Train train, Point pos, int speed) {}
     default void onSensorEnter(Train train, boolean isForward) {}
     default void onSensorExit(Train train, boolean isForward) {}
-    default void onSegmentOccupied(Train train, Segment segment) {}
 }
 ```
 
@@ -143,22 +155,14 @@ TrainMovementManager.moveLinkers()
 
 ### 2. Eventos de Sensor en Detalle
 
-El `Sensor` es un dispositivo de vía que implementa **dos interfaces de evento simultáneamente**:
-
-```
-Sensor implements SensorEventListener, TrainEventListener
-```
-
 Cuando un tren entra en una celda con sensor:
 
 ```
 1. TrainMovementManager llama a sensorEnter.onEnterTrain(train)
 2. Sensor.onEnterTrain(train):
-   a. train.notifyEnterSensor(this, isForward)
+   a. train.notifyEnterSensor(isForward)
       → dispatcher recorre listeners
       → llama a onSensorEnter() para cada listener
-      → PERO salta al propio sensor (l != sensor)
-         para evitar auto-recibirse
    b. sensorListeners.forEach(l -> l.onEnterTrain(train))
       → SensorEventListener.onEnterTrain() (otros sensores, estaciones, etc.)
 ```
@@ -385,26 +389,22 @@ sequenceDiagram
 ## Diagrama de Clases del Sistema de Eventos
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        TrainEventListener (interfaz)                    │
-│  + onSpeedChanged(int)                                                  │
-│  + onSenseChanged(boolean)                                              │
-│  + onLink(Train)                                                        │
-│  + onUnlink(Train)                                                      │
-│  + onCrash(Train, Point, int)                                           │
-│  + onContact(Train, Point, int)                                         │
-│  + onSensorEnter(Train, boolean)                                        │
-│  + onSensorExit(Train, boolean)                                         │
-│  + onSegmentOccupied(Train, Segment)                                    │
-└─────────────────────────────────────────────────────────────────────────┘
-            ▲                    ▲                     ▲
-            │                    │                     │
-   ┌────────┴────────┐  ┌───────┴───────┐   ┌────────┴──────────┐
-   │     Model       │  │ Terminal/     │   │  CommandManager   │
-   │  (logging/econ) │  │ GraphicPresent│   │  (script user)    │
-   │                 │  │  (audio)      │   │                   │
-   │ Core listener   │  │  Core listener│   │  Script listener  │
-   └─────────────────┘  └───────────────┘   └───────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         TrainEventListener (base)                            │
+│  + onSpeedChanged(int)  + onSenseChanged(boolean)  + onLink(Train)          │
+│  + onUnlink(Train)  + onCrash(Train, Point, int)  + onContact(...)         │
+│  + onSensorEnter(Train, boolean)  + onSensorExit(Train, boolean)            │
+└──────────────────────────────────────────────────────────────────────────────┘
+             ▲                            ▲
+             │                            │
+┌────────────┴────────────┐    ┌──────────┴──────────────┐
+│ CoreTrainEventListener  │    │ ScriptTrainEventListener│
+│ (extends TrainEventL.)  │    │ (extends TrainEventL.)  │
+│                         │    │                         │
+│  • Model (logging/econ) │    │  • CommandManager       │
+│  • TerminalPresenter    │    │  (automatización        │
+│  • GraphicPresenter     │    │   del usuario)          │
+└─────────────────────────┘    └─────────────────────────┘
 
 
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -433,17 +433,17 @@ Las interfaces de evento están organizadas en dos planos independientes:
 ```
 PLANO 1: Eventos de Tren (TrainEventListener)
   Emisor: Train → TrainEventDispatcher
+  Subtipos: CoreTrainEventListener (sistema), ScriptTrainEventListener (scripts)
   Propósito: Notificar cambios de estado del tren a componentes del sistema y scripts
+  Seguridad de tipos: addCoreTrainEventListener solo acepta CoreTrainEventListener
 
 PLANO 2: Eventos de Dispositivo de Vía (Sensor/Station/Fork/Semaphore)
   Emisor: Dispositivo de vía → su propia lista de listeners
   Propósito: Notificar eventos de tráfico en puntos específicos de la red
 
-PUENTE: Sensor implementa SensorEventListener
-  - Como emisor (Sensor.onSensorEnter): notifica a sus propios SensorEventListener
-    (otros dispositivos interesados en ese punto de la vía)
-  - El propio sensor se excluye de la notificación vía dispatcher
-    (if (l != sensor)) para evitar auto-recibirse
+PUENTE: Sensor.onSensorEnter() notifica al tren y a sus propios listeners
+  - train.notifyEnterSensor(isForward) → dispatcher → TrainEventListener.onSensorEnter()
+  - sensorListeners.forEach() → SensorEventListener.onEnterTrain()
 ```
 
 ---
@@ -466,8 +466,11 @@ PUENTE: Sensor implementa SensorEventListener
 
 | Archivo | Ruta |
 |---|---|
-| TrainEventDispatcher | `src/main/java/letrain/vehicle/rail/impl/TrainEventDispatcher.java` |
-| TrainEventListener | `src/main/java/letrain/vehicle/rail/TrainEventListener.java` |
+| TrainEventDispatcher (interfaz) | `src/main/java/letrain/vehicle/rail/TrainEventDispatcher.java` |
+| TrainEventDispatcherImpl | `src/main/java/letrain/vehicle/rail/impl/TrainEventDispatcherImpl.java` |
+| TrainEventListener (base) | `src/main/java/letrain/vehicle/rail/TrainEventListener.java` |
+| CoreTrainEventListener | `src/main/java/letrain/vehicle/rail/CoreTrainEventListener.java` |
+| ScriptTrainEventListener | `src/main/java/letrain/vehicle/rail/ScriptTrainEventListener.java` |
 | SensorEventListener | `src/main/java/letrain/track/SensorEventListener.java` |
 | StationEventListener | `src/main/java/letrain/track/StationEventListener.java` |
 | SemaphoreEventListener | `src/main/java/letrain/track/SemaphoreEventListener.java` |
