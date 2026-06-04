@@ -260,7 +260,7 @@ public class Locomotive extends Linker implements Tractor {
         if (getTrain() != null && getTrain().getSafetyManager() != null && getTrain().getSafetyManager().isWaitingForBlock()) {
             if (speed > 0) {
                 log.info("Locomotive {}: Train is waiting for block. Intercepting setTargetSpeed({}) and saving it instead.", id, speed);
-                getTrain().getSafetyManager().onBrakingInitiated(speed);
+                getTrain().setSavedTargetSpeed(speed);
                 speed = 0;
             }
         }

@@ -68,6 +68,11 @@ public class Train implements Renderable {
     public transient LinkersSense linkerDivisionSense;
     public transient boolean joined = false;
     private int savedSpeedBeforeReverse = -1;
+    private int savedTargetSpeed = -1;
+
+    public void setSavedTargetSpeed(int speed) {
+        this.savedTargetSpeed = speed;
+    }
 
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
@@ -421,11 +426,12 @@ public class Train implements Renderable {
     }
 
     /**
-     * Sets target speed to 0 on the director linker.
-     * The train will decelerate gradually (by inertia).
+     * Sets target speed to 0 on the director linker (gradual stop).
+     * Saves the current target speed so it can be restored later.
      */
     public void brake() {
         if (getDirectorLinker() != null) {
+            savedTargetSpeed = getDirectorLinker().getTargetSpeed();
             getDirectorLinker().setTargetSpeed(0);
         }
     }
@@ -434,10 +440,23 @@ public class Train implements Renderable {
      * Stops all tractors immediately (speed = 0).
      */
     public void emergencyStop() {
+        if (getDirectorLinker() != null) {
+            savedTargetSpeed = getDirectorLinker().getTargetSpeed();
+        }
         getTractors().forEach(t -> {
             t.setCurrentSpeed(0);
             t.setTargetSpeed(0);
         });
+    }
+
+    /**
+     * Restores the target speed saved before the last brake/emergencyStop.
+     */
+    public void restoreSpeed() {
+        if (savedTargetSpeed != -1 && getDirectorLinker() != null) {
+            getDirectorLinker().setTargetSpeed(savedTargetSpeed);
+            savedTargetSpeed = -1;
+        }
     }
 
     /**

@@ -422,21 +422,8 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
     @Override
     public void initiateBraking() {
-        Tractor head = train.getDirectorLinker();
-        if (head != null) {
-            int currentTargetSpeed = head.getTargetSpeed();
-            Train.log.info("Train {} initiateBraking: target speed was {}, setting to 0", train.getId(), currentTargetSpeed);
-            train.getSafetyManager().onBrakingInitiated(currentTargetSpeed);
-            head.setTargetSpeed(0);
-        }
+        train.brake();
+        Train.log.info("Train {} initiateBraking: target speed set to 0", train.getId());
     }
 
-    @Override
-    public void restoreSpeed(int speed) {
-        Tractor head = train.getDirectorLinker();
-        if (head != null) {
-            Train.log.info("Train {} restoreSpeed: restoring target speed to {}", train.getId(), speed);
-            head.setTargetSpeed(speed);
-        }
-    }
 }
