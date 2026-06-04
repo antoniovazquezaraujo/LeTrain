@@ -3,6 +3,7 @@ package letrain.vehicle.rail;
 import letrain.segments.BlockManager;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
+import letrain.track.Track;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +72,15 @@ public interface TrainSafetyManager {
      * Intenta bloquear y reservar los cantones iniciales (actual y el siguiente) para iniciar la marcha de forma segura.
      */
     void acquireInitialLocks();
+
+    /**
+     * Notifica que la cabeza del tren ha entrado en una vía.
+     * El SafetyManager determina si esto implica un cambio de segmento
+     * y actúa en consecuencia (bloqueos, notificaciones).
+     *
+     * @param track la vía física en la que acaba de entrar la cabeza.
+     */
+    void onTrackEntered(Track track);
 
     /**
      * Evento reactivo que se dispara cuando el tren entra físicamente en un nuevo segmento.

@@ -254,7 +254,7 @@ public class Model implements letrain.mvp.Model {
                 Train train = loco.getTrain();
                 if (train != null && train.isAutoMode()) {
                     train.actionManager.checkWaypointArrival();
-                    train.actionManager.acquireInitialLocks();
+                    train.getSafetyManager().acquireInitialLocks();
                 }
             }
         }

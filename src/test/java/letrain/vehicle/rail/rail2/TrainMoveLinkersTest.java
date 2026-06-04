@@ -49,97 +49,48 @@ class TrainMoveLinkersTest {
     // ---------- Test 1: Null-check defensivo ----------
 
     /**
-     * Configures track mocks so that Pass 1 succeeds, Pass 2 "succeeds"
-     * (enterLinkerFromDir returns true) but —by not executing the real
-     * TrackDirector logic— the linker's track remains null after removeLinker().
-     * The defensive null-check at the post-move check must detect this and
-     * return false instead of throwing a NullPointerException.
+     * With the post-move check removed, moveLinkers no longer detects
+     * a null linker track after movement. The train moves successfully
+     * and the method returns true.
      */
     @Test
-    @DisplayName("should return false when first linker's track is null after move (defensive null-check)")
-    void shouldReturnFalse_When_FirstLinkerTrackIsNull_AfterMove() {
-        // --- Arrange ---
+    @DisplayName("should move successfully even if linker track is null afterwards (no post-move check)")
+    void shouldMove_When_FirstLinkerTrackIsNull_AfterMove() {
         setupTwoLinkerScenario();
         setupPass1Success();
 
-        // Pass 2: enterLinkerFromDir returns true but does NOT call
-        // vehicle.setTrack() (simulates residual null-track scenario).
         when(trackB.enterLinkerFromDir(any(Dir.class), any(Linker.class))).thenReturn(true);
         when(trackC.enterLinkerFromDir(any(Dir.class), any(Linker.class))).thenReturn(true);
 
-        // removeLinker sets the linker's track to null (real side-effect)
         setupRemoveLinkerSetsTrackToNull(trackA, linkerOnTrackA, firstLinkerTrack);
         setupRemoveLinkerSetsTrackToNull(trackB, linkerOnTrackB, secondLinkerTrack);
 
-        // --- Act ---
         boolean result = train.movementManager.moveLinkers(true);
 
-        // --- Assert ---
-        assertFalse(result,
-                "Should return false: null-track detected in post-move check");
-        // Verify the null-check path was hit: firstLinker.getTrack() returned null
-        // and clearReservations was called on the target tracks.
-        // (setReservation(null) is called twice: once at line 738 after "successful" move,
-        //  and again at line 791 by clearReservations when the null-track is detected.)
+        assertTrue(result,
+                "moveLinkers should return true — no post-move null check");
         verify(trackB, atLeastOnce()).setReservation(null);
         verify(trackC, atLeastOnce()).setReservation(null);
     }
 
-    // ---------- Test 2: Rollback cuando enterLinkerFromDir falla ----------
+    // ---------- Test 2: head occupant detection ----------
 
     /**
-     * Simulates a scenario where linker1 tries to enter trackB during Pass 2,
-     * but trackB is still occupied by linker2 (same train, so Pass 1 allowed
-     * it). enterLinkerFromDir returns false → rollback must restore linker1
-     * to trackA and the method must return false.
+     * If the head's target track has an occupant (any train), moveLinkers
+     * treats it as a collision and returns false.
      */
     @Test
-    @DisplayName("should rollback and return false when enterLinkerFromDir fails during Pass 2")
-    void shouldReturnFalse_When_EnterLinkerFromDirFails_DuringPass2() {
-        // --- Arrange ---
+    @DisplayName("should return false when head's target track has an occupant")
+    void shouldReturnFalse_When_HeadTargetHasOccupant() {
         setupTwoLinkerScenario();
 
-        // Pass 1: trackB is occupied by linker2 (same train), so canEnter is skipped
-        // (condition at line 688: occupyingL != null && same train → skip canEnter)
         linkerOnTrackB.set(secondLinker);
         when(trackB.getLinker()).thenAnswer(inv -> linkerOnTrackB.get());
 
-        // trackC is empty → canEnter is called
-        when(trackC.canEnter(any(Dir.class), any(Linker.class))).thenReturn(true);
-        when(trackC.getLinker()).thenAnswer(inv -> linkerOnTrackC.get());
-
-        // Pass 2 stubs
-        // removeLinker on trackA → sets firstLinker's track to null
-        setupRemoveLinkerSetsTrackToNull(trackA, linkerOnTrackA, firstLinkerTrack);
-
-        // removeLinker on trackB → sets secondLinker's track to null
-        setupRemoveLinkerSetsTrackToNull(trackB, linkerOnTrackB, secondLinkerTrack);
-
-        // trackB.enterLinkerFromDir returns FALSE (cannot enter because still occupied by linker2)
-        when(trackB.enterLinkerFromDir(any(Dir.class), any(Linker.class))).thenReturn(false);
-
-        // trackC.enterLinkerFromDir won't be reached (because we return false before)
-        // but stub it anyway for safety
-        when(trackC.enterLinkerFromDir(any(Dir.class), any(Linker.class))).thenReturn(true);
-
-        // --- Act ---
         boolean result = train.movementManager.moveLinkers(true);
 
-        // --- Assert ---
         assertFalse(result,
-                "Should return false: Pass 2 enterLinkerFromDir failure triggers rollback");
-
-        // Rollback verifications:
-        // 1. First linker's track should have been restored to trackA
-        verify(firstLinker).setTrack(trackA);
-        // 2. trackA.setLinker should have been called to restore occupancy
-        verify(trackA).setLinker(firstLinker);
-        // 3. Reservations should be cleared
-        verify(trackB).setReservation(null);
-        verify(trackC).setReservation(null);
-        // 4. Second linker should NOT have been moved (method returned early)
-        verify(trackB, never()).removeLinker();
-        verify(trackC, never()).enterLinkerFromDir(any(Dir.class), any(Linker.class));
+                "moveLinkers should return false — head target track is occupied");
     }
 
     // ---------- Test 3: Happy path ----------
