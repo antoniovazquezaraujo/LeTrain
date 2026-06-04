@@ -188,7 +188,6 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             lastLinker.setRailsSinceStop(lastLinker.getRailsSinceStop() + 1);
             lastLinkerNextTrack.setReservation(null);
         }
-
         return true;
     }
 
@@ -200,7 +199,6 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             otherTrain.emergencyStop();
         }
     }
-
 
     @Override
     public void crashDetected(Linker linker, int speed) {
@@ -285,18 +283,14 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
         if (train.isStalled()) {
             Train.log.info("Train {} advance: cannot move because train is stalled", train.getId());
-            if (train.getDirectorLinker() != null) {
-                train.getDirectorLinker().setTargetSpeed(0);
-            }
+            train.brake();
             return false;
         }
 
         if (train.getModel() != null) {
             if (!train.getSafetyManager().hasPermissionToMove()) {
-                Train.log.info("Train {} advance: cannot move because hasPermissionToMove is false. Forcing setTargetSpeed(0)", train.getId());
-                if (train.getDirectorLinker() != null) {
-                    train.getDirectorLinker().setTargetSpeed(0);
-                }
+                Train.log.info("Train {} advance: cannot move because hasPermissionToMove is false. Forcing brake", train.getId());
+                train.brake();
                 return false;
             }
         }

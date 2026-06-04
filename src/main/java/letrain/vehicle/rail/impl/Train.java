@@ -421,6 +421,16 @@ public class Train implements Renderable {
     }
 
     /**
+     * Sets target speed to 0 on the director linker.
+     * The train will decelerate gradually (by inertia).
+     */
+    public void brake() {
+        if (getDirectorLinker() != null) {
+            getDirectorLinker().setTargetSpeed(0);
+        }
+    }
+
+    /**
      * Stops all tractors immediately (speed = 0).
      */
     public void emergencyStop() {
