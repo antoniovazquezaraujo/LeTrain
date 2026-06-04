@@ -264,9 +264,7 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
     public void forceEmergencyStop() {
         if (train.isAutoMode()) {
             train.setAutoMode(false);
-            if (train.getDirectorLinker() != null) {
-                train.getDirectorLinker().setTargetSpeed(0);
-            }
+            train.brake();
             if (train.getSafetyManager() != null) {
                 train.getSafetyManager().onEmergencyStop();
             }
