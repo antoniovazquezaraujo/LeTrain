@@ -85,7 +85,6 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
 
     public void onEnterTrain(Train train) {
         onEnterTrain(train, calculateIsForward(train));
-        train.notifyForkEntry(this);
     }
 
     public void onEnterTrain(Train train, boolean isForward) {

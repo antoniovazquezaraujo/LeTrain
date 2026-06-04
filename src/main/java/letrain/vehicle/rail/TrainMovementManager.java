@@ -11,7 +11,7 @@ public interface TrainMovementManager {
 
     boolean moveLinkers(boolean isNormalSense);
 
-    void crash(Linker linker, int speed);
+    void crashDetected(Linker linker, int speed);
 
     void correctDirection(Linker linker);
 

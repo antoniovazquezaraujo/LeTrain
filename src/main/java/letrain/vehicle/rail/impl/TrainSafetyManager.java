@@ -233,6 +233,31 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     }
 
     /**
+     * La cabeza del tren ha entrado en una vía física.
+     * Comprueba si implica un cambio de segmento y, si es así,
+     * notifica la entrada en el nuevo segmento.
+     */
+    @Override
+    public void onTrackEntered(Track track) {
+        if (this.train.getModel() == null)
+            return;
+        RailwayGraph graph = this.train.getModel().getRailwayGraph();
+        if (graph == null || !(track instanceof RailTrack))
+            return;
+
+        Segment newSegment = null;
+        if (track instanceof letrain.track.rail.ForkRailTrack && nextSegment != null) {
+            newSegment = nextSegment;
+        } else {
+            newSegment = graph.getSegment((RailTrack) track);
+        }
+
+        if (newSegment != null && !newSegment.equals(this.currentSegment)) {
+            onSegmentEntered(newSegment);
+        }
+    }
+
+    /**
      * Entrada física a un nuevo segmento.
      */
     @Override

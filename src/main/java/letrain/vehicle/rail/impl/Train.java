@@ -155,10 +155,6 @@ public class Train implements Renderable {
         return autopilot;
     }
 
-    public void notifyForkEntry(letrain.track.rail.ForkRailTrack fork) {
-        // No-op: la actuación sobre desvíos es reactiva en onSegmentEntered.
-    }
-
     public void setModel(letrain.mvp.Model model) {
         this.model = model;
     }

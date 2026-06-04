@@ -22,6 +22,7 @@ import letrain.vehicle.rail.Linker;
  * Handles the two-pass linker movement logic, collision detection (train-to-train
  * and dead-end), and crash handling.
  */
+
 /**
  * Handles the two-pass linker movement logic, collision detection
  * (train-to-train and dead-end), and crash handling — extracted from
@@ -45,18 +46,15 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         this.train = train;
     }
 
-    @Override
     public boolean moveLinkers(boolean isNormalSense) {
         Deque<Linker> linkers = train.getLinkers();
         if (linkers.isEmpty()) {
             return false;
         }
 
-        // Pass 1: Verify all linkers can move to their next tracks
         List<Track> targetTracks = new ArrayList<>();
         Map<Linker, Track> currentTracks = new HashMap<>();
         Map<Linker, Dir> entryDirsMap = new HashMap<>();
-        Map<Linker, Linker> occupyingLinkerMap = new HashMap<>();
 
         List<Linker> movingOrder = new ArrayList<>();
         if (isNormalSense) {
@@ -71,216 +69,148 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         Linker firstLinker = movingOrder.get(0);
         Linker lastLinker = movingOrder.get(movingOrder.size() - 1);
 
-        for (Linker linkerToMove : movingOrder) {
-            Track currentTrack = linkerToMove.getTrack();
-            if (currentTrack == null) {
+        // FASE 1A: Validar solo el primer linker (cabeza)
+        // La cabeza es la única que puede chocar con otro tren o encontrar
+        // un callejón sin salida. Si la cabeza puede moverse, el resto
+        // podrá seguirla.
+        {
+            Linker head = movingOrder.get(0);
+            Track headCurrent = head.getTrack();
+            if (headCurrent == null) {
                 return false;
             }
 
+            Dir headExitDir = head.getDir();
+            Track headNextConnectedTrack = headCurrent.getConnected(headExitDir);
+            if (headNextConnectedTrack == null) {
+                log.debug("Pass 1: nextTrack is null for head linker {}", head);
+                return false;
+            }
+
+            Linker headOccupant = headNextConnectedTrack.getLinker();
+            if (headOccupant != null) {
+                int speed = train.getSpeed();
+                if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD) {
+                    crashDetected(headOccupant, speed);
+                } else {
+                    contactDetected(headOccupant, speed);
+                }
+                return false;
+            }
+
+            Dir headEntryDir = headExitDir.inverse();
+            currentTracks.put(head, headCurrent);
+            entryDirsMap.put(head, headEntryDir);
+            headNextConnectedTrack.setReservation(head);
+            targetTracks.add(headNextConnectedTrack);
+        }
+
+        // FASE 1B: Guardar los datos del resto de linkers
+        for (int i = 1; i < movingOrder.size(); i++) {
+            Linker linkerToMove = movingOrder.get(i);
+            Track currentTrack = linkerToMove.getTrack();
             Dir exitDir = linkerToMove.getDir();
             Track nextTrackOfLinker = currentTrack.getConnected(exitDir);
-
-            if (nextTrackOfLinker == null) {
-                log.debug("Pass 1: nextTrack is null for {}", linkerToMove);
-                clearReservations(targetTracks);
-                return false;
-            }
-
-            Linker occupyingL = nextTrackOfLinker.getLinker();
-            if (occupyingL != null) {
-
-                if (occupyingL.getTrain() != train) {
-                    int speed = train.getSpeed();
-
-                    if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD) {
-                        crash(occupyingL, speed);
-                    } else {
-                        Point collisionPos = occupyingL.getPosition();
-                        train.notifyContact(collisionPos, speed);
-                        train.getTractors().forEach(t -> {
-                            t.setCurrentSpeed(0);
-                            t.setTargetSpeed(0);
-                        });
-                        Train otherTrain = occupyingL.getTrain();
-                        if (otherTrain != null) {
-                            otherTrain.getTractors().forEach(t -> {
-                                t.setCurrentSpeed(0);
-                                t.setTargetSpeed(0);
-                            });
-                        }
-                    }
-                    clearReservations(targetTracks);
-                    return false;
-                }
-            }
-
-            Dir entryDirOfLinker = linkerToMove.getDir().inverse();
-            if (occupyingL == null || occupyingL.getTrain() != train) {
-                if (!nextTrackOfLinker.canEnter(entryDirOfLinker, linkerToMove)) {
-                    clearReservations(targetTracks);
-                    return false;
-                }
-            }
+            Dir entryDirOfLinker = exitDir.inverse();
 
             currentTracks.put(linkerToMove, currentTrack);
             entryDirsMap.put(linkerToMove, entryDirOfLinker);
-            occupyingLinkerMap.put(linkerToMove, occupyingL);
-
             nextTrackOfLinker.setReservation(linkerToMove);
             targetTracks.add(nextTrackOfLinker);
         }
 
-        // Pass 2: Actually move the linkers
-        for (int i = 0; i < movingOrder.size(); i++) {
+        // ── FASE 2A: Mover cabeza (first linker) ─────────────────────
+        {
+            Track headCurrentTrack = currentTracks.get(firstLinker);
+            Track headNextTrack = targetTracks.get(0);
+            Dir headEntryDir = entryDirsMap.get(firstLinker);
+
+            firstLinker.setPreviousTrack(headCurrentTrack);
+            firstLinker.setPreviousDir(firstLinker.getDir());
+            headCurrentTrack.removeLinker();
+            headNextTrack.enterLinkerFromDir(headEntryDir, firstLinker);
+
+            firstLinker.setRailsSinceStop(firstLinker.getRailsSinceStop() + 1);
+
+            if (train.getSafetyManager() != null) {
+                train.getSafetyManager().onTrackEntered(headNextTrack);
+            }
+
+            Sensor enterSensor = headNextTrack.getSensor();
+            if (enterSensor != null) {
+                enterSensor.onEnterTrain(train);
+            }
+            if (headNextTrack.getSemaphore() != null) {
+                headNextTrack.getSemaphore().onEnterTrain(train);
+            }
+            if (headNextTrack instanceof ForkRailTrack) {
+                ((ForkRailTrack) headNextTrack).onEnterTrain(train);
+            }
+
+            headNextTrack.setReservation(null);
+        }
+
+        // ── FASE 2B: Mover centro (middle linkers) ────────────────────
+        for (int i = 1; i < movingOrder.size() - 1; i++) {
             Linker linkerToMove = movingOrder.get(i);
             Track currentTrack = currentTracks.get(linkerToMove);
             Track nextTrackOfLinker = targetTracks.get(i);
             Dir entryDirOfLinker = entryDirsMap.get(linkerToMove);
 
-            // Si el linker que sale de la celda es el último del tren disparamos evento
-            // onExitTrain
-            // a sensores, semáforos y forks
-            Sensor sensorExit = currentTrack.getSensor();
-            if (sensorExit != null && linkerToMove == lastLinker) {
-                sensorExit.onExitTrain(train);
-            }
-            if (currentTrack.getSemaphore() != null && linkerToMove == lastLinker) {
-                currentTrack.getSemaphore().onExitTrain(train);
-            }
-            if (currentTrack instanceof ForkRailTrack && linkerToMove == lastLinker) {
-                ((ForkRailTrack) currentTrack).onExitTrain(train);
-            }
-
             linkerToMove.setPreviousTrack(currentTrack);
             linkerToMove.setPreviousDir(linkerToMove.getDir());
             currentTrack.removeLinker();
-            if (nextTrackOfLinker instanceof ForkRailTrack && linkerToMove == firstLinker) {
-                train.notifyForkEntry((ForkRailTrack) nextTrackOfLinker);
-            }
-            if (!nextTrackOfLinker.enterLinkerFromDir(entryDirOfLinker, linkerToMove)) {
-                // Rollback: restore linker to its previous track
-                linkerToMove.setTrack(currentTrack);
-                currentTrack.setLinker(linkerToMove);
-                linkerToMove.setPreviousTrack(null);
-                linkerToMove.setPreviousDir(null);
-                clearReservations(targetTracks);
-                return false;
-            }
+            nextTrackOfLinker.enterLinkerFromDir(entryDirOfLinker, linkerToMove);
             linkerToMove.setRailsSinceStop(linkerToMove.getRailsSinceStop() + 1);
-
-
-            // Reactivo: Si la locomotora (firstLinker) cambia de vía, notificamos al gestor
-            // de seguridad si entra en un nuevo cantón
-            if (linkerToMove == firstLinker && train.getModel() != null) {
-                letrain.mvp.Model model = train.getModel();
-                letrain.segments.RailwayGraph graph = model.getRailwayGraph();
-                if (graph != null && nextTrackOfLinker instanceof RailTrack) {
-                    letrain.vehicle.rail.TrainSafetyManager safety = train.getSafetyManager();
-                    letrain.segments.Segment newSegment = null;
-                    if (nextTrackOfLinker instanceof letrain.track.rail.ForkRailTrack && safety != null && safety.getNextSegment() != null) {
-                        newSegment = safety.getNextSegment();
-                    } else {
-                        newSegment = graph.getSegment((RailTrack) nextTrackOfLinker);
-                    }
-                    if (newSegment != null && safety != null && !newSegment.equals(safety.getCurrentSegment())) {
-                        train.notifySegmentEntered(newSegment);
-                    }
-                }
-            }
             nextTrackOfLinker.setReservation(null);
-
-            // Si el linker que sale de la celda es el primero del tren disparamos evento
-            // onEnterTrain
-            // a sensores, semáforos y forks
-
-            Sensor sensorEnter = nextTrackOfLinker.getSensor();
-            if (sensorEnter != null && linkerToMove == firstLinker) {
-                sensorEnter.onEnterTrain(train);
-            }
-            if (nextTrackOfLinker.getSemaphore() != null && linkerToMove == firstLinker) {
-                nextTrackOfLinker.getSemaphore().onEnterTrain(train);
-            }
-            if (nextTrackOfLinker instanceof ForkRailTrack && linkerToMove == firstLinker) {
-                ((ForkRailTrack) nextTrackOfLinker).onEnterTrain(train);
-            }
         }
 
-        // Post-move collision / dead-end check
-        Track currentFirstTrack = firstLinker.getTrack();
-        if (currentFirstTrack == null) {
-            log.warn("First linker has no track after move sequence — cannot check next cell for collisions");
-            clearReservations(targetTracks);
-            return false;
-        }
-        Track nextAfterMove = currentFirstTrack.getConnected(firstLinker.getDir());
-        if (nextAfterMove != null) {
-            Linker blockingLinker = nextAfterMove.getLinker();
-            if (blockingLinker != null && blockingLinker.getTrain() != train) {
-                int speed = train.getSpeed();
-                if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD) {
-                    crash(blockingLinker, speed);
-                    train.setStalled(true);
-                } else {
-                    Point collisionPos = blockingLinker.getPosition();
-                    train.notifyContact(collisionPos, speed);
-                    train.getTractors().forEach(t -> {
-                        t.setCurrentSpeed(0);
-                        t.setTargetSpeed(0);
-                        if (t instanceof Locomotive) {
-                            ((Locomotive) t).setForceIdleSound(true);
-                        }
-                    });
-                    Train otherTrain = blockingLinker.getTrain();
-                    if (otherTrain != null) {
-                        otherTrain.getTractors().forEach(t -> {
-                            t.setCurrentSpeed(0);
-                            t.setTargetSpeed(0);
-                        });
-                    }
-                }
-                // After collision, correct direction to match physical track connections
-                correctDirection(firstLinker);
+        // ── FASE 2C: Mover cola (last linker) ────────────────────────
+        if (movingOrder.size() > 1) {
+            Track lastLinkerTrack = currentTracks.get(lastLinker);
+            Track lastLinkerNextTrack = targetTracks.get(movingOrder.size() - 1);
+            Dir lastLinkerDir = entryDirsMap.get(lastLinker);
+
+            if (lastLinkerTrack.getSensor() != null) {
+                lastLinkerTrack.getSensor().onExitTrain(train);
             }
-        } else {
-            int speed = train.getSpeed();
-            Point impactPos = firstLinker.getPosition();
-            if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD) {
-                boolean alreadyDestroying = false;
-                for (Linker l : train.getLinkers()) {
-                    if (l instanceof Destructible && ((Destructible) l).isDestroying()) {
-                        alreadyDestroying = true;
-                        break;
-                    }
-                }
-                if (!alreadyDestroying) {
-                    train.notifyCrash(impactPos, speed);
-                    train.getLinkers().forEach(l -> {
-                        if (l instanceof Locomotive) {
-                            ((Locomotive) l).setCurrentSpeed(0);
-                            ((Locomotive) l).setTargetSpeed(0);
-                            ((Locomotive) l).setForceIdleSound(true);
-                        }
-                        l.destroy();
-                    });
-                    train.setStalled(true);
-                }
-            } else {
-                train.notifyContact(impactPos, speed);
-                train.getTractors().forEach(t -> {
-                    t.setCurrentSpeed(0);
-                    t.setTargetSpeed(0);
-                    if (t instanceof Locomotive) {
-                        ((Locomotive) t).setForceIdleSound(true);
-                    }
-                });
+            if (lastLinkerTrack.getSemaphore() != null) {
+                lastLinkerTrack.getSemaphore().onExitTrain(train);
             }
+            if (lastLinkerTrack instanceof ForkRailTrack) {
+                ((ForkRailTrack) lastLinkerTrack).onExitTrain(train);
+            }
+
+            lastLinker.setPreviousTrack(lastLinkerTrack);
+            lastLinker.setPreviousDir(lastLinker.getDir());
+            lastLinkerTrack.removeLinker();
+            lastLinkerNextTrack.enterLinkerFromDir(lastLinkerDir, lastLinker);
+            lastLinker.setRailsSinceStop(lastLinker.getRailsSinceStop() + 1);
+            lastLinkerNextTrack.setReservation(null);
         }
 
         return true;
     }
 
+    private void contactDetected(Linker headOccupant, int speed) {
+        Point collisionPos = headOccupant.getPosition();
+        train.notifyContact(collisionPos, speed);
+        train.getTractors().forEach(t -> {
+            t.setCurrentSpeed(0);
+            t.setTargetSpeed(0);
+        });
+        Train otherTrain = headOccupant.getTrain();
+        if (otherTrain != null) {
+            otherTrain.getTractors().forEach(t -> {
+                t.setCurrentSpeed(0);
+                t.setTargetSpeed(0);
+            });
+        }
+    }
+
+
     @Override
-    public void crash(Linker linker, int speed) {
+    public void crashDetected(Linker linker, int speed) {
         Point crashPos = linker.getPosition();
         boolean alreadyDestroying = false;
         for (Linker l : train.getLinkers()) {
