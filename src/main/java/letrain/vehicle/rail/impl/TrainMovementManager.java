@@ -195,16 +195,9 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
     private void contactDetected(Linker headOccupant, int speed) {
         Point collisionPos = headOccupant.getPosition();
         train.notifyContact(collisionPos, speed);
-        train.getTractors().forEach(t -> {
-            t.setCurrentSpeed(0);
-            t.setTargetSpeed(0);
-        });
         Train otherTrain = headOccupant.getTrain();
         if (otherTrain != null) {
-            otherTrain.getTractors().forEach(t -> {
-                t.setCurrentSpeed(0);
-                t.setTargetSpeed(0);
-            });
+            otherTrain.emergencyStop();
         }
     }
 
@@ -212,59 +205,31 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
     @Override
     public void crashDetected(Linker linker, int speed) {
         Point crashPos = linker.getPosition();
-        boolean alreadyDestroying = false;
-        for (Linker l : train.getLinkers()) {
-            if (l instanceof Destructible && ((Destructible) l).isDestroying()) {
-                alreadyDestroying = true;
-                break;
-            }
-        }
 
-        if (!alreadyDestroying) {
+        if (!isAlreadyDestroying(train)) {
             train.notifyCrash(crashPos, speed);
-            train.getLinkers().forEach(l -> {
-                if (l instanceof Locomotive) {
-                    ((Locomotive) l).setCurrentSpeed(0);
-                    ((Locomotive) l).setTargetSpeed(0);
-                    ((Locomotive) l).setForceIdleSound(true);
-                }
-                l.destroy();
-            });
-            train.setStalled(true);
-            // Release segments so other trains can use them
-            if (train.getModel() != null) {
-                train.getModel().getBlockManager().releaseAll(train);
-            }
+            train.crashDestroy();
         }
 
-        // Also handle the other linker/train
-        if (linker.getTrain() != null) {
-            boolean otherAlreadyDestroying = false;
-            for (Linker l : linker.getTrain().getLinkers()) {
-                if (l instanceof Destructible && ((Destructible) l).isDestroying()) {
-                    otherAlreadyDestroying = true;
-                    break;
-                }
-            }
-            if (!otherAlreadyDestroying) {
-                linker.getTrain().notifyCrash(crashPos, speed);
-                linker.getTrain().getLinkers().forEach(l -> {
-                    if (l instanceof Locomotive) {
-                        ((Locomotive) l).setCurrentSpeed(0);
-                        ((Locomotive) l).setTargetSpeed(0);
-                        ((Locomotive) l).setForceIdleSound(true);
-                    }
-                    l.destroy();
-                });
-                linker.getTrain().setStalled(true);
-                if (linker.getTrain().getModel() != null) {
-                    linker.getTrain().getModel().getBlockManager().releaseAll(linker.getTrain());
-                }
+        Train otherTrain = linker.getTrain();
+        if (otherTrain != null) {
+            if (!isAlreadyDestroying(otherTrain)) {
+                otherTrain.notifyCrash(crashPos, speed);
+                otherTrain.crashDestroy();
             }
         } else {
             log.info("crash: Destroying loose linker {} at crash position {}", linker, crashPos);
             linker.destroy();
         }
+    }
+
+    private boolean isAlreadyDestroying(Train t) {
+        for (Linker l : t.getLinkers()) {
+            if (l instanceof Destructible && ((Destructible) l).isDestroying()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

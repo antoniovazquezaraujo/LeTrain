@@ -421,16 +421,41 @@ public class Train implements Renderable {
     }
 
     /**
+     * Stops all tractors immediately (speed = 0).
+     */
+    public void emergencyStop() {
+        getTractors().forEach(t -> {
+            t.setCurrentSpeed(0);
+            t.setTargetSpeed(0);
+        });
+    }
+
+    /**
+     * Destroys all linkers (speed = 0, force idle, destroy).
+     */
+    public void crashDestroy() {
+        setStalled(true);
+        getLinkers().forEach(l -> {
+            if (l instanceof Locomotive) {
+                ((Locomotive) l).setCurrentSpeed(0);
+                ((Locomotive) l).setTargetSpeed(0);
+                ((Locomotive) l).setForceIdleSound(true);
+            }
+            l.destroy();
+        });
+        if (getModel() != null) {
+            getModel().getBlockManager().releaseAll(this);
+        }
+    }
+
+    /**
      * Notifies listeners of a low-speed contact (speed &lt;
      * {@link #CRASH_SPEED_THRESHOLD}).
      * Stalls the train and sets all tractor speeds to 0.
      */
     public void notifyContact(letrain.map.Point pos, int speed) {
         guardNotify(() -> {
-            getTractors().forEach(t -> {
-                t.setCurrentSpeed(0);
-                t.setTargetSpeed(0);
-            });
+            emergencyStop();
             this.eventDispatcher.notifyContact(pos, speed);
         });
     }
