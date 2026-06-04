@@ -431,10 +431,13 @@ public class Train implements Renderable {
     }
 
     /**
-     * Destroys all linkers (speed = 0, force idle, destroy).
+     * Notifies listeners of a crash and destroys all linkers.
      */
-    public void crashDestroy() {
-        setStalled(true);
+    public void crashDestroy(letrain.map.Point pos, int speed) {
+        guardNotify(() -> {
+            this.stalled = true;
+            this.eventDispatcher.notifyCrash(pos, speed);
+        });
         getLinkers().forEach(l -> {
             if (l instanceof Locomotive) {
                 ((Locomotive) l).setCurrentSpeed(0);

@@ -207,15 +207,13 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         Point crashPos = linker.getPosition();
 
         if (!isAlreadyDestroying(train)) {
-            train.notifyCrash(crashPos, speed);
-            train.crashDestroy();
+            train.crashDestroy(crashPos, speed);
         }
 
         Train otherTrain = linker.getTrain();
         if (otherTrain != null) {
             if (!isAlreadyDestroying(otherTrain)) {
-                otherTrain.notifyCrash(crashPos, speed);
-                otherTrain.crashDestroy();
+                otherTrain.crashDestroy(crashPos, speed);
             }
         } else {
             log.info("crash: Destroying loose linker {} at crash position {}", linker, crashPos);
