@@ -29,7 +29,6 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     private Segment nextSegment;
 
     private boolean isWaitingForBlock = false; // Única variable de estado de parada de bloque
-    private int savedTargetSpeed = -1;
     private transient boolean insideFindNextSegment = false;
 
     public TrainSafetyManager(Train train) {
@@ -80,18 +79,8 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     }
 
     @Override
-    public void onBrakingInitiated(int speedToSave) {
-        log.info("Train {} onBrakingInitiated. Saved target speed: {}", train.getId(), savedTargetSpeed == -1 ? speedToSave : savedTargetSpeed);
-        this.isWaitingForBlock = true;
-        if (this.savedTargetSpeed == -1 && speedToSave > 0) {
-            this.savedTargetSpeed = speedToSave;
-        }
-    }
-
-    @Override
     public void onEmergencyStop() {
-        this.isWaitingForBlock = false; // Permitimos movimiento manual
-        this.savedTargetSpeed = -1;
+        this.isWaitingForBlock = false;
     }
 
     /**
@@ -141,8 +130,6 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     public void acquireInitialLocks() {
         BlockManager bm = this.train.getModel().getBlockManager();
         RailwayGraph graph = this.train.getModel().getRailwayGraph();
-        savedTargetSpeed = -1;
-
         Linker head = train.getPhysicalFront();
         log.info("Train {} acquireInitialLocks starting", train.getId());
         if (head == null || head.getTrack() == null) {
@@ -269,7 +256,6 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         log.info("Train {} onSegmentEntered: newSegment={}", train.getId(), newSegment != null ? newSegment.getId() : "null");
         currentSegment = newSegment;
         isWaitingForBlock = false;
-        savedTargetSpeed = -1;
 
 
 
@@ -358,11 +344,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 log.info("Train {} (AUTO) successfully woke up and locked segment  {}", train.getId(),
                         nextSegment.getId());
                 isWaitingForBlock = false;
-                if (savedTargetSpeed != -1) {
-                    train.movementManager.restoreSpeed(savedTargetSpeed);
-
-                    savedTargetSpeed = -1;
-                }
+                train.restoreSpeed();
             }
         }
     }
@@ -385,7 +367,6 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
 
         nextSegment = findNextSegment(head, graph);
         isWaitingForBlock = false;
-        savedTargetSpeed = -1;
 
         if (nextSegment == null || nextSegment.equals(currentSegment)) {
             isWaitingForBlock = false;

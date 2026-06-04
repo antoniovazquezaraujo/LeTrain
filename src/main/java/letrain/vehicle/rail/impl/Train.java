@@ -68,6 +68,11 @@ public class Train implements Renderable {
     public transient LinkersSense linkerDivisionSense;
     public transient boolean joined = false;
     private int savedSpeedBeforeReverse = -1;
+    private int savedTargetSpeed = -1;
+
+    public void setSavedTargetSpeed(int speed) {
+        this.savedTargetSpeed = speed;
+    }
 
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
@@ -421,16 +426,68 @@ public class Train implements Renderable {
     }
 
     /**
+     * Sets target speed to 0 on the director linker (gradual stop).
+     * Saves the current target speed so it can be restored later.
+     */
+    public void brake() {
+        if (getDirectorLinker() != null) {
+            savedTargetSpeed = getDirectorLinker().getTargetSpeed();
+            getDirectorLinker().setTargetSpeed(0);
+        }
+    }
+
+    /**
+     * Stops all tractors immediately (speed = 0).
+     */
+    public void emergencyStop() {
+        if (getDirectorLinker() != null) {
+            savedTargetSpeed = getDirectorLinker().getTargetSpeed();
+        }
+        getTractors().forEach(t -> {
+            t.setCurrentSpeed(0);
+            t.setTargetSpeed(0);
+        });
+    }
+
+    /**
+     * Restores the target speed saved before the last brake/emergencyStop.
+     */
+    public void restoreSpeed() {
+        if (savedTargetSpeed != -1 && getDirectorLinker() != null) {
+            getDirectorLinker().setTargetSpeed(savedTargetSpeed);
+            savedTargetSpeed = -1;
+        }
+    }
+
+    /**
+     * Notifies listeners of a crash and destroys all linkers.
+     */
+    public void crashDestroy(letrain.map.Point pos, int speed) {
+        guardNotify(() -> {
+            this.stalled = true;
+            this.eventDispatcher.notifyCrash(pos, speed);
+        });
+        getLinkers().forEach(l -> {
+            if (l instanceof Locomotive) {
+                ((Locomotive) l).setCurrentSpeed(0);
+                ((Locomotive) l).setTargetSpeed(0);
+                ((Locomotive) l).setForceIdleSound(true);
+            }
+            l.destroy();
+        });
+        if (getModel() != null) {
+            getModel().getBlockManager().releaseAll(this);
+        }
+    }
+
+    /**
      * Notifies listeners of a low-speed contact (speed &lt;
      * {@link #CRASH_SPEED_THRESHOLD}).
      * Stalls the train and sets all tractor speeds to 0.
      */
     public void notifyContact(letrain.map.Point pos, int speed) {
         guardNotify(() -> {
-            getTractors().forEach(t -> {
-                t.setCurrentSpeed(0);
-                t.setTargetSpeed(0);
-            });
+            emergencyStop();
             this.eventDispatcher.notifyContact(pos, speed);
         });
     }

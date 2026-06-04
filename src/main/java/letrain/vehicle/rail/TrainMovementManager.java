@@ -24,6 +24,4 @@ public interface TrainMovementManager {
     void refreshLinkersDirection();
 
     void initiateBraking();
-
-    void restoreSpeed(int speed);
 }
