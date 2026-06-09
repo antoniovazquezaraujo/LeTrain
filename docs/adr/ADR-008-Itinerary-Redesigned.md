@@ -1,6 +1,6 @@
 # ADR-008: Sistema de Itinerarios con Waypoints y Control Automático
 
-## Estado: PROPUESTA
+## Estado: ACEPTADO (Modificado por [[ADR-015-Abstraccion-Puertos-Nodos]])
 
 ## Contexto
 
