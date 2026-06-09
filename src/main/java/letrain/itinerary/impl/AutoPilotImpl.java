@@ -313,30 +313,6 @@ public class AutoPilotImpl implements AutoPilot {
                 if (node != null) break;
             }
         }
-        
-        if (node == null) {
-            var fromSteps = from.getSteps();
-            var toSteps = to.getSteps();
-            if (fromSteps != null && toSteps != null) {
-                var f1 = fromSteps.getFirst();
-                var f2 = fromSteps.getSecond();
-                var t1 = toSteps.getFirst();
-                var t2 = toSteps.getSecond();
-
-                if (f1 != null && f1.getRailNode() != null) {
-                    var n1 = f1.getRailNode();
-                    if ((t1 != null && n1.equals(t1.getRailNode())) || (t2 != null && n1.equals(t2.getRailNode()))) {
-                        node = n1;
-                    }
-                }
-                if (node == null && f2 != null && f2.getRailNode() != null) {
-                    var n2 = f2.getRailNode();
-                    if ((t1 != null && n2.equals(t1.getRailNode())) || (t2 != null && n2.equals(t2.getRailNode()))) {
-                        node = n2;
-                    }
-                }
-            }
-        }
 
         if (node == null) {
             log.warn("[AP] ensureForkRoute {}->{}: no shared node found", from.getId(), to.getId());
@@ -354,26 +330,7 @@ public class AutoPilotImpl implements AutoPilot {
                     from.getId(), to.getId(), entryPort.getType(), exitPort.getType(), routeChanged);
             return;
         }
-
-        if (node.getOutSteps() != null) {
-            for (var step : node.getOutSteps()) {
-                Segment nextSeg = graph.getSegment(step);
-                log.debug("[AP] ensureForkRoute {}->{}: outStep dir={} seg={}", from.getId(), to.getId(), step.getDir(),
-                        nextSeg != null ? nextSeg.getId() : "null");
-                if (nextSeg != null && nextSeg.equals(to)) {
-                    Dir targetDir = step.getDir();
-                    var alt = fork.getRouter().getAlternativeRoute();
-                    boolean altNeeded = alt != null && alt.getValue() == targetDir;
-                    log.info("[AP] ensureForkRoute {}->{}: MATCH fork={} altNeeded={} currentAlt={}", from.getId(),
-                            to.getId(), fork.getId(), altNeeded, fork.isUsingAlternativeRoute());
-                    if (fork.isUsingAlternativeRoute() != altNeeded) {
-                        fork.flipRoute();
-                    }
-                    return;
-                }
-            }
-        }
-        log.warn("[AP] ensureForkRoute {}->{}: no outStep leads to target seg", from.getId(), to.getId());
+        log.warn("[AP] ensureForkRoute {}->{}: no ports matched for the shared node", from.getId(), to.getId());
     }
 
     @Override

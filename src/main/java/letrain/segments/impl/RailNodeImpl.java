@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import letrain.map.Dir;
-import letrain.segments.PathStep;
 import letrain.segments.Port;
 import letrain.segments.PortType;
 import letrain.segments.RailNode;
@@ -16,10 +15,8 @@ import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 
 public class RailNodeImpl implements RailNode {
-    private final List<PathStep> outSteps = new ArrayList<>();
     private final Track track;
 
-    // Nuevos campos para la gestión de puertos
     private final List<Port> ports = new ArrayList<>();
     private final Map<Dir, Port> dirToPort = new HashMap<>();
     private final Map<PortType, Dir> portToDir = new HashMap<>();
@@ -31,7 +28,6 @@ public class RailNodeImpl implements RailNode {
 
     private void initializePorts() {
         if (track instanceof ForkRailTrack fork) {
-            // Mapeo físico de un desvío a puertos lógicos con protección contra nulos (útil en tests)
             Dir trunkDir = Dir.W;
             Dir normalDir = Dir.E;
             Dir alternativeDir = Dir.S;
@@ -48,7 +44,6 @@ public class RailNodeImpl implements RailNode {
             addPortMapping(PortType.A, normalDir);
             addPortMapping(PortType.B, alternativeDir);
         } else {
-            // Fin de vía (DeadEnd) tiene un solo puerto conectado
             List<Dir> connections = new ArrayList<>(track.getConnections());
             if (!connections.isEmpty()) {
                 addPortMapping(PortType.TRUNK, connections.get(0));
@@ -72,22 +67,10 @@ public class RailNodeImpl implements RailNode {
     }
 
     @Override
-    @Deprecated
-    public List<PathStep> getOutSteps() {
-        return outSteps;
-    }
-
-    @Override
     public Track getTrack() {
         return track;
     }
 
-    @Deprecated
-    public void addOutStep(PathStep step) {
-        outSteps.add(step);
-    }
-
-    // Nuevos métodos de RailNode
     @Override
     public List<Port> getPorts() {
         return ports;
@@ -99,7 +82,7 @@ public class RailNodeImpl implements RailNode {
             return TransitionType.BLOCKED;
         }
         if (!(track instanceof ForkRailTrack)) {
-            return TransitionType.BLOCKED; // Un DeadEnd no tiene transiciones
+            return TransitionType.BLOCKED;
         }
 
         PortType in = entry.getType();
@@ -117,7 +100,7 @@ public class RailNodeImpl implements RailNode {
     @Override
     public boolean setRoute(Port entry, Port exit) {
         if (getTransitionType(entry, exit) != TransitionType.DIVERGING) {
-            return false; // Solo diverger requiere conmutación física
+            return false;
         }
 
         ForkRailTrack fork = (ForkRailTrack) track;
@@ -139,7 +122,7 @@ public class RailNodeImpl implements RailNode {
     public boolean isRouteActive(Port entry, Port exit) {
         TransitionType type = getTransitionType(entry, exit);
         if (type == TransitionType.BLOCKED) return false;
-        if (type == TransitionType.CONVERGING) return true; // Converger siempre es pasable
+        if (type == TransitionType.CONVERGING) return true;
 
         ForkRailTrack fork = (ForkRailTrack) track;
         boolean usingAlt = fork.isUsingAlternativeRoute();
@@ -151,7 +134,7 @@ public class RailNodeImpl implements RailNode {
     public Port getActiveExit(Port entry) {
         if (!(track instanceof ForkRailTrack)) return null;
         if (entry.getType() == PortType.A || entry.getType() == PortType.B) {
-            return getPortByType(PortType.TRUNK); // Converger siempre sale al tronco
+            return getPortByType(PortType.TRUNK);
         }
         
         ForkRailTrack fork = (ForkRailTrack) track;

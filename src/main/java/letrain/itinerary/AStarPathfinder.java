@@ -10,7 +10,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import letrain.map.Dir;
-import letrain.segments.PathStep;
 import letrain.segments.Port;
 import letrain.segments.RailNode;
 import letrain.segments.RailwayGraph;
@@ -69,7 +68,6 @@ public class AStarPathfinder implements SegmentPathfinder {
             explored++;
 
             if (current.equals(to)) {
-                // Entry direction constraint removed for simplicity.
                 log.info("[A*] FOUND {}→{} explored={}", from.getId(), to.getId(), explored);
                 return reconstructPath(cameFrom, current);
             }
@@ -101,22 +99,6 @@ public class AStarPathfinder implements SegmentPathfinder {
                                 }
                             }
                             if (validEntry) break;
-                        }
-                    } else {
-                        var steps = current.getSteps();
-                        if (steps != null) {
-                            for (letrain.segments.PathStep exitStep : new letrain.segments.PathStep[]{steps.getFirst(), steps.getSecond()}) {
-                                if (exitStep == null) continue;
-                                for (letrain.segments.PathStep next : graph.getNextSteps(exitStep)) {
-                                    if (neighbor.equals(graph.getSegment(next))) {
-                                        if (next.getDir() == entryDir.get()) {
-                                            validEntry = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (validEntry) break;
-                            }
                         }
                     }
                     if (!validEntry) {
@@ -156,21 +138,11 @@ public class AStarPathfinder implements SegmentPathfinder {
             var aPorts = a.getPorts();
             if (aPorts != null && aPorts.getFirst() != null) {
                 aNode = aPorts.getFirst().getNode();
-            } else {
-                var aSteps = a.getSteps();
-                if (aSteps != null && aSteps.getFirst() != null) {
-                    aNode = aSteps.getFirst().getRailNode();
-                }
             }
             
             var bPorts = b.getPorts();
             if (bPorts != null && bPorts.getFirst() != null) {
                 bNode = bPorts.getFirst().getNode();
-            } else {
-                var bSteps = b.getSteps();
-                if (bSteps != null && bSteps.getFirst() != null) {
-                    bNode = bSteps.getFirst().getRailNode();
-                }
             }
 
             if (aNode == null || bNode == null) return 0;
@@ -201,19 +173,6 @@ public class AStarPathfinder implements SegmentPathfinder {
                 List<Port> nextPorts = graph.getNextPorts(exitPort);
                 if (nextPorts != null) {
                     for (Port next : nextPorts) {
-                        Segment neighbor = graph.getSegment(next);
-                        if (neighbor != null && !neighbor.equals(s)) {
-                            neighbors.add(neighbor);
-                        }
-                    }
-                }
-            }
-        } else {
-            var steps = s.getSteps();
-            if (steps != null) {
-                for (PathStep exitStep : new PathStep[]{steps.getFirst(), steps.getSecond()}) {
-                    if (exitStep == null) continue;
-                    for (PathStep next : graph.getNextSteps(exitStep)) {
                         Segment neighbor = graph.getSegment(next);
                         if (neighbor != null && !neighbor.equals(s)) {
                             neighbors.add(neighbor);

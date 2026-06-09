@@ -135,8 +135,6 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             if (train.getSafetyManager() != null) {
                 if (headNextTrack instanceof ForkRailTrack) {
                     train.getSafetyManager().onForkEntered((ForkRailTrack) headNextTrack);
-                } else {
-                    train.getSafetyManager().onTrackEntered(headNextTrack);
                 }
 
                 // If this is the only linker, it is also the tail, so we trigger exit events on headCurrentTrack

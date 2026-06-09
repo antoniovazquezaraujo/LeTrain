@@ -1,7 +1,7 @@
 # ADR-015: Abstracción de Puertos (PortType) y Tránsitos en Nodos
 
 ## Estado
-PROPUESTA
+ACEPTADA
 
 ## Contexto
 Actualmente, la interfaz [PathStep](file:///home/antonio/dev/LeTrain/src/main/java/letrain/segments/PathStep.java) acopla la representación lógica del grafo con la orientación física en el mapa mediante el uso del enumerado `Dir` (direcciones geográficas). Esto acopla el grafo ferroviario y el pathfinding con la brújula y las coordenadas físicas de la rejilla, dificultando la abstracción y aumentando la complejidad de gestión de bifurcaciones (Fork tracks) en el piloto automático.

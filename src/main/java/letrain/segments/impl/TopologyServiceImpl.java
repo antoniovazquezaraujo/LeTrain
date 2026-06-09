@@ -10,7 +10,6 @@ import java.util.Set;
 
 import letrain.map.Dir;
 import letrain.map.RailMap;
-import letrain.segments.PathStep;
 import letrain.segments.Port;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
@@ -35,8 +34,8 @@ public class TopologyServiceImpl implements TopologyService {
             }
         });
 
-        // 2. Rastrear conexiones para crear PathSteps y Segments
-        Set<Set<PathStep>> discoveredSegments = new HashSet<>();
+        // 2. Rastrear conexiones para crear Segments usando puertos
+        Set<Set<Port>> discoveredSegments = new HashSet<>();
         int segmentCounter = 0;
 
         for (Map.Entry<RailTrack, RailNodeImpl> entry : trackToNode.entrySet()) {
@@ -44,21 +43,21 @@ public class TopologyServiceImpl implements TopologyService {
             RailNodeImpl startNode = entry.getValue();
 
             for (Dir dir : startTrack.getConnections()) {
-                PathStep startStep = findOrCreateStep(startNode, dir);
+                Port startPort = startNode.getPortForDir(dir);
+                if (startPort == null) continue;
                 
                 CrawlResult result = crawl(startTrack, dir, trackToNode);
                 if (result != null) {
-                    PathStep endStep = findOrCreateStep(result.endNode, result.incomingDir);
+                    Port endPort = result.endNode.getPortForDir(result.incomingDir);
+                    if (endPort == null) continue;
                     
-                    Set<PathStep> segmentKey = new HashSet<>(Arrays.asList(startStep, endStep));
+                    Set<Port> segmentKey = new HashSet<>(Arrays.asList(startPort, endPort));
                     
                     if (!discoveredSegments.contains(segmentKey)) {
                         String segmentId = "S" + (segmentCounter++);
-                        Port startPort = startNode.getPortForDir(dir);
-                        Port endPort = result.endNode.getPortForDir(result.incomingDir);
-                        Segment segment = new SegmentImpl(segmentId, startStep, endStep, startPort, endPort);
-                        graph.registerSegment(startStep, segment);
-                        graph.registerSegment(endStep, segment);
+                        Segment segment = new SegmentImpl(segmentId, startPort, endPort);
+                        graph.registerSegment(startPort, segment);
+                        graph.registerSegment(endPort, segment);
                         discoveredSegments.add(segmentKey);
 
                         // Registrar elementos en el nodo de inicio
@@ -81,7 +80,7 @@ public class TopologyServiceImpl implements TopologyService {
     }
 
     private void registerElements(RailwayGraphImpl graph, Segment segment, RailTrack track) {
-        graph.registerTrack(segment, track); // register the track itself (needed for getSegment(RailTrack))
+        graph.registerTrack(segment, track);
         letrain.track.Sensor sensor = track.getSensor();
         if (sensor != null) {
             if (sensor instanceof letrain.track.Station) {
@@ -96,17 +95,6 @@ public class TopologyServiceImpl implements TopologyService {
         return (track instanceof ForkRailTrack) || (track.getConnections().size() != 2);
     }
 
-    private PathStep findOrCreateStep(RailNodeImpl node, Dir dir) {
-        return node.getOutSteps().stream()
-                .filter(s -> s.getDir() == dir)
-                .findFirst()
-                .orElseGet(() -> {
-                    PathStep newStep = new PathStepImpl(node, dir);
-                    node.addOutStep(newStep);
-                    return newStep;
-                });
-    }
-
     private CrawlResult crawl(RailTrack startTrack, Dir startDir, Map<RailTrack, RailNodeImpl> trackToNode) {
         List<RailTrack> visited = new ArrayList<>();
         java.util.Set<RailTrack> seen = new java.util.HashSet<>();
@@ -115,8 +103,6 @@ public class TopologyServiceImpl implements TopologyService {
 
         while (currentTrack != null && !trackToNode.containsKey(currentTrack)) {
             if (!seen.add(currentTrack)) {
-                // Cycle detected — circuit with no intermediate fork nodes.
-                // The entire loop forms one segment from start node back to itself.
                 RailNodeImpl startNode = trackToNode.get(startTrack);
                 if (startNode != null) {
                     return new CrawlResult(startNode, incomingDir, visited);

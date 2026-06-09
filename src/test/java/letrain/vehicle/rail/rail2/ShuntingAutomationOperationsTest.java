@@ -31,16 +31,13 @@ class ShuntingAutomationOperationsTest {
         segment = Mockito.mock(Segment.class);
         when(segment.getId()).thenReturn("S1");
         
-        // Mock getSteps to avoid NPE in updateForkLocks
-        letrain.segments.PathStep ps1 = Mockito.mock(letrain.segments.PathStep.class);
-        letrain.segments.PathStep ps2 = Mockito.mock(letrain.segments.PathStep.class);
+        letrain.segments.Port p1 = Mockito.mock(letrain.segments.Port.class);
+        letrain.segments.Port p2 = Mockito.mock(letrain.segments.Port.class);
         letrain.segments.RailNode rn1 = Mockito.mock(letrain.segments.RailNode.class);
         letrain.segments.RailNode rn2 = Mockito.mock(letrain.segments.RailNode.class);
-        when(ps1.getRailNode()).thenReturn(rn1);
-        when(ps2.getRailNode()).thenReturn(rn2);
-        when(rn1.getOutSteps()).thenReturn(Collections.emptyList());
-        when(rn2.getOutSteps()).thenReturn(Collections.emptyList());
-        when(segment.getSteps()).thenReturn(new letrain.utils.Pair<>(ps1, ps2));
+        when(p1.getNode()).thenReturn(rn1);
+        when(p2.getNode()).thenReturn(rn2);
+        when(segment.getPorts()).thenReturn(new letrain.utils.Pair<>(p1, p2));
 
         trainA = new Train(1);
         trainA.setModel(model);

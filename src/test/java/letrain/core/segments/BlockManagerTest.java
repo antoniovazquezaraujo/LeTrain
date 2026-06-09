@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 import letrain.segments.BlockManager;
-import letrain.segments.PathStep;
+import letrain.segments.Port;
 import letrain.segments.RailNode;
 import letrain.segments.Segment;
 import letrain.segments.impl.BlockManagerImpl;
@@ -30,17 +30,10 @@ class BlockManagerTest {
         segment = Mockito.mock(Segment.class);
         when(segment.getId()).thenReturn("S1");
         
-        PathStep ps1 = Mockito.mock(PathStep.class);
-        PathStep ps2 = Mockito.mock(PathStep.class);
-        RailNode rn1 = Mockito.mock(RailNode.class);
-        RailNode rn2 = Mockito.mock(RailNode.class);
+        Port p1 = Mockito.mock(Port.class);
+        Port p2 = Mockito.mock(Port.class);
         
-        when(ps1.getRailNode()).thenReturn(rn1);
-        when(ps2.getRailNode()).thenReturn(rn2);
-        when(rn1.getOutSteps()).thenReturn(Collections.emptyList());
-        when(rn2.getOutSteps()).thenReturn(Collections.emptyList());
-        
-        when(segment.getSteps()).thenReturn(new letrain.utils.Pair<>(ps1, ps2));
+        when(segment.getPorts()).thenReturn(new letrain.utils.Pair<>(p1, p2));
         
         trainA = Mockito.mock(Train.class);
         trainB = Mockito.mock(Train.class);

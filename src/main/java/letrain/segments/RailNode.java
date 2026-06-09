@@ -9,12 +9,6 @@ import letrain.track.Track;
  */
 public interface RailNode {
     /**
-     * Devuelve los pasos de salida disponibles desde este nodo.
-     */
-    @Deprecated
-    List<PathStep> getOutSteps();
-
-    /**
      * Devuelve el objeto de vía físico que actúa como este nodo.
      */
     Track getTrack();

@@ -8,7 +8,6 @@ import letrain.itinerary.Waypoint;
 import letrain.map.Dir;
 import letrain.mvp.Model;
 import letrain.segments.BlockManager;
-import letrain.segments.PathStep;
 import letrain.segments.Port;
 import letrain.segments.PortType;
 import letrain.segments.RailNode;
@@ -222,15 +221,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         }
     }
 
-    /**
-     * La cabeza del tren ha entrado en una vía física.
-     * @deprecated Replaced by reactive onForkEntered/onForkExited events.
-     */
-    @Override
-    @Deprecated
-    public void onTrackEntered(Track track) {
-        // Deprecated: no-op
-    }
+
 
     @Override
     public void onForkEntered(letrain.track.rail.ForkRailTrack fork) {
@@ -537,11 +528,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         }
     }
 
-    @Override
-    @Deprecated
-    public void releaseOldSegments(BlockManager bm, RailwayGraph graph) {
-        // Deprecated: no-op
-    }
+
 
     @Override
     public Segment findNextSegmentTopological(Linker head, RailwayGraph graph) {
@@ -587,28 +574,28 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             return false;
         }
         RailwayGraph graph = this.train.getModel().getRailwayGraph();
-        Pair<PathStep, PathStep> steps = nextSegment.getSteps();
-        if (steps == null || steps.getFirst() == null || steps.getSecond() == null) {
+        Pair<Port, Port> ports = nextSegment.getPorts();
+        if (ports == null || ports.getFirst() == null || ports.getSecond() == null) {
             return false;
         }
-        RailNode node1 = steps.getFirst().getRailNode();
-        RailNode node2 = steps.getSecond().getRailNode();
+        RailNode node1 = ports.getFirst().getNode();
+        RailNode node2 = ports.getSecond().getNode();
         if (node1 == null || node2 == null) {
             return false;
         }
 
         Segment sAlt = null;
-        for (PathStep step : node1.getOutSteps()) {
-            Segment s = graph.getSegment(step);
+        for (Port port : node1.getPorts()) {
+            Segment s = graph.getSegment(port);
             if (s == null || s.equals(nextSegment)) {
                 continue;
             }
-            Pair<PathStep, PathStep> altSteps = s.getSteps();
-            if (altSteps == null || altSteps.getFirst() == null || altSteps.getSecond() == null) {
+            Pair<Port, Port> altPorts = s.getPorts();
+            if (altPorts == null || altPorts.getFirst() == null || altPorts.getSecond() == null) {
                 continue;
             }
-            RailNode altNode1 = altSteps.getFirst().getRailNode();
-            RailNode altNode2 = altSteps.getSecond().getRailNode();
+            RailNode altNode1 = altPorts.getFirst().getNode();
+            RailNode altNode2 = altPorts.getSecond().getNode();
             if ((altNode1.equals(node1) && altNode2.equals(node2)) ||
                 (altNode1.equals(node2) && altNode2.equals(node1))) {
                 sAlt = s;

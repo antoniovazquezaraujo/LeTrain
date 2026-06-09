@@ -67,14 +67,6 @@ public interface TrainSafetyManager {
     void acquireInitialLocks();
 
     /**
-     * Notifica que la cabeza del tren ha entrado en una vía.
-     *
-     * @param track la vía física en la que acaba de entrar la cabeza.
-     */
-    @Deprecated
-    void onTrackEntered(Track track);
-
-    /**
      * Evento reactivo que se dispara cuando la cabeza del tren entra en un desvío (Fork).
      *
      * @param fork el desvío físico.
@@ -116,12 +108,6 @@ public interface TrainSafetyManager {
      * @return el siguiente segmento objetivo.
      */
     Segment findNextSegment(Linker head, RailwayGraph graph);
-
-    /**
-     * Libera del gestor de bloques todos aquellos segmentos que la cola del tren ya ha abandonado físicamente.
-     */
-    @Deprecated
-    void releaseOldSegments(BlockManager bm, RailwayGraph graph);
 
     /**
      * Determina el siguiente segmento del tren basándose únicamente en la topología física de las vías,

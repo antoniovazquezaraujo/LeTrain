@@ -43,16 +43,15 @@ class UnlinkBlockManagerTest {
         segment1 = mock(Segment.class);
         
         when(segment1.getId()).thenReturn("S1");
-        // BlockManagerImpl.updateForkLocks requires segments to have steps
-        letrain.segments.PathStep ps1 = mock(letrain.segments.PathStep.class);
-        letrain.segments.PathStep ps2 = mock(letrain.segments.PathStep.class);
+        letrain.segments.Port p1 = mock(letrain.segments.Port.class);
+        letrain.segments.Port p2 = mock(letrain.segments.Port.class);
         letrain.segments.RailNode rn1 = mock(letrain.segments.RailNode.class);
         letrain.segments.RailNode rn2 = mock(letrain.segments.RailNode.class);
-        when(ps1.getRailNode()).thenReturn(rn1);
-        when(ps2.getRailNode()).thenReturn(rn2);
+        when(p1.getNode()).thenReturn(rn1);
+        when(p2.getNode()).thenReturn(rn2);
         when(rn1.getTrack()).thenReturn(mock(letrain.track.Track.class));
         when(rn2.getTrack()).thenReturn(mock(letrain.track.Track.class));
-        when(segment1.getSteps()).thenReturn(new letrain.utils.Pair<>(ps1, ps2));
+        when(segment1.getPorts()).thenReturn(new letrain.utils.Pair<>(p1, p2));
 
         when(graph.getSegment(track1)).thenReturn(segment1);
         when(graph.getSegment(track2)).thenReturn(segment1);
