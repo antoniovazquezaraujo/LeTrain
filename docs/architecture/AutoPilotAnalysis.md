@@ -12,11 +12,11 @@ Unlike periodic physics systems that poll the entire world, the LeTrain autopilo
 
 ```mermaid
 graph TD
-    Train[Train Core Engine] -->|ticks| AutoPilot[AutoPilot]
-    AutoPilot -->|1. Calculate Route| Pathfinder[AStarPathfinder]
-    AutoPilot -->|2. Align Switches| RailNode[RailNode / Fork Track]
-    AutoPilot -->|3. Delegate Actions| ActionManager[TrainActionManager]
-    AutoPilot -.->|Cooperates for safety| SafetyManager[TrainSafetyManager]
+    Train["Train Core Engine"] -->|ticks| AutoPilot["AutoPilot"]
+    AutoPilot -->|1. Calculate Route| Pathfinder["AStarPathfinder"]
+    AutoPilot -->|2. Align Switches| RailNode["RailNode / Fork Track"]
+    AutoPilot -->|3. Delegate Actions| ActionManager["TrainActionManager"]
+    AutoPilot -. "Cooperates for safety" .-> SafetyManager["TrainSafetyManager"]
 ```
 
 ---
@@ -54,18 +54,14 @@ The following state machine details how the autopilot transitions between differ
 ```mermaid
 stateDiagram-v2
     [*] --> IDLE
-    
-    IDLE --> FOLLOWING : activate() [Itinerary is valid & Speed == 0]
-    
-    FOLLOWING --> IDLE : deactivate() or Itinerary completed
-    FOLLOWING --> WAITING : Waypoint reached with a WAIT command
-    FOLLOWING --> REVERSING : Waypoint reached with a REVERSE command
-    FOLLOWING --> ERROR : Path calculation failed / No route exists
-    
-    WAITING --> FOLLOWING : waitTicks completed / resumeWaiting()
-    REVERSING --> FOLLOWING : Reverse finished and safety locks reacquired
-    
-    ERROR --> IDLE : deactivate() or reset
+    IDLE --> FOLLOWING : activate
+    FOLLOWING --> IDLE : deactivate or Itinerary completed
+    FOLLOWING --> WAITING : Waypoint reached with WAIT
+    FOLLOWING --> REVERSING : Waypoint reached with REVERSE
+    FOLLOWING --> ERROR : Path calculation failed
+    WAITING --> FOLLOWING : waitTicks completed
+    REVERSING --> FOLLOWING : Reverse finished
+    ERROR --> IDLE : deactivate
 ```
 
 ---
@@ -84,16 +80,16 @@ The autopilot must set the track switches ahead of the train before it enters a 
 
 ```mermaid
 sequenceDiagram
-    participant Train as Train Movement Engine
-    participant AP as AutoPilotImpl
-    participant Node as RailNode (Fork Track)
+    participant Train as "Train Movement Engine"
+    participant AP as "AutoPilotImpl"
+    participant Node as "RailNode (Fork Track)"
     
     Train->>AP: onSegmentEntered(newSegment)
     Note over AP: Find next segment in planned route
     AP->>AP: Get shared RailNode between current & next segments
     alt Node is a Fork Track
         AP->>Node: setRoute(entryPort, exitPort)
-        Node->>Node: Toggle switch state (Normal/Alternative Route)
+        Node->>Node: Toggle switch state
         Note over Node: Switch aligned reactively
     end
 ```
