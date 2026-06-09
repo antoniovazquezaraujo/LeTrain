@@ -4,6 +4,7 @@ import letrain.segments.BlockManager;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.track.Track;
+import letrain.track.rail.ForkRailTrack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,12 +68,25 @@ public interface TrainSafetyManager {
 
     /**
      * Notifica que la cabeza del tren ha entrado en una vía.
-     * El SafetyManager determina si esto implica un cambio de segmento
-     * y actúa en consecuencia (bloqueos, notificaciones).
      *
      * @param track la vía física en la que acaba de entrar la cabeza.
      */
+    @Deprecated
     void onTrackEntered(Track track);
+
+    /**
+     * Evento reactivo que se dispara cuando la cabeza del tren entra en un desvío (Fork).
+     *
+     * @param fork el desvío físico.
+     */
+    void onForkEntered(ForkRailTrack fork);
+
+    /**
+     * Evento reactivo que se dispara cuando la cola del tren sale de un desvío (Fork).
+     *
+     * @param fork el desvío físico.
+     */
+    void onForkExited(ForkRailTrack fork);
 
     /**
      * Evento reactivo que se dispara cuando el tren entra físicamente en un nuevo segmento.
@@ -105,10 +119,8 @@ public interface TrainSafetyManager {
 
     /**
      * Libera del gestor de bloques todos aquellos segmentos que la cola del tren ya ha abandonado físicamente.
-     *
-     * @param bm el gestor de bloques (BlockManager).
-     * @param graph el grafo ferroviario.
      */
+    @Deprecated
     void releaseOldSegments(BlockManager bm, RailwayGraph graph);
 
     /**

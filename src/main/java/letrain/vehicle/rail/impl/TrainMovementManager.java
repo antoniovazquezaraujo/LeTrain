@@ -133,7 +133,25 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             firstLinker.setRailsSinceStop(firstLinker.getRailsSinceStop() + 1);
 
             if (train.getSafetyManager() != null) {
-                train.getSafetyManager().onTrackEntered(headNextTrack);
+                if (headNextTrack instanceof ForkRailTrack) {
+                    train.getSafetyManager().onForkEntered((ForkRailTrack) headNextTrack);
+                } else {
+                    train.getSafetyManager().onTrackEntered(headNextTrack);
+                }
+
+                // If this is the only linker, it is also the tail, so we trigger exit events on headCurrentTrack
+                if (movingOrder.size() == 1) {
+                    if (headCurrentTrack.getSensor() != null) {
+                        headCurrentTrack.getSensor().onExitTrain(train);
+                    }
+                    if (headCurrentTrack.getSemaphore() != null) {
+                        headCurrentTrack.getSemaphore().onExitTrain(train);
+                    }
+                    if (headCurrentTrack instanceof ForkRailTrack) {
+                        ((ForkRailTrack) headCurrentTrack).onExitTrain(train);
+                        train.getSafetyManager().onForkExited((ForkRailTrack) headCurrentTrack);
+                    }
+                }
             }
 
             Sensor enterSensor = headNextTrack.getSensor();
@@ -179,6 +197,9 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             }
             if (lastLinkerTrack instanceof ForkRailTrack) {
                 ((ForkRailTrack) lastLinkerTrack).onExitTrain(train);
+                if (train.getSafetyManager() != null) {
+                    train.getSafetyManager().onForkExited((ForkRailTrack) lastLinkerTrack);
+                }
             }
 
             lastLinker.setPreviousTrack(lastLinkerTrack);
