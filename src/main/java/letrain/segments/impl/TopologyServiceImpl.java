@@ -11,6 +11,7 @@ import java.util.Set;
 import letrain.map.Dir;
 import letrain.map.RailMap;
 import letrain.segments.PathStep;
+import letrain.segments.Port;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.segments.TopologyService;
@@ -53,7 +54,9 @@ public class TopologyServiceImpl implements TopologyService {
                     
                     if (!discoveredSegments.contains(segmentKey)) {
                         String segmentId = "S" + (segmentCounter++);
-                        Segment segment = new SegmentImpl(segmentId, startStep, endStep);
+                        Port startPort = startNode.getPortForDir(dir);
+                        Port endPort = result.endNode.getPortForDir(result.incomingDir);
+                        Segment segment = new SegmentImpl(segmentId, startStep, endStep, startPort, endPort);
                         graph.registerSegment(startStep, segment);
                         graph.registerSegment(endStep, segment);
                         discoveredSegments.add(segmentKey);

@@ -9,13 +9,26 @@ public interface RailwayGraph {
     /**
      * Dado un PathStep, devuelve el segmento al que pertenece.
      */
+    @Deprecated
     Segment getSegment(PathStep step);
 
     /**
      * Dado un paso actual, devuelve los posibles pasos siguientes 
      * al final del segmento. Devuelve null si es fin de vía.
      */
+    @Deprecated
     List<PathStep> getNextSteps(PathStep current);
+
+    /**
+     * Dado un Port, devuelve el segmento al que pertenece.
+     */
+    Segment getSegment(Port port);
+
+    /**
+     * Dado un puerto actual, devuelve los posibles puertos siguientes 
+     * al final del segmento. Devuelve null si es fin de vía.
+     */
+    List<Port> getNextPorts(Port current);
 
     /**
      * Encuentra la secuencia de segmentos que conectan dos segmentos dados.

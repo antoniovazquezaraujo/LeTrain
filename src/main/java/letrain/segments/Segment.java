@@ -15,5 +15,11 @@ public interface Segment {
     /**
      * Devuelve el par de PathSteps que definen los extremos de este segmento.
      */
+    @Deprecated
     Pair<PathStep, PathStep> getSteps();
+
+    /**
+     * Devuelve el par de puertos lógicos en los extremos de este segmento.
+     */
+    Pair<Port, Port> getPorts();
 }

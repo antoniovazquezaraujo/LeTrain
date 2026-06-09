@@ -11,12 +11,15 @@ import java.util.LinkedList;
 import java.util.stream.Collectors;
 
 import letrain.segments.PathStep;
+import letrain.segments.Port;
+import letrain.segments.PortType;
 import letrain.segments.RailNode;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 
 public class RailwayGraphImpl implements RailwayGraph {
     private final Map<PathStep, Segment> stepToSegment = new HashMap<>();
+    private final Map<Port, Segment> portToSegment = new HashMap<>();
     private final Map<RailNode, List<Segment>> nodeToSegments = new HashMap<>();
     private final Map<Segment, List<letrain.track.Station>> segmentToStations = new HashMap<>();
     private final Map<Segment, List<letrain.track.Sensor>> segmentToSensors = new HashMap<>();
@@ -24,8 +27,14 @@ public class RailwayGraphImpl implements RailwayGraph {
     private final Map<Segment, Set<letrain.track.rail.RailTrack>> segmentToTracks = new HashMap<>();
 
     @Override
+    @Deprecated
     public Segment getSegment(PathStep step) {
         return stepToSegment.get(step);
+    }
+
+    @Override
+    public Segment getSegment(Port port) {
+        return portToSegment.get(port);
     }
 
     @Override
@@ -63,6 +72,7 @@ public class RailwayGraphImpl implements RailwayGraph {
     }
 
     @Override
+    @Deprecated
     public List<PathStep> getNextSteps(PathStep current) {
         Segment s = getSegment(current);
         if (s == null) return null;
@@ -75,6 +85,22 @@ public class RailwayGraphImpl implements RailwayGraph {
         
         return destinationNode.getOutSteps().stream()
                 .filter(step -> getSegment(step) != s)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Port> getNextPorts(Port current) {
+        Segment s = getSegment(current);
+        if (s == null) return null;
+        
+        Port targetPort = current.equals(s.getPorts().getFirst()) 
+                ? s.getPorts().getSecond() 
+                : s.getPorts().getFirst();
+        
+        RailNode destinationNode = targetPort.getNode();
+        
+        return destinationNode.getPorts().stream()
+                .filter(port -> getSegment(port) != s)
                 .collect(Collectors.toList());
     }
 
@@ -112,8 +138,13 @@ public class RailwayGraphImpl implements RailwayGraph {
     private List<Segment> getConnectedSegments(Segment s) {
         List<Segment> neighbors = new ArrayList<>();
         // Un segmento está conectado a otros a través de sus dos nodos extremos
-        RailNode node1 = s.getSteps().getFirst().getRailNode();
-        RailNode node2 = s.getSteps().getSecond().getRailNode();
+        RailNode node1 = (s.getPorts() != null && s.getPorts().getFirst() != null)
+                ? s.getPorts().getFirst().getNode()
+                : s.getSteps().getFirst().getRailNode();
+                
+        RailNode node2 = (s.getPorts() != null && s.getPorts().getSecond() != null)
+                ? s.getPorts().getSecond().getNode()
+                : s.getSteps().getSecond().getRailNode();
 
         if (nodeToSegments.containsKey(node1)) neighbors.addAll(nodeToSegments.get(node1));
         if (nodeToSegments.containsKey(node2)) neighbors.addAll(nodeToSegments.get(node2));
@@ -138,6 +169,20 @@ public class RailwayGraphImpl implements RailwayGraph {
         stepToSegment.put(step, segment);
         RailNode node = step.getRailNode();
         nodeToSegments.computeIfAbsent(node, k -> new ArrayList<>()).add(segment);
+
+        // Registrar automáticamente el puerto lógico equivalente para mantener consistencia
+        if (node instanceof RailNodeImpl) {
+            Port port = ((RailNodeImpl) node).getPortForDir(step.getDir());
+            if (port != null) {
+                portToSegment.put(port, segment);
+            }
+        }
+    }
+
+    public void registerSegment(Port port, Segment segment) {
+        portToSegment.put(port, segment);
+        RailNode node = port.getNode();
+        nodeToSegments.computeIfAbsent(node, k -> new ArrayList<>()).add(segment);
     }
 
     @Override
@@ -149,8 +194,8 @@ public class RailwayGraphImpl implements RailwayGraph {
         sb.append("SEGMENTS (").append(segments.size()).append("):\n");
         for (Segment s : segments) {
             sb.append("  ").append(s.getId()).append(": ")
-              .append(s.getSteps().getFirst().getRailNode()).append(" -> ")
-              .append(s.getSteps().getSecond().getRailNode()).append("\n");
+              .append(s.getPorts().getFirst().getNode()).append(" -> ")
+              .append(s.getPorts().getSecond().getNode()).append("\n");
             
             List<letrain.track.Station> stations = getStations(s);
             if (!stations.isEmpty()) {
@@ -171,11 +216,11 @@ public class RailwayGraphImpl implements RailwayGraph {
                     .collect(Collectors.joining(", "));
             sb.append(segIds).append("\n");
             
-            sb.append("    OutSteps: ");
-            String outSteps = entry.getKey().getOutSteps().stream()
-                    .map(ps -> ps.getDir().toString())
+            sb.append("    Ports: ");
+            String portsStr = entry.getKey().getPorts().stream()
+                    .map(p -> p.getType().toString())
                     .collect(Collectors.joining(", "));
-            sb.append(outSteps).append("\n");
+            sb.append(portsStr).append("\n");
         }
         sb.append("------------------------------");
         return sb.toString();
