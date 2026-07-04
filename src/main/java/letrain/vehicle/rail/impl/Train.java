@@ -13,6 +13,8 @@ import letrain.vehicle.rail.TrainSafetyManager;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 import letrain.itinerary.Waypoint;
+import letrain.track.Station;
+import letrain.track.Sensor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +72,7 @@ public class Train implements Renderable {
     public transient boolean joined = false;
     private int savedSpeedBeforeReverse = -1;
     private int savedTargetSpeed = -1;
+    private transient java.util.Set<Sensor> activeSensors = new java.util.HashSet<>();
 
     public void setSavedTargetSpeed(int speed) {
         this.savedTargetSpeed = speed;
@@ -79,6 +82,7 @@ public class Train implements Renderable {
         this.id = ValidationUtils.requirePositive(id, "train id");
         this.linkers = new LinkedList<>();
         this.eventDispatcher = new TrainEventDispatcherImpl(this);
+        this.activeSensors = new java.util.HashSet<>();
 
         this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager();
         this.setLogisticsManager(new TrainLogisticsManager(this));
@@ -133,7 +137,7 @@ public class Train implements Renderable {
     public void setAutoMode(boolean autoMode) {
         if (autoMode) {
             autopilot.activate();
-            this.checkAndNotifyWaypointReached();
+            this.checkInitialWaypoint();
         } else {
             autopilot.deactivate();
         }
@@ -147,7 +151,7 @@ public class Train implements Renderable {
         } else if (autopilot.itinerary().isPresent()) {
             boolean activated = autopilot.activate();
             if (activated) {
-                this.checkAndNotifyWaypointReached();
+                this.checkInitialWaypoint();
                 this.safetyManager.acquireInitialLocks();
             }
         }
@@ -223,7 +227,6 @@ public class Train implements Renderable {
             this.setSavedSpeedBeforeReverse(-1);
             speedLinker.setSpeed(speed);
             if (speed > 0 && oldSpeed == 0 && getModel() != null) {
-                this.checkAndNotifyWaypointReached();
                 getSafetyManager().acquireInitialLocks();
             }
         }
@@ -273,7 +276,6 @@ public class Train implements Renderable {
                         dirLinker.setTargetSpeed(targetSpeed);
                         this.savedSpeedBeforeReverse = -1;
                         if (getModel() != null) {
-                            this.checkAndNotifyWaypointReached();
                             getSafetyManager().acquireInitialLocks();
                         }
                     }
@@ -295,9 +297,15 @@ public class Train implements Renderable {
         guardNotify(() -> this.eventDispatcher.notifyUnlink());
     }
 
-    public void notifyEnterSensor(boolean isForward) {
+    public void notifyEnterSensor(Sensor sensor, boolean isForward) {
         guardNotify(() -> {
             this.eventDispatcher.notifyEnterSensor(isForward);
+            if (sensor != null) {
+                if (this.activeSensors == null) {
+                    this.activeSensors = new java.util.HashSet<>();
+                }
+                this.activeSensors.add(sensor);
+            }
             this.checkAndNotifyWaypointReached();
             if (isAutoMode()) {
                 autopilot.onSegmentEntered(safetyManager.getCurrentSegment());
@@ -305,8 +313,13 @@ public class Train implements Renderable {
         });
     }
 
-    public void notifyExitSensor(boolean isForward) {
-        guardNotify(() -> this.eventDispatcher.notifyExitSensor(isForward));
+    public void notifyExitSensor(Sensor sensor, boolean isForward) {
+        guardNotify(() -> {
+            this.eventDispatcher.notifyExitSensor(isForward);
+            if (sensor != null && this.activeSensors != null) {
+                this.activeSensors.remove(sensor);
+            }
+        });
     }
 
     public int getId() {
@@ -337,6 +350,7 @@ public class Train implements Renderable {
      * Reinitializes transient fields after deserialization.
      */
     public void postLoadInit() {
+        this.activeSensors = new java.util.HashSet<>();
         if (this.eventDispatcher == null) {
         this.eventDispatcher = new TrainEventDispatcherImpl(this);
         }
@@ -631,7 +645,6 @@ public class Train implements Renderable {
 
 
     public void notifySegmentEntered(letrain.segments.Segment newSegment) {
-        this.checkAndNotifyWaypointReached();
         if (isAutoMode()) {
             log.info("Train {} notifySegmentEntered: notifying autopilot", id);
             autopilot.onSegmentEntered(newSegment);
@@ -641,51 +654,51 @@ public class Train implements Renderable {
         }
     }
 
-    public boolean isAtTarget(Waypoint wp) {
-        if (this.model == null)
-            return false;
-        switch (wp.type()) {
-            case STATION:
-                if (this.getStationId() == wp.targetId()) {
-                    return true;
-                }
-                letrain.track.Station curSt = this.getLogisticsManager().getStationAtTrain();
-                if (curSt != null && curSt.getId() == wp.targetId()) {
-                    return true;
-                }
-                letrain.track.Station st = this.model.getStation(wp.targetId());
-                if (st != null) {
-                    for (var linker : this.getLinkers()) {
-                        letrain.track.Track t = linker.getTrack();
-                        if (t != null && t.equals(st.getTrack())) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            case SENSOR:
-                for (var linker : this.getLinkers()) {
-                    letrain.track.Track t = linker.getTrack();
-                    if (t != null && t.getSensor() != null && t.getSensor().getId() == wp.targetId()) {
-                        return true;
-                    }
-                }
-                return false;
-        }
-        return false;
-    }
-
     public void checkAndNotifyWaypointReached() {
         if (isAutoMode()) {
             letrain.itinerary.AutoPilot ap = getAutopilot();
             if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
                 ap.currentWaypoint().ifPresent(wp -> {
-                    if (isAtTarget(wp)) {
+                    if (isCurrentlyOn(wp)) {
                         this.eventDispatcher.notifyWaypointReached(wp);
                     }
                 });
             }
         }
+    }
+
+    private void checkInitialWaypoint() {
+        if (isAutoMode()) {
+            letrain.itinerary.AutoPilot ap = getAutopilot();
+            if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+                ap.currentWaypoint().ifPresent(wp -> {
+                    if (wp.type() == Waypoint.Type.STATION && this.getStationId() == wp.targetId()) {
+                        letrain.track.Station st = this.model.getStation(wp.targetId());
+                        if (st != null) {
+                            if (this.activeSensors == null) {
+                                this.activeSensors = new java.util.HashSet<>();
+                            }
+                            this.activeSensors.add(st);
+                        }
+                        this.eventDispatcher.notifyWaypointReached(wp);
+                    }
+                });
+            }
+        }
+    }
+
+    public boolean isCurrentlyOn(Waypoint wp) {
+        if (this.activeSensors == null) {
+            return false;
+        }
+        for (Sensor s : this.activeSensors) {
+            if (wp.type() == Waypoint.Type.SENSOR && !(s instanceof Station) && s.getId() == wp.targetId()) {
+                return true;
+            } else if (wp.type() == Waypoint.Type.STATION && s instanceof Station && s.getId() == wp.targetId()) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

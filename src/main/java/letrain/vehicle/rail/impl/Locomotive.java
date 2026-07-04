@@ -42,6 +42,7 @@ public class Locomotive extends Linker implements Tractor {
     boolean destroying = false;
     int destroyingTurns = 0;
     boolean engineOn = false;
+    private boolean engineExplicitlyOff = false;
 
     public enum SpeedLimitType {
         MAX_SPEED,
@@ -224,6 +225,7 @@ public class Locomotive extends Linker implements Tractor {
 
     public void setEngineOn(boolean on) {
         this.engineOn = on;
+        this.engineExplicitlyOff = !on;
     }
 
     private boolean forceIdleSound = false;
@@ -271,7 +273,9 @@ public class Locomotive extends Linker implements Tractor {
         int oldSpeed = this.targetSpeed;
         this.targetSpeed = speed;
         if (this.targetSpeed > 0) {
-            this.engineOn = true;
+            if (!engineExplicitlyOff) {
+                this.engineOn = true;
+            }
             if (getTrain() != null) {
                 getTrain().setStalled(false);
             }

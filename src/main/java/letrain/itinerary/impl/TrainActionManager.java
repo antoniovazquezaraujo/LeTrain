@@ -51,7 +51,7 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             }
 
             autopilot.currentWaypoint().ifPresent(wp -> {
-                if (train.isAtTarget(wp)) {
+                if (train.isCurrentlyOn(wp)) {
                     log.info("Train {} consecutive waypoint reached", train.getId());
                     pendingCommands.clear();
                     pendingCommands.addAll(wp.commands());
@@ -99,7 +99,6 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     private void resumeWaiting() {
         this.waitTicks = 0;
         runPendingCommands();
-        train.checkAndNotifyWaypointReached();
     }
 
     private void acquireInitialLocks() {

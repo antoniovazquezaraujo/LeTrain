@@ -101,7 +101,7 @@ public class Sensor implements Renderable {
     }
 
     public void onSensorEnter(Train train, boolean isForward) {
-        train.notifyEnterSensor(isForward);
+        train.notifyEnterSensor(this, isForward);
         if (listeners != null) {
             for (SensorEventListener listener : listeners) {
                 listener.onEnterTrain(train, isForward);
@@ -119,7 +119,7 @@ public class Sensor implements Renderable {
     }
 
     public void onSensorExit(Train train, boolean isForward) {
-        train.notifyExitSensor(isForward);
+        train.notifyExitSensor(this, isForward);
         if (listeners != null) {
             for (SensorEventListener listener : listeners) {
                 listener.onExitTrain(train, isForward);
