@@ -194,6 +194,56 @@ class AutoPilotIntegrationTest {
 
             assertAtStation(t, branchSt);
         }
+
+        @Test
+        @DisplayName("4.3 Multiple forks to dead ends: train reaches end station")
+        void multipleForksToDeadEnds_trainReachesEndStation() {
+            RailTrack t0 = makeTrack(0, 0, Dir.E, Dir.W);
+            RailTrack t1 = makeTrack(1, 0, Dir.W, Dir.E);
+            
+            ForkRailTrack fork1 = makeFork(2, 0);
+            fork1.addRoute(Dir.W, Dir.E);
+            fork1.addRoute(Dir.E, Dir.W); // straight E
+            fork1.addRoute(Dir.W, Dir.S);
+            fork1.addRoute(Dir.S, Dir.W); // branch S (dead end)
+            fork1.setAlternativeRoute(); // start pointing to dead end S
+            
+            RailTrack t3 = makeTrack(3, 0, Dir.W, Dir.E);
+            
+            ForkRailTrack fork2 = makeFork(4, 0);
+            fork2.addRoute(Dir.W, Dir.E);
+            fork2.addRoute(Dir.E, Dir.W); // straight E
+            fork2.addRoute(Dir.W, Dir.S);
+            fork2.addRoute(Dir.S, Dir.W); // branch S (dead end)
+            fork2.setAlternativeRoute(); // start pointing to dead end S
+            
+            RailTrack t5 = makeTrack(5, 0, Dir.W, Dir.E);
+            RailTrack branch1 = makeTrack(2, 1, Dir.N, Dir.S); // dead end 1
+            RailTrack branch2 = makeTrack(4, 1, Dir.N, Dir.S); // dead end 2
+            
+            connect(t0, Dir.E, t1, Dir.W);
+            connect(t1, Dir.E, fork1, Dir.W);
+            connect(fork1, Dir.E, t3, Dir.W);
+            connect(fork1, Dir.S, branch1, Dir.N);
+            
+            connect(t3, Dir.E, fork2, Dir.W);
+            connect(fork2, Dir.E, t5, Dir.W);
+            connect(fork2, Dir.S, branch2, Dir.N);
+            
+            Station a = makeStation(t0, "A");
+            Station b = makeStation(t5, "B");
+            
+            Train t = makeTrain(t0, Dir.W); // starts at A
+            
+            model.postLoadInit();
+            t.getSafetyManager().claimOccupiedSegments();
+            
+            program("A", a.getId(), "B", b.getId(), t.getId());
+            
+            runTicks(600);
+            
+            assertAtStation(t, b);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════

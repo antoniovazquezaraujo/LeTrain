@@ -253,6 +253,9 @@ public class Model implements letrain.mvp.Model {
             for (Locomotive loco : locomotives) {
                 Train train = loco.getTrain();
                 if (train != null && train.isAutoMode()) {
+                    if (train.getSafetyManager().getCurrentSegment() != null) {
+                        train.notifyAutopilotSegmentEntered(train.getSafetyManager().getCurrentSegment());
+                    }
                     train.getSafetyManager().acquireInitialLocks();
                 }
             }

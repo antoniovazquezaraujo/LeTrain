@@ -1,8 +1,6 @@
 package letrain.itinerary.impl;
 
 import letrain.itinerary.WaypointCommand;
-import letrain.track.rail.RailTrack;
-import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +58,9 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             });
 
             if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING && this.train.getSafetyManager() != null) {
+                if (this.train.getSafetyManager().getCurrentSegment() != null) {
+                    this.train.notifyAutopilotSegmentEntered(this.train.getSafetyManager().getCurrentSegment());
+                }
                 this.train.getSafetyManager().acquireInitialLocks();
             }
         }
@@ -102,15 +103,9 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     }
 
     private void acquireInitialLocks() {
-        if (this.train.getModel() != null && this.train.isAutoMode()) {
-            Linker head = this.train.getPhysicalFront();
-            if (head != null && head.getTrack() instanceof RailTrack) {
-                letrain.segments.Segment currentSeg = this.train.getModel().getRailwayGraph()
-                        .getSegment((RailTrack) head.getTrack());
-                if (currentSeg != null) {
-                    this.train.getAutopilot().onSegmentEntered(currentSeg);
-                }
-            }
+        if (this.train.getModel() != null && this.train.isAutoMode()
+                && this.train.getSafetyManager().getCurrentSegment() != null) {
+            this.train.notifyAutopilotSegmentEntered(this.train.getSafetyManager().getCurrentSegment());
         }
         if (this.train.getSafetyManager() != null && this.train.getModel() != null) {
             this.train.getSafetyManager().acquireInitialLocks();

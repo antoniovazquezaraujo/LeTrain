@@ -46,6 +46,7 @@ public abstract class TrainMixin {
 
     @JsonProperty("trip")
     @JsonAlias({"itinerary", "trip"})
+    @JsonDeserialize(as = letrain.vehicle.rail.impl.Trip.class)
     Trip trip;
 
     @JsonProperty("directorLinker")

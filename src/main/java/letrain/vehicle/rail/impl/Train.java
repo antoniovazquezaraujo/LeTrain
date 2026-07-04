@@ -119,6 +119,10 @@ public class Train implements Renderable {
         this.railStationId = railStationId;
     }
 
+    public java.util.Set<letrain.track.Sensor> getActiveSensors() {
+        return activeSensors;
+    }
+
     public int getSpeed() {
         if (directorLinker != null) {
             return directorLinker.getSpeed();
@@ -152,6 +156,9 @@ public class Train implements Renderable {
             boolean activated = autopilot.activate();
             if (activated) {
                 this.checkInitialWaypoint();
+                if (isAutoMode() && safetyManager.getCurrentSegment() != null) {
+                    notifyAutopilotSegmentEntered(safetyManager.getCurrentSegment());
+                }
                 this.safetyManager.acquireInitialLocks();
             }
         }
@@ -227,6 +234,9 @@ public class Train implements Renderable {
             this.setSavedSpeedBeforeReverse(-1);
             speedLinker.setSpeed(speed);
             if (speed > 0 && oldSpeed == 0 && getModel() != null) {
+                if (isAutoMode() && safetyManager.getCurrentSegment() != null) {
+                    notifyAutopilotSegmentEntered(safetyManager.getCurrentSegment());
+                }
                 getSafetyManager().acquireInitialLocks();
             }
         }
@@ -276,6 +286,9 @@ public class Train implements Renderable {
                         dirLinker.setTargetSpeed(targetSpeed);
                         this.savedSpeedBeforeReverse = -1;
                         if (getModel() != null) {
+                            if (isAutoMode() && safetyManager.getCurrentSegment() != null) {
+                                notifyAutopilotSegmentEntered(safetyManager.getCurrentSegment());
+                            }
                             getSafetyManager().acquireInitialLocks();
                         }
                     }
@@ -305,6 +318,9 @@ public class Train implements Renderable {
                     this.activeSensors = new java.util.HashSet<>();
                 }
                 this.activeSensors.add(sensor);
+                if (sensor instanceof letrain.track.Station) {
+                    this.setStationId(sensor.getId());
+                }
             }
             this.checkAndNotifyWaypointReached();
             if (isAutoMode()) {
@@ -318,6 +334,9 @@ public class Train implements Renderable {
             this.eventDispatcher.notifyExitSensor(isForward);
             if (sensor != null && this.activeSensors != null) {
                 this.activeSensors.remove(sensor);
+                if (sensor instanceof letrain.track.Station && this.getStationId() == sensor.getId()) {
+                    this.setStationId(0);
+                }
             }
         });
     }
@@ -342,6 +361,9 @@ public class Train implements Renderable {
         // Delegamos enteramente la reclamación física de cantones al safetyManager
         safetyManager.claimOccupiedSegments();
         if (isAutoMode()) {
+            if (safetyManager.getCurrentSegment() != null) {
+                notifyAutopilotSegmentEntered(safetyManager.getCurrentSegment());
+            }
             safetyManager.acquireInitialLocks();
         }
     }
@@ -352,7 +374,16 @@ public class Train implements Renderable {
     public void postLoadInit() {
         this.activeSensors = new java.util.HashSet<>();
         if (this.eventDispatcher == null) {
-        this.eventDispatcher = new TrainEventDispatcherImpl(this);
+            this.eventDispatcher = new TrainEventDispatcherImpl(this);
+        } else {
+            java.util.List<letrain.vehicle.rail.CoreTrainEventListener> coreList = new java.util.ArrayList<>(this.eventDispatcher.getCoreTrainListeners());
+            for (letrain.vehicle.rail.CoreTrainEventListener l : coreList) {
+                this.eventDispatcher.removeCoreTrainEventListener(l);
+            }
+            java.util.List<letrain.vehicle.rail.ScriptTrainEventListener> scriptList = new java.util.ArrayList<>(this.eventDispatcher.getScriptTrainListeners());
+            for (letrain.vehicle.rail.ScriptTrainEventListener l : scriptList) {
+                this.eventDispatcher.removeScriptTrainEventListener(l);
+            }
         }
         this.eventDispatcher.postLoadInit();
         this.isNotifying = false;
@@ -644,13 +675,10 @@ public class Train implements Renderable {
     }
 
 
-    public void notifySegmentEntered(letrain.segments.Segment newSegment) {
-        if (isAutoMode()) {
-            log.info("Train {} notifySegmentEntered: notifying autopilot", id);
+    public void notifyAutopilotSegmentEntered(letrain.segments.Segment newSegment) {
+        if (isAutoMode() && autopilot != null) {
+            log.info("Train {} notifyAutopilotSegmentEntered: notifying autopilot", id);
             autopilot.onSegmentEntered(newSegment);
-        }
-        if (safetyManager != null && model != null) {
-            safetyManager.onSegmentEntered(newSegment);
         }
     }
 

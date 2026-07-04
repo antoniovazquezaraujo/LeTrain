@@ -100,9 +100,13 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         Set<Segment> segmentsToClaim = new HashSet<>();
         for (Linker linker : train.getLinkers()) {
             if (linker.getTrack() instanceof RailTrack) {
-                Segment segment = graph.getSegment((RailTrack) linker.getTrack());
+                RailTrack track = (RailTrack) linker.getTrack();
+                Segment segment = graph.getSegment(track);
                 if (segment != null) {
                     segmentsToClaim.add(segment);
+                }
+                if (track.getSensor() != null) {
+                    train.notifyEnterSensor(track.getSensor(), true);
                 }
             }
         }
@@ -151,14 +155,6 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             isWaitingForBlock = train.isAutoMode();
             log.info("Train {} acquireInitialLocks: currentSegment is null, isWaitingForBlock set to {}", train.getId(), isWaitingForBlock);
             return;
-        }
-
-
-
-        // Notify autopilot of current segment so it can compute route and align forks
-        if (train.isAutoMode() && train.getAutopilot() != null) {
-            log.info("Train {} acquireInitialLocks: notifying autopilot of segment {}", train.getId(), currentSegment.getId());
-            train.getAutopilot().onSegmentEntered(currentSegment);
         }
 
         // 1. Asegurar posesión del segmento actual
@@ -370,8 +366,6 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         log.info("Train {} onSegmentEntered: newSegment={}", train.getId(), newSegment != null ? newSegment.getId() : "null");
         currentSegment = newSegment;
         isWaitingForBlock = false;
-
-
 
         // 1. Asegurar posesión del segmento al que acabamos de entrar
         if (!bm.getOwnedSegments(train).contains(currentSegment)) {
