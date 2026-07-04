@@ -13,6 +13,7 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 ## 🛤️ Infraestructura Ferroviaria
 - [[infrastructure/TrackTypes|Jerarquía de Vías (Forks, Puentes, Túneles)]]
 - [[infrastructure/BlockSystem|Seguridad y Colisiones (Simple Blocking)]]
+- [[safety_locks_analysis|Análisis de Bloqueos Iniciales (acquireInitialLocks)]]
 
 ## 🚆 Material Rodante (Vehículos)
 - [[vehicles/Physics|Física de Movimiento y Colisiones]]

@@ -2,7 +2,6 @@ package letrain.itinerary.impl;
 
 import letrain.itinerary.WaypointCommand;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
@@ -82,39 +81,16 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         }
         switch (command.kind()) {
             case LOAD:
-                letrain.track.Station loadStation = train.getLogisticsManager().getStationAtTrain();
-                if (loadStation != null) {
-                    train.getLogisticsManager().startLoadProcess(loadStation);
-                }
+                train.load();
                 break;
             case UNLOAD:
-                letrain.track.Station unloadStation = train.getLogisticsManager().getStationAtTrain();
-                if (unloadStation != null) {
-                    train.getLogisticsManager().startUnloadProcess(unloadStation);
-                }
+                train.unload();
                 break;
             case REVERSE:
-                Tractor dirLinker = train.getDirectorLinker();
-                if (dirLinker != null) {
-                    if (dirLinker.getSpeed() > 0) {
-                        train.setSavedSpeedBeforeReverse(dirLinker.getTargetSpeed());
-                        dirLinker.setTargetSpeed(0);
-                        train.pendingReverse = true;
-                    } else {
-                        dirLinker.toggleReversed();
-                        train.pendingReverse = false;
-                    }
-                }
+                train.reverse();
                 break;
             case SPEED:
-                Tractor speedLinker = train.getDirectorLinker();
-                if (speedLinker != null) {
-                    train.setSavedSpeedBeforeReverse(-1);
-                    speedLinker.setSpeed(command.targetSpeed());
-                    if (command.targetSpeed() > 0 && train.getModel() != null) {
-                        train.getSafetyManager().acquireInitialLocks();
-                    }
-                }
+                train.setSpeed(command.targetSpeed());
                 break;
             default:
                 break;
@@ -125,7 +101,7 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         if (train.getModel() != null && train.getModel().getScheduler() != null) {
             train.getModel().getScheduler().schedule(ticks, () -> {
                 resumeWaiting();
-                train.getSafetyManager().acquireInitialLocks();
+                this.acquireInitialLocks();
             });
         }
     }

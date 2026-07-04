@@ -152,6 +152,48 @@ class AutoPilotIntegrationTest {
 
             assertAtStation(t, branchSt);
         }
+
+        @Test
+        @DisplayName("4.2 Fork flipped: train starting on station enters branch station")
+        void forkFlipped_trainStartsOnStation_entersBranch() {
+            RailTrack t0 = makeTrack(0, 0, Dir.E, Dir.W);
+            RailTrack t1 = makeTrack(1, 0, Dir.W, Dir.E);
+            ForkRailTrack fork = makeFork(2, 0);
+            fork.addRoute(Dir.W, Dir.E);
+            fork.addRoute(Dir.E, Dir.W); // straight
+            fork.addRoute(Dir.W, Dir.S);
+            fork.addRoute(Dir.S, Dir.W); // branch S
+            fork.setNormalRoute();
+            RailTrack t3 = makeTrack(3, 0, Dir.W, Dir.E);
+            RailTrack branch = makeTrack(2, 1, Dir.N, Dir.S);
+            connect(t0, Dir.E, t1, Dir.W);
+            connect(t1, Dir.E, fork, Dir.W);
+            connect(fork, Dir.E, t3, Dir.W);
+            connect(fork, Dir.S, branch, Dir.N);
+
+            Station startSt = makeStation(t0, "Start");
+            Station mainSt = makeStation(t3, "Main");
+            Station branchSt = makeStation(branch, "Branch");
+            Train t = makeTrain(t0, Dir.W); // Train starts at Start station (first waypoint)
+            assertFalse(fork.isUsingAlternativeRoute(), "fork starts straight");
+
+            model.setProgram("""
+                    station %d set name "Start";
+                    station %d set name "Main";
+                    station %d set name "Branch";
+                    create itinerary "Ruta" {
+                        add station "Start"
+                        add station "Branch"
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(startSt.getId(), mainSt.getId(), branchSt.getId(), t.getId(), t.getId(), t.getId()));
+
+            runTicks(600);
+
+            assertAtStation(t, branchSt);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════

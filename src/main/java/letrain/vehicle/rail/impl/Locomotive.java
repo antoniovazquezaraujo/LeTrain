@@ -274,12 +274,6 @@ public class Locomotive extends Linker implements Tractor {
             this.engineOn = true;
             if (getTrain() != null) {
                 getTrain().setStalled(false);
-                if (oldSpeed == 0) {
-                    log.info("Locomotive {}: target speed increased from 0. Acquiring initial locks.", id);
-                    Train train = getTrain();
-                    train.actionManager.checkWaypointArrival();
-                    train.getSafetyManager().acquireInitialLocks();
-                }
             }
         }
         limitTargetSpeed();

@@ -57,7 +57,7 @@ public class Train implements Renderable {
     private transient letrain.vehicle.rail.TrainSafetyManager safetyManager;
     public transient letrain.itinerary.TrainActionManager actionManager;
     private transient boolean isNotifying = false;
-    public transient boolean pendingReverse = false;
+    private transient boolean pendingReverse = false;
 
     // Transient coupling menu selection state
     private transient Deque<Linker> linkersToJoin = new LinkedList<>();
@@ -146,7 +146,6 @@ public class Train implements Renderable {
             if (activated) {
                 this.actionManager.checkWaypointArrival();
                 this.safetyManager.acquireInitialLocks();
-                this.actionManager.checkWaypointArrival();
             }
         }
         log.info("[TRAIN] toggleAutoMode → autoMode={}", isAutoMode());
@@ -210,8 +209,53 @@ public class Train implements Renderable {
         }
     }
 
-    public void setSavedSpeedBeforeReverse(int speed) {
+    private void setSavedSpeedBeforeReverse(int speed) {
         this.savedSpeedBeforeReverse = speed;
+    }
+
+    public void setSpeed(int speed) {
+        Tractor speedLinker = getDirectorLinker();
+        if (speedLinker != null) {
+            int oldSpeed = speedLinker.getTargetSpeed();
+            this.setSavedSpeedBeforeReverse(-1);
+            speedLinker.setSpeed(speed);
+            if (speed > 0 && oldSpeed == 0 && getModel() != null) {
+                this.actionManager.checkWaypointArrival();
+                getSafetyManager().acquireInitialLocks();
+            }
+        }
+    }
+
+    public void reverse() {
+        Tractor dirLinker = getDirectorLinker();
+        if (dirLinker != null) {
+            if (dirLinker.getSpeed() > 0) {
+                this.setSavedSpeedBeforeReverse(dirLinker.getTargetSpeed());
+                dirLinker.setTargetSpeed(0);
+                this.pendingReverse = true;
+            } else {
+                dirLinker.toggleReversed();
+                this.pendingReverse = false;
+            }
+        }
+    }
+
+    public void load() {
+        if (logisticsManager != null) {
+            letrain.track.Station loadStation = logisticsManager.getStationAtTrain();
+            if (loadStation != null) {
+                logisticsManager.startLoadProcess(loadStation);
+            }
+        }
+    }
+
+    public void unload() {
+        if (logisticsManager != null) {
+            letrain.track.Station unloadStation = logisticsManager.getStationAtTrain();
+            if (unloadStation != null) {
+                logisticsManager.startUnloadProcess(unloadStation);
+            }
+        }
     }
 
     public void notifySpeedChanged(int speed) {
@@ -222,8 +266,13 @@ public class Train implements Renderable {
                 if (dirLinker != null) {
                     dirLinker.toggleReversed();
                     if (this.savedSpeedBeforeReverse != -1) {
-                        dirLinker.setTargetSpeed(this.savedSpeedBeforeReverse);
+                        int targetSpeed = this.savedSpeedBeforeReverse;
+                        dirLinker.setTargetSpeed(targetSpeed);
                         this.savedSpeedBeforeReverse = -1;
+                        if (getModel() != null) {
+                            this.actionManager.checkWaypointArrival();
+                            getSafetyManager().acquireInitialLocks();
+                        }
                     }
                 }
             }

@@ -155,6 +155,12 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
 
 
 
+        // Notify autopilot of current segment so it can compute route and align forks
+        if (train.isAutoMode() && train.getAutopilot() != null) {
+            log.info("Train {} acquireInitialLocks: notifying autopilot of segment {}", train.getId(), currentSegment.getId());
+            train.getAutopilot().onSegmentEntered(currentSegment);
+        }
+
         // 1. Asegurar posesión del segmento actual
         if (!bm.getOwnedSegments(train).contains(currentSegment)) {
             boolean currentLocked = bm.tryLock(train, currentSegment);
