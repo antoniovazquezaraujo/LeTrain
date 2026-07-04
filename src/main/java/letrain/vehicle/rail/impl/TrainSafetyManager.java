@@ -213,7 +213,8 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 } else {
                     if (train.isAutoMode()) {
                         train.movementManager.initiateBraking();
-                        log.info("Train {} (AUTO) failed to lock next segment {}. Initiating  braking.", train.getId(),
+                        isWaitingForBlock = true;
+                        log.info("Train {} (AUTO) failed to lock next segment {}. isWaitingForBlock=true.", train.getId(),
                                 nextSegment.getId());
                     } else {
                         isWaitingForBlock = false;
@@ -424,7 +425,8 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 } else {
                     if (train.isAutoMode()) {
                         train.movementManager.initiateBraking();
-                        log.info("Train {} (AUTO) next segment {} is blocked. Initiating braking.  ", train.getId(),
+                        isWaitingForBlock = true;
+                        log.info("Train {} (AUTO) next segment {} is blocked. isWaitingForBlock=true.", train.getId(),
                                 nextSegment.getId());
                     } else {
                         isWaitingForBlock = false;

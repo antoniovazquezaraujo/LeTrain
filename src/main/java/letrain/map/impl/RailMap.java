@@ -2,6 +2,7 @@ package letrain.map.impl;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
@@ -17,7 +18,7 @@ public class RailMap implements letrain.map.RailMap<RailTrack>, Renderable {
     private Map<Integer, Map<Integer, RailTrack>> rails;
 
     public RailMap() {
-        rails = new HashMap<>();
+        rails = new TreeMap<>();
     }
 
     public Map<Integer, Map<Integer, RailTrack>> getRails() {
@@ -71,7 +72,7 @@ public class RailMap implements letrain.map.RailMap<RailTrack>, Renderable {
         int x = point.getX();
         int y = point.getY();
         if (!rails.containsKey(y)) {
-            rails.put(y, new HashMap<>());
+            rails.put(y, new TreeMap<>());
         }
         Map<Integer, RailTrack> cols = rails.get(y);
         if (rail != null) {

@@ -58,9 +58,7 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             });
 
             if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING && this.train.getSafetyManager() != null) {
-                if (this.train.getSafetyManager().getCurrentSegment() != null) {
-                    this.train.notifyAutopilotSegmentEntered(this.train.getSafetyManager().getCurrentSegment());
-                }
+                this.train.notifyAutopilotSegmentEntered(this.train.resolveCurrentSegmentFromGraph());
                 this.train.getSafetyManager().acquireInitialLocks();
             }
         }
@@ -103,9 +101,8 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     }
 
     private void acquireInitialLocks() {
-        if (this.train.getModel() != null && this.train.isAutoMode()
-                && this.train.getSafetyManager().getCurrentSegment() != null) {
-            this.train.notifyAutopilotSegmentEntered(this.train.getSafetyManager().getCurrentSegment());
+        if (this.train.getModel() != null && this.train.isAutoMode()) {
+            this.train.notifyAutopilotSegmentEntered(this.train.resolveCurrentSegmentFromGraph());
         }
         if (this.train.getSafetyManager() != null && this.train.getModel() != null) {
             this.train.getSafetyManager().acquireInitialLocks();

@@ -2,11 +2,13 @@ package letrain.segments.impl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import letrain.map.Dir;
 import letrain.map.RailMap;
@@ -38,7 +40,11 @@ public class TopologyServiceImpl implements TopologyService {
         Set<Set<Port>> discoveredSegments = new HashSet<>();
         int segmentCounter = 0;
 
-        for (Map.Entry<RailTrack, RailNodeImpl> entry : trackToNode.entrySet()) {
+        List<Map.Entry<RailTrack, RailNodeImpl>> sortedNodes = new ArrayList<>(trackToNode.entrySet());
+        sortedNodes.sort(Comparator.comparingInt(
+            (Map.Entry<RailTrack, RailNodeImpl> e) -> e.getKey().getPosition().getY())
+            .thenComparingInt(e -> e.getKey().getPosition().getX()));
+        for (Map.Entry<RailTrack, RailNodeImpl> entry : sortedNodes) {
             RailTrack startTrack = entry.getKey();
             RailNodeImpl startNode = entry.getValue();
 

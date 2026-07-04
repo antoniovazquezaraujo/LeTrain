@@ -239,9 +239,9 @@ class AutoPilotIntegrationTest {
             t.getSafetyManager().claimOccupiedSegments();
             
             program("A", a.getId(), "B", b.getId(), t.getId());
-            
-            runTicks(600);
-            
+
+            runUntil(model, () -> hasReached(t, b), 2000);
+
             assertAtStation(t, b);
         }
     }
@@ -838,6 +838,16 @@ class AutoPilotIntegrationTest {
 
     private boolean hasReached(Train t, Station st) {
         return t.getStationId() == st.getId();
+    }
+
+    private void runUntil(Model m, java.util.function.BooleanSupplier condition, int maxTicks) {
+        for (int i = 0; i < maxTicks; i++) {
+            if (condition.getAsBoolean()) return;
+            if (m.getScheduler() != null) m.getScheduler().tick();
+            m.moveLocomotives();
+            m.loadAndUnloadTrains();
+        }
+        m.removeDestroyedTrains();
     }
 
     private void assertAtStation(Train t, Station st) {

@@ -156,8 +156,9 @@ public class Train implements Renderable {
             boolean activated = autopilot.activate();
             if (activated) {
                 this.checkInitialWaypoint();
-                if (isAutoMode() && safetyManager.getCurrentSegment() != null) {
-                    notifyAutopilotSegmentEntered(safetyManager.getCurrentSegment());
+                letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
+                if (seg != null) {
+                    notifyAutopilotSegmentEntered(seg);
                 }
                 this.safetyManager.acquireInitialLocks();
             }
@@ -234,8 +235,9 @@ public class Train implements Renderable {
             this.setSavedSpeedBeforeReverse(-1);
             speedLinker.setSpeed(speed);
             if (speed > 0 && oldSpeed == 0 && getModel() != null) {
-                if (isAutoMode() && safetyManager.getCurrentSegment() != null) {
-                    notifyAutopilotSegmentEntered(safetyManager.getCurrentSegment());
+                letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
+                if (seg != null) {
+                    notifyAutopilotSegmentEntered(seg);
                 }
                 getSafetyManager().acquireInitialLocks();
             }
@@ -286,8 +288,9 @@ public class Train implements Renderable {
                         dirLinker.setTargetSpeed(targetSpeed);
                         this.savedSpeedBeforeReverse = -1;
                         if (getModel() != null) {
-                            if (isAutoMode() && safetyManager.getCurrentSegment() != null) {
-                                notifyAutopilotSegmentEntered(safetyManager.getCurrentSegment());
+                            letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
+                            if (seg != null) {
+                                notifyAutopilotSegmentEntered(seg);
                             }
                             getSafetyManager().acquireInitialLocks();
                         }
@@ -361,8 +364,9 @@ public class Train implements Renderable {
         // Delegamos enteramente la reclamación física de cantones al safetyManager
         safetyManager.claimOccupiedSegments();
         if (isAutoMode()) {
-            if (safetyManager.getCurrentSegment() != null) {
-                notifyAutopilotSegmentEntered(safetyManager.getCurrentSegment());
+            letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
+            if (seg != null) {
+                notifyAutopilotSegmentEntered(seg);
             }
             safetyManager.acquireInitialLocks();
         }
@@ -674,6 +678,13 @@ public class Train implements Renderable {
         }
     }
 
+
+    public letrain.segments.Segment resolveCurrentSegmentFromGraph() {
+        if (model == null || model.getRailwayGraph() == null) return null;
+        letrain.vehicle.rail.Linker head = getPhysicalFront();
+        if (head == null || !(head.getTrack() instanceof letrain.track.rail.RailTrack)) return null;
+        return model.getRailwayGraph().getSegment((letrain.track.rail.RailTrack) head.getTrack());
+    }
 
     public void notifyAutopilotSegmentEntered(letrain.segments.Segment newSegment) {
         if (isAutoMode() && autopilot != null) {
