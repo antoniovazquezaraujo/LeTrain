@@ -40,4 +40,6 @@ public interface TrainEventDispatcher {
     void notifyContact(Point pos, int speed);
 
     void notifyCrash(Point pos, int speed);
+
+    void notifyWaypointReached(letrain.itinerary.Waypoint waypoint);
 }

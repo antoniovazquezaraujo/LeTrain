@@ -22,24 +22,10 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     }
 
     @Override
-    public void checkWaypointArrival() {
-        if (!train.isAutoMode()) {
-            return;
-        }
-        letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
-        if (autopilot == null || autopilot.mode() != letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
-            return;
-        }
-        java.util.Optional<letrain.itinerary.Waypoint> wpOpt = autopilot.currentWaypoint();
-        if (wpOpt.isEmpty()) {
-            return;
-        }
-        letrain.itinerary.Waypoint wp = wpOpt.get();
-        if (isAtTarget(wp)) {
-            pendingCommands.clear();
-            pendingCommands.addAll(wp.commands());
-            runPendingCommands();
-        }
+    public void onWaypointReached(Train train, letrain.itinerary.Waypoint waypoint) {
+        pendingCommands.clear();
+        pendingCommands.addAll(waypoint.commands());
+        runPendingCommands();
     }
 
     private void runPendingCommands() {
@@ -65,13 +51,17 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             }
 
             autopilot.currentWaypoint().ifPresent(wp -> {
-                if (train.getStationId() == wp.targetId()) {
+                if (train.isAtTarget(wp)) {
                     log.info("Train {} consecutive waypoint reached", train.getId());
                     pendingCommands.clear();
                     pendingCommands.addAll(wp.commands());
                     runPendingCommands();
                 }
             });
+
+            if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING && this.train.getSafetyManager() != null) {
+                this.train.getSafetyManager().acquireInitialLocks();
+            }
         }
     }
 
@@ -109,7 +99,7 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     private void resumeWaiting() {
         this.waitTicks = 0;
         runPendingCommands();
-        checkWaypointArrival();
+        train.checkAndNotifyWaypointReached();
     }
 
     private void acquireInitialLocks() {
@@ -128,37 +118,4 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         }
     }
 
-    private boolean isAtTarget(letrain.itinerary.Waypoint wp) {
-        if (train.getModel() == null)
-            return false;
-        switch (wp.type()) {
-            case STATION:
-                if (train.getStationId() == wp.targetId()) {
-                    return true;
-                }
-                letrain.track.Station curSt = train.getLogisticsManager().getStationAtTrain();
-                if (curSt != null && curSt.getId() == wp.targetId()) {
-                    return true;
-                }
-                letrain.track.Station st = train.getModel().getStation(wp.targetId());
-                if (st != null) {
-                    for (var linker : train.getLinkers()) {
-                        letrain.track.Track t = linker.getTrack();
-                        if (t != null && t.equals(st.getTrack())) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            case SENSOR:
-                for (var linker : train.getLinkers()) {
-                    letrain.track.Track t = linker.getTrack();
-                    if (t != null && t.getSensor() != null && t.getSensor().getId() == wp.targetId()) {
-                        return true;
-                    }
-                }
-                return false;
-        }
-        return false;
-    }
 }

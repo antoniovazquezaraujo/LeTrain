@@ -12,6 +12,7 @@ import letrain.vehicle.rail.TrainMovementManager;
 import letrain.vehicle.rail.TrainSafetyManager;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
+import letrain.itinerary.Waypoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +85,7 @@ public class Train implements Renderable {
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.actionManager = new letrain.itinerary.impl.TrainActionManager(this);
+        this.addCoreTrainEventListener(this.actionManager);
         this.autopilot = new letrain.itinerary.impl.AutoPilotImpl(this, this.actionManager);
     }
 
@@ -131,6 +133,7 @@ public class Train implements Renderable {
     public void setAutoMode(boolean autoMode) {
         if (autoMode) {
             autopilot.activate();
+            this.checkAndNotifyWaypointReached();
         } else {
             autopilot.deactivate();
         }
@@ -144,7 +147,7 @@ public class Train implements Renderable {
         } else if (autopilot.itinerary().isPresent()) {
             boolean activated = autopilot.activate();
             if (activated) {
-                this.actionManager.checkWaypointArrival();
+                this.checkAndNotifyWaypointReached();
                 this.safetyManager.acquireInitialLocks();
             }
         }
@@ -220,7 +223,7 @@ public class Train implements Renderable {
             this.setSavedSpeedBeforeReverse(-1);
             speedLinker.setSpeed(speed);
             if (speed > 0 && oldSpeed == 0 && getModel() != null) {
-                this.actionManager.checkWaypointArrival();
+                this.checkAndNotifyWaypointReached();
                 getSafetyManager().acquireInitialLocks();
             }
         }
@@ -270,7 +273,7 @@ public class Train implements Renderable {
                         dirLinker.setTargetSpeed(targetSpeed);
                         this.savedSpeedBeforeReverse = -1;
                         if (getModel() != null) {
-                            this.actionManager.checkWaypointArrival();
+                            this.checkAndNotifyWaypointReached();
                             getSafetyManager().acquireInitialLocks();
                         }
                     }
@@ -295,7 +298,7 @@ public class Train implements Renderable {
     public void notifyEnterSensor(boolean isForward) {
         guardNotify(() -> {
             this.eventDispatcher.notifyEnterSensor(isForward);
-            this.actionManager.checkWaypointArrival();
+            this.checkAndNotifyWaypointReached();
             if (isAutoMode()) {
                 autopilot.onSegmentEntered(safetyManager.getCurrentSegment());
             }
@@ -342,6 +345,8 @@ public class Train implements Renderable {
         this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager();
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
+        this.actionManager = new letrain.itinerary.impl.TrainActionManager(this);
+        this.addCoreTrainEventListener(this.actionManager);
         if (this.autopilot == null) {
             this.autopilot = new letrain.itinerary.impl.AutoPilotImpl(this, this.actionManager);
         } else if (this.autopilot instanceof letrain.itinerary.impl.AutoPilotImpl) {
@@ -626,13 +631,60 @@ public class Train implements Renderable {
 
 
     public void notifySegmentEntered(letrain.segments.Segment newSegment) {
-        this.actionManager.checkWaypointArrival();
+        this.checkAndNotifyWaypointReached();
         if (isAutoMode()) {
             log.info("Train {} notifySegmentEntered: notifying autopilot", id);
             autopilot.onSegmentEntered(newSegment);
         }
         if (safetyManager != null && model != null) {
             safetyManager.onSegmentEntered(newSegment);
+        }
+    }
+
+    public boolean isAtTarget(Waypoint wp) {
+        if (this.model == null)
+            return false;
+        switch (wp.type()) {
+            case STATION:
+                if (this.getStationId() == wp.targetId()) {
+                    return true;
+                }
+                letrain.track.Station curSt = this.getLogisticsManager().getStationAtTrain();
+                if (curSt != null && curSt.getId() == wp.targetId()) {
+                    return true;
+                }
+                letrain.track.Station st = this.model.getStation(wp.targetId());
+                if (st != null) {
+                    for (var linker : this.getLinkers()) {
+                        letrain.track.Track t = linker.getTrack();
+                        if (t != null && t.equals(st.getTrack())) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            case SENSOR:
+                for (var linker : this.getLinkers()) {
+                    letrain.track.Track t = linker.getTrack();
+                    if (t != null && t.getSensor() != null && t.getSensor().getId() == wp.targetId()) {
+                        return true;
+                    }
+                }
+                return false;
+        }
+        return false;
+    }
+
+    public void checkAndNotifyWaypointReached() {
+        if (isAutoMode()) {
+            letrain.itinerary.AutoPilot ap = getAutopilot();
+            if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+                ap.currentWaypoint().ifPresent(wp -> {
+                    if (isAtTarget(wp)) {
+                        this.eventDispatcher.notifyWaypointReached(wp);
+                    }
+                });
+            }
         }
     }
 

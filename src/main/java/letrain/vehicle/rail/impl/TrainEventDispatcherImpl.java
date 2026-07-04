@@ -10,6 +10,7 @@ import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.ScriptTrainEventListener;
 import letrain.vehicle.rail.TrainEventDispatcher;
 import letrain.vehicle.rail.TrainEventListener;
+import letrain.itinerary.Waypoint;
 
 /**
  * Manages event listener registrations and broadcasts train events.
@@ -127,5 +128,10 @@ public class TrainEventDispatcherImpl implements TrainEventDispatcher {
     @Override
     public void notifyCrash(Point pos, int speed) {
         notifyAll(l -> l.onCrash(train, pos, speed));
+    }
+
+    @Override
+    public void notifyWaypointReached(Waypoint waypoint) {
+        notifyAll(l -> l.onWaypointReached(train, waypoint));
     }
 }
