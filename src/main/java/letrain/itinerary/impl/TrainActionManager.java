@@ -19,8 +19,14 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         this.pendingCommands = new CopyOnWriteArrayList<>();
     }
 
+    private letrain.itinerary.Waypoint currentProcessingWaypoint;
+
     @Override
     public void onWaypointReached(Train train, letrain.itinerary.Waypoint waypoint) {
+        if (waypoint == currentProcessingWaypoint) {
+            return;
+        }
+        currentProcessingWaypoint = waypoint;
         pendingCommands.clear();
         pendingCommands.addAll(waypoint.commands());
         runPendingCommands();
@@ -42,6 +48,7 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         if (autopilot != null && autopilot.itinerary().isPresent()) {
             autopilot.advanceWaypoint();
             autopilot.clearRoute();
+            currentProcessingWaypoint = null;
             if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
                 log.info("Train {} itinerary DONE → IDLE", train.getId());
                 train.setAutoMode(false);

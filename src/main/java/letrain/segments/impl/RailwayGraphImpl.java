@@ -45,6 +45,12 @@ public class RailwayGraphImpl implements RailwayGraph {
     }
 
     @Override
+    public boolean containsTrack(Segment segment, letrain.track.rail.RailTrack track) {
+        Set<letrain.track.rail.RailTrack> tracks = segmentToTracks.get(segment);
+        return tracks != null && tracks.contains(track);
+    }
+
+    @Override
     public int getTrackCount(Segment segment) {
         Set<letrain.track.rail.RailTrack> tracks = segmentToTracks.get(segment);
         return tracks != null ? tracks.size() : 0;

@@ -359,8 +359,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             int speed = Integer.parseInt(ctx.trainSpeed().getText());
             int clampedSpeed = Math.max(0, Math.min(10, speed));
             return (t) -> {
-                Tractor tractor = t.getDirectorLinker();
-                if (tractor != null) tractor.setSpeed(clampedSpeed);
+                t.setSpeed(clampedSpeed);
             };
         } else if (actionText.contains("accelerate")) {
             return (t) -> {
@@ -381,8 +380,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             };
         } else if (actionText.contains("stop")) {
             return (t) -> {
-                Tractor tractor = t.getDirectorLinker();
-                if (tractor != null) tractor.setSpeed(0);
+                t.setSpeed(0);
             };
         } else if (actionText.contains("invert")) {
             return (t) -> {

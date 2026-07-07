@@ -262,6 +262,9 @@ public class Model implements letrain.mvp.Model {
             }
         }
         reestablishSystemListeners();
+        if (this.program != null && !this.program.isEmpty()) {
+            this.setProgram(this.program);
+        }
     }
 
     private void setupModelTrainEventListeners() {

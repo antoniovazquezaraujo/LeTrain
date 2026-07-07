@@ -360,6 +360,9 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
      */
     @Override
     public void onSegmentEntered(Segment newSegment) {
+        if (newSegment != null && newSegment.equals(currentSegment)) {
+            return;
+        }
         BlockManager bm = this.train.getModel().getBlockManager();
         RailwayGraph graph = this.train.getModel().getRailwayGraph();
         Linker head = train.getPhysicalFront();
@@ -539,7 +542,10 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             return null;
         }
         RailTrack headTrack = (RailTrack) head.getTrack();
-        Segment s = graph.getSegment(headTrack);
+        Segment s = currentSegment;
+        if (s == null) {
+            s = graph.getSegment(headTrack);
+        }
         if (s == null) {
             log.info("Train {} findNextSegmentTopological: graph.getSegment(headTrack) is null", train.getId());
             return null;
@@ -556,10 +562,13 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         while (it.advance() && maxIterations-- > 0) {
             Track t = it.getTrack();
             if (t instanceof RailTrack) {
-                Segment nextS = graph.getSegment((RailTrack) t);
-                if (nextS != null && !nextS.equals(s)) {
-                    log.info("Train {} findNextSegmentTopological: found segment {} after iterating", train.getId(), nextS.getId());
-                    return nextS;
+                RailTrack rt = (RailTrack) t;
+                if (!graph.containsTrack(s, rt)) {
+                    Segment nextS = graph.getSegment(rt);
+                    if (nextS != null) {
+                        log.info("Train {} findNextSegmentTopological: found segment {} after iterating", train.getId(), nextS.getId());
+                        return nextS;
+                    }
                 }
             }
         }

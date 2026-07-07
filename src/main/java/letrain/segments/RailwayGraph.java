@@ -38,6 +38,11 @@ public interface RailwayGraph {
     Segment getSegment(letrain.track.rail.RailTrack track);
 
     /**
+     * Comprueba si un segmento contiene un raíl físico.
+     */
+    boolean containsTrack(Segment segment, letrain.track.rail.RailTrack track);
+
+    /**
      * Devuelve el número de vías físicas en un segmento.
      */
     default int getTrackCount(Segment segment) {
