@@ -70,8 +70,7 @@ Al analizar los logs provistos, encontramos un caso en el que la ruta planificad
 
 ### La Solución
 - Hemos introducido una comprobación de seguridad (**Failsafe**) en `TrainSafetyManager.java#findNextSegment()`:
-  Si la ruta del piloto automático indica un próximo segmento diferente al segmento que el tren va a entrar físicamente (`findNextSegmentTopological`), se produce un **mismatch**. En este caso, el sistema de seguridad prioriza el segmento físico real.
-  Al intentar bloquear el segmento físico real (`S1`), si este está ocupado, el tren frena y se detiene proactivamente en lugar de colisionar.
+  Si la ruta del piloto automático indica un próximo segmento diferente al segmento que el tren va a entrar físicamente (`findNextSegmentTopological`), se produce un **mismatch**. Si la aguja física (fork) está ocupada por el vehículo, el sistema de seguridad prioriza el segmento físico real. Al intentar bloquear el segmento físico real (`S1`), si este está ocupado, el tren frena y se detiene proactivamente en lugar de colisionar. Si la aguja está libre, el autopilot la alineará a tiempo y se continúa usando el segmento de la ruta.
 
 ---
 
