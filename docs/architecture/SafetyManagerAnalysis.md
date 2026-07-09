@@ -96,7 +96,9 @@ tryLock cada uno → si falla → tryShuntingLock
   ├── Buscar currentSegment en la ruta
   ├── ¿Siguiente en ruta existe?
   │   ├── ¿Coincide con el topológico? → Usar el de la ruta
-  │   └── NO COINCIDE → usar topológico (failsafe)
+  │   └── NO COINCIDE:
+  │       ├── ¿Aguja (fork) ocupada? → usar topológico (failsafe)
+  │       └── ¿Aguja (fork) libre? → Usar el de la ruta (el piloto la alineará a tiempo)
   └── → findNextSegmentTopological
 ```
 

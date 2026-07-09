@@ -187,7 +187,7 @@ Transición MANUAL → AUTO:
 - El jugador pulsa una tecla en modo DRIVE
 - Solo si el tren tiene un itinerario asignado
 - Solo si existe ruta válida al primer waypoint
-- Solo si el tren está parado (speed=0)
+- Solo si el tren está parado (speed=0) *(Nota: Esta restricción de velocidad fue eliminada en la Fase 4 de la refactorización para permitir la activación a cualquier velocidad)*
 
 Transición AUTO → MANUAL:
 - El jugador pulsa la tecla de modo
