@@ -477,6 +477,7 @@ public class Model implements letrain.mvp.Model {
             log.info("Discovering railway topology...");
             TopologyService topologyService = new TopologyServiceImpl();
             currentGraph = topologyService.discover(getRailMap());
+            log.info("Railway topology discovered successfully:\n{}", currentGraph);
         }
         return currentGraph;
     }

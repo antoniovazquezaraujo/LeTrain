@@ -47,11 +47,12 @@ class AutoPilotImplTest {
     }
 
     @Test
-    @DisplayName("should not activate if train is moving")
-    void needsStopToActivate() {
+    @DisplayName("should activate even if train is moving")
+    void activatesWhenMoving() {
         when(train.getSpeed()).thenReturn(5);
         autopilot.setItinerary(itinerary);
-        assertFalse(autopilot.activate());
+        assertTrue(autopilot.activate());
+        assertEquals(AutoPilot.Mode.FOLLOWING, autopilot.mode());
     }
 
     @Test

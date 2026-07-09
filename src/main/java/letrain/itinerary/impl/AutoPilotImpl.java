@@ -160,7 +160,6 @@ public class AutoPilotImpl implements AutoPilot {
             + " pf=" + (pathfinder != null));
         if (itinerary == null || !itinerary.isValid()) return false;
         if (pathfinder == null) return false;
-        if (getTrainSpeed() != 0) return false;
         mode = Mode.FOLLOWING;
         currentRoute = List.of();
         lastSegment = null;

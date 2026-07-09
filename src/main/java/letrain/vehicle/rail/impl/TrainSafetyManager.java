@@ -496,7 +496,27 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         }
     }
 
-    @Override
+    private boolean isForkOccupied(Segment from, Segment to, RailwayGraph graph) {
+        if (from == null || to == null || graph == null) return false;
+        var fromPorts = from.getPorts();
+        var toPorts = to.getPorts();
+        if (fromPorts != null && toPorts != null) {
+            for (letrain.segments.Port pFrom : new letrain.segments.Port[]{fromPorts.getFirst(), fromPorts.getSecond()}) {
+                if (pFrom == null) continue;
+                for (letrain.segments.Port pTo : new letrain.segments.Port[]{toPorts.getFirst(), toPorts.getSecond()}) {
+                    if (pTo == null) continue;
+                    if (pFrom.getNode().equals(pTo.getNode())) {
+                        var node = pFrom.getNode();
+                        if (node != null && node.getTrack() instanceof letrain.track.rail.ForkRailTrack fork) {
+                            return fork.getLinker() != null;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     public Segment findNextSegment(Linker head, RailwayGraph graph) {
         if (insideFindNextSegment) {
             return findNextSegmentTopological(head, graph);
@@ -506,26 +526,27 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             Segment topological = findNextSegmentTopological(head, graph);
             letrain.itinerary.AutoPilot ap = train.getAutopilot();
             log.info("Train {} findNextSegment: apMode={}, topological={}", train.getId(),
-                    ap.mode(), topological != null ? topological.getId() : "null");
+                     ap.mode(), topological != null ? topological.getId() : "null");
             if (ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING || ap.mode() == letrain.itinerary.AutoPilot.Mode.WAITING) {
                 // Consultamos la ruta real planificada del piloto automático
                 List<Segment> route = ap.currentRoute();
                 int index = route.indexOf(currentSegment);
                 log.info("Train {} findNextSegment: ap route index={}, routeSize={}", train.getId(), index, route.size());
-                // Auto-reverse disabled: no reverse command issued when physical next segment is missing.
-                // Existing logic for when we have a valid index into the route
                 if (index >= 0 && index + 1 < route.size()) {
                     Segment routeNext = route.get(index + 1);
                     if (routeNext != null && (topological == null || !topological.equals(routeNext))) {
-                        log.warn("Train {} findNextSegment mismatch: route next is {}, but physical next is {}. Failsafe: using physical next to prevent crash!",
-                                train.getId(), routeNext.getId(), topological != null ? topological.getId() : "null");
-                        return topological;
+                        // Si la aguja física NO está ocupada, el autopiloto la alineará a tiempo,
+                        // por lo que no disparamos el failsafe de desviación física.
+                        if (isForkOccupied(currentSegment, routeNext, graph)) {
+                            log.warn("Train {} findNextSegment mismatch: route next is {}, but physical next is {} and fork is occupied. Failsafe: using physical next to prevent crash!",
+                                    train.getId(), routeNext.getId(), topological != null ? topological.getId() : "null");
+                            return topological;
+                        }
                     }
                     log.info("Train {} findNextSegment: returning next segment from route: {}", train.getId(), routeNext.getId());
                     return routeNext;
                 }
             }
-                // Auto-reverse disabled: start‑off‑track reverse logic removed.
             log.info("Train {} findNextSegment: returning next topological segment: {}", train.getId(), topological != null ? topological.getId() : "null");
             return topological;
         } finally {

@@ -255,8 +255,8 @@ class AutoPilotIntegrationTest {
     class AutoPilotStates {
 
         @Test
-        @DisplayName("9.1 Activate while moving → fails (must be stopped)")
-        void activateWhileMoving_fails() {
+        @DisplayName("9.1 Activate while moving → succeeds")
+        void activateWhileMoving_succeeds() {
             RailTrack t0 = makeTrack(0, 0, Dir.E, Dir.W);
             RailTrack t1 = makeTrack(1, 0, Dir.W, Dir.E);
             connect(t0, Dir.E, t1, Dir.W);
@@ -270,7 +270,7 @@ class AutoPilotIntegrationTest {
             ((Locomotive) t.getDirectorLinker()).setCurrentSpeed(3);
             assertTrue(t.getSpeed() > 0, "train should be moving");
             t.toggleAutoMode();
-            assertFalse(t.isAutoMode(), "autopilot should NOT activate while moving");
+            assertTrue(t.isAutoMode(), "autopilot should activate even while moving");
         }
 
         @Test
@@ -844,6 +844,75 @@ class AutoPilotIntegrationTest {
     private void assertAtStation(Train t, Station st) {
         assertEquals(st.getId(), t.getStationId(),
                 "expected at " + st.getName() + " but was at station " + t.getStationId());
+    }
+
+
+
+    @Test
+    @DisplayName("11. Re-run after manual reversal on simple.dat")
+    void testReRunAfterManualReversal() throws Exception {
+        letrain.mvp.impl.GameSaveService saveService = new letrain.mvp.impl.GameSaveService();
+        Model m = saveService.load(new java.io.File("simple.dat")).orElseThrow();
+
+        Train t = m.getTrainFromLocomotiveId(1);
+        assertNotNull(t, "Train 1 should exist");
+        Locomotive loco = (Locomotive) t.getDirectorLinker();
+        assertNotNull(loco, "Locomotive should exist");
+
+        m.setProgram("""
+                create itinerary "21" {
+                    add station 2
+                    add station 1
+                }
+                assign itinerary "21" to train 1;
+                train 1 set autopilot true;
+                train 1 set speed 3;
+                """);
+
+        Station st1 = m.getStation(1);
+        runUntil(m, () -> t.getStationId() == st1.getId(), 800);
+        assertEquals(st1.getId(), t.getStationId(), "Should have reached station 1");
+        m.setProgram("train 1 set speed 0;");
+        runUntil(m, () -> loco.getSpeed() == 0, 300);
+        assertEquals(0, loco.getSpeed(), "Locomotive should be stopped");
+
+        // Reverse to face East
+        loco.toggleReversed();
+        m.setProgram("train 1 set speed 3;");
+
+        // Drive back to S10
+        Station st2 = m.getStation(2);
+        runUntil(m, () -> {
+            Segment curSeg = m.getRailwayGraph().getSegment((RailTrack)loco.getTrack());
+            return curSeg != null && curSeg.getId().equals("S10");
+        }, 800);
+
+        m.setProgram("train 1 set speed 0;");
+        runUntil(m, () -> loco.getSpeed() == 0, 300);
+        assertEquals(0, loco.getSpeed(), "Speed should be 0");
+
+        // Reverse again to face West
+        loco.toggleReversed();
+
+        // Run the script again!
+        m.setProgram("""
+                create itinerary "21" {
+                    add station 2
+                    add station 1
+                }
+                assign itinerary "21" to train 1;
+                train 1 set autopilot true;
+                train 1 set speed 3;
+                """);
+
+        // Let's run it and see if it goes to Station 2 and then Station 1!
+        System.out.println("DEBUG BEFORE SECOND RUN: autoMode=" + t.isAutoMode() + ", apMode=" + t.getAutopilot().mode() + ", speed=" + loco.getSpeed() + ", targetSpeed=" + loco.getTargetSpeed() + ", curSeg=" + (t.getSafetyManager().getCurrentSegment() != null ? t.getSafetyManager().getCurrentSegment().getId() : "null") + ", nextSeg=" + (t.getSafetyManager().getNextSegment() != null ? t.getSafetyManager().getNextSegment().getId() : "null") + ", waitingForBlock=" + t.getSafetyManager().isWaitingForBlock());
+        runUntil(m, () -> t.getStationId() == st2.getId(), 400);
+        System.out.println("DEBUG AFTER SECOND RUN TO ST2: autoMode=" + t.isAutoMode() + ", apMode=" + t.getAutopilot().mode() + ", speed=" + loco.getSpeed() + ", targetSpeed=" + loco.getTargetSpeed() + ", curSeg=" + (t.getSafetyManager().getCurrentSegment() != null ? t.getSafetyManager().getCurrentSegment().getId() : "null") + ", nextSeg=" + (t.getSafetyManager().getNextSegment() != null ? t.getSafetyManager().getNextSegment().getId() : "null") + ", waitingForBlock=" + t.getSafetyManager().isWaitingForBlock() + ", stationId=" + t.getStationId());
+        assertEquals(st2.getId(), t.getStationId(), "Should have reached station 2 again");
+
+        runUntil(m, () -> t.getStationId() == st1.getId(), 800);
+        assertEquals(st1.getId(), t.getStationId(), "Should have reached station 1 again");
     }
 
     private Model loadFromSave(String resourceName) throws Exception {
