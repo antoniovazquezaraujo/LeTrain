@@ -321,9 +321,9 @@ class SerializationTest {
 
         // Unlink one vehicle from the front side (frontWagon), leaving loco+backWagon
         // intact
-        train.trainCouplingManager.setFrontDivisionSense(train);
+        train.getTrainCouplingManager().setFrontDivisionSense(train);
 
-        train.trainCouplingManager.divideTrain(train, () -> 501);
+        train.getTrainCouplingManager().divideTrain(train, () -> 501);
 
         assertEquals(2, train.getLinkers().size(), "Train should keep two linkers after unlinking one from front");
         assertTrue(train.getLinkers().contains(loco));
@@ -352,7 +352,7 @@ class SerializationTest {
         ));
         // Build AutoPilot
         letrain.itinerary.impl.AutoPilotImpl ap = new letrain.itinerary.impl.AutoPilotImpl(
-            original, original.actionManager
+            original, original.getActionManager()
         );
         ap.setItinerary(itinerary);
         original.setAutopilot(ap);

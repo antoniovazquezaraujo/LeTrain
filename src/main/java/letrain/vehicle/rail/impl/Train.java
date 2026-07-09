@@ -44,7 +44,7 @@ public class Train implements Renderable {
     private int id;
     private String name;
     private final Deque<Linker> linkers;
-    public transient TrainCouplingManager trainCouplingManager;
+    private transient TrainCouplingManager trainCouplingManager;
     private letrain.vehicle.rail.TrainLogisticsManager logisticsManager;
     private letrain.itinerary.AutoPilot autopilot;
     private int railStationId = 0;
@@ -56,11 +56,23 @@ public class Train implements Renderable {
     private transient letrain.mvp.Model model;
     private transient TrainEventDispatcher eventDispatcher;
 
-    public transient letrain.vehicle.rail.TrainMovementManager movementManager;
+    private transient letrain.vehicle.rail.TrainMovementManager movementManager;
     private transient letrain.vehicle.rail.TrainSafetyManager safetyManager;
-    public transient letrain.itinerary.TrainActionManager actionManager;
+    private transient letrain.itinerary.TrainActionManager actionManager;
     private transient boolean isNotifying = false;
     private transient boolean pendingReverse = false;
+
+    public TrainCouplingManager getTrainCouplingManager() {
+        return trainCouplingManager;
+    }
+
+    public letrain.vehicle.rail.TrainMovementManager getMovementManager() {
+        return movementManager;
+    }
+
+    public letrain.itinerary.TrainActionManager getActionManager() {
+        return actionManager;
+    }
 
     // Transient coupling menu selection state
     private transient Deque<Linker> linkersToJoin = new LinkedList<>();

@@ -162,7 +162,7 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
             train.getLinkersToJoin().clear();
             train.setJoined(true);
             if (linkersActuallyAdded) {
-                train.movementManager.refreshLinkersDirection();
+                train.getMovementManager().refreshLinkersDirection();
                 train.setStalled(false);
                 train.notifyLink();
             }
@@ -328,7 +328,7 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         train.rebind();
         train.getLinkersToRemove().clear();
         train.setNumLinkersToRemove(0);
-        train.movementManager.refreshLinkersDirection();
+        train.getMovementManager().refreshLinkersDirection();
         train.setStalled(false);
         train.notifyUnlink();
     }

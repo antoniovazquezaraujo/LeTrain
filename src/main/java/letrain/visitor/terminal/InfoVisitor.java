@@ -80,7 +80,7 @@ public class InfoVisitor implements Visitor {
                     // linkersToJoin is populated in order of distance from train.
                     // so we just take the first N.
                     Train train = selected.getTrain();
-                    infoBarText += " Vagones: " + train.trainCouplingManager.getSelectedLinkersToJoin(train).size() + "/"
+                    infoBarText += " Vagones: " + train.getTrainCouplingManager().getSelectedLinkersToJoin(train).size() + "/"
                             + train.getLinkersToJoin().size();
                 }
                 break;

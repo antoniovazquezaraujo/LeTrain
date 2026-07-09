@@ -392,16 +392,16 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             boolean forward = "forward".equals(lCtx.sense().getText());
             int count = lCtx.NUMBER() != null ? Integer.parseInt(lCtx.NUMBER().getText()) : 0;
             return (t) -> {
-                t.trainCouplingManager.prepareLink(t, forward, count);
-                t.trainCouplingManager.joinLinkers(t);
+                t.getTrainCouplingManager().prepareLink(t, forward, count);
+                t.getTrainCouplingManager().joinLinkers(t);
             };
         } else if (ctx.unlinkAction() != null) {
             LeTrainProgramParser.UnlinkActionContext uCtx = ctx.unlinkAction();
             boolean forward = "forward".equals(uCtx.sense().getText());
             int count = uCtx.NUMBER() != null ? Integer.parseInt(uCtx.NUMBER().getText()) : 1;
             return (t) -> {
-                t.trainCouplingManager.prepareUnlink(t, forward, count);
-                t.trainCouplingManager.divideTrain(t, () -> model.nextTrainId());
+                t.getTrainCouplingManager().prepareUnlink(t, forward, count);
+                t.getTrainCouplingManager().divideTrain(t, () -> model.nextTrainId());
             };
         } else if (actionText.contains("unload")) {
             return (t) -> {
