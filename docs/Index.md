@@ -7,11 +7,13 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 - [[adr/ADR-001-Implementacion-MVP|ADR-001: Por qué usamos MVP]]
 - [[adr/ADR-006-Symmetry-in-Presenters|ADR-006: Simetría en Presentadores y Vistas]]
 - [[adr/ADR-007-Collision-Visual-Interpolation|ADR-007: Interpolación visual en colisiones a baja velocidad]]
+- [[adr/ADR-015-Abstraccion-Puertos-Nodos|ADR-015: Abstracción de Puertos (0, 1, 2) y Tránsitos]]
 - [[systems/CommandPattern|Gestión de Automatización (ANTLR)]]
 
 ## 🛤️ Infraestructura Ferroviaria
 - [[infrastructure/TrackTypes|Jerarquía de Vías (Forks, Puentes, Túneles)]]
 - [[infrastructure/BlockSystem|Seguridad y Colisiones (Simple Blocking)]]
+- [[safety_locks_analysis|Análisis de Bloqueos Iniciales (acquireInitialLocks)]]
 
 ## 🚆 Material Rodante (Vehículos)
 - [[vehicles/Physics|Física de Movimiento y Colisiones]]

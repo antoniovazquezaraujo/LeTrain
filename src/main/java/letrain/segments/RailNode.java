@@ -9,12 +9,13 @@ import letrain.track.Track;
  */
 public interface RailNode {
     /**
-     * Devuelve los pasos de salida disponibles desde este nodo.
-     */
-    List<PathStep> getOutSteps();
-
-    /**
      * Devuelve el objeto de vía físico que actúa como este nodo.
      */
     Track getTrack();
+
+    List<Port> getPorts();
+    TransitionType getTransitionType(Port entry, Port exit);
+    boolean setRoute(Port entry, Port exit);
+    boolean isRouteActive(Port entry, Port exit);
+    Port getActiveExit(Port entry);
 }

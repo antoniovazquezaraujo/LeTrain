@@ -2,7 +2,7 @@
 
 # ADR-003: Topología del Grafo y Motor de Rutas
 
-## Estado: Implementación validada
+## Estado: SUPERADO por [[ADR-015-Abstraccion-Puertos-Nodos]]
 
 ## Contexto
 El sistema actual evoluciona hacia un modelo de explotación ferroviaria real, donde los conceptos de **itinerario (route)** y **cantón de bloqueo (block section)** se gestionan de forma integrada con la señalización y los sistemas de seguridad.

@@ -4,7 +4,6 @@ import letrain.utils.Pair;
 
 /**
  * Conexión física única entre dos RailNode.
- * Contiene los dos PathStep que lo forman (sus entradas desde cada extremo).
  */
 public interface Segment {
     /**
@@ -13,7 +12,7 @@ public interface Segment {
     String getId();
 
     /**
-     * Devuelve el par de PathSteps que definen los extremos de este segmento.
+     * Devuelve el par de puertos lógicos en los extremos de este segmento.
      */
-    Pair<PathStep, PathStep> getSteps();
+    Pair<Port, Port> getPorts();
 }

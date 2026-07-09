@@ -9,6 +9,7 @@ import letrain.itinerary.SegmentPathfinder;
 import letrain.itinerary.Waypoint;
 import letrain.itinerary.WaypointCommand;
 import letrain.map.Dir;
+import letrain.segments.Port;
 import letrain.segments.RailNode;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
@@ -159,7 +160,6 @@ public class AutoPilotImpl implements AutoPilot {
             + " pf=" + (pathfinder != null));
         if (itinerary == null || !itinerary.isValid()) return false;
         if (pathfinder == null) return false;
-        if (getTrainSpeed() != 0) return false;
         mode = Mode.FOLLOWING;
         currentRoute = List.of();
         lastSegment = null;
@@ -290,27 +290,26 @@ public class AutoPilotImpl implements AutoPilot {
         if (graph == null)
             return;
 
-        var fromSteps = from.getSteps();
-        var toSteps = to.getSteps();
-        if (fromSteps == null || toSteps == null)
-            return;
-
-        var f1 = fromSteps.getFirst();
-        var f2 = fromSteps.getSecond();
-        var t1 = toSteps.getFirst();
-        var t2 = toSteps.getSecond();
-
+        var fromPorts = from.getPorts();
+        var toPorts = to.getPorts();
+        
+        Port entryPort = null;
+        Port exitPort = null;
         RailNode node = null;
-        if (f1 != null && f1.getRailNode() != null) {
-            var n1 = f1.getRailNode();
-            if ((t1 != null && n1.equals(t1.getRailNode())) || (t2 != null && n1.equals(t2.getRailNode()))) {
-                node = n1;
-            }
-        }
-        if (node == null && f2 != null && f2.getRailNode() != null) {
-            var n2 = f2.getRailNode();
-            if ((t1 != null && n2.equals(t1.getRailNode())) || (t2 != null && n2.equals(t2.getRailNode()))) {
-                node = n2;
+        
+        if (fromPorts != null && toPorts != null) {
+            for (Port pFrom : new Port[]{fromPorts.getFirst(), fromPorts.getSecond()}) {
+                if (pFrom == null) continue;
+                for (Port pTo : new Port[]{toPorts.getFirst(), toPorts.getSecond()}) {
+                    if (pTo == null) continue;
+                    if (pFrom.getNode().equals(pTo.getNode())) {
+                        node = pFrom.getNode();
+                        entryPort = pFrom;
+                        exitPort = pTo;
+                        break;
+                    }
+                }
+                if (node != null) break;
             }
         }
 
@@ -324,23 +323,13 @@ public class AutoPilotImpl implements AutoPilot {
             return;
         }
 
-        for (var step : node.getOutSteps()) {
-            Segment nextSeg = graph.getSegment(step);
-            log.debug("[AP] ensureForkRoute {}->{}: outStep dir={} seg={}", from.getId(), to.getId(), step.getDir(),
-                    nextSeg != null ? nextSeg.getId() : "null");
-            if (nextSeg != null && nextSeg.equals(to)) {
-                Dir targetDir = step.getDir();
-                var alt = fork.getRouter().getAlternativeRoute();
-                boolean altNeeded = alt != null && alt.getValue() == targetDir;
-                log.info("[AP] ensureForkRoute {}->{}: MATCH fork={} altNeeded={} currentAlt={}", from.getId(),
-                        to.getId(), fork.getId(), altNeeded, fork.isUsingAlternativeRoute());
-                if (fork.isUsingAlternativeRoute() != altNeeded) {
-                    fork.flipRoute();
-                }
-                return;
-            }
+        if (entryPort != null && exitPort != null) {
+            boolean routeChanged = node.setRoute(entryPort, exitPort);
+            log.info("[AP] ensureForkRoute {}->{} using ports: entry={}, exit={}, routeChanged={}", 
+                    from.getId(), to.getId(), entryPort.getType(), exitPort.getType(), routeChanged);
+            return;
         }
-        log.warn("[AP] ensureForkRoute {}->{}: no outStep leads to target seg", from.getId(), to.getId());
+        log.warn("[AP] ensureForkRoute {}->{}: no ports matched for the shared node", from.getId(), to.getId());
     }
 
     @Override

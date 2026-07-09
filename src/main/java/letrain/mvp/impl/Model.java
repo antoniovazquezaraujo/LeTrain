@@ -253,12 +253,18 @@ public class Model implements letrain.mvp.Model {
             for (Locomotive loco : locomotives) {
                 Train train = loco.getTrain();
                 if (train != null && train.isAutoMode()) {
-                    train.actionManager.checkWaypointArrival();
+                    letrain.segments.Segment seg = train.resolveCurrentSegmentFromGraph();
+                    if (seg != null) {
+                        train.notifyAutopilotSegmentEntered(seg);
+                    }
                     train.getSafetyManager().acquireInitialLocks();
                 }
             }
         }
         reestablishSystemListeners();
+        if (this.program != null && !this.program.isEmpty()) {
+            this.setProgram(this.program);
+        }
     }
 
     private void setupModelTrainEventListeners() {
@@ -471,6 +477,7 @@ public class Model implements letrain.mvp.Model {
             log.info("Discovering railway topology...");
             TopologyService topologyService = new TopologyServiceImpl();
             currentGraph = topologyService.discover(getRailMap());
+            log.info("Railway topology discovered successfully:\n{}", currentGraph);
         }
         return currentGraph;
     }

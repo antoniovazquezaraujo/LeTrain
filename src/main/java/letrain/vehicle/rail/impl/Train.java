@@ -12,6 +12,9 @@ import letrain.vehicle.rail.TrainMovementManager;
 import letrain.vehicle.rail.TrainSafetyManager;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
+import letrain.itinerary.Waypoint;
+import letrain.track.Station;
+import letrain.track.Sensor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +60,7 @@ public class Train implements Renderable {
     private transient letrain.vehicle.rail.TrainSafetyManager safetyManager;
     public transient letrain.itinerary.TrainActionManager actionManager;
     private transient boolean isNotifying = false;
-    public transient boolean pendingReverse = false;
+    private transient boolean pendingReverse = false;
 
     // Transient coupling menu selection state
     private transient Deque<Linker> linkersToJoin = new LinkedList<>();
@@ -69,6 +72,7 @@ public class Train implements Renderable {
     public transient boolean joined = false;
     private int savedSpeedBeforeReverse = -1;
     private int savedTargetSpeed = -1;
+    private transient java.util.Set<Sensor> activeSensors = new java.util.HashSet<>();
 
     public void setSavedTargetSpeed(int speed) {
         this.savedTargetSpeed = speed;
@@ -78,12 +82,14 @@ public class Train implements Renderable {
         this.id = ValidationUtils.requirePositive(id, "train id");
         this.linkers = new LinkedList<>();
         this.eventDispatcher = new TrainEventDispatcherImpl(this);
+        this.activeSensors = new java.util.HashSet<>();
 
         this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager();
         this.setLogisticsManager(new TrainLogisticsManager(this));
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.actionManager = new letrain.itinerary.impl.TrainActionManager(this);
+        this.addCoreTrainEventListener(this.actionManager);
         this.autopilot = new letrain.itinerary.impl.AutoPilotImpl(this, this.actionManager);
     }
 
@@ -113,6 +119,10 @@ public class Train implements Renderable {
         this.railStationId = railStationId;
     }
 
+    public java.util.Set<letrain.track.Sensor> getActiveSensors() {
+        return activeSensors;
+    }
+
     public int getSpeed() {
         if (directorLinker != null) {
             return directorLinker.getSpeed();
@@ -131,6 +141,7 @@ public class Train implements Renderable {
     public void setAutoMode(boolean autoMode) {
         if (autoMode) {
             autopilot.activate();
+            this.checkInitialWaypoint();
         } else {
             autopilot.deactivate();
         }
@@ -144,9 +155,12 @@ public class Train implements Renderable {
         } else if (autopilot.itinerary().isPresent()) {
             boolean activated = autopilot.activate();
             if (activated) {
-                this.actionManager.checkWaypointArrival();
+                this.checkInitialWaypoint();
+                letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
+                if (seg != null) {
+                    notifyAutopilotSegmentEntered(seg);
+                }
                 this.safetyManager.acquireInitialLocks();
-                this.actionManager.checkWaypointArrival();
             }
         }
         log.info("[TRAIN] toggleAutoMode → autoMode={}", isAutoMode());
@@ -210,8 +224,56 @@ public class Train implements Renderable {
         }
     }
 
-    public void setSavedSpeedBeforeReverse(int speed) {
+    private void setSavedSpeedBeforeReverse(int speed) {
         this.savedSpeedBeforeReverse = speed;
+    }
+
+    public void setSpeed(int speed) {
+        Tractor speedLinker = getDirectorLinker();
+        if (speedLinker != null) {
+            int oldSpeed = speedLinker.getTargetSpeed();
+            this.setSavedSpeedBeforeReverse(-1);
+            speedLinker.setSpeed(speed);
+            if (speed > 0 && oldSpeed == 0 && getModel() != null) {
+                letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
+                if (seg != null) {
+                    notifyAutopilotSegmentEntered(seg);
+                }
+                getSafetyManager().acquireInitialLocks();
+            }
+        }
+    }
+
+    public void reverse() {
+        Tractor dirLinker = getDirectorLinker();
+        if (dirLinker != null) {
+            if (dirLinker.getSpeed() > 0) {
+                this.setSavedSpeedBeforeReverse(dirLinker.getTargetSpeed());
+                dirLinker.setTargetSpeed(0);
+                this.pendingReverse = true;
+            } else {
+                dirLinker.toggleReversed();
+                this.pendingReverse = false;
+            }
+        }
+    }
+
+    public void load() {
+        if (logisticsManager != null) {
+            letrain.track.Station loadStation = logisticsManager.getStationAtTrain();
+            if (loadStation != null) {
+                logisticsManager.startLoadProcess(loadStation);
+            }
+        }
+    }
+
+    public void unload() {
+        if (logisticsManager != null) {
+            letrain.track.Station unloadStation = logisticsManager.getStationAtTrain();
+            if (unloadStation != null) {
+                logisticsManager.startUnloadProcess(unloadStation);
+            }
+        }
     }
 
     public void notifySpeedChanged(int speed) {
@@ -222,8 +284,16 @@ public class Train implements Renderable {
                 if (dirLinker != null) {
                     dirLinker.toggleReversed();
                     if (this.savedSpeedBeforeReverse != -1) {
-                        dirLinker.setTargetSpeed(this.savedSpeedBeforeReverse);
+                        int targetSpeed = this.savedSpeedBeforeReverse;
+                        dirLinker.setTargetSpeed(targetSpeed);
                         this.savedSpeedBeforeReverse = -1;
+                        if (getModel() != null) {
+                            letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
+                            if (seg != null) {
+                                notifyAutopilotSegmentEntered(seg);
+                            }
+                            getSafetyManager().acquireInitialLocks();
+                        }
                     }
                 }
             }
@@ -243,18 +313,35 @@ public class Train implements Renderable {
         guardNotify(() -> this.eventDispatcher.notifyUnlink());
     }
 
-    public void notifyEnterSensor(boolean isForward) {
+    public void notifyEnterSensor(Sensor sensor, boolean isForward) {
         guardNotify(() -> {
             this.eventDispatcher.notifyEnterSensor(isForward);
-            this.actionManager.checkWaypointArrival();
+            if (sensor != null) {
+                if (this.activeSensors == null) {
+                    this.activeSensors = new java.util.HashSet<>();
+                }
+                this.activeSensors.add(sensor);
+                if (sensor instanceof letrain.track.Station) {
+                    this.setStationId(sensor.getId());
+                }
+            }
+            this.checkAndNotifyWaypointReached();
             if (isAutoMode()) {
                 autopilot.onSegmentEntered(safetyManager.getCurrentSegment());
             }
         });
     }
 
-    public void notifyExitSensor(boolean isForward) {
-        guardNotify(() -> this.eventDispatcher.notifyExitSensor(isForward));
+    public void notifyExitSensor(Sensor sensor, boolean isForward) {
+        guardNotify(() -> {
+            this.eventDispatcher.notifyExitSensor(isForward);
+            if (sensor != null && this.activeSensors != null) {
+                this.activeSensors.remove(sensor);
+                if (sensor instanceof letrain.track.Station && this.getStationId() == sensor.getId()) {
+                    this.setStationId(0);
+                }
+            }
+        });
     }
 
     public int getId() {
@@ -277,6 +364,10 @@ public class Train implements Renderable {
         // Delegamos enteramente la reclamación física de cantones al safetyManager
         safetyManager.claimOccupiedSegments();
         if (isAutoMode()) {
+            letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
+            if (seg != null) {
+                notifyAutopilotSegmentEntered(seg);
+            }
             safetyManager.acquireInitialLocks();
         }
     }
@@ -285,14 +376,26 @@ public class Train implements Renderable {
      * Reinitializes transient fields after deserialization.
      */
     public void postLoadInit() {
+        this.activeSensors = new java.util.HashSet<>();
         if (this.eventDispatcher == null) {
-        this.eventDispatcher = new TrainEventDispatcherImpl(this);
+            this.eventDispatcher = new TrainEventDispatcherImpl(this);
+        } else {
+            java.util.List<letrain.vehicle.rail.CoreTrainEventListener> coreList = new java.util.ArrayList<>(this.eventDispatcher.getCoreTrainListeners());
+            for (letrain.vehicle.rail.CoreTrainEventListener l : coreList) {
+                this.eventDispatcher.removeCoreTrainEventListener(l);
+            }
+            java.util.List<letrain.vehicle.rail.ScriptTrainEventListener> scriptList = new java.util.ArrayList<>(this.eventDispatcher.getScriptTrainListeners());
+            for (letrain.vehicle.rail.ScriptTrainEventListener l : scriptList) {
+                this.eventDispatcher.removeScriptTrainEventListener(l);
+            }
         }
         this.eventDispatcher.postLoadInit();
         this.isNotifying = false;
         this.trainCouplingManager = new letrain.vehicle.rail.impl.TrainCouplingManager();
         this.safetyManager = new letrain.vehicle.rail.impl.TrainSafetyManager(this);
         this.movementManager = new letrain.vehicle.rail.impl.TrainMovementManager(this);
+        this.actionManager = new letrain.itinerary.impl.TrainActionManager(this);
+        this.addCoreTrainEventListener(this.actionManager);
         if (this.autopilot == null) {
             this.autopilot = new letrain.itinerary.impl.AutoPilotImpl(this, this.actionManager);
         } else if (this.autopilot instanceof letrain.itinerary.impl.AutoPilotImpl) {
@@ -576,15 +679,65 @@ public class Train implements Renderable {
     }
 
 
-    public void notifySegmentEntered(letrain.segments.Segment newSegment) {
-        this.actionManager.checkWaypointArrival();
-        if (isAutoMode()) {
-            log.info("Train {} notifySegmentEntered: notifying autopilot", id);
+    public letrain.segments.Segment resolveCurrentSegmentFromGraph() {
+        if (model == null || model.getRailwayGraph() == null) return null;
+        letrain.vehicle.rail.Linker head = getPhysicalFront();
+        if (head == null || !(head.getTrack() instanceof letrain.track.rail.RailTrack)) return null;
+        return model.getRailwayGraph().getSegment((letrain.track.rail.RailTrack) head.getTrack());
+    }
+
+    public void notifyAutopilotSegmentEntered(letrain.segments.Segment newSegment) {
+        if (isAutoMode() && autopilot != null) {
+            log.info("Train {} notifyAutopilotSegmentEntered: notifying autopilot", id);
             autopilot.onSegmentEntered(newSegment);
         }
-        if (safetyManager != null && model != null) {
-            safetyManager.onSegmentEntered(newSegment);
+    }
+
+    public void checkAndNotifyWaypointReached() {
+        if (isAutoMode()) {
+            letrain.itinerary.AutoPilot ap = getAutopilot();
+            if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+                ap.currentWaypoint().ifPresent(wp -> {
+                    if (isCurrentlyOn(wp)) {
+                        this.eventDispatcher.notifyWaypointReached(wp);
+                    }
+                });
+            }
         }
+    }
+
+    private void checkInitialWaypoint() {
+        if (isAutoMode()) {
+            letrain.itinerary.AutoPilot ap = getAutopilot();
+            if (ap != null && ap.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING) {
+                ap.currentWaypoint().ifPresent(wp -> {
+                    if (wp.type() == Waypoint.Type.STATION && this.getStationId() == wp.targetId()) {
+                        letrain.track.Station st = this.model.getStation(wp.targetId());
+                        if (st != null) {
+                            if (this.activeSensors == null) {
+                                this.activeSensors = new java.util.HashSet<>();
+                            }
+                            this.activeSensors.add(st);
+                        }
+                        this.eventDispatcher.notifyWaypointReached(wp);
+                    }
+                });
+            }
+        }
+    }
+
+    public boolean isCurrentlyOn(Waypoint wp) {
+        if (this.activeSensors == null) {
+            return false;
+        }
+        for (Sensor s : this.activeSensors) {
+            if (wp.type() == Waypoint.Type.SENSOR && !(s instanceof Station) && s.getId() == wp.targetId()) {
+                return true;
+            } else if (wp.type() == Waypoint.Type.STATION && s instanceof Station && s.getId() == wp.targetId()) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

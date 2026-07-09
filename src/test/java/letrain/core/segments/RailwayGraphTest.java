@@ -10,9 +10,8 @@ import java.util.List;
 
 import letrain.map.Dir;
 import letrain.map.Point;
-import letrain.segments.PathStep;
+import letrain.segments.Port;
 import letrain.segments.Segment;
-import letrain.segments.impl.PathStepImpl;
 import letrain.segments.impl.RailNodeImpl;
 import letrain.segments.impl.RailwayGraphImpl;
 import letrain.segments.impl.SegmentImpl;
@@ -26,11 +25,12 @@ class RailwayGraphTest {
     private RailNodeImpl nodeA;
     private RailNodeImpl nodeB;
     private RailNodeImpl nodeC;
+    private ForkRailTrack trackB;
     
-    private PathStep stepA_to_B;
-    private PathStep stepB_to_A;
-    private PathStep stepB_to_C;
-    private PathStep stepC_to_B;
+    private Port pA_E;
+    private Port pB_W;
+    private Port pB_E;
+    private Port pC_W;
     
     private Segment segmentAB;
     private Segment segmentBC;
@@ -41,87 +41,100 @@ class RailwayGraphTest {
         
         // Tracks físicos para los nodos
         RailTrack trackA = new RailTrack(); trackA.setPosition(new Point(0,0));
-        ForkRailTrack trackB = new ForkRailTrack(1); trackB.setPosition(new Point(1,0));
+        trackB = new ForkRailTrack(1); trackB.setPosition(new Point(1,0));
         RailTrack trackC = new RailTrack(); trackC.setPosition(new Point(2,0));
 
+        // Conectar tracks físicamente primero
+        trackA.connect(Dir.E, trackB);
+        trackB.connect(Dir.W, trackA);
+        trackB.connect(Dir.E, trackC);
+        trackC.connect(Dir.W, trackB);
+
+        // Configurar rutas de desvío
+        trackB.addRoute(Dir.W, Dir.E);
+        trackB.addRoute(Dir.W, Dir.S);
+
         // Nodos
-        nodeA = new RailNodeImpl(trackA); // Tope
-        nodeB = new RailNodeImpl(trackB); // Fork (decisión)
-        nodeC = new RailNodeImpl(trackC); // Tope
-        
-        // Pasos (Decisiones)
-        stepA_to_B = new PathStepImpl(nodeA, Dir.E);
-        stepB_to_A = new PathStepImpl(nodeB, Dir.W);
-        stepB_to_C = new PathStepImpl(nodeB, Dir.E);
-        stepC_to_B = new PathStepImpl(nodeC, Dir.W);
-        
-        // Registrar pasos en los nodos
-        nodeA.addOutStep(stepA_to_B);
-        nodeB.addOutStep(stepB_to_A);
-        nodeB.addOutStep(stepB_to_C);
-        nodeC.addOutStep(stepC_to_B);
-        
-        // Segmentos (unión de dos pasos enfrentados)
-        segmentAB = new SegmentImpl("AB", stepA_to_B, stepB_to_A);
-        segmentBC = new SegmentImpl("BC", stepB_to_C, stepC_to_B);
-        
+        nodeA = new RailNodeImpl(trackA); // Tope Oeste
+        nodeB = new RailNodeImpl(trackB); // Fork
+        nodeC = new RailNodeImpl(trackC); // Tope Este
+
+        // Obtener puertos lógicos
+        pA_E = nodeA.getPortForDir(Dir.E);
+        pB_W = nodeB.getPortForDir(Dir.W);
+        pB_E = nodeB.getPortForDir(Dir.E);
+        pC_W = nodeC.getPortForDir(Dir.W);
+
+        assertNotNull(pA_E);
+        assertNotNull(pB_W);
+        assertNotNull(pB_E);
+        assertNotNull(pC_W);
+
+        // Segmentos (unión de dos puertos)
+        segmentAB = new SegmentImpl("AB", pA_E, pB_W);
+        segmentBC = new SegmentImpl("BC", pB_E, pC_W);
+
         // Registrar en el grafo
-        graph.registerSegment(stepA_to_B, segmentAB);
-        graph.registerSegment(stepB_to_A, segmentAB);
-        graph.registerSegment(stepB_to_C, segmentBC);
-        graph.registerSegment(stepC_to_B, segmentBC);
+        graph.registerSegment(pA_E, segmentAB);
+        graph.registerSegment(pB_W, segmentAB);
+        graph.registerSegment(pB_E, segmentBC);
+        graph.registerSegment(pC_W, segmentBC);
     }
 
     @Test
-    void testGetNextSteps() {
-        List<PathStep> nextSteps = graph.getNextSteps(stepA_to_B);
-        assertNotNull(nextSteps);
-        assertEquals(1, nextSteps.size());
-        assertEquals(stepB_to_C, nextSteps.get(0));
+    void testGetNextPorts() {
+        List<Port> nextPorts = graph.getNextPorts(pA_E);
+        assertNotNull(nextPorts);
+        assertEquals(1, nextPorts.size());
+        assertEquals(pB_E, nextPorts.get(0));
     }
 
     @Test
     void testEndOfTrackReturnsEmpty() {
-        List<PathStep> nextSteps = graph.getNextSteps(stepB_to_C);
-        assertTrue(nextSteps.isEmpty());
+        List<Port> nextPorts = graph.getNextPorts(pB_E);
+        assertTrue(nextPorts.isEmpty());
     }
 
     @Test
     void testMultipleExitsFromFork() {
         RailTrack trackD = new RailTrack(); trackD.setPosition(new Point(1,1));
+        trackD.connect(Dir.N, trackB);
+        trackB.connect(Dir.S, trackD);
+
         RailNodeImpl nodeD = new RailNodeImpl(trackD);
-        PathStep stepB_to_D = new PathStepImpl(nodeB, Dir.S);
-        PathStep stepD_to_B = new PathStepImpl(nodeD, Dir.N);
-        nodeB.addOutStep(stepB_to_D);
-        nodeD.addOutStep(stepD_to_B);
+        Port pB_S = nodeB.getPortForDir(Dir.S);
+        Port pD_N = nodeD.getPortForDir(Dir.N);
+        assertNotNull(pB_S);
+        assertNotNull(pD_N);
         
-        Segment segmentBD = new SegmentImpl("BD", stepB_to_D, stepD_to_B);
-        graph.registerSegment(stepB_to_D, segmentBD);
-        graph.registerSegment(stepD_to_B, segmentBD);
+        Segment segmentBD = new SegmentImpl("BD", pB_S, pD_N);
+        graph.registerSegment(pB_S, segmentBD);
+        graph.registerSegment(pD_N, segmentBD);
         
-        List<PathStep> nextSteps = graph.getNextSteps(stepA_to_B);
+        List<Port> nextPorts = graph.getNextPorts(pA_E);
         
-        assertEquals(2, nextSteps.size());
-        assertTrue(nextSteps.contains(stepB_to_C));
-        assertTrue(nextSteps.contains(stepB_to_D));
-        assertFalse(nextSteps.contains(stepB_to_A));
+        assertEquals(2, nextPorts.size());
+        assertTrue(nextPorts.contains(pB_E));
+        assertTrue(nextPorts.contains(pB_S));
+        assertFalse(nextPorts.contains(pB_W));
     }
 
     @Test
     void testCircularSegment() {
-        RailTrack trackCircle = new RailTrack(); trackCircle.setPosition(new Point(5,5));
-        RailNodeImpl circularNode = new RailNodeImpl(trackCircle);
-        PathStep exit1 = new PathStepImpl(circularNode, Dir.N);
-        PathStep exit2 = new PathStepImpl(circularNode, Dir.S);
-        circularNode.addOutStep(exit1);
-        circularNode.addOutStep(exit2);
+        letrain.segments.RailNode circularNode = org.mockito.Mockito.mock(letrain.segments.RailNode.class);
+        Port exit1 = org.mockito.Mockito.mock(Port.class);
+        Port exit2 = org.mockito.Mockito.mock(Port.class);
+        
+        org.mockito.Mockito.when(exit1.getNode()).thenReturn(circularNode);
+        org.mockito.Mockito.when(exit2.getNode()).thenReturn(circularNode);
+        org.mockito.Mockito.when(circularNode.getPorts()).thenReturn(List.of(exit1, exit2));
         
         Segment circularSegment = new SegmentImpl("CIRCLE", exit1, exit2);
         graph.registerSegment(exit1, circularSegment);
         graph.registerSegment(exit2, circularSegment);
         
-        List<PathStep> nextSteps = graph.getNextSteps(exit1);
-        assertTrue(nextSteps.isEmpty());
+        List<Port> nextPorts = graph.getNextPorts(exit1);
+        assertTrue(nextPorts.isEmpty());
     }
 
     @Test
@@ -144,9 +157,13 @@ class RailwayGraphTest {
     void testFindNonExistentPath() {
         RailTrack tIso1 = new RailTrack(); tIso1.setPosition(new Point(10,10));
         RailTrack tIso2 = new RailTrack(); tIso2.setPosition(new Point(10,11));
+        tIso1.connect(Dir.N, tIso2);
+        tIso2.connect(Dir.S, tIso1);
+        RailNodeImpl nodeIso1 = new RailNodeImpl(tIso1);
+        RailNodeImpl nodeIso2 = new RailNodeImpl(tIso2);
         Segment isolatedSegment = new SegmentImpl("ISO", 
-            new PathStepImpl(new RailNodeImpl(tIso1), Dir.N),
-            new PathStepImpl(new RailNodeImpl(tIso2), Dir.S)
+            nodeIso1.getPortForDir(Dir.N),
+            nodeIso2.getPortForDir(Dir.S)
         );
         
         List<Segment> path = graph.findPath(segmentAB, isolatedSegment);
@@ -154,10 +171,12 @@ class RailwayGraphTest {
     }
 
     @Test
-    void testNonExistentPathStep() {
+    void testNonExistentPort() {
         RailTrack tGhost = new RailTrack(); tGhost.setPosition(new Point(100,100));
-        PathStep ghostStep = new PathStepImpl(new RailNodeImpl(tGhost), Dir.NE);
-        assertNull(graph.getSegment(ghostStep));
-        assertNull(graph.getNextSteps(ghostStep));
+        tGhost.connect(Dir.NE, tGhost);
+        RailNodeImpl ghostNode = new RailNodeImpl(tGhost);
+        Port ghostPort = ghostNode.getPortForDir(Dir.NE);
+        assertNull(graph.getSegment(ghostPort));
+        assertNull(graph.getNextPorts(ghostPort));
     }
 }

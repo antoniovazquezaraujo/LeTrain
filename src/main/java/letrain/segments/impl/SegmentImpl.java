@@ -1,16 +1,16 @@
 package letrain.segments.impl;
 
-import letrain.segments.PathStep;
+import letrain.segments.Port;
 import letrain.segments.Segment;
 import letrain.utils.Pair;
 
 public class SegmentImpl implements Segment {
     private final String id;
-    private final Pair<PathStep, PathStep> steps;
+    private final Pair<Port, Port> ports;
 
-    public SegmentImpl(String id, PathStep step1, PathStep step2) {
+    public SegmentImpl(String id, Port p1, Port p2) {
         this.id = id;
-        this.steps = new Pair<>(step1, step2);
+        this.ports = new Pair<>(p1, p2);
     }
 
     @Override
@@ -19,8 +19,8 @@ public class SegmentImpl implements Segment {
     }
 
     @Override
-    public Pair<PathStep, PathStep> getSteps() {
-        return steps;
+    public Pair<Port, Port> getPorts() {
+        return ports;
     }
 
     @Override
@@ -35,18 +35,20 @@ public class SegmentImpl implements Segment {
         SegmentImpl segment = (SegmentImpl) o;
         // Same ID → same logical segment
         if (id != null && id.equals(segment.id)) return true;
-        // Fallback: compare by steps (order-independent)
-        if (steps == null || segment.steps == null) return false;
-        return (java.util.Objects.equals(steps.getFirst(), segment.steps.getFirst()) && 
-                java.util.Objects.equals(steps.getSecond(), segment.steps.getSecond())) ||
-               (java.util.Objects.equals(steps.getFirst(), segment.steps.getSecond()) && 
-                java.util.Objects.equals(steps.getSecond(), segment.steps.getFirst()));
+        // Compare by ports (order-independent)
+        if (ports == null || segment.ports == null) return false;
+        return (java.util.Objects.equals(ports.getFirst(), segment.ports.getFirst()) && 
+                java.util.Objects.equals(ports.getSecond(), segment.ports.getSecond())) ||
+               (java.util.Objects.equals(ports.getFirst(), segment.ports.getSecond()) && 
+                java.util.Objects.equals(ports.getSecond(), segment.ports.getFirst()));
     }
 
     @Override
     public int hashCode() {
-        if (steps == null) return 0;
-        // Hash independiente del orden de los pasos
-        return steps.getFirst().hashCode() + steps.getSecond().hashCode();
+        if (ports == null) return 0;
+        int h1 = ports.getFirst() != null ? ports.getFirst().hashCode() : 0;
+        int h2 = ports.getSecond() != null ? ports.getSecond().hashCode() : 0;
+        // Hash independent of ports order
+        return h1 + h2;
     }
 }

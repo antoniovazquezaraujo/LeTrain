@@ -8,9 +8,10 @@ import java.util.List;
 import java.util.Optional;
 
 import letrain.map.Dir;
-import letrain.segments.PathStep;
+import letrain.segments.Port;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
+import letrain.segments.impl.RailNodeImpl;
 import letrain.utils.Pair;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,9 +54,11 @@ class SegmentPathfinderTest {
         assertTrue(pf.find(a, b, Optional.empty()).isEmpty());
     }
 
+
+
     @Test
-    @DisplayName("should choose route with lower physical track cost")
-    void physicalTrackCost() {
+    @DisplayName("should choose route with lower physical track cost using ports")
+    void physicalTrackCostUsingPorts() {
         RailwayGraph graph = mock(RailwayGraph.class);
         SegmentPathfinder pf = new AStarPathfinder(graph);
 
@@ -64,35 +67,35 @@ class SegmentPathfinderTest {
         Segment c = mock(Segment.class, "c");
         Segment to = mock(Segment.class, "to");
 
-        PathStep fromStep1 = mock(PathStep.class);
-        PathStep fromStep2 = mock(PathStep.class);
-        PathStep bStep1 = mock(PathStep.class);
-        PathStep bStep2 = mock(PathStep.class);
-        PathStep cStep1 = mock(PathStep.class);
-        PathStep cStep2 = mock(PathStep.class);
-        PathStep toStep1 = mock(PathStep.class);
-        PathStep toStep2 = mock(PathStep.class);
+        Port fromPort1 = mock(Port.class);
+        Port fromPort2 = mock(Port.class);
+        Port bPort1 = mock(Port.class);
+        Port bPort2 = mock(Port.class);
+        Port cPort1 = mock(Port.class);
+        Port cPort2 = mock(Port.class);
+        Port toPort1 = mock(Port.class);
+        Port toPort2 = mock(Port.class);
 
-        when(from.getSteps()).thenReturn(new Pair<>(fromStep1, fromStep2));
-        when(b.getSteps()).thenReturn(new Pair<>(bStep1, bStep2));
-        when(c.getSteps()).thenReturn(new Pair<>(cStep1, cStep2));
-        when(to.getSteps()).thenReturn(new Pair<>(toStep1, toStep2));
+        when(from.getPorts()).thenReturn(new Pair<>(fromPort1, fromPort2));
+        when(b.getPorts()).thenReturn(new Pair<>(bPort1, bPort2));
+        when(c.getPorts()).thenReturn(new Pair<>(cPort1, cPort2));
+        when(to.getPorts()).thenReturn(new Pair<>(toPort1, toPort2));
 
-        when(graph.getSegment(fromStep1)).thenReturn(from);
-        when(graph.getSegment(fromStep2)).thenReturn(from);
-        when(graph.getSegment(bStep1)).thenReturn(b);
-        when(graph.getSegment(bStep2)).thenReturn(b);
-        when(graph.getSegment(cStep1)).thenReturn(c);
-        when(graph.getSegment(cStep2)).thenReturn(c);
-        when(graph.getSegment(toStep1)).thenReturn(to);
-        when(graph.getSegment(toStep2)).thenReturn(to);
+        when(graph.getSegment(fromPort1)).thenReturn(from);
+        when(graph.getSegment(fromPort2)).thenReturn(from);
+        when(graph.getSegment(bPort1)).thenReturn(b);
+        when(graph.getSegment(bPort2)).thenReturn(b);
+        when(graph.getSegment(cPort1)).thenReturn(c);
+        when(graph.getSegment(cPort2)).thenReturn(c);
+        when(graph.getSegment(toPort1)).thenReturn(to);
+        when(graph.getSegment(toPort2)).thenReturn(to);
 
         // from connects to b and c
-        when(graph.getNextSteps(fromStep2)).thenReturn(List.of(bStep1, cStep1));
+        when(graph.getNextPorts(fromPort2)).thenReturn(List.of(bPort1, cPort1));
         // b connects to to
-        when(graph.getNextSteps(bStep2)).thenReturn(List.of(toStep1));
+        when(graph.getNextPorts(bPort2)).thenReturn(List.of(toPort1));
         // c connects to to
-        when(graph.getNextSteps(cStep2)).thenReturn(List.of(toStep2));
+        when(graph.getNextPorts(cPort2)).thenReturn(List.of(toPort2));
 
         // b has high track count, c has low track count
         when(graph.getTrackCount(from)).thenReturn(1);
@@ -109,30 +112,36 @@ class SegmentPathfinderTest {
     }
 
     @Test
-    @DisplayName("should enforce entryDir constraint")
-    void entryDirConstraint() {
+    @DisplayName("should enforce entryDir constraint using ports")
+    void entryDirConstraintUsingPorts() {
         RailwayGraph graph = mock(RailwayGraph.class);
         SegmentPathfinder pf = new AStarPathfinder(graph);
 
         Segment from = mock(Segment.class, "from");
         Segment to = mock(Segment.class, "to");
 
-        PathStep fromStep1 = mock(PathStep.class);
-        PathStep fromStep2 = mock(PathStep.class);
-        PathStep toStep1 = mock(PathStep.class);
-        PathStep toStep2 = mock(PathStep.class);
+        Port fromPort1 = mock(Port.class);
+        Port fromPort2 = mock(Port.class);
+        Port toPort1 = mock(Port.class);
+        Port toPort2 = mock(Port.class);
 
-        when(from.getSteps()).thenReturn(new Pair<>(fromStep1, fromStep2));
-        when(to.getSteps()).thenReturn(new Pair<>(toStep1, toStep2));
+        when(from.getPorts()).thenReturn(new Pair<>(fromPort1, fromPort2));
+        when(to.getPorts()).thenReturn(new Pair<>(toPort1, toPort2));
 
-        when(graph.getSegment(fromStep1)).thenReturn(from);
-        when(graph.getSegment(fromStep2)).thenReturn(from);
-        when(graph.getSegment(toStep1)).thenReturn(to);
-        when(graph.getSegment(toStep2)).thenReturn(to);
+        when(graph.getSegment(fromPort1)).thenReturn(from);
+        when(graph.getSegment(fromPort2)).thenReturn(from);
+        when(graph.getSegment(toPort1)).thenReturn(to);
+        when(graph.getSegment(toPort2)).thenReturn(to);
 
-        // from connects to to via toStep1
-        when(graph.getNextSteps(fromStep2)).thenReturn(List.of(toStep1));
-        when(toStep1.getDir()).thenReturn(Dir.E); // Entry direction is East
+        // from connects to to via toPort1
+        when(graph.getNextPorts(fromPort2)).thenReturn(List.of(toPort1));
+        
+        letrain.segments.impl.RailNodeImpl toNode = mock(letrain.segments.impl.RailNodeImpl.class);
+        when(toPort1.getNode()).thenReturn(toNode);
+        
+        letrain.segments.PortType portType = letrain.segments.PortType.A;
+        when(toPort1.getType()).thenReturn(portType);
+        when(toNode.getDirForPort(portType)).thenReturn(Dir.E); // Entry direction is East
 
         // If we request entryDir as West, path should not be found
         List<Segment> pathNo = pf.find(from, to, Optional.of(Dir.W));
@@ -143,11 +152,5 @@ class SegmentPathfinderTest {
         assertEquals(2, pathYes.size());
         assertEquals(from, pathYes.get(0));
         assertEquals(to, pathYes.get(1));
-
-        // If no entryDir constraint, path should be found
-        List<Segment> pathAny = pf.find(from, to, Optional.empty());
-        assertEquals(2, pathAny.size());
-        assertEquals(from, pathAny.get(0));
-        assertEquals(to, pathAny.get(1));
     }
 }

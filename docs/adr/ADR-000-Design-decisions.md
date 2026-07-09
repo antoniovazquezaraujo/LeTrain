@@ -1,7 +1,7 @@
 # ADR-000: Sistema de Guiado Automático (Fase 1: Guiado Topológico)
 
 ## Estado
-Implementado / En Evolución
+Implementado / En Evolución (Modificado por [[ADR-015-Abstraccion-Puertos-Nodos]])
 
 ## Contexto
 Se requiere un sistema que permita a un tren alcanzar un destino de forma autónoma basándose en la topología de la red ferroviaria. Se descarta el seguimiento baldosa a baldosa en favor de un modelo de grafos lógicos que desacople la navegación de la física del raíl.

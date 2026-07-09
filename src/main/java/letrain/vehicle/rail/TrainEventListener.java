@@ -1,6 +1,7 @@
 package letrain.vehicle.rail;
 
 import letrain.vehicle.rail.impl.Train;
+import letrain.itinerary.Waypoint;
 
 import java.io.Serializable;
 
@@ -27,6 +28,9 @@ public interface TrainEventListener extends Serializable {
     }
 
     default public void onSensorExit(Train train, boolean isForward) {
+    }
+
+    default void onWaypointReached(Train train, Waypoint waypoint) {
     }
 
 }

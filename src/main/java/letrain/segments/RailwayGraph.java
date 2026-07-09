@@ -7,15 +7,15 @@ import java.util.List;
  */
 public interface RailwayGraph {
     /**
-     * Dado un PathStep, devuelve el segmento al que pertenece.
+     * Dado un Port, devuelve el segmento al que pertenece.
      */
-    Segment getSegment(PathStep step);
+    Segment getSegment(Port port);
 
     /**
-     * Dado un paso actual, devuelve los posibles pasos siguientes 
+     * Dado un puerto actual, devuelve los posibles puertos siguientes 
      * al final del segmento. Devuelve null si es fin de vía.
      */
-    List<PathStep> getNextSteps(PathStep current);
+    List<Port> getNextPorts(Port current);
 
     /**
      * Encuentra la secuencia de segmentos que conectan dos segmentos dados.
@@ -36,6 +36,11 @@ public interface RailwayGraph {
      * Devuelve el segmento al que pertenece un raíl físico (si está mapeado).
      */
     Segment getSegment(letrain.track.rail.RailTrack track);
+
+    /**
+     * Comprueba si un segmento contiene un raíl físico.
+     */
+    boolean containsTrack(Segment segment, letrain.track.rail.RailTrack track);
 
     /**
      * Devuelve el número de vías físicas en un segmento.
