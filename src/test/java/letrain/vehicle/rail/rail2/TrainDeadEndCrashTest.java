@@ -105,7 +105,7 @@ class TrainDeadEndCrashTest {
         ScriptTrainEventListener listener = mock(ScriptTrainEventListener.class);
         train.addScriptTrainEventListener(listener);
 
-        boolean moved = train.movementManager.moveLinkers(true);
+        boolean moved = train.getMovementManager().moveLinkers(true);
 
         assertTrue(moved, "moveLinkers should succeed — train moves to last track");
         assertSame(trackB, loco.getTrack(), "Locomotive should have moved to trackB");
@@ -190,7 +190,7 @@ class TrainDeadEndCrashTest {
         ScriptTrainEventListener listener = mock(ScriptTrainEventListener.class);
         train.addScriptTrainEventListener(listener);
 
-        boolean moved = train.movementManager.moveLinkers(true);
+        boolean moved = train.getMovementManager().moveLinkers(true);
 
         assertTrue(moved, "moveLinkers should succeed — train moves to last track");
         assertSame(trackB, loco.getTrack(), "Locomotive should have moved to trackB");
@@ -283,7 +283,7 @@ class TrainDeadEndCrashTest {
         train.addScriptTrainEventListener(listener);
 
         // --- Act ---
-        boolean moved = train.movementManager.moveLinkers(true);
+        boolean moved = train.getMovementManager().moveLinkers(true);
 
         // --- Assert ---
         // 1. moveLinkers returns true (movement succeeded)
@@ -369,7 +369,7 @@ class TrainDeadEndCrashTest {
         ScriptTrainEventListener listener = mock(ScriptTrainEventListener.class);
         train.addScriptTrainEventListener(listener);
 
-        boolean moved = train.movementManager.moveLinkers(false);
+        boolean moved = train.getMovementManager().moveLinkers(false);
 
         assertTrue(moved, "moveLinkers should succeed — train moves to last track");
         assertSame(trackA, loco.getTrack(), "Locomotive should have moved to trackA");

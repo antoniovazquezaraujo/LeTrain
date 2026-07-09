@@ -32,10 +32,7 @@ public class AutoPilotImpl implements AutoPilot {
     private SegmentPathfinder pathfinder;
     private List<Segment> currentRoute = List.of();
     private Segment lastSegment;
-    private int routeRetryCooldown = 0;
-
     private int currentIndex = 0;
-    private static final int ROUTE_RETRY_TICKS = 100;
 
     private Train train;
     private TrainActionManager actionManager;
@@ -146,7 +143,6 @@ public class AutoPilotImpl implements AutoPilot {
         this.mode = Mode.IDLE;
         this.currentRoute = List.of();
         this.lastSegment = null;
-        this.routeRetryCooldown = 0;
         this.waitTicks = 0;
         this.pendingCommands.clear();
         this.currentIndex = 0;
@@ -163,7 +159,6 @@ public class AutoPilotImpl implements AutoPilot {
         mode = Mode.FOLLOWING;
         currentRoute = List.of();
         lastSegment = null;
-        routeRetryCooldown = 0;
         waitTicks = 0;
         pendingCommands.clear();
         currentIndex = 0;

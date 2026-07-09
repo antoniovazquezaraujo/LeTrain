@@ -65,7 +65,7 @@ class TrainMoveLinkersTest {
         setupRemoveLinkerSetsTrackToNull(trackA, linkerOnTrackA, firstLinkerTrack);
         setupRemoveLinkerSetsTrackToNull(trackB, linkerOnTrackB, secondLinkerTrack);
 
-        boolean result = train.movementManager.moveLinkers(true);
+        boolean result = train.getMovementManager().moveLinkers(true);
 
         assertTrue(result,
                 "moveLinkers should return true — no post-move null check");
@@ -87,7 +87,7 @@ class TrainMoveLinkersTest {
         linkerOnTrackB.set(secondLinker);
         when(trackB.getLinker()).thenAnswer(inv -> linkerOnTrackB.get());
 
-        boolean result = train.movementManager.moveLinkers(true);
+        boolean result = train.getMovementManager().moveLinkers(true);
 
         assertFalse(result,
                 "moveLinkers should return false — head target track is occupied");
@@ -114,7 +114,7 @@ class TrainMoveLinkersTest {
         setupRealisticEnterLinker(trackC, linkerOnTrackC, secondLinkerTrack, secondLinker);
 
         // --- Act ---
-        boolean result = train.movementManager.moveLinkers(true);
+        boolean result = train.getMovementManager().moveLinkers(true);
 
         // --- Assert ---
         assertTrue(result,

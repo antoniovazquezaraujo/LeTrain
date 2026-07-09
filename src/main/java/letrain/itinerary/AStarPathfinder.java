@@ -131,31 +131,28 @@ public class AStarPathfinder implements SegmentPathfinder {
     }
 
     private int heuristic(Segment a, Segment b) {
-        try {
-            RailNode aNode = null;
-            RailNode bNode = null;
-            
-            var aPorts = a.getPorts();
-            if (aPorts != null && aPorts.getFirst() != null) {
-                aNode = aPorts.getFirst().getNode();
-            }
-            
-            var bPorts = b.getPorts();
-            if (bPorts != null && bPorts.getFirst() != null) {
-                bNode = bPorts.getFirst().getNode();
-            }
-
-            if (aNode == null || bNode == null) return 0;
-            var aTrack = aNode.getTrack();
-            var bTrack = bNode.getTrack();
-            if (aTrack == null || bTrack == null) return 0;
-            var aPos = aTrack.getPosition();
-            var bPos = bTrack.getPosition();
-            if (aPos == null || bPos == null) return 0;
-            return Math.abs(aPos.getX() - bPos.getX()) + Math.abs(aPos.getY() - bPos.getY());
-        } catch (NullPointerException e) {
-            return 0;
+        if (a == null || b == null) return 0;
+        RailNode aNode = null;
+        RailNode bNode = null;
+        
+        var aPorts = a.getPorts();
+        if (aPorts != null && aPorts.getFirst() != null) {
+            aNode = aPorts.getFirst().getNode();
         }
+        
+        var bPorts = b.getPorts();
+        if (bPorts != null && bPorts.getFirst() != null) {
+            bNode = bPorts.getFirst().getNode();
+        }
+
+        if (aNode == null || bNode == null) return 0;
+        var aTrack = aNode.getTrack();
+        var bTrack = bNode.getTrack();
+        if (aTrack == null || bTrack == null) return 0;
+        var aPos = aTrack.getPosition();
+        var bPos = bTrack.getPosition();
+        if (aPos == null || bPos == null) return 0;
+        return Math.abs(aPos.getX() - bPos.getX()) + Math.abs(aPos.getY() - bPos.getY());
     }
 
     private int segmentCost(Segment s) {

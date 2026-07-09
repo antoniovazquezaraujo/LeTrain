@@ -38,7 +38,7 @@ public class VehicleRenderer extends BaseSubRenderer {
                     // linkersToJoin is populated in order of distance from train.
                     // so we just take the first N.
                     Train train = selected.getTrain();
-                    for (Linker l : train.trainCouplingManager.getSelectedLinkersToJoin(train)) {
+                    for (Linker l : train.getTrainCouplingManager().getSelectedLinkersToJoin(train)) {
                         if (l == locomotive) {
                             highlight = true;
                             break;
@@ -199,7 +199,7 @@ public class VehicleRenderer extends BaseSubRenderer {
                     // linkersToJoin is populated in order of distance from train.
                     // so we just take the first N.
                     Train train = selected.getTrain();
-                    for (Linker l : train.trainCouplingManager.getSelectedLinkersToJoin(train)) {
+                    for (Linker l : train.getTrainCouplingManager().getSelectedLinkersToJoin(train)) {
                         if (l == wagon) {
                             highlight = true;
                             break;
