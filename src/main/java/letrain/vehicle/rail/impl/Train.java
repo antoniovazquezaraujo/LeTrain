@@ -561,7 +561,29 @@ public class Train implements Renderable {
         getTractors().forEach(t -> {
             t.setCurrentSpeed(0);
             t.setTargetSpeed(0);
+            if (t instanceof Locomotive) {
+                ((Locomotive) t).setForceIdleSound(true);
+            }
         });
+        if (pendingReverse) {
+            pendingReverse = false;
+            Tractor dirLinker = getDirectorLinker();
+            if (dirLinker != null) {
+                dirLinker.toggleReversed();
+                if (this.savedSpeedBeforeReverse != -1) {
+                    int targetSpeed = this.savedSpeedBeforeReverse;
+                    dirLinker.setTargetSpeed(targetSpeed);
+                    this.savedSpeedBeforeReverse = -1;
+                    if (getModel() != null) {
+                        letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
+                        if (seg != null) {
+                            notifyAutopilotSegmentEntered(seg);
+                        }
+                        getSafetyManager().acquireInitialLocks();
+                    }
+                }
+            }
+        }
     }
 
     /**

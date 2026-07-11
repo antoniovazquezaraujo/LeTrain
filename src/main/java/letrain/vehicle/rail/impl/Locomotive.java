@@ -139,8 +139,36 @@ public class Locomotive extends Linker implements Tractor {
 
             // Handle acceleration from 0 - allows getting unstuck from speed 0
             if (currentSpeed == 0 && targetSpeed > 0) {
-                updateInertia();
-                resetTurns();
+                boolean blocked = false;
+                if (getTrain() != null) {
+                    java.util.Deque<Linker> linkers = getTrain().getLinkers();
+                    if (!linkers.isEmpty()) {
+                        boolean normalSense = getTrain().getDirectorLinker() == null || !getTrain().getDirectorLinker().isReversed();
+                        Linker head = normalSense ? linkers.getFirst() : linkers.getLast();
+                        if (head != null && head.getTrack() != null) {
+                            letrain.track.Track nextTrack = head.getTrack().getConnected(head.getDir());
+                            if (nextTrack != null) {
+                                Linker occupant = nextTrack.getLinker();
+                                if (occupant != null && occupant.getTrain() != null && occupant.getTrain() != getTrain()) {
+                                    blocked = true;
+                                    log.info("[CONTACT-TIMING] Instant contact check on start: next cell is occupied. Firing contact sound immediately.");
+                                    getTrain().notifyContact(nextTrack.getPosition(), targetSpeed);
+                                    
+                                    // Stop the train immediately
+                                    setCurrentSpeed(0);
+                                    setTargetSpeed(0);
+                                    this.turns = -1;
+                                    this.totalTurns = -1;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!blocked) {
+                    updateInertia();
+                    resetTurns();
+                }
             }
 
             if (currentSpeed > 0) {
