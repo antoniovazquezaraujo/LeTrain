@@ -54,8 +54,8 @@ class TrainMoveLinkersTest {
      * and the method returns true.
      */
     @Test
-    @DisplayName("should move successfully even if linker track is null afterwards (no post-move check)")
-    void shouldMove_When_FirstLinkerTrackIsNull_AfterMove() {
+    @DisplayName("should return false when first linker's track is null after move (defensive null-check)")
+    void shouldReturnFalse_When_FirstLinkerTrackIsNull_AfterMove() {
         setupTwoLinkerScenario();
         setupPass1Success();
 
@@ -67,8 +67,8 @@ class TrainMoveLinkersTest {
 
         boolean result = train.getMovementManager().moveLinkers(true);
 
-        assertTrue(result,
-                "moveLinkers should return true — no post-move null check");
+        assertFalse(result,
+                "Should return false: null-track detected in post-move check");
         verify(trackB, atLeastOnce()).setReservation(null);
         verify(trackC, atLeastOnce()).setReservation(null);
     }

@@ -208,6 +208,45 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             lastLinker.setRailsSinceStop(lastLinker.getRailsSinceStop() + 1);
             lastLinkerNextTrack.setReservation(null);
         }
+
+        // Post-move collision / dead-end check
+        Track currentFirstTrack = firstLinker.getTrack();
+        if (currentFirstTrack == null) {
+            log.warn("First linker has no track after move sequence — cannot check next cell for collisions");
+            return false;
+        }
+        Track nextAfterMove = currentFirstTrack.getConnected(firstLinker.getDir());
+        if (nextAfterMove != null) {
+            Linker blockingLinker = nextAfterMove.getLinker();
+            if (blockingLinker != null && blockingLinker.getTrain() != train) {
+                int speed = train.getSpeed();
+                if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD) {
+                    crashDetected(blockingLinker, speed);
+                } else {
+                    contactDetected(blockingLinker, speed);
+                }
+                // After collision, correct direction to match physical track connections
+                correctDirection(firstLinker);
+            }
+        } else {
+            int speed = train.getSpeed();
+            Point impactPos = firstLinker.getPosition();
+            if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD) {
+                if (!isAlreadyDestroying(train)) {
+                    train.crashDestroy(impactPos, speed);
+                }
+            } else {
+                train.notifyContact(impactPos, speed);
+                train.getTractors().forEach(t -> {
+                    t.setCurrentSpeed(0);
+                    t.setTargetSpeed(0);
+                    if (t instanceof Locomotive) {
+                        ((Locomotive) t).setForceIdleSound(true);
+                    }
+                });
+            }
+        }
+
         return true;
     }
 

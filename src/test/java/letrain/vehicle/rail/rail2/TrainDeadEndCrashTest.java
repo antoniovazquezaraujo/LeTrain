@@ -109,12 +109,11 @@ class TrainDeadEndCrashTest {
 
         assertTrue(moved, "moveLinkers should succeed — train moves to last track");
         assertSame(trackB, loco.getTrack(), "Locomotive should have moved to trackB");
-        assertFalse(train.isStalled(),
-                "Train should not be stalled yet — dead-end detected next tick");
-        verify(listener, never()).onCrash(any(Train.class), any(Point.class), anyInt());
-        verify(listener, never()).onContact(any(Train.class), any(Point.class), anyInt());
-        verify(loco, never()).destroy();
-        verify(loco, never()).setForceIdleSound(true);
+        assertTrue(train.isStalled(),
+                "Train should be stalled after high-speed crash into dead-end");
+        verify(listener).onCrash(eq(train), any(Point.class), eq(8));
+        verify(loco).destroy();
+        verify(loco).setForceIdleSound(true);
     }
 
     // ================================================================
@@ -195,11 +194,13 @@ class TrainDeadEndCrashTest {
         assertTrue(moved, "moveLinkers should succeed — train moves to last track");
         assertSame(trackB, loco.getTrack(), "Locomotive should have moved to trackB");
         assertFalse(train.isStalled(),
-                "Train should not be stalled — contact detected next tick");
-        verify(listener, never()).onContact(any(Train.class), any(Point.class), anyInt());
+                "Train should not be stalled after reversing into dead-end");
+        verify(listener).onContact(eq(train), any(Point.class), eq(3));
+        verify(loco, org.mockito.Mockito.atLeastOnce()).setForceIdleSound(true);
+        verify(loco, org.mockito.Mockito.atLeast(1)).setCurrentSpeed(0);
+        verify(loco, org.mockito.Mockito.atLeast(1)).setTargetSpeed(0);
         verify(listener, never()).onCrash(any(Train.class), any(Point.class), anyInt());
         verify(loco, never()).destroy();
-        verify(loco, never()).setForceIdleSound(true);
     }
 
     // ================================================================
@@ -374,10 +375,12 @@ class TrainDeadEndCrashTest {
         assertTrue(moved, "moveLinkers should succeed — train moves to last track");
         assertSame(trackA, loco.getTrack(), "Locomotive should have moved to trackA");
         assertFalse(train.isStalled(),
-                "Train should not be stalled — contact detected next tick");
-        verify(listener, never()).onContact(any(Train.class), any(Point.class), anyInt());
+                "Train should not be stalled after reversing into dead-end");
+        verify(listener).onContact(eq(train), any(Point.class), eq(3));
+        verify(loco, org.mockito.Mockito.atLeastOnce()).setForceIdleSound(true);
+        verify(loco, org.mockito.Mockito.atLeast(1)).setCurrentSpeed(0);
+        verify(loco, org.mockito.Mockito.atLeast(1)).setTargetSpeed(0);
         verify(listener, never()).onCrash(any(Train.class), any(Point.class), anyInt());
         verify(loco, never()).destroy();
-        verify(loco, never()).setForceIdleSound(true);
     }
 }
