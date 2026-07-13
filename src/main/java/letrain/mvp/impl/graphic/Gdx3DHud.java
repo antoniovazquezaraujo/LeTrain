@@ -974,6 +974,7 @@ public class Gdx3DHud {
             saveBtn.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
+                    model.setProgram(textArea.getText());
                     view.showSaveDialog();
                 }
             });
