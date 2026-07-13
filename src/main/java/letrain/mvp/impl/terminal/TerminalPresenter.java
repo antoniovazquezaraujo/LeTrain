@@ -38,8 +38,7 @@ import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.Wagon;
 import letrain.visitor.terminal.InfoVisitor;
 import letrain.visitor.terminal.RenderVisitor;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1032,11 +1031,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     @Override
     public void onLoadCommands(File file) {
-        CharStream input = loadProgram(file);
+        String input = loadProgram(file);
         if (input == null) {
             return;
         }
-        List<String> errors = model.setProgram(input.toString());
+        List<String> errors = model.setProgram(input);
         handleScriptErrors(errors);
     }
 
@@ -1065,15 +1064,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
 
-    CharStream loadProgram(File file) {
-        try (FileInputStream fis = new FileInputStream(file)) {
-            CharStream program = null;
-            try {
-                program = CharStreams.fromFileName(file.getName());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return program;
+    String loadProgram(File file) {
+        try {
+            return new String(java.nio.file.Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.UTF_8);
         } catch (IOException ex) {
             log.error("Error loading program", ex);
             return null;
