@@ -114,14 +114,13 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         // Registrar presencia física en BlockManager
         for (Segment segment : segmentsToClaim) {
             if (!bm.tryLock(train, segment)) {
-                // Si falla el bloqueo exclusivo, intentamos shunting (coexistencia permitida)
-                if (bm.tryShuntingLock(train, segment)) {
-                    // Conflicto físico al inicializar: si algún tren es automático, se para
-                    train.getMovementManager().forceEmergencyStop();
-                    for (Train owner : bm.getOwners(segment)) {
-                        if (owner != train) {
-                            owner.getMovementManager().forceEmergencyStop();
-                        }
+                // Conflicto físico al inicializar: si algún tren es automático, se para y pasa a manual
+                train.getMovementManager().forceEmergencyStop();
+                train.setAutoMode(false);
+                for (Train owner : bm.getOwners(segment)) {
+                    if (owner != train) {
+                        owner.getMovementManager().forceEmergencyStop();
+                        owner.setAutoMode(false);
                     }
                 }
             }
@@ -165,10 +164,12 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 // Hay otro tren: Si somos automáticos, parada de emergencia
                 log.warn("Train {} acquireInitialLocks: failed lock on current segment {}. Forcing emergency stop.", train.getId(), currentSegment.getId());
                 train.getMovementManager().forceEmergencyStop();
+                train.setAutoMode(false);
                 for (Train owner : bm.getOwners(currentSegment)) {
                     if (owner != train) {
                         log.warn("Train {} acquireInitialLocks: also forcing emergency stop on owner {}", train.getId(), owner.getId());
                         owner.getMovementManager().forceEmergencyStop();
+                        owner.setAutoMode(false);
                     }
                 }
                 if (!train.isAutoMode()) {
@@ -380,11 +381,13 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 log.warn("Train {} onSegmentEntered: failed lock on current segment {}. Forcing emergency stop.", train.getId(), currentSegment.getId());
                 // Se para el invasor (si es automático)
                 train.getMovementManager().forceEmergencyStop();
+                train.setAutoMode(false);
                 for (Train owner : bm.getOwners(currentSegment)) {
                     if (owner != train) {
                         log.warn("Train {} onSegmentEntered: also forcing emergency stop on owner {}", train.getId(), owner.getId());
                         // Se paran los automáticos invadidos
                         owner.getMovementManager().forceEmergencyStop();
+                        owner.setAutoMode(false);
                     }
                 }
                 if (!train.isAutoMode()) {

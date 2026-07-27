@@ -51,52 +51,6 @@ class BlockManagerTest {
         assertTrue(blockManager.getOwners(segment).contains(trainA));
     }
 
-    @Test
-    void testShuntingCoexistence() {
-        // Tren A bloquea el segmento (Normal)
-        assertTrue(blockManager.tryLock(trainA, segment));
-        
-        // Tren A está detenido (Velocidad 0 por defecto en mock)
-        when(trainA.getSpeed()).thenReturn(0);
-        
-        // Tren B entra en modo Shunting y tiene éxito
-        assertTrue(blockManager.tryShuntingLock(trainB, segment));
-        
-        List<Train> owners = blockManager.getOwners(segment);
-        assertEquals(2, owners.size());
-        assertTrue(owners.contains(trainA));
-        assertTrue(owners.contains(trainB));
-    }
-
-    @Test
-    void testShuntingDenialWhenMoving() {
-        // Tren A bloquea el segmento
-        assertTrue(blockManager.tryLock(trainA, segment));
-        
-        // Tren A se está moviendo
-        when(trainA.getSpeed()).thenReturn(5);
-        
-        // Tren B intenta entrar en Shunting y FALLA (Regla de Parada Total)
-        assertFalse(blockManager.tryShuntingLock(trainB, segment));
-        
-        assertEquals(1, blockManager.getOwners(segment).size());
-    }
-
-    @Test
-    void testExitShuntingRule() {
-        // Tren A y B comparten segmento
-        blockManager.tryLock(trainA, segment);
-        blockManager.tryShuntingLock(trainB, segment);
-        
-        // Tren B no puede salir de modo Shunting porque comparte segmento
-        assertFalse(blockManager.canExitShunting(trainB));
-        
-        // Tren A se marcha (libera segmento)
-        blockManager.release(trainA, segment);
-        
-        // Ahora Tren B está solo, debería poder salir de Shunting
-        assertTrue(blockManager.canExitShunting(trainB));
-    }
 
     @Test
     void testTabulaRasa() {
