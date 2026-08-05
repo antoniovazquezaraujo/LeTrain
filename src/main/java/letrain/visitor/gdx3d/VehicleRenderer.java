@@ -129,6 +129,12 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
 
         ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
+        if (!highlight && !unlinkHighlight && locomotive.getColor() != null && !instance.materials.isEmpty()) {
+            Color locoColor = getLibGdxColor(locomotive.getColor());
+            if (locoColor != null) {
+                instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(locoColor));
+            }
+        }
         if (locomotive.isDestroying()) {
             // Derailed: random offset + tilt
             int seed = locomotive.hashCode();
@@ -392,5 +398,18 @@ public class VehicleRenderer extends BaseSubRenderer {
             firePart.transform.rotate(Vector3.Y, realTime * 150f + seed * 100f);
             instances.add(firePart);
         }
+    }
+
+    public static Color getLibGdxColor(String colorName) {
+        if (colorName == null) return null;
+        return switch (colorName.toUpperCase()) {
+            case "RED", "RED_BRIGHT" -> Color.RED;
+            case "GREEN", "GREEN_BRIGHT" -> Color.GREEN;
+            case "YELLOW", "YELLOW_BRIGHT" -> Color.YELLOW;
+            case "BLUE", "BLUE_BRIGHT" -> Color.BLUE;
+            case "MAGENTA", "MAGENTA_BRIGHT" -> Color.MAGENTA;
+            case "CYAN", "CYAN_BRIGHT" -> Color.CYAN;
+            default -> Color.WHITE;
+        };
     }
 }

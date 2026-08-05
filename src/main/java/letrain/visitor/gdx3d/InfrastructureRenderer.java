@@ -77,14 +77,15 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             int absDist = Math.abs(dist);
             boolean d1Connected = isConnected(track, d1);
             boolean d2Connected = isConnected(track, d2);
+            Color blockedColor = trackRenderer.getTrackBlockedColor(track);
             if (absDist >= 1 && absDist <= 3) {
                 v1.set(PathGeometry.getDirX(d1), 0, PathGeometry.getDirZ(d1));
                 v2.set(PathGeometry.getDirX(d2), 0, PathGeometry.getDirZ(d2));
                 v3.set(0, 0, 0);
-                trackRenderer.renderMultiSegmentCurve(track.getPosition(), v1, v3, v2, d1Connected && d2Connected, 0, resourceContext.railModel);
+                trackRenderer.renderMultiSegmentCurve(track.getPosition(), v1, v3, v2, d1Connected && d2Connected, 0, resourceContext.railModel, blockedColor);
             } else {
-                trackRenderer.drawHalfTrack(track.getPosition(), d1, d1Connected, 1.0f, 1.0f);
-                trackRenderer.drawHalfTrack(track.getPosition(), d2, d2Connected, 1.0f, 1.0f);
+                trackRenderer.drawHalfTrack(track.getPosition(), d1, d1Connected, 1.0f, 1.0f, blockedColor);
+                trackRenderer.drawHalfTrack(track.getPosition(), d2, d2Connected, 1.0f, 1.0f, blockedColor);
             }
         }
 
