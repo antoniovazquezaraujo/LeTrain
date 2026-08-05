@@ -13,6 +13,8 @@ import letrain.map.Point;
 import letrain.map.impl.RailMap;
 import letrain.mvp.impl.services.AutomationEngine;
 import letrain.mvp.impl.services.SimulationService;
+import letrain.segments.BlockManager;
+import letrain.segments.Segment;
 import letrain.segments.TopologyService;
 import letrain.segments.impl.TopologyServiceImpl;
 import letrain.track.CargoTypes;
@@ -146,22 +148,27 @@ public class Model implements letrain.mvp.Model {
         return internalSimService;
     }
 
-    public Model() {
-        this.scheduler = new letrain.utils.impl.SimulationScheduler();
+    private BlockManager createBlockManager() {
         letrain.segments.impl.BlockManagerImpl bmi = new letrain.segments.impl.BlockManagerImpl();
         bmi.setOnReleaseListener((releasedSegment) -> {
-            for (Locomotive loco : locomotives) {
-                Train train = loco.getTrain();
-                if (train != null && train.isAutoMode()) {
-                    letrain.segments.Segment nextSeg = train.getSafetyManager().getNextSegment();
-                    if (train.getSafetyManager().isWaitingForBlock() && releasedSegment.equals(nextSeg)) {
-
-                        train.getSafetyManager().onBlockReleased();
+            if (locomotives != null) {
+                for (Locomotive loco : locomotives) {
+                    Train train = loco.getTrain();
+                    if (train != null && train.isAutoMode()) {
+                        letrain.segments.Segment nextSeg = train.getSafetyManager().getNextSegment();
+                        if (train.getSafetyManager().isWaitingForBlock() && releasedSegment.equals(nextSeg)) {
+                            train.getSafetyManager().onBlockReleased();
+                        }
                     }
                 }
             }
         });
-        this.blockManager = bmi;
+        return bmi;
+    }
+
+    public Model() {
+        this.scheduler = new letrain.utils.impl.SimulationScheduler();
+        this.blockManager = createBlockManager();
         this.eventLogManager = new EventLogManager();
         this.economyManager = new letrain.economy.impl.EconomyManager(eventLogManager);
         this.economyManager.reloadConfig();
@@ -204,7 +211,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     public void postLoadInit() {
-        this.blockManager = new letrain.segments.impl.BlockManagerImpl();
+        this.blockManager = createBlockManager();
         if (this.scriptTrainEventListeners == null) {
             this.scriptTrainEventListeners = new ArrayList<>();
         } else {

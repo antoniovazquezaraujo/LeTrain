@@ -491,7 +491,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         // Autopilot is always instantiated. Set pathfinder and assign itinerary
         if (model.getRailwayGraph() != null) {
             train.getAutopilot().setPathfinder(
-                new letrain.itinerary.AStarPathfinder(model.getRailwayGraph()));
+                new letrain.itinerary.AStarPathfinder(model.getRailwayGraph(), model.getBlockManager(), train));
         }
         train.getAutopilot().setItinerary(it);
         // Re-activate if autopilot was on (itinerary change resets to IDLE)

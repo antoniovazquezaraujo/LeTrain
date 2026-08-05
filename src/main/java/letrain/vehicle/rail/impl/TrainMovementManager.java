@@ -322,12 +322,12 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
     @Override
     public void forceEmergencyStop() {
         if (train.isAutoMode()) {
-            train.setAutoMode(false);
             train.brake();
+            train.setPendingManualMode(true);
             if (train.getSafetyManager() != null) {
                 train.getSafetyManager().onEmergencyStop();
             }
-            Train.log.warn("Train {} deactivated autopilot and stopped due to segment conflict.", train.getId());
+            Train.log.warn("Train {} activated emergency stop. Will switch to manual mode when fully stopped.", train.getId());
         }
     }
 

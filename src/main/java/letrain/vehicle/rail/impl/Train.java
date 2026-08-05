@@ -61,6 +61,7 @@ public class Train implements Renderable {
     private transient letrain.itinerary.TrainActionManager actionManager;
     private transient boolean isNotifying = false;
     private transient boolean pendingReverse = false;
+    private transient boolean pendingManualMode = false;
 
     public TrainCouplingManager getTrainCouplingManager() {
         return trainCouplingManager;
@@ -204,6 +205,14 @@ public class Train implements Renderable {
 
     public boolean isPendingReverse() {
         return this.pendingReverse;
+    }
+
+    public boolean isPendingManualMode() {
+        return this.pendingManualMode;
+    }
+
+    public void setPendingManualMode(boolean pending) {
+        this.pendingManualMode = pending;
     }
 
     public void addScriptTrainEventListener(ScriptTrainEventListener listener) {
@@ -416,7 +425,7 @@ public class Train implements Renderable {
         }
         if (getModel() != null && getModel().getRailwayGraph() != null) {
             this.autopilot.setPathfinder(
-                    new letrain.itinerary.AStarPathfinder(getModel().getRailwayGraph()));
+                    new letrain.itinerary.AStarPathfinder(getModel().getRailwayGraph(), getModel().getBlockManager(), this));
         }
     }
 
@@ -546,7 +555,9 @@ public class Train implements Renderable {
      */
     public void brake() {
         if (getDirectorLinker() != null) {
-            savedTargetSpeed = getDirectorLinker().getTargetSpeed();
+            if (getDirectorLinker().getTargetSpeed() > 0) {
+                savedTargetSpeed = getDirectorLinker().getTargetSpeed();
+            }
             getDirectorLinker().setTargetSpeed(0);
         }
     }
@@ -590,9 +601,11 @@ public class Train implements Renderable {
      * Restores the target speed saved before the last brake/emergencyStop.
      */
     public void restoreSpeed() {
-        if (savedTargetSpeed != -1 && getDirectorLinker() != null) {
+        if (savedTargetSpeed > 0 && getDirectorLinker() != null) {
             getDirectorLinker().setTargetSpeed(savedTargetSpeed);
             savedTargetSpeed = -1;
+        } else if (getDirectorLinker() != null && getDirectorLinker().getTargetSpeed() == 0 && isAutoMode()) {
+            getDirectorLinker().setTargetSpeed(3);
         }
     }
 

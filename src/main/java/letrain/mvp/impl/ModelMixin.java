@@ -38,13 +38,13 @@ public abstract class ModelMixin {
     @JsonDeserialize(as = letrain.economy.impl.EconomyManager.class)
     EconomyManager economyManager;
 
-    @JsonIgnore
+    @JsonProperty("selectedLocomotive")
     Locomotive selectedLocomotive;
-    @JsonIgnore
+    @JsonProperty("selectedFork")
     ForkRailTrack selectedFork;
-    @JsonIgnore
+    @JsonProperty("selectedSemaphore")
     RailSemaphore selectedSemaphore;
-    @JsonIgnore
+    @JsonProperty("selectedStation")
     Station selectedStation;
 
     @JsonProperty("eventLogManager")
@@ -69,6 +69,7 @@ public abstract class ModelMixin {
     Model.GameMode mode;
 
     @JsonProperty("railMap")
+    @com.fasterxml.jackson.annotation.JsonAlias({"map", "railMap"})
     RailMap map;
 
     @JsonProperty("locomotives")

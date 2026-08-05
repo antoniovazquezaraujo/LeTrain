@@ -19,7 +19,9 @@ public class GameSaveService {
 
     private void configureObjectMapper(ObjectMapper mapper) {
         mapper.registerModule(new JavaTimeModule());
+        mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.addMixIn(letrain.mvp.Model.class, ModelMixin.class);
+        mapper.addMixIn(letrain.mvp.impl.Model.class, ModelMixin.class);
         mapper.addMixIn(Train.class, TrainMixin.class);
         mapper.addMixIn(letrain.itinerary.Waypoint.class, WaypointMixin.class);
         mapper.addMixIn(letrain.itinerary.impl.WaypointImpl.class, WaypointMixin.class);
@@ -77,19 +79,26 @@ public class GameSaveService {
             return Optional.of(loadedModel);
         } catch (Exception e) {
             log.error("Error loading game from {}", file.getAbsolutePath(), e);
-            // Diagnostic logging to file for the AI agent to read
-            try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter("serialization_error.log"))) {
-                e.printStackTrace(pw);
-                if (e.getCause() != null) {
-                    pw.println("--- CAUSE ---");
-                    e.getCause().printStackTrace(pw);
-                }
-            } catch (IOException ioe) {
-                log.error("Failed to write diagnostic error log", ioe);
-            }
             return Optional.empty();
         }
+    }
 
+    public Optional<letrain.mvp.impl.Model> load(java.io.InputStream is) {
+        if (is == null) {
+            log.warn("Ignoring load request with null input stream");
+            return Optional.empty();
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            configureObjectMapper(mapper);
+            letrain.mvp.impl.Model loadedModel = mapper.readValue(is, letrain.mvp.impl.Model.class);
+            loadedModel.postLoadInit();
+            return Optional.of(loadedModel);
+        } catch (Exception e) {
+            log.error("Error loading game from input stream", e);
+            e.printStackTrace();
+            return Optional.empty();
+        }
     }
 }
 

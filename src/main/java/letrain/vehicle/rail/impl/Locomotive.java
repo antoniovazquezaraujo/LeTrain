@@ -219,6 +219,11 @@ public class Locomotive extends Linker implements Tractor {
             railsSinceLastSpeedChange = 0;
             if (currentSpeed == 0) {
                 setRailsSinceStop(0);
+                if (getTrain() != null && getTrain().isPendingManualMode()) {
+                    log.info("Locomotive {}: train fully stopped, switching to manual mode.", id);
+                    getTrain().setAutoMode(false);
+                    getTrain().setPendingManualMode(false);
+                }
             }
             return;
         }
@@ -294,9 +299,8 @@ public class Locomotive extends Linker implements Tractor {
                 speed = 0;
             }
         }
-        log.info("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed, speed);
-        if (this.targetSpeed == speed) {
-            return;
+        if (this.targetSpeed != speed) {
+            log.info("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed, speed);
         }
         int oldSpeed = this.targetSpeed;
         this.targetSpeed = speed;
