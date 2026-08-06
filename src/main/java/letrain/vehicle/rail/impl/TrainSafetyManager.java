@@ -48,36 +48,9 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         if (!train.isAutoMode()) {
             return true;
         }
-        Linker head = train.getPhysicalFront();
-        if (head == null || head.getTrack() == null) {
+        if (isWaitingForBlock && train.getSpeed() == 0) {
             return false;
         }
-
-        Track currentTrack = head.getTrack();
-        Dir exitDir = head.getDir();
-        Track nextTrack = currentTrack.getConnected(exitDir);
-        if (nextTrack == null) {
-            return false;
-        }
-
-        if (isWaitingForBlock) {
-            if (this.train.getModel() != null && this.train.getModel().getRailwayGraph() != null) {
-                RailwayGraph graph = this.train.getModel().getRailwayGraph();
-                BlockManager bm = this.train.getModel().getBlockManager();
-                if (nextTrack instanceof RailTrack) {
-                    RailTrack nextRailTrack = (RailTrack) nextTrack;
-                    boolean isTransition = (nextRailTrack instanceof letrain.track.rail.ForkRailTrack)
-                            || (currentSegment != null && !graph.containsTrack(currentSegment, nextRailTrack));
-                    if (isTransition) {
-                        if (nextSegment == null || (bm != null && !bm.getOwnedSegments(train).contains(nextSegment))) {
-                            return false;
-                        }
-                    }
-                }
-            }
-            return train.getSpeed() > 0;
-        }
-
         return true;
     }
 
@@ -407,20 +380,23 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             boolean entryLocked = bm.tryLock(train, currentSegment);
             log.info("Train {} onSegmentEntered: tryLock current segment {} returned {}", train.getId(), currentSegment.getId(), entryLocked);
             if (!entryLocked) {
-                // Invasión de segmento
-                log.warn("Train {} onSegmentEntered: failed lock on current segment {}. Forcing emergency stop.", train.getId(), currentSegment.getId());
-                // Se para el invasor (si es automático)
-                train.getMovementManager().forceEmergencyStop();
+                log.warn("Train {} onSegmentEntered: failed lock on current segment {}. Invasión: frenando todos los trenes y pasando a modo manual.", train.getId(), currentSegment.getId());
+                train.getMovementManager().initiateBraking();
+                train.setAutoMode(false);
+                if (train.getAutopilot() != null) {
+                    train.getAutopilot().deactivate();
+                }
                 for (Train owner : bm.getOwners(currentSegment)) {
                     if (owner != train) {
-                        log.warn("Train {} onSegmentEntered: also forcing emergency stop on owner {}", train.getId(), owner.getId());
-                        // Se paran los automáticos invadidos
-                        owner.getMovementManager().forceEmergencyStop();
+                        log.warn("Train {} onSegmentEntered: frenando también y pasando a manual el tren {}", train.getId(), owner.getId());
+                        owner.getMovementManager().initiateBraking();
+                        owner.setAutoMode(false);
+                        if (owner.getAutopilot() != null) {
+                            owner.getAutopilot().deactivate();
+                        }
                     }
                 }
-                if (!train.isAutoMode()) {
-                    isWaitingForBlock = false;
-                }
+                isWaitingForBlock = false;
                 return;
             }
         }
