@@ -380,23 +380,16 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             boolean entryLocked = bm.tryLock(train, currentSegment);
             log.info("Train {} onSegmentEntered: tryLock current segment {} returned {}", train.getId(), currentSegment.getId(), entryLocked);
             if (!entryLocked) {
-                log.warn("Train {} onSegmentEntered: failed lock on current segment {}. Invasión: frenando todos los trenes y pasando a modo manual.", train.getId(), currentSegment.getId());
+                log.warn("Train {} onSegmentEntered: failed lock on current segment {}. Invasión: iniciando frenada.", train.getId(), currentSegment.getId());
                 train.getMovementManager().initiateBraking();
-                train.setAutoMode(false);
-                if (train.getAutopilot() != null) {
-                    train.getAutopilot().deactivate();
-                }
+                train.setPendingManualMode(true);
                 for (Train owner : bm.getOwners(currentSegment)) {
                     if (owner != train) {
-                        log.warn("Train {} onSegmentEntered: frenando también y pasando a manual el tren {}", train.getId(), owner.getId());
+                        log.warn("Train {} onSegmentEntered: frenando también el tren {}", train.getId(), owner.getId());
                         owner.getMovementManager().initiateBraking();
-                        owner.setAutoMode(false);
-                        if (owner.getAutopilot() != null) {
-                            owner.getAutopilot().deactivate();
-                        }
                     }
                 }
-                isWaitingForBlock = false;
+                isWaitingForBlock = true;
                 return;
             }
         }
