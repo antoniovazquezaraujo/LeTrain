@@ -150,6 +150,17 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
         instances.add(instance);
 
+        // Auto mode indicator (blinking red dot on top face, top-left)
+        boolean isAuto = (locomotive.getTrain() != null && locomotive.getTrain().isAutoMode());
+        if (isAuto && !locomotive.isDestroying()) {
+            if (System.currentTimeMillis() % 600 < 300) {
+                ModelInstance dot = resourceContext.getModelInstance(resourceContext.autoModeDotModel);
+                dot.transform.set(instance.transform);
+                dot.transform.translate(-0.25f, 0.41f, -0.25f);
+                instances.add(dot);
+            }
+        }
+
         // Green line (direction marker) - ONLY for selected locomotive
         boolean isSelected = (modelRef != null && modelRef.getSelectedLocomotive() == locomotive);
         if (isSelected) {

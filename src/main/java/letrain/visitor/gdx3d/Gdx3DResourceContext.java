@@ -136,6 +136,7 @@ public class Gdx3DResourceContext implements Disposable {
     public Model yellowSphereModel1;
     public Model yellowSphereModel2;
     public Model yellowSphereModel3;
+    public Model autoModeDotModel;
 
     public final com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute blackDiffuseAttribute = com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.BLACK);
 
@@ -244,6 +245,11 @@ public class Gdx3DResourceContext implements Disposable {
             // Sensor
             sensorModel = register(modelBuilder.createBox(0.4f, 0.05f, 0.4f,
                     new Material(ColorAttribute.createDiffuse(Color.YELLOW)),
+                    VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+
+            // Indicador de modo automático en locomotora (puntito rojo)
+            autoModeDotModel = register(modelBuilder.createBox(0.16f, 0.04f, 0.16f,
+                    new Material(ColorAttribute.createDiffuse(Color.RED)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Terreno
