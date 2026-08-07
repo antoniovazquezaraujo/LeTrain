@@ -365,6 +365,12 @@ public class Train implements Renderable {
         });
     }
 
+    public void notifyLoadingFinished() {
+        guardNotify(() -> {
+            this.eventDispatcher.notifyLoadingFinished();
+        });
+    }
+
     public int getId() {
         return this.id;
     }

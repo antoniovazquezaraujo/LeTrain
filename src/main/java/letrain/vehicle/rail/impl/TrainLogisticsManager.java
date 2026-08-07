@@ -93,12 +93,21 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
         this.isLoading = false;
         this.loadingCount = 0;
         this.currentCapableWagons = null;
+        if (this.train != null) {
+            this.train.notifyLoadingFinished();
+        }
     }
 
     @Override
     public List<Wagon> getCapableWagons(Station station, boolean isUnload) {
         List<Wagon> result = new ArrayList<>();
+        if (station == null) {
+            return result;
+        }
         CargoTypes stationCargo = station.getCargoType();
+        if (stationCargo == null || stationCargo == CargoTypes.NONE || station.getRole() == CargoTypes.StationRole.GENERIC) {
+            return result;
+        }
         for (Linker linker : this.train.getLinkers()) {
             if (linker instanceof Wagon) {
                 Wagon wagon = (Wagon) linker;
@@ -119,7 +128,7 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
 
     @Override
     public boolean performIndustrialAction(Station station) {
-        if (this.train.getDirectorLinker().getSpeed() != 0)
+        if (this.train.getDirectorLinker() != null && this.train.getDirectorLinker().getSpeed() != 0)
             return false;
 
         boolean anyActionTaken = false;
