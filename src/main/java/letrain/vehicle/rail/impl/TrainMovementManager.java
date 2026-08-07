@@ -378,7 +378,7 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             }
         }
 
-        Train.log.info("Train {} advance: proceeding to moveLinkers", train.getId());
+        Train.log.debug("Train {} advance: proceeding to moveLinkers", train.getId());
 
         boolean normalSense = true;
         if (train.getDirectorLinker() != null && train.getDirectorLinker().isReversed()) {
