@@ -206,10 +206,10 @@ public class Locomotive extends Linker implements Tractor {
 
             if (isTimeToMove()) {
                 boolean hasPerm = getTrain() != null && getTrain().getSafetyManager().hasPermissionToMove();
-                log.info("Locomotive {}: isTimeToMove=true, currentSpeed={}, targetSpeed={}, turns={}, hasPermissionToMove={}",
+                log.debug("Locomotive {}: isTimeToMove=true, currentSpeed={}, targetSpeed={}, turns={}, hasPermissionToMove={}",
                         id, currentSpeed, targetSpeed, turns, hasPerm);
                 if (getTrain().getMovementManager().advance()) {
-                    log.info("Locomotive {}: advance() succeeded", id);
+                    log.debug("Locomotive {}: advance() succeeded", id);
                     moved = true;
                     incDistanceTraveled();
 
@@ -224,12 +224,12 @@ public class Locomotive extends Linker implements Tractor {
                             .filter(t -> t instanceof Locomotive && t != this)
                             .forEach(t -> ((Locomotive) t).resetTurns());
                 } else if (getTrain() == null || !getTrain().isAutoMode()) {
-                    log.info("Locomotive {}: advance() failed (manual mode or null train). Setting speed to 0", id);
+                    log.debug("Locomotive {}: advance() failed (manual mode or null train). Setting speed to 0", id);
                     // Blocked/Collision — stop the train (only in manual mode)
                     setCurrentSpeed(0);
                     setTargetSpeed(0);
                 } else {
-                    log.info("Locomotive {}: advance() failed (AUTO mode). Letting inertia brake.", id);
+                    log.debug("Locomotive {}: advance() failed (AUTO mode). Letting inertia brake.", id);
                     // Auto mode: don't punish, but let inertia brake
 
                     updateInertia();
