@@ -249,6 +249,21 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     }
 
     @Override
+    public void onSegmentExited(Segment oldSegment) {
+        if (oldSegment == null || this.train.getModel() == null) {
+            return;
+        }
+        BlockManager bm = this.train.getModel().getBlockManager();
+        if (bm == null) {
+            return;
+        }
+        if (!oldSegment.equals(nextSegment) && !oldSegment.equals(currentSegment)) {
+            bm.release(train, oldSegment);
+            log.info("Train {} onSegmentExited: released segment {}", train.getId(), oldSegment.getId());
+        }
+    }
+
+    @Override
     public void onForkExited(letrain.track.rail.ForkRailTrack fork) {
         if (this.train.getModel() == null) {
             return;
@@ -279,81 +294,43 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             }
         }
 
-        if (node == null) {
-            Linker tail = train.getLinkers().getLast();
+        if (node != null) {
+            Linker tail = train.getPhysicalRear();
             if (tail != null && tail.getTrack() instanceof RailTrack) {
                 Segment tailSegment = graph.getSegment((RailTrack) tail.getTrack());
                 if (tailSegment != null) {
+                    Port exitPort = null;
                     var tailPorts = tailSegment.getPorts();
                     if (tailPorts != null) {
-                        if (tailPorts.getFirst() != null && tailPorts.getFirst().getNode().getTrack() == fork) {
-                            node = tailPorts.getFirst().getNode();
-                        } else if (tailPorts.getSecond() != null && tailPorts.getSecond().getNode().getTrack() == fork) {
-                            node = tailPorts.getSecond().getNode();
+                        if (tailPorts.getFirst() != null && tailPorts.getFirst().getNode().equals(node)) {
+                            exitPort = tailPorts.getFirst();
+                        } else if (tailPorts.getSecond() != null && tailPorts.getSecond().getNode().equals(node)) {
+                            exitPort = tailPorts.getSecond();
                         }
                     }
-                }
-            }
-        }
 
-        if (node == null) {
-            log.warn("Train {} onForkExited: could not find RailNode for fork {}", train.getId(), fork.getId());
-            return;
-        }
+                    if (exitPort != null) {
+                        List<Port> otherPorts = new java.util.ArrayList<>();
+                        for (Port p : node.getPorts()) {
+                            if (!p.equals(exitPort)) {
+                                otherPorts.add(p);
+                            }
+                        }
 
-        Linker tail = train.getLinkers().getLast();
-        if (tail == null || !(tail.getTrack() instanceof RailTrack)) {
-            return;
-        }
-        Segment tailSegment = graph.getSegment((RailTrack) tail.getTrack());
-        if (tailSegment == null) {
-            return;
-        }
-
-        Port exitPort = null;
-        var tailPorts = tailSegment.getPorts();
-        if (tailPorts != null) {
-            if (tailPorts.getFirst() != null && tailPorts.getFirst().getNode().equals(node)) {
-                exitPort = tailPorts.getFirst();
-            } else if (tailPorts.getSecond() != null && tailPorts.getSecond().getNode().equals(node)) {
-                exitPort = tailPorts.getSecond();
-            }
-        }
-
-        if (exitPort != null) {
-            List<Port> otherPorts = new java.util.ArrayList<>();
-            for (Port p : node.getPorts()) {
-                if (!p.equals(exitPort)) {
-                    otherPorts.add(p);
-                }
-            }
-
-            for (Segment s : owned) {
-                var sPorts = s.getPorts();
-                if (sPorts != null) {
-                    Port p1 = sPorts.getFirst();
-                    Port p2 = sPorts.getSecond();
-                    if (otherPorts.contains(p1) || otherPorts.contains(p2)) {
-                        bm.release(train, s);
-                        log.info("Train {} released abandoned segment {} upon exiting fork {}", train.getId(), s.getId(), fork.getId());
+                        for (Segment s : owned) {
+                            var sPorts = s.getPorts();
+                            if (sPorts != null) {
+                                Port p1 = sPorts.getFirst();
+                                Port p2 = sPorts.getSecond();
+                                if (otherPorts.contains(p1) || otherPorts.contains(p2)) {
+                                    if (!s.equals(nextSegment) && !s.equals(currentSegment)) {
+                                        bm.release(train, s);
+                                        log.info("Train {} onForkExited: released abandoned branch segment {} upon exiting fork {}", train.getId(), s.getId(), fork.getId());
+                                    }
+                                }
+                            }
+                        }
                     }
-                }
-            }
-        } else {
-            Set<Segment> physicallyOccupied = new HashSet<>();
-            for (Linker l : train.getLinkers()) {
-                if (l.getTrack() instanceof RailTrack) {
-                    Segment s = graph.getSegment((RailTrack) l.getTrack());
-                    if (s != null) {
-                        physicallyOccupied.add(s);
-                    }
-                }
-            }
-
-            for (Segment s : owned) {
-                if (!physicallyOccupied.contains(s) && (nextSegment == null || !s.equals(nextSegment))) {
-                    bm.release(train, s);
-                    log.info("Train {} released segment {} (fallback exit release)", train.getId(), s.getId());
                 }
             }
         }

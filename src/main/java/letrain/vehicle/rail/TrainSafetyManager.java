@@ -81,6 +81,13 @@ public interface TrainSafetyManager {
     void onForkExited(ForkRailTrack fork);
 
     /**
+     * Evento reactivo que se dispara cuando la cola del tren sale de un segmento.
+     *
+     * @param oldSegment el segmento que la cola del tren acaba de abandonar.
+     */
+    void onSegmentExited(Segment oldSegment);
+
+    /**
      * Evento reactivo que se dispara cuando el tren entra físicamente en un nuevo segmento.
      * Asegura la posesión del nuevo segmento y solicita la reserva del cantón posterior.
      *

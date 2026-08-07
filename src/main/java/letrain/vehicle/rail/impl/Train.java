@@ -542,6 +542,11 @@ public class Train implements Renderable {
         return normalSense ? getFront() : getBack();
     }
 
+    public Linker getPhysicalRear() {
+        boolean normalSense = getDirectorLinker() == null || !getDirectorLinker().isReversed();
+        return normalSense ? getBack() : getFront();
+    }
+
     public List<Tractor> getTractors() {
         return linkers.stream()
                 .filter(Tractor.class::isInstance)
