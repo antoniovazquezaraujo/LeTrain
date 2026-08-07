@@ -42,4 +42,6 @@ public interface TrainEventDispatcher {
     void notifyCrash(Point pos, int speed);
 
     void notifyWaypointReached(letrain.itinerary.Waypoint waypoint);
+
+    void notifyLoadingFinished();
 }

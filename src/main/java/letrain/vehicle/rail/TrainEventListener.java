@@ -33,4 +33,6 @@ public interface TrainEventListener extends Serializable {
     default void onWaypointReached(Train train, Waypoint waypoint) {
     }
 
+    default public void onLoadingFinished(Train train) {
+    }
 }

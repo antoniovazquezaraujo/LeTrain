@@ -1,6 +1,8 @@
 package letrain.itinerary.impl;
 
+import letrain.itinerary.Waypoint;
 import letrain.itinerary.WaypointCommand;
+import letrain.track.Station;
 import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,16 +15,17 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     Train train;
     private final transient List<WaypointCommand> pendingCommands;
     private transient int waitTicks = 0;
+    private transient int savedTargetSpeed = 0;
+    private transient WaypointCommand pendingCommandToResume = null;
+    private letrain.itinerary.Waypoint currentProcessingWaypoint;
 
     public TrainActionManager(Train train) {
         this.train = train;
         this.pendingCommands = new CopyOnWriteArrayList<>();
     }
 
-    private letrain.itinerary.Waypoint currentProcessingWaypoint;
-
     @Override
-    public void onWaypointReached(Train train, letrain.itinerary.Waypoint waypoint) {
+    public void onWaypointReached(Train train, Waypoint waypoint) {
         if (waypoint == currentProcessingWaypoint) {
             return;
         }
@@ -32,16 +35,38 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         runPendingCommands();
     }
 
+    @Override
+    public void onSpeedChanged(int speed) {
+        if (speed == 0 && pendingCommandToResume != null) {
+            WaypointCommand cmd = pendingCommandToResume;
+            pendingCommandToResume = null;
+            if (executeCommand(cmd)) {
+                return;
+            }
+            runPendingCommands();
+        }
+    }
+
+    @Override
+    public void onLoadingFinished(Train train) {
+        if (savedTargetSpeed > 0 && pendingCommands.isEmpty()) {
+            train.setSpeed(savedTargetSpeed);
+            savedTargetSpeed = 0;
+        }
+        runPendingCommands();
+    }
+
     private void runPendingCommands() {
         while (!pendingCommands.isEmpty()) {
             WaypointCommand cmd = pendingCommands.remove(0);
-            if (cmd.kind() == WaypointCommand.Kind.WAIT) {
-                this.waitTicks = cmd.seconds() * WaypointCommand.TICKS_PER_SECOND;
-                scheduleResume(this.waitTicks);
+            if (executeCommand(cmd)) {
                 return;
-            } else {
-                executeCommand(cmd);
             }
+        }
+
+        if (savedTargetSpeed > 0) {
+            train.setSpeed(savedTargetSpeed);
+            savedTargetSpeed = 0;
         }
 
         letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
@@ -71,23 +96,65 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         }
     }
 
-    private void executeCommand(WaypointCommand command) {
+    private boolean executeCommand(WaypointCommand command) {
         if (command == null) {
-            return;
+            return false;
         }
         switch (command.kind()) {
             case LOAD:
-                train.load();
-                break;
-            case UNLOAD:
-                train.unload();
-                break;
+            case UNLOAD: {
+                boolean isUnload = command.kind() == WaypointCommand.Kind.UNLOAD;
+                Station station = train.getLogisticsManager() != null ? train.getLogisticsManager().getStationAtTrain() : null;
+                if (station == null && train.getModel() != null && currentProcessingWaypoint != null && currentProcessingWaypoint.type() == Waypoint.Type.STATION) {
+                    station = train.getModel().getStation(currentProcessingWaypoint.targetId());
+                }
+
+                if (station != null && train.getLogisticsManager() != null) {
+                    List<letrain.vehicle.rail.impl.Wagon> capableWagons = train.getLogisticsManager().getCapableWagons(station, isUnload);
+                    if (capableWagons.isEmpty()) {
+                        log.info("Train {} has no capable wagons for {} at station {}, passing through without stopping",
+                                train.getId(), command.kind(), station.getName());
+                        return false;
+                    }
+                }
+
+                if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
+                    if (savedTargetSpeed <= 0) {
+                        savedTargetSpeed = train.getDirectorLinker().getTargetSpeed() > 0
+                                ? train.getDirectorLinker().getTargetSpeed()
+                                : train.getDirectorLinker().getSpeed();
+                    }
+                    this.pendingCommandToResume = command;
+                    train.getMovementManager().initiateBraking();
+                    return true;
+                }
+
+                Station stopStation = train.getLogisticsManager() != null ? train.getLogisticsManager().getStationAtTrain() : null;
+                if (stopStation != null) {
+                    if (isUnload) {
+                        train.unload();
+                    } else {
+                        train.load();
+                    }
+                    if (train.getLogisticsManager() != null && train.getLogisticsManager().isLoading()) {
+                        return true;
+                    }
+                } else {
+                    log.info("Train {} stopped outside station for {}, skipping action", train.getId(), command.kind());
+                }
+                return false;
+            }
+            case WAIT:
+                this.waitTicks = command.seconds() * WaypointCommand.TICKS_PER_SECOND;
+                scheduleResume(this.waitTicks);
+                return true;
             case REVERSE:
                 train.reverse();
-                break;
+                return false;
             case SPEED:
                 train.setSpeed(command.targetSpeed());
-                break;
+                savedTargetSpeed = 0;
+                return false;
             case STOP:
                 train.getMovementManager().initiateBraking();
                 train.setPendingManualMode(true);
@@ -95,9 +162,9 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
                     train.getAutopilot().deactivate();
                 }
                 pendingCommands.clear();
-                break;
+                return true;
             default:
-                break;
+                return false;
         }
     }
 
@@ -123,5 +190,4 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             this.train.getSafetyManager().acquireInitialLocks();
         }
     }
-
 }

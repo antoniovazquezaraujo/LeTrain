@@ -134,4 +134,9 @@ public class TrainEventDispatcherImpl implements TrainEventDispatcher {
     public void notifyWaypointReached(Waypoint waypoint) {
         notifyAll(l -> l.onWaypointReached(train, waypoint));
     }
+
+    @Override
+    public void notifyLoadingFinished() {
+        notifyAll(l -> l.onLoadingFinished(train));
+    }
 }
