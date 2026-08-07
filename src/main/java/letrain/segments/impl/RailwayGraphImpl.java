@@ -1,5 +1,6 @@
 package letrain.segments.impl;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import letrain.segments.PortType;
 import letrain.segments.RailNode;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
+import letrain.segments.TransitionType;
 
 public class RailwayGraphImpl implements RailwayGraph {
     private final Map<Port, Segment> portToSegment = new HashMap<>();
@@ -31,12 +33,12 @@ public class RailwayGraphImpl implements RailwayGraph {
 
     @Override
     public List<letrain.track.Station> getStations(Segment segment) {
-        return segmentToStations.getOrDefault(segment, new ArrayList<>());
+        return segmentToStations.getOrDefault(segment, Collections.emptyList());
     }
 
     @Override
     public List<letrain.track.Sensor> getSensors(Segment segment) {
-        return segmentToSensors.getOrDefault(segment, new ArrayList<>());
+        return segmentToSensors.getOrDefault(segment, Collections.emptyList());
     }
 
     @Override
@@ -54,6 +56,14 @@ public class RailwayGraphImpl implements RailwayGraph {
     public int getTrackCount(Segment segment) {
         Set<letrain.track.rail.RailTrack> tracks = segmentToTracks.get(segment);
         return tracks != null ? tracks.size() : 0;
+    }
+
+    public Set<letrain.track.rail.RailTrack> getTracksForSegment(Segment segment) {
+        return segmentToTracks.getOrDefault(segment, Collections.emptySet());
+    }
+
+    public List<Segment> getSegmentsForNode(RailNode node) {
+        return nodeToSegments.getOrDefault(node, Collections.emptyList());
     }
 
     public void registerStation(Segment segment, letrain.track.Station station) {
@@ -82,6 +92,7 @@ public class RailwayGraphImpl implements RailwayGraph {
         
         return destinationNode.getPorts().stream()
                 .filter(port -> getSegment(port) != null && getSegment(port) != s)
+                .filter(port -> destinationNode.getTransitionType(targetPort, port) != TransitionType.BLOCKED)
                 .collect(Collectors.toList());
     }
 

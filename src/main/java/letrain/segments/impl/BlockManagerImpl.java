@@ -39,23 +39,6 @@ public class BlockManagerImpl implements BlockManager {
         return true;
     }
 
-    @Override
-    public boolean tryShuntingLock(Train train, Segment segment) {
-        List<Train> owners = segmentOwners.computeIfAbsent(segment, k -> new CopyOnWriteArrayList<>());
-
-        // ADR-005 REFINEMENT: Only allow coexistence if all current owners are stopped.
-        for (Train owner : owners) {
-            if (owner != train && owner.getSpeed() != 0) {
-                return false;
-            }
-        }
-
-        if (!owners.contains(train)) {
-            owners.add(train);
-            registerTrainSegment(train, segment);
-        }
-        return true;
-    }
 
     @Override
     public void release(Train train, Segment segment) {
@@ -98,19 +81,6 @@ public class BlockManagerImpl implements BlockManager {
         return segmentOwners.getOrDefault(segment, Collections.emptyList());
     }
 
-    @Override
-    public boolean canExitShunting(Train train) {
-        List<Segment> occupied = trainSegments.getOrDefault(train, Collections.emptyList());
-
-        for (Segment s : occupied) {
-            List<Train> owners = segmentOwners.get(s);
-            if (owners != null && owners.size() > 1) {
-                // Hay convivencia en al menos un segmento ocupado por el tren
-                return false;
-            }
-        }
-        return true;
-    }
 
     @Override
     public void clearAll() {

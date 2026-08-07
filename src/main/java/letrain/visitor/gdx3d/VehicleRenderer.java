@@ -129,6 +129,12 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
 
         ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
+        if (!highlight && !unlinkHighlight && locomotive.getColor() != null && !instance.materials.isEmpty()) {
+            Color locoColor = getLibGdxColor(locomotive.getColor());
+            if (locoColor != null) {
+                instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(locoColor));
+            }
+        }
         if (locomotive.isDestroying()) {
             // Derailed: random offset + tilt
             int seed = locomotive.hashCode();
@@ -143,6 +149,17 @@ public class VehicleRenderer extends BaseSubRenderer {
             instance.transform.rotate(0, 1, 0, angle);
         }
         instances.add(instance);
+
+        // Auto mode indicator (blinking red dot on top face, top-left)
+        boolean isAuto = (locomotive.getTrain() != null && locomotive.getTrain().isAutoMode());
+        if (isAuto && !locomotive.isDestroying()) {
+            if (System.currentTimeMillis() % 600 < 300) {
+                ModelInstance dot = resourceContext.getModelInstance(resourceContext.autoModeDotModel);
+                dot.transform.set(instance.transform);
+                dot.transform.translate(-0.25f, 0.41f, -0.25f);
+                instances.add(dot);
+            }
+        }
 
         // Green line (direction marker) - ONLY for selected locomotive
         boolean isSelected = (modelRef != null && modelRef.getSelectedLocomotive() == locomotive);
@@ -392,5 +409,18 @@ public class VehicleRenderer extends BaseSubRenderer {
             firePart.transform.rotate(Vector3.Y, realTime * 150f + seed * 100f);
             instances.add(firePart);
         }
+    }
+
+    public static Color getLibGdxColor(String colorName) {
+        if (colorName == null) return null;
+        return switch (colorName.toUpperCase()) {
+            case "RED", "RED_BRIGHT" -> Color.RED;
+            case "GREEN", "GREEN_BRIGHT" -> Color.GREEN;
+            case "YELLOW", "YELLOW_BRIGHT" -> Color.YELLOW;
+            case "BLUE", "BLUE_BRIGHT" -> Color.BLUE;
+            case "MAGENTA", "MAGENTA_BRIGHT" -> Color.MAGENTA;
+            case "CYAN", "CYAN_BRIGHT" -> Color.CYAN;
+            default -> Color.WHITE;
+        };
     }
 }

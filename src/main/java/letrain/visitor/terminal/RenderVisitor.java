@@ -1,9 +1,13 @@
 package letrain.visitor.terminal;
 
+import java.util.List;
 import java.util.Random;
 import letrain.visitor.Visitor;
 
 import com.googlecode.lanterna.TextColor;
+import letrain.segments.BlockManager;
+import letrain.segments.RailwayGraph;
+import letrain.segments.Segment;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
@@ -138,21 +142,42 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitModel(Model model) {
         this.model = model;
+        if (model == null) {
+            return;
+        }
         this.showId = model.isShowId();
         this.mode = model.getMode();
         selectedLocomotive = model.getSelectedLocomotive();
         selectedFork = model.getSelectedFork();
         selectedStation = model.getSelectedStation();
         selectedSemaphore = model.getSelectedSemaphore();
-        model.getGroundMap().accept(this);
-        model.getRailMap().accept(this);
-        model.getSensors().forEach(t -> t.accept(this));
-        model.getForks().forEach(t -> t.accept(this));
-        model.getSemaphores().forEach(t -> t.accept(this));
-        model.getWagons().forEach(t -> t.accept(this));
-        model.getLocomotives().forEach(t -> t.accept(this));
-        model.getStations().forEach(t -> t.accept(this));
-        visitCursor(model.getCursor());
+        if (model.getGroundMap() != null) {
+            model.getGroundMap().accept(this);
+        }
+        if (model.getRailMap() != null) {
+            model.getRailMap().accept(this);
+        }
+        if (model.getSensors() != null) {
+            model.getSensors().forEach(t -> t.accept(this));
+        }
+        if (model.getForks() != null) {
+            model.getForks().forEach(t -> t.accept(this));
+        }
+        if (model.getSemaphores() != null) {
+            model.getSemaphores().forEach(t -> t.accept(this));
+        }
+        if (model.getWagons() != null) {
+            model.getWagons().forEach(t -> t.accept(this));
+        }
+        if (model.getLocomotives() != null) {
+            model.getLocomotives().forEach(t -> t.accept(this));
+        }
+        if (model.getStations() != null) {
+            model.getStations().forEach(t -> t.accept(this));
+        }
+        if (model.getCursor() != null) {
+            visitCursor(model.getCursor());
+        }
     }
 
     @Override
@@ -162,7 +187,10 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        if (track.getSensor() != null) {
+        TextColor blockedColor = getTrackBlockedColor(track);
+        if (blockedColor != null) {
+            view.setFgColor(blockedColor);
+        } else if (track.getSensor() != null) {
             if (track.getSensor() instanceof Station) {
                 view.setFgColor(STATION_COLOR);
             } else {
@@ -229,7 +257,12 @@ public class RenderVisitor implements Visitor {
         if (track == selectedFork) {
             view.setFgColor(SELECTED_FORK_COLOR);
         } else {
-            view.setFgColor(FORK_COLOR);
+            TextColor blockedColor = getTrackBlockedColor(track);
+            if (blockedColor != null) {
+                view.setFgColor(blockedColor);
+            } else {
+                view.setFgColor(FORK_COLOR);
+            }
         }
         view.set(track.getPosition().getX(), track.getPosition().getY(), dirGraphicAspect(track.getFirstOpenDir()));
         if (this.mode == GameMode.FORKS) {
@@ -279,7 +312,8 @@ public class RenderVisitor implements Visitor {
         if (locomotive == selectedLocomotive) {
             view.setFgColor(SELECTED_LOCOMOTIVE_COLOR);
         } else {
-            view.setFgColor(LOCOMOTIVE_COLOR);
+            TextColor locoColor = parseColor(locomotive.getColor());
+            view.setFgColor(locoColor != null ? locoColor : LOCOMOTIVE_COLOR);
         }
         highlightIfSelected(locomotive);
         if (locomotive.isShowingDir()) {
@@ -484,21 +518,24 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitBridgeGateRailTrack(BridgeGateRailTrack track) {
-        view.setFgColor(RAIL_TRACK_COLOR);
+        TextColor blockedColor = getTrackBlockedColor(track);
+        view.setFgColor(blockedColor != null ? blockedColor : RAIL_TRACK_COLOR);
         view.set(track.getPosition().getX(), track.getPosition().getY(), BRIDGE_GATE_RAILTRACK_ASPECT);
         resetColors();
     }
 
     @Override
     public void visitBridgeRailTrack(BridgeRailTrack track) {
-        view.setFgColor(RAIL_TRACK_COLOR);
+        TextColor blockedColor = getTrackBlockedColor(track);
+        view.setFgColor(blockedColor != null ? blockedColor : RAIL_TRACK_COLOR);
         view.set(track.getPosition().getX(), track.getPosition().getY(), BRIDGE_RAILTRACK_ASPECT);
         resetColors();
     }
 
     @Override
     public void visitTunnelGateRailTrack(TunnelGateRailTrack track) {
-        view.setFgColor(RAIL_TRACK_COLOR);
+        TextColor blockedColor = getTrackBlockedColor(track);
+        view.setFgColor(blockedColor != null ? blockedColor : RAIL_TRACK_COLOR);
         view.set(track.getPosition().getX(), track.getPosition().getY(), TUNNEL_GATE_RAILTRACK_ASPECT);
         resetColors();
     }
@@ -506,9 +543,64 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitTunnelRailTrack(TunnelRailTrack track) {
         if (this.mode == GameMode.RAILS) {
-            view.setFgColor(RAIL_TRACK_COLOR);
+            TextColor blockedColor = getTrackBlockedColor(track);
+            view.setFgColor(blockedColor != null ? blockedColor : RAIL_TRACK_COLOR);
             view.set(track.getPosition().getX(), track.getPosition().getY(), TUNNEL_RAILTRACK_ASPECT);
             resetColors();
+        }
+    }
+
+    private TextColor getTrackBlockedColor(RailTrack track) {
+        if (model == null || track == null) {
+            return null;
+        }
+        Train ownerTrain = null;
+        RailwayGraph graph = model.getRailwayGraph();
+        BlockManager blockManager = model.getBlockManager();
+        if (graph != null && blockManager != null) {
+            Segment segment = graph.getSegment(track);
+            if (segment != null) {
+                List<Train> owners = blockManager.getOwners(segment);
+                if (owners != null && !owners.isEmpty()) {
+                    ownerTrain = owners.get(0);
+                }
+            }
+        }
+        if (ownerTrain == null && track.getLinker() != null) {
+            ownerTrain = track.getLinker().getTrain();
+        }
+        if (ownerTrain == null) {
+            return null;
+        }
+        Locomotive loco = null;
+        if (ownerTrain.getDirectorLinker() instanceof Locomotive) {
+            loco = (Locomotive) ownerTrain.getDirectorLinker();
+        } else {
+            for (Linker l : ownerTrain.getLinkers()) {
+                if (l instanceof Locomotive) {
+                    loco = (Locomotive) l;
+                    break;
+                }
+            }
+        }
+        if (loco != null && loco.getColor() != null) {
+            return parseColor(loco.getColor());
+        }
+        return null;
+    }
+
+    private TextColor parseColor(String colorName) {
+        if (colorName == null || colorName.isBlank()) {
+            return null;
+        }
+        try {
+            return TextColor.ANSI.valueOf(colorName.toUpperCase());
+        } catch (Exception e) {
+            try {
+                return TextColor.Factory.fromString(colorName);
+            } catch (Exception ex) {
+                return null;
+            }
         }
     }
 

@@ -31,4 +31,15 @@ class LocomotiveTest {
         locomotive.setTargetSpeed(-1);
         assertFalse(locomotive.isEngineOn(), "engine should remain off when speed is negative");
     }
+
+    @Test
+    @DisplayName("should assign non-empty color upon creation")
+    void shouldAssignColorOnCreation() {
+        Locomotive locomotive = new Locomotive(3, "C");
+        assertNotNull(locomotive.getColor());
+        assertFalse(locomotive.getColor().isBlank());
+
+        Locomotive withSpecificColor = new Locomotive(4, "D", "CYAN_BRIGHT");
+        assertEquals("CYAN_BRIGHT", withSpecificColor.getColor());
+    }
 }

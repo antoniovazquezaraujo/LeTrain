@@ -118,11 +118,10 @@ public class AutoPilotImpl implements AutoPilot {
 
     @Override
     public void advanceWaypoint() {
-        if (itinerary == null) return;
+        if (itinerary == null || itinerary.waypoints().isEmpty()) return;
         currentIndex++;
         if (currentIndex >= itinerary.waypoints().size()) {
-            mode = Mode.IDLE;
-            currentIndex = itinerary.waypoints().size();
+            currentIndex = 0;
         }
     }
 
@@ -355,6 +354,56 @@ public class AutoPilotImpl implements AutoPilot {
         pendingCommands.clear();
     }
 
+    private Port getTrainExitPort(Segment currentSeg) {
+        if (train == null || currentSeg == null) return null;
+        var physicalFront = train.getPhysicalFront();
+        if (physicalFront == null || physicalFront.getTrack() == null) return null;
+
+        Dir dir = physicalFront.getRealDir();
+        if (dir == null) return null;
+
+        if (!(physicalFront.getTrack() instanceof RailTrack headTrack)) return null;
+        if (train.getModel() == null) return null;
+        RailwayGraph graph = train.getModel().getRailwayGraph();
+        if (graph == null) return null;
+
+        letrain.vehicle.rail.RailIterator it = new letrain.vehicle.rail.RailIterator(headTrack, dir);
+        int maxIterations = 1000;
+        letrain.track.Track boundaryTrack = headTrack;
+        while (it.advance() && maxIterations-- > 0) {
+            letrain.track.Track t = it.getTrack();
+            if (t instanceof RailTrack rt) {
+                if (!graph.containsTrack(currentSeg, rt)) {
+                    if (rt instanceof ForkRailTrack || rt.getConnections().size() != 2) {
+                        boundaryTrack = rt;
+                    }
+                    break;
+                }
+                boundaryTrack = t;
+            }
+        }
+
+        letrain.utils.Pair<Port, Port> ports = currentSeg.getPorts();
+        if (ports != null) {
+            if (ports.getFirst() != null && ports.getFirst().getNode().getTrack() == boundaryTrack) {
+                return ports.getFirst();
+            }
+            if (ports.getSecond() != null && ports.getSecond().getNode().getTrack() == boundaryTrack) {
+                return ports.getSecond();
+            }
+            if (it.getTrack() != null) {
+                letrain.track.Track nextTrack = it.getTrack();
+                if (ports.getFirst() != null && ports.getFirst().getNode().getTrack() == nextTrack) {
+                    return ports.getFirst();
+                }
+                if (ports.getSecond() != null && ports.getSecond().getNode().getTrack() == nextTrack) {
+                    return ports.getSecond();
+                }
+            }
+        }
+        return null;
+    }
+
     private boolean calculateRoute() {
         if (pathfinder == null || itinerary == null) return false;
         Waypoint wp = currentWaypoint().orElse(null);
@@ -369,7 +418,9 @@ public class AutoPilotImpl implements AutoPilot {
             return false;
         }
 
-        currentRoute = pathfinder.find(currentSeg, targetSeg, wp.entryDir());
+        Port exitPort = getTrainExitPort(currentSeg);
+        log.info("[AP] calcRoute exitPort={}", exitPort != null ? exitPort.getType() : "null");
+        currentRoute = pathfinder.find(currentSeg, Optional.ofNullable(exitPort), targetSeg, wp.entryDir());
         log.info("[AP] calcRoute result: {} segments{} route={}",
                 currentRoute.size(),
                 currentRoute.isEmpty() ? " → ROUTE NOT FOUND" : "",

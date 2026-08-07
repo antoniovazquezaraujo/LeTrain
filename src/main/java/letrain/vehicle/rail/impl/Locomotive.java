@@ -49,9 +49,30 @@ public class Locomotive extends Linker implements Tractor {
         MIN_SPEED
     }
 
+    private static final String[] COLOR_PALETTE = {
+        "RED_BRIGHT",
+        "GREEN_BRIGHT",
+        "YELLOW_BRIGHT",
+        "BLUE_BRIGHT",
+        "MAGENTA_BRIGHT",
+        "CYAN_BRIGHT"
+    };
+    private static final java.util.Random RANDOM = new java.util.Random();
+
+    public static String pickRandomColor() {
+        return COLOR_PALETTE[RANDOM.nextInt(COLOR_PALETTE.length)];
+    }
+
+    private String color = pickRandomColor();
+
     public Locomotive(int id, String aspect) {
+        this(id, aspect, pickRandomColor());
+    }
+
+    public Locomotive(int id, String aspect, String color) {
         this.id = id;
         this.aspect = aspect;
+        this.color = (color != null && !color.isBlank()) ? color : pickRandomColor();
         this.currentSpeed = 0;
         this.targetSpeed = 0;
         resetTurns();
@@ -61,7 +82,15 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public Locomotive(int id, char c) {
-        this(id, "" + c);
+        this(id, "" + c, pickRandomColor());
+    }
+
+    public String getColor() {
+        return this.color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
     }
 
     public int getId() {
@@ -219,6 +248,11 @@ public class Locomotive extends Linker implements Tractor {
             railsSinceLastSpeedChange = 0;
             if (currentSpeed == 0) {
                 setRailsSinceStop(0);
+                if (getTrain() != null && getTrain().isPendingManualMode()) {
+                    log.info("Locomotive {}: train fully stopped, switching to manual mode.", id);
+                    getTrain().setAutoMode(false);
+                    getTrain().setPendingManualMode(false);
+                }
             }
             return;
         }
@@ -294,9 +328,8 @@ public class Locomotive extends Linker implements Tractor {
                 speed = 0;
             }
         }
-        log.info("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed, speed);
-        if (this.targetSpeed == speed) {
-            return;
+        if (this.targetSpeed != speed) {
+            log.info("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed, speed);
         }
         int oldSpeed = this.targetSpeed;
         this.targetSpeed = speed;

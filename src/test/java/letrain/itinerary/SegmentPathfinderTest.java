@@ -91,11 +91,11 @@ class SegmentPathfinderTest {
         when(graph.getSegment(toPort2)).thenReturn(to);
 
         // from connects to b and c
-        when(graph.getNextPorts(fromPort2)).thenReturn(List.of(bPort1, cPort1));
+        when(graph.getNextPorts(fromPort1)).thenReturn(List.of(bPort1, cPort1));
         // b connects to to
-        when(graph.getNextPorts(bPort2)).thenReturn(List.of(toPort1));
+        when(graph.getNextPorts(bPort1)).thenReturn(List.of(toPort1));
         // c connects to to
-        when(graph.getNextPorts(cPort2)).thenReturn(List.of(toPort2));
+        when(graph.getNextPorts(cPort1)).thenReturn(List.of(toPort2));
 
         // b has high track count, c has low track count
         when(graph.getTrackCount(from)).thenReturn(1);
@@ -134,7 +134,7 @@ class SegmentPathfinderTest {
         when(graph.getSegment(toPort2)).thenReturn(to);
 
         // from connects to to via toPort1
-        when(graph.getNextPorts(fromPort2)).thenReturn(List.of(toPort1));
+        when(graph.getNextPorts(fromPort1)).thenReturn(List.of(toPort1));
         
         letrain.segments.impl.RailNodeImpl toNode = mock(letrain.segments.impl.RailNodeImpl.class);
         when(toPort1.getNode()).thenReturn(toNode);

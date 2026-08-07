@@ -534,6 +534,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             model.addLocomotive(locomotive);
             model.getEconomyManager().onLocomotiveConstructed(locomotive);
             track.enterLinkerFromDir(model.getCursor().getDir().inverse(), locomotive);
+            train.getSafetyManager().claimOccupiedSegments();
             cursorDir = locomotive.getDir();
         } else {
             Wagon wagon = new Wagon(c);
@@ -541,6 +542,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             model.addWagon(wagon);
             model.getEconomyManager().onWagonConstructed(wagon);
             track.enterLinkerFromDir(model.getCursor().getDir().inverse(), wagon);
+            if (wagon.getTrain() != null) {
+                wagon.getTrain().getSafetyManager().claimOccupiedSegments();
+            }
             cursorDir = wagon.getDir();
         }
         Point newPos = new Point(model.getCursor().getPosition());

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -85,10 +86,9 @@ class UnlinkBlockManagerTest {
 
         train.getTrainCouplingManager().divideTrain(train, () -> 2);
 
-        // Verification:
         // 1. We should have two trains now.
-        // 2. Both should own segment1 (Shunting coexistence is allowed since they are stopped).
-        // 3. The new train should have the wagon.
+        // 2. The old train should still own segment1.
+        // 3. The new train should be stopped and in manual mode, and not own the segment.
         
         assertEquals(1, train.size(), "Original train should have 1 linker (loco)");
         Train newTrain = wagon.getTrain();
@@ -97,8 +97,9 @@ class UnlinkBlockManagerTest {
         assertEquals(1, newTrain.size(), "New train should have 1 linker (wagon)");
         
         List<Train> owners = blockManager.getOwners(segment1);
-        assertEquals(2, owners.size(), "Segment should be co-owned by both trains after unlink");
+        assertEquals(1, owners.size(), "Segment should be owned by original train after unlink");
         assertTrue(owners.contains(train));
-        assertTrue(owners.contains(newTrain));
+        assertFalse(owners.contains(newTrain));
+        assertFalse(newTrain.isAutoMode(), "New train should be in manual mode due to block conflict");
     }
 }

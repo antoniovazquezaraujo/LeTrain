@@ -35,6 +35,25 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
     }
 
     @Override
+    public Dir getDir(Dir dir) {
+        if (dir == null) {
+            return null;
+        }
+        if (originalRoute != null && alternativeRoute != null) {
+            if (dir.equals(originalRoute.getValue())) {
+                return originalRoute.getKey();
+            }
+            if (dir.equals(alternativeRoute.getValue())) {
+                return alternativeRoute.getKey();
+            }
+            if (dir.equals(originalRoute.getKey())) {
+                return usingAlternativeRoute ? alternativeRoute.getValue() : originalRoute.getValue();
+            }
+        }
+        return dirMap.get(dir);
+    }
+
+    @Override
     @JsonIgnore
     public Dir getFirstOpenDir() {
         if (isUsingAlternativeRoute()) {

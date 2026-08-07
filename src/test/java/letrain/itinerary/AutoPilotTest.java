@@ -79,4 +79,15 @@ class AutoPilotTest {
     void startsAtFirstWaypoint() {
         assertEquals(0, autopilot.currentWaypointIndex());
     }
+
+    @Test
+    @DisplayName("should loop waypoint index cyclically")
+    void advanceWaypointLoopsCyclically() {
+        autopilot.setItinerary(itinerary);
+        assertEquals(0, autopilot.currentWaypointIndex());
+        autopilot.advanceWaypoint();
+        assertEquals(1, autopilot.currentWaypointIndex());
+        autopilot.advanceWaypoint();
+        assertEquals(0, autopilot.currentWaypointIndex());
+    }
 }

@@ -10,11 +10,13 @@ import java.util.Optional;
 import java.util.Set;
 
 import letrain.map.Dir;
+import letrain.segments.BlockManager;
 import letrain.segments.Port;
 import letrain.segments.RailNode;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.segments.impl.RailNodeImpl;
+import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,37 +28,68 @@ public class AStarPathfinder implements SegmentPathfinder {
 
     private static final Logger log = LoggerFactory.getLogger(AStarPathfinder.class);
     private final RailwayGraph graph;
+    private final BlockManager blockManager;
+    private final Train train;
 
     public AStarPathfinder(RailwayGraph graph) {
-        this.graph = graph;
+        this(graph, null, null);
     }
+
+    public AStarPathfinder(RailwayGraph graph, BlockManager blockManager, Train train) {
+        this.graph = graph;
+        this.blockManager = blockManager;
+        this.train = train;
+    }
+
+    private record NodeState(Segment segment, Port entryPort) {}
 
     @Override
     public List<Segment> find(Segment from, Segment to, Optional<Dir> entryDir) {
+        return find(from, Optional.empty(), to, entryDir);
+    }
+
+    @Override
+    public List<Segment> find(Segment from, Optional<Port> fromExitPort, Segment to, Optional<Dir> entryDir) {
         if (from == null || to == null) return List.of();
         if (from.equals(to)) return List.of(from);
+        if (graph == null) return List.of();
 
-        // Fast path: if to is a direct neighbor of from, no need for full A*
-        if (entryDir.isEmpty()) {
-            for (Segment n : getNeighbors(from)) {
-                if (n.equals(to)) {
-                    log.info("[A*] direct neighbor {}→{}", from.getId(), to.getId());
-                    return List.of(from, to);
+        Map<NodeState, Integer> gScore = new HashMap<>();
+        Map<NodeState, NodeState> cameFrom = new HashMap<>();
+        Set<NodeState> closed = new HashSet<>();
+        Map<NodeState, Integer> openMap = new HashMap<>();
+
+        if (fromExitPort.isPresent() && fromExitPort.get() != null) {
+            Port entryPort = getOtherPort(from, fromExitPort.get());
+            if (entryPort != null) {
+                NodeState startState = new NodeState(from, entryPort);
+                gScore.put(startState, 0);
+                openMap.put(startState, heuristic(from, to));
+            }
+        }
+
+        if (openMap.isEmpty()) {
+            var ports = from.getPorts();
+            if (ports != null) {
+                for (Port p : new Port[]{ports.getFirst(), ports.getSecond()}) {
+                    if (p != null) {
+                        NodeState startState = new NodeState(from, p);
+                        gScore.put(startState, 0);
+                        openMap.put(startState, heuristic(from, to));
+                    }
                 }
             }
         }
 
-        Map<Segment, Integer> gScore = new HashMap<>();
-        Map<Segment, Segment> cameFrom = new HashMap<>();
-        Set<Segment> closed = new HashSet<>();
+        if (openMap.isEmpty()) {
+            return List.of();
+        }
 
-        Map<Segment, Integer> openMap = new HashMap<>();
-        gScore.put(from, 0);
-        openMap.put(from, heuristic(from, to));
         int explored = 0;
+        NodeState bestTargetState = null;
 
         while (!openMap.isEmpty()) {
-            Segment current = null;
+            NodeState current = null;
             int bestF = Integer.MAX_VALUE;
             for (var entry : openMap.entrySet()) {
                 if (entry.getValue() < bestF) {
@@ -67,64 +100,68 @@ public class AStarPathfinder implements SegmentPathfinder {
             openMap.remove(current);
             explored++;
 
-            if (current.equals(to)) {
+            if (current.segment().equals(to)) {
                 log.info("[A*] FOUND {}→{} explored={}", from.getId(), to.getId(), explored);
-                return reconstructPath(cameFrom, current);
+                bestTargetState = current;
+                break;
             }
 
             if (!closed.add(current)) continue;
 
-            for (Segment neighbor : getNeighbors(current)) {
-                if (closed.contains(neighbor)) continue;
+            Port entryPort = current.entryPort();
+            if (entryPort == null) continue;
+            List<Port> nextPorts = graph.getNextPorts(entryPort);
+            if (nextPorts == null) continue;
 
-                // Entry direction constraint check
+            for (Port nextEntryPort : nextPorts) {
+                if (nextEntryPort == null) continue;
+                Segment neighbor = graph.getSegment(nextEntryPort);
+                if (neighbor == null || neighbor.equals(current.segment())) continue;
+
+                // Entry direction constraint check for target segment
                 if (neighbor.equals(to) && entryDir.isPresent()) {
-                    boolean validEntry = false;
-                    var ports = current.getPorts();
-                    if (ports != null) {
-                        for (Port exitPort : new Port[]{ports.getFirst(), ports.getSecond()}) {
-                            if (exitPort == null) continue;
-                            List<Port> nextPorts = graph.getNextPorts(exitPort);
-                            if (nextPorts != null) {
-                                for (Port next : nextPorts) {
-                                    if (neighbor.equals(graph.getSegment(next))) {
-                                        if (next.getNode() instanceof RailNodeImpl nodeImpl) {
-                                            Dir portDir = nodeImpl.getDirForPort(next.getType());
-                                            if (portDir == entryDir.get()) {
-                                                validEntry = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if (validEntry) break;
+                    if (nextEntryPort.getNode() instanceof RailNodeImpl nodeImpl) {
+                        Dir portDir = nodeImpl.getDirForPort(nextEntryPort.getType());
+                        if (portDir != entryDir.get()) {
+                            continue;
                         }
                     }
-                    if (!validEntry) {
-                        continue;
-                    }
                 }
 
+                NodeState neighborState = new NodeState(neighbor, nextEntryPort);
+                if (closed.contains(neighborState)) continue;
+
                 int tentativeG = gScore.get(current) + segmentCost(neighbor);
-                if (tentativeG < gScore.getOrDefault(neighbor, Integer.MAX_VALUE)) {
-                    cameFrom.put(neighbor, current);
-                    gScore.put(neighbor, tentativeG);
-                    openMap.put(neighbor, tentativeG + heuristic(neighbor, to));
+                if (tentativeG < gScore.getOrDefault(neighborState, Integer.MAX_VALUE)) {
+                    cameFrom.put(neighborState, current);
+                    gScore.put(neighborState, tentativeG);
+                    openMap.put(neighborState, tentativeG + heuristic(neighbor, to));
                 }
             }
+        }
+
+        if (bestTargetState != null) {
+            return reconstructPath(cameFrom, bestTargetState);
         }
 
         log.warn("[A*] NO ROUTE {}→{} explored={}", from.getId(), to.getId(), explored);
         return List.of();
     }
 
-    private List<Segment> reconstructPath(Map<Segment, Segment> cameFrom, Segment current) {
+    private Port getOtherPort(Segment segment, Port entryPort) {
+        var ports = segment.getPorts();
+        if (ports == null) return null;
+        if (entryPort.equals(ports.getFirst())) return ports.getSecond();
+        if (entryPort.equals(ports.getSecond())) return ports.getFirst();
+        return null;
+    }
+
+    private List<Segment> reconstructPath(Map<NodeState, NodeState> cameFrom, NodeState current) {
         List<Segment> path = new ArrayList<>();
-        path.add(current);
-        while (cameFrom.containsKey(current)) {
-            current = cameFrom.get(current);
-            path.add(current);
+        NodeState curr = current;
+        while (curr != null) {
+            path.add(curr.segment());
+            curr = cameFrom.get(curr);
         }
         Collections.reverse(path);
         return path;
@@ -157,27 +194,17 @@ public class AStarPathfinder implements SegmentPathfinder {
 
     private int segmentCost(Segment s) {
         int count = graph.getTrackCount(s);
-        return count > 0 ? count : 1;
-    }
-
-    private List<Segment> getNeighbors(Segment s) {
-        if (graph == null) return List.of();
-        List<Segment> neighbors = new ArrayList<>();
-        var ports = s.getPorts();
-        if (ports != null) {
-            for (Port exitPort : new Port[]{ports.getFirst(), ports.getSecond()}) {
-                if (exitPort == null) continue;
-                List<Port> nextPorts = graph.getNextPorts(exitPort);
-                if (nextPorts != null) {
-                    for (Port next : nextPorts) {
-                        Segment neighbor = graph.getSegment(next);
-                        if (neighbor != null && !neighbor.equals(s)) {
-                            neighbors.add(neighbor);
-                        }
-                    }
-                }
+        int base = count > 0 ? count : 1;
+        BlockManager bm = this.blockManager;
+        if (bm == null && train != null && train.getModel() != null) {
+            bm = train.getModel().getBlockManager();
+        }
+        if (bm != null && train != null) {
+            List<Train> owners = bm.getOwners(s);
+            if (owners != null && !owners.isEmpty() && !owners.contains(train)) {
+                return base + 10000;
             }
         }
-        return neighbors;
+        return base;
     }
 }

@@ -18,4 +18,8 @@ public interface SegmentPathfinder {
      * @return ordered list of segments from 'from' to 'to', or empty if unreachable
      */
     List<Segment> find(Segment from, Segment to, Optional<Dir> entryDir);
+
+    default List<Segment> find(Segment from, Optional<letrain.segments.Port> fromExitPort, Segment to, Optional<Dir> entryDir) {
+        return find(from, to, entryDir);
+    }
 }

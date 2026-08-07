@@ -16,12 +16,6 @@ public interface BlockManager {
      */
     boolean tryLock(Train train, Segment segment);
 
-    /**
-     * Intenta bloquear un segmento en modo Maniobra (Shunting).
-     * Permite la propiedad compartida si el segmento ya está ocupado.
-     * @return true si se permitió el acceso, false si hay impedimentos físicos (movimiento).
-     */
-    boolean tryShuntingLock(Train train, Segment segment);
 
     /**
      * Libera la propiedad de un segmento para un tren específico.
@@ -39,11 +33,6 @@ public interface BlockManager {
      */
     List<Train> getOwners(Segment segment);
 
-    /**
-     * Valida si un tren puede abandonar el modo Shunting.
-     * Según ADR-005: solo si es el único dueño de todos sus segmentos ocupados.
-     */
-    boolean canExitShunting(Train train);
 
     /**
      * Limpia todos los bloqueos registrados (Protocolo Tabula Rasa).

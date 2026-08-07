@@ -125,4 +125,24 @@ class TrainSafetyManagerTest {
         verify(blockManager).release(train, current);
         verify(blockManager, never()).release(train, next);
     }
+
+    @Test
+    @DisplayName("should release segment on onSegmentExited when not current or next")
+    void segmentExitedReleasesSegment() {
+        Train train = new Train(1);
+        train.setModel(model);
+
+        Locomotive loco = new Locomotive(101, 'L');
+        train.pushBack(loco);
+        train.rebind();
+
+        TrainSafetyManager safety = (TrainSafetyManager) train.getSafetyManager();
+        Segment oldSeg = mock(Segment.class, "oldSeg");
+        Segment currentSeg = mock(Segment.class, "currentSeg");
+
+        when(blockManager.getOwnedSegments(train)).thenReturn(List.of(oldSeg, currentSeg));
+
+        safety.onSegmentExited(oldSeg);
+        verify(blockManager).release(train, oldSeg);
+    }
 }

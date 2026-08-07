@@ -9,6 +9,8 @@ import java.util.Map;
 
 import letrain.map.Dir;
 import letrain.map.Point;
+import letrain.segments.RailwayGraph;
+import letrain.segments.Segment;
 import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
@@ -136,6 +138,14 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                 if (headNextTrack instanceof ForkRailTrack) {
                     train.getSafetyManager().onForkEntered((ForkRailTrack) headNextTrack);
                     train.notifyAutopilotSegmentEntered(train.getSafetyManager().getCurrentSegment());
+                } else if (headNextTrack instanceof RailTrack && train.getModel() != null && train.getModel().getRailwayGraph() != null) {
+                    RailwayGraph graph = train.getModel().getRailwayGraph();
+                    Segment newSeg = graph.getSegment((RailTrack) headNextTrack);
+                    Segment oldSeg = (headCurrentTrack instanceof RailTrack) ? graph.getSegment((RailTrack) headCurrentTrack) : null;
+                    if (newSeg != null && !newSeg.equals(oldSeg)) {
+                        train.getSafetyManager().onSegmentEntered(newSeg);
+                        train.notifyAutopilotSegmentEntered(newSeg);
+                    }
                 }
 
                 // If this is the only linker, it is also the tail, so we trigger exit events on headCurrentTrack
@@ -149,6 +159,14 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                     if (headCurrentTrack instanceof ForkRailTrack) {
                         ((ForkRailTrack) headCurrentTrack).onExitTrain(train);
                         train.getSafetyManager().onForkExited((ForkRailTrack) headCurrentTrack);
+                    }
+                    if (train.getModel() != null && train.getModel().getRailwayGraph() != null) {
+                        RailwayGraph graph = train.getModel().getRailwayGraph();
+                        Segment segExited = (headCurrentTrack instanceof RailTrack) ? graph.getSegment((RailTrack) headCurrentTrack) : null;
+                        Segment segEntered = (headNextTrack instanceof RailTrack) ? graph.getSegment((RailTrack) headNextTrack) : null;
+                        if (segExited != null && !segExited.equals(segEntered)) {
+                            train.getSafetyManager().onSegmentExited(segExited);
+                        }
                     }
                 }
             }
@@ -188,25 +206,33 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             Track lastLinkerNextTrack = targetTracks.get(movingOrder.size() - 1);
             Dir lastLinkerDir = entryDirsMap.get(lastLinker);
 
-            if (lastLinkerTrack.getSensor() != null) {
-                lastLinkerTrack.getSensor().onExitTrain(train);
-            }
-            if (lastLinkerTrack.getSemaphore() != null) {
-                lastLinkerTrack.getSemaphore().onExitTrain(train);
-            }
-            if (lastLinkerTrack instanceof ForkRailTrack) {
-                ((ForkRailTrack) lastLinkerTrack).onExitTrain(train);
-                if (train.getSafetyManager() != null) {
-                    train.getSafetyManager().onForkExited((ForkRailTrack) lastLinkerTrack);
-                }
-            }
-
             lastLinker.setPreviousTrack(lastLinkerTrack);
             lastLinker.setPreviousDir(lastLinker.getDir());
             lastLinkerTrack.removeLinker();
             lastLinkerNextTrack.enterLinkerFromDir(lastLinkerDir, lastLinker);
             lastLinker.setRailsSinceStop(lastLinker.getRailsSinceStop() + 1);
             lastLinkerNextTrack.setReservation(null);
+
+            if (lastLinkerTrack.getSensor() != null) {
+                lastLinkerTrack.getSensor().onExitTrain(train);
+            }
+            if (lastLinkerTrack.getSemaphore() != null) {
+                lastLinkerTrack.getSemaphore().onExitTrain(train);
+            }
+            if (train.getSafetyManager() != null) {
+                if (lastLinkerTrack instanceof ForkRailTrack) {
+                    ((ForkRailTrack) lastLinkerTrack).onExitTrain(train);
+                    train.getSafetyManager().onForkExited((ForkRailTrack) lastLinkerTrack);
+                }
+                if (train.getModel() != null && train.getModel().getRailwayGraph() != null) {
+                    RailwayGraph graph = train.getModel().getRailwayGraph();
+                    Segment segExited = (lastLinkerTrack instanceof RailTrack) ? graph.getSegment((RailTrack) lastLinkerTrack) : null;
+                    Segment segEntered = (lastLinkerNextTrack instanceof RailTrack) ? graph.getSegment((RailTrack) lastLinkerNextTrack) : null;
+                    if (segExited != null && !segExited.equals(segEntered)) {
+                        train.getSafetyManager().onSegmentExited(segExited);
+                    }
+                }
+            }
         }
 
         // Post-move collision / dead-end check
@@ -322,12 +348,12 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
     @Override
     public void forceEmergencyStop() {
         if (train.isAutoMode()) {
-            train.setAutoMode(false);
             train.brake();
+            train.setPendingManualMode(true);
             if (train.getSafetyManager() != null) {
                 train.getSafetyManager().onEmergencyStop();
             }
-            Train.log.warn("Train {} deactivated autopilot and stopped due to segment conflict.", train.getId());
+            Train.log.warn("Train {} activated emergency stop. Will switch to manual mode when fully stopped.", train.getId());
         }
     }
 
