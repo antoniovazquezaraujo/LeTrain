@@ -486,6 +486,36 @@ class AutoPilotIntegrationTest {
                     "direction should have flipped after REVERSE command (was " + originalDir + ", now " + newDir + ")");
         }
 
+        @Test
+        @DisplayName("10.7 STOP command initiates braking and deactivates auto mode")
+        void stopCommandBrakesAndSetsManual() {
+            RailTrack t0 = makeTrack(0, 0, Dir.E, Dir.W);
+            RailTrack t1 = makeTrack(1, 0, Dir.W, Dir.E);
+            RailTrack t2 = makeTrack(2, 0, Dir.W, Dir.E);
+            connect(t0, Dir.E, t1, Dir.W);
+            connect(t1, Dir.E, t2, Dir.W);
+            Station a = makeStation(t0, "A");
+            Station b = makeStation(t2, "B");
+            Train t = makeTrain(t0, Dir.W);
+            Locomotive l = (Locomotive) t.getDirectorLinker();
+
+            model.setProgram("""
+                    station %d set name "A";
+                    station %d set name "B";
+                    create itinerary "Ruta" {
+                        add station "A"
+                        add station "B" STOP
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+
+            runUntil(model, () -> !t.isAutoMode() && t.getSpeed() == 0, 800);
+            assertFalse(t.isAutoMode(), "train should switch to manual mode after STOP command");
+            assertEquals(0, l.getTargetSpeed(), "train target speed should be 0 after STOP command");
+        }
+
         @Disabled("Auto-reverse disabled; test no longer applicable")
         @Test
         @DisplayName("10.6 Auto-reverse on routing mismatch at fork (disabled)")

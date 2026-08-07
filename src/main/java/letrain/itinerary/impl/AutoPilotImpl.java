@@ -118,11 +118,10 @@ public class AutoPilotImpl implements AutoPilot {
 
     @Override
     public void advanceWaypoint() {
-        if (itinerary == null) return;
+        if (itinerary == null || itinerary.waypoints().isEmpty()) return;
         currentIndex++;
         if (currentIndex >= itinerary.waypoints().size()) {
-            mode = Mode.IDLE;
-            currentIndex = itinerary.waypoints().size();
+            currentIndex = 0;
         }
     }
 

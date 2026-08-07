@@ -570,7 +570,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             case "LOAD"     -> List.of(WaypointCommand.LOAD);
             case "UNLOAD"   -> List.of(WaypointCommand.UNLOAD);
             case "REVERSE"  -> List.of(WaypointCommand.REVERSE);
-            case "STOP"     -> List.of(WaypointCommand.speed(0));
+            case "STOP"     -> List.of(WaypointCommand.STOP);
             default -> {
                 if (text.startsWith("WAIT")) {
                     int seconds = Integer.parseInt(ctx.NUMBER().getText());

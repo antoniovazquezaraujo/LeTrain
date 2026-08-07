@@ -46,14 +46,14 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
 
         letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
         if (autopilot != null && autopilot.itinerary().isPresent()) {
+            if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
+                log.info("Train {} autopilot IDLE", train.getId());
+                return;
+            }
+
             autopilot.advanceWaypoint();
             autopilot.clearRoute();
             currentProcessingWaypoint = null;
-            if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
-                log.info("Train {} itinerary DONE → IDLE", train.getId());
-                train.setAutoMode(false);
-                return;
-            }
 
             autopilot.currentWaypoint().ifPresent(wp -> {
                 if (train.isCurrentlyOn(wp)) {
@@ -87,6 +87,14 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
                 break;
             case SPEED:
                 train.setSpeed(command.targetSpeed());
+                break;
+            case STOP:
+                train.getMovementManager().initiateBraking();
+                train.setPendingManualMode(true);
+                if (train.getAutopilot() != null) {
+                    train.getAutopilot().deactivate();
+                }
+                pendingCommands.clear();
                 break;
             default:
                 break;
