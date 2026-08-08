@@ -332,7 +332,7 @@ public class RailTrackMaker {
             }
             updateCursorPosition(newPos);
             Point point = presenter.getModel().getCursor().getPosition();
-            presenter.getView().setPageOfPos(point.getX(), point.getY());
+            presenter.getView().ensureVisible(point.getX(), point.getY(), 3);
         }
     }
 
@@ -402,7 +402,7 @@ public class RailTrackMaker {
         degreesOfRotation = 0;
         if (makeTrack(type)) {
             Point position = presenter.getModel().getCursor().getPosition();
-            presenter.getView().setPageOfPos(position.getX(), position.getY());
+            presenter.getView().ensureVisible(position.getX(), position.getY(), 3);
             return true;
         }
         return false;
@@ -661,7 +661,7 @@ public class RailTrackMaker {
         }
         updateCursorPosition(newPos);
         Point position = presenter.getModel().getCursor().getPosition();
-        presenter.getView().setPageOfPos(position.getX(), position.getY());
+        presenter.getView().ensureVisible(position.getX(), position.getY(), 3);
     }
 
     private void updateCursorPosition(Point newPos) {
@@ -692,42 +692,34 @@ public class RailTrackMaker {
 
     void mapPageDown() {
         presenter.getView().clear();
-        Point point = presenter.getView().getMapScrollPage();
-        point.setY(point.getY() + 1);
+        Point offset = presenter.getView().getScrollOffset();
+        presenter.getView().setScrollOffset(new Point(offset.getX(), offset.getY() + presenter.getView().getRows()));
         varyCursorPosition(new Point(0, 1 * presenter.getView().getRows()));
-        presenter.getView().setMapScrollPage(point);
         presenter.getView().clear();
-
     }
 
     void mapPageLeft() {
         presenter.getView().clear();
-        Point point = presenter.getView().getMapScrollPage();
-        point.setX(point.getX() - 1);
+        Point offset = presenter.getView().getScrollOffset();
+        presenter.getView().setScrollOffset(new Point(offset.getX() - presenter.getView().getCols(), offset.getY()));
         varyCursorPosition(new Point((-1 * presenter.getView().getCols()), 0));
-        presenter.getView().setMapScrollPage(point);
         presenter.getView().clear();
-
     }
 
     void mapPageUp() {
         presenter.getView().clear();
-        Point point = presenter.getView().getMapScrollPage();
-        point.setY(point.getY() - 1);
+        Point offset = presenter.getView().getScrollOffset();
+        presenter.getView().setScrollOffset(new Point(offset.getX(), offset.getY() - presenter.getView().getRows()));
         varyCursorPosition(new Point(0, -1 * presenter.getView().getRows()));
-        presenter.getView().setMapScrollPage(point);
         presenter.getView().clear();
-
     }
 
     void mapPageRight() {
         presenter.getView().clear();
-        Point point = presenter.getView().getMapScrollPage();
-        point.setX(point.getX() + 1);
+        Point offset = presenter.getView().getScrollOffset();
+        presenter.getView().setScrollOffset(new Point(offset.getX() + presenter.getView().getCols(), offset.getY()));
         varyCursorPosition(new Point((1 * presenter.getView().getCols()), 0));
-        presenter.getView().setMapScrollPage(point);
         presenter.getView().clear();
-
     }
 
 }

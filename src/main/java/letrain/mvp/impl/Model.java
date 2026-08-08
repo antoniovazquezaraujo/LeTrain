@@ -735,8 +735,8 @@ public class Model implements letrain.mvp.Model {
         return false;
     }
 
-    public void updateGroundMap(Point mapScrollPage, int columns, int rows) {
-        this.groundMap.renderBlock(mapScrollPage.getX() * columns, mapScrollPage.getY() * rows, columns, rows);
+    public void updateGroundMap(Point scrollOffset, int columns, int rows) {
+        this.groundMap.renderBlock(scrollOffset.getX(), scrollOffset.getY(), columns, rows);
     }
 
     @Override public EconomyManager getEconomyManager() { return this.economyManager; }
@@ -758,7 +758,7 @@ public class Model implements letrain.mvp.Model {
     @Override
     public List<GameModeMenuOption> getMenuModel() {
         return Arrays.asList(
-                new GameModeMenuOption("&rails", "[Left/Right]:Rotate [Up/Down]:Move [Shift+Up]:Add rail2 [Ctrl+Up]:Remove rail2 [Ctrl/Shift+Down]:Remove rail2 [Ins]:Add sensor [Home]:Add semaphore [W]:Add station [#]:Steps [Space]:Reset steps", () -> true, () -> (this.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
+                new GameModeMenuOption("&rails", "[Left/Right]:Rotate [Up/Down]:Move [Shift+Up]:Add rail [Ctrl+Up]:Remove rail [Ctrl/Shift+Down]:Remove rail [Ins]:Add sensor [Home]:Add semaphore [W]:Add station [#]:Steps [Space]:Reset steps", () -> true, () -> (this.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
                 new GameModeMenuOption("&drive", "[Left/Right]:Select [m]:Motor On/Off [Up]:Accel [Down]:Decel [Space]:Reverse [Enter]:Load/Unload [#]:Select by ID", () -> !this.getLocomotives().isEmpty(), () -> this.getMode() == GameMode.DRIVE, () -> GameMode.DRIVE),
                 new GameModeMenuOption("&forks", "[Left/Right]:Select [Space]:Toggle [#]:Select by ID", () -> !this.getForks().isEmpty(), () -> this.getMode() == GameMode.FORKS, () -> GameMode.FORKS),
                 new GameModeMenuOption("&semaphores", "[Left/Right]:Select [Space]:Toggle [#]:Select by ID", () -> !this.getSemaphores().isEmpty(), () -> this.getMode() == GameMode.SEMAPHORES, () -> GameMode.SEMAPHORES),

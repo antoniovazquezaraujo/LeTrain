@@ -33,6 +33,8 @@ public interface GameViewListener {
     void setProgram(String program);
 
     void onMapPageChanged(Point mapScrollPage, int columns, int rows);
+
+    void onScreenResized(int columns, int rows);
     
     String getGameObjectsReport();
     

@@ -72,23 +72,19 @@ public class InfoVisitor implements Visitor {
                 }
                 break;
             case LINK:
-                infoBarText += "Modo: VINCULAR (LINK) [Arriba/Abajo]: Sentido [Izqu/Der]: Cantidad [Espacio]: Vincular";
+                infoBarText += "Mode: LINK [Up/Down]: Direction [Left/Right]: Quantity [Space]: Link";
                 Locomotive selected = model.getSelectedLocomotive();
                 if (selected != null && selected.getTrain() != null) {
-                    // Convert deque to list to slice it
-                    // Logic might differ based on iteration order of deque vs join sense
-                    // linkersToJoin is populated in order of distance from train.
-                    // so we just take the first N.
                     Train train = selected.getTrain();
-                    infoBarText += " Vagones: " + train.getTrainCouplingManager().getSelectedLinkersToJoin(train).size() + "/"
+                    infoBarText += " Wagons: " + train.getTrainCouplingManager().getSelectedLinkersToJoin(train).size() + "/"
                             + train.getLinkersToJoin().size();
                 }
                 break;
             case UNLINK:
-                infoBarText += "Modo: DESVINCULAR (UNLINK) [Flechas]: Seleccionar [Espacio]: Desvincular";
+                infoBarText += "Mode: UNLINK [Arrows]: Select [Space]: Unlink";
                 break;
             case MENU:
-                infoBarText += "Menu Principal";
+                infoBarText += "Main Menu";
                 break;
             case PROGRAM:
                 visitProgram(model);
@@ -103,28 +99,54 @@ public class InfoVisitor implements Visitor {
         view.setMenu(model.getMenuModel());
 
         StringBuilder richInfo = new StringBuilder();
-        // Row 3: Finances
-        EconomyManager economy = model.getEconomyManager();
-        richInfo.append(String.format("$: %.2f | Ingresos(+): %.2f | Gastos(-): %.2f\n",
-                economy.getBalance(), economy.getTotalIncome(), economy.getTotalExpenses()));
 
-        // Row 4: Vehicle Status / Mode Help fallback
-        Locomotive selectedLoco = model.getSelectedLocomotive();
-        if (selectedLoco != null) {
-            String notchBar = getNotchBar(selectedLoco.getSpeed(), selectedLoco.getTargetSpeed(), 10);
-            richInfo.append(String.format("Notch: %s | Vagones: %d\n",
-                    notchBar, selectedLoco.getTrain().getLinkers().size() - 1));
-        } else {
-            richInfo.append(infoBarText).append("\n");
+        // Row 3: Notch / Speedometer / Vehicle Status on Left, Finances on Right
+        EconomyManager economy = model.getEconomyManager();
+        String moneyText = "";
+        if (economy != null) {
+            moneyText = String.format("$: %.2f | Income(+): %.2f | Expenses(-): %.2f",
+                    economy.getBalance(), economy.getTotalIncome(), economy.getTotalExpenses());
         }
 
-        // Row 5: System info
+        String vehicleText;
+        Locomotive selectedLoco = model.getSelectedLocomotive();
+        if (selectedLoco != null) {
+            int trainId = (selectedLoco.getTrain() != null)
+                    ? selectedLoco.getTrain().getId()
+                    : selectedLoco.getId();
+            String notchBar = getNotchBar(selectedLoco.getSpeed(), selectedLoco.getTargetSpeed(), 10);
+            String speedStr = String.valueOf(selectedLoco.getSpeed());
+            if (selectedLoco.getSpeed() != selectedLoco.getTargetSpeed()) {
+                speedStr += "->" + selectedLoco.getTargetSpeed();
+            }
+            int wagonsCount = (selectedLoco.getTrain() != null && selectedLoco.getTrain().getLinkers() != null)
+                    ? Math.max(0, selectedLoco.getTrain().getLinkers().size() - 1)
+                    : 0;
+            vehicleText = String.format("Train: %d | Notch: %s | Speed: %s | Wagons: %d%s",
+                    trainId, notchBar, speedStr, wagonsCount, selectedLoco.isReversed() ? " (Rev)" : "");
+        } else {
+            vehicleText = infoBarText;
+        }
+
+        int totalWidth = view != null ? Math.max(40, view.getCols() - 2) : 80;
+        String combinedLine;
+        if (vehicleText.length() + moneyText.length() < totalWidth) {
+            int padding = totalWidth - vehicleText.length() - moneyText.length();
+            combinedLine = vehicleText + " ".repeat(padding) + moneyText;
+        } else if (!moneyText.isEmpty()) {
+            combinedLine = vehicleText + " | " + moneyText;
+        } else {
+            combinedLine = vehicleText;
+        }
+        richInfo.append(combinedLine).append("\n");
+
+        // Row 4: System info
         String commonText = getCommonInfoBarText(model);
-        String lastSave = model.getLastSaveTime() != null ? " | Guardado: " + model.getLastSaveTime().toString().substring(11, 16) : "";
+        String lastSave = model.getLastSaveTime() != null ? " | Saved: " + model.getLastSaveTime().toString().substring(11, 16) : "";
         richInfo.append(commonText).append(lastSave).append("\n");
 
-        // Row 6: Global Help
-        richInfo.append("[PgUp/PgDn]: Scroll Mapa | [r/d/f/s/t/l/u/p/n]: Modos | [Esc]: Salir");
+        // Row 5: Global Help
+        richInfo.append("[PgUp/PgDn]: Scroll Map | [r/d/f/s/t/l/u/p/n]: Modes | [Esc]: Exit");
 
         view.setInfoBarText(richInfo.toString());
     }
@@ -146,10 +168,10 @@ public class InfoVisitor implements Visitor {
     }
 
     public String getCommonInfoBarText(Model model) {
-        return "| Pag " + view.getMapScrollPage() +
-                "| Cursor " + model.getCursor().getPosition() +
-                "| Steps " + model.getQuantifierSteps() + "/" + model.getQuantifier() +
-                "|";
+        return "| Page " + view.getMapScrollPage() +
+                " | Cursor " + model.getCursor().getPosition() +
+                " | Steps " + model.getQuantifierSteps() + "/" + model.getQuantifier() +
+                " |";
     }
 
     @Override

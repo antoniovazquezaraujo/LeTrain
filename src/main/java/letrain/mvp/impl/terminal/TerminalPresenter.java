@@ -46,7 +46,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     Logger log = LoggerFactory.getLogger(TerminalPresenter.class);
 
     Model model;
-    private final TerminalView view;
+    TerminalView view;
     private final RenderVisitor renderer;
     private final InfoVisitor informer;
     boolean running;
@@ -147,7 +147,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             KeyStroke stroke = null;
             model.setMode(RAILS);
             letrain.map.Point startPos = model.getCursor().getPosition();
-            model.updateGroundMap(startPos, view.getCols(), view.getRows());
+            view.centerOn(startPos.getX(), startPos.getY());
+            model.updateGroundMap(view.getScrollOffset(), view.getCols(), view.getRows());
             while (running) {
                 stroke = null;
                 stroke = view.readKey();
@@ -918,42 +919,38 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void mapPageDown() {
         view.clear();
-        Point point = view.getMapScrollPage();
-        point.setY(point.getY() + 1);
-        view.setMapScrollPage(point);
+        Point offset = view.getScrollOffset();
+        view.setScrollOffset(new Point(offset.getX(), offset.getY() + view.getRows()));
         view.clear();
     }
 
     private void mapPageLeft() {
         view.clear();
-        Point point = view.getMapScrollPage();
-        point.setX(point.getX() - 1);
-        view.setMapScrollPage(point);
+        Point offset = view.getScrollOffset();
+        view.setScrollOffset(new Point(offset.getX() - view.getCols(), offset.getY()));
         view.clear();
 
     }
 
     private void mapPageUp() {
         view.clear();
-        Point point = view.getMapScrollPage();
-        point.setY(point.getY() - 1);
-        view.setMapScrollPage(point);
+        Point offset = view.getScrollOffset();
+        view.setScrollOffset(new Point(offset.getX(), offset.getY() - view.getRows()));
         view.clear();
     }
 
     private void mapPageRight() {
         view.clear();
-        Point point = view.getMapScrollPage();
-        point.setX(point.getX() + 1);
-        view.setMapScrollPage(point);
+        Point offset = view.getScrollOffset();
+        view.setScrollOffset(new Point(offset.getX() + view.getCols(), offset.getY()));
         view.clear();
 
     }
 
     void setPageOfPoint(Point point) {
-        view.setPageOfPos(point.getX(), point.getY());
-        Page page = point.getPage();
-        railTrackMaker.setCursorPage(page);
+        if (point != null) {
+            view.centerOn(point.getX(), point.getY());
+        }
     }
 
     /***********************************************************
@@ -1106,10 +1103,35 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         return model.getEventLogManager().getEntries();
     }
 
-    @Override
-    public void onMapPageChanged(Point mapScrollPage, int columns, int rows) {
-        model.updateGroundMap(mapScrollPage, columns, rows);
+    public Point getActiveFocusPoint() {
+        if ((model.getMode() == DRIVE || model.getMode() == LINK || model.getMode() == UNLINK)
+                && model.getSelectedLocomotive() != null) {
+            return model.getSelectedLocomotive().getPosition();
+        } else if (model.getMode() == FORKS && model.getSelectedFork() != null) {
+            return model.getSelectedFork().getPosition();
+        } else if (model.getMode() == SEMAPHORES && model.getSelectedSemaphore() != null) {
+            return model.getSelectedSemaphore().getPosition();
+        } else if (model.getMode() == STATIONS && model.getSelectedStation() != null) {
+            return model.getSelectedStation().getPosition();
+        } else if (model.getCursor() != null) {
+            return model.getCursor().getPosition();
+        }
+        return new Point(0, 0);
+    }
 
+    @Override
+    public void onScreenResized(int columns, int rows) {
+        Point focus = getActiveFocusPoint();
+        if (focus != null) {
+            view.centerOn(focus.getX(), focus.getY());
+        }
+        Point offset = view.getScrollOffset();
+        model.updateGroundMap(offset, columns, rows);
+    }
+
+    @Override
+    public void onMapPageChanged(Point scrollOffset, int columns, int rows) {
+        model.updateGroundMap(scrollOffset, columns, rows);
     }
 
     private void updateTimeouts() {
