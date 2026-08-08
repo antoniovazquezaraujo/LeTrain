@@ -427,6 +427,10 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     @Override
+    public void onScreenResized(int cols, int rows) {
+    }
+
+    @Override
     public void onChar(com.googlecode.lanterna.input.KeyStroke stroke) {
         inputHandler.onChar(stroke);
     }

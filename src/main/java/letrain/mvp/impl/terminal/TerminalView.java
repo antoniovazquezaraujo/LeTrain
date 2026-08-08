@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
 public class TerminalView implements letrain.mvp.View {
     private static final Logger log = LoggerFactory.getLogger(TerminalView.class);
     private final GameViewListener gameViewListener;
-    private Point mapScrollPage = new Point(0, 0);
+    private Point scrollOffset = new Point(0, 0);
     private Screen screen;
     private DefaultTerminalFactory terminalFactory;
     private Terminal terminal;
@@ -152,16 +152,30 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     @Override
+    public Point getScrollOffset() {
+        return this.scrollOffset;
+    }
+
+    @Override
+    public void setScrollOffset(Point pos) {
+        this.scrollOffset = pos;
+        if (TerminalView.this.gameViewListener != null) {
+            TerminalView.this.gameViewListener.onMapPageChanged(scrollOffset, getCols(), getRows());
+        }
+    }
+
+    @Override
     public Point getMapScrollPage() {
-        return this.mapScrollPage;
+        int cols = getCols();
+        int rows = getRows();
+        int pageX = cols > 0 ? (int) Math.floor((double) scrollOffset.getX() / cols) : 0;
+        int pageY = rows > 0 ? (int) Math.floor((double) scrollOffset.getY() / rows) : 0;
+        return new Point(pageX, pageY);
     }
 
     @Override
     public void setMapScrollPage(Point pos) {
-        this.mapScrollPage = pos;
-        setStatusBarText("Page: " + mapScrollPage.getX() + ", " + mapScrollPage.getY());
-        TerminalView.this.gameViewListener.onMapPageChanged(mapScrollPage, gameBoxSize.getColumns(),
-                gameBoxSize.getRows());
+        setScrollOffset(new Point(pos.getX() * getCols(), pos.getY() * getRows()));
     }
 
     @Override
@@ -185,7 +199,7 @@ public class TerminalView implements letrain.mvp.View {
         if (changedSize != null) {
             terminalSize = changedSize;
             recalculateSizes(terminalSize);
-            TerminalView.this.gameViewListener.onMapPageChanged(mapScrollPage, gameBoxSize.getColumns(),
+            TerminalView.this.gameViewListener.onScreenResized(gameBoxSize.getColumns(),
                     gameBoxSize.getRows());
             gameBox.fillRectangle(gameBoxPosition, gameBoxSize, ' ');
         }
@@ -255,8 +269,8 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void set(int x, int y, String c) {
-        x -= mapScrollPage.getX() * getCols();
-        y -= mapScrollPage.getY() * getRows();
+        x -= scrollOffset.getX();
+        y -= scrollOffset.getY();
         if (x >= 0 && x < getCols() && y >= 0 && y < getRows()) {
             for (int i = 0; i < c.length(); i++) {
                 gameBox.setCharacter(
@@ -284,10 +298,39 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void setPageOfPos(int x, int y) {
-        Page page = new Point(x, y).getPage();
-        Point actualPage = getMapScrollPage();
-        if (page.getX() != actualPage.getX() || page.getY() != actualPage.getY()) {
-            setMapScrollPage(new Point(page.getX(), page.getY()));
+        centerOn(x, y);
+    }
+
+    @Override
+    public void centerOn(int x, int y) {
+        int cols = getCols();
+        int rows = getRows();
+        setScrollOffset(new Point(x - cols / 2, y - rows / 2));
+    }
+
+    @Override
+    public void ensureVisible(int x, int y, int margin) {
+        int cols = getCols();
+        int rows = getRows();
+        if (cols <= 0 || rows <= 0) return;
+        int minX = scrollOffset.getX() + margin;
+        int maxX = scrollOffset.getX() + cols - 1 - margin;
+        int minY = scrollOffset.getY() + margin;
+        int maxY = scrollOffset.getY() + rows - 1 - margin;
+        int newScrollX = scrollOffset.getX();
+        int newScrollY = scrollOffset.getY();
+        if (x < minX) {
+            newScrollX = x - margin;
+        } else if (x > maxX) {
+            newScrollX = x - (cols - 1 - margin);
+        }
+        if (y < minY) {
+            newScrollY = y - margin;
+        } else if (y > maxY) {
+            newScrollY = y - (rows - 1 - margin);
+        }
+        if (newScrollX != scrollOffset.getX() || newScrollY != scrollOffset.getY()) {
+            setScrollOffset(new Point(newScrollX, newScrollY));
         }
     }
 
@@ -332,12 +375,14 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     void recalculateSizes(TerminalSize terminalSize) {
-        gameBoxSize = new TerminalSize(terminalSize.getColumns(), terminalSize.getRows() - 7);
+        int cols = Math.max(1, terminalSize.getColumns());
+        int rows = Math.max(1, terminalSize.getRows() - 7);
+        gameBoxSize = new TerminalSize(cols, rows);
         gameBoxPosition = TerminalPosition.TOP_LEFT_CORNER;
         Page.setWidth(gameBoxSize.getColumns());
         Page.setHeight(gameBoxSize.getRows());
-        menuBoxSize = new TerminalSize(terminalSize.getColumns(), 7);
-        menuBoxPosition = new TerminalPosition(0, terminalSize.getRows() - 7);
+        menuBoxSize = new TerminalSize(terminalSize.getColumns(), Math.min(7, terminalSize.getRows()));
+        menuBoxPosition = new TerminalPosition(0, Math.max(0, terminalSize.getRows() - menuBoxSize.getRows()));
     }
 
     Screen createScreen(Terminal terminal) throws IOException {

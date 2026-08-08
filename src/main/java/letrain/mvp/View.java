@@ -22,6 +22,22 @@ public interface View {
 
     void setPageOfPos(int x, int y);
 
+    default Point getScrollOffset() {
+        return getMapScrollPage();
+    }
+
+    default void setScrollOffset(Point pos) {
+        setMapScrollPage(pos);
+    }
+
+    default void centerOn(int x, int y) {
+        setPageOfPos(x, y);
+    }
+
+    default void ensureVisible(int x, int y, int margin) {
+        setPageOfPos(x, y);
+    }
+
     void clear(int x, int y);
 
     void fill(int x, int y, int width, int height, String c);
