@@ -427,26 +427,26 @@ public class Gdx3DResourceContext implements Disposable {
         // Left Pillar (Z = -0.35)
         mpb = mb.part("pillarL", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, stoneMat);
         mpb.setVertexTransform(new Matrix4().setToTranslation(0f, 0.4f, -0.35f));
-        BoxShapeBuilder.build(mpb, 1.0f, 0.8f, 0.3f);
+        BoxShapeBuilder.build(mpb, 1.6f, 0.8f, 0.3f);
 
         // Right Pillar (Z = 0.35)
         mpb = mb.part("pillarR", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, stoneMat);
         mpb.setVertexTransform(new Matrix4().setToTranslation(0f, 0.4f, 0.35f));
-        BoxShapeBuilder.build(mpb, 1.0f, 0.8f, 0.3f);
+        BoxShapeBuilder.build(mpb, 1.6f, 0.8f, 0.3f);
 
         // Top Lintel (Y = 0.95)
         mpb = mb.part("lintel", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, stoneMat);
         mpb.setVertexTransform(new Matrix4().setToTranslation(0f, 0.95f, 0f));
-        BoxShapeBuilder.build(mpb, 1.0f, 0.3f, 1.0f);
+        BoxShapeBuilder.build(mpb, 1.6f, 0.3f, 1.0f);
 
         // Arch corners (to make it look round)
         mpb = mb.part("cornerL", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, stoneMat);
         mpb.setVertexTransform(new Matrix4().setToTranslation(0f, 0.75f, -0.15f));
-        BoxShapeBuilder.build(mpb, 1.0f, 0.1f, 0.1f);
+        BoxShapeBuilder.build(mpb, 1.6f, 0.1f, 0.1f);
 
         mpb = mb.part("cornerR", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, stoneMat);
         mpb.setVertexTransform(new Matrix4().setToTranslation(0f, 0.75f, 0.15f));
-        BoxShapeBuilder.build(mpb, 1.0f, 0.1f, 0.1f);
+        BoxShapeBuilder.build(mpb, 1.6f, 0.1f, 0.1f);
 
         // Black Hole background. It blocks the view inside the mountain.
         // We put a thin black wall in the middle of the portal (at X = 0).
