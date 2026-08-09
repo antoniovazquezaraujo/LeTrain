@@ -206,6 +206,16 @@ public class Gdx3DHud {
                 new com.badlogic.gdx.graphics.g2d.NinePatch(new Texture(pixCyan), 6, 6, 6, 6));
         skin.add("window-cyan", windowCyan);
 
+        // Window Background - Blue Border (Resize Hover)
+        Pixmap pixBlue = new Pixmap(20, 20, Pixmap.Format.RGBA8888);
+        pixBlue.setColor(new Color(0.2f, 0.55f, 1.0f, 1f));
+        pixBlue.fill();
+        pixBlue.setColor(Color.BLACK);
+        pixBlue.fillRectangle(6, 6, 8, 8);
+        com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowBlue = new com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable(
+                new com.badlogic.gdx.graphics.g2d.NinePatch(new Texture(pixBlue), 6, 6, 6, 6));
+        skin.add("window-blue", windowBlue);
+
         windowStyle.background = windowWhite;
         windowStyle.titleFontColor = Color.WHITE;
         skin.add("default", windowStyle);
@@ -496,6 +506,12 @@ public class Gdx3DHud {
             window.setResizable(true);
             window.padTop(35);
 
+            final com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowWhite = skin.get("window-white", com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable.class);
+            final com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowBlue = skin.get("window-blue", com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable.class);
+            final Window.WindowStyle ideWindowStyle = new Window.WindowStyle(skin.get(Window.WindowStyle.class));
+            ideWindowStyle.background = windowWhite;
+            window.setStyle(ideWindowStyle);
+
             // Title bar buttons
             Table titleTable = window.getTitleTable();
             TextButton.TextButtonStyle titleBtnStyle = new TextButton.TextButtonStyle(
@@ -533,13 +549,46 @@ public class Gdx3DHud {
                         window.setResizable(false);
                         window.setMovable(false);
                         isMaximized[0] = true;
+                        maxBtnTitle.setText(" [-] ");
+                        ideWindowStyle.background = windowWhite;
+                        window.setBackground(windowWhite);
                     } else {
                         window.setResizable(true);
                         window.setMovable(true);
                         window.setBounds(prevX[0], prevY[0], prevW[0], prevH[0]);
                         isMaximized[0] = false;
+                        maxBtnTitle.setText(" [ ] ");
                     }
                     window.invalidateHierarchy();
+                }
+            });
+
+            window.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                @Override
+                public boolean mouseMoved(InputEvent event, float x, float y) {
+                    if (!isMaximized[0]) {
+                        // Use a 20px margin to make it easy to trigger and visible
+                        boolean nearBorder = (x <= 20 || x >= window.getWidth() - 20 || y <= 20 || y >= window.getHeight() - 20);
+                        if (nearBorder) {
+                            ideWindowStyle.background = windowBlue;
+                            window.setBackground(windowBlue);
+                        } else {
+                            ideWindowStyle.background = windowWhite;
+                            window.setBackground(windowWhite);
+                        }
+                    } else {
+                        ideWindowStyle.background = windowWhite;
+                        window.setBackground(windowWhite);
+                    }
+                    return false;
+                }
+
+                @Override
+                public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
+                    if (toActor == null || !toActor.isDescendantOf(window)) {
+                        ideWindowStyle.background = windowWhite;
+                        window.setBackground(windowWhite);
+                    }
                 }
             });
 
@@ -804,7 +853,8 @@ public class Gdx3DHud {
             examplesContent.setFontScale(1.0f);
             examplesContent.setWrap(true);
             examplesTable.add(examplesTitle).pad(5).row();
-            examplesTable.add(examplesContent).growX().pad(5);
+            ScrollPane examplesScroll = new ScrollPane(examplesContent, skin);
+            examplesTable.add(examplesScroll).grow().pad(5);
 
             // 4. Logs
             final Table logTable = new Table();
@@ -816,6 +866,27 @@ public class Gdx3DHud {
             logTable.add(logTitle).pad(5).row();
             ScrollPane logScroll = new ScrollPane(logContent, skin);
             logTable.add(logScroll).grow().pad(5);
+
+            // Hover focus listeners for all panels and editor
+            java.util.function.Function<ScrollPane, com.badlogic.gdx.scenes.scene2d.InputListener> createScrollFocusListener = (sp) -> new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                @Override
+                public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
+                    if (pointer == -1 && stage != null) {
+                        stage.setScrollFocus(sp);
+                    }
+                }
+            };
+
+            refTable.addListener(createScrollFocusListener.apply(refScroll));
+            refScroll.addListener(createScrollFocusListener.apply(refScroll));
+            objsTable.addListener(createScrollFocusListener.apply(objsScroll));
+            objsScroll.addListener(createScrollFocusListener.apply(objsScroll));
+            examplesTable.addListener(createScrollFocusListener.apply(examplesScroll));
+            examplesScroll.addListener(createScrollFocusListener.apply(examplesScroll));
+            logTable.addListener(createScrollFocusListener.apply(logScroll));
+            logScroll.addListener(createScrollFocusListener.apply(logScroll));
+            editorScroll.addListener(createScrollFocusListener.apply(editorScroll));
+            textArea.addListener(createScrollFocusListener.apply(editorScroll));
 
             sideTable.add(refTable).grow().row();
             sideTable.add(objsTable).grow().row();

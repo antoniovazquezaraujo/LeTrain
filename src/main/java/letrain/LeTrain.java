@@ -29,7 +29,7 @@ public class LeTrain {
         if (use3D) {
             com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration config = new com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration();
             config.setTitle("LeTrain 3D - Wooden Edition");
-            config.setWindowedMode(1280, 720);
+            config.setMaximized(true);
             GraphicPresenter view3D = new GraphicPresenter(this.model);
             new com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application(view3D, config);
         } else {
