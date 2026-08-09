@@ -704,7 +704,7 @@ public class Gdx3DHud {
             // ── BUILD TREE ──
             refTree.add(heading.apply("ITINERARY DSL"));
             var itin = parent.apply("  [-] create itinerary");
-            itin.add(leaf.apply("template", "create itinerary \"\" {\n  add station \"\"\n}"));
+            itin.add(leaf.apply("template", "create itinerary \"\" {\n  add station #\n}"));
             itin.setExpanded(true);
             refTree.add(itin);
 
