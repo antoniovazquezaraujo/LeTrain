@@ -1135,100 +1135,31 @@ public class Gdx3DHud {
 
     public void showFileDialog(String title, String defaultText, Consumer<String> onResult) {
         Gdx.app.postRunnable(() -> {
-            Window window = new Window(title, skin);
-            window.getTitleTable().pad(10);
-            window.pad(20);
-            window.setModal(true);
-            window.setMovable(true);
-
-            Table fileListTable = new Table();
-            fileListTable.setBackground(skin.newDrawable("white", new Color(0.1f, 0.1f, 0.1f, 1f)));
-            fileListTable.top();
-
-            TextField textField = new TextField(defaultText, skin);
-
-            java.io.File dir = new java.io.File(".");
-            java.io.File[] files = dir.listFiles((d, name) -> name.endsWith(".dat"));
-            if (files != null) {
-                java.util.Arrays.sort(files, (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified()));
-                for (java.io.File f : files) {
-                    TextButton fileBtn = new TextButton(f.getName(), skin, "monospace-button");
-                    fileBtn.getLabel().setAlignment(com.badlogic.gdx.utils.Align.left);
-                    fileBtn.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-                        @Override
-                        public void clicked(InputEvent event, float x, float y) {
-                            textField.setText(f.getName());
-                            if (getTapCount() >= 2) {
-                                onResult.accept(f.getName());
-                                window.remove();
-                            }
-                        }
-                    });
-                    fileListTable.add(fileBtn).growX().pad(2).row();
-                }
+            if (!com.kotcrab.vis.ui.VisUI.isLoaded()) {
+                com.kotcrab.vis.ui.VisUI.load();
+                com.kotcrab.vis.ui.widget.file.FileChooser.setDefaultPrefsName("letrain.filechooser");
             }
-            if (files == null || files.length == 0) {
-                fileListTable.add(new Label("No .dat files found", skin)).pad(10);
-            }
-
-            ScrollPane scrollPane = new ScrollPane(fileListTable, skin);
-            scrollPane.setFadeScrollBars(false);
-
-            Label label = new Label("Filename:", skin);
-            TextButton okBtn = new TextButton("OK", skin);
-            TextButton cancelBtn = new TextButton("Cancel", skin);
-
-            okBtn.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    onResult.accept(textField.getText());
-                    window.remove();
-                }
-            });
-
-            cancelBtn.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    window.remove();
-                }
-            });
-
-            textField.setTextFieldListener((textField1, c) -> {
-                if (c == '\r' || c == '\n') {
-                    onResult.accept(textField1.getText());
-                    window.remove();
-                }
-            });
-
-            window.add(scrollPane).colspan(2).grow().minWidth(300).minHeight(200).padBottom(10).row();
-
-            Table inputTable = new Table();
-            inputTable.add(label).padRight(10);
-            inputTable.add(textField).growX().row();
-            window.add(inputTable).colspan(2).growX().padBottom(10).row();
-
-            window.add(okBtn).padRight(10).width(100).right();
-            window.add(cancelBtn).width(100).left();
-
-            window.pack();
-            window.setSize(Math.max(window.getWidth(), 400), Math.max(window.getHeight(), 350));
+            com.kotcrab.vis.ui.widget.file.FileChooser fileChooser = new com.kotcrab.vis.ui.widget.file.FileChooser(
+                    title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN);
+            fileChooser.setSelectionMode(com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode.FILES);
             
-            // Hover scroll focus for the file list
-            scrollPane.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
+            // Only show .dat files by default
+            com.kotcrab.vis.ui.widget.file.FileTypeFilter filter = new com.kotcrab.vis.ui.widget.file.FileTypeFilter(true);
+            filter.addRule("Data files (*.dat)", "dat");
+            fileChooser.setFileTypeFilter(filter);
+            
+            fileChooser.setDirectory(Gdx.files.local("."));
+            
+            fileChooser.setListener(new com.kotcrab.vis.ui.widget.file.FileChooserAdapter() {
                 @Override
-                public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-                    if (pointer == -1 && stage != null) {
-                        stage.setScrollFocus(scrollPane);
+                public void selected(com.badlogic.gdx.utils.Array<com.badlogic.gdx.files.FileHandle> files) {
+                    if (files.size > 0) {
+                        onResult.accept(files.get(0).file().getAbsolutePath());
                     }
                 }
             });
-
-            // Center on stage
-            window.setPosition(stage.getWidth() / 2 - window.getWidth() / 2,
-                    stage.getHeight() / 2 - window.getHeight() / 2);
-
-            stage.addActor(window);
-            stage.setKeyboardFocus(textField);
+            
+            stage.addActor(fileChooser.fadeIn());
         });
     }
 
