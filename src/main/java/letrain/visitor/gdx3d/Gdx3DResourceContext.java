@@ -333,13 +333,12 @@ public class Gdx3DResourceContext implements Disposable {
         ModelBuilder mb = new ModelBuilder();
         mb.begin();
         float width = 0.9f;
-        float height = 0.5f;
-        float thickness = 0.04f;
+        float height = 0.01f; // Flat like paint
+        float thickness = 0.1f; // Width of the painted line
         
         Material mat = new Material(ColorAttribute.createDiffuse(color));
         
-        // Walls
-        MeshPartBuilder mpb = mb.part("walls", GL20.GL_TRIANGLES,
+        MeshPartBuilder mpb = mb.part("outline", GL20.GL_TRIANGLES,
                 VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, mat);
         Matrix4 m = new Matrix4();
         
@@ -348,9 +347,9 @@ public class Gdx3DResourceContext implements Disposable {
             float angle = i * 90f;
             float bx = (float) Math.cos(Math.toRadians(angle)) * offset;
             float bz = (float) Math.sin(Math.toRadians(angle)) * offset;
-            m.setToRotation(0, 1, 0, angle).trn(bx, -height / 2f, bz);
+            m.setToRotation(0, 1, 0, angle).trn(bx, 0.03f, bz); // Y=0.03f to sit above the ground
             mpb.setVertexTransform(m);
-            // The wall is 'thickness' wide in the local X direction, 'height' high, and 'width' long in local Z
+            // The line is 'thickness' wide, 'height' tall, and 'width' long
             BoxShapeBuilder.build(mpb, thickness, height, width);
         }
         return mb.end();
