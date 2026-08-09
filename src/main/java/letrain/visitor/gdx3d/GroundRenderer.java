@@ -82,8 +82,8 @@ public class GroundRenderer extends BaseSubRenderer {
                 break;
         }
 
-        if (model == resourceContext.mountainModel && modelRef != null && modelRef.getTrackMap() != null) {
-            letrain.track.Track t = modelRef.getTrackMap().getTrack(ground.getPosition().getX(), ground.getPosition().getY());
+        if (model == resourceContext.mountainModel && modelRef != null && modelRef.getRailMap() != null) {
+            letrain.track.Track t = modelRef.getRailMap().getTrackAt(ground.getPosition().getX(), ground.getPosition().getY());
             if (t instanceof letrain.track.rail.TunnelGateRailTrack) {
                 model = resourceContext.groundModel;
                 yPosition = 0.0f;
