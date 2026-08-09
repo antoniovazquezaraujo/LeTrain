@@ -32,6 +32,15 @@ public class GroundRenderer extends BaseSubRenderer {
         float scaleY = 0.01f;
         float scaleZ = 1.0f;
 
+        int backgroundType = type;
+        if (type >= 10 && type <= 29) {
+            if (modelRef != null && modelRef.getGroundMap() != null) {
+                backgroundType = modelRef.getGroundMap().getBackgroundTerrain(ground.getPosition().getX(), ground.getPosition().getY());
+            } else {
+                backgroundType = letrain.ground.GroundMap.GROUND;
+            }
+        }
+
         if (type >= 10 && type <= 19) {
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
             tempColor.set((cargo != null) ? cargo.getColor() : Color.WHITE);
@@ -44,8 +53,6 @@ public class GroundRenderer extends BaseSubRenderer {
             jewelBlock.transform.setToTranslation(x, h / 2f, z);
             jewelBlock.transform.scale(0.9f, h, 0.9f);
             instances.add(jewelBlock);
-            model = resourceContext.groundModel;
-            yPosition = 0.0f;
         } else if (type >= 20 && type <= 29) {
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
             com.badlogic.gdx.graphics.g3d.Model consumerModelToUse = resourceContext.coalConsumerModel;
@@ -57,24 +64,22 @@ public class GroundRenderer extends BaseSubRenderer {
             ModelInstance instance = resourceContext.getModelInstance(consumerModelToUse);
             instance.transform.setToTranslation(x, 0.03f, z);
             instances.add(instance);
-            model = null; // Do not draw any ground tile beneath it
-            yPosition = 0.0f;
-        } else {
-            switch (type) {
-                case GroundMap.GROUND:
-                    model = resourceContext.groundModel;
-                    yPosition = 0.0f;
-                    break;
-                case GroundMap.WATER:
-                    model = resourceContext.waterModel;
-                    yPosition = -2.0f;
-                    break;
-                case GroundMap.ROCK:
-                    model = resourceContext.mountainModel;
-                    yPosition = 0.6f;
-                    scaleY = 1.2f;
-                    break;
-            }
+        }
+        
+        switch (backgroundType) {
+            case letrain.ground.GroundMap.GROUND:
+                model = resourceContext.groundModel;
+                yPosition = 0.0f;
+                break;
+            case letrain.ground.GroundMap.WATER:
+                model = resourceContext.waterModel;
+                yPosition = -2.0f;
+                break;
+            case letrain.ground.GroundMap.ROCK:
+                model = resourceContext.mountainModel;
+                yPosition = 0.6f;
+                scaleY = 1.2f;
+                break;
         }
 
         if (model != null) {
@@ -104,11 +109,10 @@ public class GroundRenderer extends BaseSubRenderer {
                 instances.add(instance);
             }
 
-            if (type != GroundMap.WATER && modelRef != null && modelRef.getGroundMap() != null) {
+            if (backgroundType != letrain.ground.GroundMap.WATER && modelRef != null && modelRef.getGroundMap() != null) {
                 int gx = ground.getPosition().getX();
                 int gy = ground.getPosition().getY();
-                if (type == GroundMap.ROCK) tempColor.set(0.5f, 0.4f, 0.3f, 1f);
-                else if (type >= 10 && type <= 29) tempColor.set(Color.BLACK);
+                if (backgroundType == letrain.ground.GroundMap.ROCK) tempColor.set(0.5f, 0.4f, 0.3f, 1f);
                 else tempColor.set(0.4f, 0.6f, 0.3f, 1f);
 
                 checkAndAddWall(gx, gy - 1, x, -1.05f, z - 0.5f, 0, tempColor);

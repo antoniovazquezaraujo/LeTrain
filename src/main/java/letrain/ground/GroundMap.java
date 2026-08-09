@@ -25,6 +25,8 @@ public interface GroundMap extends Renderable {
 
     void renderBlock(int startx, int starty, int width, int height);
 
+    int getBackgroundTerrain(int x, int y);
+
     Integer getValueAt(int x, int y);
 
     Integer getValueAt(Point pos);
