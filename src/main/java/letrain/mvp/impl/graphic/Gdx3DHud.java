@@ -551,6 +551,7 @@ public class Gdx3DHud {
                         isMaximized[0] = true;
                         maxBtnTitle.setText(" [-] ");
                         ideWindowStyle.background = windowWhite;
+                        window.setBackground(windowWhite);
                     } else {
                         window.setResizable(true);
                         window.setMovable(true);
@@ -566,14 +567,18 @@ public class Gdx3DHud {
                 @Override
                 public boolean mouseMoved(InputEvent event, float x, float y) {
                     if (!isMaximized[0]) {
-                        boolean nearBorder = (x <= 14 || x >= window.getWidth() - 14 || y <= 14 || y >= window.getHeight() - 14);
+                        // Use a 20px margin to make it easy to trigger and visible
+                        boolean nearBorder = (x <= 20 || x >= window.getWidth() - 20 || y <= 20 || y >= window.getHeight() - 20);
                         if (nearBorder) {
                             ideWindowStyle.background = windowBlue;
+                            window.setBackground(windowBlue);
                         } else {
                             ideWindowStyle.background = windowWhite;
+                            window.setBackground(windowWhite);
                         }
                     } else {
                         ideWindowStyle.background = windowWhite;
+                        window.setBackground(windowWhite);
                     }
                     return false;
                 }
@@ -582,6 +587,7 @@ public class Gdx3DHud {
                 public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
                     if (toActor == null || !toActor.isDescendantOf(window)) {
                         ideWindowStyle.background = windowWhite;
+                        window.setBackground(windowWhite);
                     }
                 }
             });
