@@ -1176,6 +1176,8 @@ public class Gdx3DHud {
                 }
             });
             
+            fileChooser.setSize(750, 500);
+            fileChooser.centerWindow();
             stage.addActor(fileChooser.fadeIn());
         });
     }
