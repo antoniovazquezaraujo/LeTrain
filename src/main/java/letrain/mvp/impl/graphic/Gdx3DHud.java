@@ -1138,12 +1138,43 @@ public class Gdx3DHud {
             Window window = new Window(title, skin);
             window.getTitleTable().pad(10);
             window.pad(20);
+            window.setModal(true);
+            window.setMovable(true);
 
-            Label label = new Label("Filename:",
-                    skin);
-            TextField textField = new TextField(
-                    defaultText, skin);
+            Table fileListTable = new Table();
+            fileListTable.setBackground(skin.newDrawable("white", new Color(0.1f, 0.1f, 0.1f, 1f)));
+            fileListTable.top();
 
+            TextField textField = new TextField(defaultText, skin);
+
+            java.io.File dir = new java.io.File(".");
+            java.io.File[] files = dir.listFiles((d, name) -> name.endsWith(".dat"));
+            if (files != null) {
+                java.util.Arrays.sort(files, (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified()));
+                for (java.io.File f : files) {
+                    TextButton fileBtn = new TextButton(f.getName(), skin, "monospace-button");
+                    fileBtn.getLabel().setAlignment(com.badlogic.gdx.utils.Align.left);
+                    fileBtn.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+                        @Override
+                        public void clicked(InputEvent event, float x, float y) {
+                            textField.setText(f.getName());
+                            if (getTapCount() >= 2) {
+                                onResult.accept(f.getName());
+                                window.remove();
+                            }
+                        }
+                    });
+                    fileListTable.add(fileBtn).growX().pad(2).row();
+                }
+            }
+            if (files == null || files.length == 0) {
+                fileListTable.add(new Label("No .dat files found", skin)).pad(10);
+            }
+
+            ScrollPane scrollPane = new ScrollPane(fileListTable, skin);
+            scrollPane.setFadeScrollBars(false);
+
+            Label label = new Label("Filename:", skin);
             TextButton okBtn = new TextButton("OK", skin);
             TextButton cancelBtn = new TextButton("Cancel", skin);
 
@@ -1162,7 +1193,6 @@ public class Gdx3DHud {
                 }
             });
 
-            // Allow Enter to verify
             textField.setTextFieldListener((textField1, c) -> {
                 if (c == '\r' || c == '\n') {
                     onResult.accept(textField1.getText());
@@ -1170,17 +1200,32 @@ public class Gdx3DHud {
                 }
             });
 
-            window.add(label).padRight(10);
-            window.add(textField).width(200).row();
-            window.add(okBtn).pad(10);
-            window.add(cancelBtn).pad(10);
+            window.add(scrollPane).colspan(2).grow().minWidth(300).minHeight(200).padBottom(10).row();
+
+            Table inputTable = new Table();
+            inputTable.add(label).padRight(10);
+            inputTable.add(textField).growX().row();
+            window.add(inputTable).colspan(2).growX().padBottom(10).row();
+
+            window.add(okBtn).padRight(10).width(100).right();
+            window.add(cancelBtn).width(100).left();
 
             window.pack();
+            window.setSize(Math.max(window.getWidth(), 400), Math.max(window.getHeight(), 350));
+            
+            // Hover scroll focus for the file list
+            scrollPane.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                @Override
+                public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
+                    if (pointer == -1 && stage != null) {
+                        stage.setScrollFocus(scrollPane);
+                    }
+                }
+            });
 
             // Center on stage
-            window.setPosition(
-                    (stage.getWidth() - window.getWidth()) / 2,
-                    (stage.getHeight() - window.getHeight()) / 2);
+            window.setPosition(stage.getWidth() / 2 - window.getWidth() / 2,
+                    stage.getHeight() / 2 - window.getHeight() / 2);
 
             stage.addActor(window);
             stage.setKeyboardFocus(textField);
