@@ -271,9 +271,9 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         ModelInstance plate = resourceContext.getModelInstance(resourceContext.wagonJewelModel);
         plate.materials.get(0)
                 .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(structureColor));
-        plate.transform.setToTranslation(plateMidX, 0.01f, plateMidZ);
+        plate.transform.setToTranslation(plateMidX, 0.05f, plateMidZ);
         plate.transform.rotate(0, 1, 0, plateAngle);
-        plate.transform.scale(plateLengthPerp, 0.01f, plateWidth);
+        plate.transform.scale(plateLengthPerp, 0.05f, plateWidth);
         if (alpha < 1.0f) {
             plate.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, alpha));
         }
