@@ -462,7 +462,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
 
     private Dir resolveDir(LeTrainProgramParser.WaypointContext ctx) {
         if (ctx.direction() != null && ctx.direction().dir() != null) {
-            return Dir.valueOf(ctx.direction().dir().getText());
+            return Dir.valueOf(ctx.direction().dir().getText().toUpperCase());
         }
         return null; // default
     }
@@ -565,17 +565,17 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     }
 
     private List<WaypointCommand> toCommands(LeTrainProgramParser.ActionContext ctx) {
-        String text = ctx.getText().toUpperCase();
+        String text = ctx.getText().toLowerCase();
         return switch (text) {
-            case "LOAD"     -> List.of(WaypointCommand.LOAD);
-            case "UNLOAD"   -> List.of(WaypointCommand.UNLOAD);
-            case "REVERSE"  -> List.of(WaypointCommand.REVERSE);
-            case "STOP"     -> List.of(WaypointCommand.STOP);
+            case "load"     -> List.of(WaypointCommand.LOAD);
+            case "unload"   -> List.of(WaypointCommand.UNLOAD);
+            case "reverse"  -> List.of(WaypointCommand.REVERSE);
+            case "stop"     -> List.of(WaypointCommand.STOP);
             default -> {
-                if (text.startsWith("WAIT")) {
+                if (text.startsWith("wait")) {
                     int seconds = Integer.parseInt(ctx.NUMBER().getText());
                     yield List.of(WaypointCommand.waitSeconds(seconds));
-                } else if (text.startsWith("SPEED")) {
+                } else if (text.startsWith("speed")) {
                     int speed = Integer.parseInt(ctx.NUMBER().getText());
                     yield List.of(WaypointCommand.speed(speed));
                 }

@@ -703,24 +703,24 @@ public class Gdx3DHud {
 
             // ── BUILD TREE ──
             refTree.add(heading.apply("ITINERARY DSL"));
-            var itin = parent.apply("  [+] create itinerary");
-            itin.add(leaf.apply("template", "create itinerary \"\" {\n  add station \"\"\n}"));
+            var itin = parent.apply("  [-] create itinerary");
+            itin.add(leaf.apply("template", "create itinerary \"\" {\n  add station #\n}"));
             itin.setExpanded(true);
             refTree.add(itin);
 
             var addSt = parent.apply("  [+] add station [cmd]");
-            addSt.add(leaf.apply("LOAD", "add station # LOAD"));
-            addSt.add(leaf.apply("UNLOAD", "add station # UNLOAD"));
-            addSt.add(leaf.apply("REVERSE", "add station # REVERSE"));
-            addSt.add(leaf.apply("STOP", "add station # STOP"));
-            addSt.add(leaf.apply("WAIT n", "add station # WAIT #"));
-            addSt.add(leaf.apply("SPEED n", "add station # SPEED #"));
+            addSt.add(leaf.apply("load", "add station # load"));
+            addSt.add(leaf.apply("unload", "add station # unload"));
+            addSt.add(leaf.apply("reverse", "add station # reverse"));
+            addSt.add(leaf.apply("stop", "add station # stop"));
+            addSt.add(leaf.apply("wait n", "add station # wait #"));
+            addSt.add(leaf.apply("speed n", "add station # speed #"));
             refTree.add(addSt);
 
             var addSe = parent.apply("  [+] add sensor [cmd]");
-            addSe.add(leaf.apply("LOAD", "add sensor # LOAD"));
-            addSe.add(leaf.apply("UNLOAD", "add sensor # UNLOAD"));
-            addSe.add(leaf.apply("WAIT n", "add sensor # WAIT #"));
+            addSe.add(leaf.apply("load", "add sensor # load"));
+            addSe.add(leaf.apply("unload", "add sensor # unload"));
+            addSe.add(leaf.apply("wait n", "add sensor # wait #"));
             refTree.add(addSe);
 
             refTree.add(leaf.apply("assign", "assign itinerary \"\" to train #;"));
@@ -730,7 +730,7 @@ public class Gdx3DHud {
             refTree.add(heading.apply("TRIGGERS"));
 
             var sensor = parent.apply("  [+] sensor");
-            var snOn = parent.apply("    [+] on train");
+            var snOn = parent.apply("    [-] on train");
             snOn.add(leaf.apply("enter", "sensor # on train enter {\n  \n}"));
             snOn.add(leaf.apply("exit", "sensor # on train exit {\n  \n}"));
             snOn.add(leaf.apply("enter fwd", "sensor # on train enter forward {\n  \n}"));
@@ -740,7 +740,7 @@ public class Gdx3DHud {
             refTree.add(sensor);
 
             var station = parent.apply("  [+] station");
-            var stOn = parent.apply("    [+] on train");
+            var stOn = parent.apply("    [-] on train");
             stOn.add(leaf.apply("enter", "station # on train enter {\n  \n}"));
             stOn.add(leaf.apply("exit", "station # on train exit {\n  \n}"));
             stOn.add(leaf.apply("enter fwd", "station # on train enter forward {\n  \n}"));
@@ -764,7 +764,7 @@ public class Gdx3DHud {
             refTree.add(semaphore);
 
             var trainTrig = parent.apply("  [+] train");
-            var trOn = parent.apply("    [+] on");
+            var trOn = parent.apply("    [-] on");
             trOn.add(leaf.apply("enter", "train # on enter {\n  \n}"));
             trOn.add(leaf.apply("exit", "train # on exit {\n  \n}"));
             trOn.add(leaf.apply("link", "train # on link {\n  \n}"));
@@ -780,7 +780,7 @@ public class Gdx3DHud {
             // ── ACTIONS ──
             refTree.add(heading.apply("ACTIONS"));
 
-            var trainAct = parent.apply("  [+] train");
+            var trainAct = parent.apply("  [-] train");
             trainAct.add(leaf.apply("set speed", "train # set speed #;"));
             trainAct.add(leaf.apply("accelerate", "train # accelerate;"));
             trainAct.add(leaf.apply("decelerate", "train # decelerate;"));
@@ -802,15 +802,15 @@ public class Gdx3DHud {
             trainAt.add(leaf.apply("semaphore", "train at semaphore # stop;"));
             refTree.add(trainAt);
 
-            var forkAct = parent.apply("  [+] fork");
+            var forkAct = parent.apply("  [-] fork");
             forkAct.add(leaf.apply("straight", "fork # set straight;"));
             forkAct.add(leaf.apply("curved", "fork # set curved;"));
             forkAct.add(leaf.apply("flip", "fork # set flip;"));
-            forkAct.add(leaf.apply("dir...", "fork # set E;"));
+            forkAct.add(leaf.apply("dir...", "fork # set e;"));
             forkAct.setExpanded(true);
             refTree.add(forkAct);
 
-            var semAct = parent.apply("  [+] semaphore");
+            var semAct = parent.apply("  [-] semaphore");
             semAct.add(leaf.apply("open", "semaphore # set open;"));
             semAct.add(leaf.apply("closed", "semaphore # set closed;"));
             semAct.setExpanded(true);
@@ -842,11 +842,11 @@ public class Gdx3DHud {
             Label examplesTitle = new Label("EXAMPLES", skin, "monospace");
             examplesTitle.setColor(Color.GREEN);
             Label examplesContent = new Label(
-                    "station 1 on load {\n" +
-                            "  train unlink back 1;\n" +
+                    "station 1 on train enter {\n" +
+                            "  train unlink backward 1;\n" +
                             "  train set speed 2;\n" +
                             "}\n" +
-                            "sensor 5 on enter {\n" +
+                            "sensor 5 on train enter {\n" +
                             "  train stop;\n" +
                             "}",
                     skin, "monospace");
