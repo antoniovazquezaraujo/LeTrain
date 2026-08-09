@@ -709,18 +709,18 @@ public class Gdx3DHud {
             refTree.add(itin);
 
             var addSt = parent.apply("  [+] add station [cmd]");
-            addSt.add(leaf.apply("LOAD", "add station # LOAD"));
-            addSt.add(leaf.apply("UNLOAD", "add station # UNLOAD"));
-            addSt.add(leaf.apply("REVERSE", "add station # REVERSE"));
-            addSt.add(leaf.apply("STOP", "add station # STOP"));
-            addSt.add(leaf.apply("WAIT n", "add station # WAIT #"));
-            addSt.add(leaf.apply("SPEED n", "add station # SPEED #"));
+            addSt.add(leaf.apply("load", "add station # load"));
+            addSt.add(leaf.apply("unload", "add station # unload"));
+            addSt.add(leaf.apply("reverse", "add station # reverse"));
+            addSt.add(leaf.apply("stop", "add station # stop"));
+            addSt.add(leaf.apply("wait n", "add station # wait #"));
+            addSt.add(leaf.apply("speed n", "add station # speed #"));
             refTree.add(addSt);
 
             var addSe = parent.apply("  [+] add sensor [cmd]");
-            addSe.add(leaf.apply("LOAD", "add sensor # LOAD"));
-            addSe.add(leaf.apply("UNLOAD", "add sensor # UNLOAD"));
-            addSe.add(leaf.apply("WAIT n", "add sensor # WAIT #"));
+            addSe.add(leaf.apply("load", "add sensor # load"));
+            addSe.add(leaf.apply("unload", "add sensor # unload"));
+            addSe.add(leaf.apply("wait n", "add sensor # wait #"));
             refTree.add(addSe);
 
             refTree.add(leaf.apply("assign", "assign itinerary \"\" to train #;"));
@@ -806,7 +806,7 @@ public class Gdx3DHud {
             forkAct.add(leaf.apply("straight", "fork # set straight;"));
             forkAct.add(leaf.apply("curved", "fork # set curved;"));
             forkAct.add(leaf.apply("flip", "fork # set flip;"));
-            forkAct.add(leaf.apply("dir...", "fork # set E;"));
+            forkAct.add(leaf.apply("dir...", "fork # set e;"));
             forkAct.setExpanded(true);
             refTree.add(forkAct);
 
@@ -842,11 +842,11 @@ public class Gdx3DHud {
             Label examplesTitle = new Label("EXAMPLES", skin, "monospace");
             examplesTitle.setColor(Color.GREEN);
             Label examplesContent = new Label(
-                    "station 1 on load {\n" +
-                            "  train unlink back 1;\n" +
+                    "station 1 on train enter {\n" +
+                            "  train unlink backward 1;\n" +
                             "  train set speed 2;\n" +
                             "}\n" +
-                            "sensor 5 on enter {\n" +
+                            "sensor 5 on train enter {\n" +
                             "  train stop;\n" +
                             "}",
                     skin, "monospace");
