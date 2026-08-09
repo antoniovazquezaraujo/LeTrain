@@ -39,6 +39,7 @@ public class AutomationEngine {
         }
 
         try {
+            program = program.toLowerCase();
             CharStream input = CharStreams.fromString(program);
             LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);

@@ -41,9 +41,9 @@ sensorRef  : STRING | NUMBER ;
 
 direction : dir ;
 
-action : 'LOAD' | 'UNLOAD' | 'REVERSE' | 'STOP'
-       | 'WAIT' NUMBER
-       | 'SPEED' NUMBER
+action : 'load' | 'unload' | 'reverse' | 'stop'
+       | 'wait' NUMBER
+       | 'speed' NUMBER
        ;
 
 // ── Trigger-based automation (existing) ──
@@ -89,7 +89,7 @@ trainSense      : 'forward' | 'backward';
 trainSpeed      : NUMBER;
 
 sense : 'forward' | 'backward';
-dir   : 'E'| 'NE' | 'N' | 'NW' | 'W' | 'SW' | 'S' | 'SE';
+dir   : 'e'| 'ne' | 'n' | 'nw' | 'w' | 'sw' | 's' | 'se';
 
 NUMBER : [0-9]+;
 STRING : '"' ~["]* '"' ;
