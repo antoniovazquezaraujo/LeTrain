@@ -1132,6 +1132,29 @@ public class Gdx3DHud {
             if (!com.kotcrab.vis.ui.VisUI.isLoaded()) {
                 com.kotcrab.vis.ui.VisUI.load();
                 com.kotcrab.vis.ui.widget.file.FileChooser.setDefaultPrefsName("letrain.filechooser");
+                
+                // Override VisUI fonts with our monospace font to keep aesthetic consistency
+                com.badlogic.gdx.scenes.scene2d.ui.Skin visSkin = com.kotcrab.vis.ui.VisUI.getSkin();
+                com.badlogic.gdx.graphics.g2d.BitmapFont font = skin.getFont("default-font");
+                
+                for (com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle.class).values()) {
+                    style.font = font;
+                }
+                for (com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle.class).values()) {
+                    style.font = font;
+                }
+                for (com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle.class).values()) {
+                    style.titleFont = font;
+                }
+                for (com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle.class).values()) {
+                    style.font = font;
+                }
+                for (com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle.class).values()) {
+                    style.font = font;
+                }
+                for (com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle.class).values()) {
+                    style.font = font;
+                }
             }
             com.kotcrab.vis.ui.widget.file.FileChooser fileChooser = new com.kotcrab.vis.ui.widget.file.FileChooser(
                     title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN);
