@@ -273,9 +273,7 @@ public class Gdx3DResourceContext implements Disposable {
                     new Material(ColorAttribute.createDiffuse(new Color(0.5f, 0.5f, 0.5f, 1f))),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
-            tunnelPortalModel = register(modelBuilder.createBox(1.0f, 1.2f, 1.0f,
-                    new Material(ColorAttribute.createDiffuse(new Color(0.15f, 0.15f, 0.15f, 1f))),
-                    VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+            tunnelPortalModel = register(createTunnelPortalModel());
 
             terrainWallModel = register(modelBuilder.createBox(1.0f, 2.1f, 0.05f,
                     new Material(ColorAttribute.createDiffuse(Color.GRAY)),
@@ -400,17 +398,61 @@ public class Gdx3DResourceContext implements Disposable {
         mpb.setVertexTransform(new Matrix4().setToTranslation(0, 0, d / 2f - thickness / 2f));
         BoxShapeBuilder.build(mpb, w, h, thickness);
 
+        // Wall Back
         mpb = mb.part("wall_back", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, mat);
         mpb.setVertexTransform(new Matrix4().setToTranslation(0, 0, -d / 2f + thickness / 2f));
         BoxShapeBuilder.build(mpb, w, h, thickness);
 
         mpb = mb.part("wall_left", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, mat);
         mpb.setVertexTransform(new Matrix4().setToTranslation(-w / 2f + thickness / 2f, 0, 0));
-        BoxShapeBuilder.build(mpb, thickness, h, d - 2 * thickness);
+        BoxShapeBuilder.build(mpb, thickness, h, d);
 
         mpb = mb.part("wall_right", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, mat);
         mpb.setVertexTransform(new Matrix4().setToTranslation(w / 2f - thickness / 2f, 0, 0));
-        BoxShapeBuilder.build(mpb, thickness, h, d - 2 * thickness);
+        BoxShapeBuilder.build(mpb, thickness, h, d);
+
+        return mb.end();
+    }
+
+    private Model createTunnelPortalModel() {
+        ModelBuilder mb = new ModelBuilder();
+        mb.begin();
+        MeshPartBuilder mpb;
+        Material stoneMat = new Material(ColorAttribute.createDiffuse(Color.GRAY));
+        Material darkMat = new Material(ColorAttribute.createDiffuse(new Color(0.05f, 0.05f, 0.05f, 1f)));
+
+        // We build the model aligned with the X axis.
+        // It has depth 1.0 along X (x from -0.5 to 0.5)
+
+        // Left Pillar (Z = -0.35)
+        mpb = mb.part("pillarL", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, stoneMat);
+        mpb.setVertexTransform(new Matrix4().setToTranslation(0f, 0.4f, -0.35f));
+        BoxShapeBuilder.build(mpb, 1.0f, 0.8f, 0.3f);
+
+        // Right Pillar (Z = 0.35)
+        mpb = mb.part("pillarR", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, stoneMat);
+        mpb.setVertexTransform(new Matrix4().setToTranslation(0f, 0.4f, 0.35f));
+        BoxShapeBuilder.build(mpb, 1.0f, 0.8f, 0.3f);
+
+        // Top Lintel (Y = 0.95)
+        mpb = mb.part("lintel", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, stoneMat);
+        mpb.setVertexTransform(new Matrix4().setToTranslation(0f, 0.95f, 0f));
+        BoxShapeBuilder.build(mpb, 1.0f, 0.3f, 1.0f);
+
+        // Arch corners (to make it look round)
+        mpb = mb.part("cornerL", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, stoneMat);
+        mpb.setVertexTransform(new Matrix4().setToTranslation(0f, 0.75f, -0.15f));
+        BoxShapeBuilder.build(mpb, 1.0f, 0.1f, 0.1f);
+
+        mpb = mb.part("cornerR", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, stoneMat);
+        mpb.setVertexTransform(new Matrix4().setToTranslation(0f, 0.75f, 0.15f));
+        BoxShapeBuilder.build(mpb, 1.0f, 0.1f, 0.1f);
+
+        // Black Hole background. It blocks the view inside the mountain.
+        // We put a thin black wall in the middle of the portal (at X = 0).
+        mpb = mb.part("hole", GL20.GL_TRIANGLES, VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, darkMat);
+        mpb.setVertexTransform(new Matrix4().setToTranslation(0f, 0.45f, 0f));
+        BoxShapeBuilder.build(mpb, 0.05f, 0.9f, 0.4f);
 
         return mb.end();
     }

@@ -333,16 +333,22 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         ModelInstance portal = resourceContext.getModelInstance(resourceContext.tunnelPortalModel);
         if (isXRayActive) {
             portal.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
-            portal.transform.setToTranslation(
-                    tunnelGateRailTrack.getPosition().getX() + 0.5f,
-                    0.6f,
-                    tunnelGateRailTrack.getPosition().getY() + 0.5f);
+        }
+
+        letrain.map.Dir dir = tunnelGateRailTrack.getAnyDir();
+        float dx = letrain.utils.PathGeometry.getDirX(dir);
+        float dz = letrain.utils.PathGeometry.getDirZ(dir);
+        float angle = (float) Math.toDegrees(Math.atan2(-dz, dx));
+
+        portal.transform.setToTranslation(
+                tunnelGateRailTrack.getPosition().getX() + 0.5f,
+                0.0f,
+                tunnelGateRailTrack.getPosition().getY() + 0.5f);
+        portal.transform.rotate(com.badlogic.gdx.math.Vector3.Y, angle);
+
+        if (isXRayActive) {
             transparentInstances.add(portal);
         } else {
-            portal.transform.setToTranslation(
-                    tunnelGateRailTrack.getPosition().getX() + 0.5f,
-                    0.6f,
-                    tunnelGateRailTrack.getPosition().getY() + 0.5f);
             instances.add(portal);
         }
         trackRenderer.visitRailTrack(tunnelGateRailTrack);
