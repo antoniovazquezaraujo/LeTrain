@@ -1054,12 +1054,6 @@ public class Gdx3DHud {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
                     view.showLoadDialog();
-                    ideWindow = null;
-                    ideLogContent = null;
-                    ideObjsContent = null;
-                    window.remove();
-                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                    view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
                 }
             });
 
