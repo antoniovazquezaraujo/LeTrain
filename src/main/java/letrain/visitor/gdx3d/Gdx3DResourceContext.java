@@ -338,17 +338,10 @@ public class Gdx3DResourceContext implements Disposable {
         
         Material mat = new Material(ColorAttribute.createDiffuse(color));
         
-        // Base (floor)
-        MeshPartBuilder mpb = mb.part("base", GL20.GL_TRIANGLES,
+        // Walls
+        MeshPartBuilder mpb = mb.part("walls", GL20.GL_TRIANGLES,
                 VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, mat);
         Matrix4 m = new Matrix4();
-        m.setToTranslation(0, -height + 0.02f, 0); // Sink into the ground
-        mpb.setVertexTransform(m);
-        BoxShapeBuilder.build(mpb, width, 0.02f, width);
-
-        // Walls
-        mpb = mb.part("walls", GL20.GL_TRIANGLES,
-                VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, mat);
         
         float offset = (width - thickness) / 2f;
         for (int i = 0; i < 4; i++) {
