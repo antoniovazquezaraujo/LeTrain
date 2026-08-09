@@ -142,6 +142,17 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         generateTerrain(startx, starty, width, height);
     }
 
+    public int getBackgroundTerrain(int col, int row) {
+        if (noise == null) return letrain.ground.GroundMap.GROUND;
+        float baseNoise = noise.smoothNoise(Math.abs(col * 0.01F), Math.abs(row * 0.02F), 0, OCTAVES);
+        float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
+        float waterThreshold = (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
+        float rockThreshold = (economyManager != null) ? economyManager.getRockThreshold() : 180f;
+        if (scaledBase < waterThreshold) return letrain.ground.GroundMap.WATER;
+        if (scaledBase > rockThreshold) return letrain.ground.GroundMap.ROCK;
+        return letrain.ground.GroundMap.GROUND;
+    }
+
     void generateTerrain(int startX, int startY, int width, int height) {
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
