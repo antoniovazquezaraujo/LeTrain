@@ -332,42 +332,33 @@ public class Gdx3DResourceContext implements Disposable {
     private Model createConsumerModel(Color color) {
         ModelBuilder mb = new ModelBuilder();
         mb.begin();
-        float thickness = 0.06f;
-        float h = 0.04f;
-
-        float luminance = 0.299f * color.r + 0.587f * color.g + 0.114f * color.b;
-        Color barColor = color.cpy();
-        if (luminance > 0.5f) {
-            barColor.lerp(Color.BLACK, 0.5f);
-        } else {
-            barColor.lerp(Color.WHITE, 0.6f);
-        }
-
-        Material iconMat = new Material(ColorAttribute.createDiffuse(barColor));
-        Material bgMat = new Material(ColorAttribute.createDiffuse(color));
-
-        MeshPartBuilder mpb = mb.part("bg", GL20.GL_TRIANGLES,
-                VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, bgMat);
-        BoxShapeBuilder.build(mpb, 0.95f, 0.01f, 0.95f);
-
-        mpb = mb.part("x", GL20.GL_TRIANGLES,
-                VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, iconMat);
+        float width = 0.9f;
+        float height = 0.5f;
+        float thickness = 0.08f;
+        
+        Material mat = new Material(ColorAttribute.createDiffuse(color));
+        
+        // Base (floor)
+        MeshPartBuilder mpb = mb.part("base", GL20.GL_TRIANGLES,
+                VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, mat);
         Matrix4 m = new Matrix4();
-        m.setToRotation(0, 1, 0, 45).trn(0, 0.02f, 0);
+        m.setToTranslation(0, 0.05f, 0); // slightly above 0 to prevent z-fighting with ground
         mpb.setVertexTransform(m);
-        BoxShapeBuilder.build(mpb, thickness, h, 1.35f);
-        m.setToRotation(0, 1, 0, -45).trn(0, 0.02f, 0);
-        mpb.setVertexTransform(m);
-        BoxShapeBuilder.build(mpb, thickness, h, 1.35f);
+        BoxShapeBuilder.build(mpb, width, 0.02f, width);
 
+        // Walls
+        mpb = mb.part("walls", GL20.GL_TRIANGLES,
+                VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, mat);
+        
+        float offset = (width - thickness) / 2f;
         for (int i = 0; i < 4; i++) {
             float angle = i * 90f;
-            float offset = 0.47f;
             float bx = (float) Math.cos(Math.toRadians(angle)) * offset;
             float bz = (float) Math.sin(Math.toRadians(angle)) * offset;
-            m.setToRotation(0, 1, 0, angle).trn(bx, 0.02f, bz);
+            m.setToRotation(0, 1, 0, angle).trn(bx, height / 2f, bz);
             mpb.setVertexTransform(m);
-            BoxShapeBuilder.build(mpb, thickness, h, 1.0f);
+            // The wall is 'thickness' wide in the local X direction, 'height' high, and 'width' long in local Z
+            BoxShapeBuilder.build(mpb, thickness, height, width);
         }
         return mb.end();
     }
