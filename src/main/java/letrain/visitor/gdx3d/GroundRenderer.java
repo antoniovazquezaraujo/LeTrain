@@ -55,9 +55,9 @@ public class GroundRenderer extends BaseSubRenderer {
             float x = ground.getPosition().getX() + 0.5f;
             float z = ground.getPosition().getY() + 0.5f;
             ModelInstance instance = resourceContext.getModelInstance(consumerModelToUse);
-            instance.transform.setToTranslation(x, 0.01f, z);
+            instance.transform.setToTranslation(x, 0.03f, z);
             instances.add(instance);
-            model = resourceContext.groundModel;
+            model = null; // Do not draw any ground tile beneath it
             yPosition = 0.0f;
         } else {
             switch (type) {
@@ -98,11 +98,6 @@ public class GroundRenderer extends BaseSubRenderer {
                     instance.transform.scale(scaleX, scaleY, scaleZ);
                     instances.add(instance);
                 }
-            } else if (type >= 10 && type <= 29) {
-                instance.materials.get(0).set(resourceContext.blackDiffuseAttribute);
-                instance.transform.setToTranslation(x, yPosition, z);
-                instance.transform.scale(scaleX, scaleY, scaleZ);
-                instances.add(instance);
             } else {
                 instance.transform.setToTranslation(x, yPosition, z);
                 instance.transform.scale(scaleX, scaleY, scaleZ);
