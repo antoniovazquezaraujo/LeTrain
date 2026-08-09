@@ -334,7 +334,7 @@ public class Gdx3DResourceContext implements Disposable {
         mb.begin();
         float width = 0.9f;
         float height = 0.5f;
-        float thickness = 0.08f;
+        float thickness = 0.04f;
         
         Material mat = new Material(ColorAttribute.createDiffuse(color));
         
@@ -342,7 +342,7 @@ public class Gdx3DResourceContext implements Disposable {
         MeshPartBuilder mpb = mb.part("base", GL20.GL_TRIANGLES,
                 VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal, mat);
         Matrix4 m = new Matrix4();
-        m.setToTranslation(0, 0.05f, 0); // slightly above 0 to prevent z-fighting with ground
+        m.setToTranslation(0, -height + 0.02f, 0); // Sink into the ground
         mpb.setVertexTransform(m);
         BoxShapeBuilder.build(mpb, width, 0.02f, width);
 
@@ -355,7 +355,7 @@ public class Gdx3DResourceContext implements Disposable {
             float angle = i * 90f;
             float bx = (float) Math.cos(Math.toRadians(angle)) * offset;
             float bz = (float) Math.sin(Math.toRadians(angle)) * offset;
-            m.setToRotation(0, 1, 0, angle).trn(bx, height / 2f, bz);
+            m.setToRotation(0, 1, 0, angle).trn(bx, -height / 2f, bz);
             mpb.setVertexTransform(m);
             // The wall is 'thickness' wide in the local X direction, 'height' high, and 'width' long in local Z
             BoxShapeBuilder.build(mpb, thickness, height, width);
