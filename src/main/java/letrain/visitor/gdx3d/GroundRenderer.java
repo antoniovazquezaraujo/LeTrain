@@ -82,6 +82,15 @@ public class GroundRenderer extends BaseSubRenderer {
                 break;
         }
 
+        if (model == resourceContext.mountainModel && modelRef != null && modelRef.getTrackMap() != null) {
+            letrain.track.Track t = modelRef.getTrackMap().getTrack(ground.getPosition().getX(), ground.getPosition().getY());
+            if (t instanceof letrain.track.rail.TunnelGateRailTrack) {
+                model = resourceContext.groundModel;
+                yPosition = 0.0f;
+                scaleY = 0.01f;
+            }
+        }
+
         if (model != null) {
             float x = ground.getPosition().getX() + 0.5f;
             float z = ground.getPosition().getY() + 0.5f;
