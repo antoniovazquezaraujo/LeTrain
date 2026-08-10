@@ -46,6 +46,7 @@ public class Gdx3DInputHandler implements InputProcessor {
     private long semaphoreInputTimeout = 0;
     private long stationInputTimeout = 0;
     private long locomotiveInputTimeout = 0;
+    private Locomotive lastCreatedLoco = null;
 
     public Gdx3DInputHandler(Model model, GraphicPresenter view, CameraController cameraController,
                              RailTrackMaker trackMaker, AudioController audioController) {
@@ -246,6 +247,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         // Global Enter to Menu (matches TerminalPresenter)
         if (stroke.getKeyType() == KeyType.Enter) {
             if (model.getMode() != Model.GameMode.DRIVE) {
+                lastCreatedLoco = null;
                 model.setMode(Model.GameMode.MENU);
                 return;
             }
@@ -271,8 +273,10 @@ public class Gdx3DInputHandler implements InputProcessor {
                             model.setMode(Model.GameMode.SEMAPHORES);
                         return;
                     case 't':
-                        if (model.getCursorRailTrack() != null)
+                        if (model.getCursorRailTrack() != null) {
+                            lastCreatedLoco = null;
                             model.setMode(Model.GameMode.TRAINS);
+                        }
                         return;
                     case 'l':
                         if (!model.getLocomotives().isEmpty()) {
@@ -648,15 +652,22 @@ public class Gdx3DInputHandler implements InputProcessor {
     private void handleTrainsInput(KeyStroke stroke) {
         if (stroke.getKeyType() == KeyType.Character) {
             char c = stroke.getCharacter();
-            if (c == '1') {
-                model.setSelectedWagonType(CargoTypes.GOLD);
-                view.updateHUD();
-            } else if (c == '2') {
-                model.setSelectedWagonType(CargoTypes.COAL);
-                view.updateHUD();
-            } else if (c == '3') {
-                model.setSelectedWagonType(CargoTypes.RUBY);
-                view.updateHUD();
+            if (Character.isDigit(c)) {
+                if (lastCreatedLoco != null) {
+                    int colorIdx = c - '0';
+                    lastCreatedLoco.setColor(Locomotive.COLOR_PALETTE[colorIdx % Locomotive.COLOR_PALETTE.length]);
+                    return;
+                }
+                if (c == '1') {
+                    model.setSelectedWagonType(CargoTypes.GOLD);
+                    view.updateHUD();
+                } else if (c == '2') {
+                    model.setSelectedWagonType(CargoTypes.COAL);
+                    view.updateHUD();
+                } else if (c == '3') {
+                    model.setSelectedWagonType(CargoTypes.RUBY);
+                    view.updateHUD();
+                }
             } else {
                 createVehicle(c);
             }
@@ -683,6 +694,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             track.enterLinkerFromDir(cursorDir.inverse(), locomotive);
             train.getSafetyManager().claimOccupiedSegments();
             cursorDir = locomotive.getDir();
+            lastCreatedLoco = locomotive;
         } else {
             Wagon wagon = new Wagon("" + c);
             wagon.setExclusiveCargoType(model.getSelectedWagonType());
@@ -692,6 +704,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 wagon.getTrain().getSafetyManager().claimOccupiedSegments();
             }
             cursorDir = wagon.getDir();
+            lastCreatedLoco = null;
         }
         model.getCursor().setDir(cursorDir);
         model.getCursor().getPosition().move(cursorDir);
@@ -706,6 +719,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             Linker linker = track.getLinker();
             if (linker instanceof Locomotive) {
                 model.removeLocomotive((Locomotive) linker);
+                if (lastCreatedLoco == linker) lastCreatedLoco = null;
             } else if (linker instanceof Wagon) {
                 model.removeWagon((Wagon) linker);
             }

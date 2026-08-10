@@ -118,6 +118,8 @@ public class Gdx3DResourceContext implements Disposable {
     public Model semaphoreOpenModel;
     public Model semaphoreClosedModel;
     public Model sensorModel;
+    public Model contrastBaseModel;
+    public Model contrastLineBaseModel;
     public Model goldConsumerModel;
     public Model coalConsumerModel;
     public Model rubyConsumerModel;
@@ -189,9 +191,9 @@ public class Gdx3DResourceContext implements Disposable {
                     new Material(ColorAttribute.createDiffuse(Color.YELLOW)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
-            // Línea de selección
+            // Línea de selección tintable (blanca por defecto)
             selectionLineModel = register(modelBuilder.createBox(0.12f, 0.02f, 0.5f,
-                    new Material(ColorAttribute.createDiffuse(Color.GREEN)),
+                    new Material(ColorAttribute.createDiffuse(Color.WHITE)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Vagón amarillo (LINK)
@@ -247,9 +249,19 @@ public class Gdx3DResourceContext implements Disposable {
                     new Material(ColorAttribute.createDiffuse(Color.YELLOW)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
-            // Indicador de modo automático en locomotora (puntito rojo)
-            autoModeDotModel = register(modelBuilder.createBox(0.16f, 0.04f, 0.16f,
-                    new Material(ColorAttribute.createDiffuse(Color.RED)),
+            // Indicador de modo automático en locomotora (puntito) tintable
+            autoModeDotModel = register(modelBuilder.createBox(0.1f, 0.1f, 0.1f,
+                    new Material(ColorAttribute.createDiffuse(Color.WHITE)),
+                    VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+
+            // Base negra para contraste (ej. debajo de los números o indicadores)
+            contrastBaseModel = register(modelBuilder.createBox(0.35f, 0.02f, 0.35f,
+                    new Material(ColorAttribute.createDiffuse(Color.BLACK)),
+                    VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+
+            // Base para contraste (alargada para la línea de dirección)
+            contrastLineBaseModel = register(modelBuilder.createBox(0.16f, 0.02f, 0.54f,
+                    new Material(ColorAttribute.createDiffuse(Color.BLACK)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Terreno
