@@ -93,14 +93,43 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             Dir branch1Dir = track.getOriginalRoute().getSecond();
             Dir branch2Dir = track.getAlternativeRoute().getSecond();
             
+            letrain.vehicle.rail.impl.Train ownerTrain = getTrackOwner(track);
+            
             for (Dir entryDir : new Dir[]{ rootDir, branch1Dir, branch2Dir }) {
                 Dir rightSideDir = entryDir.turnLeft().turnLeft();
-                // Move towards the edge of the tile (0.4) and to the right side of the track (0.35)
-                float sx = track.getPosition().getX() + 0.5f + PathGeometry.getDirX(entryDir) * 0.45f + PathGeometry.getDirX(rightSideDir) * 0.35f;
-                float sz = track.getPosition().getY() + 0.5f + PathGeometry.getDirZ(entryDir) * 0.45f + PathGeometry.getDirZ(rightSideDir) * 0.35f;
+                // Move further out (0.65) and to the right side (0.35)
+                float sx = track.getPosition().getX() + 0.5f + PathGeometry.getDirX(entryDir) * 0.65f + PathGeometry.getDirX(rightSideDir) * 0.35f;
+                float sz = track.getPosition().getY() + 0.5f + PathGeometry.getDirZ(entryDir) * 0.65f + PathGeometry.getDirZ(rightSideDir) * 0.35f;
+                
+                boolean isGreen = true;
+                if (ownerTrain != null) {
+                    isGreen = false;
+                    boolean onFork = false;
+                    for (letrain.vehicle.rail.impl.Linker l : ownerTrain.getLinkers()) {
+                        if (l.getTrack() == track) {
+                            onFork = true;
+                            break;
+                        }
+                    }
+                    if (!onFork && ownerTrain.getDirectorLinker() != null && ownerTrain.getDirectorLinker().getTrack() != null) {
+                        letrain.map.Point trainPos = ownerTrain.getDirectorLinker().getTrack().getPosition();
+                        float minDist = Float.MAX_VALUE;
+                        Dir closestDir = null;
+                        for (Dir d : new Dir[]{ rootDir, branch1Dir, branch2Dir }) {
+                             float dist = trainPos.dst(track.getPosition().getX() + PathGeometry.getDirX(d), track.getPosition().getY() + PathGeometry.getDirZ(d));
+                             if (dist < minDist) {
+                                 minDist = dist;
+                                 closestDir = d;
+                             }
+                        }
+                        if (entryDir == closestDir) {
+                            isGreen = true;
+                        }
+                    }
+                }
                 
                 ModelInstance autoSemaphore = resourceContext.getModelInstance(
-                        blockedColor != null ? resourceContext.semaphoreClosedModel : resourceContext.semaphoreOpenModel);
+                        isGreen ? resourceContext.semaphoreOpenModel : resourceContext.semaphoreClosedModel);
                 autoSemaphore.transform.setToTranslation(sx, 0.5f, sz);
                 
                 float sdx = PathGeometry.getDirX(entryDir);
@@ -455,5 +484,25 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 com.badlogic.gdx.graphics.GL20.GL_GREATER, false));
         ghost.transform.set(instance.transform);
         instances.add(ghost);
+    }
+
+    private letrain.vehicle.rail.impl.Train getTrackOwner(letrain.track.rail.RailTrack track) {
+        if (modelRef == null || track == null) return null;
+        letrain.vehicle.rail.impl.Train ownerTrain = null;
+        letrain.segments.RailwayGraph graph = modelRef.getRailwayGraph();
+        letrain.segments.BlockManager blockManager = modelRef.getBlockManager();
+        if (graph != null && blockManager != null) {
+            letrain.segments.Segment segment = graph.getSegment(track);
+            if (segment != null) {
+                java.util.List<letrain.vehicle.rail.impl.Train> owners = blockManager.getOwners(segment);
+                if (owners != null && !owners.isEmpty()) {
+                    ownerTrain = owners.get(0);
+                }
+            }
+        }
+        if (ownerTrain == null && track.getLinker() != null) {
+            ownerTrain = track.getLinker().getTrain();
+        }
+        return ownerTrain;
     }
 }
