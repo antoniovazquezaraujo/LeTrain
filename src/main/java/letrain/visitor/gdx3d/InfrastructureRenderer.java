@@ -105,25 +105,30 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 if (ownerTrain != null) {
                     isGreen = false;
                     boolean onFork = false;
-                    for (letrain.vehicle.rail.impl.Linker l : ownerTrain.getLinkers()) {
+                    for (letrain.vehicle.rail.Linker l : ownerTrain.getLinkers()) {
                         if (l.getTrack() == track) {
                             onFork = true;
                             break;
                         }
                     }
-                    if (!onFork && ownerTrain.getDirectorLinker() != null && ownerTrain.getDirectorLinker().getTrack() != null) {
-                        letrain.map.Point trainPos = ownerTrain.getDirectorLinker().getTrack().getPosition();
-                        float minDist = Float.MAX_VALUE;
-                        Dir closestDir = null;
-                        for (Dir d : new Dir[]{ rootDir, branch1Dir, branch2Dir }) {
-                             float dist = trainPos.dst(track.getPosition().getX() + PathGeometry.getDirX(d), track.getPosition().getY() + PathGeometry.getDirZ(d));
-                             if (dist < minDist) {
-                                 minDist = dist;
-                                 closestDir = d;
-                             }
-                        }
-                        if (entryDir == closestDir) {
-                            isGreen = true;
+                    if (!onFork && ownerTrain.getDirectorLinker() instanceof letrain.vehicle.rail.Linker) {
+                        letrain.vehicle.rail.Linker director = (letrain.vehicle.rail.Linker) ownerTrain.getDirectorLinker();
+                        if (director.getTrack() != null) {
+                            letrain.map.Point trainPos = director.getTrack().getPosition();
+                            float minDist = Float.MAX_VALUE;
+                            Dir closestDir = null;
+                            for (Dir d : new Dir[]{ rootDir, branch1Dir, branch2Dir }) {
+                                 float tdx = track.getPosition().getX() + PathGeometry.getDirX(d) - trainPos.getX();
+                                 float tdy = track.getPosition().getY() + PathGeometry.getDirZ(d) - trainPos.getY();
+                                 float dDist = tdx * tdx + tdy * tdy;
+                                 if (dDist < minDist) {
+                                     minDist = dDist;
+                                     closestDir = d;
+                                 }
+                            }
+                            if (entryDir == closestDir) {
+                                isGreen = true;
+                            }
                         }
                     }
                 }
