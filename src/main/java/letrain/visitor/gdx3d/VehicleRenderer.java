@@ -150,26 +150,18 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
         instances.add(instance);
 
-        // Auto mode indicator (blinking dot on top face, top-left)
+        // Auto mode indicator (blinking red dot on top face, top-left)
         boolean isAuto = (locomotive.getTrain() != null && locomotive.getTrain().isAutoMode());
         if (isAuto && !locomotive.isDestroying()) {
             if (System.currentTimeMillis() % 600 < 300) {
                 ModelInstance dot = resourceContext.getModelInstance(resourceContext.autoModeDotModel);
                 dot.transform.set(instance.transform);
                 dot.transform.translate(-0.25f, 0.41f, -0.25f);
-                if (getLibGdxColor(locomotive.getColor()) != null) {
-                    dot.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(getLibGdxColor(locomotive.getColor())));
-                }
                 instances.add(dot);
-
-                ModelInstance dotBase = resourceContext.getModelInstance(resourceContext.contrastBaseModel);
-                dotBase.transform.set(instance.transform);
-                dotBase.transform.translate(-0.25f, 0.40f, -0.25f);
-                instances.add(dotBase);
             }
         }
 
-        // Color line (direction marker) - ONLY for selected locomotive
+        // Green line (direction marker) - ONLY for selected locomotive
         boolean isSelected = (modelRef != null && modelRef.getSelectedLocomotive() == locomotive);
         if (isSelected) {
             ModelInstance selectionLine = resourceContext.getModelInstance(resourceContext.selectionLineModel);
@@ -179,15 +171,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             float lineOffset = 0.25f;
             selectionLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.02f, renderY + dzL * lineOffset);
             selectionLine.transform.rotate(0, 1, 0, angle);
-            if (getLibGdxColor(locomotive.getColor()) != null) {
-                selectionLine.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(getLibGdxColor(locomotive.getColor())));
-            }
             instances.add(selectionLine);
-
-            ModelInstance lineBase = resourceContext.getModelInstance(resourceContext.contrastLineBaseModel);
-            lineBase.transform.setToTranslation(renderX + dxL * lineOffset, 1.01f, renderY + dzL * lineOffset);
-            lineBase.transform.rotate(0, 1, 0, angle);
-            instances.add(lineBase);
         }
 
         if (locomotive.isDestroying()) {
@@ -200,34 +184,23 @@ public class VehicleRenderer extends BaseSubRenderer {
             float dxL = v1.x;
             float dzL = v1.z;
 
-            ModelInstance labelBase = resourceContext.getModelInstance(resourceContext.contrastBaseModel);
-            labelBase.transform.setToTranslation(renderX, 1.01f, renderY);
-            labelBase.transform.rotate(0, 1, 0, angle);
-            instances.add(labelBase);
-
             v1.set(renderX, 1.02f, renderY);
             v2.set(0, 1, 0);
             v3.set(dxL, 0, dzL).nor();
-            Color labelColor = getLibGdxColor(locomotive.getColor());
-            if (labelColor == null || labelColor.equals(Color.BLACK)) labelColor = Color.WHITE;
+            
+            Color labelColor = Color.WHITE;
+            if (locomotive.getColor() != null && locomotive.getColor().equalsIgnoreCase("WHITE")) {
+                labelColor = Color.BLACK;
+            }
+
             addLabel(v1, "" + locomotive.getId(), v2, v3, labelColor, 1.0f);
 
             float perpXL = dzL * 0.46f;
             float perpZL = -dxL * 0.42f;
 
-            ModelInstance aspectBase1 = resourceContext.getModelInstance(resourceContext.contrastBaseModel);
-            aspectBase1.transform.setToTranslation(renderX + perpXL * 0.87f, 0.55f, renderY + perpZL * 0.87f);
-            aspectBase1.transform.rotate(0, 1, 0, angle + 90);
-            instances.add(aspectBase1);
-
             v1.set(renderX + perpXL, 0.55f, renderY + perpZL);
             v2.set(perpXL, 0, perpZL).nor();
             addLabel(v1, locomotive.getAspect(), v2, null, labelColor, 1.0f);
-
-            ModelInstance aspectBase2 = resourceContext.getModelInstance(resourceContext.contrastBaseModel);
-            aspectBase2.transform.setToTranslation(renderX - perpXL * 0.87f, 0.55f, renderY - perpZL * 0.87f);
-            aspectBase2.transform.rotate(0, 1, 0, angle - 90);
-            instances.add(aspectBase2);
 
             v1.set(renderX - perpXL, 0.55f, renderY - perpZL);
             v2.set(-perpXL, 0, -perpZL).nor();
