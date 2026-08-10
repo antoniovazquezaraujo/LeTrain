@@ -49,13 +49,17 @@ public class Locomotive extends Linker implements Tractor {
         MIN_SPEED
     }
 
-    private static final String[] COLOR_PALETTE = {
-        "RED_BRIGHT",
-        "GREEN_BRIGHT",
-        "YELLOW_BRIGHT",
-        "BLUE_BRIGHT",
-        "MAGENTA_BRIGHT",
-        "CYAN_BRIGHT"
+    public static final String[] COLOR_PALETTE = {
+        "WHITE",         // 0
+        "RED_BRIGHT",    // 1
+        "GREEN_BRIGHT",  // 2
+        "YELLOW_BRIGHT", // 3
+        "BLUE_BRIGHT",   // 4
+        "MAGENTA_BRIGHT",// 5
+        "CYAN_BRIGHT",   // 6
+        "BLACK",         // 7
+        "GRAY",          // 8
+        "ORANGE"         // 9
     };
     private static final java.util.Random RANDOM = new java.util.Random();
 
@@ -63,7 +67,7 @@ public class Locomotive extends Linker implements Tractor {
         return COLOR_PALETTE[RANDOM.nextInt(COLOR_PALETTE.length)];
     }
 
-    private String color = pickRandomColor();
+    private String color = "WHITE";
 
     public Locomotive(int id, String aspect) {
         this(id, aspect, pickRandomColor());

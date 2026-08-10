@@ -190,7 +190,7 @@ public class Gdx3DResourceContext implements Disposable {
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Línea de selección
-            selectionLineModel = register(modelBuilder.createBox(0.12f, 0.02f, 0.5f,
+            selectionLineModel = register(modelBuilder.createBox(0.06f, 0.02f, 0.5f,
                     new Material(ColorAttribute.createDiffuse(Color.GREEN)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
@@ -248,7 +248,7 @@ public class Gdx3DResourceContext implements Disposable {
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Indicador de modo automático en locomotora (puntito rojo)
-            autoModeDotModel = register(modelBuilder.createBox(0.16f, 0.04f, 0.16f,
+            autoModeDotModel = register(modelBuilder.createBox(0.1f, 0.1f, 0.1f,
                     new Material(ColorAttribute.createDiffuse(Color.RED)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 

@@ -169,8 +169,16 @@ public class VehicleRenderer extends BaseSubRenderer {
             float dxL = v1.x;
             float dzL = v1.z;
             float lineOffset = 0.25f;
-            selectionLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.02f, renderY + dzL * lineOffset);
+            selectionLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.05f, renderY + dzL * lineOffset);
             selectionLine.transform.rotate(0, 1, 0, angle);
+            
+            if (locomotive.getColor() != null && 
+               (locomotive.getColor().equalsIgnoreCase("GREEN") || locomotive.getColor().equalsIgnoreCase("GREEN_BRIGHT"))) {
+                selectionLine.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(Color.BLUE));
+            } else {
+                selectionLine.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(Color.GREEN));
+            }
+            
             instances.add(selectionLine);
         }
 
@@ -187,18 +195,27 @@ public class VehicleRenderer extends BaseSubRenderer {
             v1.set(renderX, 1.02f, renderY);
             v2.set(0, 1, 0);
             v3.set(dxL, 0, dzL).nor();
-            addLabel(v1, "" + locomotive.getId(), v2, v3, Color.WHITE, 1.0f);
+            
+            Color labelColor = Color.WHITE;
+            if (locomotive.getColor() != null && 
+               (locomotive.getColor().equalsIgnoreCase("WHITE") || 
+                locomotive.getColor().equalsIgnoreCase("YELLOW") ||
+                locomotive.getColor().equalsIgnoreCase("YELLOW_BRIGHT"))) {
+                labelColor = Color.BLACK;
+            }
+
+            addLabel(v1, "" + locomotive.getId(), v2, v3, labelColor, 1.0f);
 
             float perpXL = dzL * 0.46f;
             float perpZL = -dxL * 0.42f;
 
             v1.set(renderX + perpXL, 0.55f, renderY + perpZL);
             v2.set(perpXL, 0, perpZL).nor();
-            addLabel(v1, locomotive.getAspect(), v2);
+            addLabel(v1, locomotive.getAspect(), v2, null, labelColor, 1.0f);
 
             v1.set(renderX - perpXL, 0.55f, renderY - perpZL);
             v2.set(-perpXL, 0, -perpZL).nor();
-            addLabel(v1, locomotive.getAspect(), v2);
+            addLabel(v1, locomotive.getAspect(), v2, null, labelColor, 1.0f);
         }
     }
 
@@ -420,6 +437,10 @@ public class VehicleRenderer extends BaseSubRenderer {
             case "BLUE", "BLUE_BRIGHT" -> Color.BLUE;
             case "MAGENTA", "MAGENTA_BRIGHT" -> Color.MAGENTA;
             case "CYAN", "CYAN_BRIGHT" -> Color.CYAN;
+            case "ORANGE" -> Color.ORANGE;
+            case "BLACK" -> Color.BLACK;
+            case "GRAY" -> Color.GRAY;
+            case "WHITE" -> Color.WHITE;
             default -> Color.WHITE;
         };
     }
