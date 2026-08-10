@@ -336,14 +336,52 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         }
 
         letrain.map.Dir dir = tunnelGateRailTrack.getAnyDir();
-        float dx = letrain.utils.PathGeometry.getDirX(dir);
-        float dz = letrain.utils.PathGeometry.getDirZ(dir);
-        float angle = (float) Math.toDegrees(Math.atan2(-dz, dx));
+        float dx = 0;
+        float dz = 0;
+        float angle = 0;
+        if (dir != null) {
+            dx = letrain.utils.PathGeometry.getDirX(dir);
+            dz = letrain.utils.PathGeometry.getDirZ(dir);
+            angle = (float) Math.toDegrees(Math.atan2(-dz, dx));
+        }
 
-        portal.transform.setToTranslation(
-                tunnelGateRailTrack.getPosition().getX() + 0.5f,
-                0.0f,
-                tunnelGateRailTrack.getPosition().getY() + 0.5f);
+        float tx = tunnelGateRailTrack.getPosition().getX() + 0.5f;
+        float tz = tunnelGateRailTrack.getPosition().getY() + 0.5f;
+
+        if (modelRef != null && modelRef.getGroundMap() != null && dir != null) {
+            Integer terrain = modelRef.getGroundMap().getValueAt(tunnelGateRailTrack.getPosition());
+            if (terrain != null && terrain != letrain.ground.GroundMap.ROCK) {
+                // The exit gate is placed on GROUND. Visually shift it 1 block backwards into the mountain.
+                letrain.map.Dir opposite = dir.inverse();
+                
+                float dx1 = dx * 2;
+                float dz1 = dz * 2;
+                letrain.map.Point p1 = new letrain.map.Point(
+                    tunnelGateRailTrack.getPosition().getX() + (int)dx1,
+                    tunnelGateRailTrack.getPosition().getY() + (int)dz1
+                );
+                
+                float dx2 = letrain.utils.PathGeometry.getDirX(opposite) * 2;
+                float dz2 = letrain.utils.PathGeometry.getDirZ(opposite) * 2;
+                letrain.map.Point p2 = new letrain.map.Point(
+                    tunnelGateRailTrack.getPosition().getX() + (int)dx2,
+                    tunnelGateRailTrack.getPosition().getY() + (int)dz2
+                );
+                
+                Integer t1 = modelRef.getGroundMap().getValueAt(p1);
+                Integer t2 = modelRef.getGroundMap().getValueAt(p2);
+                
+                if (t1 != null && t1 == letrain.ground.GroundMap.ROCK) {
+                    tx += dx1;
+                    tz += dz1;
+                } else if (t2 != null && t2 == letrain.ground.GroundMap.ROCK) {
+                    tx += dx2;
+                    tz += dz2;
+                }
+            }
+        }
+
+        portal.transform.setToTranslation(tx, 0.0f, tz);
         portal.transform.rotate(com.badlogic.gdx.math.Vector3.Y, angle);
 
         if (isXRayActive) {
