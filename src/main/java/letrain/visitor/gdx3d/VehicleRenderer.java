@@ -171,6 +171,14 @@ public class VehicleRenderer extends BaseSubRenderer {
             float lineOffset = 0.25f;
             selectionLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.02f, renderY + dzL * lineOffset);
             selectionLine.transform.rotate(0, 1, 0, angle);
+            
+            if (locomotive.getColor() != null && 
+               (locomotive.getColor().equalsIgnoreCase("GREEN") || locomotive.getColor().equalsIgnoreCase("GREEN_BRIGHT"))) {
+                selectionLine.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(Color.BLUE));
+            } else {
+                selectionLine.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(Color.GREEN));
+            }
+            
             instances.add(selectionLine);
         }
 
@@ -189,7 +197,10 @@ public class VehicleRenderer extends BaseSubRenderer {
             v3.set(dxL, 0, dzL).nor();
             
             Color labelColor = Color.WHITE;
-            if (locomotive.getColor() != null && locomotive.getColor().equalsIgnoreCase("WHITE")) {
+            if (locomotive.getColor() != null && 
+               (locomotive.getColor().equalsIgnoreCase("WHITE") || 
+                locomotive.getColor().equalsIgnoreCase("YELLOW") ||
+                locomotive.getColor().equalsIgnoreCase("YELLOW_BRIGHT"))) {
                 labelColor = Color.BLACK;
             }
 
