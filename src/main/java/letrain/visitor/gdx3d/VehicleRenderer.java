@@ -169,7 +169,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             float dxL = v1.x;
             float dzL = v1.z;
             float lineOffset = 0.25f;
-            selectionLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.02f, renderY + dzL * lineOffset);
+            selectionLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.05f, renderY + dzL * lineOffset);
             selectionLine.transform.rotate(0, 1, 0, angle);
             
             if (locomotive.getColor() != null && 
