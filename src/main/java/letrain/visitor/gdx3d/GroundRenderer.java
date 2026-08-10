@@ -88,6 +88,34 @@ public class GroundRenderer extends BaseSubRenderer {
                 model = resourceContext.groundModel;
                 yPosition = 0.0f;
                 scaleY = 0.01f;
+            } else {
+                // Check if this mountain cell is on the side of a diagonal tunnel door
+                boolean isSideOfDiagonalDoor = false;
+                int[][] neighbors = {{1,0}, {-1,0}, {0,1}, {0,-1}, {1,1}, {-1,-1}, {1,-1}, {-1,1}};
+                for (int[] offset : neighbors) {
+                    letrain.track.Track neighborTrack = modelRef.getRailMap().getTrackAt(ground.getPosition().getX() + offset[0], ground.getPosition().getY() + offset[1]);
+                    if (neighborTrack instanceof letrain.track.rail.TunnelGateRailTrack) {
+                        letrain.map.Dir dir = ((letrain.track.rail.TunnelGateRailTrack)neighborTrack).getAnyDir();
+                        int relX = -offset[0];
+                        int relY = -offset[1];
+                        if (dir == letrain.map.Dir.NE || dir == letrain.map.Dir.SW) {
+                            if (!((relX == 1 && relY == -1) || (relX == -1 && relY == 1))) {
+                                isSideOfDiagonalDoor = true;
+                                break;
+                            }
+                        } else if (dir == letrain.map.Dir.NW || dir == letrain.map.Dir.SE) {
+                            if (!((relX == -1 && relY == -1) || (relX == 1 && relY == 1))) {
+                                isSideOfDiagonalDoor = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (isSideOfDiagonalDoor) {
+                    model = resourceContext.groundModel;
+                    yPosition = 0.0f;
+                    scaleY = 0.01f;
+                }
             }
         }
 
