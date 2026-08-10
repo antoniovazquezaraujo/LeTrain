@@ -88,20 +88,27 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 trackRenderer.drawHalfTrack(track.getPosition(), d2, d2Connected, 1.0f, 1.0f, blockedColor);
             }
 
-            // Draw automatic visual semaphore on the opposite side of the switch box
-            Dir otherSideDir = trackAxis.turnLeft().turnLeft();
-            float sx = track.getPosition().getX() + 0.5f + PathGeometry.getDirX(otherSideDir) * 0.8f;
-            float sz = track.getPosition().getY() + 0.5f + PathGeometry.getDirZ(otherSideDir) * 0.8f;
+            // Draw automatic visual semaphores for all 3 converging/diverging branches
+            Dir rootDir = track.getOriginalRoute().getFirst();
+            Dir branch1Dir = track.getOriginalRoute().getSecond();
+            Dir branch2Dir = track.getAlternativeRoute().getSecond();
             
-            ModelInstance autoSemaphore = resourceContext.getModelInstance(
-                    blockedColor != null ? resourceContext.semaphoreClosedModel : resourceContext.semaphoreOpenModel);
-            autoSemaphore.transform.setToTranslation(sx, 0.5f, sz);
-            
-            float sdx = PathGeometry.getDirX(trackAxis);
-            float sdz = PathGeometry.getDirZ(trackAxis);
-            float sAngle = (float) Math.atan2(sdx, sdz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-            autoSemaphore.transform.rotate(0, 1, 0, sAngle);
-            instances.add(autoSemaphore);
+            for (Dir entryDir : new Dir[]{ rootDir, branch1Dir, branch2Dir }) {
+                Dir rightSideDir = entryDir.turnLeft().turnLeft();
+                // Move towards the edge of the tile (0.4) and to the right side of the track (0.35)
+                float sx = track.getPosition().getX() + 0.5f + PathGeometry.getDirX(entryDir) * 0.45f + PathGeometry.getDirX(rightSideDir) * 0.35f;
+                float sz = track.getPosition().getY() + 0.5f + PathGeometry.getDirZ(entryDir) * 0.45f + PathGeometry.getDirZ(rightSideDir) * 0.35f;
+                
+                ModelInstance autoSemaphore = resourceContext.getModelInstance(
+                        blockedColor != null ? resourceContext.semaphoreClosedModel : resourceContext.semaphoreOpenModel);
+                autoSemaphore.transform.setToTranslation(sx, 0.5f, sz);
+                
+                float sdx = PathGeometry.getDirX(entryDir);
+                float sdz = PathGeometry.getDirZ(entryDir);
+                float sAngle = (float) Math.atan2(sdx, sdz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+                autoSemaphore.transform.rotate(0, 1, 0, sAngle);
+                instances.add(autoSemaphore);
+            }
         }
 
         String idText = String.valueOf(track.getId());
