@@ -87,6 +87,21 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 trackRenderer.drawHalfTrack(track.getPosition(), d1, d1Connected, 1.0f, 1.0f, blockedColor);
                 trackRenderer.drawHalfTrack(track.getPosition(), d2, d2Connected, 1.0f, 1.0f, blockedColor);
             }
+
+            // Draw automatic visual semaphore on the opposite side of the switch box
+            Dir otherSideDir = trackAxis.turnLeft().turnLeft();
+            float sx = track.getPosition().getX() + 0.5f + PathGeometry.getDirX(otherSideDir) * 0.8f;
+            float sz = track.getPosition().getY() + 0.5f + PathGeometry.getDirZ(otherSideDir) * 0.8f;
+            
+            ModelInstance autoSemaphore = resourceContext.getModelInstance(
+                    blockedColor != null ? resourceContext.semaphoreClosedModel : resourceContext.semaphoreOpenModel);
+            autoSemaphore.transform.setToTranslation(sx, 0.5f, sz);
+            
+            float sdx = PathGeometry.getDirX(trackAxis);
+            float sdz = PathGeometry.getDirZ(trackAxis);
+            float sAngle = (float) Math.atan2(sdx, sdz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+            autoSemaphore.transform.rotate(0, 1, 0, sAngle);
+            instances.add(autoSemaphore);
         }
 
         String idText = String.valueOf(track.getId());
