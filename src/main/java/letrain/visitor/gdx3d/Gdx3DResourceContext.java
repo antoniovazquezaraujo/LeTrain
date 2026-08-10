@@ -238,9 +238,9 @@ public class Gdx3DResourceContext implements Disposable {
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Semáforo Abierto
-            semaphoreOpenModel = register(createSemaphoreModel(Color.GREEN));
-            // Semáforo Cerrado
-            semaphoreClosedModel = register(createSemaphoreModel(Color.RED));
+            semaphoreOpenModel = register(createSemaphoreModel(true));
+
+            semaphoreClosedModel = register(createSemaphoreModel(false));
 
             // Sensor
             sensorModel = register(modelBuilder.createBox(0.4f, 0.05f, 0.4f,
@@ -306,7 +306,7 @@ public class Gdx3DResourceContext implements Disposable {
         return model;
     }
 
-    private Model createSemaphoreModel(Color lightColor) {
+    private Model createSemaphoreModel(boolean isOpen) {
         ModelBuilder mb = new ModelBuilder();
         mb.begin();
         // Poste
@@ -314,16 +314,38 @@ public class Gdx3DResourceContext implements Disposable {
         node1.id = "pole";
         MeshPartBuilder mpbSem = mb.part("pole", GL20.GL_TRIANGLES,
                 VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal,
-                new Material(ColorAttribute.createDiffuse(Color.GRAY)));
-        CylinderShapeBuilder.build(mpbSem, 0.1f, 1.0f, 0.1f, 10);
-        // Luz
+                new Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.GRAY)));
+        com.badlogic.gdx.graphics.g3d.utils.shapebuilders.CylinderShapeBuilder.build(mpbSem, 0.05f, 1.0f, 0.05f, 10);
+        
+        // Plancha negra
         Node node2 = mb.node();
-        node2.id = "light";
-        node2.translation.set(0, 0.5f, 0);
-        mpbSem = mb.part("light", GL20.GL_TRIANGLES,
+        node2.id = "plate";
+        node2.translation.set(0, 0.5f, 0.025f);
+        mpbSem = mb.part("plate", GL20.GL_TRIANGLES,
                 VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal,
-                new Material(ColorAttribute.createDiffuse(lightColor)));
-        BoxShapeBuilder.build(mpbSem, 0.2f, 0.3f, 0.2f);
+                new Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.BLACK)));
+        com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder.build(mpbSem, 0.2f, 0.4f, 0.05f);
+
+        // Luces (esferas asomando)
+        com.badlogic.gdx.graphics.Color topColor = isOpen ? com.badlogic.gdx.graphics.Color.valueOf("440000") : com.badlogic.gdx.graphics.Color.RED;
+        com.badlogic.gdx.graphics.Color bottomColor = isOpen ? com.badlogic.gdx.graphics.Color.GREEN : com.badlogic.gdx.graphics.Color.valueOf("004400");
+        
+        Node node3 = mb.node();
+        node3.id = "lightTop";
+        node3.translation.set(0, 0.6f, 0.05f);
+        mpbSem = mb.part("lightTop", GL20.GL_TRIANGLES,
+                VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal,
+                new Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(topColor)));
+        com.badlogic.gdx.graphics.g3d.utils.shapebuilders.SphereShapeBuilder.build(mpbSem, 0.12f, 0.12f, 0.04f, 10, 10);
+        
+        Node node4 = mb.node();
+        node4.id = "lightBottom";
+        node4.translation.set(0, 0.4f, 0.05f);
+        mpbSem = mb.part("lightBottom", GL20.GL_TRIANGLES,
+                VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal,
+                new Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(bottomColor)));
+        com.badlogic.gdx.graphics.g3d.utils.shapebuilders.SphereShapeBuilder.build(mpbSem, 0.12f, 0.12f, 0.04f, 10, 10);
+
         return mb.end();
     }
 
