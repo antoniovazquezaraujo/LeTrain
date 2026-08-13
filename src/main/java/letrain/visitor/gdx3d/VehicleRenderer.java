@@ -95,7 +95,12 @@ public class VehicleRenderer extends BaseSubRenderer {
             {
                 letrain.track.Track lookTrack = locomotive.getTrack();
                 letrain.map.Dir lookDir = locomotive.getDir();
+                int chainDepth = 0;
                 while (lookTrack != null) {
+                    if (chainDepth >= 100) {
+                        throw new IllegalStateException("CRITICAL ERROR: Infinite loop detected in rendering chain for locomotive train " + train.getId());
+                    }
+                    chainDepth++;
                     letrain.track.Track nextTrack = lookTrack.getConnected(lookDir);
                     if (nextTrack == null) break;
                     letrain.vehicle.rail.Linker occupyingL = nextTrack.getLinker();
@@ -314,7 +319,12 @@ public class VehicleRenderer extends BaseSubRenderer {
             {
                 letrain.track.Track lookTrack = wagon.getTrack();
                 letrain.map.Dir lookDir = wagon.getDir();
+                int chainDepth = 0;
                 while (lookTrack != null) {
+                    if (chainDepth >= 100) {
+                        throw new IllegalStateException("CRITICAL ERROR: Infinite loop detected in rendering chain for wagon train " + train.getId());
+                    }
+                    chainDepth++;
                     letrain.track.Track nextTrack = lookTrack.getConnected(lookDir);
                     if (nextTrack == null) break;
                     letrain.vehicle.rail.Linker occupyingL = nextTrack.getLinker();
