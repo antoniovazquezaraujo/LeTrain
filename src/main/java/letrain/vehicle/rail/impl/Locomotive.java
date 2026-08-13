@@ -1,11 +1,11 @@
 package letrain.vehicle.rail.impl;
 
 import letrain.map.Dir;
-import letrain.vehicle.rail.Linker;
 import letrain.vehicle.Tractor;
+import letrain.vehicle.rail.Linker;
 import letrain.visitor.Visitor;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * A locomotive (engine) that pulls or pushes a train. Implements {@link Tractor}
@@ -351,7 +351,10 @@ public class Locomotive extends Linker implements Tractor {
         if (getTrain() != null) {
             for (Tractor tractor : getTrain().getTractors()) {
                 if (tractor instanceof Locomotive && tractor != this) {
-                    ((Locomotive) tractor).setTargetSpeed(this.targetSpeed);
+
+                    if (tractor.getTargetSpeed() != this.targetSpeed) {
+                        ((Locomotive) tractor).setTargetSpeed(this.targetSpeed);
+                    }
                 }
             }
         }
