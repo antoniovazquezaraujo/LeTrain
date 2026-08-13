@@ -210,6 +210,7 @@ public class RailTrackMaker {
                 sensor.setTrack(track);
                 sensor.setCreationDir(presenter.getModel().getCursor().getDir());
                 presenter.getModel().addSensor(sensor);
+                track.setSensor(sensor);
             }
         }
     }
@@ -268,6 +269,7 @@ public class RailTrackMaker {
                 }
 
                 presenter.getModel().addStation(station);
+                track.setSensor(station);
             }
         }
     }

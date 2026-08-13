@@ -355,13 +355,15 @@ public class Model implements letrain.mvp.Model {
     }
 
     @Override public void addSensor(Sensor sensor) {
-        sensors.add(sensor);
-        if (sensor.getTrack() != null) {
-            sensor.getTrack().setSensor(sensor);
+        if (!sensors.contains(sensor)) {
+            sensors.add(sensor);
+            if (sensor.getTrack() != null) {
+                sensor.getTrack().setSensor(sensor);
+            }
+            getEconomyManager().onSensorConstructed(sensor);
+            setupSensorSystemListeners(sensor);
+            mapChanged = true;
         }
-        getEconomyManager().onSensorConstructed(sensor);
-        setupSensorSystemListeners(sensor);
-        mapChanged = true;
     }
 
     private void setupSensorSystemListeners(Sensor sensor) {
@@ -398,10 +400,12 @@ public class Model implements letrain.mvp.Model {
     @Override public List<ForkRailTrack> getForks() { return this.forks; }
 
     @Override public void addFork(ForkRailTrack fork) {
-        this.forks.add(fork);
-        getEconomyManager().onForkConstructed(fork);
-        setupForkSystemListeners(fork);
-        mapChanged = true;
+        if (!this.forks.contains(fork)) {
+            this.forks.add(fork);
+            getEconomyManager().onForkConstructed(fork);
+            setupForkSystemListeners(fork);
+            mapChanged = true;
+        }
     }
 
     private void setupForkSystemListeners(ForkRailTrack fork) {
@@ -561,12 +565,14 @@ public class Model implements letrain.mvp.Model {
     @Override public List<RailSemaphore> getSemaphores() { return this.semaphores; }
 
     @Override public void addSemaphore(RailSemaphore semaphore) {
-        this.semaphores.add(semaphore);
-        getEconomyManager().onSemaphoreConstructed(semaphore);
-        RailTrack track = map.getTrackAt(semaphore.getPosition());
-        if (track != null) track.setSemaphore(semaphore);
-        setupSemaphoreSystemListeners(semaphore);
-        mapChanged = true;
+        if (!this.semaphores.contains(semaphore)) {
+            this.semaphores.add(semaphore);
+            getEconomyManager().onSemaphoreConstructed(semaphore);
+            RailTrack track = map.getTrackAt(semaphore.getPosition());
+            if (track != null) track.setSemaphore(semaphore);
+            setupSemaphoreSystemListeners(semaphore);
+            mapChanged = true;
+        }
     }
 
     private void setupSemaphoreSystemListeners(RailSemaphore semaphore) {
@@ -650,13 +656,15 @@ public class Model implements letrain.mvp.Model {
     @Override public List<Station> getStations() { return this.stations; }
 
     @Override public void addStation(Station station) {
-        stations.add(station);
-        if (station.getTrack() != null) {
-            station.getTrack().setSensor(station);
+        if (!stations.contains(station)) {
+            stations.add(station);
+            if (station.getTrack() != null) {
+                station.getTrack().setSensor(station);
+            }
+            getEconomyManager().onStationConstructed();
+            setupStationSystemListeners(station);
+            mapChanged = true;
         }
-        getEconomyManager().onStationConstructed();
-        setupStationSystemListeners(station);
-        mapChanged = true;
     }
 
     private void setupStationSystemListeners(Station station) {
