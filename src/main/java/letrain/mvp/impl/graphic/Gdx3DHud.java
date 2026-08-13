@@ -115,7 +115,7 @@ public class Gdx3DHud {
         TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle();
         textButtonStyle.up = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.2f, 1f));
         textButtonStyle.down = skin.newDrawable("white", Color.CYAN);
-        textButtonStyle.checked = textButtonStyle.up;
+        textButtonStyle.checked = skin.newDrawable("white", new Color(0.3f, 0.4f, 0.6f, 1f));
         textButtonStyle.over = skin.newDrawable("white", new Color(0.15f, 0.15f, 0.15f, 1f));
         textButtonStyle.font = skin.getFont("default");
         textButtonStyle.fontColor = Color.WHITE;
