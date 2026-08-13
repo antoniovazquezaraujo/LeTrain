@@ -135,6 +135,10 @@ public interface Model {
 
     Locomotive getSelectedLocomotive();
 
+    default boolean canEnterLinkUnlinkMode() {
+        return !getLocomotives().isEmpty() && (getSelectedLocomotive() == null || (getSelectedLocomotive().getSpeed() == 0 && getSelectedLocomotive().getTargetSpeed() == 0));
+    }
+
     void setSelectedLocomotive(Locomotive selectedLocomotive);
 
     boolean selectLocomotive(int id);

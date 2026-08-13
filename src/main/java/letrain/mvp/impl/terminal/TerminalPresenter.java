@@ -289,7 +289,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 return false;
             case 'l':
-                if (!model.getLocomotives().isEmpty()) {
+                if (model.canEnterLinkUnlinkMode()) {
                     model.setMode(LINK);
                     if (model.getSelectedLocomotive() != null
                             && model.getSelectedLocomotive().getTrain() != null) {
@@ -300,7 +300,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 return false;
             case 'u':
-                if (!model.getLocomotives().isEmpty()) {
+                if (model.canEnterLinkUnlinkMode()) {
                     model.setMode(UNLINK);
                     if (model.getSelectedLocomotive() != null
                             && model.getSelectedLocomotive().getTrain() != null) {
