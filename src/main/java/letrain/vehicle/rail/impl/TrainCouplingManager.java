@@ -124,14 +124,24 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
             int count = 0;
             boolean linkersActuallyAdded = false;
             Set<Train> affectedOldTrains = new HashSet<Train>();
+            
             for (Linker linkerToJoin : train.getLinkersToJoin()) {
                 if (count >= train.getNumLinkersToJoin())
                     break;
 
+                boolean normalSense = train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
                 if (train.getLinkerJoinSense() == Train.LinkersSense.FRONT) {
-                    train.getLinkers().addFirst(linkerToJoin);
+                    if (normalSense) {
+                        train.getLinkers().addFirst(linkerToJoin);
+                    } else {
+                        train.getLinkers().addLast(linkerToJoin);
+                    }
                 } else {
-                    train.getLinkers().addLast(linkerToJoin);
+                    if (normalSense) {
+                        train.getLinkers().addLast(linkerToJoin);
+                    } else {
+                        train.getLinkers().addFirst(linkerToJoin);
+                    }
                 }
 
                 Train oldTrain = linkerToJoin.getTrain();
