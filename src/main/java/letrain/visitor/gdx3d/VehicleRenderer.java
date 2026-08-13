@@ -197,7 +197,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             float dxL = v1.x;
             float dzL = v1.z;
 
-            v1.set(renderX, 1.02f, renderY);
+            v1.set(renderX, 1.08f, renderY);
             v2.set(0, 1, 0);
             v3.set(dxL, 0, dzL).nor();
             
@@ -212,7 +212,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             addLabel(v1, "" + locomotive.getId(), v2, v3, labelColor, 1.0f);
 
             float perpXL = dzL * 0.46f;
-            float perpZL = -dxL * 0.42f;
+            float perpZL = -dxL * 0.46f;
 
             v1.set(renderX + perpXL, 0.55f, renderY + perpZL);
             v2.set(perpXL, 0, perpZL).nor();
