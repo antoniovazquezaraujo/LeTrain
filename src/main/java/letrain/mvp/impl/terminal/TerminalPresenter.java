@@ -447,16 +447,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
                     divideTrain();
-                    model.setMode(MENU);
+                    model.setMode(model.getPreviousMode());
                 }
                 break;
             case Enter:
                 divideTrain();
-                model.setMode(MENU);
+                model.setMode(model.getPreviousMode());
                 break;
             case Delete:
                 destroyLinkers();
-                model.setMode(MENU);
+                model.setMode(model.getPreviousMode());
                 break;
             default:
                 break;
@@ -490,12 +490,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
                     linkSelectedVehicles();
-                    model.setMode(MENU);
+                    model.setMode(model.getPreviousMode());
                 }
                 break;
             case Enter:
                 linkSelectedVehicles();
-                model.setMode(MENU);
+                model.setMode(model.getPreviousMode());
                 break;
             default:
                 break;

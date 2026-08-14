@@ -246,7 +246,10 @@ public class Gdx3DInputHandler implements InputProcessor {
 
         // Global Enter to Menu (matches TerminalPresenter)
         if (stroke.getKeyType() == KeyType.Enter) {
-            if (model.getMode() != Model.GameMode.DRIVE) {
+            if (model.getMode() == Model.GameMode.LINK || model.getMode() == Model.GameMode.UNLINK) {
+                model.setMode(model.getPreviousMode());
+                return;
+            } else if (model.getMode() != Model.GameMode.DRIVE) {
                 lastCreatedLoco = null;
                 model.setMode(Model.GameMode.MENU);
                 return;
@@ -516,7 +519,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
                     train.getTrainCouplingManager().joinLinkers(train);
                 }
-                model.setMode(Model.GameMode.MENU);
+                model.setMode(model.getPreviousMode());
             }
         }
     }
@@ -539,7 +542,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 audioController.playOneShot("link",
                         (float) model.getSelectedLocomotive().getPosition().getX(),
                         (float) model.getSelectedLocomotive().getPosition().getY());
-                model.setMode(Model.GameMode.MENU);
+                model.setMode(model.getPreviousMode());
             }
         }
     }
