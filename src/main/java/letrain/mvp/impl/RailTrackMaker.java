@@ -326,15 +326,7 @@ public class RailTrackMaker {
         }
 
         if (moveCursor) {
-            Point newPos = new Point(presenter.getModel().getCursor().getPosition());
-            if (!reversed) {
-                newPos.move(presenter.getModel().getCursor().getDir(), 1);
-            } else {
-                newPos.move(presenter.getModel().getCursor().getDir().inverse());
-            }
-            updateCursorPosition(newPos);
-            Point point = presenter.getModel().getCursor().getPosition();
-            presenter.getView().ensureVisible(point.getX(), point.getY(), 3);
+            cursorForward();
         }
     }
 
@@ -664,7 +656,8 @@ public class RailTrackMaker {
         }
         updateCursorPosition(newPos);
         
-        if (!makingTracks && presenter.getModel().getCursor().getMode() == CursorMode.MOVING) {
+        CursorMode mode = presenter.getModel().getCursor().getMode();
+        if (!makingTracks && (mode == CursorMode.MOVING || mode == CursorMode.ERASING)) {
             RailTrack nextTrack = presenter.getModel().getRailMap().getTrackAt(newPos);
             if (nextTrack != null) {
                 Dir entryDir = (!reversed) ? d.inverse() : d;
