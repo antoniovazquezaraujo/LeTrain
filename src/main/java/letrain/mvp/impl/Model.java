@@ -337,6 +337,13 @@ public class Model implements letrain.mvp.Model {
             if (track instanceof ForkRailTrack) {
                 removeFork((ForkRailTrack) track);
             }
+            // Disconnect from neighbors
+            for (letrain.map.Dir dir : track.getConnections()) {
+                letrain.track.Track neighbor = track.getConnected(dir);
+                if (neighbor != null) {
+                    neighbor.disconnect(dir.inverse());
+                }
+            }
             map.removeTrack(point);
             mapChanged = true;
         }
