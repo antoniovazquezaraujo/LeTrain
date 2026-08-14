@@ -326,15 +326,7 @@ public class RailTrackMaker {
         }
 
         if (moveCursor) {
-            Point newPos = new Point(presenter.getModel().getCursor().getPosition());
-            if (!reversed) {
-                newPos.move(presenter.getModel().getCursor().getDir(), 1);
-            } else {
-                newPos.move(presenter.getModel().getCursor().getDir().inverse());
-            }
-            updateCursorPosition(newPos);
-            Point point = presenter.getModel().getCursor().getPosition();
-            presenter.getView().ensureVisible(point.getX(), point.getY(), 3);
+            cursorForward();
         }
     }
 
@@ -656,12 +648,28 @@ public class RailTrackMaker {
 
     void cursorForward() {
         Point newPos = new Point(presenter.getModel().getCursor().getPosition());
+        Dir d = presenter.getModel().getCursor().getDir();
         if (!reversed) {
-            newPos.move(presenter.getModel().getCursor().getDir(), 1);
+            newPos.move(d, 1);
         } else {
-            newPos.move(presenter.getModel().getCursor().getDir().inverse());
+            newPos.move(d.inverse());
         }
         updateCursorPosition(newPos);
+        
+        CursorMode mode = presenter.getModel().getCursor().getMode();
+        if (!makingTracks && (mode == CursorMode.MOVING || mode == CursorMode.ERASING)) {
+            RailTrack nextTrack = presenter.getModel().getRailMap().getTrackAt(newPos);
+            if (nextTrack != null) {
+                Dir entryDir = (!reversed) ? d.inverse() : d;
+                Dir exitDir = nextTrack.getDir(entryDir);
+                if (exitDir != null) {
+                    Dir newDir = (!reversed) ? exitDir : exitDir.inverse();
+                    presenter.getModel().getCursor().setDir(newDir);
+                    this.dir = newDir;
+                }
+            }
+        }
+        
         Point position = presenter.getModel().getCursor().getPosition();
         presenter.getView().ensureVisible(position.getX(), position.getY(), 3);
     }
