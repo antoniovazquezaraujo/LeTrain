@@ -663,7 +663,9 @@ public class RailTrackMaker {
                 Dir entryDir = (!reversed) ? d.inverse() : d;
                 Dir exitDir = nextTrack.getDir(entryDir);
                 if (exitDir != null) {
-                    presenter.getModel().getCursor().setDir((!reversed) ? exitDir : exitDir.inverse());
+                    Dir newDir = (!reversed) ? exitDir : exitDir.inverse();
+                    presenter.getModel().getCursor().setDir(newDir);
+                    this.dir = newDir;
                 }
             }
         }
