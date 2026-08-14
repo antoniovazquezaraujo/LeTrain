@@ -105,6 +105,7 @@ public class RailTrackMaker {
                     removeTrack(true);
                     makingTracks = false;
                     wasRemoving = false;
+                    caterpillarCounter = 5;
                 } else {
                     makingTracks = false;
                     wasRemoving = false;
