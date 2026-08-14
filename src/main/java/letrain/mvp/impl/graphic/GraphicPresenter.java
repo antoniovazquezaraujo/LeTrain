@@ -228,7 +228,7 @@ public class GraphicPresenter extends ApplicationAdapter
                 Usage.Position | Usage.Normal);
 
         spriteBatch = new SpriteBatch();
-        font = FontManager.loadMonospaceFont(24);
+        font = FontManager.loadMonospaceFont(128); // High resolution for 3D Decal
         font.setColor(Color.WHITE);
         font.getData().markupEnabled = true;
 
