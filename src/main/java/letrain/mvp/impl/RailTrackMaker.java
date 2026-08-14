@@ -656,12 +656,25 @@ public class RailTrackMaker {
 
     void cursorForward() {
         Point newPos = new Point(presenter.getModel().getCursor().getPosition());
+        Dir d = presenter.getModel().getCursor().getDir();
         if (!reversed) {
-            newPos.move(presenter.getModel().getCursor().getDir(), 1);
+            newPos.move(d, 1);
         } else {
-            newPos.move(presenter.getModel().getCursor().getDir().inverse());
+            newPos.move(d.inverse());
         }
         updateCursorPosition(newPos);
+        
+        if (!makingTracks && presenter.getModel().getCursor().getMode() == CursorMode.MOVING) {
+            RailTrack nextTrack = presenter.getModel().getRailMap().getTrackAt(newPos);
+            if (nextTrack != null) {
+                Dir entryDir = (!reversed) ? d.inverse() : d;
+                Dir exitDir = nextTrack.getDir(entryDir);
+                if (exitDir != null) {
+                    presenter.getModel().getCursor().setDir((!reversed) ? exitDir : exitDir.inverse());
+                }
+            }
+        }
+        
         Point position = presenter.getModel().getCursor().getPosition();
         presenter.getView().ensureVisible(position.getX(), position.getY(), 3);
     }
