@@ -71,6 +71,7 @@ public class Model implements letrain.mvp.Model {
 
     letrain.ground.GroundMap groundMap;
     GameMode mode = letrain.mvp.Model.GameMode.RAILS;
+    GameMode previousMode = letrain.mvp.Model.GameMode.RAILS;
     RailMap map;
     List<Locomotive> locomotives;
     List<Wagon> wagons;
@@ -482,11 +483,18 @@ public class Model implements letrain.mvp.Model {
             }
             mapChanged = false;
         }
+        if (this.mode != mode) {
+            this.previousMode = this.mode;
+        }
         this.mode = mode;
         if (mode == GameMode.FORKS && selectedFork == null && !getForks().isEmpty()) {
             selectedFork = getForks().get(0);
             selectedForkIndex = 0;
         }
+    }
+
+    @Override public GameMode getPreviousMode() {
+        return previousMode;
     }
 
     @JsonIgnore

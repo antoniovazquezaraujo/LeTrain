@@ -130,6 +130,7 @@ public interface Model {
     void moveLocomotives();
 
     GameMode getMode();
+    GameMode getPreviousMode();
 
     void setMode(GameMode mode);
 
