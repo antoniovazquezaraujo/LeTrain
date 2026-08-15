@@ -327,7 +327,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         ModelInstance plate = resourceContext.getModelInstance(resourceContext.wagonJewelModel);
         plate.materials.get(0)
                 .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(structureColor));
-        plate.transform.setToTranslation(plateMidX, 0.05f, plateMidZ);
+        plate.transform.setToTranslation(plateMidX, 0.1f, plateMidZ);
         plate.transform.rotate(0, 1, 0, plateAngle);
         plate.transform.scale(plateLengthPerp, 0.05f, plateWidth);
         if (alpha < 1.0f) {
@@ -361,7 +361,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         labelColor.a = alpha;
 
         String idText = (id >= 0) ? String.valueOf(id) : "?";
-        float labelOffset = boardSize / 2f + 0.01f;
+        float labelOffset = boardSize / 2f + 0.05f;
 
         labels.add(new Gdx3DRenderer.VehicleLabel(
                 new Vector3(centerX + perpX * labelOffset, boardCenterY,
