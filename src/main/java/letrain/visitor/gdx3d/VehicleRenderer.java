@@ -105,12 +105,21 @@ public class VehicleRenderer extends BaseSubRenderer {
                     if (nextTrack == null) break;
                     letrain.vehicle.rail.Linker occupyingL = nextTrack.getLinker();
                     if (occupyingL == null) break; // free cell
+                    if (occupyingL == locomotive) break; // cycle detected (circular train)
                     if (occupyingL.getTrain() != train) {
                         canEnterNext = false; // different train blocks the chain
                         break;
                     }
                     // Same train — follow the chain forward
-                    lookDir = occupyingL.getDir();
+                    letrain.map.Dir entry = lookDir.inverse();
+                    if (occupyingL.getEntryDir() == entry) {
+                        lookDir = occupyingL.getDir();
+                    } else if (occupyingL.getDir() == entry) {
+                        lookDir = occupyingL.getEntryDir();
+                    } else {
+                        canEnterNext = false; // blocks the route
+                        break;
+                    }
                     lookTrack = nextTrack;
                 }
             }
@@ -329,12 +338,21 @@ public class VehicleRenderer extends BaseSubRenderer {
                     if (nextTrack == null) break;
                     letrain.vehicle.rail.Linker occupyingL = nextTrack.getLinker();
                     if (occupyingL == null) break; // free cell
+                    if (occupyingL == wagon) break; // cycle detected (circular train)
                     if (occupyingL.getTrain() != train) {
                         canEnterNext = false; // different train blocks the chain
                         break;
                     }
                     // Same train — follow the chain forward
-                    lookDir = occupyingL.getDir();
+                    letrain.map.Dir entry = lookDir.inverse();
+                    if (occupyingL.getEntryDir() == entry) {
+                        lookDir = occupyingL.getDir();
+                    } else if (occupyingL.getDir() == entry) {
+                        lookDir = occupyingL.getEntryDir();
+                    } else {
+                        canEnterNext = false; // blocks the route
+                        break;
+                    }
                     lookTrack = nextTrack;
                 }
             }
