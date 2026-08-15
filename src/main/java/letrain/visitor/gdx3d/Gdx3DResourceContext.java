@@ -186,7 +186,7 @@ public class Gdx3DResourceContext implements Disposable {
 
             // Locomotora amarilla (LINK)
             locomotiveHighlightModel = register(modelBuilder.createBox(0.85f, 0.85f, 0.85f,
-                    new Material(ColorAttribute.createDiffuse(new Color(1f, 1f, 0f, 0.5f)),
+                    new Material(ColorAttribute.createDiffuse(new Color(1f, 1f, 0f, 0.75f)),
                             new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
@@ -197,7 +197,7 @@ public class Gdx3DResourceContext implements Disposable {
 
             // Vagón amarillo (LINK)
             wagonHighlightModel = register(modelBuilder.createBox(0.85f, 0.85f, 0.85f,
-                    new Material(ColorAttribute.createDiffuse(new Color(1f, 1f, 0f, 0.5f)),
+                    new Material(ColorAttribute.createDiffuse(new Color(1f, 1f, 0f, 0.75f)),
                             new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
@@ -232,12 +232,12 @@ public class Gdx3DResourceContext implements Disposable {
 
             // UNLINK
             locomotiveUnlinkModel = register(modelBuilder.createBox(0.85f, 0.85f, 0.85f,
-                    new Material(ColorAttribute.createDiffuse(new Color(1f, 0f, 0f, 0.5f)),
+                    new Material(ColorAttribute.createDiffuse(new Color(1f, 0f, 0f, 0.75f)),
                             new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             wagonUnlinkModel = register(modelBuilder.createBox(0.85f, 0.85f, 0.85f,
-                    new Material(ColorAttribute.createDiffuse(new Color(1f, 0f, 0f, 0.5f)),
+                    new Material(ColorAttribute.createDiffuse(new Color(1f, 0f, 0f, 0.75f)),
                             new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
