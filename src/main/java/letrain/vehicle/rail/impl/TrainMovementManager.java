@@ -395,7 +395,7 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             savedEntryDirs.put(l, l.getEntryDir());
         }
 
-        refreshLinkersDirection(normalSense);
+        refreshLinkersDirection();
         boolean moved = moveLinkers(normalSense);
 
         if (!moved || train.isStalled()) {
@@ -419,95 +419,65 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
     @Override
     public void refreshLinkersDirection() {
-        if (train.getDirectorLinker() == null || ((Locomotive) train.getDirectorLinker()).getTrack() == null) {
+        Tractor tractor = train.getDirectorLinker();
+        if (tractor == null || ((Locomotive) tractor).getTrack() == null) {
             return;
         }
-        boolean normalSense = true;
-        if (train.getDirectorLinker().isReversed()) {
-            normalSense = false;
-        }
-        refreshLinkersDirection(normalSense);
-    }
 
-    private void refreshLinkersDirection(boolean isNormalSense) {
-        setDirPushedLinkers(isNormalSense);
-        setDirTowedLinkers(isNormalSense);
-    }
-
-    private void setDirPushedLinkers(boolean isNormalSense) {
-        Iterator<Linker> iterator;
-        if (!isNormalSense) {
-            iterator = train.getLinkers().iterator();
-        } else {
-            iterator = train.getLinkers().descendingIterator();
+        List<Linker> order = new ArrayList<>(train.getLinkers());
+        boolean normalSense = !tractor.isReversed();
+        if (normalSense) {
+            java.util.Collections.reverse(order);
         }
 
-        Tractor tractor = train.getDirectorLinker();
-        while (iterator.hasNext()) {
-            Linker next = iterator.next();
-            if (next == tractor) {
-                break;
+        for (int i = 0; i < order.size(); i++) {
+            Linker linker = order.get(i);
+            if (linker == tractor) {
+                continue;
             }
-        }
-        Track oldTrack = ((Locomotive) tractor).getTrack();
-        while (iterator.hasNext()) {
-            Linker next = iterator.next();
-            Track wagonTrack = next.getTrack();
-            Dir nextEntry = null;
-            for (Dir conn : oldTrack.getConnections()) {
-                if (oldTrack.getConnected(conn) == wagonTrack) {
-                    nextEntry = conn.inverse();
-                    break;
+
+            Track track = linker.getTrack();
+            if (track == null) continue;
+
+            Dir entryDir = null;
+            Dir exitDir = null;
+
+            if (i > 0) {
+                Track prevTrack = order.get(i - 1).getTrack();
+                for (Dir conn : track.getConnections()) {
+                    if (track.getConnected(conn) == prevTrack) {
+                        entryDir = conn;
+                        break;
+                    }
                 }
             }
-            if (nextEntry == null) {
-                break;
-            }
-            next.setEntryDir(nextEntry);
-            Dir nextDir = wagonTrack.getDir(nextEntry);
-            if (nextDir == null) {
-                break;
-            }
-            next.setDir(nextDir);
-            oldTrack = wagonTrack;
-        }
-    }
 
-    private void setDirTowedLinkers(boolean isNormalSense) {
-        Iterator<Linker> iterator;
-        if (isNormalSense) {
-            iterator = train.getLinkers().iterator();
-        } else {
-            iterator = train.getLinkers().descendingIterator();
-        }
-        Tractor tractor = train.getDirectorLinker();
-        while (iterator.hasNext()) {
-            Linker next = iterator.next();
-            if (next == tractor) {
-                break;
-            }
-        }
-        Track oldTrack = ((Locomotive) tractor).getTrack();
-        while (iterator.hasNext()) {
-            Linker next = iterator.next();
-            Dir nextDir = null;
-            Track wagonTrack = next.getTrack();
-            for (Dir conn : oldTrack.getConnections()) {
-                if (oldTrack.getConnected(conn) == wagonTrack) {
-                    nextDir = conn.inverse();
-                    break;
+            if (i < order.size() - 1) {
+                Track nextTrack = order.get(i + 1).getTrack();
+                for (Dir conn : track.getConnections()) {
+                    if (track.getConnected(conn) == nextTrack) {
+                        exitDir = conn;
+                        break;
+                    }
                 }
             }
-            if (nextDir == null) {
-                break;
+
+            if (entryDir != null && exitDir != null) {
+                linker.setEntryDir(entryDir);
+                linker.setDir(exitDir);
+            } else if (entryDir != null) {
+                linker.setEntryDir(entryDir);
+                Dir out = track.getDir(entryDir);
+                if (out != null) linker.setDir(out);
+            } else if (exitDir != null) {
+                linker.setDir(exitDir);
+                for (Dir conn : track.getConnections()) {
+                    if (track.getDir(conn) == exitDir) {
+                        linker.setEntryDir(conn);
+                        break;
+                    }
+                }
             }
-            next.setDir(nextDir);
-            Dir nextEntry = next.getTrack().getDir(next.getDir());
-            if (nextEntry == null) {
-                break;
-            }
-            next.setEntryDir(nextEntry);
-            oldTrack = next.getTrack();
         }
     }
 

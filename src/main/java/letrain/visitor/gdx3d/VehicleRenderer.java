@@ -330,30 +330,33 @@ public class VehicleRenderer extends BaseSubRenderer {
                 letrain.map.Dir lookDir = wagon.getDir();
                 int chainDepth = 0;
                 while (lookTrack != null) {
+                    if (chainDepth >= 90) {
+                        System.out.println("DEBUG LOOP: chainDepth=" + chainDepth + ", lookTrack=" + lookTrack.getPosition() + ", lookDir=" + lookDir + ", entry=" + lookDir.inverse());
+                    }
                     if (chainDepth >= 100) {
                         throw new IllegalStateException("CRITICAL ERROR: Infinite loop detected in rendering chain for wagon train " + train.getId());
                     }
                     chainDepth++;
-                    letrain.track.Track nextTrack = lookTrack.getConnected(lookDir);
-                    if (nextTrack == null) break;
-                    letrain.vehicle.rail.Linker occupyingL = nextTrack.getLinker();
-                    if (occupyingL == null) break; // free cell
-                    if (occupyingL == wagon) break; // cycle detected (circular train)
-                    if (occupyingL.getTrain() != train) {
+                    letrain.track.Track nextTrackLocal = lookTrack.getConnected(lookDir);
+                    if (nextTrackLocal == null) break;
+                    letrain.vehicle.rail.Linker occupyingLLocal = nextTrackLocal.getLinker();
+                    if (occupyingLLocal == null) break; // free cell
+                    if (occupyingLLocal == wagon) break; // cycle detected (circular train)
+                    if (occupyingLLocal.getTrain() != train) {
                         canEnterNext = false; // different train blocks the chain
                         break;
                     }
                     // Same train — follow the chain forward
                     letrain.map.Dir entry = lookDir.inverse();
-                    if (occupyingL.getEntryDir() == entry) {
-                        lookDir = occupyingL.getDir();
-                    } else if (occupyingL.getDir() == entry) {
-                        lookDir = occupyingL.getEntryDir();
+                    if (occupyingLLocal.getEntryDir() == entry) {
+                        lookDir = occupyingLLocal.getDir();
+                    } else if (occupyingLLocal.getDir() == entry) {
+                        lookDir = occupyingLLocal.getEntryDir();
                     } else {
                         canEnterNext = false; // blocks the route
                         break;
                     }
-                    lookTrack = nextTrack;
+                    lookTrack = nextTrackLocal;
                 }
             }
 
