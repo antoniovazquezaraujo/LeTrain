@@ -26,6 +26,9 @@
     *   `src/test/java/letrain`: Unit and integration tests.
     *   `src/main/resources`: Configuration (e.g., `logback.xml`) and assets (fonts, audio).
     *   `economy.properties`: Central configuration file for game economy tuning.
+*   **Git Workflow & Merging:**
+    *   **CRITICAL RULE:** NEVER merge feature branches into `develop` or push changes to `develop` without the user explicitly stating that they have tested the changes locally and given approval to merge.
+    *   Always leave changes in a separate branch (e.g., `feature/...` or `fix/...`) and wait for user confirmation.
 
 ## Documentation & Navigation
 *   **Class Index:** A complete list of project classes is maintained at `docs/architecture/ClassIndex.md`. Consult this file to locate specific components.
