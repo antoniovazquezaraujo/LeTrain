@@ -220,7 +220,7 @@ public class VehicleRenderer extends BaseSubRenderer {
                 labelColor = Color.BLACK;
             }
 
-            addLabel(v1, "" + locomotive.getId(), v2, v3, labelColor, 0.75f);
+            addLabel(v1, "" + locomotive.getId(), v2, v3, labelColor, 0.5f);
 
             float perpXL = dzL * 0.46f;
             float perpZL = -dxL * 0.46f;

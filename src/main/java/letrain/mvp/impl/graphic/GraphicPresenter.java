@@ -310,7 +310,7 @@ public class GraphicPresenter extends ApplicationAdapter
                 if (label.text == null || label.text.isEmpty())
                     continue;
 
-                float baseCharSpacing = 0.35f; // Espaciado base (aumentado para evitar solapamiento)
+                float baseCharSpacing = 0.50f; // Espaciado base (aumentado para evitar solapamiento)
                 float charSpacing = baseCharSpacing * label.scale;
                 float totalWidth = label.text.length() * charSpacing;
                 float startOffset = -totalWidth / 2f + charSpacing / 2f;
