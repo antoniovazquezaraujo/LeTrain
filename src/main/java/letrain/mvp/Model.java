@@ -40,10 +40,12 @@ public interface Model {
     public int nextStationId();
 
     public int nextLocomotiveId();
+    public int peekNextLocomotiveId();
 
     public int nextSensorId();
 
     public int nextTrainId();
+    public int peekNextTrainId();
 
     void addTrack(Point point, RailTrack track);
 

@@ -687,21 +687,24 @@ public class Gdx3DInputHandler implements InputProcessor {
         Dir cursorDir = model.getCursor().getDir();
 
         if (Character.isUpperCase(c)) {
-            int locoId = model.nextLocomotiveId();
+            int locoId = model.peekNextLocomotiveId();
             Locomotive locomotive = new Locomotive(locoId, "" + c);
-            Train train = new Train(model.nextTrainId());
+            int trainId = model.peekNextTrainId();
+            Train train = new Train(trainId);
             train.pushBack(locomotive);
             train.setDirectorLinker(locomotive);
-            model.addLocomotive(locomotive);
-            model.selectLocomotive(locoId);
+            
             track.enterLinkerFromDir(cursorDir.inverse(), locomotive);
             
             if (locomotive.getDir() == null) {
                 track.removeLinker();
-                model.removeLocomotive(locomotive);
-                if (lastCreatedLoco == locomotive) lastCreatedLoco = null;
                 return;
             }
+            
+            model.nextLocomotiveId();
+            model.nextTrainId();
+            model.addLocomotive(locomotive);
+            model.selectLocomotive(locoId);
             
             train.getSafetyManager().claimOccupiedSegments();
             cursorDir = locomotive.getDir();
@@ -709,14 +712,15 @@ public class Gdx3DInputHandler implements InputProcessor {
         } else {
             Wagon wagon = new Wagon("" + c);
             wagon.setExclusiveCargoType(model.getSelectedWagonType());
-            model.addWagon(wagon);
+            
             track.enterLinkerFromDir(cursorDir.inverse(), wagon);
             
             if (wagon.getDir() == null) {
                 track.removeLinker();
-                model.removeWagon(wagon);
                 return;
             }
+            
+            model.addWagon(wagon);
             
             if (wagon.getTrain() != null) {
                 wagon.getTrain().getSafetyManager().claimOccupiedSegments();

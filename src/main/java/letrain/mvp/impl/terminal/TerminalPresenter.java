@@ -527,22 +527,40 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
         Dir cursorDir = Dir.E;
         if (c.toUpperCase().equals(c)) {
-            Locomotive locomotive = new Locomotive(model.nextLocomotiveId(), c);
-            Train train = new Train(model.nextTrainId());
+            int locoId = model.peekNextLocomotiveId();
+            Locomotive locomotive = new Locomotive(locoId, c);
+            int trainId = model.peekNextTrainId();
+            Train train = new Train(trainId);
             train.pushBack(locomotive);
             train.addCoreTrainEventListener(this);
             train.setDirectorLinker(locomotive);
+            
+            track.enterLinkerFromDir(model.getCursor().getDir().inverse(), locomotive);
+            
+            if (locomotive.getDir() == null) {
+                track.removeLinker();
+                return;
+            }
+            
+            model.nextLocomotiveId();
+            model.nextTrainId();
             model.addLocomotive(locomotive);
             model.getEconomyManager().onLocomotiveConstructed(locomotive);
-            track.enterLinkerFromDir(model.getCursor().getDir().inverse(), locomotive);
             train.getSafetyManager().claimOccupiedSegments();
             cursorDir = locomotive.getDir();
         } else {
             Wagon wagon = new Wagon(c);
             wagon.setExclusiveCargoType(model.getSelectedWagonType());
+            
+            track.enterLinkerFromDir(model.getCursor().getDir().inverse(), wagon);
+            
+            if (wagon.getDir() == null) {
+                track.removeLinker();
+                return;
+            }
+            
             model.addWagon(wagon);
             model.getEconomyManager().onWagonConstructed(wagon);
-            track.enterLinkerFromDir(model.getCursor().getDir().inverse(), wagon);
             if (wagon.getTrain() != null) {
                 wagon.getTrain().getSafetyManager().claimOccupiedSegments();
             }

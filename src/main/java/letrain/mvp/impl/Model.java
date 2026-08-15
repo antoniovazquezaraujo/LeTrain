@@ -292,8 +292,10 @@ public class Model implements letrain.mvp.Model {
     @Override public int nextSemaphoreId() { return ++nextSemaphoreId; }
     @Override public int nextForkId() { return ++nextForkId; }
     @Override public int nextLocomotiveId() { return ++nextLocomotiveId; }
+    @Override public int peekNextLocomotiveId() { return nextLocomotiveId + 1; }
     @Override public int nextSensorId() { return ++nextSensorId; }
     @Override public int nextTrainId() { return ++nextTrainId; }
+    @Override public int peekNextTrainId() { return nextTrainId + 1; }
     @Override public int nextStationId() { return ++nextStationId; }
 
     public double getLinearDistanceBetweenStations(int startStationId, int endStationId) {
