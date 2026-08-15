@@ -695,6 +695,14 @@ public class Gdx3DInputHandler implements InputProcessor {
             model.addLocomotive(locomotive);
             model.selectLocomotive(locoId);
             track.enterLinkerFromDir(cursorDir.inverse(), locomotive);
+            
+            if (locomotive.getDir() == null) {
+                track.removeLinker();
+                model.removeLocomotive(locomotive);
+                if (lastCreatedLoco == locomotive) lastCreatedLoco = null;
+                return;
+            }
+            
             train.getSafetyManager().claimOccupiedSegments();
             cursorDir = locomotive.getDir();
             lastCreatedLoco = locomotive;
@@ -703,6 +711,13 @@ public class Gdx3DInputHandler implements InputProcessor {
             wagon.setExclusiveCargoType(model.getSelectedWagonType());
             model.addWagon(wagon);
             track.enterLinkerFromDir(cursorDir.inverse(), wagon);
+            
+            if (wagon.getDir() == null) {
+                track.removeLinker();
+                model.removeWagon(wagon);
+                return;
+            }
+            
             if (wagon.getTrain() != null) {
                 wagon.getTrain().getSafetyManager().claimOccupiedSegments();
             }
