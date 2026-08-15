@@ -328,7 +328,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         plate.materials.get(0)
                 .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(structureColor));
         
-        float cargoPlateElevation = 0.25f;
+        float cargoPlateElevation = 0.05f; // Reverted back to original
         plate.transform.setToTranslation(plateMidX, cargoPlateElevation, plateMidZ);
         plate.transform.rotate(0, 1, 0, plateAngle);
         plate.transform.scale(plateLengthPerp, 0.05f, plateWidth);

@@ -62,7 +62,9 @@ public class GroundRenderer extends BaseSubRenderer {
             float x = ground.getPosition().getX() + 0.5f;
             float z = ground.getPosition().getY() + 0.5f;
             ModelInstance instance = resourceContext.getModelInstance(consumerModelToUse);
-            instance.transform.setToTranslation(x, 0.03f, z);
+            
+            float cargoDepositElevation = 0.15f;
+            instance.transform.setToTranslation(x, cargoDepositElevation, z);
             instances.add(instance);
         }
         
