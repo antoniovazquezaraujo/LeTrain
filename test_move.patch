@@ -1,0 +1,22 @@
+--- src/main/java/letrain/vehicle/rail/impl/TrainMovementManager.java
++++ src/main/java/letrain/vehicle/rail/impl/TrainMovementManager.java
+@@ -111,10 +111,14 @@
+         for (int i = 1; i < movingOrder.size(); i++) {
+             Linker linkerToMove = movingOrder.get(i);
+             Track currentTrack = linkerToMove.getTrack();
+-            Dir exitDir = linkerToMove.getDir();
+-            Track nextTrackOfLinker = currentTrack.getConnected(exitDir);
+-            Dir entryDirOfLinker = exitDir.inverse();
+-
++            Linker linkerAhead = movingOrder.get(i - 1);
++            Track nextTrackOfLinker = currentTracks.get(linkerAhead);
++            Dir entryDirOfLinker = null;
++            for (Dir conn : nextTrackOfLinker.getConnections()) {
++                if (nextTrackOfLinker.getConnected(conn) == currentTrack) {
++                    entryDirOfLinker = conn;
++                    break;
++                }
++            }
+             currentTracks.put(linkerToMove, currentTrack);
+             entryDirsMap.put(linkerToMove, entryDirOfLinker);
+             nextTrackOfLinker.setReservation(linkerToMove);

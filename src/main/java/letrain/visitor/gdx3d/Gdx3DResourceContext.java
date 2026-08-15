@@ -185,8 +185,9 @@ public class Gdx3DResourceContext implements Disposable {
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Locomotora amarilla (LINK)
-            locomotiveHighlightModel = register(modelBuilder.createBox(0.8f, 0.8f, 0.8f,
-                    new Material(ColorAttribute.createDiffuse(Color.YELLOW)),
+            locomotiveHighlightModel = register(modelBuilder.createBox(0.85f, 0.85f, 0.85f,
+                    new Material(ColorAttribute.createDiffuse(new Color(1f, 1f, 0f, 0.5f)),
+                            new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Línea de selección
@@ -195,8 +196,9 @@ public class Gdx3DResourceContext implements Disposable {
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Vagón amarillo (LINK)
-            wagonHighlightModel = register(modelBuilder.createBox(0.8f, 0.8f, 0.8f,
-                    new Material(ColorAttribute.createDiffuse(Color.YELLOW)),
+            wagonHighlightModel = register(modelBuilder.createBox(0.85f, 0.85f, 0.85f,
+                    new Material(ColorAttribute.createDiffuse(new Color(1f, 1f, 0f, 0.5f)),
+                            new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Chasis del vagón
@@ -229,12 +231,14 @@ public class Gdx3DResourceContext implements Disposable {
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // UNLINK
-            locomotiveUnlinkModel = register(modelBuilder.createBox(0.8f, 0.8f, 0.8f,
-                    new Material(ColorAttribute.createDiffuse(Color.RED)),
+            locomotiveUnlinkModel = register(modelBuilder.createBox(0.85f, 0.85f, 0.85f,
+                    new Material(ColorAttribute.createDiffuse(new Color(1f, 0f, 0f, 0.5f)),
+                            new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
-            wagonUnlinkModel = register(modelBuilder.createBox(0.8f, 0.8f, 0.8f,
-                    new Material(ColorAttribute.createDiffuse(Color.RED)),
+            wagonUnlinkModel = register(modelBuilder.createBox(0.85f, 0.85f, 0.85f,
+                    new Material(ColorAttribute.createDiffuse(new Color(1f, 0f, 0f, 0.5f)),
+                            new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Semáforo Abierto

@@ -136,14 +136,9 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
 
         Model locoModelToUse = resourceContext.locomotiveModel;
-        if (unlinkHighlight) {
-            locoModelToUse = resourceContext.locomotiveUnlinkModel;
-        } else if (highlight) {
-            locoModelToUse = resourceContext.locomotiveHighlightModel;
-        }
 
         ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
-        if (!highlight && !unlinkHighlight && locomotive.getColor() != null && !instance.materials.isEmpty()) {
+        if (locomotive.getColor() != null && !instance.materials.isEmpty()) {
             Color locoColor = getLibGdxColor(locomotive.getColor());
             if (locoColor != null) {
                 instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(locoColor));
@@ -163,6 +158,13 @@ public class VehicleRenderer extends BaseSubRenderer {
             instance.transform.rotate(0, 1, 0, angle);
         }
         instances.add(instance);
+
+        if (unlinkHighlight || highlight) {
+            Model overlayModel = unlinkHighlight ? resourceContext.locomotiveUnlinkModel : resourceContext.locomotiveHighlightModel;
+            ModelInstance overlay = resourceContext.getModelInstance(overlayModel);
+            overlay.transform.set(instance.transform);
+            transparentInstances.add(overlay);
+        }
 
         // Auto mode indicator (blinking red dot on top face, top-left)
         boolean isAuto = (locomotive.getTrain() != null && locomotive.getTrain().isAutoMode());
@@ -275,16 +277,8 @@ public class VehicleRenderer extends BaseSubRenderer {
             chassisColor = wagon.getExclusiveCargoType().getColor();
         }
 
-        if (unlinkHighlight) {
-            chassisModel = resourceContext.wagonUnlinkModel;
-        } else if (highlight) {
-            chassisModel = resourceContext.wagonHighlightModel;
-        }
-
         ModelInstance instance = resourceContext.getModelInstance(chassisModel);
-        if (!highlight && !unlinkHighlight) {
-            instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(chassisColor));
-        }
+        instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(chassisColor));
 
         float renderX = wagon.getPosition().getX() + 0.5f;
         float renderY = wagon.getPosition().getY() + 0.5f;
@@ -389,10 +383,17 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
         instances.add(instance);
 
+        if (unlinkHighlight || highlight) {
+            Model overlayModel = unlinkHighlight ? resourceContext.wagonUnlinkModel : resourceContext.wagonHighlightModel;
+            ModelInstance overlay = resourceContext.getModelInstance(overlayModel);
+            overlay.transform.set(instance.transform);
+            transparentInstances.add(overlay);
+        }
+
         // NO green line for wagons, as per user's mandate.
 
         // Jewel rendering
-        if (wagon.getCargoAmount() > 0 && !highlight && !unlinkHighlight) {
+        if (wagon.getCargoAmount() > 0) {
             Color cargoColor = (wagon.getCargoType() != null) ? wagon.getCargoType().getColor() : Color.YELLOW;
             float fullness = (float) wagon.getCargoAmount() / (float) wagon.getMaxCapacity();
             float maxHeight = 0.5f;
