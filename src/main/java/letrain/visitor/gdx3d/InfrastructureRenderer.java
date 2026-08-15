@@ -328,7 +328,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         plate.materials.get(0)
                 .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(structureColor));
         
-        float cargoPlateElevation = 0.1f;
+        float cargoPlateElevation = 0.15f;
         plate.transform.setToTranslation(plateMidX, cargoPlateElevation, plateMidZ);
         plate.transform.rotate(0, 1, 0, plateAngle);
         plate.transform.scale(plateLengthPerp, 0.05f, plateWidth);
@@ -367,25 +367,27 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         float zFightingLabelOffset = 0.05f;
         float labelOffset = boardSize / 2f + zFightingLabelOffset;
 
+        float stationLabelScale = 0.5f;
+        
         labels.add(new Gdx3DRenderer.VehicleLabel(
                 new Vector3(centerX + perpX * labelOffset, boardCenterY,
                         centerZ + perpZ * labelOffset),
-                idText, new Vector3(perpX, 0, perpZ), labelColor));
+                idText, new Vector3(perpX, 0, perpZ), null, labelColor, stationLabelScale));
 
         labels.add(new Gdx3DRenderer.VehicleLabel(
                 new Vector3(centerX - perpX * labelOffset, boardCenterY,
                         centerZ - perpZ * labelOffset),
-                idText, new Vector3(-perpX, 0, -perpZ), labelColor));
+                idText, new Vector3(-perpX, 0, -perpZ), null, labelColor, stationLabelScale));
 
         labels.add(new Gdx3DRenderer.VehicleLabel(
                 new Vector3(centerX + paraX * labelOffset, boardCenterY,
                         centerZ + paraZ * labelOffset),
-                idText, new Vector3(paraX, 0, paraZ), labelColor));
+                idText, new Vector3(paraX, 0, paraZ), null, labelColor, stationLabelScale));
 
         labels.add(new Gdx3DRenderer.VehicleLabel(
                 new Vector3(centerX - paraX * labelOffset, boardCenterY,
                         centerZ - paraZ * labelOffset),
-                idText, new Vector3(-paraX, 0, -paraZ), labelColor));
+                idText, new Vector3(-paraX, 0, -paraZ), null, labelColor, stationLabelScale));
     }
 
     @Override
