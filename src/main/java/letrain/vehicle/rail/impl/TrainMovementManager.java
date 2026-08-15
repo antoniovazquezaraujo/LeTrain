@@ -432,9 +432,6 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
         for (int i = 0; i < order.size(); i++) {
             Linker linker = order.get(i);
-            if (linker == tractor) {
-                continue;
-            }
 
             Track track = linker.getTrack();
             if (track == null) continue;
