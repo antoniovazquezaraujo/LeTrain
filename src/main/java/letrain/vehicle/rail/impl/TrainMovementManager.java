@@ -449,21 +449,27 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                 break;
             }
         }
-        Dir pushDir = ((Locomotive) tractor).getDir();
+        Track oldTrack = ((Locomotive) tractor).getTrack();
         while (iterator.hasNext()) {
             Linker next = iterator.next();
-            Track nextTrack = next.getTrack();
-            if (pushDir == null) {
+            Track wagonTrack = next.getTrack();
+            Dir nextEntry = null;
+            for (Dir conn : oldTrack.getConnections()) {
+                if (oldTrack.getConnected(conn) == wagonTrack) {
+                    nextEntry = conn.inverse();
+                    break;
+                }
+            }
+            if (nextEntry == null) {
                 break;
             }
-            Dir inverseEntry = pushDir.inverse();
-            next.setEntryDir(inverseEntry);
-            Dir nextDir = nextTrack.getDir(inverseEntry);
+            next.setEntryDir(nextEntry);
+            Dir nextDir = wagonTrack.getDir(nextEntry);
             if (nextDir == null) {
                 break;
             }
             next.setDir(nextDir);
-            pushDir = next.getDir();
+            oldTrack = wagonTrack;
         }
     }
 
