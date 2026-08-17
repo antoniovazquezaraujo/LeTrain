@@ -25,7 +25,7 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
     Map<Integer, Map<Integer, Integer>> cells;
     @com.fasterxml.jackson.annotation.JsonIgnore
     PerlinNoise noise = null;
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @com.fasterxml.jackson.annotation.JsonProperty("blocks")
     Set<Block> blocks;
     private EconomyManager economyManager;
 
@@ -213,6 +213,58 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                 }
             }
         }
+    }
+
+    public void compactBlocks() {
+        if (cells == null || cells.isEmpty()) return;
+        
+        Set<String> explored = new HashSet<>();
+        for (Integer r : cells.keySet()) {
+            Map<Integer, Integer> rowCells = cells.get(r);
+            if (rowCells != null) {
+                for (Integer c : rowCells.keySet()) {
+                    explored.add(c + "," + r);
+                }
+            }
+        }
+        
+        Set<Block> compacted = new HashSet<>();
+        while (!explored.isEmpty()) {
+            String pStr = explored.iterator().next();
+            String[] parts = pStr.split(",");
+            int minX = Integer.parseInt(parts[0]);
+            int minY = Integer.parseInt(parts[1]);
+            int maxX = minX;
+            int maxY = minY;
+            
+            // Expand right
+            while (explored.contains((maxX + 1) + "," + minY)) {
+                maxX++;
+            }
+            
+            // Expand down
+            boolean canExpandY = true;
+            while (canExpandY) {
+                for (int x = minX; x <= maxX; x++) {
+                    if (!explored.contains(x + "," + (maxY + 1))) {
+                        canExpandY = false;
+                        break;
+                    }
+                }
+                if (canExpandY) {
+                    maxY++;
+                }
+            }
+            
+            // Remove the covered cells
+            for (int y = minY; y <= maxY; y++) {
+                for (int x = minX; x <= maxX; x++) {
+                    explored.remove(x + "," + y);
+                }
+            }
+            compacted.add(new Block(minX, minY, maxX - minX + 1, maxY - minY + 1));
+        }
+        this.blocks = compacted;
     }
 
     public void rebuildCellsFromBlocks() {

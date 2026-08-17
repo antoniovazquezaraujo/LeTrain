@@ -38,6 +38,9 @@ public class GameSaveService {
             return false;
         }
         try {
+            if (model.getGroundMap() instanceof letrain.ground.impl.GroundMap) {
+                ((letrain.ground.impl.GroundMap) model.getGroundMap()).compactBlocks();
+            }
             ObjectMapper mapper = new ObjectMapper();
             configureObjectMapper(mapper);
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
