@@ -438,7 +438,7 @@ public class TerminalView implements letrain.mvp.View {
 
         ActionListBox refList = new ActionListBox(new TerminalSize(30, 20)) {
             @Override
-            protected com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(com.googlecode.lanterna.input.KeyStroke ks) {
+            public com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(com.googlecode.lanterna.input.KeyStroke ks) {
                 if (ks instanceof com.googlecode.lanterna.input.MouseAction) {
                     com.googlecode.lanterna.input.MouseAction mi = (com.googlecode.lanterna.input.MouseAction) ks;
                     if (mi.getActionType() == com.googlecode.lanterna.input.MouseActionType.CLICK_RELEASE) {
