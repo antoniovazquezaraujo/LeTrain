@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 public class GroundMap implements letrain.ground.GroundMap, Serializable {
     private static final long serialVersionUID = 1L;
     Logger log = LoggerFactory.getLogger(getClass());
-    @com.fasterxml.jackson.annotation.JsonProperty("cells")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     Map<Integer, Map<Integer, Integer>> cells;
     @com.fasterxml.jackson.annotation.JsonIgnore
     PerlinNoise noise = null;
