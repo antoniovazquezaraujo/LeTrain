@@ -438,15 +438,15 @@ public class TerminalView implements letrain.mvp.View {
 
         ActionListBox refList = new ActionListBox(new TerminalSize(30, 20)) {
             @Override
-            public com.googlecode.lanterna.gui2.Interactable.Result handleInput(com.googlecode.lanterna.input.KeyStroke ks) {
-                if (ks instanceof com.googlecode.lanterna.input.MouseInput) {
-                    com.googlecode.lanterna.input.MouseInput mi = (com.googlecode.lanterna.input.MouseInput) ks;
+            protected com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(com.googlecode.lanterna.input.KeyStroke ks) {
+                if (ks instanceof com.googlecode.lanterna.input.MouseAction) {
+                    com.googlecode.lanterna.input.MouseAction mi = (com.googlecode.lanterna.input.MouseAction) ks;
                     if (mi.getActionType() == com.googlecode.lanterna.input.MouseActionType.CLICK_RELEASE) {
-                        super.handleInput(ks);
-                        return super.handleInput(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.Enter));
+                        super.handleKeyStroke(ks);
+                        return super.handleKeyStroke(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.Enter));
                     }
                 }
-                return super.handleInput(ks);
+                return super.handleKeyStroke(ks);
             }
         };
         Runnable updateList = new Runnable() {
@@ -544,7 +544,7 @@ public class TerminalView implements letrain.mvp.View {
             }
         };
 
-        Button togglePanelsBtn = new Button("Toggle", () -> {
+        Runnable togglePanelsAction = () -> {
             if (sidePanel.getParent() != null) {
                 mainPanel.removeComponent(sidePanel);
                 editor.setPreferredSize(new TerminalSize(90, 20));
@@ -552,7 +552,8 @@ public class TerminalView implements letrain.mvp.View {
                 mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
                 editor.setPreferredSize(new TerminalSize(60, 20));
             }
-        });
+        };
+        Button togglePanelsBtn = new Button("Toggle", togglePanelsAction);
         togglePanelsBtn.setRenderer(mnemonicRenderer);
         footer.addComponent(togglePanelsBtn);
 
@@ -576,7 +577,7 @@ public class TerminalView implements letrain.mvp.View {
             public void onInput(com.googlecode.lanterna.gui2.Window w, com.googlecode.lanterna.input.KeyStroke ks, java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
                 if (ks.isAltDown() && ks.getCharacter() != null) {
                     char c = Character.toLowerCase(ks.getCharacter());
-                    if (c == 't') { togglePanelsBtn.getRunnable().run(); deliverEvent.set(false); }
+                    if (c == 't') { togglePanelsAction.run(); deliverEvent.set(false); }
                     else if (c == 'a') { applyAction.run(); deliverEvent.set(false); }
                     else if (c == 's') { saveAction.run(); deliverEvent.set(false); }
                     else if (c == 'l') { loadAction.run(); deliverEvent.set(false); }
