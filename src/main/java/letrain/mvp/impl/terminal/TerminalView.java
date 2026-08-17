@@ -437,18 +437,19 @@ public class TerminalView implements letrain.mvp.View {
         sidePanel.addComponent(new Label("QUICK REFERENCE").setLabelWidth(30));
 
         ActionListBox refList = new ActionListBox(new TerminalSize(30, 20)) {
+            private long lastClickTime = 0;
             @Override
             public com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(com.googlecode.lanterna.input.KeyStroke ks) {
                 if (ks instanceof com.googlecode.lanterna.input.MouseAction) {
                     com.googlecode.lanterna.input.MouseAction mi = (com.googlecode.lanterna.input.MouseAction) ks;
                     if (mi.getActionType() == com.googlecode.lanterna.input.MouseActionType.CLICK_RELEASE) {
                         super.handleKeyStroke(ks);
-                        return super.handleKeyStroke(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.Enter));
-                    } else if (mi.getActionType() == com.googlecode.lanterna.input.MouseActionType.MOVE) {
-                        int idx = getIndexByMouseAction(mi);
-                        if (idx >= 0 && idx < getItems().size()) {
-                            setSelectedIndex(idx);
+                        long now = System.currentTimeMillis();
+                        if (now - lastClickTime < 500) {
+                            return super.handleKeyStroke(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.Enter));
                         }
+                        lastClickTime = now;
+                        return com.googlecode.lanterna.gui2.Interactable.Result.HANDLED;
                     }
                 }
                 return super.handleKeyStroke(ks);
@@ -583,6 +584,8 @@ public class TerminalView implements letrain.mvp.View {
                 if (ks.isAltDown() && ks.getCharacter() != null) {
                     char c = Character.toLowerCase(ks.getCharacter());
                     if (c == 't') { togglePanelsAction.run(); deliverEvent.set(false); }
+                    else if (c == 'r') { refList.takeFocus(); deliverEvent.set(false); }
+                    else if (c == 'e') { editor.takeFocus(); deliverEvent.set(false); }
                     else if (c == 'a') { applyAction.run(); deliverEvent.set(false); }
                     else if (c == 's') { saveAction.run(); deliverEvent.set(false); }
                     else if (c == 'l') { loadAction.run(); deliverEvent.set(false); }
