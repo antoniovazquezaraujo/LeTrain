@@ -218,35 +218,49 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
     public void compactBlocks() {
         if (cells == null || cells.isEmpty()) return;
         
-        Set<String> explored = new HashSet<>();
+        Set<Long> explored = new HashSet<>();
         for (Integer r : cells.keySet()) {
             Map<Integer, Integer> rowCells = cells.get(r);
             if (rowCells != null) {
                 for (Integer c : rowCells.keySet()) {
-                    explored.add(c + "," + r);
+                    long packed = ((long) c << 32) | (r & 0xFFFFFFFFL);
+                    explored.add(packed);
                 }
             }
         }
         
+        List<Long> sortedCells = new ArrayList<>(explored);
+        sortedCells.sort((a, b) -> {
+            int yA = (int) (a.longValue());
+            int yB = (int) (b.longValue());
+            if (yA != yB) return Integer.compare(yA, yB);
+            int xA = (int) (a.longValue() >> 32);
+            int xB = (int) (b.longValue() >> 32);
+            return Integer.compare(xA, xB);
+        });
+        
         Set<Block> compacted = new HashSet<>();
-        while (!explored.isEmpty()) {
-            String pStr = explored.iterator().next();
-            String[] parts = pStr.split(",");
-            int minX = Integer.parseInt(parts[0]);
-            int minY = Integer.parseInt(parts[1]);
-            int maxX = minX;
-            int maxY = minY;
+        
+        for (Long p : sortedCells) {
+            if (!explored.contains(p)) continue;
+            
+            int startX = (int) (p >> 32);
+            int startY = (int) (p.longValue());
+            
+            int maxX = startX;
+            int maxY = startY;
             
             // Expand right
-            while (explored.contains((maxX + 1) + "," + minY)) {
+            while (explored.contains(((long) (maxX + 1) << 32) | (startY & 0xFFFFFFFFL))) {
                 maxX++;
             }
             
             // Expand down
             boolean canExpandY = true;
             while (canExpandY) {
-                for (int x = minX; x <= maxX; x++) {
-                    if (!explored.contains(x + "," + (maxY + 1))) {
+                int nextY = maxY + 1;
+                for (int x = startX; x <= maxX; x++) {
+                    if (!explored.contains(((long) x << 32) | (nextY & 0xFFFFFFFFL))) {
                         canExpandY = false;
                         break;
                     }
@@ -256,14 +270,16 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                 }
             }
             
-            // Remove the covered cells
-            for (int y = minY; y <= maxY; y++) {
-                for (int x = minX; x <= maxX; x++) {
-                    explored.remove(x + "," + y);
+            // Mark as covered
+            for (int y = startY; y <= maxY; y++) {
+                for (int x = startX; x <= maxX; x++) {
+                    explored.remove(((long) x << 32) | (y & 0xFFFFFFFFL));
                 }
             }
-            compacted.add(new Block(minX, minY, maxX - minX + 1, maxY - minY + 1));
+            
+            compacted.add(new Block(startX, startY, maxX - startX + 1, maxY - startY + 1));
         }
+        
         this.blocks = compacted;
     }
 
