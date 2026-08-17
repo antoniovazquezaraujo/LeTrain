@@ -547,7 +547,7 @@ public class TerminalView implements letrain.mvp.View {
                 }
                 String label = component.getLabel();
                 graphics.putString(0, 0, "< " + label + " >");
-                graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.YELLOW_BRIGHT);
+                graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
                 if (label.length() > 0) {
                     graphics.putString(2, 0, label.substring(0, 1));
                 }
