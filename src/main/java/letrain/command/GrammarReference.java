@@ -38,7 +38,10 @@ public class GrammarReference {
         }
     }
 
+    private static List<Node> cachedTree = null;
+
     public static List<Node> getReferenceTree() {
+        if (cachedTree != null) return cachedTree;
         List<Node> root = new ArrayList<>();
 
         Node itinHeading = new Node("ITINERARY DSL").setHeading(true);
@@ -161,6 +164,7 @@ public class GrammarReference {
         root.add(new Node("sensor", "sensor # set name \"\";"));
         root.add(new Node("train", "train # set name \"\";"));
 
+        cachedTree = root;
         return root;
     }
 

@@ -436,21 +436,38 @@ public class TerminalView implements letrain.mvp.View {
         Panel sidePanel = new Panel(new LinearLayout(Direction.VERTICAL));
         sidePanel.addComponent(new Label("QUICK REFERENCE").setLabelWidth(30));
 
-        ActionListBox refList = new ActionListBox(new TerminalSize(30, 8));
-        java.util.List<String[]> flatRefs = letrain.command.GrammarReference.getFlatReferenceList();
-        String[][] refs = flatRefs.toArray(new String[0][]);
-        for (String[] r : refs) {
-            String label = r[0];
-            String snippet = r[1];
-            if (label.isEmpty())
-                continue;
-            if (snippet.isEmpty()) {
-                refList.addItem("[" + label + "]", () -> {
-                });
-            } else {
-                refList.addItem(label, () -> insertAtCaret(editor, snippet));
+        ActionListBox refList = new ActionListBox(new TerminalSize(30, 20));
+        Runnable updateList = new Runnable() {
+            private void build(letrain.command.GrammarReference.Node node, String indent) {
+                if (node.isHeading) {
+                    refList.addItem(node.label, () -> {});
+                } else if (node.snippet != null && node.children.isEmpty()) {
+                    refList.addItem(indent + node.label, () -> {
+                        insertAtCaret(editor, node.snippet);
+                    });
+                } else {
+                    String prefix = node.expanded ? "[-]" : "[+]";
+                    refList.addItem(indent + prefix + " " + node.label, () -> {
+                        node.setExpanded(!node.expanded);
+                        this.run();
+                        refList.takeFocus();
+                    });
+                    if (node.expanded) {
+                        for (letrain.command.GrammarReference.Node child : node.children) {
+                            build(child, indent + "  ");
+                        }
+                    }
+                }
             }
-        }
+            @Override
+            public void run() {
+                refList.clearItems();
+                for (letrain.command.GrammarReference.Node rootNode : letrain.command.GrammarReference.getReferenceTree()) {
+                    build(rootNode, "");
+                }
+            }
+        };
+        updateList.run();
         sidePanel.addComponent(refList);
 
         sidePanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
@@ -511,6 +528,9 @@ public class TerminalView implements letrain.mvp.View {
             }
         };
 
+        Button helpBtn = new Button("F1=Help", this::showReferenceGuide);
+        footer.addComponent(helpBtn);
+
         Button applyBtn = new Button("Apply", applyAction);
         applyBtn.setRenderer(mnemonicRenderer);
         footer.addComponent(applyBtn);
@@ -529,7 +549,10 @@ public class TerminalView implements letrain.mvp.View {
         window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
             @Override
             public void onInput(com.googlecode.lanterna.gui2.Window w, com.googlecode.lanterna.input.KeyStroke ks, java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
-                if (ks.isAltDown() && ks.getCharacter() != null) {
+                if (ks.getKeyType() == com.googlecode.lanterna.input.KeyType.F1) {
+                    showReferenceGuide();
+                    deliverEvent.set(false);
+                } else if (ks.isAltDown() && ks.getCharacter() != null) {
                     char c = Character.toLowerCase(ks.getCharacter());
                     if (c == 'a') { applyAction.run(); deliverEvent.set(false); }
                     else if (c == 's') { saveAction.run(); deliverEvent.set(false); }
