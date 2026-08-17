@@ -667,8 +667,8 @@ public class Gdx3DHud {
 
             refTree.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
                 @Override
-                public boolean keyDown(InputEvent event, int keycode) {
-                    if (keycode == Input.Keys.ENTER) {
+                public boolean keyDown(com.badlogic.gdx.scenes.scene2d.InputEvent event, int keycode) {
+                    if (keycode == com.badlogic.gdx.Input.Keys.ENTER) {
                         com.badlogic.gdx.utils.Array<Tree.Node> selection = refTree.getSelection().toArray();
                         if (selection.size > 0) {
                             Tree.Node node = selection.get(0);
@@ -697,12 +697,12 @@ public class Gdx3DHud {
                 n.setValue(snippet);
                 l.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
                     @Override
-                    public void clicked(InputEvent event, float x, float y) {
+                    public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
                         insertAtCursor(textArea, snippet + "\n");
                         event.stop();
                     }
                     @Override
-                    public void enter(InputEvent event, float x, float y, int pointer, com.badlogic.gdx.scenes.scene2d.Actor fromActor) {
+                    public void enter(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y, int pointer, com.badlogic.gdx.scenes.scene2d.Actor fromActor) {
                         refTree.getSelection().set(n);
                     }
                 });
@@ -720,7 +720,7 @@ public class Gdx3DHud {
                 Tree.Node n = new Tree.Node(l) {};
                 l.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
                     @Override
-                    public void clicked(InputEvent event, float x, float y) {
+                    public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
                         n.setExpanded(!n.isExpanded());
                         l.setText(n.isExpanded()
                             ? text.replace("[+]", "[-]")
@@ -728,7 +728,7 @@ public class Gdx3DHud {
                         event.stop();
                     }
                     @Override
-                    public void enter(InputEvent event, float x, float y, int pointer, com.badlogic.gdx.scenes.scene2d.Actor fromActor) {
+                    public void enter(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y, int pointer, com.badlogic.gdx.scenes.scene2d.Actor fromActor) {
                         refTree.getSelection().set(n);
                     }
                 });
