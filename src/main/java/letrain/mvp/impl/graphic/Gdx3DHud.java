@@ -1135,7 +1135,7 @@ public class Gdx3DHud {
                 
                 // Override VisUI fonts with our monospace font to keep aesthetic consistency
                 com.badlogic.gdx.scenes.scene2d.ui.Skin visSkin = com.kotcrab.vis.ui.VisUI.getSkin();
-                com.badlogic.gdx.graphics.g2d.BitmapFont font = skin.getFont("default");
+                com.badlogic.gdx.graphics.g2d.BitmapFont font = letrain.utils.FontManager.loadFont("JuliaMono-Regular", 18);
                 
                 for (com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle.class).values()) {
                     style.font = font;
