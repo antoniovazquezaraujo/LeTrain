@@ -936,7 +936,6 @@ public class Gdx3DHud {
             final TextButton okBtn = new TextButton(" OK ", skin, "monospace-button");
             okBtn.setColor(Color.GREEN);
             final TextButton cancelBtn = new TextButton(" CANCEL ", skin, "monospace-button");
-            applyBtn.getLabel().getStyle().font.getData().markupEnabled = true;
             footer.add(applyBtn).pad(5);
             footer.add(saveBtn).pad(5);
             footer.add(loadBtn).pad(5);
@@ -1095,11 +1094,11 @@ public class Gdx3DHud {
                     public void run() {
                         boolean altDown = com.badlogic.gdx.Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT) 
                                        || com.badlogic.gdx.Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
-                        applyBtn.setText(altDown ? " [YELLOW]A[]PPLY " : " APPLY ");
-                        saveBtn.setText(altDown ? " [YELLOW]S[]AVE " : " SAVE ");
-                        loadBtn.setText(altDown ? " [YELLOW]L[]OAD " : " LOAD ");
-                        okBtn.setText(altDown ? " [YELLOW]O[]K " : " OK ");
-                        cancelBtn.setText(altDown ? " [YELLOW]C[]ANCEL " : " CANCEL ");
+                        applyBtn.setText(altDown ? " <A>PPLY " : " APPLY ");
+                        saveBtn.setText(altDown ? " <S>AVE " : " SAVE ");
+                        loadBtn.setText(altDown ? " <L>OAD " : " LOAD ");
+                        okBtn.setText(altDown ? " <O>K " : " OK ");
+                        cancelBtn.setText(altDown ? " <C>ANCEL " : " CANCEL ");
                     }
                 })
             ));
