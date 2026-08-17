@@ -533,7 +533,7 @@ public class TerminalView implements letrain.mvp.View {
         };
         Runnable cancelAction = window::close;
 
-        com.googlecode.lanterna.gui2.ComponentRenderer<Button> mnemonicRenderer = new com.googlecode.lanterna.gui2.ComponentRenderer<Button>() {
+        com.googlecode.lanterna.gui2.InteractableRenderer<Button> mnemonicRenderer = new com.googlecode.lanterna.gui2.InteractableRenderer<Button>() {
             @Override
             public com.googlecode.lanterna.TerminalSize getPreferredSize(Button component) {
                 return new com.googlecode.lanterna.TerminalSize(component.getLabel().length() + 4, 1);
@@ -551,6 +551,10 @@ public class TerminalView implements letrain.mvp.View {
                 if (label.length() > 0) {
                     graphics.putString(2, 0, label.substring(0, 1));
                 }
+            }
+            @Override
+            public com.googlecode.lanterna.TerminalPosition getCursorLocation(Button component) {
+                return null;
             }
         };
 
