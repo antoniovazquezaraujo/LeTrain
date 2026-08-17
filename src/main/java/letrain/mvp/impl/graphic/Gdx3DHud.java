@@ -664,6 +664,8 @@ public class Gdx3DHud {
             refTree.setPadding(5f);
             refTree.setIconSpacing(6f, 0);
             refTree.setIndentSpacing(12f);
+            
+            final ScrollPane[] scrollPaneHolder = new ScrollPane[1];
 
             refTree.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
                 private Tree.Node getNextVisible(Tree.Node current) {
@@ -699,11 +701,21 @@ public class Gdx3DHud {
 
                     if (keycode == com.badlogic.gdx.Input.Keys.DOWN) {
                         Tree.Node next = getNextVisible(current);
-                        if (next != null) refTree.getSelection().set(next);
+                        if (next != null) {
+                            refTree.getSelection().set(next);
+                            if (scrollPaneHolder[0] != null && next.getActor() != null) {
+                                scrollPaneHolder[0].scrollTo(next.getActor().getX(), next.getActor().getY(), next.getActor().getWidth(), next.getActor().getHeight());
+                            }
+                        }
                         return true;
                     } else if (keycode == com.badlogic.gdx.Input.Keys.UP) {
                         Tree.Node prev = getPrevVisible(current);
-                        if (prev != null) refTree.getSelection().set(prev);
+                        if (prev != null) {
+                            refTree.getSelection().set(prev);
+                            if (scrollPaneHolder[0] != null && prev.getActor() != null) {
+                                scrollPaneHolder[0].scrollTo(prev.getActor().getX(), prev.getActor().getY(), prev.getActor().getWidth(), prev.getActor().getHeight());
+                            }
+                        }
                         return true;
                     } else if (keycode == com.badlogic.gdx.Input.Keys.ENTER && current != null) {
                         if (current.getValue() instanceof String) {
@@ -792,6 +804,7 @@ public class Gdx3DHud {
             }
 
             ScrollPane refScroll = new ScrollPane(refTree, skin);
+            scrollPaneHolder[0] = refScroll;
             refTable.add(refScroll).grow().pad(5);
 
             // 2. Objects
@@ -1097,7 +1110,11 @@ public class Gdx3DHud {
                         } else if (keycode == com.badlogic.gdx.Input.Keys.R) {
                             stage.setKeyboardFocus(refTree);
                             if (refTree.getSelection().isEmpty() && refTree.getRootNodes().size > 0) {
-                                refTree.getSelection().set(refTree.getRootNodes().get(0));
+                                Tree.Node root = (Tree.Node) refTree.getRootNodes().get(0);
+                                refTree.getSelection().set(root);
+                                if (scrollPaneHolder[0] != null && root.getActor() != null) {
+                                    scrollPaneHolder[0].scrollTo(root.getActor().getX(), root.getActor().getY(), root.getActor().getWidth(), root.getActor().getHeight());
+                                }
                             }
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.E) {
