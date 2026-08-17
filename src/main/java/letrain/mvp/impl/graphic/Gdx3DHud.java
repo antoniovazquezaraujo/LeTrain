@@ -667,26 +667,26 @@ public class Gdx3DHud {
 
             refTree.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
                 private Tree.Node getNextVisible(Tree.Node current) {
-                    if (current == null) return refTree.getRootNodes().size > 0 ? refTree.getRootNodes().get(0) : null;
-                    if (current.isExpanded() && current.getChildren().size > 0) return current.getChildren().get(0);
+                    if (current == null) return refTree.getRootNodes().size > 0 ? (Tree.Node) refTree.getRootNodes().get(0) : null;
+                    if (current.isExpanded() && current.getChildren().size > 0) return (Tree.Node) current.getChildren().get(0);
                     Tree.Node node = current;
                     while (node != null) {
                         Tree.Node p = node.getParent();
-                        com.badlogic.gdx.utils.Array<Tree.Node> siblings = p == null ? refTree.getRootNodes() : p.getChildren();
+                        com.badlogic.gdx.utils.Array siblings = p == null ? refTree.getRootNodes() : p.getChildren();
                         int idx = siblings.indexOf(node, true);
-                        if (idx < siblings.size - 1) return siblings.get(idx + 1);
+                        if (idx < siblings.size - 1) return (Tree.Node) siblings.get(idx + 1);
                         node = p;
                     }
                     return null;
                 }
                 private Tree.Node getPrevVisible(Tree.Node current) {
-                    if (current == null) return refTree.getRootNodes().size > 0 ? refTree.getRootNodes().get(0) : null;
+                    if (current == null) return refTree.getRootNodes().size > 0 ? (Tree.Node) refTree.getRootNodes().get(0) : null;
                     Tree.Node p = current.getParent();
-                    com.badlogic.gdx.utils.Array<Tree.Node> siblings = p == null ? refTree.getRootNodes() : p.getChildren();
+                    com.badlogic.gdx.utils.Array siblings = p == null ? refTree.getRootNodes() : p.getChildren();
                     int idx = siblings.indexOf(current, true);
                     if (idx > 0) {
-                        Tree.Node node = siblings.get(idx - 1);
-                        while (node.isExpanded() && node.getChildren().size > 0) node = node.getChildren().peek();
+                        Tree.Node node = (Tree.Node) siblings.get(idx - 1);
+                        while (node.isExpanded() && node.getChildren().size > 0) node = (Tree.Node) node.getChildren().peek();
                         return node;
                     }
                     return p;
