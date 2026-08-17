@@ -437,55 +437,8 @@ public class TerminalView implements letrain.mvp.View {
         sidePanel.addComponent(new Label("QUICK REFERENCE").setLabelWidth(30));
 
         ActionListBox refList = new ActionListBox(new TerminalSize(30, 8));
-        String[][] refs = {
-                { "ITINERARY DSL", "" },
-                { "  create itinerary", "create itinerary \"Ruta\" {\n  add station \"A\"\n}" },
-                { "  add station with cmd", "add station \"A\" LOAD UNLOAD" },
-                { "  add sensor with cmd", "add sensor \"S1\" WAIT 5" },
-                { "  path commands", "LOAD | UNLOAD | REVERSE | STOP" },
-                { "  path commands", "WAIT n | SPEED n" },
-                { "  assign itinerary", "assign itinerary \"Ruta\" to train 1;" },
-                { "  set autopilot", "train 1 set autopilot true;" },
-                { "", "" },
-                { "TRIGGERS", "" },
-                { "  sensor entry", "sensor 1 on train enter {\n  \n}" },
-                { "  sensor exit", "sensor 1 on train exit {\n  \n}" },
-                { "  fork entry", "fork 1 on train enter {\n  \n}" },
-                { "  fork exit", "fork 1 on train exit {\n  \n}" },
-                { "  semaphore entry", "semaphore 1 on train enter {\n  \n}" },
-                { "  semaphore exit", "semaphore 1 on train exit {\n  \n}" },
-                { "  station entry", "station 1 on train enter {\n  \n}" },
-                { "  station exit", "station 1 on train exit {\n  \n}" },
-                { "  train enter/exit", "train 1 on enter {\n  \n}" },
-                { "  train link/unlink", "train 1 on link {\n  \n}" },
-                { "  train crash", "train 1 on crash {\n  \n}" },
-                { "  train contact", "train 1 on contact {\n  \n}" },
-                { "", "" },
-                { "ACTIONS", "" },
-                { "  train speed", "train 1 set speed 5;" },
-                { "  train stop", "train 1 stop;" },
-                { "  train accelerate", "train 1 accelerate;" },
-                { "  train decelerate", "train 1 decelerate;" },
-                { "  train invert", "train 1 invert;" },
-                { "  train forward", "train 1 set forward;" },
-                { "  train backward", "train 1 set backward;" },
-                { "  train load", "train 1 load;" },
-                { "  train unload", "train 1 unload;" },
-                { "  train link", "train 1 link forward 1;" },
-                { "  train unlink", "train 1 unlink back 1;" },
-                { "  train at station", "train at station 1 stop;" },
-                { "  train at sensor", "train at sensor 1 stop;" },
-                { "  fork straight", "fork 1 set straight;" },
-                { "  fork curved", "fork 1 set curved;" },
-                { "  fork dir", "fork 1 set E;" },
-                { "  semaphore open", "semaphore 1 set open;" },
-                { "  semaphore closed", "semaphore 1 set closed;" },
-                { "", "" },
-                { "SET NAMES", "" },
-                { "  station name", "station 1 set name \"Madrid\";" },
-                { "  sensor name", "sensor 1 set name \"S1\";" },
-                { "  train name", "train 1 set name \"Express\";" }
-        };
+        java.util.List<String[]> flatRefs = letrain.command.GrammarReference.getFlatReferenceList();
+        String[][] refs = flatRefs.toArray(new String[0][]);
         for (String[] r : refs) {
             String label = r[0];
             String snippet = r[1];
@@ -670,47 +623,7 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void showReferenceGuide() {
-        String guide = "LeTrain Automation Reference:\n\n" +
-                "── Itinerary DSL (auto-navigation) ──\n" +
-                "  create itinerary \"name\" {\n" +
-                "    add station \"A\" [cmd] [cmd] ...\n" +
-                "    add sensor \"S1\" [cmd] ...\n" +
-                "  }\n" +
-                "  assign itinerary \"name\" to train ID;\n" +
-                "  train ID set autopilot true|false;\n" +
-                "  Waypoint commands: LOAD UNLOAD REVERSE STOP\n" +
-                "                     WAIT n   SPEED n\n\n" +
-                "── Triggers (event-based) ──\n" +
-                "  sensor ID on train enter|exit { actions }\n" +
-                "  station ID on train enter|exit { actions }\n" +
-                "  fork ID on train enter|exit { actions }\n" +
-                "  semaphore ID on train enter|exit { actions }\n" +
-                "  train ID on enter|exit|link|unlink|crash|contact { actions }\n\n" +
-                "── Actions ──\n" +
-                "  train set speed N      train stop\n" +
-                "  train accelerate        train decelerate\n" +
-                "  train invert            train set forward|backward\n" +
-                "  train load              train unload\n" +
-                "  train link fwd|back [N] train unlink fwd|back [N]\n" +
-                "  fork ID set straight|curved|flip|dir\n" +
-                "  semaphore ID set open|closed\n" +
-                "  train at station ID     train at sensor ID\n" +
-                "  train at fork ID        train at semaphore ID\n\n" +
-                "── Set names ──\n" +
-                "  station ID set name \"...\"\n" +
-                "  sensor  ID set name \"...\"\n" +
-                "  train   ID set name \"...\"\n\n" +
-                "Examples:\n" +
-                "  create itinerary \"Ruta\" {\n" +
-                "    add station \"Madrid\" LOAD\n" +
-                "    add station \"Barcelona\" UNLOAD\n" +
-                "  }\n" +
-                "  assign itinerary \"Ruta\" to train 1;\n" +
-                "  train 1 set autopilot true;\n" +
-                "  train 1 set speed 3;\n" +
-                "  ---\n" +
-                "  station 1 on train enter { train load; train unlink back 1; }\n" +
-                "  train 1 on crash { train set speed 0; }";
+        String guide = letrain.command.GrammarReference.getGuideString();
         showMessage("Automation Cheat Sheet", guide);
     }
 }

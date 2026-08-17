@@ -1,0 +1,484 @@
+{
+  "@id" : 1,
+  "previousMode" : "RAILS",
+  "xRayActive" : false,
+  "economyManager" : {
+    "@id" : 2,
+    "totalIncome" : 0.0,
+    "totalExpenses" : 0.0,
+    "balance" : 0.0,
+    "prices" : {
+      "CONSTRUCTED_FORK" : 1000.0,
+      "DESTROYED_TUNNEL_RAIL_TRACK" : 30000.0,
+      "CONSTRUCTED_BRIDGE_RAIL_TRACK" : 20000.0,
+      "DESTROYED_WAGON" : 10000.0,
+      "CONSTRUCTED_WAGON" : 30000.0,
+      "CONSTRUCTED_NORMAL_RAIL_TRACK" : 100.0,
+      "DESTROYED_NORMAL_RAIL_TRACK" : 500.0,
+      "TRAIN_MOVED" : 0.0,
+      "CONSTRUCTED_TUNNEL_RAIL_TRACK" : 70000.0,
+      "DESTROYED_STATION" : 50000.0,
+      "DESTROYED_LOCOMOTIVE" : 30000.0,
+      "LOAD_PASSENGERS" : 1000.0,
+      "CONSTRUCTED_STATION" : 100000.0,
+      "CONSTRUCTED_LOCOMOTIVE" : 50000.0,
+      "UNLOAD_PASSENGERS" : 1000.0,
+      "DESTROYED_SEMAPHORE" : 500.0,
+      "TRAIN_CRASHED" : 1000000.0,
+      "DESTROYED_FORK" : 500.0,
+      "DESTROYED_SENSOR" : 500.0,
+      "CONSTRUCTED_SENSOR" : 100.0,
+      "CONSTRUCTED_SEMAPHORE" : 100.0,
+      "DESTROYED_BRIDGE_RAIL_TRACK" : 10000.0
+    },
+    "cargoBaseValues" : {
+      "RUBY" : 20000.0,
+      "GOLD" : 2000.0,
+      "COAL" : 200.0,
+      "NONE" : 0.0
+    },
+    "fuelCostPerMeter" : 0.5,
+    "cargoLoadingFee" : 100.0,
+    "startingBalance" : 0.0,
+    "goldThreshold" : 0.3,
+    "coalThreshold" : 0.25,
+    "rubyThreshold" : 0.35,
+    "waterThreshold" : 110.0,
+    "rockThreshold" : 130.0,
+    "viewRadius" : 15,
+    "eventLogManager" : {
+      "@id" : 3,
+      "entries" : [ ]
+    },
+    "constructedNormalRailTracks" : 0,
+    "constructedBridgeRailTracks" : 0,
+    "constructedTunnelRailTracks" : 0,
+    "constructedForks" : 0,
+    "constructedStations" : 0,
+    "constructedSensors" : 0,
+    "constructedSemaphores" : 0,
+    "constructedLocomotives" : 0,
+    "constructedWagons" : 0,
+    "destroyedNormalRailTracks" : 0,
+    "destroyedBridgeRailTracks" : 0,
+    "destroyedTunnelRailTracks" : 0,
+    "destroyedForks" : 0,
+    "destroyedStations" : 0,
+    "destroyedSensors" : 0,
+    "destroyedSemaphores" : 0,
+    "destroyedLocomotives" : 0,
+    "destroyedWagons" : 0
+  },
+  "selectedLocomotive" : null,
+  "selectedFork" : null,
+  "selectedSemaphore" : null,
+  "selectedStation" : null,
+  "eventLogManager" : 3,
+  "selectedLocomotiveIndex" : 0,
+  "selectedForkIndex" : 0,
+  "selectedSemaphoreIndex" : 0,
+  "selectedStationIndex" : 0,
+  "showId" : false,
+  "groundMap" : {
+    "@id" : 4,
+    "blocks" : [ {
+      "x" : -77259,
+      "y" : -78469,
+      "width" : 31,
+      "height" : 43
+    }, {
+      "x" : -77427,
+      "y" : -78397,
+      "width" : 12,
+      "height" : 67
+    }, {
+      "x" : -77403,
+      "y" : -78366,
+      "width" : 7,
+      "height" : 36
+    }, {
+      "x" : -77523,
+      "y" : -78402,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77439,
+      "y" : -78385,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77283,
+      "y" : -78306,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77247,
+      "y" : -78385,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77391,
+      "y" : -78378,
+      "width" : 7,
+      "height" : 48
+    }, {
+      "x" : -77396,
+      "y" : -78373,
+      "width" : 5,
+      "height" : 43
+    }, {
+      "x" : -77247,
+      "y" : -78342,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77408,
+      "y" : -78185,
+      "width" : 24,
+      "height" : 24
+    }, {
+      "x" : -77444,
+      "y" : -78265,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77223,
+      "y" : -78414,
+      "width" : 7,
+      "height" : 60
+    }, {
+      "x" : -77415,
+      "y" : -78414,
+      "width" : 7,
+      "height" : 84
+    }, {
+      "x" : -77300,
+      "y" : -78337,
+      "width" : 17,
+      "height" : 43
+    }, {
+      "x" : -77271,
+      "y" : -78361,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77259,
+      "y" : -78373,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77235,
+      "y" : -78354,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77372,
+      "y" : -78409,
+      "width" : 12,
+      "height" : 55
+    }, {
+      "x" : -77463,
+      "y" : -78246,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77235,
+      "y" : -78426,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77492,
+      "y" : -78313,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77475,
+      "y" : -78258,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77259,
+      "y" : -78330,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77480,
+      "y" : -78301,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77451,
+      "y" : -78234,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77228,
+      "y" : -78457,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77396,
+      "y" : -78433,
+      "width" : 12,
+      "height" : 55
+    }, {
+      "x" : -77408,
+      "y" : -78361,
+      "width" : 5,
+      "height" : 31
+    }, {
+      "x" : -77504,
+      "y" : -78325,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77456,
+      "y" : -78277,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77271,
+      "y" : -78457,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77499,
+      "y" : -78282,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77216,
+      "y" : -78445,
+      "width" : 12,
+      "height" : 79
+    }, {
+      "x" : -77427,
+      "y" : -78426,
+      "width" : 19,
+      "height" : 12
+    }, {
+      "x" : -77511,
+      "y" : -78294,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77559,
+      "y" : -78409,
+      "width" : 12,
+      "height" : 79
+    }, {
+      "x" : -77420,
+      "y" : -78241,
+      "width" : 12,
+      "height" : 84
+    }, {
+      "x" : -77511,
+      "y" : -78457,
+      "width" : 103,
+      "height" : 31
+    }, {
+      "x" : -77487,
+      "y" : -78270,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77432,
+      "y" : -78253,
+      "width" : 12,
+      "height" : 96
+    }, {
+      "x" : -77283,
+      "y" : -78349,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77547,
+      "y" : -78421,
+      "width" : 12,
+      "height" : 103
+    }, {
+      "x" : -77468,
+      "y" : -78289,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77271,
+      "y" : -78318,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77511,
+      "y" : -78414,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77535,
+      "y" : -78390,
+      "width" : 7,
+      "height" : 84
+    }, {
+      "x" : -77307,
+      "y" : -78306,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77259,
+      "y" : -78426,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77319,
+      "y" : -78318,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77324,
+      "y" : -78361,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77235,
+      "y" : -78397,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77439,
+      "y" : -78222,
+      "width" : 7,
+      "height" : 65
+    }, {
+      "x" : -77535,
+      "y" : -78433,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77312,
+      "y" : -78349,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77331,
+      "y" : -78330,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77523,
+      "y" : -78306,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77283,
+      "y" : -78445,
+      "width" : 12,
+      "height" : 31
+    }, {
+      "x" : -77384,
+      "y" : -78421,
+      "width" : 12,
+      "height" : 79
+    }, {
+      "x" : -77528,
+      "y" : -78349,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77343,
+      "y" : -78342,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77204,
+      "y" : -78433,
+      "width" : 12,
+      "height" : 55
+    }, {
+      "x" : -77516,
+      "y" : -78337,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77192,
+      "y" : -78421,
+      "width" : 12,
+      "height" : 31
+    }, {
+      "x" : -77360,
+      "y" : -78397,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77464,
+      "y" : -78185,
+      "width" : 25,
+      "height" : 24
+    }, {
+      "x" : -77408,
+      "y" : -78445,
+      "width" : 12,
+      "height" : 79
+    }, {
+      "x" : -77348,
+      "y" : -78385,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77511,
+      "y" : -78426,
+      "width" : 19,
+      "height" : 12
+    }, {
+      "x" : -77355,
+      "y" : -78354,
+      "width" : 7,
+      "height" : 12
+    }, {
+      "x" : -77523,
+      "y" : -78445,
+      "width" : 12,
+      "height" : 43
+    }, {
+      "x" : -77336,
+      "y" : -78373,
+      "width" : 12,
+      "height" : 43
+    } ]
+  },
+  "mode" : "PROGRAM",
+  "railMap" : {
+    "@id" : 5,
+    "rails" : { }
+  },
+  "locomotives" : [ ],
+  "wagons" : [ ],
+  "cursor" : {
+    "dir" : "SW",
+    "selected" : false,
+    "reversed" : false,
+    "mode" : "MOVING",
+    "position" : {
+      "@id" : 6,
+      "x" : -77268,
+      "y" : -78430
+    },
+    "previousPosition" : {
+      "@id" : 7,
+      "x" : -77267,
+      "y" : -78431
+    }
+  },
+  "forks" : [ ],
+  "sensors" : [ ],
+  "semaphores" : [ ],
+  "stations" : [ ],
+  "nextLocomotiveId" : 0,
+  "nextForkId" : 0,
+  "nextSensorId" : 0,
+  "nextSemaphoreId" : 0,
+  "nextTrainId" : 0,
+  "nextStationId" : 0,
+  "program" : "",
+  "seed" : 228,
+  "quantifier" : 12,
+  "quantifierSteps" : 0,
+  "lastSaveTime" : null
+}

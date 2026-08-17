@@ -702,125 +702,27 @@ public class Gdx3DHud {
             };
 
             // ── BUILD TREE ──
-            refTree.add(heading.apply("ITINERARY DSL"));
-            var itin = parent.apply("  [-] create itinerary");
-            itin.add(leaf.apply("template", "create itinerary \"\" {\n  add station #\n}"));
-            itin.setExpanded(true);
-            refTree.add(itin);
-
-            var addSt = parent.apply("  [+] add station [cmd]");
-            addSt.add(leaf.apply("load", "add station # load"));
-            addSt.add(leaf.apply("unload", "add station # unload"));
-            addSt.add(leaf.apply("reverse", "add station # reverse"));
-            addSt.add(leaf.apply("stop", "add station # stop"));
-            addSt.add(leaf.apply("wait n", "add station # wait #"));
-            addSt.add(leaf.apply("speed n", "add station # speed #"));
-            refTree.add(addSt);
-
-            var addSe = parent.apply("  [+] add sensor [cmd]");
-            addSe.add(leaf.apply("load", "add sensor # load"));
-            addSe.add(leaf.apply("unload", "add sensor # unload"));
-            addSe.add(leaf.apply("wait n", "add sensor # wait #"));
-            refTree.add(addSe);
-
-            refTree.add(leaf.apply("assign", "assign itinerary \"\" to train #;"));
-            refTree.add(leaf.apply("autopilot", "train # set autopilot true;"));
-
-            // ── TRIGGERS ──
-            refTree.add(heading.apply("TRIGGERS"));
-
-            var sensor = parent.apply("  [+] sensor");
-            var snOn = parent.apply("    [-] on train");
-            snOn.add(leaf.apply("enter", "sensor # on train enter {\n  \n}"));
-            snOn.add(leaf.apply("exit", "sensor # on train exit {\n  \n}"));
-            snOn.add(leaf.apply("enter fwd", "sensor # on train enter forward {\n  \n}"));
-            snOn.add(leaf.apply("exit bwd", "sensor # on train exit backward {\n  \n}"));
-            snOn.setExpanded(true);
-            sensor.add(snOn);
-            refTree.add(sensor);
-
-            var station = parent.apply("  [+] station");
-            var stOn = parent.apply("    [-] on train");
-            stOn.add(leaf.apply("enter", "station # on train enter {\n  \n}"));
-            stOn.add(leaf.apply("exit", "station # on train exit {\n  \n}"));
-            stOn.add(leaf.apply("enter fwd", "station # on train enter forward {\n  \n}"));
-            stOn.add(leaf.apply("exit bwd", "station # on train exit backward {\n  \n}"));
-            stOn.setExpanded(true);
-            station.add(stOn);
-            refTree.add(station);
-
-            var fork = parent.apply("  [+] fork");
-            var fkOn = parent.apply("    [+] on train");
-            fkOn.add(leaf.apply("enter", "fork # on train enter {\n  \n}"));
-            fkOn.add(leaf.apply("exit", "fork # on train exit {\n  \n}"));
-            fork.add(fkOn);
-            refTree.add(fork);
-
-            var semaphore = parent.apply("  [+] semaphore");
-            var smOn = parent.apply("    [+] on train");
-            smOn.add(leaf.apply("enter", "semaphore # on train enter {\n  \n}"));
-            smOn.add(leaf.apply("exit", "semaphore # on train exit {\n  \n}"));
-            semaphore.add(smOn);
-            refTree.add(semaphore);
-
-            var trainTrig = parent.apply("  [+] train");
-            var trOn = parent.apply("    [-] on");
-            trOn.add(leaf.apply("enter", "train # on enter {\n  \n}"));
-            trOn.add(leaf.apply("exit", "train # on exit {\n  \n}"));
-            trOn.add(leaf.apply("link", "train # on link {\n  \n}"));
-            trOn.add(leaf.apply("unlink", "train # on unlink {\n  \n}"));
-            trOn.add(leaf.apply("crash", "train # on crash {\n  \n}"));
-            trOn.add(leaf.apply("contact", "train # on contact {\n  \n}"));
-            trOn.add(leaf.apply("crash fwd", "train # on crash forward {\n  \n}"));
-            trOn.add(leaf.apply("contact bwd", "train # on contact backward {\n  \n}"));
-            trOn.setExpanded(true);
-            trainTrig.add(trOn);
-            refTree.add(trainTrig);
-
-            // ── ACTIONS ──
-            refTree.add(heading.apply("ACTIONS"));
-
-            var trainAct = parent.apply("  [-] train");
-            trainAct.add(leaf.apply("set speed", "train # set speed #;"));
-            trainAct.add(leaf.apply("accelerate", "train # accelerate;"));
-            trainAct.add(leaf.apply("decelerate", "train # decelerate;"));
-            trainAct.add(leaf.apply("stop", "train # stop;"));
-            trainAct.add(leaf.apply("invert", "train # invert;"));
-            trainAct.add(leaf.apply("set forward", "train # set forward;"));
-            trainAct.add(leaf.apply("set backward", "train # set backward;"));
-            trainAct.add(leaf.apply("load", "train # load;"));
-            trainAct.add(leaf.apply("unload", "train # unload;"));
-            trainAct.add(leaf.apply("link", "train # link forward #;"));
-            trainAct.add(leaf.apply("unlink", "train # unlink backward #;"));
-            trainAct.setExpanded(true);
-            refTree.add(trainAct);
-
-            var trainAt = parent.apply("  [+] train at");
-            trainAt.add(leaf.apply("station", "train at station # stop;"));
-            trainAt.add(leaf.apply("sensor", "train at sensor # stop;"));
-            trainAt.add(leaf.apply("fork", "train at fork # stop;"));
-            trainAt.add(leaf.apply("semaphore", "train at semaphore # stop;"));
-            refTree.add(trainAt);
-
-            var forkAct = parent.apply("  [-] fork");
-            forkAct.add(leaf.apply("straight", "fork # set straight;"));
-            forkAct.add(leaf.apply("curved", "fork # set curved;"));
-            forkAct.add(leaf.apply("flip", "fork # set flip;"));
-            forkAct.add(leaf.apply("dir...", "fork # set e;"));
-            forkAct.setExpanded(true);
-            refTree.add(forkAct);
-
-            var semAct = parent.apply("  [-] semaphore");
-            semAct.add(leaf.apply("open", "semaphore # set open;"));
-            semAct.add(leaf.apply("closed", "semaphore # set closed;"));
-            semAct.setExpanded(true);
-            refTree.add(semAct);
-
-            // ── SET NAMES ──
-            refTree.add(heading.apply("SET NAMES"));
-            refTree.add(leaf.apply("station", "station # set name \"\";"));
-            refTree.add(leaf.apply("sensor", "sensor # set name \"\";"));
-            refTree.add(leaf.apply("train", "train # set name \"\";"));
+            class TreeBuilder {
+                Tree.Node build(letrain.command.GrammarReference.Node refNode, String indent) {
+                    if (refNode.isHeading) {
+                        return heading.apply(refNode.label);
+                    } else if (refNode.snippet != null && refNode.children.isEmpty()) {
+                        return leaf.apply(refNode.label, refNode.snippet);
+                    } else {
+                        String prefix = refNode.expanded ? "[-]" : "[+]";
+                        Tree.Node n = parent.apply(indent + prefix + " " + refNode.label);
+                        for (letrain.command.GrammarReference.Node child : refNode.children) {
+                            n.add(build(child, indent + "  "));
+                        }
+                        if (refNode.expanded) n.setExpanded(true);
+                        return n;
+                    }
+                }
+            }
+            TreeBuilder tb = new TreeBuilder();
+            for (letrain.command.GrammarReference.Node rootNode : letrain.command.GrammarReference.getReferenceTree()) {
+                refTree.add(tb.build(rootNode, "  "));
+            }
 
             ScrollPane refScroll = new ScrollPane(refTree, skin);
             refTable.add(refScroll).grow().pad(5);
