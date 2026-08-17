@@ -533,10 +533,10 @@ public class TerminalView implements letrain.mvp.View {
         };
         Runnable cancelAction = window::close;
 
-        footer.addComponent(new Button("<A>pply", applyAction));
-        footer.addComponent(new Button("<S>ave", saveAction));
-        footer.addComponent(new Button("<L>oad", loadAction));
-        footer.addComponent(new Button("<C>ancel", cancelAction));
+        footer.addComponent(new Button("Apply", applyAction));
+        footer.addComponent(new Button("Save", saveAction));
+        footer.addComponent(new Button("Load", loadAction));
+        footer.addComponent(new Button("Cancel", cancelAction));
 
         window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
             @Override
