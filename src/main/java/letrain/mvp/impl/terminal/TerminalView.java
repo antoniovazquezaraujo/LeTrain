@@ -533,11 +533,42 @@ public class TerminalView implements letrain.mvp.View {
         };
         Runnable cancelAction = window::close;
 
-        footer.addComponent(new Button("Apply", applyAction));
-        footer.addComponent(new Button("Save", saveAction));
-        footer.addComponent(new Button("Load", loadAction));
-        footer.addComponent(new Button("Cancel", cancelAction));
+        com.googlecode.lanterna.gui2.ComponentRenderer<Button> mnemonicRenderer = new com.googlecode.lanterna.gui2.ComponentRenderer<Button>() {
+            @Override
+            public com.googlecode.lanterna.TerminalSize getPreferredSize(Button component) {
+                return new com.googlecode.lanterna.TerminalSize(component.getLabel().length() + 4, 1);
+            }
+            @Override
+            public void drawComponent(com.googlecode.lanterna.gui2.TextGUIGraphics graphics, Button component) {
+                if (component.isFocused()) {
+                    graphics.applyThemeStyle(component.getThemeDefinition().getActive());
+                } else {
+                    graphics.applyThemeStyle(component.getThemeDefinition().getNormal());
+                }
+                String label = component.getLabel();
+                graphics.putString(0, 0, "< " + label + " >");
+                graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.YELLOW_BRIGHT);
+                if (label.length() > 0) {
+                    graphics.putString(2, 0, label.substring(0, 1));
+                }
+            }
+        };
 
+        Button applyBtn = new Button("Apply", applyAction);
+        applyBtn.setRenderer(mnemonicRenderer);
+        footer.addComponent(applyBtn);
+
+        Button saveBtn = new Button("Save", saveAction);
+        saveBtn.setRenderer(mnemonicRenderer);
+        footer.addComponent(saveBtn);
+
+        Button loadBtn = new Button("Load", loadAction);
+        loadBtn.setRenderer(mnemonicRenderer);
+        footer.addComponent(loadBtn);
+
+        Button cancelBtn = new Button("Cancel", cancelAction);
+        cancelBtn.setRenderer(mnemonicRenderer);
+        footer.addComponent(cancelBtn);
         window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
             @Override
             public void onInput(com.googlecode.lanterna.gui2.Window w, com.googlecode.lanterna.input.KeyStroke ks, java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
