@@ -688,7 +688,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void showSaveDialog() {
-        hud.showFileDialog("Save Game", DEFAULT_SAVEGAME_FILENAME, (text) -> {
+        hud.showFileDialog("Save Game", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.SAVE, DEFAULT_SAVEGAME_FILENAME, (text) -> {
             if (text != null && !text.trim().isEmpty()) {
                 File file = new File(text);
                 log.info("Saving game to {}", file.getAbsolutePath());
@@ -699,7 +699,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void showLoadDialog() {
-        hud.showFileDialog("Load Game", DEFAULT_SAVEGAME_FILENAME, (text) -> {
+        hud.showFileDialog("Load Game", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN, DEFAULT_SAVEGAME_FILENAME, (text) -> {
             if (text != null && !text.trim().isEmpty()) {
                 File file = new File(text);
                 log.info("Loading game from {}", file.getAbsolutePath());

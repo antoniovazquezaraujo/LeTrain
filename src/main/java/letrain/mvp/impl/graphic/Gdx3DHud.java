@@ -1127,7 +1127,7 @@ public class Gdx3DHud {
             stage.setKeyboardFocus(textArea);
     }
 
-    public void showFileDialog(String title, String defaultText, Consumer<String> onResult) {
+    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode, String defaultText, Consumer<String> onResult) {
         Gdx.app.postRunnable(() -> {
             if (!com.kotcrab.vis.ui.VisUI.isLoaded()) {
                 com.kotcrab.vis.ui.VisUI.load();
@@ -1157,7 +1157,7 @@ public class Gdx3DHud {
                 }
             }
             com.kotcrab.vis.ui.widget.file.FileChooser fileChooser = new com.kotcrab.vis.ui.widget.file.FileChooser(
-                    title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN);
+                    title, mode);
             fileChooser.setSelectionMode(com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode.FILES);
             
             // Only show .dat files by default
