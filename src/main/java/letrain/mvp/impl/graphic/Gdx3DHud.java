@@ -666,23 +666,56 @@ public class Gdx3DHud {
             refTree.setIndentSpacing(12f);
 
             refTree.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                private Tree.Node getNextVisible(Tree.Node current) {
+                    if (current == null) return refTree.getRootNodes().size > 0 ? refTree.getRootNodes().get(0) : null;
+                    if (current.isExpanded() && current.getChildren().size > 0) return current.getChildren().get(0);
+                    Tree.Node node = current;
+                    while (node != null) {
+                        Tree.Node p = node.getParent();
+                        com.badlogic.gdx.utils.Array<Tree.Node> siblings = p == null ? refTree.getRootNodes() : p.getChildren();
+                        int idx = siblings.indexOf(node, true);
+                        if (idx < siblings.size - 1) return siblings.get(idx + 1);
+                        node = p;
+                    }
+                    return null;
+                }
+                private Tree.Node getPrevVisible(Tree.Node current) {
+                    if (current == null) return refTree.getRootNodes().size > 0 ? refTree.getRootNodes().get(0) : null;
+                    Tree.Node p = current.getParent();
+                    com.badlogic.gdx.utils.Array<Tree.Node> siblings = p == null ? refTree.getRootNodes() : p.getChildren();
+                    int idx = siblings.indexOf(current, true);
+                    if (idx > 0) {
+                        Tree.Node node = siblings.get(idx - 1);
+                        while (node.isExpanded() && node.getChildren().size > 0) node = node.getChildren().peek();
+                        return node;
+                    }
+                    return p;
+                }
+
                 @Override
                 public boolean keyDown(com.badlogic.gdx.scenes.scene2d.InputEvent event, int keycode) {
-                    if (keycode == com.badlogic.gdx.Input.Keys.ENTER) {
-                        com.badlogic.gdx.utils.Array<Tree.Node> selection = refTree.getSelection().toArray();
-                        if (selection.size > 0) {
-                            Tree.Node node = selection.get(0);
-                            if (node.getValue() instanceof String) {
-                                insertAtCursor(textArea, (String) node.getValue() + "\n");
+                    com.badlogic.gdx.utils.Array<Tree.Node> selection = refTree.getSelection().toArray();
+                    Tree.Node current = selection.size > 0 ? selection.get(0) : null;
+
+                    if (keycode == com.badlogic.gdx.Input.Keys.DOWN) {
+                        Tree.Node next = getNextVisible(current);
+                        if (next != null) refTree.getSelection().set(next);
+                        return true;
+                    } else if (keycode == com.badlogic.gdx.Input.Keys.UP) {
+                        Tree.Node prev = getPrevVisible(current);
+                        if (prev != null) refTree.getSelection().set(prev);
+                        return true;
+                    } else if (keycode == com.badlogic.gdx.Input.Keys.ENTER && current != null) {
+                        if (current.getValue() instanceof String) {
+                            insertAtCursor(textArea, (String) current.getValue() + "\n");
+                            return true;
+                        } else if (current.getActor() instanceof Label) {
+                            Label l = (Label) current.getActor();
+                            String text = l.getText().toString();
+                            if (text.contains("[+]") || text.contains("[-]")) {
+                                current.setExpanded(!current.isExpanded());
+                                l.setText(current.isExpanded() ? text.replace("[+]", "[-]") : text.replace("[-]", "[+]"));
                                 return true;
-                            } else if (node.getActor() instanceof Label) {
-                                Label l = (Label) node.getActor();
-                                String text = l.getText().toString();
-                                if (text.contains("[+]") || text.contains("[-]")) {
-                                    node.setExpanded(!node.isExpanded());
-                                    l.setText(node.isExpanded() ? text.replace("[+]", "[-]") : text.replace("[-]", "[+]"));
-                                    return true;
-                                }
                             }
                         }
                     }
@@ -1063,6 +1096,9 @@ public class Gdx3DHud {
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.R) {
                             stage.setKeyboardFocus(refTree);
+                            if (refTree.getSelection().isEmpty() && refTree.getRootNodes().size > 0) {
+                                refTree.getSelection().set(refTree.getRootNodes().get(0));
+                            }
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.E) {
                             stage.setKeyboardFocus(textArea);
