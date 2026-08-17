@@ -66,5 +66,4 @@ public interface View {
 
     void showMessage(String title, String message);
 
-    void showReferenceGuide();
 }

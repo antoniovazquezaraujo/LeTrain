@@ -222,11 +222,6 @@ public class Gdx3DInputHandler implements InputProcessor {
             return;
         }
 
-        if (stroke.getKeyType() == KeyType.F12) {
-            view.showReferenceGuide();
-            return;
-        }
-
         // Global Camera Zoom/Rotation (Alt + Arrows)
         if (stroke.isAltDown()) {
             if (stroke.getKeyType() == KeyType.ArrowLeft) {
@@ -477,11 +472,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             }
         }
     }
-
     private void handleProgramInput(KeyStroke stroke) {
-        if (stroke.getKeyType() == KeyType.F12) {
-            view.showReferenceGuide();
-        }
     }
 
     private void handleLinkInput(KeyStroke stroke) {

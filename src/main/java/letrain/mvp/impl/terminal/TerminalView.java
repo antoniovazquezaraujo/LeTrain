@@ -436,7 +436,19 @@ public class TerminalView implements letrain.mvp.View {
         Panel sidePanel = new Panel(new LinearLayout(Direction.VERTICAL));
         sidePanel.addComponent(new Label("QUICK REFERENCE").setLabelWidth(30));
 
-        ActionListBox refList = new ActionListBox(new TerminalSize(30, 20));
+        ActionListBox refList = new ActionListBox(new TerminalSize(30, 20)) {
+            @Override
+            public com.googlecode.lanterna.gui2.Interactable.Result handleInput(com.googlecode.lanterna.input.KeyStroke ks) {
+                if (ks instanceof com.googlecode.lanterna.input.MouseInput) {
+                    com.googlecode.lanterna.input.MouseInput mi = (com.googlecode.lanterna.input.MouseInput) ks;
+                    if (mi.getActionType() == com.googlecode.lanterna.input.MouseActionType.CLICK_RELEASE) {
+                        super.handleInput(ks);
+                        return super.handleInput(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.Enter));
+                    }
+                }
+                return super.handleInput(ks);
+            }
+        };
         Runnable updateList = new Runnable() {
             private void build(letrain.command.GrammarReference.Node node, String indent) {
                 if (node.isHeading) {
@@ -461,9 +473,13 @@ public class TerminalView implements letrain.mvp.View {
             }
             @Override
             public void run() {
+                int selected = refList.getSelectedIndex();
                 refList.clearItems();
                 for (letrain.command.GrammarReference.Node rootNode : letrain.command.GrammarReference.getReferenceTree()) {
                     build(rootNode, "");
+                }
+                if (selected >= 0 && selected < refList.getItems().size()) {
+                    refList.setSelectedIndex(selected);
                 }
             }
         };
@@ -528,8 +544,17 @@ public class TerminalView implements letrain.mvp.View {
             }
         };
 
-        Button helpBtn = new Button("F1=Help", this::showReferenceGuide);
-        footer.addComponent(helpBtn);
+        Button togglePanelsBtn = new Button("Toggle", () -> {
+            if (sidePanel.getParent() != null) {
+                mainPanel.removeComponent(sidePanel);
+                editor.setPreferredSize(new TerminalSize(90, 20));
+            } else {
+                mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
+                editor.setPreferredSize(new TerminalSize(60, 20));
+            }
+        });
+        togglePanelsBtn.setRenderer(mnemonicRenderer);
+        footer.addComponent(togglePanelsBtn);
 
         Button applyBtn = new Button("Apply", applyAction);
         applyBtn.setRenderer(mnemonicRenderer);
@@ -549,12 +574,10 @@ public class TerminalView implements letrain.mvp.View {
         window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
             @Override
             public void onInput(com.googlecode.lanterna.gui2.Window w, com.googlecode.lanterna.input.KeyStroke ks, java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
-                if (ks.getKeyType() == com.googlecode.lanterna.input.KeyType.F1) {
-                    showReferenceGuide();
-                    deliverEvent.set(false);
-                } else if (ks.isAltDown() && ks.getCharacter() != null) {
+                if (ks.isAltDown() && ks.getCharacter() != null) {
                     char c = Character.toLowerCase(ks.getCharacter());
-                    if (c == 'a') { applyAction.run(); deliverEvent.set(false); }
+                    if (c == 't') { togglePanelsBtn.getRunnable().run(); deliverEvent.set(false); }
+                    else if (c == 'a') { applyAction.run(); deliverEvent.set(false); }
                     else if (c == 's') { saveAction.run(); deliverEvent.set(false); }
                     else if (c == 'l') { loadAction.run(); deliverEvent.set(false); }
                     else if (c == 'c') { cancelAction.run(); deliverEvent.set(false); }
@@ -644,9 +667,4 @@ public class TerminalView implements letrain.mvp.View {
         com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui, title, message);
     }
 
-    @Override
-    public void showReferenceGuide() {
-        String guide = letrain.command.GrammarReference.getGuideString();
-        showMessage("Automation Cheat Sheet", guide);
-    }
 }
