@@ -930,12 +930,12 @@ public class Gdx3DHud {
 
             // Footer
             Table footer = new Table();
-            TextButton applyBtn = new TextButton(" APPLY ", skin, "monospace-button");
-            TextButton saveBtn = new TextButton(" SAVE ", skin, "monospace-button");
-            TextButton loadBtn = new TextButton(" LOAD ", skin, "monospace-button");
-            TextButton okBtn = new TextButton(" OK ", skin, "monospace-button");
+            final TextButton applyBtn = new TextButton(" APPLY ", skin, "monospace-button");
+            final TextButton saveBtn = new TextButton(" SAVE ", skin, "monospace-button");
+            final TextButton loadBtn = new TextButton(" LOAD ", skin, "monospace-button");
+            final TextButton okBtn = new TextButton(" OK ", skin, "monospace-button");
             okBtn.setColor(Color.GREEN);
-            TextButton cancelBtn = new TextButton(" CANCEL ", skin, "monospace-button");
+            final TextButton cancelBtn = new TextButton(" CANCEL ", skin, "monospace-button");
             footer.add(applyBtn).pad(5);
             footer.add(saveBtn).pad(5);
             footer.add(loadBtn).pad(5);
@@ -1085,6 +1085,48 @@ public class Gdx3DHud {
                     window.remove();
                     model.setMode(letrain.mvp.Model.GameMode.RAILS);
                     view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
+                }
+            });
+
+            window.addAction(com.badlogic.gdx.scenes.scene2d.actions.Actions.forever(
+                com.badlogic.gdx.scenes.scene2d.actions.Actions.run(new Runnable() {
+                    @Override
+                    public void run() {
+                        boolean altDown = com.badlogic.gdx.Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT) 
+                                       || com.badlogic.gdx.Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
+                        applyBtn.setText(altDown ? " <A>PPLY " : " APPLY ");
+                        saveBtn.setText(altDown ? " <S>AVE " : " SAVE ");
+                        loadBtn.setText(altDown ? " <L>OAD " : " LOAD ");
+                        okBtn.setText(altDown ? " <O>K " : " OK ");
+                        cancelBtn.setText(altDown ? " <C>ANCEL " : " CANCEL ");
+                    }
+                })
+            ));
+
+            window.addCaptureListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                @Override
+                public boolean keyDown(InputEvent event, int keycode) {
+                    boolean altDown = com.badlogic.gdx.Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT) 
+                                   || com.badlogic.gdx.Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
+                    if (altDown) {
+                        if (keycode == com.badlogic.gdx.Input.Keys.A) {
+                            applyBtn.fire(new ChangeListener.ChangeEvent());
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.S) {
+                            saveBtn.fire(new ChangeListener.ChangeEvent());
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.L) {
+                            loadBtn.fire(new ChangeListener.ChangeEvent());
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.O) {
+                            okBtn.fire(new ChangeListener.ChangeEvent());
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.C) {
+                            cancelBtn.fire(new ChangeListener.ChangeEvent());
+                            return true;
+                        }
+                    }
+                    return false;
                 }
             });
 
