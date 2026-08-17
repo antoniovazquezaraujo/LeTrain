@@ -659,10 +659,36 @@ public class Gdx3DHud {
             com.badlogic.gdx.scenes.scene2d.ui.Tree.TreeStyle treeStyle = new com.badlogic.gdx.scenes.scene2d.ui.Tree.TreeStyle();
             treeStyle.plus = skin.newDrawable("white", new Color(0.6f, 0.6f, 0.6f, 1f));
             treeStyle.minus = skin.newDrawable("white", new Color(0.6f, 0.6f, 0.6f, 1f));
+            treeStyle.selection = skin.newDrawable("white", new Color(0.2f, 0.4f, 0.6f, 0.8f));
             Tree refTree = new Tree(treeStyle);
             refTree.setPadding(5f);
             refTree.setIconSpacing(6f, 0);
             refTree.setIndentSpacing(12f);
+
+            refTree.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                @Override
+                public boolean keyDown(InputEvent event, int keycode) {
+                    if (keycode == Input.Keys.ENTER) {
+                        com.badlogic.gdx.utils.Array<Tree.Node> selection = refTree.getSelection().toArray();
+                        if (selection.size > 0) {
+                            Tree.Node node = selection.get(0);
+                            if (node.getValue() instanceof String) {
+                                insertAtCursor(textArea, (String) node.getValue() + "\n");
+                                return true;
+                            } else if (node.getActor() instanceof Label) {
+                                Label l = (Label) node.getActor();
+                                String text = l.getText().toString();
+                                if (text.contains("[+]") || text.contains("[-]")) {
+                                    node.setExpanded(!node.isExpanded());
+                                    l.setText(node.isExpanded() ? text.replace("[+]", "[-]") : text.replace("[-]", "[+]"));
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                    return false;
+                }
+            });
 
             // Helper: creates a clickable leaf node that inserts a snippet on click
             java.util.function.BiFunction<String, String, Tree.Node> leaf = (labelText, snippet) -> {
@@ -674,6 +700,10 @@ public class Gdx3DHud {
                     public void clicked(InputEvent event, float x, float y) {
                         insertAtCursor(textArea, snippet + "\n");
                         event.stop();
+                    }
+                    @Override
+                    public void enter(InputEvent event, float x, float y, int pointer, com.badlogic.gdx.scenes.scene2d.Actor fromActor) {
+                        refTree.getSelection().set(n);
                     }
                 });
                 return n;
@@ -696,6 +726,10 @@ public class Gdx3DHud {
                             ? text.replace("[+]", "[-]")
                             : text.replace("[-]", "[+]"));
                         event.stop();
+                    }
+                    @Override
+                    public void enter(InputEvent event, float x, float y, int pointer, com.badlogic.gdx.scenes.scene2d.Actor fromActor) {
+                        refTree.getSelection().set(n);
                     }
                 });
                 return n;
