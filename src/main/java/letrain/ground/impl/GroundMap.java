@@ -25,7 +25,7 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
     Map<Integer, Map<Integer, Integer>> cells;
     @com.fasterxml.jackson.annotation.JsonIgnore
     PerlinNoise noise = null;
-    @com.fasterxml.jackson.annotation.JsonProperty("blocks")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     Set<Block> blocks;
     private EconomyManager economyManager;
 
@@ -211,6 +211,14 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
 
                     setValueAt(colIndex, rowIndex, terrain);
                 }
+            }
+        }
+    }
+
+    public void rebuildCellsFromBlocks() {
+        if (blocks != null) {
+            for (Block block : blocks) {
+                generateTerrain(block.x(), block.y(), block.width(), block.height());
             }
         }
     }

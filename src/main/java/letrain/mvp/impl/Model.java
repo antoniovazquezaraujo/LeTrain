@@ -235,6 +235,9 @@ public class Model implements letrain.mvp.Model {
                 java.lang.reflect.Field ecoField = letrain.ground.impl.GroundMap.class.getDeclaredField("economyManager");
                 ecoField.setAccessible(true);
                 ecoField.set(this.groundMap, this.economyManager);
+                if (this.groundMap instanceof letrain.ground.impl.GroundMap) {
+                    ((letrain.ground.impl.GroundMap) this.groundMap).rebuildCellsFromBlocks();
+                }
             } catch (Exception e) {
                 log.error("Error re-initializing GroundMap", e);
             }
