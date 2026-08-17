@@ -519,37 +519,20 @@ public class TerminalView implements letrain.mvp.View {
 
         // Footer (Buttons)
         Panel footer = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        Runnable applyAction = () -> {
+        footer.addComponent(new Button("Apply", () -> {
             gameViewListener.onEditCommands(editor.getText());
             window.close();
-        };
-        Runnable saveAction = () -> {
+        }));
+        footer.addComponent(new Button("Save", () -> {
+            // We apply first to ensure the saved game has the latest code
             gameViewListener.onEditCommands(editor.getText());
             showSaveDialog();
-        };
-        Runnable loadAction = () -> {
+        }));
+        footer.addComponent(new Button("Load", () -> {
             showLoadDialog();
             window.close();
-        };
-        Runnable cancelAction = window::close;
-
-        footer.addComponent(new Button("<A>pply", applyAction));
-        footer.addComponent(new Button("<S>ave", saveAction));
-        footer.addComponent(new Button("<L>oad", loadAction));
-        footer.addComponent(new Button("<C>ancel", cancelAction));
-
-        window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
-            @Override
-            public void onInput(com.googlecode.lanterna.gui2.Window w, com.googlecode.lanterna.input.KeyStroke ks, java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
-                if (ks.isAltDown() && ks.getCharacter() != null) {
-                    char c = Character.toLowerCase(ks.getCharacter());
-                    if (c == 'a') { applyAction.run(); deliverEvent.set(false); }
-                    else if (c == 's') { saveAction.run(); deliverEvent.set(false); }
-                    else if (c == 'l') { loadAction.run(); deliverEvent.set(false); }
-                    else if (c == 'c') { cancelAction.run(); deliverEvent.set(false); }
-                }
-            }
-        });
+        }));
+        footer.addComponent(new Button("Cancel", window::close));
 
         mainPanel.addComponent(footer, BorderLayout.Location.BOTTOM);
 
