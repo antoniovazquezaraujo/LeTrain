@@ -1061,6 +1061,12 @@ public class Gdx3DHud {
                         } else if (keycode == com.badlogic.gdx.Input.Keys.C) {
                             cancelBtn.fire(new ChangeListener.ChangeEvent());
                             return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.R) {
+                            stage.setKeyboardFocus(refTree);
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.E) {
+                            stage.setKeyboardFocus(textArea);
+                            return true;
                         }
                     }
                     return false;
