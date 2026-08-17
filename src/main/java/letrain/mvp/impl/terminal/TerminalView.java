@@ -444,6 +444,11 @@ public class TerminalView implements letrain.mvp.View {
                     if (mi.getActionType() == com.googlecode.lanterna.input.MouseActionType.CLICK_RELEASE) {
                         super.handleKeyStroke(ks);
                         return super.handleKeyStroke(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.Enter));
+                    } else if (mi.getActionType() == com.googlecode.lanterna.input.MouseActionType.MOVE) {
+                        int idx = getIndexByMouseAction(mi);
+                        if (idx >= 0 && idx < getItems().size()) {
+                            setSelectedIndex(idx);
+                        }
                     }
                 }
                 return super.handleKeyStroke(ks);
