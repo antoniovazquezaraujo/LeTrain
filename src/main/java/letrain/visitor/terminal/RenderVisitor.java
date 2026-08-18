@@ -137,6 +137,7 @@ public class RenderVisitor implements Visitor {
     public void resetColors() {
         view.setFgColor(FG_COLOR);
         view.setBgColor(BG_COLOR);
+        view.setUnderline(false);
     }
 
     @Override
@@ -346,13 +347,15 @@ public class RenderVisitor implements Visitor {
                 view.setFgColor(TextColor.ANSI.values()[new Random().nextInt(TextColor.ANSI.values().length)]);
             } else if (wagon.getExclusiveCargoType() != letrain.track.CargoTypes.NONE) {
                 boolean isLoaded = wagon.getCargoAmount() > 0;
-                view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), isLoaded));
+                view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), true));
+                view.setUnderline(isLoaded);
             } else {
                 view.setFgColor(WAGON_COLOR);
             }
         } else if (wagon.getExclusiveCargoType() != letrain.track.CargoTypes.NONE) {
             boolean isLoaded = wagon.getCargoAmount() > 0;
-            view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), isLoaded));
+            view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), true));
+            view.setUnderline(isLoaded);
         } else {
             view.setFgColor(WAGON_COLOR);
         }
