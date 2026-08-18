@@ -94,9 +94,9 @@ public class RenderVisitor implements Visitor {
     public static String BRIDGE_RAILTRACK_ASPECT = "\u252C";
     public static String BRIDGE_GATE_RAILTRACK_ASPECT = "\u224E";
     public static String SENSOR_ASPECT = "₪";
-    public static String GENERIC_STATION_ASPECT = "░";
-    public static String LOAD_STATION_ASPECT = "■";
-    public static String UNLOAD_STATION_ASPECT = "□";
+    public static String GENERIC_STATION_ASPECT = "◇";
+    public static String LOAD_STATION_ASPECT = "▲";
+    public static String UNLOAD_STATION_ASPECT = "▼";
     public static String RAIL_CROSS_ASPECT = "+";
     public static String DIAGONAL_RAIL_CROSS_ASPECT = "X";
     public static String SEMAPHORE_ASPECT = ":";
