@@ -94,7 +94,9 @@ public class RenderVisitor implements Visitor {
     public static String BRIDGE_RAILTRACK_ASPECT = "\u252C";
     public static String BRIDGE_GATE_RAILTRACK_ASPECT = "\u224E";
     public static String SENSOR_ASPECT = "₪";
-    public static String STATION_ASPECT = "[";
+    public static String GENERIC_STATION_ASPECT = "[";
+    public static String LOAD_STATION_ASPECT = "[";
+    public static String UNLOAD_STATION_ASPECT = "]";
     public static String RAIL_CROSS_ASPECT = "+";
     public static String DIAGONAL_RAIL_CROSS_ASPECT = "X";
     public static String SEMAPHORE_ASPECT = ":";
@@ -216,11 +218,13 @@ public class RenderVisitor implements Visitor {
             view.setFgColor(STATION_COLOR);
         }
 
-        String aspect = STATION_ASPECT;
+        String aspect = GENERIC_STATION_ASPECT;
         if (station.getCargoType() != letrain.track.CargoTypes.NONE) {
             boolean isProducer = station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER;
-            if (!isProducer) {
-                aspect = "]";
+            if (isProducer) {
+                aspect = LOAD_STATION_ASPECT;
+            } else {
+                aspect = UNLOAD_STATION_ASPECT;
             }
         }
         view.set(track.getPosition().getX(), track.getPosition().getY(),
