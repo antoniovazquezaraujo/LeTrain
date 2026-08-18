@@ -113,8 +113,8 @@ public class RenderVisitor implements Visitor {
     public static String VERTICAL_DIR = "|";
     public static String DIAGONAL_DIR = "/";
     public static String ANTI_DIAGONAL_DIR = "\\";
-    public static String PRODUCER_ASPECT = "¬";
-    public static String CONSUMER_ASPECT = "X";
+    public static String PRODUCER_ASPECT = "╥";
+    public static String CONSUMER_ASPECT = "╨";
 
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
