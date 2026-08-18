@@ -473,7 +473,7 @@ public class RenderVisitor implements Visitor {
 
         if (type >= 10 && type <= 19) {
             letrain.track.CargoTypes cargo = letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            color = getCargoColor(cargo, true);
+            color = getCargoColor(cargo, false);
             aspect = PRODUCER_ASPECT;
         } else if (type >= 20 && type <= 29) {
             letrain.track.CargoTypes cargo = letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
