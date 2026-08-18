@@ -104,7 +104,7 @@ public class InfoVisitor implements Visitor {
         EconomyManager economy = model.getEconomyManager();
         String moneyText = "";
         if (economy != null) {
-            moneyText = String.format("$: %.2f | Income(+): %.2f | Expenses(-): %.2f",
+            moneyText = String.format(java.util.Locale.US, "$: %.2f | Income(+): %.2f | Expenses(-): %.2f",
                     economy.getBalance(), economy.getTotalIncome(), economy.getTotalExpenses());
         }
 

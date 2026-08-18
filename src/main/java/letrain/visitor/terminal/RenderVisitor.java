@@ -51,7 +51,7 @@ public class RenderVisitor implements Visitor {
     private static final TextColor SELECTED_LOCOMOTIVE_COLOR = TextColor.ANSI.RED_BRIGHT;
     private static final TextColor RAIL_TRACK_COLOR = TextColor.ANSI.BLACK_BRIGHT;
     private static final TextColor SENSOR_COLOR = TextColor.ANSI.CYAN_BRIGHT;
-    private static final TextColor STATION_COLOR = TextColor.ANSI.MAGENTA_BRIGHT;
+    private static final TextColor STATION_COLOR = TextColor.ANSI.WHITE;
     private static final TextColor SELECTED_STATION_COLOR = TextColor.ANSI.RED_BRIGHT;
     public static final TextColor FORK_COLOR = TextColor.ANSI.WHITE_BRIGHT;
     public static final TextColor SELECTED_FORK_COLOR = TextColor.ANSI.RED_BRIGHT;
@@ -94,7 +94,9 @@ public class RenderVisitor implements Visitor {
     public static String BRIDGE_RAILTRACK_ASPECT = "\u252C";
     public static String BRIDGE_GATE_RAILTRACK_ASPECT = "\u224E";
     public static String SENSOR_ASPECT = "₪";
-    public static String STATION_ASPECT = "[";
+    public static String GENERIC_STATION_ASPECT = "◇";
+    public static String LOAD_STATION_ASPECT = "▲";
+    public static String UNLOAD_STATION_ASPECT = "▼";
     public static String RAIL_CROSS_ASPECT = "+";
     public static String DIAGONAL_RAIL_CROSS_ASPECT = "X";
     public static String SEMAPHORE_ASPECT = ":";
@@ -113,8 +115,8 @@ public class RenderVisitor implements Visitor {
     public static String VERTICAL_DIR = "|";
     public static String DIAGONAL_DIR = "/";
     public static String ANTI_DIAGONAL_DIR = "\\";
-    public static String PRODUCER_ASPECT = "¬";
-    public static String CONSUMER_ASPECT = "X";
+    public static String PRODUCER_ASPECT = "●";
+    public static String CONSUMER_ASPECT = "◌";
 
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
@@ -137,6 +139,7 @@ public class RenderVisitor implements Visitor {
     public void resetColors() {
         view.setFgColor(FG_COLOR);
         view.setBgColor(BG_COLOR);
+        view.setUnderline(false);
     }
 
     @Override
@@ -215,8 +218,17 @@ public class RenderVisitor implements Visitor {
             view.setFgColor(STATION_COLOR);
         }
 
+        String aspect = GENERIC_STATION_ASPECT;
+        if (station.getCargoType() != letrain.track.CargoTypes.NONE) {
+            boolean isProducer = station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER;
+            if (isProducer) {
+                aspect = LOAD_STATION_ASPECT;
+            } else {
+                aspect = UNLOAD_STATION_ASPECT;
+            }
+        }
         view.set(track.getPosition().getX(), track.getPosition().getY(),
-                STATION_ASPECT + (this.mode == GameMode.STATIONS ? station.getId() : ""));
+                aspect + (this.mode == GameMode.STATIONS ? station.getId() : ""));
         resetColors();
     }
 
@@ -346,13 +358,15 @@ public class RenderVisitor implements Visitor {
                 view.setFgColor(TextColor.ANSI.values()[new Random().nextInt(TextColor.ANSI.values().length)]);
             } else if (wagon.getExclusiveCargoType() != letrain.track.CargoTypes.NONE) {
                 boolean isLoaded = wagon.getCargoAmount() > 0;
-                view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), isLoaded));
+                view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), true));
+                view.setUnderline(isLoaded);
             } else {
                 view.setFgColor(WAGON_COLOR);
             }
         } else if (wagon.getExclusiveCargoType() != letrain.track.CargoTypes.NONE) {
             boolean isLoaded = wagon.getCargoAmount() > 0;
-            view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), isLoaded));
+            view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), true));
+            view.setUnderline(isLoaded);
         } else {
             view.setFgColor(WAGON_COLOR);
         }
@@ -477,7 +491,7 @@ public class RenderVisitor implements Visitor {
             aspect = PRODUCER_ASPECT;
         } else if (type >= 20 && type <= 29) {
             letrain.track.CargoTypes cargo = letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            color = getCargoColor(cargo, false);
+            color = getCargoColor(cargo, true);
             aspect = CONSUMER_ASPECT;
         } else {
             switch (type) {

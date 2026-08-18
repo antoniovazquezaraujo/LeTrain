@@ -62,6 +62,7 @@ public class TerminalView implements letrain.mvp.View {
 
     private TextColor fgColor;
     private TextColor bgColor;
+    private boolean isUnderline = false;
     boolean endOfGame = false;
     static final TextColor NORMAL_MENU_FG_COLOR = ANSI.WHITE;
     static final TextColor NORMAL_MENU_BG_COLOR = ANSI.BLACK;
@@ -272,6 +273,7 @@ public class TerminalView implements letrain.mvp.View {
         x -= scrollOffset.getX();
         y -= scrollOffset.getY();
         if (x >= 0 && x < getCols() && y >= 0 && y < getRows()) {
+            com.googlecode.lanterna.SGR[] modifiers = isUnderline ? new com.googlecode.lanterna.SGR[]{com.googlecode.lanterna.SGR.UNDERLINE} : new com.googlecode.lanterna.SGR[0];
             for (int i = 0; i < c.length(); i++) {
                 gameBox.setCharacter(
                         x + i,
@@ -279,9 +281,14 @@ public class TerminalView implements letrain.mvp.View {
                         TextCharacter.fromCharacter(
                                 c.charAt(i),
                                 fgColor,
-                                bgColor)[0]);
+                                bgColor,
+                                modifiers)[0]);
             }
         }
+    }
+
+    public void setUnderline(boolean enable) {
+        this.isUnderline = enable;
     }
 
     public TextColor getFgColor() {
