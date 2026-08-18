@@ -507,7 +507,7 @@ public class RenderVisitor implements Visitor {
             case COAL:
                 return isLoaded ? TextColor.ANSI.WHITE : TextColor.ANSI.BLACK_BRIGHT;
             case GOLD:
-                return isLoaded ? TextColor.ANSI.YELLOW_BRIGHT : TextColor.ANSI.YELLOW;
+                return isLoaded ? TextColor.ANSI.YELLOW_BRIGHT : new TextColor.RGB(180, 180, 0);
             case RUBY:
                 return isLoaded ? TextColor.ANSI.RED_BRIGHT : TextColor.ANSI.RED;
             case NONE:
