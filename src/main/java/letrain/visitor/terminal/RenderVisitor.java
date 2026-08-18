@@ -113,8 +113,8 @@ public class RenderVisitor implements Visitor {
     public static String VERTICAL_DIR = "|";
     public static String DIAGONAL_DIR = "/";
     public static String ANTI_DIAGONAL_DIR = "\\";
-    public static String PRODUCER_ASPECT = "[";
-    public static String CONSUMER_ASPECT = "]";
+    public static String PRODUCER_ASPECT = "●";
+    public static String CONSUMER_ASPECT = "◌";
 
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
@@ -216,8 +216,15 @@ public class RenderVisitor implements Visitor {
             view.setFgColor(STATION_COLOR);
         }
 
+        String aspect = STATION_ASPECT;
+        if (station.getCargoType() != letrain.track.CargoTypes.NONE) {
+            boolean isProducer = station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER;
+            if (!isProducer) {
+                aspect = "]";
+            }
+        }
         view.set(track.getPosition().getX(), track.getPosition().getY(),
-                STATION_ASPECT + (this.mode == GameMode.STATIONS ? station.getId() : ""));
+                aspect + (this.mode == GameMode.STATIONS ? station.getId() : ""));
         resetColors();
     }
 
