@@ -40,6 +40,8 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         train.setJoined(false);
         Linker lastLinker = null;
         Dir dir = Dir.E;
+        boolean normalSense = train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
+        boolean lookAtPhysicalFront = (forwardDirection == normalSense);
 
         if (train.getLinkers().size() == 1) {
             lastLinker = (Linker) train.getDirectorLinker();
@@ -47,7 +49,7 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
             if (entryDir == null) {
                 entryDir = lastLinker.getRealDir().inverse();
             }
-            if (forwardDirection) {
+            if (lookAtPhysicalFront) {
                 train.setLinkerJoinSense(Train.LinkersSense.FRONT);
                 dir = lastLinker.getTrack().getDir(entryDir);
             } else {
@@ -55,24 +57,47 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 dir = entryDir;
             }
         } else if (train.getLinkers().size() > 1) {
-            if (forwardDirection) {
+            if (lookAtPhysicalFront) {
                 lastLinker = train.getLinkers().getFirst();
                 train.setLinkerJoinSense(Train.LinkersSense.FRONT);
-                dir = getLinkDir(train, lastLinker);
+                
+                Dir preferredDir = lastLinker.getDir();
+                Track connected = lastLinker.getTrack().getConnected(preferredDir);
+                if (connected != null && (connected.getLinker() == null || connected.getLinker().getTrain() != train)) {
+                    dir = preferredDir;
+                } else {
+                    Track lastTrack = lastLinker.getTrack();
+                    dir = null;
+                    for (Dir conn : lastTrack.getConnections()) {
+                        Track t = lastTrack.getConnected(conn);
+                        if (t == null) continue;
+                        Linker l = t.getLinker();
+                        if (l == null || l.getTrain() != train) {
+                            dir = conn;
+                            break;
+                        }
+                    }
+                }
             } else {
                 lastLinker = train.getLinkers().getLast();
                 train.setLinkerJoinSense(Train.LinkersSense.BACK);
-                // Find the connection from the last linker that leads away
-                // from our own train (empty track or different train).
-                Track lastTrack = lastLinker.getTrack();
-                dir = null;
-                for (Dir conn : lastTrack.getConnections()) {
-                    Track connected = lastTrack.getConnected(conn);
-                    if (connected == null) continue;
-                    Linker l = connected.getLinker();
-                    if (l == null || l.getTrain() != train) {
-                        dir = conn;
-                        break;
+                
+                Dir preferredDir = lastLinker.getEntryDir();
+                if (preferredDir == null) preferredDir = lastLinker.getRealDir().inverse();
+                Track connected = lastLinker.getTrack().getConnected(preferredDir);
+                if (connected != null && (connected.getLinker() == null || connected.getLinker().getTrain() != train)) {
+                    dir = preferredDir;
+                } else {
+                    Track lastTrack = lastLinker.getTrack();
+                    dir = null;
+                    for (Dir conn : lastTrack.getConnections()) {
+                        Track t = lastTrack.getConnected(conn);
+                        if (t == null) continue;
+                        Linker l = t.getLinker();
+                        if (l == null || l.getTrain() != train) {
+                            dir = conn;
+                            break;
+                        }
                     }
                 }
             }
@@ -129,19 +154,10 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 if (count >= train.getNumLinkersToJoin())
                     break;
 
-                boolean normalSense = train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
                 if (train.getLinkerJoinSense() == Train.LinkersSense.FRONT) {
-                    if (normalSense) {
-                        train.getLinkers().addFirst(linkerToJoin);
-                    } else {
-                        train.getLinkers().addLast(linkerToJoin);
-                    }
+                    train.getLinkers().addFirst(linkerToJoin);
                 } else {
-                    if (normalSense) {
-                        train.getLinkers().addLast(linkerToJoin);
-                    } else {
-                        train.getLinkers().addFirst(linkerToJoin);
-                    }
+                    train.getLinkers().addLast(linkerToJoin);
                 }
 
                 Train oldTrain = linkerToJoin.getTrain();
@@ -195,7 +211,10 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
             return;
         }
 
-        if (forward) {
+        boolean normalSense = train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
+        boolean lookAtPhysicalFront = (forward == normalSense);
+
+        if (lookAtPhysicalFront) {
             train.setLinkerDivisionSense(Train.LinkersSense.FRONT);
         } else {
             train.setLinkerDivisionSense(Train.LinkersSense.BACK);
@@ -386,54 +405,6 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         return linkersToDestroy;
     }
 
-    @Override
-    public Dir getLinkDir(Train train, Linker linker) {
-        Dir linkerDir = linker.getDir();
-        Linker adjacentLinker = getAdjacentLinker(linker, linkerDir);
-        if (adjacentLinker != null && adjacentLinker.getTrain() != train) {
-            return linkerDir;
-        }
-        // If no adjacent linker or it's from our own train, try the opposite
-        // direction via the track router. This handles the case where the loco
-        // faces backward after reversing, but the wagons are forward.
-        if (adjacentLinker == null && linker.getEntryDir() != null) {
-            Dir oppositeDir = linker.getTrack().getDir(linker.getEntryDir());
-            if (oppositeDir != null) {
-                Linker oppositeLinker = getAdjacentLinker(linker, oppositeDir);
-                if (oppositeLinker != null && oppositeLinker.getTrain() != train) {
-                    return oppositeDir;
-                }
-            }
-        }
-        // Walk through same-train linkers
-        // Walk through same-train linkers using track router to find
-        // the exit where a different train might be.
-        if (adjacentLinker != null && adjacentLinker.getTrain() == train) {
-            // Walk through same-train linkers following track connections outward.
-            Track currentTrack = linker.getTrack().getConnected(linkerDir);
-            Track prevTrack = linker.getTrack(); // skip the track we came from
-            Linker nextLinker = adjacentLinker;
-            while (currentTrack != null && nextLinker != null && nextLinker.getTrain() == train) {
-                // Walk one hop: find a connection that doesn't go back
-                Track nextTrack = null;
-                for (Dir conn : currentTrack.getConnections()) {
-                    Track t = currentTrack.getConnected(conn);
-                    if (t != null && t != prevTrack) {
-                        nextTrack = t;
-                        break;
-                    }
-                }
-                if (nextTrack == null) break;
-                prevTrack = currentTrack;
-                currentTrack = nextTrack;
-                nextLinker = currentTrack.getLinker();
-            }
-            if (nextLinker != null && nextLinker.getTrain() != train) {
-                return linkerDir;
-            }
-        }
-        return null;
-    }
 
     @Override
     public Linker getAdjacentLinker(Linker linker, Dir dir) {
