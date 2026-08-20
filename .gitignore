@@ -6,3 +6,10 @@ Ideas.adoc
 unused_sound/
 docs/.obsidian/
 docs/adr/ADR-013-Nuevas-Ideas.md
+*.dat
+*.patch
+*.log
+commands.txt
+video-list.txt
+load-unload
+inject_2d_videos.py
