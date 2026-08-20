@@ -21,4 +21,4 @@ jobs:
         cache: maven
         
     - name: Build and run tests
-      run: mvn test
+      run: xvfb-run mvn test
