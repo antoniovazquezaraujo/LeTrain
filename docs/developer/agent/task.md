@@ -1,0 +1,54 @@
+# Tasks — Reactive Autopilot Refactoring
+
+- [x] 1. Integración del Planificador (`SimulationScheduler`)
+  - [x] Añadir `SimulationScheduler` a la interfaz `Model`
+  - [x] Instanciar e implementar `getScheduler()` en `ModelImpl`
+  - [x] Conectar `scheduler.tick()` en `SimulationController.tick()`
+- [x] 2. Cambios en la interfaz y lógica de `AutoPilot`
+  - [x] Eliminar `tick()` de la interfaz `AutoPilot`
+  - [x] Cambiar `onForkEntered` por `onSegmentEntered`
+  - [x] Añadir `resumeWaiting()` a la interfaz `AutoPilot`
+  - [x] Implementar la nueva máquina de estados reactiva en `AutoPilotImpl`
+- [x] 3. Cambios en `Train` e interfaces de comunicación
+  - [x] Añadir `scheduleResume(int ticks)` a `TrainActionManager`
+  - [x] Implementar `scheduleResume` en `Train` llamando al planificador
+  - [x] Eliminar la propagación de `notifyForkEntry` obsoleta
+- [x] 4. Ajustes en `TrainSafetyManager` y `Locomotive`
+  - [x] Despertar reactivamente al `AutoPilot` en `onSegmentEntered` antes de evaluar bloqueos
+  - [x] Implementar `hasPermissionToMove()` para permitir el avance con inercia (`speed > 0`) cuando está bloqueado
+  - [x] Eliminar la invocación de `autopilot.tick()` en `Locomotive.update()`
+  - [x] Garantizar la desaceleración acústica en el bucle `else` de `Locomotive.update()`
+- [x] 5. Adaptación y validación de Tests
+  - [x] Actualizar `AutoPilotImplTest.java` para usar eventos reactivos
+  - [x] Actualizar `AutoPilotTest.java`
+  - [x] Validar con `mvn clean test`
+  - [x] Empaquetar y construir distribución final con `mvn clean package -DskipTests`
+- [x] 6. Corrección de verificación de bloqueo inicial en arranque y reanudación
+  - [x] Añadir `acquireInitialLocks()` a `TrainActionManager.java`
+  - [x] Implementar `acquireInitialLocks()` in `Train.java`
+  - [x] Invocar `actionManager.acquireInitialLocks()` en `AutoPilotImpl.java#resumeWaiting()`
+  - [x] Invocar `safetyManager.acquireInitialLocks()` al ejecutar comandos `SPEED` mayores que 0 en `Train.java`
+  - [x] Invocar `safetyManager.acquireInitialLocks()` al restaurar/reconectar cantones en `Train.java#rebind()`
+  - [x] Validar con `mvn clean compile` y ejecutar los tests
+- [x] 7. Logs de Diagnóstico Detallados
+  - [x] Añadir logs detallados a `TrainSafetyManager.java` (locks, entry, wakeup, permissions, topología)
+  - [x] Añadir logs detallados a `Locomotive.java` (setTargetSpeed, update, updateInertia)
+  - [x] Añadir logs detallados a `Train.java` (advance, executeCommand)
+  - [x] Añadir logs detallados a `AutoPilotImpl.java` (onSegmentEntered)
+  - [x] Validar compilación y tests con `mvn clean test`
+  - [x] Volver a empaquetar con `mvn package -DskipTests`
+- [x] 8. Failsafe para Desviación Físico-Lógica de Rutas
+  - [x] Comprobar discrepancia en `findNextSegment` (ruta vs topología)
+  - [x] Retornar y bloquear segmento físico real en caso de discrepancia para evitar colisiones
+  - [x] Validar compilación y tests con `mvn clean test`
+  - [x] Volver a empaquetar con `mvn package -DskipTests`
+- [x] 9. Inicialización del Piloto Automático al Re-enlazar/Cargar Partida
+  - [x] Notificar al piloto automático del segmento actual en `TrainSafetyManager.java#acquireInitialLocks()`
+  - [x] Validar compilación y tests con `mvn clean test`
+  - [x] Volver a empaquetar con `mvn package -DskipTests`
+- [/] 10. Inversión Automática y Sincronización en Desvíos (Forks)
+  - [x] Implementar la persistencia de velocidad en `Train.java` para `REVERSE`
+  - [x] Sincronizar inversión llamando a `safetyManager.onReverse` en `Locomotive.java#toggleReversed`
+  - [x] Añadir inversión automática reactiva por discrepancia de dirección en `TrainSafetyManager.java#findNextSegment`
+  - [x] Implementar test de integración `autoReverseOnRoutingMismatch` en `AutoPilotIntegrationTest.java`
+  - [/] Verificar construyendo y pasando toda la suite de tests

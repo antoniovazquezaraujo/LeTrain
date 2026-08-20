@@ -1,0 +1,21 @@
+package letrain.vehicle;
+
+import letrain.map.Dir;
+import letrain.track.Track;
+import letrain.track.Trackable;
+
+public abstract class Tracker
+        extends Vehicle
+        implements Trackable {
+    Track track;
+
+    @Override
+    public void setTrack(Track track) {
+        this.track = track;
+    }
+
+    @Override
+    public Track getTrack() {
+        return this.track;
+    }
+}

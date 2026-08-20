@@ -1,68 +1,131 @@
 package letrain.economy.impl;
 
-import java.io.Serializable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
+import java.util.Properties;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import letrain.mvp.Presenter;
+import letrain.track.CargoTypes;
+import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.Wagon;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class EconomyManager implements letrain.economy.EconomyManager, Serializable {
-    private static final long serialVersionUID = 1L;
-    float totalIncome;
-    float totalExpenses;
-    float balance;
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+public class EconomyManager implements letrain.economy.EconomyManager {
+    @com.fasterxml.jackson.annotation.JsonProperty("totalIncome")
+    float totalIncome = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("totalExpenses")
+    float totalExpenses = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("balance")
+    float balance = 1000000f; // Initial balance as requested
 
+    @com.fasterxml.jackson.annotation.JsonProperty("prices")
     Map<ExpenseType, Float> prices = new HashMap<>();
+    @com.fasterxml.jackson.annotation.JsonProperty("cargoBaseValues")
+    Map<CargoTypes, Float> cargoBaseValues = new HashMap<>();
+    @com.fasterxml.jackson.annotation.JsonProperty("fuelCostPerMeter")
+    private float fuelCostPerMeter = 0.5f;
+    @com.fasterxml.jackson.annotation.JsonProperty("cargoLoadingFee")
+    private float cargoLoadingFee = 100f;
+    @com.fasterxml.jackson.annotation.JsonProperty("startingBalance")
+    private float startingBalance = 0f;
+    @com.fasterxml.jackson.annotation.JsonProperty("goldThreshold")
+    private float goldThreshold = 0.30f;
+    @com.fasterxml.jackson.annotation.JsonProperty("coalThreshold")
+    private float coalThreshold = 0.25f;
+    @com.fasterxml.jackson.annotation.JsonProperty("rubyThreshold")
+    private float rubyThreshold = 0.35f;
+    @com.fasterxml.jackson.annotation.JsonProperty("waterThreshold")
+    private float waterThreshold = 110f;
+    @com.fasterxml.jackson.annotation.JsonProperty("rockThreshold")
+    private float rockThreshold = 130f;
+    @com.fasterxml.jackson.annotation.JsonProperty("viewRadius")
+    private int viewRadius = 15;
+    private static final Logger log = LoggerFactory.getLogger(EconomyManager.class);
+    @com.fasterxml.jackson.annotation.JsonProperty("eventLogManager")
+    private letrain.mvp.impl.EventLogManager eventLogManager;
 
+    @com.fasterxml.jackson.annotation.JsonProperty("constructedNormalRailTracks")
     int constructedNormalRailTracks = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("constructedBridgeRailTracks")
     int constructedBridgeRailTracks = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("constructedTunnelRailTracks")
     int constructedTunnelRailTracks = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("constructedForks")
     int constructedForks = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("constructedStations")
     int constructedStations = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("constructedSensors")
     int constructedSensors = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("constructedSemaphores")
     int constructedSemaphores = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("constructedLocomotives")
     int constructedLocomotives = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("constructedWagons")
     int constructedWagons = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("destroyedNormalRailTracks")
     int destroyedNormalRailTracks = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("destroyedBridgeRailTracks")
     int destroyedBridgeRailTracks = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("destroyedTunnelRailTracks")
     int destroyedTunnelRailTracks = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("destroyedForks")
     int destroyedForks = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("destroyedStations")
     int destroyedStations = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("destroyedSensors")
     int destroyedSensors = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("destroyedSemaphores")
     int destroyedSemaphores = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("destroyedLocomotives")
     int destroyedLocomotives = 0;
+    @com.fasterxml.jackson.annotation.JsonProperty("destroyedWagons")
     int destroyedWagons = 0;
 
-    public EconomyManager() {
+    protected EconomyManager() {
+    }
+ 
+    public EconomyManager(letrain.mvp.impl.EventLogManager eventLogManager) {
+        this.eventLogManager = eventLogManager;
         prices.put(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK, 100f);
         prices.put(ExpenseType.CONSTRUCTED_BRIDGE_RAIL_TRACK, 20000f);
         prices.put(ExpenseType.CONSTRUCTED_TUNNEL_RAIL_TRACK, 70000f);
         prices.put(ExpenseType.CONSTRUCTED_FORK, 1000f);
-        prices.put(ExpenseType.CONSTRUCTED_STATION, 1000f);
+        prices.put(ExpenseType.CONSTRUCTED_STATION, 100000f);
         prices.put(ExpenseType.CONSTRUCTED_SENSOR, 100f);
         prices.put(ExpenseType.CONSTRUCTED_SEMAPHORE, 100f);
-        prices.put(ExpenseType.CONSTRUCTED_LOCOMOTIVE, 10000f);
-        prices.put(ExpenseType.CONSTRUCTED_WAGON, 1000f);
+        prices.put(ExpenseType.CONSTRUCTED_LOCOMOTIVE, 50000f);
+        prices.put(ExpenseType.CONSTRUCTED_WAGON, 30000f);
         prices.put(ExpenseType.DESTROYED_NORMAL_RAIL_TRACK, 500f);
-        prices.put(ExpenseType.DESTROYED_BRIDGE_RAIL_TRACK, 1000f);
-        prices.put(ExpenseType.DESTROYED_TUNNEL_RAIL_TRACK, 1500f);
+        prices.put(ExpenseType.DESTROYED_BRIDGE_RAIL_TRACK, 10000f);
+        prices.put(ExpenseType.DESTROYED_TUNNEL_RAIL_TRACK, 30000f);
         prices.put(ExpenseType.DESTROYED_FORK, 500f);
         prices.put(ExpenseType.DESTROYED_STATION, 50000f);
         prices.put(ExpenseType.DESTROYED_SENSOR, 500f);
         prices.put(ExpenseType.DESTROYED_SEMAPHORE, 500f);
-        prices.put(ExpenseType.DESTROYED_LOCOMOTIVE, 50000f);
-        prices.put(ExpenseType.DESTROYED_WAGON, 5000f);
+        prices.put(ExpenseType.DESTROYED_LOCOMOTIVE, 30000f);
+        prices.put(ExpenseType.DESTROYED_WAGON, 10000f);
         prices.put(ExpenseType.LOAD_PASSENGERS, 1000f);
         prices.put(ExpenseType.UNLOAD_PASSENGERS, 1000f);
-        prices.put(ExpenseType.TRAIN_MOVED, 1f);
-        prices.put(ExpenseType.TRAIN_CRASHED, 100000f);
+        prices.put(ExpenseType.TRAIN_MOVED, 0f);
+        prices.put(ExpenseType.TRAIN_CRASHED, 1000000f);
+
+        // Cargo values
+        cargoBaseValues.put(CargoTypes.GOLD, 2000f);
+        cargoBaseValues.put(CargoTypes.COAL, 200f);
+        cargoBaseValues.put(CargoTypes.RUBY, 20000f);
+        cargoBaseValues.put(CargoTypes.NONE, 0f);
     }
 
     @Override
@@ -126,115 +189,125 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
     @Override
     public void onForkConstructed(ForkRailTrack fork) {
         this.constructedForks++;
+        spend(ExpenseType.CONSTRUCTED_FORK);
     }
 
     @Override
     public void onStationConstructed() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onStationConstructed'");
+        this.constructedStations++;
+        spend(ExpenseType.CONSTRUCTED_STATION);
     }
 
     @Override
     public void onSensorConstructed(Sensor sensor) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onSensorConstructed'");
+        this.constructedSensors++;
+        spend(ExpenseType.CONSTRUCTED_SENSOR);
     }
 
     @Override
-    public void onSemaphoreConstructed(Semaphore semaphore) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onSemaphoreConstructed'");
+    public void onSemaphoreConstructed(RailSemaphore semaphore) {
+        this.constructedSemaphores++;
+        spend(ExpenseType.CONSTRUCTED_SEMAPHORE);
     }
 
     @Override
     public void onLocomotiveConstructed(Locomotive locomotive) {
         this.constructedLocomotives++;
+        spend(ExpenseType.CONSTRUCTED_LOCOMOTIVE);
     }
 
     @Override
     public void onWagonConstructed(Wagon wagon) {
         this.constructedWagons++;
+        spend(ExpenseType.CONSTRUCTED_WAGON);
     }
 
     @Override
-    public void onRailTrackDestroyed(Presenter.TrackType rail) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onRailDestroyed'");
+    public void onRailTrackDestroyed(Presenter.TrackType type) {
+        switch (type) {
+            case NORMAL_TRACK:
+                destroyedNormalRailTracks++;
+                spend(ExpenseType.DESTROYED_NORMAL_RAIL_TRACK);
+                break;
+            case BRIDGE_GATE_TRACK:
+            case BRIDGE_TRACK:
+                destroyedBridgeRailTracks++;
+                spend(ExpenseType.DESTROYED_BRIDGE_RAIL_TRACK);
+                break;
+            case TUNNEL_GATE_TRACK:
+            case TUNNEL_TRACK:
+                destroyedTunnelRailTracks++;
+                spend(ExpenseType.DESTROYED_TUNNEL_RAIL_TRACK);
+                break;
+            case STATION_TRACK:
+                // Station destruction is handled by onStationDestroyed
+                break;
+        }
     }
 
     @Override
     public void onForkDestroyed(ForkRailTrack fork) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onForkDestroyed'");
+        destroyedForks++;
+        spend(ExpenseType.DESTROYED_FORK);
     }
 
     @Override
     public void onStationDestroyed() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onStationDestroyed'");
+        destroyedStations++;
+        spend(ExpenseType.DESTROYED_STATION);
     }
 
     @Override
     public void onSensorDestroyed(Sensor sensor) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onSensorDestroyed'");
+        destroyedSensors++;
+        spend(ExpenseType.DESTROYED_SENSOR);
     }
 
     @Override
-    public void onSemaphoreDestroyed(Semaphore semaphore) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onSemaphoreDestroyed'");
+    public void onSemaphoreDestroyed(RailSemaphore semaphore) {
+        destroyedSemaphores++;
+        spend(ExpenseType.DESTROYED_SEMAPHORE);
     }
 
     @Override
     public void onLocomotiveDestroyed(Locomotive locomotive) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onLocomotiveDestroyed'");
+        destroyedLocomotives++;
+        spend(ExpenseType.DESTROYED_LOCOMOTIVE);
     }
 
     @Override
     public void onWagonDestroyed(Wagon wagon) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onWagonDestroyed'");
+        destroyedWagons++;
+        spend(ExpenseType.DESTROYED_WAGON);
     }
 
     @Override
     public void onLoadPassengers(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled,
             double linearDistanceToStart) {
-        int amount = calculateMoneyAmount(train, elapsedTime, totalDistanceTraveled, linearDistanceToStart);
-        earn(ExpenseType.LOAD_PASSENGERS, amount);
+        // We keep this for compatibility if needed, but logic moves to cargo
     }
 
-    /**
-     * Calculates the money amount earned by loading passengers.
-     * 
-     * @param train
-     * @param elapsedTime
-     * @param totalDistanceTraveled
-     * @param linearDistanceToStart
-     * @return the calculated money amount
-     *
-     */
-    private int calculateMoneyAmount(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled,
-            double linearDistanceToStart) {
-        final int TICKET_PRICE = 10;
-        final double LINEAR_DISTANCE_PRICE = 0.2;
-        final double DISTANCE_PRICE = 0.05;
-        final double TIME_FACTOR = 1;
-        final double MIN_AVERAGE_SPEED = 8;
+    @Override
+    public void chargeFuel(Train train) {
+        float cost = Math.abs(fuelCostPerMeter * train.getLinkers().size());
+        totalExpenses += cost;
+        balance -= cost;
+    }
 
-        int moneyAmount = 0;
-        moneyAmount += train.getLinkers().size() * TICKET_PRICE;
-        ;
-        moneyAmount += LINEAR_DISTANCE_PRICE * linearDistanceToStart;
-        moneyAmount += DISTANCE_PRICE * totalDistanceTraveled;
-        if (elapsedTime.getMinute() > 0) {
-            double averageSpeed = totalDistanceTraveled / elapsedTime.getMinute();
-            if (averageSpeed < MIN_AVERAGE_SPEED) {
-                moneyAmount -= TIME_FACTOR * elapsedTime.getMinute();
-            }
-        }
-        return moneyAmount;
+    @Override
+    public void onLoadCargo(Wagon wagon) {
+        float fee = cargoLoadingFee;
+        totalExpenses += fee;
+        balance -= fee;
+    }
+
+    @Override
+    public void onUnloadCargo(Wagon wagon, CargoTypes type, int amount, int distance) {
+        float baseValue = cargoBaseValues.getOrDefault(type, 0f);
+        // Payment = (Quantity * BaseValue) * (1 + TravelDistance / 100)
+        float payment = ((float) amount * baseValue) * (1f + (float) distance / 100f);
+        totalIncome += payment;
+        balance += payment;
     }
 
     @Override
@@ -244,8 +317,8 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
 
     @Override
     public void onTrainCrashed(Train train) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onTrainCrashed'");
+        spend(ExpenseType.TRAIN_CRASHED);
+        eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
     }
 
     public int getConstructedNormalRailTracks() {
@@ -333,6 +406,90 @@ public class EconomyManager implements letrain.economy.EconomyManager, Serializa
     @Override
     public float getTotalExpenses() {
         return totalExpenses;
+    }
+
+    @Override
+    public void reloadConfig() {
+        File configFile = new File("economy.properties");
+        if (!configFile.exists()) {
+            return;
+        }
+
+        Properties props = new Properties();
+        try (FileInputStream fis = new FileInputStream(configFile)) {
+            props.load(fis);
+            log.info("Loading economy configuration from {}", configFile.getAbsolutePath());
+
+            // Load general costs
+            fuelCostPerMeter = Float
+                    .parseFloat(props.getProperty("fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
+            cargoLoadingFee = Float.parseFloat(props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
+            float newStartingBalance = Float
+                    .parseFloat(props.getProperty("startingBalance", String.valueOf(startingBalance)));
+
+            // Only update current balance if it's the very beginning of the game (total
+            // income/expenses are zero)
+            if (totalIncome == 0 && totalExpenses == 0) {
+                balance = newStartingBalance;
+            }
+            startingBalance = newStartingBalance;
+
+            // Load thresholds
+            goldThreshold = Float.parseFloat(props.getProperty("threshold.GOLD", "0.28"));
+            coalThreshold = Float.parseFloat(props.getProperty("threshold.COAL", "0.28"));
+            rubyThreshold = Float.parseFloat(props.getProperty("threshold.RUBY", "0.28"));
+            waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER", "130"));
+            rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK", "180"));
+            viewRadius = Integer.parseInt(props.getProperty("map.VIEW_RADIUS", "5"));
+
+            // Load ExpenseType prices
+            for (ExpenseType type : ExpenseType.values()) {
+                String key = "price." + type.name();
+                if (props.containsKey(key)) {
+                    prices.put(type, Float.parseFloat(props.getProperty(key)));
+                }
+            }
+
+            // Load CargoTypes values
+            for (CargoTypes type : CargoTypes.values()) {
+                String key = "cargo." + type.name();
+                if (props.containsKey(key)) {
+                    cargoBaseValues.put(type, Float.parseFloat(props.getProperty(key)));
+                }
+            }
+        } catch (IOException | NumberFormatException e) {
+            log.error("Error loading economy configuration: {}", e.getMessage());
+        }
+    }
+
+    @Override
+    public float getGoldThreshold() {
+        return goldThreshold;
+    }
+
+    @Override
+    public float getCoalThreshold() {
+        return coalThreshold;
+    }
+
+    @Override
+    public float getRubyThreshold() {
+        return rubyThreshold;
+    }
+
+    @Override
+    public float getWaterThreshold() {
+        return waterThreshold;
+    }
+
+    @Override
+    public float getRockThreshold() {
+        return rockThreshold;
+    }
+
+    @Override
+    public int getViewRadius() {
+        return viewRadius;
     }
 
 }

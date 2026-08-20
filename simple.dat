@@ -1,0 +1,272 @@
+{
+  "@id" : 1,
+  "previousMode" : "RAILS",
+  "xRayActive" : false,
+  "economyManager" : {
+    "@id" : 2,
+    "totalIncome" : 0.0,
+    "totalExpenses" : 400.0,
+    "balance" : -400.0,
+    "prices" : {
+      "CONSTRUCTED_FORK" : 1000.0,
+      "DESTROYED_TUNNEL_RAIL_TRACK" : 30000.0,
+      "CONSTRUCTED_BRIDGE_RAIL_TRACK" : 20000.0,
+      "DESTROYED_WAGON" : 10000.0,
+      "CONSTRUCTED_WAGON" : 30000.0,
+      "CONSTRUCTED_NORMAL_RAIL_TRACK" : 100.0,
+      "DESTROYED_NORMAL_RAIL_TRACK" : 500.0,
+      "TRAIN_MOVED" : 0.0,
+      "CONSTRUCTED_TUNNEL_RAIL_TRACK" : 70000.0,
+      "DESTROYED_STATION" : 50000.0,
+      "DESTROYED_LOCOMOTIVE" : 30000.0,
+      "LOAD_PASSENGERS" : 1000.0,
+      "CONSTRUCTED_STATION" : 100000.0,
+      "CONSTRUCTED_LOCOMOTIVE" : 50000.0,
+      "UNLOAD_PASSENGERS" : 1000.0,
+      "DESTROYED_SEMAPHORE" : 500.0,
+      "TRAIN_CRASHED" : 1000000.0,
+      "DESTROYED_FORK" : 500.0,
+      "DESTROYED_SENSOR" : 500.0,
+      "CONSTRUCTED_SENSOR" : 100.0,
+      "CONSTRUCTED_SEMAPHORE" : 100.0,
+      "DESTROYED_BRIDGE_RAIL_TRACK" : 10000.0
+    },
+    "cargoBaseValues" : {
+      "RUBY" : 20000.0,
+      "GOLD" : 2000.0,
+      "COAL" : 200.0,
+      "NONE" : 0.0
+    },
+    "fuelCostPerMeter" : 0.5,
+    "cargoLoadingFee" : 100.0,
+    "startingBalance" : 0.0,
+    "goldThreshold" : 0.3,
+    "coalThreshold" : 0.25,
+    "rubyThreshold" : 0.35,
+    "waterThreshold" : 0.0,
+    "rockThreshold" : 1.44444432E8,
+    "viewRadius" : 15,
+    "eventLogManager" : {
+      "@id" : 3,
+      "entries" : [ ]
+    },
+    "constructedNormalRailTracks" : 4,
+    "constructedBridgeRailTracks" : 0,
+    "constructedTunnelRailTracks" : 0,
+    "constructedForks" : 0,
+    "constructedStations" : 0,
+    "constructedSensors" : 0,
+    "constructedSemaphores" : 0,
+    "constructedLocomotives" : 0,
+    "constructedWagons" : 0,
+    "destroyedNormalRailTracks" : 0,
+    "destroyedBridgeRailTracks" : 0,
+    "destroyedTunnelRailTracks" : 0,
+    "destroyedForks" : 0,
+    "destroyedStations" : 0,
+    "destroyedSensors" : 0,
+    "destroyedSemaphores" : 0,
+    "destroyedLocomotives" : 0,
+    "destroyedWagons" : 0
+  },
+  "selectedLocomotive" : null,
+  "selectedFork" : null,
+  "selectedSemaphore" : null,
+  "selectedStation" : null,
+  "eventLogManager" : 3,
+  "selectedLocomotiveIndex" : 0,
+  "selectedForkIndex" : 0,
+  "selectedSemaphoreIndex" : 0,
+  "selectedStationIndex" : 0,
+  "showId" : false,
+  "groundMap" : {
+    "@id" : 4,
+    "blocks" : [ {
+      "x" : -54434,
+      "y" : 64584,
+      "width" : 24,
+      "height" : 24
+    }, {
+      "x" : -54493,
+      "y" : 64587,
+      "width" : 3,
+      "height" : 24
+    }, {
+      "x" : -54468,
+      "y" : 64611,
+      "width" : 3,
+      "height" : 4
+    }, {
+      "x" : -54465,
+      "y" : 64581,
+      "width" : 31,
+      "height" : 33
+    }, {
+      "x" : -54490,
+      "y" : 64584,
+      "width" : 25,
+      "height" : 27
+    }, {
+      "x" : -54465,
+      "y" : 64614,
+      "width" : 30,
+      "height" : 1
+    }, {
+      "x" : -54434,
+      "y" : 64608,
+      "width" : 21,
+      "height" : 3
+    } ]
+  },
+  "mode" : "PROGRAM",
+  "railMap" : {
+    "@id" : 5,
+    "rails" : {
+      "64598" : {
+        "-54450" : {
+          "type" : "RailTrack",
+          "@id" : 6,
+          "linker" : null,
+          "reservation" : null,
+          "sensor" : null,
+          "semaphore" : null,
+          "router" : {
+            "type" : "SimpleRouter",
+            "dirMap" : {
+              "SW" : "N",
+              "N" : "SW"
+            }
+          },
+          "position" : {
+            "@id" : 7,
+            "x" : -54450,
+            "y" : 64598
+          },
+          "curve" : true,
+          "straight" : false,
+          "anyDir" : "SW",
+          "cross" : false,
+          "connectedTracks" : [ null, null, null, null, null, {
+            "type" : "RailTrack",
+            "@id" : 8,
+            "linker" : null,
+            "reservation" : null,
+            "sensor" : null,
+            "semaphore" : null,
+            "router" : {
+              "type" : "SimpleRouter",
+              "dirMap" : {
+                "NE" : "W",
+                "W" : "NE"
+              }
+            },
+            "position" : {
+              "@id" : 9,
+              "x" : -54451,
+              "y" : 64599
+            },
+            "curve" : true,
+            "straight" : false,
+            "anyDir" : "NE",
+            "cross" : false,
+            "connectedTracks" : [ null, 6, null, null, {
+              "type" : "RailTrack",
+              "@id" : 10,
+              "linker" : null,
+              "reservation" : null,
+              "sensor" : null,
+              "semaphore" : null,
+              "router" : {
+                "type" : "SimpleRouter",
+                "dirMap" : {
+                  "W" : "E",
+                  "E" : "W"
+                }
+              },
+              "position" : {
+                "@id" : 11,
+                "x" : -54452,
+                "y" : 64599
+              },
+              "curve" : false,
+              "straight" : true,
+              "anyDir" : "W",
+              "cross" : false,
+              "connectedTracks" : [ 8, null, null, null, {
+                "type" : "RailTrack",
+                "@id" : 12,
+                "linker" : null,
+                "reservation" : null,
+                "sensor" : null,
+                "semaphore" : null,
+                "router" : {
+                  "type" : "SimpleRouter",
+                  "dirMap" : {
+                    "W" : "E",
+                    "E" : "W"
+                  }
+                },
+                "position" : {
+                  "@id" : 13,
+                  "x" : -54453,
+                  "y" : 64599
+                },
+                "curve" : false,
+                "straight" : true,
+                "anyDir" : "W",
+                "cross" : false,
+                "connectedTracks" : [ 10, null, null, null, null, null, null, null ],
+                "numRoutes" : 2,
+                "firstOpenDir" : "W"
+              }, null, null, null ],
+              "numRoutes" : 2,
+              "firstOpenDir" : "W"
+            }, null, null, null ],
+            "numRoutes" : 2,
+            "firstOpenDir" : "NE"
+          }, null, null ],
+          "numRoutes" : 2,
+          "firstOpenDir" : "SW"
+        }
+      },
+      "64599" : {
+        "-54453" : 12,
+        "-54452" : 10,
+        "-54451" : 8
+      }
+    }
+  },
+  "locomotives" : [ ],
+  "wagons" : [ ],
+  "cursor" : {
+    "dir" : "N",
+    "selected" : false,
+    "reversed" : false,
+    "mode" : "MOVING",
+    "position" : {
+      "@id" : 14,
+      "x" : -54450,
+      "y" : 64596
+    },
+    "previousPosition" : {
+      "@id" : 15,
+      "x" : 0,
+      "y" : 0
+    }
+  },
+  "forks" : [ ],
+  "sensors" : [ ],
+  "semaphores" : [ ],
+  "stations" : [ ],
+  "nextLocomotiveId" : 0,
+  "nextForkId" : 0,
+  "nextSensorId" : 0,
+  "nextSemaphoreId" : 0,
+  "nextTrainId" : 0,
+  "nextStationId" : 0,
+  "program" : "",
+  "seed" : 78,
+  "quantifier" : 1,
+  "quantifierSteps" : 0,
+  "lastSaveTime" : null
+}

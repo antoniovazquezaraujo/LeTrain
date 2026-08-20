@@ -210,8 +210,8 @@ class DirTest {
             "SE, false"
     })
     void testIsStraight(Dir a, boolean b) {
-        Dir d = Dir.E;
-        Assertions.assertEquals(b, d.isStraight(a));
+        Dir dir = Dir.E;
+        Assertions.assertEquals(b, dir.isStraight(a));
         Assertions.assertTrue(a.isStraight(a.inverse()));
     }
 

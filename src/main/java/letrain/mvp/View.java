@@ -1,9 +1,9 @@
 package letrain.mvp;
 
-import com.googlecode.lanterna.TextColor;
-import com.googlecode.lanterna.input.KeyStroke;
-import com.googlecode.lanterna.screen.Screen;
+import java.util.List;
+
 import letrain.map.Point;
+import letrain.mvp.Model.GameModeMenuOption;
 
 public interface View {
     Point getMapScrollPage();
@@ -16,11 +16,27 @@ public interface View {
 
     void set(int x, int y, String c);
 
-    void setFgColor(TextColor color);
-
-    void setBgColor(TextColor color);
+    // Removed Lanterna specific color methods, will use abstract semantic styles or implementation specifics
+    // void setFgColor(TextColor color);
+    // void setBgColor(TextColor color);
 
     void setPageOfPos(int x, int y);
+
+    default Point getScrollOffset() {
+        return getMapScrollPage();
+    }
+
+    default void setScrollOffset(Point pos) {
+        setMapScrollPage(pos);
+    }
+
+    default void centerOn(int x, int y) {
+        setPageOfPos(x, y);
+    }
+
+    default void ensureVisible(int x, int y, int margin) {
+        setPageOfPos(x, y);
+    }
 
     void clear(int x, int y);
 
@@ -32,21 +48,22 @@ public interface View {
 
     void setInfoBarText(String info);
 
-    void setMenu(String[] options, int selectedOption);
+    void setMenu(List<GameModeMenuOption> options);
 
     void setHelpBarText(String info);
 
-    boolean isEndOfGame(KeyStroke stroke);
+    void showSaveDialog();
 
-    public KeyStroke readKey();
+    void showLoadDialog();
 
-    public void setScreen(Screen screen);
+    void showIDE();
 
-    TextColor getFgColor();
-
-    void showMainDialog();
+    void showExitDialog();
 
     public int getCols();
 
     public int getRows();
+
+    void showMessage(String title, String message);
+
 }

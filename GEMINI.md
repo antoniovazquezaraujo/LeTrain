@@ -1,0 +1,38 @@
+# GEMINI.md
+
+## Project Overview
+**LeTrain** is a procedural train simulator combining classic ASCII aesthetics with a modern 3D engine (LibGDX). Players manage rail networks, logistics, and economies in an infinite, procedurally generated world.
+
+## Building and Running
+*   **Build & Package:** `mvn package -DskipTests`
+    *   This command generates a distribution in the `output/LeTrain` directory.
+*   **Tests:** `mvn test`
+*   **Running:** The project includes two main launchers, created via `jpackage` during the Maven build phase:
+    *   `LeTrain`: Launches the modern 3D experience.
+    *   `LeTrain2D`: Launches the classic terminal view.
+
+## Development Conventions
+*   **Language:** Java 17.
+*   **Build Tool:** Maven.
+*   **Testing:** JUnit 5 with Mockito for mocking dependencies.
+*   **Architecture:**
+    *   **Core:** Procedural generation (Perlin noise), economy management, and rail logistics.
+    *   **3D Engine:** LibGDX.
+    *   **UI:** Lanterna for terminal interfaces.
+    *   **Automation:** ANTLR4 is used for a custom rail automation language (Grammar: `src/main/antlr4/letrain/command/LeTrainProgram.g4`).
+    *   **Serialization:** Uses Jackson (`jackson-databind`) for JSON serialization/deserialization.
+*   **Project Structure:**
+    *   `src/main/java/letrain`: Main source code.
+    *   `src/test/java/letrain`: Unit and integration tests.
+    *   `src/main/resources`: Configuration (e.g., `logback.xml`) and assets (fonts, audio).
+    *   `economy.properties`: Central configuration file for game economy tuning.
+*   **Git Workflow & Merging:**
+    *   **CRITICAL RULE:** NEVER merge feature branches into `develop` or push changes to `develop` without the user explicitly stating that they have tested the changes locally and given approval to merge.
+    *   Always leave changes in a separate branch (e.g., `feature/...` or `fix/...`) and wait for user confirmation.
+
+## Documentation & Navigation
+*   **Class Index:** A complete list of project classes is maintained at `docs/architecture/ClassIndex.md`. Consult this file to locate specific components.
+*   **Architecture & ADRs:** Detailed technical documentation and architectural decision records are located in the `docs/` directory.
+
+---
+*Last updated: 2026-04-16*

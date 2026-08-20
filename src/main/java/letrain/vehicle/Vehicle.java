@@ -2,25 +2,29 @@ package letrain.vehicle;
 
 import java.io.Serializable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import letrain.map.Dir;
-import letrain.map.Mapeable;
+import letrain.map.Mappable;
 import letrain.map.Point;
 import letrain.map.Reversible;
-import letrain.map.Rotable;
+import letrain.map.Rotatable;
 import letrain.track.Track;
 import letrain.visitor.Renderable;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class Vehicle<T extends Track>
         implements
         Serializable,
-        Rotable,
+        Rotatable,
         Reversible,
         Selectable,
-        Mapeable,
+        Mappable,
         Transportable,
         Renderable,
         Destructible {
     protected Point pos = new Point(0, 0);
+    protected Point previousPos = new Point(0, 0);
     protected Dir dir;
     private boolean selected = false;
     private boolean reversed = false;
@@ -37,15 +41,26 @@ public abstract class Vehicle<T extends Track>
     };
 
     /***********************************************************
-     * Mapeable implementation
+     * Mappable implementation
      **********************************************************/
     public Point getPosition() {
         return pos;
     }
 
     public void setPosition(Point pos) {
+        this.previousPos.setX(this.pos.getX());
+        this.previousPos.setY(this.pos.getY());
         this.pos.setX(pos.getX());
         this.pos.setY(pos.getY());
+    }
+
+    public Point getPreviousPosition() {
+        return previousPos;
+    }
+
+    public void syncPosition() {
+        this.previousPos.setX(this.pos.getX());
+        this.previousPos.setY(this.pos.getY());
     }
 
     /***********************************************************
@@ -62,7 +77,7 @@ public abstract class Vehicle<T extends Track>
     }
 
     /***********************************************************
-     * Rotable implementation
+     * Rotatable implementation
      **********************************************************/
     @Override
     public void rotateLeft() {
@@ -114,13 +129,27 @@ public abstract class Vehicle<T extends Track>
     }
 
     @Override
+    @JsonIgnore
     public void toggleReversed() {
         setReversed(!isReversed());
     }
 
     @Override
+    @JsonIgnore
     public Dir getRealDir() {
         return this.dir;
+    }
+
+    @Override
+    @JsonIgnore
+    public boolean isDestroying() {
+        return false;
+    }
+
+    @Override
+    @JsonIgnore
+    public boolean isDestroyed() {
+        return false;
     }
 
 }

@@ -1,11 +1,12 @@
 package letrain.utils;
 
-import java.io.Serializable;
-
-public class Pair<T1, T2> implements Serializable {
-    private static final long serialVersionUID = 1L;
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+public class Pair<T1, T2> {
     private T1 first;
     private T2 second;
+
+    public Pair() {
+    }
 
     public Pair(T1 first, T2 second) {
         this.first = first;
@@ -16,6 +17,7 @@ public class Pair<T1, T2> implements Serializable {
         return first;
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public T1 getKey() {
         return first;
     }
@@ -24,6 +26,7 @@ public class Pair<T1, T2> implements Serializable {
         return second;
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public T2 getValue() {
         return second;
     }
@@ -42,4 +45,17 @@ public class Pair<T1, T2> implements Serializable {
         return "(" + first + ", " + second + ")";
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Pair<?, ?> pair = (Pair<?, ?>) o;
+        return java.util.Objects.equals(first, pair.first) &&
+               java.util.Objects.equals(second, pair.second);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(first, second);
+    }
 }

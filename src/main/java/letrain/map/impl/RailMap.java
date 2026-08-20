@@ -1,21 +1,32 @@
 package letrain.map.impl;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import letrain.map.Point;
 import letrain.track.rail.RailTrack;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 
-public class RailMap implements Serializable, letrain.map.RailMap<RailTrack>, Renderable {
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+public class RailMap implements letrain.map.RailMap<RailTrack>, Renderable {
 
-    private final Map<Integer, Map<Integer, RailTrack>> rails;
+    private Map<Integer, Map<Integer, RailTrack>> rails;
 
     public RailMap() {
-        rails = new HashMap<>();
+        rails = new TreeMap<>();
+    }
+
+    public Map<Integer, Map<Integer, RailTrack>> getRails() {
+        return rails;
+    }
+
+    public void setRails(Map<Integer, Map<Integer, RailTrack>> rails) {
+        this.rails = rails;
     }
 
     @Override
@@ -23,6 +34,21 @@ public class RailMap implements Serializable, letrain.map.RailMap<RailTrack>, Re
         for (int row : rails.keySet()) {
             for (RailTrack track : rails.get(row).values()) {
                 c.accept(track);
+            }
+        }
+    }
+
+    @Override
+    public void forEachInRange(int minX, int minY, int maxX, int maxY, Consumer<RailTrack> c) {
+        for (int row = minY; row <= maxY; row++) {
+            Map<Integer, RailTrack> rowRails = rails.get(row);
+            if (rowRails != null) {
+                for (int col = minX; col <= maxX; col++) {
+                    RailTrack track = rowRails.get(col);
+                    if (track != null) {
+                        c.accept(track);
+                    }
+                }
             }
         }
     }
@@ -42,11 +68,11 @@ public class RailMap implements Serializable, letrain.map.RailMap<RailTrack>, Re
     }
 
     @Override
-    public void addTrack(Point p, RailTrack rail) {
-        int x = p.getX();
-        int y = p.getY();
+    public void addTrack(Point point, RailTrack rail) {
+        int x = point.getX();
+        int y = point.getY();
         if (!rails.containsKey(y)) {
-            rails.put(y, new HashMap<>());
+            rails.put(y, new TreeMap<>());
         }
         Map<Integer, RailTrack> cols = rails.get(y);
         if (rail != null) {
@@ -59,9 +85,9 @@ public class RailMap implements Serializable, letrain.map.RailMap<RailTrack>, Re
     }
 
     @Override
-    public RailTrack removeTrack(Point p) {
-        RailTrack ret = getTrackAt(p);
-        rails.get(p.getY()).remove(p.getX());
+    public RailTrack removeTrack(Point point) {
+        RailTrack ret = getTrackAt(point);
+        rails.get(point.getY()).remove(point.getX());
         return ret;
     }
 

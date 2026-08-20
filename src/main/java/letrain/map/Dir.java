@@ -115,8 +115,8 @@ public enum Dir {
         return value;
     }
 
-    public int angularDistance(Dir d) {
-        return shortWay(d.value - this.value);
+    public int angularDistance(Dir dir) {
+        return shortWay(dir.value - this.value);
     }
 
     public Dir inverse() {

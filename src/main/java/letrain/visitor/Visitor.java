@@ -14,9 +14,9 @@ import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.TunnelGateRailTrack;
 import letrain.track.rail.TunnelRailTrack;
-import letrain.vehicle.impl.Cursor;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.Cursor;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Wagon;
 
 public interface Visitor {
     void visitEconomyManager(EconomyManager economyManager);
@@ -41,7 +41,7 @@ public interface Visitor {
 
     void visitSemaphore(RailSemaphore semaphore);
 
-    void visitStation(Station Station);
+    void visitStation(Station station);
 
     void visitGroundMap(GroundMap groundMap);
 

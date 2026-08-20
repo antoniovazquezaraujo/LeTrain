@@ -13,4 +13,9 @@ public class Gate extends Track {
     public Router getRouter() {
         return null;
     }
+
+    @Override
+    public void setRouter(Router router) {
+        // Gates don't have routers in this implementation
+    }
 }

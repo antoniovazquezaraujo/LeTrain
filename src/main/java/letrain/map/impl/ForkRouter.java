@@ -1,12 +1,18 @@
 package letrain.map.impl;
+ 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.utils.Pair;
 
+@com.fasterxml.jackson.annotation.JsonTypeName("ForkRouter")
 public class ForkRouter extends SimpleRouter implements DynamicRouter {
+    @com.fasterxml.jackson.annotation.JsonProperty("alternativeRoute")
     private Pair<Dir, Dir> alternativeRoute = null;
+    @com.fasterxml.jackson.annotation.JsonProperty("originalRoute")
     private Pair<Dir, Dir> originalRoute = null;
+    @com.fasterxml.jackson.annotation.JsonProperty("usingAlternativeRoute")
     private boolean usingAlternativeRoute = false;
 
     @Override
@@ -29,11 +35,31 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
     }
 
     @Override
+    public Dir getDir(Dir dir) {
+        if (dir == null) {
+            return null;
+        }
+        if (originalRoute != null && alternativeRoute != null) {
+            if (dir.equals(originalRoute.getValue())) {
+                return originalRoute.getKey();
+            }
+            if (dir.equals(alternativeRoute.getValue())) {
+                return alternativeRoute.getKey();
+            }
+            if (dir.equals(originalRoute.getKey())) {
+                return usingAlternativeRoute ? alternativeRoute.getValue() : originalRoute.getValue();
+            }
+        }
+        return dirMap.get(dir);
+    }
+
+    @Override
+    @JsonIgnore
     public Dir getFirstOpenDir() {
         if (isUsingAlternativeRoute()) {
-            return alternativeRoute.getValue();
+            return alternativeRoute != null ? alternativeRoute.getValue() : null;
         } else {
-            return originalRoute.getValue();
+            return originalRoute != null ? originalRoute.getValue() : null;
         }
     }
 
@@ -70,11 +96,13 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
     }
 
     @Override
+    @JsonIgnore
     public Pair<Dir, Dir> getAlternativeRoute() {
         return alternativeRoute;
     }
 
     @Override
+    @JsonIgnore
     public Pair<Dir, Dir> getOriginalRoute() {
         return originalRoute;
     }

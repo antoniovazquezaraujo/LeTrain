@@ -1,15 +1,18 @@
 package letrain.economy;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.Semaphore;
+import letrain.track.RailSemaphore;
 
 import letrain.mvp.Presenter;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.Wagon;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+@JsonDeserialize(as = letrain.economy.impl.EconomyManager.class)
 public interface EconomyManager {
     enum ExpenseType {
         CONSTRUCTED_NORMAL_RAIL_TRACK,
@@ -60,7 +63,7 @@ public interface EconomyManager {
 
     void onSensorConstructed(Sensor sensor);
 
-    void onSemaphoreConstructed(Semaphore semaphore);
+    void onSemaphoreConstructed(RailSemaphore semaphore);
 
     void onLocomotiveConstructed(Locomotive locomotive);
 
@@ -74,7 +77,7 @@ public interface EconomyManager {
 
     void onSensorDestroyed(Sensor sensor);
 
-    void onSemaphoreDestroyed(Semaphore semaphore);
+    void onSemaphoreDestroyed(RailSemaphore semaphore);
 
     void onLocomotiveDestroyed(Locomotive locomotive);
 
@@ -86,6 +89,12 @@ public interface EconomyManager {
     void onTrainMoved(Train train);
 
     void onTrainCrashed(Train train);
+    
+    void chargeFuel(Train train);
+    
+    void onLoadCargo(Wagon wagon);
+    
+    void onUnloadCargo(Wagon wagon, letrain.track.CargoTypes type, int amount, int distance);
 
     public int getConstructedNormalRailTracks();
 
@@ -123,4 +132,17 @@ public interface EconomyManager {
 
     public int getDestroyedWagons();
 
+    public void reloadConfig();
+
+    public float getGoldThreshold();
+
+    public float getCoalThreshold();
+
+    public float getRubyThreshold();
+
+    public float getWaterThreshold();
+
+    public float getRockThreshold();
+
+    public int getViewRadius();
 }

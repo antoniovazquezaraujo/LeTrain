@@ -1,6 +1,5 @@
 package letrain.ground;
 
-import java.io.Serializable;
 import java.util.Random;
 
 /**
@@ -12,21 +11,10 @@ import java.util.Random;
  * @author Matthew A. Johnston (WarmWaffles)
  * 
  */
-public class PerlinNoise implements Serializable {
-	private static final long serialVersionUID = 1L;
+public class PerlinNoise {
 	private float xo, yo, zo;
 	private float[] pow;
 	private int[] perm;
-
-	// public static void main(String args[]) {
-	// PerlinNoise p = new PerlinNoise(254);
-	// for (float y = 0; y < 10; y += 1) {
-	// for (float x = 0; x < 10; x += 1) {
-	// System.out.print(p.turbulentNoise(x * 0.1F, y * 0.1F, 0, 5) + "\t");
-	// }
-	// System.out.println();
-	// }
-	// }
 
 	/**
 	 * Builds the Perlin Noise generator.

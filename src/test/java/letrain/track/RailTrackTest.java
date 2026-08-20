@@ -1,14 +1,15 @@
 package letrain.track;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import letrain.map.Dir;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.Vehicle;
-import letrain.vehicle.impl.Linker;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.vehicle.rail.Linker;
+import letrain.vehicle.Tracker;
+import letrain.vehicle.rail.impl.Wagon;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,25 +89,33 @@ class RailTrackTest {
 
     @Test
     void testAddVehicle() {
-        Vehicle<RailTrack> v = new Wagon();
-        track.enterLinkerFromDir(Dir.S, (Linker) v);
+        Linker v = new Wagon();
+        boolean added = track.enterLinkerFromDir(Dir.S, v);
+        assertTrue(added);
         assertEquals(v, track.getLinker());
     }
 
     @Test
     void testAddTwoVehicles() {
-        Vehicle<RailTrack> v = new Wagon();
-        Vehicle<RailTrack> v2 = new Wagon();
-        track.enterLinkerFromDir(Dir.S, (Linker) v);
-        track.enterLinkerFromDir(Dir.N, (Linker) v2);
-        // TODO fix this
-        // assertFalse(added);
+        Linker v = new Wagon();
+        Linker v2 = new Wagon();
+        assertTrue(track.enterLinkerFromDir(Dir.S, v));
+
+        // El segundo vehículo no debe reemplazar al primero.
+        boolean secondAdded = track.enterLinkerFromDir(Dir.N, v2);
+        assertFalse(secondAdded);
+        assertEquals(v, track.getLinker());
+
+        // El primer vehículo sigue en el track; el segundo no debe haber ingresado.
+        assertEquals(track, ((Tracker) v).getTrack());
+        assertNull(((Tracker) v2).getTrack(),
+                "El segundo vehículo no debe haberse montado en el track porque estaba ocupado");
     }
 
     @Test
     void testRemoveVehicle() {
-        Vehicle<RailTrack> v = new Wagon();
-        track.enterLinkerFromDir(Dir.N, (Linker) v);
+        Linker v = new Wagon();
+        track.enterLinkerFromDir(Dir.N, v);
         track.removeLinker();
         assertNull(track.getLinker());
     }

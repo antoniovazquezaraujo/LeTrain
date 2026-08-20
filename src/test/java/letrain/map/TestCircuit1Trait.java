@@ -7,7 +7,7 @@ import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.TunnelRailTrack;
-import letrain.vehicle.impl.Cursor;
+import letrain.vehicle.Cursor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -59,7 +59,7 @@ class TestCircuit1TraitTest {
 
     private boolean makeTrack() {
         Point cursorPosition = cursor.getPosition();
-        Dir dir = cursor.getDir();
+        Dir cursorDir = cursor.getDir();
         if (oldTrack != null) {
             oldDir = cursorPosition.locate(oldTrack.getPosition());
         } else {
@@ -78,14 +78,11 @@ class TestCircuit1TraitTest {
                 return false;
             }
         }
-        track.addRoute(oldDir, dir);
-        track.setPosition(cursorPosition);
-        if (oldTrack != null) {
-            track.connect(oldDir, oldTrack);
-            oldTrack.connect(track.getDir(dir).inverse(), track);
-        }
-        railMap.addTrack(cursorPosition, track);
-        if (canBeAFork(track, oldDir, dir)) {
+        track.addRoute(oldDir, cursorDir);
+
+            oldTrack.connect(track.getDir(cursorDir).inverse(), track);
+
+        if (canBeAFork(track, oldDir, cursorDir)) {
             final ForkRailTrack myNewTrack = new ForkRailTrack(1);
             // Modmodel.addFork(myNewTrack)
             final Router router = track.getRouter();
@@ -96,9 +93,9 @@ class TestCircuit1TraitTest {
             myNewTrack.setNormalRoute();
             railMap.removeTrack(track.getPosition());
             railMap.addTrack(cursor.getPosition(), myNewTrack);
-            for (Dir d : Dir.values()) {
-                if (track.getConnected(d) != null) {
-                    myNewTrack.connect(d, track.getConnected(d));
+            for (Dir dir : Dir.values()) {
+                if (track.getConnected(dir) != null) {
+                    myNewTrack.connect(dir, track.getConnected(dir));
                 }
             }
             myNewTrack.setAlternativeRoute();

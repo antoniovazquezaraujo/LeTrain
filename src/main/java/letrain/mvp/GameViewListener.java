@@ -26,10 +26,17 @@ public interface GameViewListener {
 
     void onChar(KeyStroke c);
 
+    void onKeyUp(KeyStroke c);
+
     String getProgram();
 
     void setProgram(String program);
 
     void onMapPageChanged(Point mapScrollPage, int columns, int rows);
 
+    void onScreenResized(int columns, int rows);
+    
+    String getGameObjectsReport();
+    
+    java.util.List<String> getEventLogEntries();
 }

@@ -1,0 +1,71 @@
+# LeTrain - User Manual
+
+Welcome to the official **LeTrain** manual. Here you will find everything you need to know to operate your railway network, manage the economy, and automate your trains, whether using the classic 2D terminal client or the modern 3D view.
+
+## 🎥 Videotutorial / Gameplay
+
+<iframe width="1120" height="630" src="https://www.youtube.com/embed/VwS9Gbu3ygw" title="LeTrain Trailer" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+---
+
+## 🎮 Basic Controls
+
+The game can be controlled via the keyboard in both its 2D and 3D versions. Below are the main keys and modes:
+
+### Navigation and Views
+- **Arrow Keys**: Move the cursor freely or follow a track.
+- **Numbers (0-9)**: Increase the speed and jump distance of the cursor. Press **Spacebar** to return to moving 1 by 1.
+- **Key 'o'**: Instantly relocate the cursor to a train, station, or fork.
+- **Key 'c'**: Toggle between the three cameras (Perspective, Top-down, and Cab view).
+
+### Construction (Rails Mode)
+- **Shift + Arrows**: Build new tracks.
+- **Ctrl + Arrows**: Delete existing tracks.
+- **Home**: Create a semaphore on the track.
+- **Insert**: Create a sensor on the track.
+- **End**: Create a station.
+
+### Trains and Driving (Drive / Trains Mode)
+- **Trains Mode**: Lowercase letters create wagons (keys 1, 2, 3 for cargo type). Uppercase letters create locomotives (keys 0-9 for color). Press **Enter** to finish.
+- **Drive Mode**: Left/Right arrows select a train. Up/Down arrows accelerate/brake. **Spacebar** reverses direction (only when stopped).
+- **Link / Unlink Mode**: Up/Down selects the end of the train. Left/Right selects the amount of wagons. **Spacebar** executes coupling/uncoupling.
+
+### Interaction
+- **Spacebar**: Change the state of a semaphore (in Semaphores mode).
+- **Enter**: Start loading/unloading cargo when stopping a train at a station.
+
+## 🏭 Station Types and Cargo
+
+In LeTrain, logistics are the key to the economy. The map generates natural resource points procedurally, and your job is to connect them:
+
+- **Load Stations (`▲`)**: Built adjacent to producing zones (e.g., coal, gold, or ruby mines). They extract material into your trains.
+- **Unload Stations (`▼`)**: Built next to consuming zones (e.g., cities or factories). Here you sell your cargo and earn profits.
+- **Generic Stations (`◇`)**: Act as waypoints or exchange points, and can be manually assigned.
+
+*(Visual note: When playing in 2D, you will see a blinking underline on the train while it is loading or unloading cargo, which will become solid when completed).*
+
+## 💰 Economy and Profits
+
+You start with your account at zero. To earn money you must:
+1. Build tracks from a producing zone to a consuming zone.
+2. Build a train and its wagons (beware of fuel costs!).
+3. Transport the cargo. **Profit is calculated based on the distance traveled**: the longer the journey from the producing zone to the consuming zone, the higher the payout!
+
+You can adjust the base costs and rewards by modifying the `economy.properties` file before launching the game.
+
+## 🤖 Autopilot and Routes
+
+To manage dozens of trains without going crazy, LeTrain includes an Autopilot that you can program yourself. Check the complete programming guide at: **[grammar.md](grammar.md)**.
+
+---
+<div align="center" style="margin-top: 40px; margin-bottom: 40px;">
+  <img src="https://img.shields.io/badge/Java-17%2B-ED8B00?style=flat-square&logo=openjdk&logoColor=white" alt="Java 17+">
+  <img src="https://img.shields.io/badge/LibGDX-Engine-E3363E?style=flat-square&logo=libgdx&logoColor=white" alt="LibGDX">
+  <img src="https://img.shields.io/badge/Open_Source-%E2%9D%A4%EF%B8%8F-2EA44F?style=flat-square" alt="Open Source">
+  <br><br>
+  <strong>The Letter Train Simulator (LeTrain)</strong><br>
+  Developed with ☕ by <a href="https://github.com/antoniovazquezaraujo">Antonio Vázquez Araújo</a><br><br>
+  <a href="https://github.com/antoniovazquezaraujo/LeTrain/issues">Report a Bug</a> &nbsp;|&nbsp; 
+  <a href="https://github.com/antoniovazquezaraujo/LeTrain">Source Code</a> &nbsp;|&nbsp; 
+  <a href="mailto:antoniovazquezaraujo@gmail.com">Contact (Email)</a>
+</div>

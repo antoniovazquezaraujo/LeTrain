@@ -1,6 +1,7 @@
 package letrain.map.impl;
+ 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -9,14 +10,18 @@ import letrain.map.Dir;
 import letrain.map.Router;
 import letrain.utils.Pair;
 
-public class SimpleRouter implements Serializable, Router {
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+@com.fasterxml.jackson.annotation.JsonTypeName("SimpleRouter")
+public class SimpleRouter implements Router {
 
-    protected final Map<Dir, Dir> dirMap = new HashMap<>();
+    @com.fasterxml.jackson.annotation.JsonProperty("dirMap")
+    protected Map<Dir, Dir> dirMap = new HashMap<>();
 
     public SimpleRouter() {
 
     }
 
+    @JsonIgnore
     public boolean isHorizontalOrVertical() {
         return dirMap.keySet().stream()
                 .filter(t -> {
@@ -30,11 +35,13 @@ public class SimpleRouter implements Serializable, Router {
     }
 
     @Override
+    @JsonIgnore
     public Dir getAnyDir() {
         return getFirstOpenDir();
     }
 
     @Override
+    @JsonIgnore
     public boolean isStraight() {
         return getNumRoutes() <= 2
                 &&
@@ -42,6 +49,7 @@ public class SimpleRouter implements Serializable, Router {
     }
 
     @Override
+    @JsonIgnore
     public boolean isCurve() {
         return getNumRoutes() == 2
                 &&
@@ -49,6 +57,7 @@ public class SimpleRouter implements Serializable, Router {
     }
 
     @Override
+    @JsonIgnore
     public boolean isCross() {
         return getNumRoutes() > 3;
     }
@@ -68,6 +77,7 @@ public class SimpleRouter implements Serializable, Router {
     }
 
     @Override
+    @JsonIgnore
     public Dir getFirstOpenDir() {
         if (getNumRoutes() > 0) {
             return dirMap.keySet().iterator().next();
@@ -76,12 +86,21 @@ public class SimpleRouter implements Serializable, Router {
     }
 
     @Override
+    @JsonIgnore
     public int getNumRoutes() {
         return dirMap.keySet().size();
     }
 
     @Override
     public void addRoute(Dir from, Dir to) {
+        if (from == null || to == null) {
+            // Null directions cause NullPointerExceptions later in Map.get or equals
+            return;
+        }
+        if (from == to) {
+            // Self-loops cause immediate 180-degree flips and infinite loops in some logic
+            return;
+        }
         // ruta repetida
         if (dirMap.containsKey(from) && dirMap.get(from).equals(to)) {
             return;

@@ -1,11 +1,12 @@
 package letrain.track;
 
-import java.io.Serializable;
 
 import letrain.map.Dir;
-import letrain.vehicle.impl.Linker;
+import letrain.vehicle.rail.Linker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class TrackDirector<T extends Track> implements Serializable {
+public class TrackDirector<T extends Track> {
     private static TrackDirector instance;
 
     public TrackDirector() {
@@ -19,11 +20,35 @@ public class TrackDirector<T extends Track> implements Serializable {
         return instance;
     }
 
-    public void enterLinkerFromDir(T track, Dir d, Linker vehicle) {
+    private static final Logger log = LoggerFactory.getLogger(TrackDirector.class);
+
+    public boolean enterLinkerFromDir(T track, Dir dir, Linker vehicle) {
+        if (!track.canEnter(dir, vehicle)) {
+            log.debug("Cannot enter linker {} from {} into track {}: occupied or reserved.", vehicle, dir,
+                    track.getPosition());
+            return false;
+        }
+
         vehicle.setTrack(track);
         vehicle.setPosition(track.getPosition());
-        vehicle.setDir(track.getRouter().getDir(d));
+        vehicle.setEntryDir(dir);
+        Dir exitDir = track.getRouter().getDir(dir);
+        if (exitDir != null && track.getConnected(exitDir) != null) {
+            vehicle.setDir(exitDir);
+        } else if (track.getConnections().size() > 1) {
+            // Router gave invalid direction but track has multiple connections.
+            // Find the physical exit (skip the entry port we came from).
+            Dir entryPort = dir.inverse();
+            for (Dir conn : track.getConnections()) {
+                if (conn != entryPort && track.getConnected(conn) != null) {
+                    vehicle.setDir(conn);
+                    break;
+                }
+            }
+        }
+        // If only one connection → dead-end → keep current direction (stuck)
         track.setLinker(vehicle);
+        return true;
     }
 
     public Linker removeLinker(T track) {
@@ -35,15 +60,27 @@ public class TrackDirector<T extends Track> implements Serializable {
         return ret;
     }
 
-    public boolean canEnter(T track, Dir d, Trackeable v) {
-        return (v == null || track.getLinker() == null);
+    public boolean canEnter(T track, Dir dir, Linker v) {
+        // Points 5 & 10: One vehicle per track
+        if (track.getLinker() != null) {
+            return false;
+        }
+
+        // Reservation check to prevent race conditions in multi-train ticks
+        if (track.getReservation() != null && track.getReservation() != v) {
+            return false;
+        }
+
+        // If the track is empty and not reserved by another vehicle, it can be entered.
+        // Further checks might be needed based on router logic or specific track types.
+        return true;
     }
 
-    public boolean canExit(T track, Dir d) {
+    public boolean canExit(T track, Dir dir) {
         if (track.getLinker() != null) {
             Dir exitDir = track.getRouter().getDir(track.getLinker().getDir());
-            T target = (T) track.getConnected(d);
-            return target != null && target.canEnter(d, track.getLinker());
+            T target = (T) track.getConnected(dir);
+            return target != null && target.canEnter(dir, track.getLinker());
         }
         return true; // Qué contestar si estaba vacío??
     }

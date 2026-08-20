@@ -1,0 +1,15 @@
+Cosas pendientes:
+- Salidas y entradas de túneles, pintarlas como arcos "románicos"
+- Números de las locos, separarlos un poco más de la superficie
+- Pitido del tren, agregar
+- Luz roja intermitente cuando el tren va en piloto automático. Fija cuando esté en modo shunting. Cambiar la linea actual por un punto a la izquierda.
+- Mejorar el sonido en general y aclarar lo de que interviene en la aceleración
+- Editar y mostrar los nombres de las estaciones
+- Las superficies de descarga siguen vibrando
+- En la vista desde la loco, las flechas deberían de subir y bajar la cámara y de girar en derredor
+- Señales de velocidad máxima y mínima, agregar
+- Modo noche y día, posible mejora
+- El suelo de las montañas debe ser también marrón, no verde
+- 
+- Logs por pantalla en 2D, fuera
+- Modo shunting, parece que no se pueden despegar una vez que colisionan

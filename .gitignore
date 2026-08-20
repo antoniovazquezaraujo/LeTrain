@@ -1,4 +1,8 @@
-.idea\
+.idea/
 Ideas.adoc
 /target/
 *.ltr
+/output/
+unused_sound/
+docs/.obsidian/
+docs/adr/ADR-013-Nuevas-Ideas.md

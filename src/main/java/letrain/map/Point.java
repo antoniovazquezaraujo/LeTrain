@@ -9,22 +9,28 @@ import static letrain.map.Dir.SE;
 import static letrain.map.Dir.SW;
 import static letrain.map.Dir.W;
 
-import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
-public class Point implements Serializable {
-    private static final long serialVersionUID = 1L;
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+public class Point {
 
     private int x;
     private int y;
 
-    public Point(int x, int y) {
+    public Point() {
+    }
+
+    public Point(@com.fasterxml.jackson.annotation.JsonProperty("x") int x, 
+                 @com.fasterxml.jackson.annotation.JsonProperty("y") int y) {
         this.y = y;
         this.x = x;
     }
 
     @Override
     public boolean equals(Object p) {
-        if (p.getClass() != Point.class) {
+        if (p == null || p.getClass() != Point.class) {
             return false;
         }
         Point q = (Point) p;
@@ -51,27 +57,27 @@ public class Point implements Serializable {
         this.y = y;
     }
 
-    public Dir locate(Point p) {
-        if (y > p.y) {
-            if (x > p.x) {
+    public Dir locate(Point point) {
+        if (y > point.y) {
+            if (x > point.x) {
                 return NW;
-            } else if (x < p.x) {
+            } else if (x < point.x) {
                 return NE;
             } else {
                 return N;
             }
-        } else if (y < p.y) {
-            if (x > p.x) {
+        } else if (y < point.y) {
+            if (x > point.x) {
                 return SW;
-            } else if (x < p.x) {
+            } else if (x < point.x) {
                 return SE;
             } else {
                 return S;
             }
         } else {// y == p.y
-            if (x > p.x) {
+            if (x > point.x) {
                 return W;
-            } else if (x < p.x) {
+            } else if (x < point.x) {
                 return E;
             } else {
                 return null;
@@ -81,7 +87,7 @@ public class Point implements Serializable {
 
     @Override
     public String toString() {
-        return "[" + x + "," + y + ']';
+        return "" + x + "," + y;
     }
 
     public void move(Dir dir) {
@@ -133,18 +139,20 @@ public class Point implements Serializable {
         int pageY = (getY() < 0) ? (getY() + 1) / Page.getHeight() - 1 : getY() / Page.getHeight();
         return new Page(pageX, pageY);
     }
-    
+
     public Point addPage(Page page) {
         return new Point(
                 (getX() + page.getX() * Page.getWidth()),
                 (getY() + page.getY() * Page.getHeight()));
     }
 
+    @JsonIgnore
     public Point setPage(Page page) {
         Point relativePosition = this.getPosInPage();
         return relativePosition.addPage(page);
     }
 
+    @JsonIgnore
     public Point getPosInPage() {
         Page currentPage = getPage();
         int relativeX = getX() - currentPage.getX() * Page.getWidth();

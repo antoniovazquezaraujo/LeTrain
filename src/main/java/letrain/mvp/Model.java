@@ -1,21 +1,33 @@
 package letrain.mvp;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.Supplier;
 
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
+import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
-import letrain.vehicle.impl.Cursor;
-import letrain.vehicle.impl.rail.Locomotive;
-import letrain.vehicle.impl.rail.Train;
-import letrain.vehicle.impl.rail.Wagon;
+import letrain.track.rail.RailTrack;
+import letrain.vehicle.Cursor;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.CoreTrainEventListener;
+import letrain.vehicle.rail.ScriptTrainEventListener;
+import letrain.vehicle.rail.impl.Wagon;
 
 public interface Model {
+
+    public void addScriptTrainEventListener(ScriptTrainEventListener listener);
+
+    public void addCoreTrainEventListener(CoreTrainEventListener listener);
+
+    public void removeAllScriptTrainEventListeners();
 
     public void setShowId(boolean b);
 
@@ -28,10 +40,16 @@ public interface Model {
     public int nextStationId();
 
     public int nextLocomotiveId();
+    public int peekNextLocomotiveId();
 
     public int nextSensorId();
 
     public int nextTrainId();
+    public int peekNextTrainId();
+
+    void addTrack(Point point, RailTrack track);
+
+    RailTrack removeTrack(Point point);
 
     RailMap getRailMap();
 
@@ -53,11 +71,17 @@ public interface Model {
 
     List<Station> getStations();
 
-    void addStation(Station Station);
+    void addStation(Station station);
 
-    void removeStation(Station Station);
+    void removeStation(Station station);
 
     Station getStation(int id);
+
+    Station findStationByName(String name);
+
+    Sensor findSensorByName(String name);
+
+    Train findTrainByName(String name);
 
     Station getSelectedStation();
 
@@ -103,13 +127,20 @@ public interface Model {
 
     RailSemaphore getSelectedSemaphore();
 
+    void setSelectedSemaphore(RailSemaphore selectedSemaphore);
+
     void moveLocomotives();
 
     GameMode getMode();
+    GameMode getPreviousMode();
 
     void setMode(GameMode mode);
 
     Locomotive getSelectedLocomotive();
+
+    default boolean canEnterLinkUnlinkMode() {
+        return !getLocomotives().isEmpty() && (getSelectedLocomotive() == null || (getSelectedLocomotive().getSpeed() == 0 && getSelectedLocomotive().getTargetSpeed() == 0));
+    }
 
     void setSelectedLocomotive(Locomotive selectedLocomotive);
 
@@ -141,7 +172,8 @@ public interface Model {
         LINK("Link trains"),
         UNLINK("Divide trains"),
         STATIONS("Stations"),
-        LOAD_TRAINS("Use load Stations");
+        LOAD_TRAINS("Use load Stations"),
+        PROGRAM("Program");
 
         private String name;
 
@@ -158,10 +190,61 @@ public interface Model {
 
     public void removeDestroyedTrains();
 
-    public void setProgram(String program);
+    public List<String> setProgram(String program);
 
     public String getProgram();
 
     public EconomyManager getEconomyManager();
 
+    public RailTrack getCursorRailTrack();
+
+    public record GameModeMenuOption(
+            String gameModeName,
+            String gameModeDescription,
+            Supplier<Boolean> enabledIf,
+            Supplier<Boolean> selectedIf,
+            Supplier<GameMode> doWhenSelected) {
+    }
+
+    public List<GameModeMenuOption> getMenuModel();
+
+    public int getQuantifier();
+
+    public void setQuantifier(int quantifier);
+
+    public int getQuantifierSteps();
+
+    public void setQuantifierSteps(int quantifierSteps);
+
+    public void setLastSaveTime(LocalDateTime now);
+
+    public LocalDateTime getLastSaveTime();
+
+    CargoTypes getStationGhostCargoType();
+
+    CargoTypes.StationRole getStationGhostRole();
+
+    letrain.mvp.impl.EventLogManager getEventLogManager();
+
+    String getGameObjectsReport();
+
+    String getRailwayGraphReport();
+
+    CargoTypes getSelectedWagonType();
+
+    void setSelectedWagonType(CargoTypes type);
+
+    boolean isXRayActive();
+    void setXRayActive(boolean xRayActive);
+
+    void updateGroundMap(Point point, int type, int variation);
+
+    boolean isMapChanged();
+    void setMapChanged(boolean mapChanged);
+
+    letrain.segments.BlockManager getBlockManager();
+
+    letrain.segments.RailwayGraph getRailwayGraph();
+
+    letrain.utils.SimulationScheduler getScheduler();
 }
