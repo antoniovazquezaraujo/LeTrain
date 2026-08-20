@@ -44,7 +44,6 @@ public interface TrainCouplingManager {
 
     List<Linker> destroyLinkers(Train train, Supplier<Integer> nextTrainIdSupplier);
 
-    Dir getLinkDir(Train train, Linker linker);
 
     Linker getAdjacentLinker(Linker linker, Dir dir);
 }
