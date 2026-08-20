@@ -199,8 +199,8 @@ public class AudioMixer {
             } catch (Exception e) {
                 log.warn("Error stopping/flushing audio line", e);
             }
-        } catch (LineUnavailableException e) {
-            log.error("AudioMixer failed to initialize audio line", e);
+        } catch (LineUnavailableException | IllegalArgumentException e) {
+            log.error("AudioMixer failed to initialize audio line (no audio device available?)", e);
         } finally {
             if (line != null) {
                 try {
