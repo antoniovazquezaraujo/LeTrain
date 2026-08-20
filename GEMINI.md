@@ -27,9 +27,11 @@
     *   `src/main/resources`: Configuration (e.g., `logback.xml`) and assets (fonts, audio).
     *   `economy.properties`: Central configuration file for game economy tuning.
 *   **Git Workflow & Merging:**
-    *   **CRITICAL RULE:** NEVER merge feature branches into `develop` or push changes to `develop` without the user explicitly stating that they have tested the changes locally and given approval to merge.
-    *   Always leave changes in a separate branch (e.g., `feature/...` or `fix/...`) and wait for user confirmation.
-    *   **CRITICAL RULE:** After a branch has been successfully merged into `develop` or `main`, ALWAYS delete the branch both locally and remotely (`git branch -d` and `git push origin --delete`) to keep the repository clean.
+    *   **CRITICAL RULE (ABSOLUTE PROHIBITION):** You are STRICTLY FORBIDDEN from merging any branch into `develop` or `main` on your own initiative.
+    *   `main` is the sacred release branch. `develop` is the integration branch. YOU CANNOT TOUCH THEM without explicit, unambiguous permission from the user AFTER they have tested the changes.
+    *   When writing code, you MUST commit it to a separate branch (`feature/...` or `fix/...`) and STOP.
+    *   Do NOT chain `git merge` commands in your terminal tools (e.g., NEVER run `git commit && git checkout develop && git merge`).
+    *   **CRITICAL RULE:** After the user approves and the branch has been successfully merged, ALWAYS delete the branch both locally and remotely (`git branch -d` and `git push origin --delete`) to keep the repository clean.
 
 ## Documentation & Navigation
 *   **Class Index:** A complete list of project classes is maintained at `docs/architecture/ClassIndex.md`. Consult this file to locate specific components.
