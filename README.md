@@ -1,5 +1,12 @@
 # LeTrain 🚂✨
 
+<p align="left">
+  <a href="https://github.com/antoniovazquezaraujo/LeTrain/actions/workflows/ci.yml"><img src="https://github.com/antoniovazquezaraujo/LeTrain/actions/workflows/ci.yml/badge.svg" alt="Build Status"></a>
+  <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases"><img src="https://img.shields.io/github/v/release/antoniovazquezaraujo/LeTrain?include_prereleases&style=flat-square" alt="GitHub release"></a>
+  <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square" alt="License"></a>
+  <img src="https://img.shields.io/badge/Java-17%2B-ED8B00?style=flat-square&logo=openjdk&logoColor=white" alt="Java 17+">
+</p>
+
 ```
       __       ______           _
      / /   ___/_  __/________ _(_)___
