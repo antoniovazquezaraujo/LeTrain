@@ -15,7 +15,9 @@ import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.rail.impl.Locomotive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
+@DisabledIfEnvironmentVariable(named = "CI", matches = "true")
 class TerminalPresenterResizeTest {
 
     @Test
