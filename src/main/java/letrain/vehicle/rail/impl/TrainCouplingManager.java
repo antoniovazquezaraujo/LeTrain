@@ -405,7 +405,6 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         return linkersToDestroy;
     }
 
-    @Override
 
     @Override
     public Linker getAdjacentLinker(Linker linker, Dir dir) {
