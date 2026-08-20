@@ -49,6 +49,7 @@ public class Train implements Renderable {
     private letrain.itinerary.AutoPilot autopilot;
     private int railStationId = 0;
     private boolean stalled = false;
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = letrain.vehicle.rail.impl.Trip.class)
     private letrain.vehicle.rail.Trip trip;
 
     private Tractor directorLinker;
