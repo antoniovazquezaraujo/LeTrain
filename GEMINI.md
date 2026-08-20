@@ -29,6 +29,7 @@
 *   **Git Workflow & Merging:**
     *   **CRITICAL RULE:** NEVER merge feature branches into `develop` or push changes to `develop` without the user explicitly stating that they have tested the changes locally and given approval to merge.
     *   Always leave changes in a separate branch (e.g., `feature/...` or `fix/...`) and wait for user confirmation.
+    *   **CRITICAL RULE:** After a branch has been successfully merged into `develop` or `main`, ALWAYS delete the branch both locally and remotely (`git branch -d` and `git push origin --delete`) to keep the repository clean.
 
 ## Documentation & Navigation
 *   **Class Index:** A complete list of project classes is maintained at `docs/architecture/ClassIndex.md`. Consult this file to locate specific components.
