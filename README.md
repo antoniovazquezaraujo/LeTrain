@@ -23,9 +23,7 @@
   </a>
 </p>
 
-<p align="center">
-  <video src="https://github.com/user-attachments/assets/8e804f39-4363-4ab6-9419-1d2eefe48d15" autoplay loop muted playsinline width="50%"></video>
-</p>
+<img width="426" height="240" alt="promoLeTrain2D" src="https://github.com/user-attachments/assets/4b435726-b68f-47bb-9487-84a61a3ea568" />
 
 **LeTrain** is a procedural train simulator that blends classic ASCII aesthetics with a modern 3D engine. Build vast rail networks across an infinite world, manage a complex economy, and master the art of logistical efficiency.
 
