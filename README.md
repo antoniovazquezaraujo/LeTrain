@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Java-17%2B-ED8B00?style=flat-square&logo=openjdk&logoColor=white" alt="Java 17+">
 </p>
 
-```
+```text
       __       ______           _
      / /   ___/_  __/________ _(_)___
     / /   / _ \/ / / ___/ __ `/ / __ \
@@ -23,7 +23,9 @@
   </a>
 </p>
 
-<img width="426" height="240" alt="promoLeTrain2D" src="https://github.com/user-attachments/assets/4b435726-b68f-47bb-9487-84a61a3ea568" />
+<p align="center">
+  <img width="80%" alt="promoLeTrain2D" src="https://github.com/user-attachments/assets/4b435726-b68f-47bb-9487-84a61a3ea568" />
+</p>
 
 **LeTrain** is a procedural train simulator that blends classic ASCII aesthetics with a modern 3D engine. Build vast rail networks across an infinite world, manage a complex economy, and master the art of logistical efficiency.
 
