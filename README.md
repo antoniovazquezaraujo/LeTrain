@@ -7,7 +7,8 @@
   <img src="https://img.shields.io/badge/Java-17%2B-ED8B00?style=flat-square&logo=openjdk&logoColor=white" alt="Java 17+">
 </p>
 
-```
+<div align="center">
+<pre>
       __       ______           _
      / /   ___/_  __/________ _(_)___
     / /   / _ \/ / / ___/ __ `/ / __ \
@@ -15,7 +16,8 @@
   /_____/\___/_/ /_/   \__,_/_/_/ /_/
        The Letter Train Simulator           
    (C) 2006-2026 Antonio Vazquez Araujo 
-```
+</pre>
+</div>
 
 <p align="center">
   <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases/latest">
