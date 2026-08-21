@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=LeTrain
+Comment=Procedural train simulator
+Exec=letrain
+Icon=${SNAP}/meta/gui/letrain.png
+Terminal=false
+Type=Application
+Categories=Game;Simulation;

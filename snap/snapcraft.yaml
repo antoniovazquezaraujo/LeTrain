@@ -1,0 +1,36 @@
+name: letrain
+base: core22
+version: '1.0.0'
+summary: Procedural train simulator and logistics tycoon
+description: |
+  LeTrain is a procedural train simulator combining classic ASCII aesthetics with a modern 3D engine.
+  Build vast rail networks across an infinite world, manage a complex economy, and master the art of logistical efficiency.
+
+grade: stable
+confinement: strict
+
+apps:
+  letrain:
+    command: usr/lib/jvm/java-17-openjdk-amd64/bin/java -jar $SNAP/letrain.jar
+    extensions: [gnome]
+    plugs:
+      - opengl
+      - pulseaudio
+      - alsa
+      - x11
+
+parts:
+  letrain:
+    plugin: maven
+    source: .
+    maven-parameters:
+      - clean
+      - package
+      - -DskipTests
+    override-build: |
+      craftctl default
+      cp target/*-jar-with-dependencies.jar $CRAFT_PART_INSTALL/letrain.jar || cp target/*.jar $CRAFT_PART_INSTALL/letrain.jar
+    build-packages:
+      - openjdk-17-jdk
+    stage-packages:
+      - openjdk-17-jre
