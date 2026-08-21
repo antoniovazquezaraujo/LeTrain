@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <video src="https://github.com/user-attachments/assets/41e6f7a7-f636-40bc-a68f-644e12899cf7" autoplay loop muted playsinline width="100%"></video>
+  <video src="https://github.com/user-attachments/assets/8e804f39-4363-4ab6-9419-1d2eefe48d15" autoplay loop muted playsinline width="100%"></video>
 </p>
 
 **LeTrain** is a procedural train simulator that blends classic ASCII aesthetics with a modern 3D engine. Build vast rail networks across an infinite world, manage a complex economy, and master the art of logistical efficiency.
