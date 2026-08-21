@@ -8,7 +8,8 @@
 </p>
 
 <div align="center">
-<pre>
+
+```text
       __       ______           _
      / /   ___/_  __/________ _(_)___
     / /   / _ \/ / / ___/ __ `/ / __ \
@@ -16,7 +17,8 @@
   /_____/\___/_/ /_/   \__,_/_/_/ /_/
        The Letter Train Simulator           
    (C) 2006-2026 Antonio Vazquez Araujo 
-</pre>
+```
+
 </div>
 
 <p align="center">
