@@ -21,7 +21,7 @@
   <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases/latest">
     <img src="https://img.shields.io/badge/🎮_Download_Latest_Release-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Latest Release">
   </a>
-  <a href="https://github.com/antoniovazquezaraujo/LeTrain/blob/develop/docs/user/index.md">
+  <a href="https://antoniovazquezaraujo.github.io/LeTrain/">
     <img src="https://img.shields.io/badge/📖_Read_the_Documentation-2EA043?style=for-the-badge&logo=markdown&logoColor=white" alt="Read the Documentation">
   </a>
 </p>
