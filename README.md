@@ -17,6 +17,14 @@
    (C) 2006-2026 Antonio Vazquez Araujo 
 ```
 
+<p align="center">
+  <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases/latest">
+    <img src="https://img.shields.io/badge/🎮_Download_Latest_Release-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Latest Release">
+  </a>
+</p>
+
+https://github.com/user-attachments/assets/41e6f7a7-f636-40bc-a68f-644e12899cf7
+
 **LeTrain** is a procedural train simulator that blends classic ASCII aesthetics with a modern 3D engine. Build vast rail networks across an infinite world, manage a complex economy, and master the art of logistical efficiency.
 
 ---
