@@ -45,16 +45,12 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
 
         if (train.getLinkers().size() == 1) {
             lastLinker = (Linker) train.getDirectorLinker();
-            Dir entryDir = lastLinker.getEntryDir();
-            if (entryDir == null) {
-                entryDir = lastLinker.getRealDir().inverse();
-            }
             if (lookAtPhysicalFront) {
                 train.setLinkerJoinSense(Train.LinkersSense.FRONT);
-                dir = lastLinker.getTrack().getDir(entryDir);
+                dir = lastLinker.getRealDir();
             } else {
                 train.setLinkerJoinSense(Train.LinkersSense.BACK);
-                dir = entryDir;
+                dir = lastLinker.getRealDir().inverse();
             }
         } else if (train.getLinkers().size() > 1) {
             if (lookAtPhysicalFront) {
