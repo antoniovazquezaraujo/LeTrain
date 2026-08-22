@@ -49,7 +49,7 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
             if (entryDir == null) {
                 entryDir = lastLinker.getRealDir().inverse();
             }
-            if (lookAtPhysicalFront) {
+            if (forwardDirection) {
                 train.setLinkerJoinSense(Train.LinkersSense.FRONT);
                 dir = lastLinker.getTrack().getDir(entryDir);
             } else {
@@ -57,8 +57,8 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 dir = entryDir;
             }
         } else if (train.getLinkers().size() > 1) {
-            if (lookAtPhysicalFront) {
-                lastLinker = train.getLinkers().getFirst();
+            if (forwardDirection) {
+                lastLinker = normalSense ? train.getLinkers().getLast() : train.getLinkers().getFirst();
                 train.setLinkerJoinSense(Train.LinkersSense.FRONT);
                 
                 Dir preferredDir = lastLinker.getDir();
@@ -79,7 +79,7 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                     }
                 }
             } else {
-                lastLinker = train.getLinkers().getLast();
+                lastLinker = normalSense ? train.getLinkers().getFirst() : train.getLinkers().getLast();
                 train.setLinkerJoinSense(Train.LinkersSense.BACK);
                 
                 Dir preferredDir = lastLinker.getEntryDir();
@@ -154,10 +154,20 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 if (count >= train.getNumLinkersToJoin())
                     break;
 
-                if (train.getLinkerJoinSense() == Train.LinkersSense.FRONT) {
-                    train.getLinkers().addFirst(linkerToJoin);
+                boolean normalSense = train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
+                boolean addToPhysicalFront = (train.getLinkerJoinSense() == Train.LinkersSense.FRONT);
+                if (addToPhysicalFront) {
+                    if (normalSense) {
+                        train.getLinkers().addFirst(linkerToJoin);
+                    } else {
+                        train.getLinkers().addLast(linkerToJoin);
+                    }
                 } else {
-                    train.getLinkers().addLast(linkerToJoin);
+                    if (normalSense) {
+                        train.getLinkers().addLast(linkerToJoin);
+                    } else {
+                        train.getLinkers().addFirst(linkerToJoin);
+                    }
                 }
 
                 Train oldTrain = linkerToJoin.getTrain();
