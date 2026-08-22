@@ -351,22 +351,21 @@ public class RenderVisitor implements Visitor {
             view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), getCrashAspect());
             return;
         }
-        if (wagon.getTrain() != null && wagon.getTrain().getLogisticsManager().isLoading()) {
-            letrain.track.Station station = model.getStation(wagon.getTrain().getStationId());
-            if (station != null && station.getCargoType() != letrain.track.CargoTypes.NONE &&
-                    station.getCargoType() == wagon.getExclusiveCargoType()) {
-                view.setFgColor(TextColor.ANSI.values()[new Random().nextInt(TextColor.ANSI.values().length)]);
-            } else if (wagon.getExclusiveCargoType() != letrain.track.CargoTypes.NONE) {
-                boolean isLoaded = wagon.getCargoAmount() > 0;
-                view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), true));
-                view.setUnderline(isLoaded);
-            } else {
-                view.setFgColor(WAGON_COLOR);
-            }
-        } else if (wagon.getExclusiveCargoType() != letrain.track.CargoTypes.NONE) {
+        if (wagon.getExclusiveCargoType() != letrain.track.CargoTypes.NONE) {
             boolean isLoaded = wagon.getCargoAmount() > 0;
             view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), true));
-            view.setUnderline(isLoaded);
+            if (isLoaded) {
+                boolean isLoadingProcess = wagon.getTrain() != null && wagon.getTrain().getLogisticsManager().isLoading();
+                if (isLoadingProcess && !wagon.isFull()) {
+                    // Lanterna's Swing emulator often ignores SGR.BLINK. We manually toggle underline every 500ms.
+                    boolean blinkState = (System.currentTimeMillis() / 300) % 2 == 0;
+                    view.setUnderline(blinkState);
+                } else {
+                    view.setUnderline(true);
+                }
+            } else {
+                view.setUnderline(false);
+            }
         } else {
             view.setFgColor(WAGON_COLOR);
         }
