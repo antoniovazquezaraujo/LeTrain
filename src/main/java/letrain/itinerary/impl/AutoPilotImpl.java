@@ -222,13 +222,15 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     @Override
-    public void onSegmentEntered(Segment newSegment) {
-        log.info("[AP] onSegmentEntered: newSegment={}, mode={}", newSegment != null ? newSegment.getId() : "null", mode);
+    public void onSegmentEntered(Segment currentSeg) {
+        if (currentSeg == null) {
+            return;
+        }
+        log.info("[AP] onSegmentEntered: newSegment={}, mode={}", currentSeg != null ? currentSeg.getId() : "null", mode);
         if (mode != Mode.FOLLOWING) {
             return;
         }
 
-        Segment currentSeg = newSegment;
         lastSegment = currentSeg;
 
         Optional<Waypoint> currentWpOpt = currentWaypoint();
