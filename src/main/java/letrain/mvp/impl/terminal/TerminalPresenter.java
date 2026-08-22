@@ -725,15 +725,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                         if (train.getLogisticsManager().isLoading()) { // Si ya está cargando/descargando, lo termina
                             train.getLogisticsManager().endLoadUnloadProcess();
                         } else {
-                            CargoTypes trainCargoType = train.getLogisticsManager().getTrainCargoType();
-                            if (trainCargoType != CargoTypes.NONE
-                                    && station.getRole() == CargoTypes.StationRole.CONSUMER) {
-                                train.getLogisticsManager().startUnloadProcess(station);
-                                train.recordStopAtStation();
-                            } else if (trainCargoType == CargoTypes.NONE
-                                    && station.getRole() == CargoTypes.StationRole.PRODUCER) {
-                                train.getLogisticsManager().startLoadProcess(station);
-                                train.recordStopAtStation();
+                            if (station.getRole() == CargoTypes.StationRole.CONSUMER) {
+                                if (!train.getLogisticsManager().getCapableWagons(station, true).isEmpty()) {
+                                    train.getLogisticsManager().startUnloadProcess(station);
+                                    train.recordStopAtStation();
+                                }
+                            } else if (station.getRole() == CargoTypes.StationRole.PRODUCER) {
+                                if (!train.getLogisticsManager().getCapableWagons(station, false).isEmpty()) {
+                                    train.getLogisticsManager().startLoadProcess(station);
+                                    train.recordStopAtStation();
+                                }
                             }
                         }
                         return; // Consume the event
