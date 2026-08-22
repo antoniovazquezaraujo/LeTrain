@@ -32,7 +32,7 @@
     *   When writing code, you MUST commit it to a separate branch (`feature/...` or `fix/...`) and STOP.
     *   Do NOT chain `git merge` commands in your terminal tools (e.g., NEVER run `git commit && git checkout develop && git merge`).
     *   **CRITICAL RULE:** After the user approves and the branch has been successfully merged, ALWAYS delete the branch both locally and remotely (`git branch -d` and `git push origin --delete`) to keep the repository clean.
-
+    *   **Issue Linking:** When creating a PR that resolves an issue, you MUST include keywords like `Fixes #ID` or `Resolves #ID` in the PR description (e.g. `gh pr create --body "Fixes #..."`). If a PR was merged without doing this, you MUST add a comment to the Issue linking to the PR before closing it.
 ## Documentation & Navigation
 *   **Class Index:** A complete list of project classes is maintained at `docs/architecture/ClassIndex.md`. Consult this file to locate specific components.
 *   **Architecture & ADRs:** Detailed technical documentation and architectural decision records are located in the `docs/` directory.
