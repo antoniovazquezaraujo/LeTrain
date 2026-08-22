@@ -206,6 +206,18 @@ public class RenderVisitor implements Visitor {
         resetColors();
     }
 
+    private boolean isStationActive(Station station) {
+        if (model == null) return false;
+        for (letrain.vehicle.rail.impl.Locomotive loco : model.getLocomotives()) {
+            if (loco.getTrain() != null && 
+                loco.getTrain().getStationId() == station.getId() && 
+                loco.getTrain().getLogisticsManager().isLoading()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public void visitStation(Station station) {
         Track track = station.getTrack();
@@ -227,6 +239,18 @@ public class RenderVisitor implements Visitor {
                 aspect = UNLOAD_STATION_ASPECT;
             }
         }
+        if (isStationActive(station)) {
+            boolean blinkState = (System.currentTimeMillis() / 300) % 2 == 0;
+            if (!blinkState) {
+                // To blink, we simply don't draw the station, leaving the track visible underneath.
+                resetColors();
+                return;
+            }
+        }
+        
+        // Remove underline logic for station since we are doing appear/disappear blink
+        view.setUnderline(false);
+        
         view.set(track.getPosition().getX(), track.getPosition().getY(),
                 aspect + (this.mode == GameMode.STATIONS ? station.getId() : ""));
         resetColors();
