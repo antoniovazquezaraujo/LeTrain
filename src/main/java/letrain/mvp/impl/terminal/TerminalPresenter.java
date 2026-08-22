@@ -320,6 +320,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 model.setMode(PROGRAM);
                 view.showIDE();
                 return true;
+            case 'o':
+                handleSnapCursor();
+                return true;
             default:
                 return false;
         }
@@ -570,6 +573,41 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         newPos.move(cursorDir, 1);
         model.getCursor().setDir(cursorDir);
         model.getCursor().setPosition(newPos);
+    }
+
+
+    private void handleSnapCursor() {
+        letrain.map.Point targetPos = null;
+        switch (model.getMode()) {
+            case DRIVE:
+            case LINK:
+            case UNLINK:
+                if (model.getSelectedLocomotive() != null) {
+                    targetPos = model.getSelectedLocomotive().getPosition();
+                }
+                break;
+            case FORKS:
+                if (model.getSelectedFork() != null) {
+                    targetPos = model.getSelectedFork().getPosition();
+                }
+                break;
+            case SEMAPHORES:
+                if (model.getSelectedSemaphore() != null) {
+                    targetPos = model.getSelectedSemaphore().getPosition();
+                }
+                break;
+            case STATIONS:
+                if (model.getSelectedStation() != null) {
+                    targetPos = model.getSelectedStation().getPosition();
+                }
+                break;
+            default:
+                break;
+        }
+
+        if (targetPos != null) {
+            model.getCursor().setPosition(targetPos);
+        }
     }
 
     private void deleteVehicle() {
