@@ -63,6 +63,7 @@ public class TerminalView implements letrain.mvp.View {
     private TextColor fgColor;
     private TextColor bgColor;
     private boolean isUnderline = false;
+    private boolean isBlink = false;
     boolean endOfGame = false;
     static final TextColor NORMAL_MENU_FG_COLOR = ANSI.WHITE;
     static final TextColor NORMAL_MENU_BG_COLOR = ANSI.BLACK;
@@ -273,7 +274,10 @@ public class TerminalView implements letrain.mvp.View {
         x -= scrollOffset.getX();
         y -= scrollOffset.getY();
         if (x >= 0 && x < getCols() && y >= 0 && y < getRows()) {
-            com.googlecode.lanterna.SGR[] modifiers = isUnderline ? new com.googlecode.lanterna.SGR[]{com.googlecode.lanterna.SGR.UNDERLINE} : new com.googlecode.lanterna.SGR[0];
+            java.util.List<com.googlecode.lanterna.SGR> sgrList = new java.util.ArrayList<>();
+            if (isUnderline) sgrList.add(com.googlecode.lanterna.SGR.UNDERLINE);
+            if (isBlink) sgrList.add(com.googlecode.lanterna.SGR.BLINK);
+            com.googlecode.lanterna.SGR[] modifiers = sgrList.toArray(new com.googlecode.lanterna.SGR[0]);
             for (int i = 0; i < c.length(); i++) {
                 gameBox.setCharacter(
                         x + i,
@@ -289,6 +293,10 @@ public class TerminalView implements letrain.mvp.View {
 
     public void setUnderline(boolean enable) {
         this.isUnderline = enable;
+    }
+
+    public void setBlink(boolean enable) {
+        this.isBlink = enable;
     }
 
     public TextColor getFgColor() {
