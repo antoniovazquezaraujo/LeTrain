@@ -41,7 +41,6 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         Linker lastLinker = null;
         Dir dir = Dir.E;
         boolean normalSense = train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
-        boolean lookAtPhysicalFront = (forwardDirection == normalSense);
 
         if (train.getLinkers().size() == 1) {
             lastLinker = (Linker) train.getDirectorLinker();
@@ -49,17 +48,24 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
             if (entryDir == null) {
                 entryDir = lastLinker.getRealDir().inverse();
             }
-            if (lookAtPhysicalFront) {
-                train.setLinkerJoinSense(Train.LinkersSense.FRONT);
-                dir = lastLinker.getTrack().getDir(entryDir);
+            if (forwardDirection) {
+                if (normalSense) train.setLinkerJoinSense(Train.LinkersSense.FRONT);
+                else train.setLinkerJoinSense(Train.LinkersSense.BACK);
+                dir = lastLinker.getDir();
             } else {
-                train.setLinkerJoinSense(Train.LinkersSense.BACK);
+                if (normalSense) train.setLinkerJoinSense(Train.LinkersSense.BACK);
+                else train.setLinkerJoinSense(Train.LinkersSense.FRONT);
                 dir = entryDir;
             }
         } else if (train.getLinkers().size() > 1) {
-            if (lookAtPhysicalFront) {
-                lastLinker = train.getLinkers().getFirst();
-                train.setLinkerJoinSense(Train.LinkersSense.FRONT);
+            if (forwardDirection) {
+                if (normalSense) {
+                    lastLinker = train.getLinkers().getFirst();
+                    train.setLinkerJoinSense(Train.LinkersSense.FRONT);
+                } else {
+                    lastLinker = train.getLinkers().getLast();
+                    train.setLinkerJoinSense(Train.LinkersSense.BACK);
+                }
                 
                 Dir preferredDir = lastLinker.getDir();
                 Track connected = lastLinker.getTrack().getConnected(preferredDir);
@@ -79,8 +85,13 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                     }
                 }
             } else {
-                lastLinker = train.getLinkers().getLast();
-                train.setLinkerJoinSense(Train.LinkersSense.BACK);
+                if (normalSense) {
+                    lastLinker = train.getLinkers().getLast();
+                    train.setLinkerJoinSense(Train.LinkersSense.BACK);
+                } else {
+                    lastLinker = train.getLinkers().getFirst();
+                    train.setLinkerJoinSense(Train.LinkersSense.FRONT);
+                }
                 
                 Dir preferredDir = lastLinker.getEntryDir();
                 if (preferredDir == null) preferredDir = lastLinker.getRealDir().inverse();
@@ -212,12 +223,13 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         }
 
         boolean normalSense = train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
-        boolean lookAtPhysicalFront = (forward == normalSense);
 
-        if (lookAtPhysicalFront) {
-            train.setLinkerDivisionSense(Train.LinkersSense.FRONT);
+        if (forward) {
+            if (normalSense) train.setLinkerDivisionSense(Train.LinkersSense.FRONT);
+            else train.setLinkerDivisionSense(Train.LinkersSense.BACK);
         } else {
-            train.setLinkerDivisionSense(Train.LinkersSense.BACK);
+            if (normalSense) train.setLinkerDivisionSense(Train.LinkersSense.BACK);
+            else train.setLinkerDivisionSense(Train.LinkersSense.FRONT);
         }
 
         int maxRemovable = Math.max(0, train.getLinkers().size() - 1);
