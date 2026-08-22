@@ -43,7 +43,7 @@ public class GameSaveService {
             }
             ObjectMapper mapper = new ObjectMapper();
             configureObjectMapper(mapper);
-            mapper.enable(SerializationFeature.INDENT_OUTPUT);
+            mapper.disable(SerializationFeature.INDENT_OUTPUT);
             mapper.writeValue(file, model);
             log.info("Game saved successfully to {} (JSON)", file.getAbsolutePath());
             return true;
