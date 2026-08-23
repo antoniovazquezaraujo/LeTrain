@@ -470,6 +470,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             case "MAGENTA", "MAGENTA_BRIGHT" -> Color.MAGENTA;
             case "CYAN", "CYAN_BRIGHT" -> Color.CYAN;
             case "ORANGE" -> Color.ORANGE;
+            case "PINK" -> Color.PINK;
             case "BLACK" -> Color.BLACK;
             case "GRAY" -> Color.GRAY;
             case "WHITE" -> Color.WHITE;

@@ -89,6 +89,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         initModeKeyHandlers();
     }
 
+    private Locomotive lastCreatedLoco;
+
     private void initModeKeyHandlers() {
         modeKeyHandlers.put(RAILS, keyEvent -> railTrackMaker.onChar(keyEvent));
         modeKeyHandlers.put(DRIVE, keyEvent -> trainDriverOnChar(keyEvent));
@@ -237,6 +239,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             // In DRIVE mode, Enter is for loading/unloading, not for switching to MENU.
             // The logic is handled inside trainDriverOnChar.
             if (model.getMode() != DRIVE) {
+                lastCreatedLoco = null;
                 model.setMode(MENU);
                 return;
             }
@@ -543,11 +546,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (model.getRailMap().getTrackAt(model.getCursor().getPosition()) == null) {
             return;
         }
-        String c = keyEvent.getCharacter().toString();
+        char cChar = keyEvent.getCharacter();
+        String c = String.valueOf(cChar);
         if (c.isEmpty()) {
             return;
         }
-        if (c.matches("[123]")) {
+        
+        if (Character.isDigit(cChar)) {
+            if (lastCreatedLoco != null) {
+                int colorIdx = cChar - '0';
+                lastCreatedLoco.setColor(Locomotive.COLOR_PALETTE[colorIdx % Locomotive.COLOR_PALETTE.length]);
+                return;
+            }
             if (c.equals("1")) model.setSelectedWagonType(letrain.track.CargoTypes.GOLD);
             else if (c.equals("2")) model.setSelectedWagonType(letrain.track.CargoTypes.COAL);
             else if (c.equals("3")) model.setSelectedWagonType(letrain.track.CargoTypes.RUBY);
@@ -585,6 +595,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             model.getEconomyManager().onLocomotiveConstructed(locomotive);
             train.getSafetyManager().claimOccupiedSegments();
             cursorDir = locomotive.getDir();
+            lastCreatedLoco = locomotive;
         } else {
             Wagon wagon = new Wagon(c);
             wagon.setExclusiveCargoType(model.getSelectedWagonType());
@@ -598,6 +609,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             
             model.addWagon(wagon);
             model.getEconomyManager().onWagonConstructed(wagon);
+            lastCreatedLoco = null;
             if (wagon.getTrain() != null) {
                 wagon.getTrain().getSafetyManager().claimOccupiedSegments();
             }
