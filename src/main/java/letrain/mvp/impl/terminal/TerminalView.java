@@ -64,6 +64,9 @@ public class TerminalView implements letrain.mvp.View {
     private TextColor bgColor;
     private boolean isUnderline = false;
     private boolean isBlink = false;
+    private int cameraDeadzone = 1;
+    private boolean cameraPagination = false;
+    private int flashDeadzoneTicks = 0;
     boolean endOfGame = false;
     static final TextColor NORMAL_MENU_FG_COLOR = ANSI.WHITE;
     static final TextColor NORMAL_MENU_BG_COLOR = ANSI.BLACK;
@@ -196,6 +199,31 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     @Override
+    public boolean isCameraPagination() {
+        return this.cameraPagination;
+    }
+
+    @Override
+    public void setCameraPagination(boolean paginate) {
+        this.cameraPagination = paginate;
+    }
+
+    @Override
+    public int getCameraDeadzone() {
+        return this.cameraDeadzone;
+    }
+
+    @Override
+    public void setCameraDeadzone(int margin) {
+        this.cameraDeadzone = margin;
+    }
+
+    @Override
+    public void flashCameraDeadzone() {
+        this.flashDeadzoneTicks = 6; // Paint for 2 frames
+    }
+
+    @Override
     public void paint() {
         TerminalSize changedSize = screen.doResizeIfNecessary();
         if (changedSize != null) {
@@ -207,6 +235,49 @@ public class TerminalView implements letrain.mvp.View {
         }
 
         try {
+            if (flashDeadzoneTicks > 0) {
+                flashDeadzoneTicks--;
+                int radius = getCameraDeadzone();
+                if (radius >= 0) {
+                    int cols = getCols();
+                    int rows = getRows();
+                    int centerX = cols / 2;
+                    int centerY = rows / 2;
+                    
+                    int radiusX = (int) Math.round(radius * ((double) cols / rows));
+                    int radiusY = radius;
+                    
+                    int screenMinX = centerX - radiusX;
+                    int screenMaxX = centerX + radiusX;
+                    int screenMinY = centerY - radiusY;
+                    int screenMaxY = centerY + radiusY;
+                    
+                    if (radius >= 999) {
+                        screenMinX = 0;
+                        screenMaxX = cols - 1;
+                        screenMinY = 0;
+                        screenMaxY = rows - 1;
+                    }
+                    
+                    screenMinX = Math.max(0, screenMinX);
+                    screenMaxX = Math.min(cols - 1, screenMaxX);
+                    screenMinY = Math.max(0, screenMinY);
+                    screenMaxY = Math.min(rows - 1, screenMaxY);
+                    
+                    if (screenMinX <= screenMaxX && screenMinY <= screenMaxY) {
+                        com.googlecode.lanterna.TextColor dotColor = cameraPagination ? com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT : com.googlecode.lanterna.TextColor.ANSI.BLUE_BRIGHT;
+                        com.googlecode.lanterna.TextCharacter dot = new com.googlecode.lanterna.TextCharacter('·', dotColor, com.googlecode.lanterna.TextColor.ANSI.BLACK);
+                        for (int x = screenMinX; x <= screenMaxX; x++) {
+                            gameBox.setCharacter(x, screenMinY, dot);
+                            gameBox.setCharacter(x, screenMaxY, dot);
+                        }
+                        for (int y = screenMinY; y <= screenMaxY; y++) {
+                            gameBox.setCharacter(screenMinX, y, dot);
+                            gameBox.setCharacter(screenMaxX, y, dot);
+                        }
+                    }
+                }
+            }
             this.screen.refresh();
             Thread.yield();
         } catch (IOException e) {
@@ -324,26 +395,44 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     @Override
-    public void ensureVisible(int x, int y, int margin) {
+    public void ensureVisible(int x, int y, int radius, boolean paginate) {
         int cols = getCols();
         int rows = getRows();
         if (cols <= 0 || rows <= 0) return;
-        int minX = scrollOffset.getX() + margin;
-        int maxX = scrollOffset.getX() + cols - 1 - margin;
-        int minY = scrollOffset.getY() + margin;
-        int maxY = scrollOffset.getY() + rows - 1 - margin;
+        
+        int centerX = scrollOffset.getX() + cols / 2;
+        int centerY = scrollOffset.getY() + rows / 2;
+        
+        int radiusX = (int) Math.round(radius * ((double) cols / rows));
+        int radiusY = radius;
+        
+        int minX = centerX - radiusX;
+        int maxX = centerX + radiusX;
+        int minY = centerY - radiusY;
+        int maxY = centerY + radiusY;
+        
+        if (radius >= 999) {
+            minX = scrollOffset.getX();
+            maxX = scrollOffset.getX() + cols - 1;
+            minY = scrollOffset.getY();
+            maxY = scrollOffset.getY() + rows - 1;
+        }
+
         int newScrollX = scrollOffset.getX();
         int newScrollY = scrollOffset.getY();
+
         if (x < minX) {
-            newScrollX = x - margin;
+            newScrollX -= (paginate ? Math.max(1, maxX - minX) : (minX - x));
         } else if (x > maxX) {
-            newScrollX = x - (cols - 1 - margin);
+            newScrollX += (paginate ? Math.max(1, maxX - minX) : (x - maxX));
         }
+        
         if (y < minY) {
-            newScrollY = y - margin;
+            newScrollY -= (paginate ? Math.max(1, maxY - minY) : (minY - y));
         } else if (y > maxY) {
-            newScrollY = y - (rows - 1 - margin);
+            newScrollY += (paginate ? Math.max(1, maxY - minY) : (y - maxY));
         }
+
         if (newScrollX != scrollOffset.getX() || newScrollY != scrollOffset.getY()) {
             setScrollOffset(new Point(newScrollX, newScrollY));
         }
