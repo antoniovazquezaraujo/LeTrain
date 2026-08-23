@@ -57,9 +57,8 @@ public class Locomotive extends Linker implements Tractor {
         "BLUE_BRIGHT",   // 4
         "MAGENTA_BRIGHT",// 5
         "CYAN_BRIGHT",   // 6
-        "BLACK",         // 7
-        "GRAY",          // 8
-        "ORANGE"         // 9
+        "GRAY",          // 7
+        "ORANGE"         // 8
     };
     private static final java.util.Random RANDOM = new java.util.Random();
 
