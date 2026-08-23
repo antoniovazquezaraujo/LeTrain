@@ -633,6 +633,8 @@ public class RenderVisitor implements Visitor {
             return TextColor.ANSI.BLACK_BRIGHT;
         } else if (upper.equals("ORANGE")) {
             return new TextColor.RGB(255, 165, 0); // Lanterna will downsample this automatically if needed
+        } else if (upper.equals("PINK")) {
+            return new TextColor.RGB(255, 192, 203);
         }
         try {
             return TextColor.ANSI.valueOf(upper);
