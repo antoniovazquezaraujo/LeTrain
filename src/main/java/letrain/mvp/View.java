@@ -34,8 +34,26 @@ public interface View {
         setPageOfPos(x, y);
     }
 
-    default void ensureVisible(int x, int y, int margin) {
+
+    default void ensureVisible(int x, int y, int radius, boolean paginate) {
         setPageOfPos(x, y);
+    }
+
+    default boolean isCameraPagination() {
+        return false;
+    }
+
+    default void setCameraPagination(boolean paginate) {
+    }
+
+    default int getCameraDeadzone() {
+        return 0;
+    }
+
+    default void setCameraDeadzone(int margin) {
+    }
+
+    default void flashCameraDeadzone() {
     }
 
     void clear(int x, int y);

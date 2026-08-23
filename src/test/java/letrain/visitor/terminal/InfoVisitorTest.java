@@ -68,6 +68,6 @@ class InfoVisitorTest {
 
         // Verify translations on other lines
         assertTrue(lines[1].contains("| Page 0,0 | Cursor 10,20"), "Page info should be in English");
-        assertTrue(lines[2].contains("[PgUp/PgDn]: Scroll Map | [r/d/f/s/t/l/u/p/n]: Modes | [Esc]: Exit"), "Global help should be in English");
+        assertTrue(lines[2].contains("[PgUp/Dn]: Scroll | [c/C]: Camera | [r/d/f/s/t/l/u/p/n]: Modes | [Esc]: Exit"), "Global help should be in English");
     }
 }

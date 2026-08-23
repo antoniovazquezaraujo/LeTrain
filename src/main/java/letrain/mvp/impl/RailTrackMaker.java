@@ -397,7 +397,7 @@ public class RailTrackMaker {
         degreesOfRotation = 0;
         if (makeTrack(type)) {
             Point position = presenter.getModel().getCursor().getPosition();
-            presenter.getView().ensureVisible(position.getX(), position.getY(), 3);
+            presenter.getView().ensureVisible(position.getX(), position.getY(), presenter.getView().getCameraDeadzone(), presenter.getView().isCameraPagination());
             return true;
         }
         return false;
@@ -672,7 +672,7 @@ public class RailTrackMaker {
         }
         
         Point position = presenter.getModel().getCursor().getPosition();
-        presenter.getView().ensureVisible(position.getX(), position.getY(), 3);
+        presenter.getView().ensureVisible(position.getX(), position.getY(), presenter.getView().getCameraDeadzone(), presenter.getView().isCameraPagination());
     }
 
     private void updateCursorPosition(Point newPos) {

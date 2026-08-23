@@ -178,8 +178,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 if (model.getMode() == DRIVE) {
                     Locomotive selectedLocomotive = model.getSelectedLocomotive();
                     if (selectedLocomotive != null) {
-                        view.setPageOfPos(selectedLocomotive.getPosition().getX(),
-                                selectedLocomotive.getPosition().getY());
+                        view.ensureVisible(selectedLocomotive.getPosition().getX(),
+                                selectedLocomotive.getPosition().getY(), view.getCameraDeadzone(), view.isCameraPagination());
                     }
                 }
 
@@ -249,6 +249,24 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
+    private static final int[] CAMERA_DEADZONE_STEPS = {1, 3, 6, 10, 15, 20, 25, 999};
+    private int cameraDeadzoneIndex = 0;
+
+    private void cycleCameraDeadzone() {
+        int maxRadius = view.getRows() / 2 - 1;
+        if (maxRadius < 1) maxRadius = 1;
+        
+        int deadzone;
+        do {
+            cameraDeadzoneIndex = (cameraDeadzoneIndex + 1) % CAMERA_DEADZONE_STEPS.length;
+            deadzone = CAMERA_DEADZONE_STEPS[cameraDeadzoneIndex];
+        } while (deadzone != 999 && deadzone >= maxRadius);
+        
+        // 999 is handled specially by View as "full screen"
+        view.setCameraDeadzone(deadzone);
+        view.flashCameraDeadzone();
+    }
+
     private boolean handleModeHotkey(KeyStroke keyEvent) {
         if (keyEvent.getKeyType() != KeyType.Character || keyEvent.getCharacter() == ' ') {
             return false;
@@ -260,6 +278,19 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
 
         switch (keyEvent.getCharacter()) {
+            case 'c':
+                if (model.getMode() != TRAINS) {
+                    cycleCameraDeadzone();
+                    return true;
+                }
+                return false;
+            case 'C':
+                if (model.getMode() != TRAINS) {
+                    view.setCameraPagination(!view.isCameraPagination());
+                    view.flashCameraDeadzone();
+                    return true;
+                }
+                return false;
             case 'r':
                 model.setMode(RAILS);
                 return true;
