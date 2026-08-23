@@ -42,6 +42,10 @@ public class LeTrain {
             presenter.start();
             presenter.stop();
         }
+        
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {}
         System.exit(0);
     }
 }

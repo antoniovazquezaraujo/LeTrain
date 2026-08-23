@@ -95,6 +95,7 @@ public class TerminalView implements letrain.mvp.View {
 
 
         try {
+            terminalFactory.setUnixTerminalCtrlCBehaviour(com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal.CtrlCBehaviour.TRAP);
             terminal = terminalFactory.createTerminal();
             terminal.setCursorVisible(false);
             setScreen(createScreen(terminal));
@@ -767,10 +768,21 @@ public class TerminalView implements letrain.mvp.View {
     public void stop() {
         try {
             if (screen != null) {
-                screen.stopScreen();
+                try {
+                    screen.stopScreen();
+                } catch (IllegalStateException ignored) {
+                    // Ignored: Screen already stopped or not in private mode
+                }
             }
-        } catch (IOException e) {
-            log.warn("Error stopping screen", e);
+            if (terminal != null) {
+                try {
+                    terminal.close();
+                } catch (IllegalStateException ignored) {
+                    // Ignored: Shutdown in progress
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error stopping screen/terminal", e);
         }
     }
 

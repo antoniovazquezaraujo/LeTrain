@@ -130,7 +130,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         this.model.addCoreTrainEventListener(this);
     }
 
+    private boolean stopped = false;
     public void stop() {
+        if (stopped) return;
+        stopped = true;
         running = false;
         if (audioController != null) {
             audioController.stop();
@@ -1143,8 +1146,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     @Override
     public void onExitGame() {
+        running = false;
         stop();
-        System.exit(0);
     }
 
     @Override
