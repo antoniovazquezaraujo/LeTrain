@@ -628,8 +628,14 @@ public class RenderVisitor implements Visitor {
         if (colorName == null || colorName.isBlank()) {
             return null;
         }
+        String upper = colorName.toUpperCase();
+        if (upper.equals("GRAY") || upper.equals("GREY")) {
+            return TextColor.ANSI.BLACK_BRIGHT;
+        } else if (upper.equals("ORANGE")) {
+            return new TextColor.RGB(255, 165, 0); // Lanterna will downsample this automatically if needed
+        }
         try {
-            return TextColor.ANSI.valueOf(colorName.toUpperCase());
+            return TextColor.ANSI.valueOf(upper);
         } catch (Exception e) {
             try {
                 return TextColor.Factory.fromString(colorName);
