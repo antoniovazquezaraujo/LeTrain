@@ -225,6 +225,24 @@ public class AudioController {
 
             synth.update();
 
+            // Dynamic Volume based on Director Status
+            boolean isDirector = loco.getTrain() != null && loco.getTrain().getDirectorLinker() == loco;
+            float locoVolume = 0.8f;
+            float coachVolume = 0.6f;
+            if (!isDirector && loco.getTrain() != null) {
+                int totalLocos = 0;
+                for (letrain.vehicle.rail.Linker l : loco.getTrain().getLinkers()) {
+                    if (l instanceof Locomotive) {
+                        totalLocos++;
+                    }
+                }
+                int extraLocos = Math.max(1, totalLocos - 1);
+                locoVolume = 0.8f / extraLocos;
+                coachVolume = 0.0f;
+            }
+            synth.setLocoVolume(locoVolume);
+            synth.setCoachVolume(coachVolume);
+
             // Sync Throttle (Engine Sound)
             if (loco.isForceIdleSound()) {
                 synth.forceIdle();
