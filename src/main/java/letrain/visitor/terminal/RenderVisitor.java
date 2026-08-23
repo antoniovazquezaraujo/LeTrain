@@ -48,7 +48,6 @@ public class RenderVisitor implements Visitor {
     private static final TextColor CURSOR_ERASING_COLOR = TextColor.ANSI.RED_BRIGHT;
     private static final TextColor WAGON_COLOR = TextColor.ANSI.WHITE;
     private static final TextColor LOCOMOTIVE_COLOR = TextColor.ANSI.WHITE;
-    private static final TextColor SELECTED_LOCOMOTIVE_COLOR = TextColor.ANSI.RED_BRIGHT;
     private static final TextColor RAIL_TRACK_COLOR = TextColor.ANSI.BLACK_BRIGHT;
     private static final TextColor SENSOR_COLOR = TextColor.ANSI.CYAN_BRIGHT;
     private static final TextColor STATION_COLOR = TextColor.ANSI.WHITE;
@@ -345,11 +344,10 @@ public class RenderVisitor implements Visitor {
             resetColors();
             return;
         }
+        TextColor locoColor = parseColor(locomotive.getColor());
+        view.setFgColor(locoColor != null ? locoColor : LOCOMOTIVE_COLOR);
         if (locomotive == selectedLocomotive) {
-            view.setFgColor(SELECTED_LOCOMOTIVE_COLOR);
-        } else {
-            TextColor locoColor = parseColor(locomotive.getColor());
-            view.setFgColor(locoColor != null ? locoColor : LOCOMOTIVE_COLOR);
+            view.setUnderline(true);
         }
         highlightIfSelected(locomotive);
         if (locomotive.isShowingDir()) {
