@@ -146,7 +146,7 @@ public class InfoVisitor implements Visitor {
         richInfo.append(commonText).append(lastSave).append("\n");
 
         // Row 5: Global Help
-        richInfo.append("[PgUp/Dn]: Scroll | [c/C]: Camera | [r/d/f/s/t/l/u/p/n]: Modes | [Esc]: Exit");
+        richInfo.append("[PgUp/Dn]: Scroll | [c/C]: Camera | [r/d/f/s/t/l/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit");
 
         view.setInfoBarText(richInfo.toString());
     }

@@ -55,6 +55,15 @@ public class Model implements letrain.mvp.Model {
     private transient boolean mapChanged = false;
 
     @JsonIgnore
+    private int helpLevel = 2;
+
+    @Override
+    public int getHelpLevel() { return helpLevel; }
+
+    @Override
+    public void setHelpLevel(int helpLevel) { this.helpLevel = helpLevel; }
+
+    @JsonIgnore
     public boolean isMapChanged() {
         return mapChanged;
     }

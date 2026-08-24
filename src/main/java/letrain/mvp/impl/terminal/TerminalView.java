@@ -68,6 +68,19 @@ public class TerminalView implements letrain.mvp.View {
     private boolean cameraPagination = false;
     private int flashDeadzoneTicks = 0;
     boolean endOfGame = false;
+    private int helpLevel = 2;
+
+    @Override
+    public void setHelpLevel(int helpLevel) {
+        if (this.helpLevel == helpLevel) return;
+        this.helpLevel = helpLevel;
+        if (terminalSize != null) {
+            recalculateSizes(terminalSize);
+            if (this.gameViewListener != null) {
+                this.gameViewListener.onScreenResized(gameBoxSize.getColumns(), gameBoxSize.getRows());
+            }
+        }
+    }
     static final TextColor NORMAL_MENU_FG_COLOR = ANSI.WHITE;
     static final TextColor NORMAL_MENU_BG_COLOR = ANSI.BLACK;
     static final TextColor DISABLED_FG_COLOR = ANSI.BLACK_BRIGHT;
@@ -191,6 +204,7 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void setInfoBarText(String text) {
+        if (helpLevel == 0) return;
         String[] lines = text.split("\n");
         for (int i = 0; i < lines.length; i++) {
             if (i + 3 < menuBoxSize.getRows()) {
@@ -299,6 +313,7 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void setMenu(List<GameModeMenuOption> options) {
+        if (helpLevel == 0) return;
         int length = 1;
         for (GameModeMenuOption option : options) {
             String[] parts = option.gameModeName().split("&");
@@ -338,6 +353,7 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void setHelpBarText(String text) {
+        if (helpLevel == 0) return;
         menuBox.putString(menuBoxPosition.withRelative(1, 2), text);
     }
 
@@ -481,12 +497,13 @@ public class TerminalView implements letrain.mvp.View {
 
     void recalculateSizes(TerminalSize terminalSize) {
         int cols = Math.max(1, terminalSize.getColumns());
-        int rows = Math.max(1, terminalSize.getRows() - 7);
+        int reservedRows = (helpLevel == 2) ? 7 : (helpLevel == 1 ? 5 : 0);
+        int rows = Math.max(1, terminalSize.getRows() - reservedRows);
         gameBoxSize = new TerminalSize(cols, rows);
         gameBoxPosition = TerminalPosition.TOP_LEFT_CORNER;
         Page.setWidth(gameBoxSize.getColumns());
         Page.setHeight(gameBoxSize.getRows());
-        menuBoxSize = new TerminalSize(terminalSize.getColumns(), Math.min(7, terminalSize.getRows()));
+        menuBoxSize = new TerminalSize(terminalSize.getColumns(), Math.min(reservedRows, terminalSize.getRows()));
         menuBoxPosition = new TerminalPosition(0, Math.max(0, terminalSize.getRows() - menuBoxSize.getRows()));
     }
 

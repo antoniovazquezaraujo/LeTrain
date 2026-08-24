@@ -59,6 +59,9 @@ public interface Model {
 
     List<Wagon> getWagons();
 
+    default int getHelpLevel() { return 2; }
+    default void setHelpLevel(int helpLevel) {}
+
     Cursor getCursor();
 
     Train getTrainFromLocomotiveId(int locomotiveId);
