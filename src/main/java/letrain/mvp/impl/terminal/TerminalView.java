@@ -337,7 +337,11 @@ public class TerminalView implements letrain.mvp.View {
             menuBox.putString(menuBoxPosition.withRelative(length, 1), firstPart);
             length += firstPart.length();
 
-            menuBox.setForegroundColor(SHORTCUT_COLOR);
+            if (!option.enabledIf().get()) {
+                menuBox.setForegroundColor(DISABLED_FG_COLOR);
+            } else {
+                menuBox.setForegroundColor(SHORTCUT_COLOR);
+            }
             menuBox.putString(menuBoxPosition.withRelative(length, 1), shortcutPart);
             length += shortcutPart.length();
 
