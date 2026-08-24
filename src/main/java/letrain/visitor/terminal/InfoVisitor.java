@@ -100,15 +100,8 @@ public class InfoVisitor implements Visitor {
 
         StringBuilder richInfo = new StringBuilder();
 
-        // Row 3: Notch / Speedometer / Vehicle Status on Left, Finances on Right
-        EconomyManager economy = model.getEconomyManager();
-        String moneyText = "";
-        if (economy != null) {
-            moneyText = String.format(java.util.Locale.US, "$: %.2f | Income(+): %.2f | Expenses(-): %.2f",
-                    economy.getBalance(), economy.getTotalIncome(), economy.getTotalExpenses());
-        }
-
-        String vehicleText;
+        // Row 3: Vehicle text (left) + System info (right)
+        String vehicleText = "";
         Locomotive selectedLoco = model.getSelectedLocomotive();
         if (selectedLoco != null) {
             int trainId = (selectedLoco.getTrain() != null)
@@ -124,26 +117,43 @@ public class InfoVisitor implements Visitor {
                     : 0;
             vehicleText = String.format("Train: %d | Notch: %s | Speed: %s | Wagons: %d%s",
                     trainId, notchBar, speedStr, wagonsCount, selectedLoco.isReversed() ? " (Rev)" : "");
-        } else {
+        } else if (infoBarText != null) {
             vehicleText = infoBarText;
         }
 
         int totalWidth = view != null ? Math.max(40, view.getCols() - 2) : 80;
-        String combinedLine;
-        if (vehicleText.length() + moneyText.length() < totalWidth) {
-            int padding = totalWidth - vehicleText.length() - moneyText.length();
-            combinedLine = vehicleText + " ".repeat(padding) + moneyText;
-        } else if (!moneyText.isEmpty()) {
-            combinedLine = vehicleText + " | " + moneyText;
-        } else {
-            combinedLine = vehicleText;
+        
+        String page = view != null ? view.getMapScrollPage().getX() + "," + view.getMapScrollPage().getY() : "0,0";
+        String pos = model.getCursor().getPosition().getX() + "," + model.getCursor().getPosition().getY();
+        String systemInfo = String.format("|Page:%s|Pos:%s|Step:%d/%d|", 
+                page, pos, model.getQuantifierSteps(), model.getQuantifier());
+        if (model.getLastSaveTime() != null) {
+            systemInfo += "Saved:" + model.getLastSaveTime().toString().substring(11, 16) + "|";
         }
-        richInfo.append(combinedLine).append("\n");
 
-        // Row 4: System info
-        String commonText = getCommonInfoBarText(model);
-        String lastSave = model.getLastSaveTime() != null ? " | Saved: " + model.getLastSaveTime().toString().substring(11, 16) : "";
-        richInfo.append(commonText).append(lastSave).append("\n");
+        String line1;
+        if (vehicleText.length() + systemInfo.length() < totalWidth) {
+            int padding = totalWidth - vehicleText.length() - systemInfo.length();
+            line1 = vehicleText + " ".repeat(padding) + systemInfo;
+        } else {
+            line1 = vehicleText + " | " + systemInfo;
+        }
+        richInfo.append(line1).append("\n");
+
+        // Row 4: Economy info (centered)
+        EconomyManager economy = model.getEconomyManager();
+        String line2 = "";
+        if (economy != null) {
+            String moneyText = String.format(java.util.Locale.US, "|$:%,.2f|In:%,.2f|Out:%,.2f|",
+                    economy.getBalance(), economy.getTotalIncome(), economy.getTotalExpenses());
+            if (moneyText.length() < totalWidth) {
+                int leftPadding = (totalWidth - moneyText.length()) / 2;
+                line2 = " ".repeat(leftPadding) + moneyText;
+            } else {
+                line2 = moneyText;
+            }
+        }
+        richInfo.append(line2).append("\n");
 
         // Row 5: Global Help
         richInfo.append("[PgUp/Dn]: Scroll | [c/C]: Camera | [r/d/f/s/t/l/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit");
