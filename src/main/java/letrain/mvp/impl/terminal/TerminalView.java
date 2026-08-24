@@ -808,6 +808,10 @@ public class TerminalView implements letrain.mvp.View {
         // Fallback: manually reset terminal state using ANSI escape codes
         System.out.print("\033[0m\033[?1049l\033[?25h");
         System.out.flush();
+        try {
+            Runtime.getRuntime().exec(new String[]{"sh", "-c", "stty sane < /dev/tty"}).waitFor();
+        } catch (Exception ignored) {
+        }
     }
 
     @Override
