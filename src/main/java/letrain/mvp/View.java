@@ -69,6 +69,8 @@ public interface View {
     void setMenu(List<GameModeMenuOption> options);
 
     void setHelpBarText(String info);
+    
+    default void setHelpLevel(int helpLevel) {}
 
     void showSaveDialog();
 

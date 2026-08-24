@@ -243,6 +243,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 model.setMode(MENU);
                 return;
             }
+        } else if (keyEvent.getKeyType() == KeyType.Tab) {
+            int current = model.getHelpLevel();
+            int next = (current - 1 + 3) % 3; // 2 -> 1 -> 0 -> 2 -> 1 -> 0... wait 2-1 = 1, 1-1 = 0, 0-1 = 2
+            if (next < 0) next = 2; // (0-1 = -1 -> 2)
+            model.setHelpLevel(next);
+            view.setHelpLevel(next);
+            return;
         } else if (keyEvent.getKeyType() == KeyType.Escape) {
             view.showExitDialog();
         } else if (handleModeHotkey(keyEvent)) {

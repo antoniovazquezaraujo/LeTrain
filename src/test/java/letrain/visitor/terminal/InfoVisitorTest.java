@@ -63,11 +63,13 @@ class InfoVisitorTest {
         assertTrue(firstLine.contains("Notch:"), "Should contain Notch bar");
         assertTrue(firstLine.contains("Speed: 3->5"), "Should contain speed progression");
         assertTrue(firstLine.contains("Wagons: 0"), "Should contain wagon count in English");
-        assertTrue(firstLine.contains("$: 1500.50 | Income(+): 200.00 | Expenses(-): 50.00"), "Should contain financial info in English");
-        assertTrue(firstLine.endsWith("$: 1500.50 | Income(+): 200.00 | Expenses(-): 50.00"), "Financial info must be aligned to the right");
+        assertTrue(firstLine.contains("|Page:0,0|Pos:10,20|Step:1/1|"), "Page info should be in English and new format");
+
+        String secondLine = lines[1];
+        assertTrue(secondLine.contains("|In:200.00|Out:50.00|$:1,500.50|"), "Should contain financial info in new format");
+        assertTrue(secondLine.endsWith("|In:200.00|Out:50.00|$:1,500.50|"), "Financial info should be right aligned");
 
         // Verify translations on other lines
-        assertTrue(lines[1].contains("| Page 0,0 | Cursor 10,20"), "Page info should be in English");
-        assertTrue(lines[2].contains("[PgUp/Dn]: Scroll | [c/C]: Camera | [r/d/f/s/t/l/u/p/n]: Modes | [Esc]: Exit"), "Global help should be in English");
+        assertTrue(lines[3].contains("[PgUp/Dn]: Scroll | [c/C]: Camera | [r/d/f/s/t/l/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit"), "Global help should be in English");
     }
 }
