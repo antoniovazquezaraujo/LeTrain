@@ -766,24 +766,22 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     public void stop() {
-        try {
-            if (screen != null) {
-                try {
-                    screen.stopScreen();
-                } catch (IllegalStateException ignored) {
-                    // Ignored: Screen already stopped or not in private mode
-                }
+        if (screen != null) {
+            try {
+                screen.stopScreen();
+                screen.close();
+            } catch (Exception ignored) {
             }
-            if (terminal != null) {
-                try {
-                    terminal.close();
-                } catch (IllegalStateException ignored) {
-                    // Ignored: Shutdown in progress
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Error stopping screen/terminal", e);
         }
+        if (terminal != null) {
+            try {
+                terminal.close();
+            } catch (Exception ignored) {
+            }
+        }
+        // Fallback: manually reset terminal state using ANSI escape codes
+        System.out.print("\033[0m\033[?1049l\033[?25h");
+        System.out.flush();
     }
 
     @Override
