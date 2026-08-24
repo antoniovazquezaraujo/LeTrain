@@ -39,6 +39,7 @@ public class RailTrackMaker {
     boolean makingTracks = false;
     private boolean wasRemoving = false;
     private int caterpillarCounter = 0;
+    private boolean quantifierReset = true;
     Presenter presenter;
     Point lastCursorPosition = null;
     Integer oldGroundType = null;
@@ -124,14 +125,20 @@ public class RailTrackMaker {
             case Character:
                 if (keyEvent.getCharacter() == ' ') {
                     presenter.getModel().setQuantifier(1);
+                    quantifierReset = true;
                 } else if (keyEvent.getCharacter() == 'w' || keyEvent.getCharacter() == 'W') {
                     manageStationSensor();
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     if (keyEvent.getCharacter() == '0' && presenter.getModel().getQuantifier() == 0) {
                         presenter.getModel().setShowId(true);
                     } else {
-                        presenter.getModel().setQuantifier(
-                                presenter.getModel().getQuantifier() * 10 + (keyEvent.getCharacter() - '0'));
+                        if (quantifierReset) {
+                            presenter.getModel().setQuantifier(keyEvent.getCharacter() - '0');
+                            quantifierReset = false;
+                        } else {
+                            presenter.getModel().setQuantifier(
+                                    presenter.getModel().getQuantifier() * 10 + (keyEvent.getCharacter() - '0'));
+                        }
                     }
                 }
                 break;
