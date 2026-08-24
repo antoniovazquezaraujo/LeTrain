@@ -795,17 +795,20 @@ public class TerminalView implements letrain.mvp.View {
         if (screen != null) {
             try {
                 screen.stopScreen();
+            } catch (Exception e) {
+                // Ignore, screen might already be stopped
+            }
+            try {
                 screen.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                // Ignore
             }
         }
         if (terminal != null) {
             try {
-                terminal.exitPrivateMode();
                 terminal.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                // Ignore
             }
         }
     }

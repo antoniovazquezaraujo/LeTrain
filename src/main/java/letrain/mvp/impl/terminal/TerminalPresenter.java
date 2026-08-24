@@ -333,7 +333,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 return false;
             case 'l':
-                if (model.canEnterLinkUnlinkMode()) {
+                if (model.canEnterLinkMode()) {
                     model.setMode(LINK);
                     if (model.getSelectedLocomotive() != null
                             && model.getSelectedLocomotive().getTrain() != null) {
@@ -344,7 +344,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 return false;
             case 'u':
-                if (model.canEnterLinkUnlinkMode()) {
+                if (model.canEnterUnlinkMode()) {
                     model.setMode(UNLINK);
                     if (model.getSelectedLocomotive() != null
                             && model.getSelectedLocomotive().getTrain() != null) {

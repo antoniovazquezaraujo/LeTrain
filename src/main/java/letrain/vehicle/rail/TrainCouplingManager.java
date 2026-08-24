@@ -18,6 +18,8 @@ public interface TrainCouplingManager {
 
     List<Linker> getSelectedLinkersToJoin(Train train);
 
+    boolean hasLinkableVehicles(Train train);
+
     void updateLinkersToJoin(Train train, boolean forwardDirection);
 
     void joinLinkers(Train train);

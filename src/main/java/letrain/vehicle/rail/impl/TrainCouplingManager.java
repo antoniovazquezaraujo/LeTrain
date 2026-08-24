@@ -155,6 +155,109 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
     }
 
     @Override
+    public boolean hasLinkableVehicles(Train train) {
+        return hasLinkable(train, true) || hasLinkable(train, false);
+    }
+
+    private boolean hasLinkable(Train train, boolean forwardDirection) {
+        Linker lastLinker = null;
+        Dir dir = Dir.E;
+        boolean normalSense = train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
+
+        if (train.getLinkers().size() == 1) {
+            lastLinker = (Linker) train.getDirectorLinker();
+            Dir entryDir = lastLinker.getEntryDir();
+            if (entryDir == null) {
+                entryDir = lastLinker.getRealDir().inverse();
+            }
+            if (forwardDirection) {
+                dir = lastLinker.getDir();
+            } else {
+                dir = entryDir;
+            }
+        } else if (train.getLinkers().size() > 1) {
+            if (forwardDirection) {
+                if (normalSense) {
+                    lastLinker = train.getLinkers().getFirst();
+                } else {
+                    lastLinker = train.getLinkers().getLast();
+                }
+                
+                Dir preferredDir = lastLinker.getDir();
+                Track connected = lastLinker.getTrack().getConnected(preferredDir);
+                if (connected != null && (connected.getLinker() == null || connected.getLinker().getTrain() != train)) {
+                    dir = preferredDir;
+                } else {
+                    Track lastTrack = lastLinker.getTrack();
+                    dir = null;
+                    for (Dir conn : lastTrack.getConnections()) {
+                        Track t = lastTrack.getConnected(conn);
+                        if (t == null) continue;
+                        Linker l = t.getLinker();
+                        if (l == null || l.getTrain() != train) {
+                            dir = conn;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                if (normalSense) {
+                    lastLinker = train.getLinkers().getLast();
+                } else {
+                    lastLinker = train.getLinkers().getFirst();
+                }
+                
+                Dir preferredDir = lastLinker.getEntryDir();
+                if (preferredDir == null) preferredDir = lastLinker.getRealDir().inverse();
+                Track connected = lastLinker.getTrack().getConnected(preferredDir);
+                if (connected != null && (connected.getLinker() == null || connected.getLinker().getTrain() != train)) {
+                    dir = preferredDir;
+                } else {
+                    Track lastTrack = lastLinker.getTrack();
+                    dir = null;
+                    for (Dir conn : lastTrack.getConnections()) {
+                        Track t = lastTrack.getConnected(conn);
+                        if (t == null) continue;
+                        Linker l = t.getLinker();
+                        if (l == null || l.getTrain() != train) {
+                            dir = conn;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (lastLinker != null && lastLinker.getTrack() != null && dir != null) {
+            Track nextTrack = lastLinker.getTrack().getConnected(dir);
+            if (nextTrack != null) {
+                RailIterator iterator = new RailIterator(nextTrack, dir);
+                Dir entryPort = null;
+                for (Dir conn : nextTrack.getConnections()) {
+                    if (nextTrack.getConnected(conn) == lastLinker.getTrack()) {
+                        entryPort = conn;
+                        break;
+                    }
+                }
+                if (entryPort != null) {
+                    Dir exitDir = nextTrack.getDir(entryPort);
+                    if (exitDir != null) {
+                        iterator.setDir(exitDir);
+                    }
+                }
+                Linker nextLinker = iterator.getTrack().getLinker();
+                while (nextLinker != null && nextLinker.getTrain() == train) {
+                    if (!iterator.advance()) break;
+                    nextLinker = iterator.getTrack().getLinker();
+                }
+                if (nextLinker != null && train != nextLinker.getTrain()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
     public void joinLinkers(Train train) {
         if (!train.isJoined()) {
             int count = 0;

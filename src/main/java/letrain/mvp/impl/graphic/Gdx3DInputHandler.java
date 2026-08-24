@@ -277,7 +277,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                         }
                         return;
                     case 'l':
-                        if (model.canEnterLinkUnlinkMode()) {
+                        if (model.canEnterLinkMode()) {
                             model.setMode(Model.GameMode.LINK);
                             if (model.getSelectedLocomotive() != null
                                     && model.getSelectedLocomotive().getTrain() != null) {
@@ -287,7 +287,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                         }
                         return;
                     case 'u':
-                        if (model.canEnterLinkUnlinkMode()) {
+                        if (model.canEnterUnlinkMode()) {
                             model.setMode(Model.GameMode.UNLINK);
                             if (model.getSelectedLocomotive() != null
                                     && model.getSelectedLocomotive().getTrain() != null) {
