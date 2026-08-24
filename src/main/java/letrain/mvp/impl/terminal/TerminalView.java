@@ -795,19 +795,22 @@ public class TerminalView implements letrain.mvp.View {
         if (screen != null) {
             try {
                 screen.stopScreen();
+            } catch (Exception e) {
+                // Ignore, screen might already be stopped
+            }
+            try {
                 screen.close();
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // Ignore
             }
         }
         if (terminal != null) {
             try {
                 terminal.close();
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // Ignore
             }
         }
-        // Fallback: manually reset terminal state using ANSI escape codes
-        System.out.print("\033[0m\033[?1049l\033[?25h");
-        System.out.flush();
     }
 
     @Override
