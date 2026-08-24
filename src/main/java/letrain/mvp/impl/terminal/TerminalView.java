@@ -209,11 +209,7 @@ public class TerminalView implements letrain.mvp.View {
         int offset = 2; // Always start at row 2
         for (int i = 0; i < lines.length; i++) {
             if (i + offset < menuBoxSize.getRows()) {
-                if (i == 3) { // General Help line
-                    menuBox.setForegroundColor(DISABLED_FG_COLOR);
-                } else {
-                    menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
-                }
+                menuBox.setForegroundColor(DISABLED_FG_COLOR);
                 menuBox.putString(menuBoxPosition.withRelative(1, offset + i), lines[i]);
             }
         }

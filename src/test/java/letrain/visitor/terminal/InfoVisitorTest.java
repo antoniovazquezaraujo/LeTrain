@@ -66,8 +66,8 @@ class InfoVisitorTest {
         assertTrue(firstLine.contains("|Page:0,0|Pos:10,20|Step:1/1|"), "Page info should be in English and new format");
 
         String secondLine = lines[1];
-        assertTrue(secondLine.contains("|$:1,500.50|In:200.00|Out:50.00|"), "Should contain financial info in new format");
-        assertTrue(secondLine.endsWith("|$:1,500.50|In:200.00|Out:50.00|"), "Financial info should be right aligned");
+        assertTrue(secondLine.contains("|In:200.00|Out:50.00|$:1,500.50|"), "Should contain financial info in new format");
+        assertTrue(secondLine.endsWith("|In:200.00|Out:50.00|$:1,500.50|"), "Financial info should be right aligned");
 
         // Verify translations on other lines
         assertTrue(lines[3].contains("[PgUp/Dn]: Scroll | [c/C]: Camera | [r/d/f/s/t/l/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit"), "Global help should be in English");

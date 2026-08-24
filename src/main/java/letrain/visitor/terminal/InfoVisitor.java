@@ -144,8 +144,8 @@ public class InfoVisitor implements Visitor {
         EconomyManager economy = model.getEconomyManager();
         String line2 = "";
         if (economy != null) {
-            String moneyText = String.format(java.util.Locale.US, "|$:%,.2f|In:%,.2f|Out:%,.2f|",
-                    economy.getBalance(), economy.getTotalIncome(), economy.getTotalExpenses());
+            String moneyText = String.format(java.util.Locale.US, "|In:%,.2f|Out:%,.2f|$:%,.2f|",
+                    economy.getTotalIncome(), economy.getTotalExpenses(), economy.getBalance());
             if (moneyText.length() < totalWidth) {
                 int leftPadding = totalWidth - moneyText.length(); // Right align
                 line2 = " ".repeat(leftPadding) + moneyText;
