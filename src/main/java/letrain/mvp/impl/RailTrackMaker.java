@@ -595,6 +595,8 @@ public class RailTrackMaker {
             newGate.addRoute(t.getKey(), t.getValue());
         });
         
+        presenter.getModel().removeTrack(oldTrack.getPosition());
+
         for (Dir d : Dir.values()) {
             Track connected = oldTrack.getConnected(d);
             if (connected != null) {
@@ -603,7 +605,6 @@ public class RailTrackMaker {
             }
         }
         
-        presenter.getModel().removeTrack(oldTrack.getPosition());
         presenter.getModel().addTrack(oldTrack.getPosition(), newGate);
         oldTrack = newGate;
     }
