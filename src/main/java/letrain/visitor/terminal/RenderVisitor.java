@@ -96,8 +96,8 @@ public class RenderVisitor implements Visitor {
     public static String GENERIC_STATION_ASPECT = "◇";
     public static String LOAD_STATION_ASPECT = "▲";
     public static String UNLOAD_STATION_ASPECT = "▼";
-    public static String RAIL_CROSS_ASPECT = "+";
-    public static String DIAGONAL_RAIL_CROSS_ASPECT = "X";
+    public static String RAIL_CROSS_ASPECT = "┼";
+    public static String DIAGONAL_RAIL_CROSS_ASPECT = "╳";
     public static String SEMAPHORE_ASPECT = ":";
     public static String STATION_RAIL_TRACK_ASPECT = "#";
     public static String CURVE_RAIL_TRACK_ASPECT = "·";
@@ -112,8 +112,8 @@ public class RenderVisitor implements Visitor {
     public static String CURSOR_ASPECT_SE = "⌟";
     public static String HORIZONTAL_DIR = "─";
     public static String VERTICAL_DIR = "│";
-    public static String DIAGONAL_DIR = "/";
-    public static String ANTI_DIAGONAL_DIR = "\\";
+    public static String DIAGONAL_DIR = "╱";
+    public static String ANTI_DIAGONAL_DIR = "╲";
     public static String PRODUCER_ASPECT = "●";
     public static String CONSUMER_ASPECT = "◌";
     public static String DEAD_END_ASPECT = "╺";
