@@ -468,16 +468,11 @@ public class RailTrackMaker {
             } else {
                 // salimos de otro tipo de suelo
                 if (effectiveActualType != GroundMap.GROUND) {
-                    // no podemos pasar de un tipo de suelo a otro sin pasar por GROUND
+                    // si saltamos de agua a roca sin pasar por GROUND no dejamos
                     return null;
                 }
-                if (effectiveOldType == GroundMap.WATER) {
-                    // salimos de agua
-                    type = Presenter.TrackType.BRIDGE_GATE_TRACK;
-                } else if (effectiveOldType == GroundMap.ROCK) {
-                    // salimos de roca
-                    type = Presenter.TrackType.TUNNEL_GATE_TRACK;
-                }
+                // pasamos de otro tipo de suelo a GROUND
+                type = Presenter.TrackType.NORMAL_TRACK;
             }
         }
         return type;
@@ -513,6 +508,13 @@ public class RailTrackMaker {
         if (track == null) {
             // si no había nada creamos un track normal
             track = createTrackOfSelectedType();
+            if (oldTrack != null && type == Presenter.TrackType.NORMAL_TRACK) {
+                if (oldTrack.getClass().equals(letrain.track.rail.TunnelRailTrack.class)) {
+                    convertOldTrackToGate(Presenter.TrackType.TUNNEL_GATE_TRACK);
+                } else if (oldTrack.getClass().equals(letrain.track.rail.BridgeRailTrack.class)) {
+                    convertOldTrackToGate(Presenter.TrackType.BRIDGE_GATE_TRACK);
+                }
+            }
         } else {
             if (actualGroundType != GroundMap.GROUND) {
                 // si la dirección del cursor es distinta de la del track actual retornamos
@@ -576,6 +578,35 @@ public class RailTrackMaker {
         fork.setPosition(cursorPosition);
         fork.setCreationDir(presenter.getModel().getCursor().getDir());
         return fork;
+    }
+
+    private void convertOldTrackToGate(Presenter.TrackType gateType) {
+        if (oldTrack == null) return;
+        RailTrack newGate;
+        if (gateType == Presenter.TrackType.TUNNEL_GATE_TRACK) {
+            newGate = new letrain.track.rail.TunnelGateRailTrack();
+        } else {
+            newGate = new letrain.track.rail.BridgeGateRailTrack();
+        }
+        newGate.setPosition(oldTrack.getPosition());
+        
+        final letrain.map.Router router = oldTrack.getRouter();
+        router.forEach(t -> {
+            newGate.addRoute(t.getKey(), t.getValue());
+        });
+        
+        presenter.getModel().removeTrack(oldTrack.getPosition());
+
+        for (Dir d : Dir.values()) {
+            Track connected = oldTrack.getConnected(d);
+            if (connected != null) {
+                newGate.connect(d, connected);
+                connected.connect(d.inverse(), newGate);
+            }
+        }
+        
+        presenter.getModel().addTrack(oldTrack.getPosition(), newGate);
+        oldTrack = newGate;
     }
 
     private void addRoutesToFork(RailTrack track, final ForkRailTrack fork) {

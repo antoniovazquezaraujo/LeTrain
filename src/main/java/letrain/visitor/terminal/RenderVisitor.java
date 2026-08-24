@@ -340,7 +340,9 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        if (locomotive.getTrack().getClass().equals(TunnelRailTrack.class) && this.mode != GameMode.RAILS) {
+        if ((locomotive.getTrack().getClass().equals(TunnelRailTrack.class) ||
+             locomotive.getTrack().getClass().equals(TunnelGateRailTrack.class)) && 
+            this.mode != GameMode.RAILS) {
             return;
         }
         if (locomotive.isDestroying()) {
@@ -369,8 +371,9 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitWagon(Wagon wagon) {
-        if (wagon.getTrack().getClass().equals(TunnelRailTrack.class) &&
-                this.mode != GameMode.RAILS) {
+        if ((wagon.getTrack().getClass().equals(TunnelRailTrack.class) ||
+             wagon.getTrack().getClass().equals(TunnelGateRailTrack.class)) &&
+            this.mode != GameMode.RAILS) {
             return;
         }
         if (wagon.isDestroying()) {
