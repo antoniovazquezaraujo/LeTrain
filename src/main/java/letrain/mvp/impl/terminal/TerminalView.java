@@ -206,12 +206,18 @@ public class TerminalView implements letrain.mvp.View {
     public void setInfoBarText(String text) {
         if (helpLevel == 0) return;
         String[] lines = text.split("\n");
-        int offset = (helpLevel == 2) ? 3 : 2; // Shift up if helpLevel is 1
+        int offset = 2; // Always start at row 2
         for (int i = 0; i < lines.length; i++) {
             if (i + offset < menuBoxSize.getRows()) {
+                if (i == 3) { // General Help line
+                    menuBox.setForegroundColor(DISABLED_FG_COLOR);
+                } else {
+                    menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
+                }
                 menuBox.putString(menuBoxPosition.withRelative(1, offset + i), lines[i]);
             }
         }
+        menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
     }
 
     @Override
@@ -355,7 +361,9 @@ public class TerminalView implements letrain.mvp.View {
     @Override
     public void setHelpBarText(String text) {
         if (helpLevel < 2) return;
-        menuBox.putString(menuBoxPosition.withRelative(1, 2), text);
+        menuBox.setForegroundColor(DISABLED_FG_COLOR);
+        menuBox.putString(menuBoxPosition.withRelative(1, 4), text);
+        menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
     }
 
     @Override

@@ -140,22 +140,22 @@ public class InfoVisitor implements Visitor {
         }
         richInfo.append(line1).append("\n");
 
-        // Row 4: Economy info (centered)
+        // Row 4: Economy info (right aligned)
         EconomyManager economy = model.getEconomyManager();
         String line2 = "";
         if (economy != null) {
             String moneyText = String.format(java.util.Locale.US, "|$:%,.2f|In:%,.2f|Out:%,.2f|",
                     economy.getBalance(), economy.getTotalIncome(), economy.getTotalExpenses());
             if (moneyText.length() < totalWidth) {
-                int leftPadding = (totalWidth - moneyText.length()) / 2;
+                int leftPadding = totalWidth - moneyText.length(); // Right align
                 line2 = " ".repeat(leftPadding) + moneyText;
             } else {
                 line2 = moneyText;
             }
         }
-        richInfo.append(line2).append("\n");
+        richInfo.append(line2).append("\n\n"); // Extra newline to leave Row 4 blank for Specific Help
 
-        // Row 5: Global Help
+        // Row 6: Global Help
         richInfo.append("[PgUp/Dn]: Scroll | [c/C]: Camera | [r/d/f/s/t/l/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit");
 
         view.setInfoBarText(richInfo.toString());
