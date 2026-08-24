@@ -98,7 +98,7 @@ public class RenderVisitor implements Visitor {
     public static String UNLOAD_STATION_ASPECT = "▼";
     public static String RAIL_CROSS_ASPECT = "┼";
     public static String DIAGONAL_RAIL_CROSS_ASPECT = "╳";
-    public static String MIXED_RAIL_CROSS_ASPECT = "✳";
+    public static String MIXED_RAIL_CROSS_ASPECT = "*";
     public static String SEMAPHORE_ASPECT = ":";
     public static String STATION_RAIL_TRACK_ASPECT = "#";
     public static String CURVE_RAIL_TRACK_ASPECT = "·";
