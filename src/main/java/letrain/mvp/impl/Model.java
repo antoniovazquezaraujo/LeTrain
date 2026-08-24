@@ -800,8 +800,8 @@ public class Model implements letrain.mvp.Model {
                 new GameModeMenuOption("&forks", "[Left/Right]:Select [o]:Locate [Space]:Toggle [#]:Select by ID", () -> !this.getForks().isEmpty(), () -> this.getMode() == GameMode.FORKS, () -> GameMode.FORKS),
                 new GameModeMenuOption("&semaphores", "[Left/Right]:Select [o]:Locate [Space]:Toggle [#]:Select by ID", () -> !this.getSemaphores().isEmpty(), () -> this.getMode() == GameMode.SEMAPHORES, () -> GameMode.SEMAPHORES),
                 new GameModeMenuOption("&trains", "[A-Z]: LOCOMOTIVE | [a-z]: WAGON | [ENTER]: FINISH", () -> this.getCursorRailTrack() != null, () -> this.getMode() == GameMode.TRAINS, () -> GameMode.TRAINS),
-                new GameModeMenuOption("&link", "[Up/Down]:Front/Back [Left/Right]:Select/Unselect wagons [o]:Locate [Space]:Link", () -> this.canEnterLinkUnlinkMode(), () -> this.getMode() == GameMode.LINK, () -> GameMode.LINK),
-                new GameModeMenuOption("&unlink", "[Up/Down]:Front/Back [Left/Right]:Select/Unselect wagons [o]:Locate [Space]:Unlink", () -> this.canEnterLinkUnlinkMode(), () -> this.getMode() == GameMode.UNLINK, () -> GameMode.UNLINK),
+                new GameModeMenuOption("&link", "[Up/Down]:Front/Back [Left/Right]:Select/Unselect wagons [o]:Locate [Space]:Link", () -> this.canEnterLinkMode(), () -> this.getMode() == GameMode.LINK, () -> GameMode.LINK),
+                new GameModeMenuOption("&unlink", "[Up/Down]:Front/Back [Left/Right]:Select/Unselect wagons [o]:Locate [Space]:Unlink", () -> this.canEnterUnlinkMode(), () -> this.getMode() == GameMode.UNLINK, () -> GameMode.UNLINK),
                 new GameModeMenuOption("&program", "Integrated Development Environment (Apply/Save/Load/Cancel)", () -> true, () -> this.getMode() == GameMode.PROGRAM, () -> GameMode.PROGRAM),
                 new GameModeMenuOption("statio&ns", "[Left/Right]:Select [o]:Locate [#]:Select by ID", () -> !this.getStations().isEmpty(), () -> this.getMode() == GameMode.STATIONS, () -> GameMode.STATIONS));
     }
