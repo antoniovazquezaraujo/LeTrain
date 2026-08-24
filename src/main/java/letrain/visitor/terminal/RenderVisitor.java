@@ -116,6 +116,7 @@ public class RenderVisitor implements Visitor {
     public static String ANTI_DIAGONAL_DIR = "\\";
     public static String PRODUCER_ASPECT = "●";
     public static String CONSUMER_ASPECT = "◌";
+    public static String DEAD_END_ASPECT = "╺";
 
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
@@ -190,6 +191,8 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitRailTrack(RailTrack track) {
         TextColor blockedColor = getTrackBlockedColor(track);
+        String aspect = getTrackAspect(track);
+
         if (blockedColor != null) {
             view.setFgColor(blockedColor);
         } else if (track.getSensor() != null) {
@@ -198,10 +201,12 @@ public class RenderVisitor implements Visitor {
             } else {
                 view.setFgColor(SENSOR_COLOR);
             }
+        } else if (DEAD_END_ASPECT.equals(aspect)) {
+            view.setFgColor(TextColor.ANSI.YELLOW);
         } else {
             view.setFgColor(RAIL_TRACK_COLOR);
         }
-        view.set(track.getPosition().getX(), track.getPosition().getY(), getTrackAspect(track));
+        view.set(track.getPosition().getX(), track.getPosition().getY(), aspect);
         resetColors();
     }
 
@@ -421,6 +426,24 @@ public class RenderVisitor implements Visitor {
         if (track instanceof StationRailTrack) {
             return STATION_RAIL_TRACK_ASPECT;
         }
+
+        java.util.concurrent.atomic.AtomicBoolean isDisconnected = new java.util.concurrent.atomic.AtomicBoolean(false);
+        track.forEach(route -> {
+            if (!isConnected(track, route.getFirst()) || !isConnected(track, route.getSecond())) {
+                isDisconnected.set(true);
+            }
+        });
+        if (track.getNumRoutes() == 0) {
+            Dir dir = track.getFirstOpenDir();
+            if (dir != null && !isConnected(track, dir)) {
+                isDisconnected.set(true);
+            }
+        }
+
+        if (isDisconnected.get()) {
+            return DEAD_END_ASPECT;
+        }
+
         if (track.getRouter().isStraight()) {
             return dirGraphicAspect(track.getRouter().getFirstOpenDir());
         } else if (track.getRouter().isCurve()) {
@@ -428,6 +451,13 @@ public class RenderVisitor implements Visitor {
         } else {
             return getCrossAspect(track);
         }
+    }
+
+    private boolean isConnected(Track track, Dir dir) {
+        if (dir == null) return false;
+        Track neighbor = track.getConnected(dir);
+        if (neighbor == null) return false;
+        return neighbor.getRouter().getDir(dir.inverse()) != null;
     }
 
     private String dirGraphicAspect(Dir dir) {
