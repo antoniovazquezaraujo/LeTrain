@@ -206,9 +206,10 @@ public class TerminalView implements letrain.mvp.View {
     public void setInfoBarText(String text) {
         if (helpLevel == 0) return;
         String[] lines = text.split("\n");
+        int offset = (helpLevel == 2) ? 3 : 2; // Shift up if helpLevel is 1
         for (int i = 0; i < lines.length; i++) {
-            if (i + 3 < menuBoxSize.getRows()) {
-                menuBox.putString(menuBoxPosition.withRelative(1, 3 + i), lines[i]);
+            if (i + offset < menuBoxSize.getRows()) {
+                menuBox.putString(menuBoxPosition.withRelative(1, offset + i), lines[i]);
             }
         }
     }
@@ -353,7 +354,7 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void setHelpBarText(String text) {
-        if (helpLevel == 0) return;
+        if (helpLevel < 2) return;
         menuBox.putString(menuBoxPosition.withRelative(1, 2), text);
     }
 
@@ -497,7 +498,7 @@ public class TerminalView implements letrain.mvp.View {
 
     void recalculateSizes(TerminalSize terminalSize) {
         int cols = Math.max(1, terminalSize.getColumns());
-        int reservedRows = (helpLevel == 2) ? 7 : (helpLevel == 1 ? 5 : 0);
+        int reservedRows = (helpLevel == 2) ? 7 : (helpLevel == 1 ? 4 : 0);
         int rows = Math.max(1, terminalSize.getRows() - reservedRows);
         gameBoxSize = new TerminalSize(cols, rows);
         gameBoxPosition = TerminalPosition.TOP_LEFT_CORNER;
