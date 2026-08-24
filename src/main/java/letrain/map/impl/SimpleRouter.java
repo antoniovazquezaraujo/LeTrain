@@ -25,8 +25,21 @@ public class SimpleRouter implements Router {
     public boolean isHorizontalOrVertical() {
         return dirMap.keySet().stream()
                 .filter(t -> {
-                    return (t == Dir.N) || t == Dir.S | t == Dir.E | t == Dir.W;
+                    return (t == Dir.N) || t == Dir.S || t == Dir.E || t == Dir.W;
                 }).count() > 0;
+    }
+
+    @JsonIgnore
+    public boolean isDiagonal() {
+        return dirMap.keySet().stream()
+                .filter(t -> {
+                    return (t == Dir.NE) || t == Dir.NW || t == Dir.SE || t == Dir.SW;
+                }).count() > 0;
+    }
+
+    @JsonIgnore
+    public boolean isMixedCross() {
+        return isHorizontalOrVertical() && isDiagonal();
     }
 
     @Override

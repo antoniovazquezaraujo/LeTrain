@@ -98,6 +98,7 @@ public class RenderVisitor implements Visitor {
     public static String UNLOAD_STATION_ASPECT = "▼";
     public static String RAIL_CROSS_ASPECT = "┼";
     public static String DIAGONAL_RAIL_CROSS_ASPECT = "╳";
+    public static String MIXED_RAIL_CROSS_ASPECT = "*";
     public static String SEMAPHORE_ASPECT = ":";
     public static String STATION_RAIL_TRACK_ASPECT = "#";
     public static String CURVE_RAIL_TRACK_ASPECT = "·";
@@ -508,7 +509,9 @@ public class RenderVisitor implements Visitor {
 
     public String getCrossAspect(Track track) {
         SimpleRouter r = (SimpleRouter) (track.getRouter());
-        if (r.isHorizontalOrVertical()) {
+        if (r.isMixedCross()) {
+            return MIXED_RAIL_CROSS_ASPECT;
+        } else if (r.isHorizontalOrVertical()) {
             return RAIL_CROSS_ASPECT;
         } else {
             return DIAGONAL_RAIL_CROSS_ASPECT;
