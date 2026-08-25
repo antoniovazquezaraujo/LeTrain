@@ -147,6 +147,10 @@ public class CameraController {
             letrain.track.RailSemaphore selected = model.getSelectedSemaphore();
             targetX = selected.getPosition().getX() + 0.5f;
             targetZ = selected.getPosition().getY() + 0.5f;
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.SPEED_SIGNALS && model.getSelectedSpeedSignal() != null) {
+            letrain.track.SpeedSignal selected = model.getSelectedSpeedSignal();
+            targetX = selected.getPosition().getX() + 0.5f;
+            targetZ = selected.getPosition().getY() + 0.5f;
         } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS && model.getSelectedStation() != null) {
             letrain.track.Station selected = model.getSelectedStation();
             targetX = selected.getPosition().getX() + 0.5f;

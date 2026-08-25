@@ -543,8 +543,10 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         instance.transform.setToTranslation(x + 0.5f + offsetX, 0.5f, y + 0.5f + offsetZ);
         instance.transform.rotate(0, 1, 0, angle);
 
-        if (modelRef != null && modelRef.getSelectedSpeedSignal() == speedSignal) {
-            instance.transform.scale(1.5f, 1.5f, 1.5f);
+
+        float scale = (modelRef != null && modelRef.getSelectedSpeedSignal() == speedSignal) ? 1.5f : 1.0f;
+        if (scale > 1.0f) {
+            instance.transform.scale(scale, scale, scale);
         }
 
         instances.add(instance);
@@ -553,14 +555,17 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         int limit = speedSignal.getLimit();
         String limitText = limit >= 1 && limit <= 10 ? String.valueOf(limit) : "?";
         
-        // Offset for the text slightly in front of the plate
-        float labelOffsetX = -PathGeometry.getDirX(creationDir) * 0.051f;
-        float labelOffsetZ = -PathGeometry.getDirZ(creationDir) * 0.051f;
+        float rad = (float) Math.toRadians(angle);
+        float localZ = 0.05f * scale + 0.01f; // Just outside the scaled plate
+        float labelOffsetX = (float) Math.sin(rad) * localZ;
+        float labelOffsetZ = (float) Math.cos(rad) * localZ;
         
-        Vector3 labelPos = new Vector3(x + 0.5f + offsetX + labelOffsetX, 1.0f, y + 0.5f + offsetZ + labelOffsetZ);
-        Vector3 labelNormal = new Vector3(-PathGeometry.getDirX(creationDir), 0, -PathGeometry.getDirZ(creationDir));
+        float worldY = 0.5f + 0.5f * scale + 0.05f * scale; 
+        
+        Vector3 labelPos = new Vector3(x + 0.5f + offsetX + labelOffsetX, worldY, y + 0.5f + offsetZ + labelOffsetZ);
+        Vector3 labelNormal = new Vector3((float) Math.sin(rad), 0, (float) Math.cos(rad));
         
         Color textColor = com.badlogic.gdx.graphics.Color.BLACK;
-        labels.add(new Gdx3DRenderer.VehicleLabel(labelPos, limitText, labelNormal, new Vector3(0, 1, 0), textColor, 0.25f));
+        labels.add(new Gdx3DRenderer.VehicleLabel(labelPos, limitText, labelNormal, new Vector3(0, 1, 0), textColor, 0.25f * scale));
     }
 }
