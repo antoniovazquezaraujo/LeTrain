@@ -273,4 +273,5 @@ public interface Model {
     letrain.segments.RailwayGraph getRailwayGraph();
 
     letrain.utils.SimulationScheduler getScheduler();
+    public java.util.List<letrain.track.SpeedSignal> getSpeedSignals();
 }

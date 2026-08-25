@@ -1,0 +1,6 @@
+            case 'g':
+                if (!model.getSpeedSignals().isEmpty()) {
+                    model.setMode(letrain.mvp.Model.GameMode.SPEED_SIGNALS);
+                    return true;
+                }
+                return false;

@@ -664,7 +664,7 @@ public class Model implements letrain.mvp.Model {
         return false;
     }
     
-    private java.util.List<letrain.track.SpeedSignal> getSpeedSignals() {
+    public java.util.List<letrain.track.SpeedSignal> getSpeedSignals() {
         return sensors.stream()
                 .filter(s -> s instanceof letrain.track.SpeedSignal)
                 .map(s -> (letrain.track.SpeedSignal) s)

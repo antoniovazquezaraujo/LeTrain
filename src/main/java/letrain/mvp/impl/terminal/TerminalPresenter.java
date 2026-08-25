@@ -363,6 +363,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     return true;
                 }
                 return false;
+            case 'g':
+                if (!model.getSpeedSignals().isEmpty()) {
+                    model.setMode(letrain.mvp.Model.GameMode.SPEED_SIGNALS);
+                    return true;
+                }
+                return false;
             case 'p':
                 model.setMode(PROGRAM);
                 view.showIDE();
