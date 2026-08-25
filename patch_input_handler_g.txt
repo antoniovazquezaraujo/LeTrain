@@ -1,4 +1,0 @@
-                    case 'g':
-                        if (!model.getSpeedSignals().isEmpty())
-                            model.setMode(Model.GameMode.SPEED_SIGNALS);
-                        return;

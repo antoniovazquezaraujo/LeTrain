@@ -1,2 +1,0 @@
-    private int speedSignalId = 0;
-    private long speedSignalInputTimeout = 0;
