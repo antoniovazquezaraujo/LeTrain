@@ -464,6 +464,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                         speedSignalId = 0;
                         speedSignalInputTimeout = 0;
                     }
+                    if (model.getSelectedSpeedSignal() != null) {
+                        letrain.track.SpeedSignal sig = model.getSelectedSpeedSignal();
+                        sig.setCreationDir(sig.getCreationDir().inverse());
+                    }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     if (model.getSelectedSpeedSignal() != null) {
                         int val = keyEvent.getCharacter() - '0';
