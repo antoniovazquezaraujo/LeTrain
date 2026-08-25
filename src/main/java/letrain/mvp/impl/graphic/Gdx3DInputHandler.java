@@ -266,6 +266,10 @@ public class Gdx3DInputHandler implements InputProcessor {
                         if (!model.getForks().isEmpty())
                             model.setMode(Model.GameMode.FORKS);
                         return;
+                    case 'g':
+                        if (!model.getSpeedSignals().isEmpty())
+                            model.setMode(Model.GameMode.SPEED_SIGNALS);
+                        return;
                     case 's':
                         if (!model.getSemaphores().isEmpty())
                             model.setMode(Model.GameMode.SEMAPHORES);
@@ -333,6 +337,9 @@ public class Gdx3DInputHandler implements InputProcessor {
             case SEMAPHORES:
                 handleSemaphoreInput(stroke);
                 break;
+            case SPEED_SIGNALS:
+                handleSpeedSignalsInput(stroke);
+                break;
             case STATIONS:
                 handleStationInput(stroke);
                 break;
@@ -368,6 +375,11 @@ public class Gdx3DInputHandler implements InputProcessor {
             case SEMAPHORES:
                 if (model.getSelectedSemaphore() != null) {
                     targetPos = model.getSelectedSemaphore().getPosition();
+                }
+                break;
+            case SPEED_SIGNALS:
+                if (model.getSelectedSpeedSignal() != null) {
+                    targetPos = model.getSelectedSpeedSignal().getPosition();
                 }
                 break;
             case STATIONS:

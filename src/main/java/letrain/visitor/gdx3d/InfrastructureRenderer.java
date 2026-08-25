@@ -176,7 +176,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
         float dx = PathGeometry.getDirX(dir);
         float dz = PathGeometry.getDirZ(dir);
-        float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+            angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
 
         ModelInstance instance = resourceContext.getModelInstance(resourceContext.sensorModel);
         instance.materials.get(0)
@@ -218,7 +218,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                     float dz = PathGeometry.getDirZ(dir);
                     offsetX = dz * 1.0f;
                     offsetZ = -dx * 1.0f;
-                    angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+            angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
                 }
             }
         }
@@ -478,7 +478,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         Point pos = cursor.getPosition();
         float dx = PathGeometry.getDirX(dir);
         float dz = PathGeometry.getDirZ(dir);
-        float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+            angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
 
         ModelInstance instance = resourceContext.getModelInstance(resourceContext.cursorModel);
         instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
@@ -537,7 +537,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             // Position the signal to the side of the track (like semaphore)
             offsetX = dz * 1.0f;
             offsetZ = -dx * 1.0f;
-            angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+            angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
         }
 
         instance.transform.setToTranslation(x + 0.5f + offsetX, 0.5f, y + 0.5f + offsetZ);
@@ -554,13 +554,13 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         String limitText = limit >= 1 && limit <= 10 ? String.valueOf(limit) : "?";
         
         // Offset for the text slightly in front of the plate
-        float labelOffsetX = PathGeometry.getDirX(creationDir) * 0.051f;
-        float labelOffsetZ = PathGeometry.getDirZ(creationDir) * 0.051f;
+        float labelOffsetX = -PathGeometry.getDirX(creationDir) * 0.051f;
+        float labelOffsetZ = -PathGeometry.getDirZ(creationDir) * 0.051f;
         
         Vector3 labelPos = new Vector3(x + 0.5f + offsetX + labelOffsetX, 1.0f, y + 0.5f + offsetZ + labelOffsetZ);
-        Vector3 labelNormal = new Vector3(PathGeometry.getDirX(creationDir), 0, PathGeometry.getDirZ(creationDir));
+        Vector3 labelNormal = new Vector3(-PathGeometry.getDirX(creationDir), 0, -PathGeometry.getDirZ(creationDir));
         
-        Color textColor = speedSignal.isMax() ? Color.WHITE : Color.WHITE;
+        Color textColor = com.badlogic.gdx.graphics.Color.BLACK;
         labels.add(new Gdx3DRenderer.VehicleLabel(labelPos, limitText, labelNormal, new Vector3(0, 1, 0), textColor, 0.25f));
     }
 }
