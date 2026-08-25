@@ -53,10 +53,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     int forkId;
     int semaphoreId;
+    int speedSignalId;
     int locomotiveId;
     int StationId;
 
     private long forkInputTimeout = 0;
+    private long speedSignalInputTimeout = 0;
     private long semaphoreInputTimeout = 0;
     private long stationInputTimeout = 0;
     private long locomotiveInputTimeout = 0;
@@ -96,6 +98,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         modeKeyHandlers.put(DRIVE, keyEvent -> trainDriverOnChar(keyEvent));
         modeKeyHandlers.put(FORKS, keyEvent -> handleForksModeKey(keyEvent));
         modeKeyHandlers.put(SEMAPHORES, keyEvent -> handleSemaphoresModeKey(keyEvent));
+        modeKeyHandlers.put(letrain.mvp.Model.GameMode.SPEED_SIGNALS, keyEvent -> handleSpeedSignalsModeKey(keyEvent));
         modeKeyHandlers.put(TRAINS, keyEvent -> {
             if (keyEvent.getKeyType() == KeyType.Backspace) {
                 deleteVehicle();
@@ -360,6 +363,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     return true;
                 }
                 return false;
+            case 'g':
+                if (!model.getSpeedSignals().isEmpty()) {
+                    model.setMode(letrain.mvp.Model.GameMode.SPEED_SIGNALS);
+                    return true;
+                }
+                return false;
             case 'p':
                 model.setMode(PROGRAM);
                 view.showIDE();
@@ -438,6 +447,60 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
+    private void handleSpeedSignalsModeKey(com.googlecode.lanterna.input.KeyStroke keyEvent) {
+        switch (keyEvent.getKeyType()) {
+            case Backspace:
+                speedSignalId = speedSignalId / 10;
+                model.selectSpeedSignal(speedSignalId);
+                break;
+            case Character:
+                if (keyEvent.getCharacter() == 'm' || keyEvent.getCharacter() == 'M') {
+                    if (model.getSelectedSpeedSignal() != null) {
+                        model.getSelectedSpeedSignal().setMax(!model.getSelectedSpeedSignal().isMax());
+                    }
+                } else if (keyEvent.getCharacter() == ' ') {
+                    if (speedSignalId > 0) {
+                        model.selectSpeedSignal(speedSignalId);
+                        speedSignalId = 0;
+                        speedSignalInputTimeout = 0;
+                    }
+                    if (model.getSelectedSpeedSignal() != null) {
+                        letrain.track.SpeedSignal sig = model.getSelectedSpeedSignal();
+                        sig.setCreationDir(sig.getCreationDir().inverse());
+                    }
+                } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
+                    if (model.getSelectedSpeedSignal() != null) {
+                        int val = keyEvent.getCharacter() - '0';
+                        if (val == 0) val = 10;
+                        model.getSelectedSpeedSignal().setLimit(val);
+                    } else {
+                        speedSignalId = speedSignalId * 10 + (keyEvent.getCharacter() - '0');
+                        speedSignalInputTimeout = System.currentTimeMillis() + 1000;
+                    }
+                }
+                break;
+            case ArrowLeft:
+                model.selectPrevSpeedSignal();
+                break;
+            case ArrowRight:
+                model.selectNextSpeedSignal();
+                break;
+            case ArrowUp:
+                if (model.getSelectedSpeedSignal() != null) {
+                    int l = model.getSelectedSpeedSignal().getLimit();
+                    if (l < 10) model.getSelectedSpeedSignal().setLimit(l + 1);
+                }
+                break;
+            case ArrowDown:
+                if (model.getSelectedSpeedSignal() != null) {
+                    int l = model.getSelectedSpeedSignal().getLimit();
+                    if (l > 1) model.getSelectedSpeedSignal().setLimit(l - 1);
+                }
+                break;
+            default:
+                break;
+        }
+    }
     private void handleSemaphoresModeKey(KeyStroke keyEvent) {
         switch (keyEvent.getKeyType()) {
             case Backspace:
@@ -1250,6 +1313,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             model.selectFork(forkId);
             forkId = 0;
             forkInputTimeout = 0;
+        }
+        if (speedSignalInputTimeout > 0 && now > speedSignalInputTimeout) {
+            model.selectSpeedSignal(speedSignalId);
+            speedSignalId = 0;
+            speedSignalInputTimeout = 0;
         }
         if (semaphoreInputTimeout > 0 && now > semaphoreInputTimeout) {
             model.selectSemaphore(semaphoreId);

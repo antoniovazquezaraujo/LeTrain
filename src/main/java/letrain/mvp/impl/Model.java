@@ -40,6 +40,7 @@ public class Model implements letrain.mvp.Model {
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     RailSemaphore selectedSemaphore;
+    letrain.track.SpeedSignal selectedSpeedSignal;
     Station selectedStation;
     EventLogManager eventLogManager;
 
@@ -75,6 +76,7 @@ public class Model implements letrain.mvp.Model {
     int selectedLocomotiveIndex;
     int selectedForkIndex;
     int selectedSemaphoreIndex;
+    int selectedSpeedSignalIndex;
     int selectedStationIndex;
     boolean showId = false;
 
@@ -648,12 +650,51 @@ public class Model implements letrain.mvp.Model {
 
     @Override public RailSemaphore getSelectedSemaphore() { return selectedSemaphore; }
     @Override public void setSelectedSemaphore(RailSemaphore selectedSemaphore) { this.selectedSemaphore = selectedSemaphore; }
+    @Override public letrain.track.SpeedSignal getSelectedSpeedSignal() { return selectedSpeedSignal; }
+    @Override public void setSelectedSpeedSignal(letrain.track.SpeedSignal selectedSpeedSignal) { this.selectedSpeedSignal = selectedSpeedSignal; }
 
     @Override public boolean selectSemaphore(int id) {
         for (RailSemaphore semaphore : getSemaphores()) {
             if (semaphore.getId() == id) {
                 selectedSemaphore = semaphore;
                 selectedSemaphoreIndex = semaphores.indexOf(semaphore);
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public java.util.List<letrain.track.SpeedSignal> getSpeedSignals() {
+        return sensors.stream()
+                .filter(s -> s instanceof letrain.track.SpeedSignal)
+                .map(s -> (letrain.track.SpeedSignal) s)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override public boolean selectNextSpeedSignal() {
+        java.util.List<letrain.track.SpeedSignal> sigs = getSpeedSignals();
+        if (sigs.isEmpty()) return false;
+        selectedSpeedSignalIndex++;
+        if (selectedSpeedSignalIndex >= sigs.size()) selectedSpeedSignalIndex = 0;
+        selectedSpeedSignal = sigs.get(selectedSpeedSignalIndex);
+        return true;
+    }
+
+    @Override public boolean selectPrevSpeedSignal() {
+        java.util.List<letrain.track.SpeedSignal> sigs = getSpeedSignals();
+        if (sigs.isEmpty()) return false;
+        selectedSpeedSignalIndex--;
+        if (selectedSpeedSignalIndex < 0) selectedSpeedSignalIndex = sigs.size() - 1;
+        selectedSpeedSignal = sigs.get(selectedSpeedSignalIndex);
+        return true;
+    }
+
+    @Override public boolean selectSpeedSignal(int id) {
+        java.util.List<letrain.track.SpeedSignal> sigs = getSpeedSignals();
+        for (int i = 0; i < sigs.size(); i++) {
+            if (sigs.get(i).getId() == id) {
+                selectedSpeedSignal = sigs.get(i);
+                selectedSpeedSignalIndex = i;
                 return true;
             }
         }
@@ -795,10 +836,11 @@ public class Model implements letrain.mvp.Model {
     @Override
     public List<GameModeMenuOption> getMenuModel() {
         return Arrays.asList(
-                new GameModeMenuOption("&rails", "[Left/Right]:Rotate [Up/Down]:Move [Shift+Up]:Add rail [Ctrl+Up]:Remove rail [Ctrl/Shift+Down]:Remove rail [Ins]:Add sensor [Home]:Add semaphore [W]:Add station [#]:Steps [Space]:Reset steps", () -> true, () -> (this.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
+                new GameModeMenuOption("&rails", "[Left/Right]:Rotate [Up/Down]:Move [Shift+Up]:Add rail [Ctrl+Up]:Remove rail [Ctrl/Shift+Down]:Remove rail [Ins]:Add sensor [Home]:Add sem [Del]:Add speed [End]:Add station [#]:Steps [Space]:Reset steps", () -> true, () -> (this.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
                 new GameModeMenuOption("&drive", "[Left/Right]:Select [o]:Locate [m]:Motor On/Off [Up]:Accel [Down]:Decel [Space]:Reverse [Enter]:Load/Unload [#]:Select by ID", () -> !this.getLocomotives().isEmpty(), () -> this.getMode() == GameMode.DRIVE, () -> GameMode.DRIVE),
                 new GameModeMenuOption("&forks", "[Left/Right]:Select [o]:Locate [Space]:Toggle [#]:Select by ID", () -> !this.getForks().isEmpty(), () -> this.getMode() == GameMode.FORKS, () -> GameMode.FORKS),
                 new GameModeMenuOption("&semaphores", "[Left/Right]:Select [o]:Locate [Space]:Toggle [#]:Select by ID", () -> !this.getSemaphores().isEmpty(), () -> this.getMode() == GameMode.SEMAPHORES, () -> GameMode.SEMAPHORES),
+                new GameModeMenuOption("si&gnals", "[Left/Right]:Select [m]:Max/Min [Up/Down]:Limit [Space]:Invert", () -> !getSpeedSignals().isEmpty(), () -> this.getMode() == GameMode.SPEED_SIGNALS, () -> GameMode.SPEED_SIGNALS),
                 new GameModeMenuOption("&trains", "[A-Z]: LOCOMOTIVE | [a-z]: WAGON | [ENTER]: FINISH", () -> this.getCursorRailTrack() != null, () -> this.getMode() == GameMode.TRAINS, () -> GameMode.TRAINS),
                 new GameModeMenuOption("&link", "[Up/Down]:Front/Back [Left/Right]:Select/Unselect wagons [o]:Locate [Space]:Link", () -> this.canEnterLinkMode(), () -> this.getMode() == GameMode.LINK, () -> GameMode.LINK),
                 new GameModeMenuOption("&unlink", "[Up/Down]:Front/Back [Left/Right]:Select/Unselect wagons [o]:Locate [Space]:Unlink", () -> this.canEnterUnlinkMode(), () -> this.getMode() == GameMode.UNLINK, () -> GameMode.UNLINK),

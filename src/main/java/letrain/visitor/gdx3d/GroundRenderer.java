@@ -135,4 +135,7 @@ public class GroundRenderer extends BaseSubRenderer {
             instances.add(wall);
         }
     }
+
+    @Override
+    public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {}
 }

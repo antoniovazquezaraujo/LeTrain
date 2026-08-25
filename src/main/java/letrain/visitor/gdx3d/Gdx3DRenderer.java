@@ -316,4 +316,7 @@ public class Gdx3DRenderer implements Visitor {
     public void dispose() {
         // resourceContext is disposed by GraphicPresenter
     }
+
+    @Override
+    public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {}
 }

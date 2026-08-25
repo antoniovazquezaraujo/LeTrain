@@ -516,4 +516,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         }
         return ownerTrain;
     }
+
+    @Override
+    public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {}
 }

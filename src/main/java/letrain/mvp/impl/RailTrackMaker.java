@@ -196,6 +196,9 @@ public class RailTrackMaker {
             case End:
                 manageStationSensor();
                 break;
+            case Delete:
+                manageSpeedSignal();
+                break;
             default:
                 break;
         }
@@ -204,6 +207,21 @@ public class RailTrackMaker {
 
     private void createStation() {
         // Obsolete
+    }
+
+    void manageSpeedSignal() {
+        Point position = presenter.getModel().getCursor().getPosition();
+        Track track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
+        if (track != null) {
+            Sensor sensor = track.getSensor();
+            if (sensor != null && sensor instanceof letrain.track.SpeedSignal) {
+                presenter.getModel().removeSensor(sensor);
+            } else if (sensor == null) {
+                letrain.track.SpeedSignal speedSignal = new letrain.track.SpeedSignal(presenter.getModel().nextSensorId(), presenter.getModel().getCursor().getDir(), 3, true);
+                speedSignal.setTrack(track);
+                presenter.getModel().addSensor(speedSignal);
+            }
+        }
     }
 
     void manageSensor() {

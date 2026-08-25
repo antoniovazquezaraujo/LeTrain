@@ -275,4 +275,7 @@ public class TrackRenderer extends BaseSubRenderer {
             return false;
         return neighbor.getRouter().getDir(dir.inverse()) != null;
     }
+
+    @Override
+    public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {}
 }
