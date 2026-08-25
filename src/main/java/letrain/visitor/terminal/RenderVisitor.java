@@ -123,6 +123,7 @@ public class RenderVisitor implements Visitor {
     ForkRailTrack selectedFork;
     Station selectedStation;
     RailSemaphore selectedSemaphore;
+    letrain.track.SpeedSignal selectedSpeedSignal;
     private final TerminalView view;
     private GameMode mode;
     boolean showId = false;
@@ -155,6 +156,7 @@ public class RenderVisitor implements Visitor {
         selectedFork = model.getSelectedFork();
         selectedStation = model.getSelectedStation();
         selectedSemaphore = model.getSelectedSemaphore();
+        selectedSpeedSignal = model.getSelectedSpeedSignal();
         if (model.getGroundMap() != null) {
             model.getGroundMap().accept(this);
         }
@@ -296,6 +298,9 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {
         letrain.map.Point pos = speedSignal.getPosition();
+        if (speedSignal == selectedSpeedSignal && mode == GameMode.SPEED_SIGNALS) {
+            view.setUnderline(true);
+        }
         if (speedSignal.isMax()) {
             view.setFgColor(TextColor.ANSI.RED);
         } else {
@@ -315,6 +320,8 @@ public class RenderVisitor implements Visitor {
         view.set(pos.getX(), pos.getY(), String.valueOf(icon));
         view.set(pos.getX() + 1, pos.getY(), arrow);
         
+        view.setUnderline(false);
+        view.setFgColor(TextColor.ANSI.WHITE);
         resetColors();
     }
 
