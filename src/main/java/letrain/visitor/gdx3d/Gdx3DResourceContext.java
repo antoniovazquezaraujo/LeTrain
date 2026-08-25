@@ -339,12 +339,12 @@ public class Gdx3DResourceContext implements Disposable {
 
         Node node3 = mb.node();
         node3.id = "center";
-        node3.translation.set(0, 0.5f, 0.030f);
+        node3.translation.set(0, 0.5f, 0.035f); // Empujado un poco más hacia afuera
         node3.rotation.set(com.badlogic.gdx.math.Vector3.X, 90f);
         mpb = mb.part("center", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
                 com.badlogic.gdx.graphics.VertexAttributes.Usage.Position | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
                 new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.WHITE)));
-        com.badlogic.gdx.graphics.g3d.utils.shapebuilders.CylinderShapeBuilder.build(mpb, 0.25f, 0.05f, 0.25f, 20);
+        com.badlogic.gdx.graphics.g3d.utils.shapebuilders.CylinderShapeBuilder.build(mpb, 0.25f, 0.06f, 0.25f, 20);
 
         return mb.end();
     }
