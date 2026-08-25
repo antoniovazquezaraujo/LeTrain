@@ -120,6 +120,8 @@ public class Gdx3DResourceContext implements Disposable {
     public Model terrainWallModel;
     public Model semaphoreOpenModel;
     public Model semaphoreClosedModel;
+    public Model speedSignalMaxModel;
+    public Model speedSignalMinModel;
     public Model sensorModel;
     public Model goldConsumerModel;
     public Model coalConsumerModel;
@@ -248,6 +250,8 @@ public class Gdx3DResourceContext implements Disposable {
             semaphoreOpenModel = register(createSemaphoreModel(true));
 
             semaphoreClosedModel = register(createSemaphoreModel(false));
+            speedSignalMaxModel = register(createSpeedSignalModel(true));
+            speedSignalMinModel = register(createSpeedSignalModel(false));
 
             // Sensor
             sensorModel = register(modelBuilder.createBox(0.4f, 0.05f, 0.4f,
@@ -313,6 +317,37 @@ public class Gdx3DResourceContext implements Disposable {
         return model;
     }
 
+    private Model createSpeedSignalModel(boolean isMax) {
+        ModelBuilder mb = new ModelBuilder();
+        mb.begin();
+        Node node1 = mb.node();
+        node1.id = "pole";
+        MeshPartBuilder mpb = mb.part("pole", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
+                com.badlogic.gdx.graphics.VertexAttributes.Usage.Position | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
+                new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.GRAY)));
+        com.badlogic.gdx.graphics.g3d.utils.shapebuilders.CylinderShapeBuilder.build(mpb, 0.05f, 1.0f, 0.05f, 10);
+        
+        Node node2 = mb.node();
+        node2.id = "plate";
+        node2.translation.set(0, 0.5f, 0.025f);
+        node2.rotation.set(com.badlogic.gdx.math.Vector3.X, 90f);
+        com.badlogic.gdx.graphics.Color plateColor = isMax ? com.badlogic.gdx.graphics.Color.RED : com.badlogic.gdx.graphics.Color.BLUE;
+        mpb = mb.part("plate", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
+                com.badlogic.gdx.graphics.VertexAttributes.Usage.Position | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
+                new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(plateColor)));
+        com.badlogic.gdx.graphics.g3d.utils.shapebuilders.CylinderShapeBuilder.build(mpb, 0.35f, 0.05f, 0.35f, 20);
+
+        Node node3 = mb.node();
+        node3.id = "center";
+        node3.translation.set(0, 0.5f, 0.030f);
+        node3.rotation.set(com.badlogic.gdx.math.Vector3.X, 90f);
+        mpb = mb.part("center", com.badlogic.gdx.graphics.GL20.GL_TRIANGLES,
+                com.badlogic.gdx.graphics.VertexAttributes.Usage.Position | com.badlogic.gdx.graphics.VertexAttributes.Usage.Normal,
+                new com.badlogic.gdx.graphics.g3d.Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.WHITE)));
+        com.badlogic.gdx.graphics.g3d.utils.shapebuilders.CylinderShapeBuilder.build(mpb, 0.25f, 0.05f, 0.25f, 20);
+
+        return mb.end();
+    }
     private Model createSemaphoreModel(boolean isOpen) {
         ModelBuilder mb = new ModelBuilder();
         mb.begin();
