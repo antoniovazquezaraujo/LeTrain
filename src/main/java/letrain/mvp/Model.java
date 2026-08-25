@@ -187,6 +187,7 @@ public interface Model {
         DRIVE("Manage locomotives"),
         FORKS("Manage forks"),
         SEMAPHORES("Manage semaphores"),
+        SPEED_SIGNALS("Manage speed signals"),
         TRAINS("Create trains"),
         LINK("Link trains"),
         UNLINK("Divide trains"),

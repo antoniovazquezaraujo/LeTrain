@@ -86,6 +86,8 @@ public class Train implements Renderable {
     public transient boolean joined = false;
     private int savedSpeedBeforeReverse = -1;
     private int savedTargetSpeed = -1;
+    @com.fasterxml.jackson.annotation.JsonProperty("programmedSpeed")
+    private int programmedSpeed = 0;
     private transient java.util.Set<Sensor> activeSensors = new java.util.HashSet<>();
 
     public void setSavedTargetSpeed(int speed) {
@@ -250,7 +252,23 @@ public class Train implements Renderable {
         this.savedSpeedBeforeReverse = speed;
     }
 
+    public int getProgrammedSpeed() {
+        return this.programmedSpeed;
+    }
+
+    public void setProgrammedSpeed(int speed) {
+        this.programmedSpeed = speed;
+    }
+
+    public void applySpeedRestriction(int speed) {
+        Tractor speedLinker = getDirectorLinker();
+        if (speedLinker != null) {
+            speedLinker.setTargetSpeed(speed);
+        }
+    }
+
     public void setSpeed(int speed) {
+        this.programmedSpeed = speed;
         Tractor speedLinker = getDirectorLinker();
         if (speedLinker != null) {
             int oldSpeed = speedLinker.getTargetSpeed();
