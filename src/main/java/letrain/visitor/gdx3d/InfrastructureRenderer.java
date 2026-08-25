@@ -218,7 +218,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                     float dz = PathGeometry.getDirZ(dir);
                     offsetX = dz * 1.0f;
                     offsetZ = -dx * 1.0f;
-        float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+        angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
                 }
             }
         }
