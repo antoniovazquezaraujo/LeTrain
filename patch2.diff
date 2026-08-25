@@ -1,0 +1,36 @@
+--- src/main/java/letrain/mvp/impl/RailTrackMaker.java
++++ src/main/java/letrain/mvp/impl/RailTrackMaker.java
+@@ -594,22 +594,24 @@
+         }
+         return fork;
+     }
+ 
+     private void convertOldTrackToGate(Presenter.TrackType gateType) {
+         if (oldTrack == null) return;
+         RailTrack newGate;
+         if (gateType == Presenter.TrackType.TUNNEL_GATE_TRACK) {
+             newGate = new letrain.track.rail.TunnelGateRailTrack();
+         } else {
+             newGate = new letrain.track.rail.BridgeGateRailTrack();
+         }
+         newGate.setPosition(oldTrack.getPosition());
+         
+         final letrain.map.Router router = oldTrack.getRouter();
+         router.forEach(t -> {
+             newGate.addRoute(t.getKey(), t.getValue());
+         });
+         
++        presenter.getModel().removeTrack(oldTrack.getPosition());
++
+         for (Dir d : Dir.values()) {
+             Track connected = oldTrack.getConnected(d);
+             if (connected != null) {
+                 newGate.connect(d, connected);
+                 connected.connect(d.inverse(), newGate);
+             }
+         }
+         
+-        presenter.getModel().removeTrack(oldTrack.getPosition());
+         presenter.getModel().addTrack(oldTrack.getPosition(), newGate);
+         oldTrack = newGate;
+     }

@@ -295,7 +295,42 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {
-        // Will implement in PR 2
+        letrain.map.Point pos = speedSignal.getPosition();
+        if (speedSignal.isMax()) {
+            view.setFgColor(TextColor.ANSI.RED);
+        } else {
+            view.setFgColor(TextColor.ANSI.BLUE);
+        }
+        
+        int limit = speedSignal.getLimit();
+        char icon;
+        if (limit >= 1 && limit <= 10) {
+            icon = (char) ('\u245F' + limit);
+        } else {
+            icon = '?';
+        }
+        
+        String arrow = speedSignalArrow(speedSignal.getCreationDir());
+        
+        view.set(pos.getX(), pos.getY(), String.valueOf(icon));
+        view.set(pos.getX() + 1, pos.getY(), arrow);
+        
+        resetColors();
+    }
+
+    private String speedSignalArrow(letrain.map.Dir dir) {
+        if (dir == null) return "";
+        switch (dir) {
+            case E: return "→";
+            case W: return "←";
+            case N: return "↑";
+            case S: return "↓";
+            case NE: return "↗";
+            case SW: return "↙";
+            case NW: return "↖";
+            case SE: return "↘";
+        }
+        return "";
     }
 
     @Override

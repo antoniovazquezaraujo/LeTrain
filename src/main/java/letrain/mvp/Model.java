@@ -123,14 +123,20 @@ public interface Model {
     RailSemaphore getSemaphoreAt(Point point);
 
     boolean selectNextSemaphore();
-
     boolean selectPrevSemaphore();
+    
+    boolean selectSpeedSignal(int id);
+    boolean selectNextSpeedSignal();
+    boolean selectPrevSpeedSignal();
 
     boolean selectSemaphore(int id);
 
     RailSemaphore getSelectedSemaphore();
 
     void setSelectedSemaphore(RailSemaphore selectedSemaphore);
+
+    letrain.track.SpeedSignal getSelectedSpeedSignal();
+    void setSelectedSpeedSignal(letrain.track.SpeedSignal selectedSpeedSignal);
 
     void moveLocomotives();
 

@@ -477,4 +477,7 @@ public class VehicleRenderer extends BaseSubRenderer {
             default -> Color.WHITE;
         };
     }
+
+    @Override
+    public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {}
 }

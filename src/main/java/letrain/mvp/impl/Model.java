@@ -40,6 +40,7 @@ public class Model implements letrain.mvp.Model {
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
     RailSemaphore selectedSemaphore;
+    letrain.track.SpeedSignal selectedSpeedSignal;
     Station selectedStation;
     EventLogManager eventLogManager;
 
@@ -75,6 +76,7 @@ public class Model implements letrain.mvp.Model {
     int selectedLocomotiveIndex;
     int selectedForkIndex;
     int selectedSemaphoreIndex;
+    int selectedSpeedSignalIndex;
     int selectedStationIndex;
     boolean showId = false;
 
@@ -648,12 +650,51 @@ public class Model implements letrain.mvp.Model {
 
     @Override public RailSemaphore getSelectedSemaphore() { return selectedSemaphore; }
     @Override public void setSelectedSemaphore(RailSemaphore selectedSemaphore) { this.selectedSemaphore = selectedSemaphore; }
+    @Override public letrain.track.SpeedSignal getSelectedSpeedSignal() { return selectedSpeedSignal; }
+    @Override public void setSelectedSpeedSignal(letrain.track.SpeedSignal selectedSpeedSignal) { this.selectedSpeedSignal = selectedSpeedSignal; }
 
     @Override public boolean selectSemaphore(int id) {
         for (RailSemaphore semaphore : getSemaphores()) {
             if (semaphore.getId() == id) {
                 selectedSemaphore = semaphore;
                 selectedSemaphoreIndex = semaphores.indexOf(semaphore);
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private java.util.List<letrain.track.SpeedSignal> getSpeedSignals() {
+        return sensors.stream()
+                .filter(s -> s instanceof letrain.track.SpeedSignal)
+                .map(s -> (letrain.track.SpeedSignal) s)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override public boolean selectNextSpeedSignal() {
+        java.util.List<letrain.track.SpeedSignal> sigs = getSpeedSignals();
+        if (sigs.isEmpty()) return false;
+        selectedSpeedSignalIndex++;
+        if (selectedSpeedSignalIndex >= sigs.size()) selectedSpeedSignalIndex = 0;
+        selectedSpeedSignal = sigs.get(selectedSpeedSignalIndex);
+        return true;
+    }
+
+    @Override public boolean selectPrevSpeedSignal() {
+        java.util.List<letrain.track.SpeedSignal> sigs = getSpeedSignals();
+        if (sigs.isEmpty()) return false;
+        selectedSpeedSignalIndex--;
+        if (selectedSpeedSignalIndex < 0) selectedSpeedSignalIndex = sigs.size() - 1;
+        selectedSpeedSignal = sigs.get(selectedSpeedSignalIndex);
+        return true;
+    }
+
+    @Override public boolean selectSpeedSignal(int id) {
+        java.util.List<letrain.track.SpeedSignal> sigs = getSpeedSignals();
+        for (int i = 0; i < sigs.size(); i++) {
+            if (sigs.get(i).getId() == id) {
+                selectedSpeedSignal = sigs.get(i);
+                selectedSpeedSignalIndex = i;
                 return true;
             }
         }

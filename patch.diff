@@ -1,0 +1,43 @@
+--- src/main/java/letrain/mvp/impl/RailTrackMaker.java
++++ src/main/java/letrain/mvp/impl/RailTrackMaker.java
+@@ -512,6 +512,13 @@
+             // si no había nada creamos un track normal
+             track = createTrackOfSelectedType();
++            if (oldTrack != null && type == Presenter.TrackType.NORMAL_TRACK) {
++                if (oldTrack.getClass().equals(letrain.track.rail.TunnelRailTrack.class)) {
++                    convertOldTrackToGate(Presenter.TrackType.TUNNEL_GATE_TRACK);
++                } else if (oldTrack.getClass().equals(letrain.track.rail.BridgeRailTrack.class)) {
++                    convertOldTrackToGate(Presenter.TrackType.BRIDGE_GATE_TRACK);
++                }
++            }
+         } else {
+             if (actualGroundType != GroundMap.GROUND) {
+                 // si la dirección del cursor es distinta de la del track actual retornamos
+                 if (track != null && !track.canExit(presenter.getModel().getCursor().getDir())) {
+@@ -588,6 +595,27 @@
+         }
+         return fork;
+     }
++
++    private void convertOldTrackToGate(Presenter.TrackType gateType) {
++        if (oldTrack == null) return;
++        RailTrack newGate;
++        if (gateType == Presenter.TrackType.TUNNEL_GATE_TRACK) {
++            newGate = new letrain.track.rail.TunnelGateRailTrack();
++        } else {
++            newGate = new letrain.track.rail.BridgeGateRailTrack();
++        }
++        newGate.setPosition(oldTrack.getPosition());
++        
++        final letrain.map.Router router = oldTrack.getRouter();
++        router.forEach(t -> {
++            newGate.addRoute(t.getKey(), t.getValue());
++        });
++        
++        presenter.getModel().removeTrack(oldTrack.getPosition());
++        presenter.getModel().addTrack(oldTrack.getPosition(), newGate);
++        oldTrack = newGate;
++    }
+ 
+     private void substituteInMapTrackWithFork(RailTrack track1, final ForkRailTrack fork) {
+         presenter.getModel().removeTrack(track1.getPosition());
