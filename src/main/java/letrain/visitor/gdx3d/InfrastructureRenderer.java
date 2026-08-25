@@ -176,7 +176,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
         float dx = PathGeometry.getDirX(dir);
         float dz = PathGeometry.getDirZ(dir);
-            angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
+        float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
 
         ModelInstance instance = resourceContext.getModelInstance(resourceContext.sensorModel);
         instance.materials.get(0)
@@ -218,7 +218,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                     float dz = PathGeometry.getDirZ(dir);
                     offsetX = dz * 1.0f;
                     offsetZ = -dx * 1.0f;
-            angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
+        float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
                 }
             }
         }
@@ -478,7 +478,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         Point pos = cursor.getPosition();
         float dx = PathGeometry.getDirX(dir);
         float dz = PathGeometry.getDirZ(dir);
-            angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
+        float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
 
         ModelInstance instance = resourceContext.getModelInstance(resourceContext.cursorModel);
         instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
