@@ -560,7 +560,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         float labelOffsetX = (float) Math.sin(rad) * localZ;
         float labelOffsetZ = (float) Math.cos(rad) * localZ;
         
-        float worldY = 0.5f + 0.5f * scale + 0.12f * scale; 
+        float worldY = 0.5f + 0.5f * scale; 
         
         Vector3 labelPos = new Vector3(x + 0.5f + offsetX + labelOffsetX, worldY, y + 0.5f + offsetZ + labelOffsetZ);
         Vector3 labelNormal = new Vector3((float) Math.sin(rad), 0, (float) Math.cos(rad));

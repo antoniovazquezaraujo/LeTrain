@@ -602,6 +602,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     if (model.getSelectedSpeedSignal() != null) {
                         letrain.track.SpeedSignal sig = model.getSelectedSpeedSignal();
                         sig.setCreationDir(sig.getCreationDir().inverse());
+                        cameraController.forceSnap();
                     }
                 } else if (stroke.getCharacter() >= '0' && stroke.getCharacter() <= '9') {
                     if (model.getSelectedSpeedSignal() != null) {

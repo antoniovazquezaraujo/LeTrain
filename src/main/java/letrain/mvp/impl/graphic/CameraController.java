@@ -61,6 +61,10 @@ public class CameraController {
         return cam;
     }
 
+    public void forceSnap() {
+        this.lastCameraSnapSignal = null;
+    }
+
     public CameraMode getMode() {
         return cameraMode;
     }
