@@ -556,16 +556,16 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         String limitText = limit >= 1 && limit <= 10 ? String.valueOf(limit) : "?";
         
         float rad = (float) Math.toRadians(angle);
-        float localZ = 0.05f * scale + 0.01f; // Just outside the scaled plate
+        float localZ = 0.05f * scale + 0.05f; // Just outside the scaled plate
         float labelOffsetX = (float) Math.sin(rad) * localZ;
         float labelOffsetZ = (float) Math.cos(rad) * localZ;
         
-        float worldY = 0.5f + 0.5f * scale + 0.05f * scale; 
+        float worldY = 0.5f + 0.5f * scale + 0.12f * scale; 
         
         Vector3 labelPos = new Vector3(x + 0.5f + offsetX + labelOffsetX, worldY, y + 0.5f + offsetZ + labelOffsetZ);
         Vector3 labelNormal = new Vector3((float) Math.sin(rad), 0, (float) Math.cos(rad));
         
         Color textColor = com.badlogic.gdx.graphics.Color.BLACK;
-        labels.add(new Gdx3DRenderer.VehicleLabel(labelPos, limitText, labelNormal, new Vector3(0, 1, 0), textColor, 0.25f * scale));
+        labels.add(new Gdx3DRenderer.VehicleLabel(labelPos, limitText, labelNormal, new Vector3(0, 1, 0), textColor, 0.30f * scale));
     }
 }
