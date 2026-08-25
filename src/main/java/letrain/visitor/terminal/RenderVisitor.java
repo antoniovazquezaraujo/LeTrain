@@ -123,6 +123,7 @@ public class RenderVisitor implements Visitor {
     ForkRailTrack selectedFork;
     Station selectedStation;
     RailSemaphore selectedSemaphore;
+    letrain.track.SpeedSignal selectedSpeedSignal;
     private final TerminalView view;
     private GameMode mode;
     boolean showId = false;
@@ -155,6 +156,7 @@ public class RenderVisitor implements Visitor {
         selectedFork = model.getSelectedFork();
         selectedStation = model.getSelectedStation();
         selectedSemaphore = model.getSelectedSemaphore();
+        selectedSpeedSignal = model.getSelectedSpeedSignal();
         if (model.getGroundMap() != null) {
             model.getGroundMap().accept(this);
         }
@@ -291,6 +293,51 @@ public class RenderVisitor implements Visitor {
         }
         view.set(pos.getX() + 1, pos.getY(), "" + (mode.equals(GameMode.SEMAPHORES) ? semaphore.getId() : ""));
         resetColors();
+    }
+
+    @Override
+    public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {
+        letrain.map.Point pos = speedSignal.getPosition();
+        if (speedSignal == selectedSpeedSignal && mode == GameMode.SPEED_SIGNALS) {
+            view.setUnderline(true);
+        }
+        if (speedSignal.isMax()) {
+            view.setFgColor(TextColor.ANSI.RED);
+        } else {
+            view.setFgColor(TextColor.ANSI.BLUE);
+        }
+        
+        int limit = speedSignal.getLimit();
+        char icon;
+        if (limit >= 1 && limit <= 10) {
+            icon = (char) ('\u245F' + limit);
+        } else {
+            icon = '?';
+        }
+        
+        String arrow = speedSignalArrow(speedSignal.getCreationDir());
+        
+        view.set(pos.getX(), pos.getY(), String.valueOf(icon));
+        view.set(pos.getX() + 1, pos.getY(), arrow);
+        
+        view.setUnderline(false);
+        view.setFgColor(TextColor.ANSI.WHITE);
+        resetColors();
+    }
+
+    private String speedSignalArrow(letrain.map.Dir dir) {
+        if (dir == null) return "";
+        switch (dir) {
+            case E: return "→";
+            case W: return "←";
+            case N: return "↑";
+            case S: return "↓";
+            case NE: return "↗";
+            case SW: return "↙";
+            case NW: return "↖";
+            case SE: return "↘";
+        }
+        return "";
     }
 
     @Override

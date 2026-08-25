@@ -41,6 +41,8 @@ public class Gdx3DInputHandler implements InputProcessor {
     private int forkIdAccumulator = 0;
     private int semaphoreIdAccumulator = 0;
     private int stationIdAccumulator = 0;
+    private int speedSignalId = 0;
+    private long speedSignalInputTimeout = 0;
     private int locomotiveIdAccumulator = 0;
     private long forkInputTimeout = 0;
     private long semaphoreInputTimeout = 0;
@@ -266,6 +268,10 @@ public class Gdx3DInputHandler implements InputProcessor {
                         if (!model.getForks().isEmpty())
                             model.setMode(Model.GameMode.FORKS);
                         return;
+                    case 'g':
+                        if (!model.getSpeedSignals().isEmpty())
+                            model.setMode(Model.GameMode.SPEED_SIGNALS);
+                        return;
                     case 's':
                         if (!model.getSemaphores().isEmpty())
                             model.setMode(Model.GameMode.SEMAPHORES);
@@ -333,6 +339,9 @@ public class Gdx3DInputHandler implements InputProcessor {
             case SEMAPHORES:
                 handleSemaphoreInput(stroke);
                 break;
+            case SPEED_SIGNALS:
+                handleSpeedSignalsInput(stroke);
+                break;
             case STATIONS:
                 handleStationInput(stroke);
                 break;
@@ -368,6 +377,11 @@ public class Gdx3DInputHandler implements InputProcessor {
             case SEMAPHORES:
                 if (model.getSelectedSemaphore() != null) {
                     targetPos = model.getSelectedSemaphore().getPosition();
+                }
+                break;
+            case SPEED_SIGNALS:
+                if (model.getSelectedSpeedSignal() != null) {
+                    targetPos = model.getSelectedSpeedSignal().getPosition();
                 }
                 break;
             case STATIONS:
@@ -565,6 +579,62 @@ public class Gdx3DInputHandler implements InputProcessor {
             forkIdAccumulator = forkIdAccumulator / 10;
             model.selectFork(forkIdAccumulator);
             forkInputTimeout = System.currentTimeMillis() + 1000;
+        }
+    }
+
+    private void handleSpeedSignalsInput(KeyStroke stroke) {
+        switch (stroke.getKeyType()) {
+            case Backspace:
+                speedSignalId = speedSignalId / 10;
+                model.selectSpeedSignal(speedSignalId);
+                break;
+            case Character:
+                if (stroke.getCharacter() == 'm' || stroke.getCharacter() == 'M') {
+                    if (model.getSelectedSpeedSignal() != null) {
+                        model.getSelectedSpeedSignal().setMax(!model.getSelectedSpeedSignal().isMax());
+                    }
+                } else if (stroke.getCharacter() == ' ') {
+                    if (speedSignalId > 0) {
+                        model.selectSpeedSignal(speedSignalId);
+                        speedSignalId = 0;
+                        speedSignalInputTimeout = 0;
+                    }
+                    if (model.getSelectedSpeedSignal() != null) {
+                        letrain.track.SpeedSignal sig = model.getSelectedSpeedSignal();
+                        sig.setCreationDir(sig.getCreationDir().inverse());
+                        cameraController.forceSnap();
+                    }
+                } else if (stroke.getCharacter() >= '0' && stroke.getCharacter() <= '9') {
+                    if (model.getSelectedSpeedSignal() != null) {
+                        int val = stroke.getCharacter() - '0';
+                        if (val == 0) val = 10;
+                        model.getSelectedSpeedSignal().setLimit(val);
+                    } else {
+                        speedSignalId = speedSignalId * 10 + (stroke.getCharacter() - '0');
+                        speedSignalInputTimeout = System.currentTimeMillis() + 1000;
+                    }
+                }
+                break;
+            case ArrowLeft:
+                model.selectPrevSpeedSignal();
+                break;
+            case ArrowRight:
+                model.selectNextSpeedSignal();
+                break;
+            case ArrowUp:
+                if (model.getSelectedSpeedSignal() != null) {
+                    int l = model.getSelectedSpeedSignal().getLimit();
+                    if (l < 10) model.getSelectedSpeedSignal().setLimit(l + 1);
+                }
+                break;
+            case ArrowDown:
+                if (model.getSelectedSpeedSignal() != null) {
+                    int l = model.getSelectedSpeedSignal().getLimit();
+                    if (l > 1) model.getSelectedSpeedSignal().setLimit(l - 1);
+                }
+                break;
+            default:
+                break;
         }
     }
 

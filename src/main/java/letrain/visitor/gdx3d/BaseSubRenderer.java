@@ -102,4 +102,7 @@ public abstract class BaseSubRenderer implements Visitor {
             return letrain.map.Dir.N;
         return dir;
     }
+
+    @Override
+    public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {}
 }

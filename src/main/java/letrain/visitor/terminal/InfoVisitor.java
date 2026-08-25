@@ -264,6 +264,12 @@ public class InfoVisitor implements Visitor {
     }
 
     @Override
+    public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {
+        String type = speedSignal.isMax() ? "Max" : "Min";
+        infoBarText += "SpeedSignal:[" + speedSignal.getId() + ":" + type + " " + speedSignal.getLimit() + "]" + "\n";
+    }
+
+    @Override
     public void visitStation(Station station) {
         infoBarText += "Station:[" + station.getId() + "]" + "\n" + "Position:" + station.getPosition() + "\n";
     }

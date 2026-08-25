@@ -218,7 +218,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                     float dz = PathGeometry.getDirZ(dir);
                     offsetX = dz * 1.0f;
                     offsetZ = -dx * 1.0f;
-                    angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+        angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
                 }
             }
         }
@@ -515,5 +515,57 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             ownerTrain = track.getLinker().getTrain();
         }
         return ownerTrain;
+    }
+
+    @Override
+    public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {
+        float x = speedSignal.getPosition().getX();
+        float y = speedSignal.getPosition().getY();
+
+        com.badlogic.gdx.graphics.g3d.Model modelToUse = speedSignal.isMax() ? resourceContext.speedSignalMaxModel
+                : resourceContext.speedSignalMinModel;
+        ModelInstance instance = resourceContext.getModelInstance(modelToUse);
+
+        float offsetX = 0;
+        float offsetZ = 0;
+        float angle = 0;
+
+        Dir creationDir = speedSignal.getCreationDir();
+        if (creationDir != null) {
+            float dx = PathGeometry.getDirX(creationDir);
+            float dz = PathGeometry.getDirZ(creationDir);
+            // Position the signal to the side of the track (like semaphore)
+            offsetX = dz * 1.0f;
+            offsetZ = -dx * 1.0f;
+            angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
+        }
+
+        instance.transform.setToTranslation(x + 0.5f + offsetX, 0.5f, y + 0.5f + offsetZ);
+        instance.transform.rotate(0, 1, 0, angle);
+
+
+        float scale = (modelRef != null && modelRef.getSelectedSpeedSignal() == speedSignal) ? 1.5f : 1.0f;
+        if (scale > 1.0f) {
+            instance.transform.scale(scale, scale, scale);
+        }
+
+        instances.add(instance);
+
+        // Add label for the speed limit
+        int limit = speedSignal.getLimit();
+        String limitText = limit >= 1 && limit <= 10 ? String.valueOf(limit) : "?";
+        
+        float rad = (float) Math.toRadians(angle);
+        float localZ = 0.05f * scale + 0.05f; // Just outside the scaled plate
+        float labelOffsetX = (float) Math.sin(rad) * localZ;
+        float labelOffsetZ = (float) Math.cos(rad) * localZ;
+        
+        float worldY = 0.5f + 0.5f * scale; 
+        
+        Vector3 labelPos = new Vector3(x + 0.5f + offsetX + labelOffsetX, worldY, y + 0.5f + offsetZ + labelOffsetZ);
+        Vector3 labelNormal = new Vector3((float) Math.sin(rad), 0, (float) Math.cos(rad));
+        
+        Color textColor = com.badlogic.gdx.graphics.Color.BLACK;
+        labels.add(new Gdx3DRenderer.VehicleLabel(labelPos, limitText, labelNormal, new Vector3(0, 1, 0), textColor, 0.30f * scale));
     }
 }

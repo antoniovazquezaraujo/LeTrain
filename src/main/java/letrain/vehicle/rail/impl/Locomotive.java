@@ -313,7 +313,11 @@ public class Locomotive extends Linker implements Tractor {
         if (getTrain() != null && getTrain().isAutoMode()) {
             getTrain().setAutoMode(false);
         }
-        setTargetSpeed(this.targetSpeed + 1);
+        if (getTrain() != null) {
+            getTrain().setSpeed(this.targetSpeed + 1);
+        } else {
+            setTargetSpeed(this.targetSpeed + 1);
+        }
     }
 
     public void decSpeed() {
@@ -321,7 +325,11 @@ public class Locomotive extends Linker implements Tractor {
         if (getTrain() != null && getTrain().isAutoMode()) {
             getTrain().setAutoMode(false);
         }
-        setTargetSpeed(this.targetSpeed - 1);
+        if (getTrain() != null) {
+            getTrain().setSpeed(this.targetSpeed - 1);
+        } else {
+            setTargetSpeed(this.targetSpeed - 1);
+        }
     }
 
     public void setTargetSpeed(int speed) {

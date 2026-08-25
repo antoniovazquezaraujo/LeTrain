@@ -123,14 +123,20 @@ public interface Model {
     RailSemaphore getSemaphoreAt(Point point);
 
     boolean selectNextSemaphore();
-
     boolean selectPrevSemaphore();
+    
+    boolean selectSpeedSignal(int id);
+    boolean selectNextSpeedSignal();
+    boolean selectPrevSpeedSignal();
 
     boolean selectSemaphore(int id);
 
     RailSemaphore getSelectedSemaphore();
 
     void setSelectedSemaphore(RailSemaphore selectedSemaphore);
+
+    letrain.track.SpeedSignal getSelectedSpeedSignal();
+    void setSelectedSpeedSignal(letrain.track.SpeedSignal selectedSpeedSignal);
 
     void moveLocomotives();
 
@@ -187,6 +193,7 @@ public interface Model {
         DRIVE("Manage locomotives"),
         FORKS("Manage forks"),
         SEMAPHORES("Manage semaphores"),
+        SPEED_SIGNALS("Manage speed signals"),
         TRAINS("Create trains"),
         LINK("Link trains"),
         UNLINK("Divide trains"),
@@ -266,4 +273,5 @@ public interface Model {
     letrain.segments.RailwayGraph getRailwayGraph();
 
     letrain.utils.SimulationScheduler getScheduler();
+    public java.util.List<letrain.track.SpeedSignal> getSpeedSignals();
 }
