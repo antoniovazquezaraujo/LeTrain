@@ -1,1 +1,0 @@
-                new GameModeMenuOption("&rails", "[Left/Right]:Rotate [Up/Down]:Move [Shift+Up]:Add rail [Ctrl+Up]:Remove rail [Ctrl/Shift+Down]:Remove rail [Ins]:Add sensor [Home]:Add sem [Del]:Add speed [End]:Add station [#]:Steps [Space]:Reset steps", () -> true, () -> (this.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
