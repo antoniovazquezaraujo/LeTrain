@@ -77,8 +77,6 @@ public class SpeedSignal extends Sensor implements Serializable {
 
     @Override
     public void accept(Visitor visitor) {
-        // Will implement visitSpeedSignal in the future PRs
-        // visitor.visitSpeedSignal(this);
-        super.accept(visitor);
+        visitor.visitSpeedSignal(this);
     }
 }

@@ -41,6 +41,8 @@ public interface Visitor {
 
     void visitSemaphore(RailSemaphore semaphore);
 
+    void visitSpeedSignal(letrain.track.SpeedSignal speedSignal);
+
     void visitStation(Station station);
 
     void visitGroundMap(GroundMap groundMap);

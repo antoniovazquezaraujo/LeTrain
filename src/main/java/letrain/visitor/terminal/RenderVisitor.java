@@ -294,6 +294,11 @@ public class RenderVisitor implements Visitor {
     }
 
     @Override
+    public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {
+        // Will implement in PR 2
+    }
+
+    @Override
     public void visitForkRailTrack(ForkRailTrack track) {
         if (track == selectedFork) {
             view.setFgColor(SELECTED_FORK_COLOR);
