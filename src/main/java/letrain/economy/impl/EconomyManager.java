@@ -434,12 +434,42 @@ public class EconomyManager implements letrain.economy.EconomyManager {
             }
             startingBalance = newStartingBalance;
 
-            // Load thresholds
-            goldThreshold = Float.parseFloat(props.getProperty("threshold.GOLD", "0.28"));
-            coalThreshold = Float.parseFloat(props.getProperty("threshold.COAL", "0.28"));
-            rubyThreshold = Float.parseFloat(props.getProperty("threshold.RUBY", "0.28"));
-            waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER", "130"));
-            rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK", "180"));
+            // Load Cargo Probabilities (0-100) and convert to thresholds
+            if (props.containsKey("prob.GOLD")) {
+                float prob = Float.parseFloat(props.getProperty("prob.GOLD"));
+                goldThreshold = 1.0f - (prob / 100.0f);
+            } else {
+                goldThreshold = Float.parseFloat(props.getProperty("threshold.GOLD", "0.28"));
+            }
+
+            if (props.containsKey("prob.COAL")) {
+                float prob = Float.parseFloat(props.getProperty("prob.COAL"));
+                coalThreshold = 1.0f - (prob / 100.0f);
+            } else {
+                coalThreshold = Float.parseFloat(props.getProperty("threshold.COAL", "0.28"));
+            }
+
+            if (props.containsKey("prob.RUBY")) {
+                float prob = Float.parseFloat(props.getProperty("prob.RUBY"));
+                rubyThreshold = 1.0f - (prob / 100.0f);
+            } else {
+                rubyThreshold = Float.parseFloat(props.getProperty("threshold.RUBY", "0.28"));
+            }
+
+            // Load Terrain Probabilities (0-100) and convert to thresholds
+            if (props.containsKey("prob.WATER")) {
+                float prob = Float.parseFloat(props.getProperty("prob.WATER"));
+                waterThreshold = (prob / 100.0f) * 255.0f;
+            } else {
+                waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER", "130"));
+            }
+
+            if (props.containsKey("prob.ROCK")) {
+                float prob = Float.parseFloat(props.getProperty("prob.ROCK"));
+                rockThreshold = 255.0f - ((prob / 100.0f) * 255.0f);
+            } else {
+                rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK", "180"));
+            }
             viewRadius = Integer.parseInt(props.getProperty("map.VIEW_RADIUS", "5"));
 
             // Load ExpenseType prices
