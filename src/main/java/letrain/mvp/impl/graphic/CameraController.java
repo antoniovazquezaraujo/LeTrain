@@ -34,6 +34,7 @@ public class CameraController {
     private float targetCameraDistance = 8.5f;
     private float mapCameraHeight = 15f;
     private letrain.track.SpeedSignal lastCameraSnapSignal;
+    private letrain.track.RailSemaphore lastCameraSnapSemaphore;
 
     // Estado de cámara CAB
     private final Vector2 currentCabDirection = new Vector2(0, 1);
@@ -63,6 +64,7 @@ public class CameraController {
 
     public void forceSnap() {
         this.lastCameraSnapSignal = null;
+        this.lastCameraSnapSemaphore = null;
     }
 
     public CameraMode getMode() {
@@ -152,6 +154,14 @@ public class CameraController {
             letrain.track.RailSemaphore selected = model.getSelectedSemaphore();
             targetX = selected.getPosition().getX() + 0.5f;
             targetZ = selected.getPosition().getY() + 0.5f;
+            if (selected != lastCameraSnapSemaphore) {
+                lastCameraSnapSemaphore = selected;
+                if (selected.getCreationDir() != null) {
+                    float dx = letrain.utils.PathGeometry.getDirX(selected.getCreationDir());
+                    float dz = letrain.utils.PathGeometry.getDirZ(selected.getCreationDir());
+                    targetCameraAngle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+                }
+            }
         } else if (model.getMode() == letrain.mvp.Model.GameMode.SPEED_SIGNALS && model.getSelectedSpeedSignal() != null) {
             letrain.track.SpeedSignal selected = model.getSelectedSpeedSignal();
             targetX = selected.getPosition().getX() + 0.5f;
