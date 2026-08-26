@@ -35,6 +35,7 @@ public class CameraController {
     private float mapCameraHeight = 15f;
     private letrain.track.SpeedSignal lastCameraSnapSignal;
     private letrain.track.RailSemaphore lastCameraSnapSemaphore;
+    private letrain.mvp.Model.GameMode lastMode = null;
 
     // Estado de cámara CAB
     private final Vector2 currentCabDirection = new Vector2(0, 1);
@@ -134,6 +135,11 @@ public class CameraController {
     public void update(float alpha) {
         if (cam == null) {
             return;
+        }
+        letrain.mvp.Model.GameMode currentMode = model.getMode();
+        if (currentMode != lastMode) {
+            forceSnap();
+            lastMode = currentMode;
         }
         float targetX;
         float targetZ;
