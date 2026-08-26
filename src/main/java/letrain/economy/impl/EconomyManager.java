@@ -41,15 +41,15 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("startingBalance")
     private float startingBalance = 0f;
     @com.fasterxml.jackson.annotation.JsonProperty("goldThreshold")
-    private float goldThreshold = 0.30f;
+    private float goldThreshold = 0.32f; // Approx 4%
     @com.fasterxml.jackson.annotation.JsonProperty("coalThreshold")
-    private float coalThreshold = 0.25f;
+    private float coalThreshold = 0.28f; // Approx 10%
     @com.fasterxml.jackson.annotation.JsonProperty("rubyThreshold")
-    private float rubyThreshold = 0.35f;
+    private float rubyThreshold = 0.34f; // Approx 1.5%
     @com.fasterxml.jackson.annotation.JsonProperty("waterThreshold")
-    private float waterThreshold = 110f;
+    private float waterThreshold = 127.5f;
     @com.fasterxml.jackson.annotation.JsonProperty("rockThreshold")
-    private float rockThreshold = 130f;
+    private float rockThreshold = 178.5f;
     @com.fasterxml.jackson.annotation.JsonProperty("viewRadius")
     private int viewRadius = 15;
     private static final Logger log = LoggerFactory.getLogger(EconomyManager.class);
@@ -434,12 +434,70 @@ public class EconomyManager implements letrain.economy.EconomyManager {
             }
             startingBalance = newStartingBalance;
 
-            // Load thresholds
-            goldThreshold = Float.parseFloat(props.getProperty("threshold.GOLD", "0.28"));
-            coalThreshold = Float.parseFloat(props.getProperty("threshold.COAL", "0.28"));
-            rubyThreshold = Float.parseFloat(props.getProperty("threshold.RUBY", "0.28"));
-            waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER", "130"));
-            rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK", "180"));
+            // Load Cargo Probabilities (0-100) and convert to thresholds
+            // They represent the approximate % of the map covered.
+            float probGold = 4f;
+            if (props.containsKey("prob.GOLD")) {
+                probGold = Float.parseFloat(props.getProperty("prob.GOLD"));
+            } else if (props.containsKey("threshold.GOLD")) {
+                probGold = (1.0f - Float.parseFloat(props.getProperty("threshold.GOLD", "0.28"))) * 10f; // Approx
+            }
+
+            float probCoal = 10f;
+            if (props.containsKey("prob.COAL")) {
+                probCoal = Float.parseFloat(props.getProperty("prob.COAL"));
+            } else if (props.containsKey("threshold.COAL")) {
+                probCoal = (1.0f - Float.parseFloat(props.getProperty("threshold.COAL", "0.28"))) * 15f;
+            }
+
+            float probRuby = 1.5f;
+            if (props.containsKey("prob.RUBY")) {
+                probRuby = Float.parseFloat(props.getProperty("prob.RUBY"));
+            } else if (props.containsKey("threshold.RUBY")) {
+                probRuby = (1.0f - Float.parseFloat(props.getProperty("threshold.RUBY", "0.28"))) * 5f;
+            }
+
+            // Cap the sum to 25% max coverage
+            float totalCargo = probGold + probCoal + probRuby;
+            if (totalCargo > 25f) {
+                float scale = 25f / totalCargo;
+                probGold *= scale;
+                probCoal *= scale;
+                probRuby *= scale;
+                log.warn("Cargo probabilities too high (Total=" + totalCargo + "%). Scaled down to max 25%.");
+            }
+
+            // Convert to Perlin noise thresholds (empirical approximation)
+            goldThreshold = (probGold <= 0) ? 0.6f : 0.35f - (probGold * 0.0068f);
+            coalThreshold = (probCoal <= 0) ? 0.6f : 0.35f - (probCoal * 0.0068f);
+            rubyThreshold = (probRuby <= 0) ? 0.6f : 0.35f - (probRuby * 0.0068f);
+
+            // Load Terrain Probabilities (0-100) and convert to thresholds
+            float probWater = 50f;
+            if (props.containsKey("prob.WATER")) {
+                probWater = Float.parseFloat(props.getProperty("prob.WATER"));
+            } else if (props.containsKey("threshold.WATER")) {
+                probWater = (Float.parseFloat(props.getProperty("threshold.WATER", "130")) / 255.0f) * 100f;
+            }
+
+            float probRock = 30f;
+            if (props.containsKey("prob.ROCK")) {
+                probRock = Float.parseFloat(props.getProperty("prob.ROCK"));
+            } else if (props.containsKey("threshold.ROCK")) {
+                probRock = ((255.0f - Float.parseFloat(props.getProperty("threshold.ROCK", "180"))) / 255.0f) * 100f;
+            }
+
+            waterThreshold = (probWater / 100.0f) * 255.0f;
+            rockThreshold = 255.0f - ((probRock / 100.0f) * 255.0f);
+            
+            // Normalize to guarantee at least ~10% ground
+            // (A threshold gap of 7 units corresponds to roughly 10% of the Perlin noise distribution)
+            if (rockThreshold - waterThreshold < 7f) {
+                float mid = (waterThreshold + rockThreshold) / 2.0f;
+                waterThreshold = mid - 3.5f;
+                rockThreshold = mid + 3.5f;
+                log.warn("Terrain probabilities too high (Water=" + probWater + "%, Rock=" + probRock + "%). Adjusted internally to guarantee ~10% ground.");
+            }
             viewRadius = Integer.parseInt(props.getProperty("map.VIEW_RADIUS", "5"));
 
             // Load ExpenseType prices
