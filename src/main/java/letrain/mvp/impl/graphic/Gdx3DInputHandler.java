@@ -644,12 +644,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         } else if (stroke.getKeyType() == KeyType.ArrowRight) {
             model.selectNextSemaphore();
         } else if (stroke.getKeyType() == KeyType.Character
-                && stroke.getCharacter() == ' ') {
-            if (semaphoreIdAccumulator > 0) {
-                model.selectSemaphore(semaphoreIdAccumulator);
-                semaphoreIdAccumulator = 0;
-                semaphoreInputTimeout = 0;
-            }
+                && (stroke.getCharacter() == 'm' || stroke.getCharacter() == 'M')) {
             RailSemaphore s = model.getSelectedSemaphore();
             if (s != null) {
                 s.setOpen(!s.isOpen());
@@ -657,6 +652,21 @@ public class Gdx3DInputHandler implements InputProcessor {
                         (float) s.getPosition().getX(),
                         (float) s.getPosition().getY());
             }
+        } else if (stroke.getKeyType() == KeyType.Character
+                && stroke.getCharacter() == ' ') {
+            if (semaphoreIdAccumulator > 0) {
+                model.selectSemaphore(semaphoreIdAccumulator);
+                semaphoreIdAccumulator = 0;
+                semaphoreInputTimeout = 0;
+            }
+            RailSemaphore s = model.getSelectedSemaphore();
+            if (s != null && s.getCreationDir() != null) {
+                s.setCreationDir(s.getCreationDir().inverse());
+                if (cameraController != null) {
+                    cameraController.forceSnap();
+                }
+            }
+
         } else if (stroke.getKeyType() == KeyType.Character &&
                 Character.isDigit(stroke.getCharacter())) {
             semaphoreIdAccumulator = semaphoreIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
