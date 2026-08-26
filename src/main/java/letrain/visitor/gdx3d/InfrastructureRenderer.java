@@ -208,19 +208,13 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         float offsetZ = 0;
         float angle = 0;
 
-        if (modelRef != null) {
-            letrain.track.Track track = modelRef.getRailMap().getTrackAt((int) x, (int) y);
-            if (track != null && track instanceof letrain.track.rail.RailTrack) {
-                letrain.track.rail.RailTrack railTrack = (letrain.track.rail.RailTrack) track;
-                if (railTrack.getNumRoutes() > 0) {
-                    Dir dir = railTrack.getFirstOpenDir();
-                    float dx = PathGeometry.getDirX(dir);
-                    float dz = PathGeometry.getDirZ(dir);
-                    offsetX = dz * 1.0f;
-                    offsetZ = -dx * 1.0f;
-        angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
-                }
-            }
+        letrain.map.Dir dir = semaphore.getCreationDir();
+        if (dir != null) {
+            float dx = PathGeometry.getDirX(dir);
+            float dz = PathGeometry.getDirZ(dir);
+            offsetX = dz * 1.0f;
+            offsetZ = -dx * 1.0f;
+            angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
         }
 
         instance.transform.setToTranslation(x + 0.5f + offsetX, 0.5f, y + 0.5f + offsetZ);

@@ -508,13 +508,17 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 selectSemaphore(semaphoreId);
                 break;
             case Character:
-                if (keyEvent.getCharacter() == ' ') {
+                if (keyEvent.getCharacter() == 'm' || keyEvent.getCharacter() == 'M') {
+                    toggleSemaphore();
+                } else if (keyEvent.getCharacter() == ' ') {
                     if (semaphoreId > 0) {
                         selectSemaphore(semaphoreId);
                         semaphoreId = 0;
                         semaphoreInputTimeout = 0;
                     }
-                    toggleSemaphore();
+                    if (model.getSelectedSemaphore() != null && model.getSelectedSemaphore().getCreationDir() != null) {
+                        model.getSelectedSemaphore().setCreationDir(model.getSelectedSemaphore().getCreationDir().inverse());
+                    }
                     semaphoreId = 0;
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     semaphoreId = semaphoreId * 10 + (keyEvent.getCharacter() - '0');
