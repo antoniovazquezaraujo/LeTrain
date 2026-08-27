@@ -19,6 +19,7 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 - **Números (0-9)**: Aumentar la velocidad y distancia de salto del cursor. Pulsa **Espacio** para volver a ir de 1 en 1.
 - **Tecla 'o'**: Reubicar el cursor instantáneamente sobre un tren, estación o desvío.
 - **Tecla 'c'**: Alternar entre las tres cámaras (Perspectiva, Cenital y Cabina de locomotora).
+- **Tecla 'Tab'**: Alternar entre los diferentes niveles de visibilidad de la barra de información (Compacta, Completa, Oculta).
 
 ### Construcción (Modo Rails)
 - **Mayús + Flechas**: Construir vías nuevas.
@@ -44,7 +45,7 @@ En LeTrain, la logística es la clave de la economía. El mapa genera puntos de 
 - **Estaciones de Descarga (`▼`)**: Se construyen junto a las zonas consumidoras (ej. ciudades o fábricas). Aquí vendes tu mercancía y obtienes beneficios.
 - **Estaciones Genéricas (`◇`)**: Actúan como puntos de paso o intercambio, y se pueden asignar manualmente.
 
-*(Nota visual: Al jugar en 2D, observarás un subrayado parpadeante en el tren cuando se esté cargando o descargando mercancía, que quedará fijo al completarse).*
+*(Nota visual: Cuando juegues en la Terminal 2D, las vías se dibujan con caracteres ASCII continuos y las vías muertas se marcan con iconos amarillos. Además, observarás un subrayado parpadeante en el tren mientras carga o descarga mercancía, que quedará fijo al completarse).*
 
 ## 💰 Economía y Beneficios
 

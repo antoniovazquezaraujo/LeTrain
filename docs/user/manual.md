@@ -17,6 +17,7 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 - **Numbers (0-9)**: Increase the speed and jump distance of the cursor. Press **Spacebar** to return to moving 1 by 1.
 - **Key 'o'**: Instantly relocate the cursor to a train, station, or fork.
 - **Key 'c'**: Toggle between the three cameras (Perspective, Top-down, and Cab view).
+- **Key 'Tab'**: Cycle through the information bar visibility levels (Compact, Full, Hidden).
 
 ### Construction (Rails Mode)
 - **Shift + Arrows**: Build new tracks.
@@ -42,7 +43,7 @@ In LeTrain, logistics are the key to the economy. The map generates natural reso
 - **Unload Stations (`▼`)**: Built next to consuming zones (e.g., cities or factories). Here you sell your cargo and earn profits.
 - **Generic Stations (`◇`)**: Act as waypoints or exchange points, and can be manually assigned.
 
-*(Visual note: When playing in 2D, you will see a blinking underline on the train while it is loading or unloading cargo, which will become solid when completed).*
+*(Visual note: When playing in the 2D Terminal, tracks are rendered using continuous ASCII characters, and dead ends are marked with yellow icons. Additionally, you will see a blinking underline on the train while it is loading or unloading cargo, which will become solid when completed).*
 
 ## 💰 Economy and Profits
 
