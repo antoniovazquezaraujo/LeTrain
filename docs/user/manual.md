@@ -35,7 +35,7 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 
 ### Interaction
 - **Spacebar**: In Semaphores or Speed Signals mode, invert the direction of the device.
-- **Key 'm'**: Change the state (green/red) of a semaphore.
+- **Key 'm'**: In Semaphores mode, change the state (green/red). In Speed Signals mode, toggle the type of signal (Max/Min). In Trains mode, start/stop the engine.
 - **Enter**: Start loading/unloading cargo when stopping a train at a station.
 
 ## 🏭 Station Types and Cargo

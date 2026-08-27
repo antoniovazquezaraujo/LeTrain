@@ -37,7 +37,7 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 
 ### Interacción
 - **Espacio**: En el modo Semáforos o Señales de Velocidad, invertir el sentido del dispositivo.
-- **Tecla 'm'**: Cambiar el estado (verde/rojo) de un semáforo.
+- **Tecla 'm'**: En Semáforos, cambia el estado (verde/rojo). En Señales de Velocidad, alterna el tipo de señal (Máx/Mín). En Trenes, enciende/apaga el motor.
 - **Intro (Enter)**: Iniciar la carga/descarga de mercancías al detener el tren en una estación.
 
 ## 🏭 Tipos de Estaciones y Mercancías
