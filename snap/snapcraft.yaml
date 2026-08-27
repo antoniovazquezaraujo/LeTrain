@@ -1,6 +1,6 @@
 name: letrain
 base: core22
-version: "1.0.0-beta.2"
+version: "1.0.0-beta.3-SNAPSHOT"
 summary: Procedural train simulator and logistics tycoon
 description: |
   LeTrain is a procedural train simulator combining classic ASCII aesthetics with a modern 3D engine.
