@@ -14,9 +14,11 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 
 ### Navigation and Views
 - **Arrow Keys**: Move the cursor freely or follow a track.
-- **Numbers (0-9)**: Increase the speed and jump distance of the cursor. Press **Spacebar** to return to moving 1 by 1.
+- **Numbers (0-9)**: Enter a numeric multiplier (quantifier) to increase the speed and jump distance of the cursor. Pressing numbers overrides the current multiplier. Press **Spacebar** to return to moving 1 by 1.
 - **Key 'o'**: Instantly relocate the cursor to a train, station, or fork.
-- **Key 'c'**: Toggle between the three cameras (Perspective, Top-down, and Cab view).
+- **Key 'c'**: In 3D: Toggle between the three cameras (Perspective, Top-down, and Cab view). In 2D: Cycle the camera deadzone box.
+- **Key 'C' (Shift+c)**: In 2D: Toggle camera pagination mode.
+- **Key 'Tab'**: Cycle through the information bar visibility levels (Compact, Full, Hidden).
 
 ### Construction (Rails Mode)
 - **Shift + Arrows**: Build new tracks.
@@ -24,6 +26,7 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 - **Home**: Create a semaphore on the track.
 - **Insert**: Create a sensor on the track.
 - **End**: Create a station.
+- **Del**: Create a speed limit signal on the track.
 
 ### Trains and Driving (Drive / Trains Mode)
 - **Trains Mode**: Lowercase letters create wagons (keys 1, 2, 3 for cargo type). Uppercase letters create locomotives (keys 0-9 for color). Press **Enter** to finish.
@@ -31,7 +34,8 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 - **Link / Unlink Mode**: Up/Down selects the end of the train. Left/Right selects the amount of wagons. **Spacebar** executes coupling/uncoupling.
 
 ### Interaction
-- **Spacebar**: Change the state of a semaphore (in Semaphores mode).
+- **Spacebar**: In Semaphores or Speed Signals mode, invert the direction of the device.
+- **Key 'm'**: In Semaphores mode, change the state (green/red). In Speed Signals mode, toggle the type of signal (Max/Min). In Trains mode, start/stop the engine.
 - **Enter**: Start loading/unloading cargo when stopping a train at a station.
 
 ## 🏭 Station Types and Cargo
@@ -42,7 +46,7 @@ In LeTrain, logistics are the key to the economy. The map generates natural reso
 - **Unload Stations (`▼`)**: Built next to consuming zones (e.g., cities or factories). Here you sell your cargo and earn profits.
 - **Generic Stations (`◇`)**: Act as waypoints or exchange points, and can be manually assigned.
 
-*(Visual note: When playing in 2D, you will see a blinking underline on the train while it is loading or unloading cargo, which will become solid when completed).*
+*(Visual note: When playing in the 2D Terminal, tracks are rendered using continuous ASCII characters, and dead ends are marked with yellow icons. Additionally, you will see a blinking underline on the train while it is loading or unloading cargo, which will become solid when completed).*
 
 ## 💰 Economy and Profits
 
