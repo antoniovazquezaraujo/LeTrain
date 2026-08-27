@@ -16,7 +16,7 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 
 ### Navegación y Vistas
 - **Flechas de dirección**: Mover el cursor libremente o seguir una vía.
-- **Números (0-9)**: Aumentar la velocidad y distancia de salto del cursor. Pulsa **Espacio** para volver a ir de 1 en 1.
+- **Números (0-9)**: Introduce un salto numérico (multiplicador) para aumentar la velocidad y distancia del cursor. Al introducir un nuevo número se sobrescribe el anterior. Pulsa **Espacio** para volver a ir de 1 en 1.
 - **Tecla 'o'**: Reubicar el cursor instantáneamente sobre un tren, estación o desvío.
 - **Tecla 'c'**: En 3D: Alternar entre las tres cámaras (Perspectiva, Cenital y Cabina). En 2D: Cambiar el tamaño de la zona muerta de la cámara.
 - **Tecla 'C' (Mayús+c)**: En 2D: Activar o desactivar la paginación de cámara.
@@ -28,6 +28,7 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 - **Inicio (Home)**: Crear un semáforo sobre la vía.
 - **Insert**: Crear un sensor sobre la vía.
 - **Fin (End)**: Crear una estación.
+- **Tecla 'g'**: Crear una señal de límite de velocidad en la vía.
 
 ### Trenes y Conducción (Modo Drive / Trains)
 - **Modo Trains**: Letras minúsculas crean vagones (teclas 1, 2, 3 para tipo de mercancía). Letras mayúsculas crean locomotoras (teclas 0-9 para color). Pulsa **Intro** para terminar.
@@ -35,7 +36,8 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 - **Modo Link / Unlink**: Arriba/Abajo selecciona el extremo del tren. Izquierda/Derecha selecciona la cantidad de vagones. **Espacio** ejecuta el enganche.
 
 ### Interacción
-- **Espacio**: Cambiar el estado de un semáforo (en modo Semaphores).
+- **Espacio**: En el modo Semáforos o Señales de Velocidad, invertir el sentido del dispositivo.
+- **Tecla 'm'**: Cambiar el estado (verde/rojo) de un semáforo.
 - **Intro (Enter)**: Iniciar la carga/descarga de mercancías al detener el tren en una estación.
 
 ## 🏭 Tipos de Estaciones y Mercancías
