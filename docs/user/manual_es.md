@@ -18,7 +18,8 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 - **Flechas de dirección**: Mover el cursor libremente o seguir una vía.
 - **Números (0-9)**: Aumentar la velocidad y distancia de salto del cursor. Pulsa **Espacio** para volver a ir de 1 en 1.
 - **Tecla 'o'**: Reubicar el cursor instantáneamente sobre un tren, estación o desvío.
-- **Tecla 'c'**: Alternar entre las tres cámaras (Perspectiva, Cenital y Cabina de locomotora).
+- **Tecla 'c'**: En 3D: Alternar entre las tres cámaras (Perspectiva, Cenital y Cabina). En 2D: Cambiar el tamaño de la zona muerta de la cámara.
+- **Tecla 'C' (Mayús+c)**: En 2D: Activar o desactivar la paginación de cámara.
 - **Tecla 'Tab'**: Alternar entre los diferentes niveles de visibilidad de la barra de información (Compacta, Completa, Oculta).
 
 ### Construcción (Modo Rails)
