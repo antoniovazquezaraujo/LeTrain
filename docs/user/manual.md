@@ -26,7 +26,7 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 - **Home**: Create a semaphore on the track.
 - **Insert**: Create a sensor on the track.
 - **End**: Create a station.
-- **Key 'g'**: Create a speed limit signal on the track.
+- **Del**: Create a speed limit signal on the track.
 
 ### Trains and Driving (Drive / Trains Mode)
 - **Trains Mode**: Lowercase letters create wagons (keys 1, 2, 3 for cargo type). Uppercase letters create locomotives (keys 0-9 for color). Press **Enter** to finish.

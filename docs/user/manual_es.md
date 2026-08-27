@@ -28,7 +28,7 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 - **Inicio (Home)**: Crear un semáforo sobre la vía.
 - **Insert**: Crear un sensor sobre la vía.
 - **Fin (End)**: Crear una estación.
-- **Tecla 'g'**: Crear una señal de límite de velocidad en la vía.
+- **Supr (Del)**: Crear una señal de límite de velocidad en la vía.
 
 ### Trenes y Conducción (Modo Drive / Trains)
 - **Modo Trains**: Letras minúsculas crean vagones (teclas 1, 2, 3 para tipo de mercancía). Letras mayúsculas crean locomotoras (teclas 0-9 para color). Pulsa **Intro** para terminar.
