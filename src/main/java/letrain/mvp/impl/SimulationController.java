@@ -14,8 +14,8 @@ public class SimulationController {
     private final RailTrackMaker trackMaker;
     private final SimulationService simulationService;
 
-    public SimulationController(
-            letrain.mvp.Model model, AudioController audioController, RailTrackMaker trackMaker) {
+    public SimulationController(letrain.mvp.Model model, AudioController audioController,
+            RailTrackMaker trackMaker) {
         this.model = model;
         this.audioController = audioController;
         this.trackMaker = trackMaker;

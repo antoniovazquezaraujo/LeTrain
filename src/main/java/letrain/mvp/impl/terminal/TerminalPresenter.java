@@ -95,32 +95,25 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         modeKeyHandlers.put(DRIVE, keyEvent -> trainDriverOnChar(keyEvent));
         modeKeyHandlers.put(FORKS, keyEvent -> handleForksModeKey(keyEvent));
         modeKeyHandlers.put(SEMAPHORES, keyEvent -> handleSemaphoresModeKey(keyEvent));
-        modeKeyHandlers.put(
-                letrain.mvp.Model.GameMode.SPEED_SIGNALS,
+        modeKeyHandlers.put(letrain.mvp.Model.GameMode.SPEED_SIGNALS,
                 keyEvent -> handleSpeedSignalsModeKey(keyEvent));
-        modeKeyHandlers.put(
-                TRAINS,
-                keyEvent -> {
-                    if (keyEvent.getKeyType() == KeyType.Backspace) {
-                        deleteVehicle();
-                    } else if (keyEvent.getKeyType() == KeyType.Character) {
-                        handleTrainsModeKey(keyEvent);
-                    }
-                });
+        modeKeyHandlers.put(TRAINS, keyEvent -> {
+            if (keyEvent.getKeyType() == KeyType.Backspace) {
+                deleteVehicle();
+            } else if (keyEvent.getKeyType() == KeyType.Character) {
+                handleTrainsModeKey(keyEvent);
+            }
+        });
         modeKeyHandlers.put(LINK, keyEvent -> handleLinkModeKey(keyEvent));
         modeKeyHandlers.put(UNLINK, keyEvent -> handleUnlinkModeKey(keyEvent));
         modeKeyHandlers.put(STATIONS, keyEvent -> handleStationsModeKey(keyEvent));
         modeKeyHandlers.put(PROGRAM, keyEvent -> handleProgramModeKey(keyEvent));
-        modeKeyHandlers.put(
-                MENU,
-                keyEvent -> {
-                    // no-op in menu mode
-                });
-        modeKeyHandlers.put(
-                letrain.mvp.Model.GameMode.LOAD_TRAINS,
-                keyEvent -> {
-                    // no-op
-                });
+        modeKeyHandlers.put(MENU, keyEvent -> {
+            // no-op in menu mode
+        });
+        modeKeyHandlers.put(letrain.mvp.Model.GameMode.LOAD_TRAINS, keyEvent -> {
+            // no-op
+        });
     }
 
     void setModel(Model model) {
@@ -182,12 +175,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 if (audioController != null) {
                     if (model.getMode() == DRIVE && model.getSelectedLocomotive() != null) {
                         Point pos = model.getSelectedLocomotive().getPosition();
-                        audioController.setListenerPosition(
-                                (float) pos.getX(), (float) pos.getY(), 0, 0);
+                        audioController.setListenerPosition((float) pos.getX(), (float) pos.getY(),
+                                0, 0);
                     } else {
                         Point pos = model.getCursor().getPosition();
-                        audioController.setListenerPosition(
-                                (float) pos.getX(), (float) pos.getY(), 0, 0);
+                        audioController.setListenerPosition((float) pos.getX(), (float) pos.getY(),
+                                0, 0);
                     }
                     audioController.update();
                 }
@@ -197,10 +190,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 if (model.getMode() == DRIVE) {
                     Locomotive selectedLocomotive = model.getSelectedLocomotive();
                     if (selectedLocomotive != null) {
-                        view.ensureVisible(
-                                selectedLocomotive.getPosition().getX(),
-                                selectedLocomotive.getPosition().getY(),
-                                view.getCameraDeadzone(),
+                        view.ensureVisible(selectedLocomotive.getPosition().getX(),
+                                selectedLocomotive.getPosition().getY(), view.getCameraDeadzone(),
                                 view.isCameraPagination());
                     }
                 }
@@ -263,10 +254,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             }
         } else if (keyEvent.getKeyType() == KeyType.Tab) {
             int current = model.getHelpLevel();
-            int next =
-                    (current - 1 + 3)
-                            % 3; // 2 -> 1 -> 0 -> 2 -> 1 -> 0... wait 2-1 = 1, 1-1 = 0, 0-1 = 2
-            if (next < 0) next = 2; // (0-1 = -1 -> 2)
+            int next = (current - 1 + 3) % 3; // 2 -> 1 -> 0 -> 2 -> 1 -> 0... wait 2-1 = 1, 1-1 =
+                                              // 0, 0-1 = 2
+            if (next < 0)
+                next = 2; // (0-1 = -1 -> 2)
             model.setHelpLevel(next);
             view.setHelpLevel(next);
             return;
@@ -425,15 +416,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 if (keyEvent.getCharacter() == '-') {
                     // Legacy manual load
                     /*
-                     * Station selectedStation = model.getSelectedStation();
-                     * if (selectedStation != null) {
-                     * Linker linker = selectedStation.getTrack().getLinker();
-                     * if (linker != null) {
-                     * Train train = linker.getTrain();
-                     * train.getTrip().restart(actualStop);
-                     * }
-                     * }
-                     * }
+                     * Station selectedStation = model.getSelectedStation(); if (selectedStation !=
+                     * null) { Linker linker = selectedStation.getTrack().getLinker(); if (linker !=
+                     * null) { Train train = linker.getTrain(); train.getTrip().restart(actualStop);
+                     * } } }
                      */
                 } else if (keyEvent.getCharacter() == ' ') {
                     if (StationId > 0) {
@@ -545,9 +531,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     }
                     if (model.getSelectedSemaphore() != null
                             && model.getSelectedSemaphore().getCreationDir() != null) {
-                        model.getSelectedSemaphore()
-                                .setCreationDir(
-                                        model.getSelectedSemaphore().getCreationDir().inverse());
+                        model.getSelectedSemaphore().setCreationDir(
+                                model.getSelectedSemaphore().getCreationDir().inverse());
                     }
                     semaphoreId = 0;
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
@@ -667,8 +652,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             }
             if (c.equals("1")) {
                 model.setSelectedWagonType(letrain.track.CargoTypes.GOLD);
-            } else if (c.equals("2")) model.setSelectedWagonType(letrain.track.CargoTypes.COAL);
-            else if (c.equals("3")) model.setSelectedWagonType(letrain.track.CargoTypes.RUBY);
+            } else if (c.equals("2"))
+                model.setSelectedWagonType(letrain.track.CargoTypes.COAL);
+            else if (c.equals("3"))
+                model.setSelectedWagonType(letrain.track.CargoTypes.RUBY);
             return;
         }
 
@@ -915,20 +902,19 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     Train train = model.getSelectedLocomotive().getTrain();
                     Station station = train.getLogisticsManager().getStationAtTrain();
                     if (station != null) {
-                        if (train.getLogisticsManager()
-                                .isLoading()) { // Si ya está cargando/descargando, lo termina
+                        if (train.getLogisticsManager().isLoading()) { // Si ya está
+                                                                       // cargando/descargando, lo
+                                                                       // termina
                             train.getLogisticsManager().endLoadUnloadProcess();
                         } else {
                             if (station.getRole() == CargoTypes.StationRole.CONSUMER) {
-                                if (!train.getLogisticsManager()
-                                        .getCapableWagons(station, true)
+                                if (!train.getLogisticsManager().getCapableWagons(station, true)
                                         .isEmpty()) {
                                     train.getLogisticsManager().startUnloadProcess(station);
                                     train.recordStopAtStation();
                                 }
                             } else if (station.getRole() == CargoTypes.StationRole.PRODUCER) {
-                                if (!train.getLogisticsManager()
-                                        .getCapableWagons(station, false)
+                                if (!train.getLogisticsManager().getCapableWagons(station, false)
                                         .isEmpty()) {
                                     train.getLogisticsManager().startLoadProcess(station);
                                     train.recordStopAtStation();
@@ -950,9 +936,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (model.getSelectedLocomotive() != null) {
             Train train = model.getSelectedLocomotive().getTrain();
 
-            List<Linker> linkersToDestroy =
-                    train.getTrainCouplingManager()
-                            .destroyLinkers(train, () -> model.nextTrainId());
+            List<Linker> linkersToDestroy = train.getTrainCouplingManager().destroyLinkers(train,
+                    () -> model.nextTrainId());
             for (Linker linker : linkersToDestroy) {
                 if (linker instanceof Locomotive) {
                     model.removeLocomotive((Locomotive) linker);
@@ -1034,8 +1019,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             Train train = loco.getTrain();
 
             train.getTrainCouplingManager().divideTrain(train, () -> model.nextTrainId());
-            audioController.playOneShot(
-                    "link", (float) loco.getPosition().getX(), (float) loco.getPosition().getY());
+            audioController.playOneShot("link", (float) loco.getPosition().getX(),
+                    (float) loco.getPosition().getY());
         }
     }
 
@@ -1071,8 +1056,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void toggleFork() {
         if (model.getSelectedFork() != null) {
             model.getSelectedFork().flipRoute();
-            audioController.playOneShot(
-                    "fork",
+            audioController.playOneShot("fork",
                     (float) model.getSelectedFork().getPosition().getX(),
                     (float) model.getSelectedFork().getPosition().getY());
         }
@@ -1228,8 +1212,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     // View specific listener
                     loadedModel.addCoreTrainEventListener(this);
                 } else {
-                    view.showMessage(
-                            "Load Error", "Could not load game from\n" + file.getAbsolutePath());
+                    view.showMessage("Load Error",
+                            "Could not load game from\n" + file.getAbsolutePath());
                 }
             } catch (Exception e) {
                 log.error("Serious error while loading game in 2D", e);
@@ -1281,8 +1265,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     String loadProgram(File file) {
         try {
-            return new String(
-                    java.nio.file.Files.readAllBytes(file.toPath()),
+            return new String(java.nio.file.Files.readAllBytes(file.toPath()),
                     java.nio.charset.StandardCharsets.UTF_8);
         } catch (IOException ex) {
             log.error("Error loading program", ex);

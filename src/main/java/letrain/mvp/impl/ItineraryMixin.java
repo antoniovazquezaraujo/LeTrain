@@ -37,11 +37,8 @@ public abstract class ItineraryMixin {
             if (node.has("waypoints")) {
                 JsonParser parser = node.get("waypoints").traverse(p.getCodec());
                 parser.nextToken();
-                waypoints =
-                        ctxt.readValue(
-                                parser,
-                                ctxt.getTypeFactory()
-                                        .constructCollectionType(List.class, Waypoint.class));
+                waypoints = ctxt.readValue(parser,
+                        ctxt.getTypeFactory().constructCollectionType(List.class, Waypoint.class));
             }
 
             return new ItineraryImpl(waypoints);

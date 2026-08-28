@@ -83,19 +83,15 @@ public class RailwayGraphImpl implements RailwayGraph {
             return null;
         }
 
-        Port targetPort =
-                current.equals(s.getPorts().getFirst())
-                        ? s.getPorts().getSecond()
-                        : s.getPorts().getFirst();
+        Port targetPort = current.equals(s.getPorts().getFirst()) ? s.getPorts().getSecond()
+                : s.getPorts().getFirst();
 
         RailNode destinationNode = targetPort.getNode();
 
         return destinationNode.getPorts().stream()
                 .filter(port -> getSegment(port) != null && getSegment(port) != s)
-                .filter(
-                        port ->
-                                destinationNode.getTransitionType(targetPort, port)
-                                        != TransitionType.BLOCKED)
+                .filter(port -> destinationNode.getTransitionType(targetPort,
+                        port) != TransitionType.BLOCKED)
                 .collect(Collectors.toList());
     }
 
@@ -136,24 +132,20 @@ public class RailwayGraphImpl implements RailwayGraph {
 
     private List<Segment> getConnectedSegments(Segment s) {
         List<Segment> neighbors = new ArrayList<>();
-        RailNode node1 =
-                (s.getPorts() != null && s.getPorts().getFirst() != null)
-                        ? s.getPorts().getFirst().getNode()
-                        : null;
+        RailNode node1 = (s.getPorts() != null && s.getPorts().getFirst() != null)
+                ? s.getPorts().getFirst().getNode()
+                : null;
 
-        RailNode node2 =
-                (s.getPorts() != null && s.getPorts().getSecond() != null)
-                        ? s.getPorts().getSecond().getNode()
-                        : null;
+        RailNode node2 = (s.getPorts() != null && s.getPorts().getSecond() != null)
+                ? s.getPorts().getSecond().getNode()
+                : null;
 
         if (node1 != null && nodeToSegments.containsKey(node1))
             neighbors.addAll(nodeToSegments.get(node1));
         if (node2 != null && nodeToSegments.containsKey(node2))
             neighbors.addAll(nodeToSegments.get(node2));
 
-        return neighbors.stream()
-                .filter(neighbor -> !neighbor.equals(s))
-                .distinct()
+        return neighbors.stream().filter(neighbor -> !neighbor.equals(s)).distinct()
                 .collect(Collectors.toList());
     }
 
@@ -182,32 +174,19 @@ public class RailwayGraphImpl implements RailwayGraph {
                 portToSegment.values().stream().distinct().collect(Collectors.toList());
         sb.append("SEGMENTS (").append(segments.size()).append("):\n");
         for (Segment s : segments) {
-            sb.append("  ")
-                    .append(s.getId())
-                    .append(": ")
-                    .append(s.getPorts().getFirst().getNode())
-                    .append(" -> ")
-                    .append(s.getPorts().getSecond().getNode())
-                    .append("\n");
+            sb.append("  ").append(s.getId()).append(": ").append(s.getPorts().getFirst().getNode())
+                    .append(" -> ").append(s.getPorts().getSecond().getNode()).append("\n");
 
             List<letrain.track.Station> stations = getStations(s);
             if (!stations.isEmpty()) {
-                sb.append("    Stations: ")
-                        .append(
-                                stations.stream()
-                                        .map(st -> "ID=" + st.getId())
-                                        .collect(Collectors.joining(", ")))
-                        .append("\n");
+                sb.append("    Stations: ").append(stations.stream().map(st -> "ID=" + st.getId())
+                        .collect(Collectors.joining(", "))).append("\n");
             }
 
             List<letrain.track.Sensor> sensors = getSensors(s);
             if (!sensors.isEmpty()) {
-                sb.append("    Sensors: ")
-                        .append(
-                                sensors.stream()
-                                        .map(se -> "ID=" + se.getId())
-                                        .collect(Collectors.joining(", ")))
-                        .append("\n");
+                sb.append("    Sensors: ").append(sensors.stream().map(se -> "ID=" + se.getId())
+                        .collect(Collectors.joining(", "))).append("\n");
             }
         }
 
@@ -219,10 +198,8 @@ public class RailwayGraphImpl implements RailwayGraph {
             sb.append(segIds).append("\n");
 
             sb.append("    Ports: ");
-            String portsStr =
-                    entry.getKey().getPorts().stream()
-                            .map(p -> p.getType().toString())
-                            .collect(Collectors.joining(", "));
+            String portsStr = entry.getKey().getPorts().stream().map(p -> p.getType().toString())
+                    .collect(Collectors.joining(", "));
             sb.append(portsStr).append("\n");
         }
         sb.append("------------------------------");

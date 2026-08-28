@@ -21,7 +21,8 @@ public class Station extends Sensor {
     private static final int BASE_TRANSFER_RATE = 1;
     private static final int TRANSFER_RATE_PER_INDUSTRY_DIVISOR = 3;
 
-    @JsonIgnore private transient List<StationEventListener> stationListeners = new ArrayList<>();
+    @JsonIgnore
+    private transient List<StationEventListener> stationListeners = new ArrayList<>();
 
     @JsonIgnore
     private transient List<StationEventListener> systemStationListeners = new ArrayList<>();
@@ -166,14 +167,16 @@ public class Station extends Sensor {
             for (StationEventListener l : stationListeners) {
                 if (isEnter) {
                     l.onEnterTrain(train, isForward);
-                } else l.onExitTrain(train, isForward);
+                } else
+                    l.onExitTrain(train, isForward);
             }
         }
         if (systemStationListeners != null) {
             for (StationEventListener l : systemStationListeners) {
                 if (isEnter) {
                     l.onEnterTrain(train, isForward);
-                } else l.onExitTrain(train, isForward);
+                } else
+                    l.onExitTrain(train, isForward);
             }
         }
     }

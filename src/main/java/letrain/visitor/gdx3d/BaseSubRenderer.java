@@ -31,11 +31,8 @@ public abstract class BaseSubRenderer implements Visitor {
     protected final com.badlogic.gdx.math.Vector3 v3 = new com.badlogic.gdx.math.Vector3();
     protected final com.badlogic.gdx.graphics.Color c1 = new com.badlogic.gdx.graphics.Color();
 
-    public BaseSubRenderer(
-            Gdx3DResourceContext resourceContext,
-            List<ModelInstance> instances,
-            List<ModelInstance> transparentInstances,
-            List<Gdx3DRenderer.VehicleLabel> labels) {
+    public BaseSubRenderer(Gdx3DResourceContext resourceContext, List<ModelInstance> instances,
+            List<ModelInstance> transparentInstances, List<Gdx3DRenderer.VehicleLabel> labels) {
         this.resourceContext = resourceContext;
         this.instances = instances;
         this.transparentInstances = transparentInstances;
@@ -46,13 +43,9 @@ public abstract class BaseSubRenderer implements Visitor {
         this.parentRenderer = parentRenderer;
     }
 
-    protected void addLabel(
-            com.badlogic.gdx.math.Vector3 pos,
-            String text,
-            com.badlogic.gdx.math.Vector3 normal,
-            com.badlogic.gdx.math.Vector3 up,
-            com.badlogic.gdx.graphics.Color color,
-            float scale) {
+    protected void addLabel(com.badlogic.gdx.math.Vector3 pos, String text,
+            com.badlogic.gdx.math.Vector3 normal, com.badlogic.gdx.math.Vector3 up,
+            com.badlogic.gdx.graphics.Color color, float scale) {
         if (parentRenderer != null) {
             parentRenderer.addLabel(pos, text, normal, up, color, scale);
         } else {
@@ -60,13 +53,13 @@ public abstract class BaseSubRenderer implements Visitor {
         }
     }
 
-    protected void addLabel(
-            com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal) {
+    protected void addLabel(com.badlogic.gdx.math.Vector3 pos, String text,
+            com.badlogic.gdx.math.Vector3 normal) {
         addLabel(pos, text, normal, null, com.badlogic.gdx.graphics.Color.WHITE, 1.0f);
     }
 
-    public void updateState(
-            Model modelRef, Camera camera, float animationAlpha, boolean isXRayActive) {
+    public void updateState(Model modelRef, Camera camera, float animationAlpha,
+            boolean isXRayActive) {
         this.modelRef = modelRef;
         this.camera = camera;
         this.animationAlpha = animationAlpha;
@@ -131,8 +124,8 @@ public abstract class BaseSubRenderer implements Visitor {
         if (camera == null) {
             return true;
         }
-        return camera.frustum.boundsInFrustum(
-                pos.getX() + 0.5f, 0.5f, pos.getY() + 0.5f, 0.5f, 0.5f, 0.5f);
+        return camera.frustum.boundsInFrustum(pos.getX() + 0.5f, 0.5f, pos.getY() + 0.5f, 0.5f,
+                0.5f, 0.5f);
     }
 
     protected boolean isConnected(letrain.track.Track track, letrain.map.Dir dir) {

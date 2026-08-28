@@ -49,7 +49,8 @@ public class AmbientSource implements AudioSource {
                 } else {
                     active = false;
                     // Fill rest with silence
-                    for (int j = i; j < len; j++) buffer[j] = 0;
+                    for (int j = i; j < len; j++)
+                        buffer[j] = 0;
                     return true; // Finished but filled buffer partially
                 }
             }

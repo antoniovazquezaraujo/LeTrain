@@ -43,32 +43,23 @@ public class PathGeometry {
         }
     }
 
-    public static void getQuadraticBezier(
-            Vector3 out, Vector3 p0, Vector3 p1, Vector3 p2, float t) {
+    public static void getQuadraticBezier(Vector3 out, Vector3 p0, Vector3 p1, Vector3 p2,
+            float t) {
         float invT = 1f - t;
-        out.set(p0)
-                .scl(invT * invT)
+        out.set(p0).scl(invT * invT)
                 .add(p1.x * 2f * invT * t, p1.y * 2f * invT * t, p1.z * 2f * invT * t)
                 .add(p2.x * t * t, p2.y * t * t, p2.z * t * t);
     }
 
-    public static void getQuadraticBezierTangent(
-            Vector3 out, Vector3 p0, Vector3 p1, Vector3 p2, float t) {
+    public static void getQuadraticBezierTangent(Vector3 out, Vector3 p0, Vector3 p1, Vector3 p2,
+            float t) {
         float invT = 1f - t;
-        out.set(p1)
-                .sub(p0)
-                .scl(2f * invT)
-                .add((p2.x - p1.x) * 2f * t, (p2.y - p1.y) * 2f * t, (p2.z - p1.z) * 2f * t);
+        out.set(p1).sub(p0).scl(2f * invT).add((p2.x - p1.x) * 2f * t, (p2.y - p1.y) * 2f * t,
+                (p2.z - p1.z) * 2f * t);
     }
 
-    public static void calculateBezierPoint(
-            float cellX,
-            float cellY,
-            Dir dEntry,
-            Dir dExit,
-            float t,
-            Vector3 outPos,
-            Vector3 outTangent) {
+    public static void calculateBezierPoint(float cellX, float cellY, Dir dEntry, Dir dExit,
+            float t, Vector3 outPos, Vector3 outTangent) {
 
         if (dEntry == null) {
             dEntry = dExit.inverse();
@@ -96,17 +87,9 @@ public class PathGeometry {
      * @param outPos Vector3 to store the result position
      * @param outTangent Vector3 to store the result tangent
      */
-    public static void calculateTwoStagePath(
-            float cellX,
-            float cellY,
-            Dir dEntry,
-            Dir dExit,
-            Track currentTrack,
-            float progress,
-            float currentSpeed,
-            boolean canEnterNext,
-            Vector3 outPos,
-            Vector3 outTangent) {
+    public static void calculateTwoStagePath(float cellX, float cellY, Dir dEntry, Dir dExit,
+            Track currentTrack, float progress, float currentSpeed, boolean canEnterNext,
+            Vector3 outPos, Vector3 outTangent) {
         if (progress < 0.5f) {
             // Phase 1: Current Cell (Center -> Exit)
             float t = 0.5f + (canEnterNext ? progress : 0.0f);

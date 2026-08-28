@@ -17,13 +17,9 @@ public class AudioMixer {
 
     static {
         try {
-            Runtime.getRuntime()
-                    .addShutdownHook(
-                            new Thread(
-                                    () -> {
-                                        shutdownInProgress = true;
-                                    },
-                                    "AudioMixer-ShutdownHook"));
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                shutdownInProgress = true;
+            }, "AudioMixer-ShutdownHook"));
         } catch (Exception e) {
             // Ignore if JVM is already shutting down
         }
@@ -107,13 +103,15 @@ public class AudioMixer {
             while (running) {
                 try {
                     // Clear mix buffer
-                    for (int i = 0; i < mixBuffer.length; i++) mixBuffer[i] = 0;
+                    for (int i = 0; i < mixBuffer.length; i++)
+                        mixBuffer[i] = 0;
 
                     // Mix sources
                     for (AudioSource source : sources) {
                         try {
                             // Reset source buffer
-                            for (int i = 0; i < sourceBuffer.length; i++) sourceBuffer[i] = 0;
+                            for (int i = 0; i < sourceBuffer.length; i++)
+                                sourceBuffer[i] = 0;
 
                             boolean active = source.read(sourceBuffer);
                             if (!active) {
