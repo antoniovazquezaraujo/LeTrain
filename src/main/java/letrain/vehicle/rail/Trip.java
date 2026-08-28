@@ -27,9 +27,6 @@ public interface Trip {
     TripState getState();
 
     public enum TripState {
-        CONSTRUCTED,
-        STARTING,
-        STOPPING,
-        AT_END
+        CONSTRUCTED, STARTING, STOPPING, AT_END
     }
 }

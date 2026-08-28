@@ -48,8 +48,7 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
                 return alternativeRoute.getKey();
             }
             if (dir.equals(originalRoute.getKey())) {
-                return usingAlternativeRoute
-                        ? alternativeRoute.getValue()
+                return usingAlternativeRoute ? alternativeRoute.getValue()
                         : originalRoute.getValue();
             }
         }
@@ -116,13 +115,11 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
         if (dirMap.containsKey(from) && dirMap.get(from).equals(to)) {
             return;
         }
-        if (originalRoute != null
-                && originalRoute.getKey().equals(from)
+        if (originalRoute != null && originalRoute.getKey().equals(from)
                 && originalRoute.getValue().equals(to)) {
             return;
         }
-        if (alternativeRoute != null
-                && alternativeRoute.getKey().equals(from)
+        if (alternativeRoute != null && alternativeRoute.getKey().equals(from)
                 && alternativeRoute.getValue().equals(to)) {
             return;
         }

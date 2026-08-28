@@ -29,8 +29,8 @@ public abstract class AutoPilotMixin {
             gen.writeNumberField("currentIndex", value.currentWaypointIndex());
             if (value instanceof AutoPilotImpl impl) {
                 gen.writeNumberField("waitTicks", impl.getWaitTicks());
-                serializers.defaultSerializeField(
-                        "pendingCommands", impl.getPendingCommands(), gen);
+                serializers.defaultSerializeField("pendingCommands", impl.getPendingCommands(),
+                        gen);
             } else {
                 gen.writeNumberField("waitTicks", 0);
                 gen.writeNullField("pendingCommands");
@@ -70,12 +70,8 @@ public abstract class AutoPilotMixin {
             if (node.has("pendingCommands") && !node.get("pendingCommands").isNull()) {
                 JsonParser parser = node.get("pendingCommands").traverse(p.getCodec());
                 parser.nextToken();
-                pendingCommands =
-                        ctxt.readValue(
-                                parser,
-                                ctxt.getTypeFactory()
-                                        .constructCollectionType(
-                                                List.class, WaypointCommand.class));
+                pendingCommands = ctxt.readValue(parser, ctxt.getTypeFactory()
+                        .constructCollectionType(List.class, WaypointCommand.class));
             }
 
             return new AutoPilotImpl(itinerary, mode, waitTicks, pendingCommands, currentIndex);

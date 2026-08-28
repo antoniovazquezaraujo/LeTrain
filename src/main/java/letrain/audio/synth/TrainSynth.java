@@ -10,7 +10,6 @@ public class TrainSynth {
     private float chugPhase = 0.0f;
 
     // Synthesis Parameters
-    private float chuffRateResult = 0.0f; // Calculated chuffs per second
 
     public TrainSynth() {
         engineHum = new Oscillator();
@@ -42,7 +41,8 @@ public class TrainSynth {
 
     public void read(float[] buffer) {
         // Clear buffer first
-        for (int i = 0; i < buffer.length; i++) buffer[i] = 0.0f;
+        for (int i = 0; i < buffer.length; i++)
+            buffer[i] = 0.0f;
 
         // --- Logic Update (Per buffer to save CPU, sound changes slowly anyway) ---
 
@@ -72,7 +72,8 @@ public class TrainSynth {
         // We'll add hiss directly
         float[] hissBuf = new float[buffer.length];
         hiss.read(hissBuf);
-        for (int i = 0; i < buffer.length; i++) buffer[i] += hissBuf[i];
+        for (int i = 0; i < buffer.length; i++)
+            buffer[i] += hissBuf[i];
 
         // C. Generate Chug (Amplitude Modulated Noise)
         float[] noiseBuf = new float[buffer.length];

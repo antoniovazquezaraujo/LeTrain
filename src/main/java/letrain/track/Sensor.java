@@ -17,28 +17,25 @@ import letrain.visitor.Visitor;
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 @com.fasterxml.jackson.annotation.JsonTypeInfo(
         use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME,
-        include = com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY,
-        property = "@type")
+        include = com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY, property = "@type")
 @com.fasterxml.jackson.annotation.JsonSubTypes({
-    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(
-            value = letrain.track.Sensor.class,
-            name = "Sensor"),
-    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(
-            value = letrain.track.Station.class,
-            name = "Station"),
-    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(
-            value = letrain.track.SpeedSignal.class,
-            name = "SpeedSignal")
-})
+        @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Sensor.class,
+                name = "Sensor"),
+        @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Station.class,
+                name = "Station"),
+        @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.SpeedSignal.class,
+                name = "SpeedSignal")})
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class Sensor implements Renderable {
     private int id;
     private String name;
     Track track;
 
-    @JsonIgnore transient List<SensorEventListener> listeners = new ArrayList<>();
+    @JsonIgnore
+    transient List<SensorEventListener> listeners = new ArrayList<>();
 
-    @JsonIgnore transient List<SensorEventListener> systemListeners = new ArrayList<>();
+    @JsonIgnore
+    transient List<SensorEventListener> systemListeners = new ArrayList<>();
 
     private Dir sideDir;
     private Dir creationDir = Dir.E;

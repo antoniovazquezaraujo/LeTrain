@@ -5,10 +5,7 @@ import letrain.visitor.Visitor;
 
 public class Cursor extends Vehicle {
     public enum CursorMode {
-        DRAWING,
-        ERASING,
-        MOVING,
-        MAKING_TRACKS
+        DRAWING, ERASING, MOVING, MAKING_TRACKS
     }
 
     private CursorMode mode;

@@ -28,17 +28,15 @@ public class AutoPilotImpl implements AutoPilot {
     private Mode mode = Mode.IDLE;
     private SegmentPathfinder pathfinder;
     private List<Segment> currentRoute = List.of();
-    private Segment lastSegment;
     private int currentIndex = 0;
 
     private Train train;
-    private TrainActionManager actionManager;
     private final List<WaypointCommand> pendingCommands = new java.util.ArrayList<>();
     private int waitTicks = 0;
 
     public AutoPilotImpl() {
         this.train = null;
-        this.actionManager = null;
+
         log.info("[AP] created empty");
     }
 
@@ -48,18 +46,14 @@ public class AutoPilotImpl implements AutoPilot {
 
     public AutoPilotImpl(Train train, TrainActionManager actionManager) {
         this.train = train;
-        this.actionManager = actionManager;
+
         log.info("[AP] created");
     }
 
-    public AutoPilotImpl(
-            Itinerary itinerary,
-            Mode mode,
-            int waitTicks,
-            List<WaypointCommand> pendingCommands,
-            int currentIndex) {
+    public AutoPilotImpl(Itinerary itinerary, Mode mode, int waitTicks,
+            List<WaypointCommand> pendingCommands, int currentIndex) {
         this.train = null;
-        this.actionManager = null;
+
         this.itinerary = itinerary;
         this.mode = mode;
         this.waitTicks = waitTicks;
@@ -72,7 +66,7 @@ public class AutoPilotImpl implements AutoPilot {
 
     public void reinitialize(Train train, TrainActionManager actionManager) {
         this.train = train;
-        this.actionManager = actionManager;
+
         log.info("[AP] reinitialized");
     }
 
@@ -145,7 +139,7 @@ public class AutoPilotImpl implements AutoPilot {
         this.itinerary = it;
         this.mode = Mode.IDLE;
         this.currentRoute = List.of();
-        this.lastSegment = null;
+
         this.waitTicks = 0;
         this.pendingCommands.clear();
         this.currentIndex = 0;
@@ -156,13 +150,8 @@ public class AutoPilotImpl implements AutoPilot {
         if (train == null) {
             return false;
         }
-        log.info(
-                "[AP] activate() speed="
-                        + getTrainSpeed()
-                        + " itin="
-                        + (itinerary != null && itinerary.isValid())
-                        + " pf="
-                        + (pathfinder != null));
+        log.info("[AP] activate() speed=" + getTrainSpeed() + " itin="
+                + (itinerary != null && itinerary.isValid()) + " pf=" + (pathfinder != null));
         if (itinerary == null || !itinerary.isValid()) {
             return false;
         }
@@ -171,7 +160,6 @@ public class AutoPilotImpl implements AutoPilot {
         }
         mode = Mode.FOLLOWING;
         currentRoute = List.of();
-        lastSegment = null;
         waitTicks = 0;
         pendingCommands.clear();
         currentIndex = 0;
@@ -248,15 +236,12 @@ public class AutoPilotImpl implements AutoPilot {
         if (currentSeg == null) {
             return;
         }
-        log.info(
-                "[AP] onSegmentEntered: newSegment={}, mode={}",
-                currentSeg != null ? currentSeg.getId() : "null",
-                mode);
+        log.info("[AP] onSegmentEntered: newSegment={}, mode={}",
+                currentSeg != null ? currentSeg.getId() : "null", mode);
         if (mode != Mode.FOLLOWING) {
             return;
         }
 
-        lastSegment = currentSeg;
 
         Optional<Waypoint> currentWpOpt = currentWaypoint();
         if (currentWpOpt.isEmpty()) {
@@ -283,10 +268,8 @@ public class AutoPilotImpl implements AutoPilot {
         log.info("[AP] onSegmentEntered: current segment index in route = {}", index);
         if (index != -1 && index + 1 < currentRoute.size()) {
             Segment nextSeg = currentRoute.get(index + 1);
-            log.info(
-                    "[AP] onSegmentEntered: orienting fork for next segment {} from {}",
-                    nextSeg.getId(),
-                    currentSeg.getId());
+            log.info("[AP] onSegmentEntered: orienting fork for next segment {} from {}",
+                    nextSeg.getId(), currentSeg.getId());
             ensureForkRoute(currentSeg, nextSeg);
         }
     }
@@ -304,7 +287,7 @@ public class AutoPilotImpl implements AutoPilot {
     @Override
     public void clearRoute() {
         this.currentRoute = List.of();
-        this.lastSegment = null;
+
     }
 
     @Override
@@ -351,28 +334,19 @@ public class AutoPilotImpl implements AutoPilot {
             return;
         }
         if (!(node.getTrack() instanceof ForkRailTrack fork)) {
-            log.debug(
-                    "[AP] ensureForkRoute {}->{}: shared node is not a fork ({})",
-                    from.getId(),
-                    to.getId(),
-                    node.getTrack());
+            log.debug("[AP] ensureForkRoute {}->{}: shared node is not a fork ({})", from.getId(),
+                    to.getId(), node.getTrack());
             return;
         }
 
         if (entryPort != null && exitPort != null) {
             boolean routeChanged = node.setRoute(entryPort, exitPort);
-            log.info(
-                    "[AP] ensureForkRoute {}->{} using ports: entry={}, exit={}, routeChanged={}",
-                    from.getId(),
-                    to.getId(),
-                    entryPort.getType(),
-                    exitPort.getType(),
+            log.info("[AP] ensureForkRoute {}->{} using ports: entry={}, exit={}, routeChanged={}",
+                    from.getId(), to.getId(), entryPort.getType(), exitPort.getType(),
                     routeChanged);
             return;
         }
-        log.warn(
-                "[AP] ensureForkRoute {}->{}: no ports matched for the shared node",
-                from.getId(),
+        log.warn("[AP] ensureForkRoute {}->{}: no ports matched for the shared node", from.getId(),
                 to.getId());
     }
 
@@ -386,11 +360,8 @@ public class AutoPilotImpl implements AutoPilot {
         if (index != -1) {
             newRoute.set(index, newSeg);
             currentRoute = List.copyOf(newRoute);
-            log.info(
-                    "[AP] replaceRouteSegment: replaced {} with {} at index {}",
-                    oldSeg.getId(),
-                    newSeg.getId(),
-                    index);
+            log.info("[AP] replaceRouteSegment: replaced {} with {} at index {}", oldSeg.getId(),
+                    newSeg.getId(), index);
             if (index > 0) {
                 ensureForkRoute(newRoute.get(index - 1), newSeg);
             }
@@ -486,8 +457,7 @@ public class AutoPilotImpl implements AutoPilot {
 
         Segment currentSeg = getTrainCurrentSegment();
         Segment targetSeg = getTrainTargetSegment(wp);
-        log.info(
-                "[AP] calcRoute currentSeg={} targetSeg={}",
+        log.info("[AP] calcRoute currentSeg={} targetSeg={}",
                 currentSeg != null ? currentSeg.getId() : "null",
                 targetSeg != null ? targetSeg.getId() : "null");
         if (currentSeg == null || targetSeg == null) {
@@ -496,12 +466,9 @@ public class AutoPilotImpl implements AutoPilot {
 
         Port exitPort = getTrainExitPort(currentSeg);
         log.info("[AP] calcRoute exitPort={}", exitPort != null ? exitPort.getType() : "null");
-        currentRoute =
-                pathfinder.find(
-                        currentSeg, Optional.ofNullable(exitPort), targetSeg, wp.entryDir());
-        log.info(
-                "[AP] calcRoute result: {} segments{} route={}",
-                currentRoute.size(),
+        currentRoute = pathfinder.find(currentSeg, Optional.ofNullable(exitPort), targetSeg,
+                wp.entryDir());
+        log.info("[AP] calcRoute result: {} segments{} route={}", currentRoute.size(),
                 currentRoute.isEmpty() ? " → ROUTE NOT FOUND" : "",
                 currentRoute.stream().map(Segment::getId).toList());
         return !currentRoute.isEmpty();

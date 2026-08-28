@@ -37,16 +37,15 @@ class SerializationTest {
         mapper.addMixIn(letrain.mvp.Model.class, letrain.mvp.impl.ModelMixin.class);
         mapper.addMixIn(Train.class, letrain.mvp.impl.TrainMixin.class);
         mapper.addMixIn(letrain.itinerary.Waypoint.class, letrain.mvp.impl.WaypointMixin.class);
-        mapper.addMixIn(
-                letrain.itinerary.impl.WaypointImpl.class, letrain.mvp.impl.WaypointMixin.class);
+        mapper.addMixIn(letrain.itinerary.impl.WaypointImpl.class,
+                letrain.mvp.impl.WaypointMixin.class);
         mapper.addMixIn(letrain.itinerary.Itinerary.class, letrain.mvp.impl.ItineraryMixin.class);
-        mapper.addMixIn(
-                letrain.itinerary.impl.ItineraryImpl.class, letrain.mvp.impl.ItineraryMixin.class);
+        mapper.addMixIn(letrain.itinerary.impl.ItineraryImpl.class,
+                letrain.mvp.impl.ItineraryMixin.class);
         mapper.addMixIn(letrain.itinerary.AutoPilot.class, letrain.mvp.impl.AutoPilotMixin.class);
-        mapper.addMixIn(
-                letrain.itinerary.impl.AutoPilotImpl.class, letrain.mvp.impl.AutoPilotMixin.class);
-        mapper.addMixIn(
-                letrain.itinerary.WaypointCommand.class,
+        mapper.addMixIn(letrain.itinerary.impl.AutoPilotImpl.class,
+                letrain.mvp.impl.AutoPilotMixin.class);
+        mapper.addMixIn(letrain.itinerary.WaypointCommand.class,
                 letrain.mvp.impl.WaypointCommandMixin.class);
     }
 
@@ -104,12 +103,11 @@ class SerializationTest {
         assertNotNull(restored);
 
         // Attempting to call methods that access the listeners should not throw NPE
-        assertDoesNotThrow(
-                () -> {
-                    // notifyLink/notifyUnlink use the trainListeners list
-                    // If transient initialization failed, these would throw NPE
-                    original.getId(); // Basic getter should work
-                });
+        assertDoesNotThrow(() -> {
+            // notifyLink/notifyUnlink use the trainListeners list
+            // If transient initialization failed, these would throw NPE
+            original.getId(); // Basic getter should work
+        });
     }
 
     @Test
@@ -119,13 +117,12 @@ class SerializationTest {
 
         // Add a listener
         AtomicBoolean listenerCalled = new AtomicBoolean(false);
-        original.addScriptTrainEventListener(
-                new ScriptTrainEventListener() {
-                    @Override
-                    public void onSpeedChanged(int speed) {
-                        listenerCalled.set(true);
-                    }
-                });
+        original.addScriptTrainEventListener(new ScriptTrainEventListener() {
+            @Override
+            public void onSpeedChanged(int speed) {
+                listenerCalled.set(true);
+            }
+        });
 
         // Serialize and deserialize
         byte[] serialized = serialize(original);
@@ -166,11 +163,10 @@ class SerializationTest {
         assertNotNull(restored);
 
         // Should be able to access model without NPE
-        assertDoesNotThrow(
-                () -> {
-                    // If trainEventListeners was not reinitialized, this could throw NPE
-                    restored.toString();
-                });
+        assertDoesNotThrow(() -> {
+            // If trainEventListeners was not reinitialized, this could throw NPE
+            restored.toString();
+        });
     }
 
     @Test
@@ -209,11 +205,10 @@ class SerializationTest {
         assertNotNull(restored);
 
         // Should handle listener operations without throwing
-        assertDoesNotThrow(
-                () -> {
-                    // Listener operations should not throw NPE
-                    restored.getId();
-                });
+        assertDoesNotThrow(() -> {
+            // Listener operations should not throw NPE
+            restored.getId();
+        });
     }
 
     @Test
@@ -324,9 +319,7 @@ class SerializationTest {
 
         train.getTrainCouplingManager().divideTrain(train, () -> 501);
 
-        assertEquals(
-                2,
-                train.getLinkers().size(),
+        assertEquals(2, train.getLinkers().size(),
                 "Train should keep two linkers after unlinking one from front");
         assertTrue(train.getLinkers().contains(loco));
         assertTrue(train.getLinkers().contains(backWagon));
@@ -344,21 +337,13 @@ class SerializationTest {
         java.util.List<letrain.itinerary.WaypointCommand> cmds1 =
                 java.util.List.of(letrain.itinerary.WaypointCommand.LOAD);
         java.util.List<letrain.itinerary.WaypointCommand> cmds2 =
-                java.util.List.of(
-                        letrain.itinerary.WaypointCommand.waitSeconds(5),
+                java.util.List.of(letrain.itinerary.WaypointCommand.waitSeconds(5),
                         letrain.itinerary.WaypointCommand.speed(8));
         itinerary.addWaypoint(
-                new letrain.itinerary.impl.WaypointImpl(
-                        letrain.itinerary.Waypoint.Type.STATION,
-                        10,
-                        java.util.Optional.of(letrain.map.Dir.N),
-                        cmds1));
-        itinerary.addWaypoint(
-                new letrain.itinerary.impl.WaypointImpl(
-                        letrain.itinerary.Waypoint.Type.SENSOR,
-                        20,
-                        java.util.Optional.empty(),
-                        cmds2));
+                new letrain.itinerary.impl.WaypointImpl(letrain.itinerary.Waypoint.Type.STATION, 10,
+                        java.util.Optional.of(letrain.map.Dir.N), cmds1));
+        itinerary.addWaypoint(new letrain.itinerary.impl.WaypointImpl(
+                letrain.itinerary.Waypoint.Type.SENSOR, 20, java.util.Optional.empty(), cmds2));
         // Build AutoPilot
         letrain.itinerary.impl.AutoPilotImpl ap =
                 new letrain.itinerary.impl.AutoPilotImpl(original, original.getActionManager());
@@ -406,8 +391,7 @@ class SerializationTest {
         if (restoredAp instanceof letrain.itinerary.impl.AutoPilotImpl impl) {
             assertEquals(42, impl.getWaitTicks());
             assertEquals(1, impl.getPendingCommands().size());
-            assertEquals(
-                    letrain.itinerary.WaypointCommand.Kind.SPEED,
+            assertEquals(letrain.itinerary.WaypointCommand.Kind.SPEED,
                     impl.getPendingCommands().get(0).kind());
             assertEquals(5, impl.getPendingCommands().get(0).targetSpeed());
         }

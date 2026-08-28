@@ -18,11 +18,9 @@ import letrain.vehicle.rail.impl.Wagon;
  * Tracks its current position, direction, previous cell, and the train it belongs to.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes({
-    @JsonSubTypes.Type(value = Locomotive.class, name = "Locomotive"),
-    @JsonSubTypes.Type(value = Wagon.class, name = "Wagon"),
-    @JsonSubTypes.Type(value = Cursor.class, name = "Cursor")
-})
+@JsonSubTypes({@JsonSubTypes.Type(value = Locomotive.class, name = "Locomotive"),
+        @JsonSubTypes.Type(value = Wagon.class, name = "Wagon"),
+        @JsonSubTypes.Type(value = Cursor.class, name = "Cursor")})
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public abstract class Linker extends Tracker implements Linkable {
     private Train train;

@@ -48,8 +48,8 @@ public class AStarPathfinder implements SegmentPathfinder {
     }
 
     @Override
-    public List<Segment> find(
-            Segment from, Optional<Port> fromExitPort, Segment to, Optional<Dir> entryDir) {
+    public List<Segment> find(Segment from, Optional<Port> fromExitPort, Segment to,
+            Optional<Dir> entryDir) {
         if (from == null || to == null) {
             return List.of();
         }

@@ -41,10 +41,7 @@ public class Trip implements letrain.vehicle.rail.Trip {
         if (stops == null) {
             stops = new ArrayList<>();
         }
-        if (getStops()
-                .map(Stop::stationId)
-                .filter(t -> t == stop.stationId())
-                .findFirst()
+        if (getStops().map(Stop::stationId).filter(t -> t == stop.stationId()).findFirst()
                 .isPresent()) {
             stops.add(stop);
             this.state = TripState.AT_END;

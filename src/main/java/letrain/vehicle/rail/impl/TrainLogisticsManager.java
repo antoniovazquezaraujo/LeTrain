@@ -20,7 +20,8 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
         this.train = train;
     }
 
-    @JsonIgnore private transient List<Wagon> currentCapableWagons = null;
+    @JsonIgnore
+    private transient List<Wagon> currentCapableWagons = null;
 
     @Override
     public boolean isLoading() {
@@ -103,8 +104,7 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
             return result;
         }
         CargoTypes stationCargo = station.getCargoType();
-        if (stationCargo == null
-                || stationCargo == CargoTypes.NONE
+        if (stationCargo == null || stationCargo == CargoTypes.NONE
                 || station.getRole() == CargoTypes.StationRole.GENERIC) {
             return result;
         }
@@ -116,13 +116,10 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
                         result.add(wagon);
                     }
                 } else {
-                    boolean canLoadMore =
-                            !wagon.isFull()
-                                    && (wagon.getCargoAmount() == 0
-                                            || wagon.getCargoType() == stationCargo);
-                    if (canLoadMore
-                            && (wagon.getExclusiveCargoType() == CargoTypes.NONE
-                                    || wagon.getExclusiveCargoType() == stationCargo)) {
+                    boolean canLoadMore = !wagon.isFull() && (wagon.getCargoAmount() == 0
+                            || wagon.getCargoType() == stationCargo);
+                    if (canLoadMore && (wagon.getExclusiveCargoType() == CargoTypes.NONE
+                            || wagon.getExclusiveCargoType() == stationCargo)) {
                         result.add(wagon);
                     }
                 }
@@ -134,11 +131,10 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
     @Override
     public boolean performIndustrialAction(Station station) {
         if (this.train.getDirectorLinker() != null
-                && this.train.getDirectorLinker().getSpeed() != 0) return false;
+                && this.train.getDirectorLinker().getSpeed() != 0)
+            return false;
 
         boolean anyActionTaken = false;
-        double totalDistance = 0;
-        int deliveryCount = 0;
 
         if (this.train.getLinkers().isEmpty()) {
             return false;
@@ -177,21 +173,14 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
                 }
             }
         } else if (station.getRole() == CargoTypes.StationRole.CONSUMER) {
-            int targetRemaining =
-                    Wagon.MAX_CARGO_CAPACITY
-                            - ((wagonTick + 1) * Wagon.MAX_CARGO_CAPACITY) / MAX_LOADING_COUNT;
+            int targetRemaining = Wagon.MAX_CARGO_CAPACITY
+                    - ((wagonTick + 1) * Wagon.MAX_CARGO_CAPACITY) / MAX_LOADING_COUNT;
             if (wagon.getCargoAmount() > targetRemaining
                     && wagon.getCargoType() == station.getCargoType()) {
                 int toUnload = wagon.getCargoAmount() - targetRemaining;
                 wagon.unload(toUnload);
                 station.receiveImportCargo(toUnload);
 
-                if (wagon.getLoadingPoint() != null) {
-                    totalDistance +=
-                            letrain.map.Point.distance(
-                                    wagon.getLoadingPoint(), station.getTrack().getPosition());
-                    deliveryCount++;
-                }
                 if (wagon.getCargoAmount() == 0) {
                     wagon.setCargoType(CargoTypes.NONE);
                     wagon.setLoadingPoint(null);

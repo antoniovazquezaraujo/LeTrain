@@ -21,11 +21,8 @@ public class TrackDirector<T extends Track> {
 
     public boolean enterLinkerFromDir(T track, Dir dir, Linker vehicle) {
         if (!track.canEnter(dir, vehicle)) {
-            log.debug(
-                    "Cannot enter linker {} from {} into track {}: occupied or reserved.",
-                    vehicle,
-                    dir,
-                    track.getPosition());
+            log.debug("Cannot enter linker {} from {} into track {}: occupied or reserved.",
+                    vehicle, dir, track.getPosition());
             return false;
         }
 
@@ -78,7 +75,6 @@ public class TrackDirector<T extends Track> {
 
     public boolean canExit(T track, Dir dir) {
         if (track.getLinker() != null) {
-            Dir exitDir = track.getRouter().getDir(track.getLinker().getDir());
             T target = (T) track.getConnected(dir);
             return target != null && target.canEnter(dir, track.getLinker());
         }

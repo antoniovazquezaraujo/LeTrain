@@ -22,19 +22,22 @@ public class PerlinNoise {
         pow = new float[32];
         perm = new int[512];
 
-        for (int i = 0; i < pow.length; i++) pow[i] = (float) Math.pow(2, i);
+        for (int i = 0; i < pow.length; i++)
+            pow[i] = (float) Math.pow(2, i);
 
         int[] permutation = new int[256];
 
         Random r = new Random(seed);
 
-        for (int i = 0; i < permutation.length; i++) permutation[i] = r.nextInt(256);
+        for (int i = 0; i < permutation.length; i++)
+            permutation[i] = r.nextInt(256);
 
         if (permutation.length != 256) {
             throw new IllegalStateException();
         }
 
-        for (int i = 0; i < 256; i++) perm[256 + i] = perm[i] = permutation[i];
+        for (int i = 0; i < 256; i++)
+            perm[256 + i] = perm[i] = permutation[i];
     }
 
     /**
@@ -57,7 +60,8 @@ public class PerlinNoise {
      */
     public float smoothNoise(float x, float y, float z, int octaves) {
         float height = 0.0f;
-        for (int octave = 1; octave <= octaves; octave++) height += noise(x, y, z, octave);
+        for (int octave = 1; octave <= octaves; octave++)
+            height += noise(x, y, z, octave);
         return height;
     }
 
