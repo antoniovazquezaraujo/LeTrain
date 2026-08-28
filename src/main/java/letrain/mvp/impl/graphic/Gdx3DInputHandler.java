@@ -262,6 +262,11 @@ public class Gdx3DInputHandler implements InputProcessor {
             }
         }
 
+        if (stroke.getKeyType() == KeyType.Escape) {
+            view.showExitDialog();
+            return;
+        }
+
         // Global Enter to Menu (matches TerminalPresenter)
         if (stroke.getKeyType() == KeyType.Enter) {
             if (model.getMode() == Model.GameMode.LINK
