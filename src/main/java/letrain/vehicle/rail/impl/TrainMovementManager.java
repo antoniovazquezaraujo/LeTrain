@@ -334,10 +334,14 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
     @Override
     public void correctDirection(Linker linker) {
-        if (linker == null) return;
+        if (linker == null) {
+            return;
+        }
         Track t = linker.getTrack();
         Dir d = linker.getDir();
-        if (t == null || t.getConnected(d) != null) return;
+        if (t == null || t.getConnected(d) != null) {
+            return;
+        }
         // Skip the entry direction (where we came from) — pick the exit
         Dir entryDir = linker.getEntryDir();
         for (Dir conn : t.getConnections()) {
@@ -454,7 +458,9 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             Linker linker = order.get(i);
 
             Track track = linker.getTrack();
-            if (track == null) continue;
+            if (track == null) {
+                continue;
+            }
 
             Dir entryDir = null;
             Dir exitDir = null;
@@ -485,7 +491,9 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             } else if (entryDir != null) {
                 linker.setEntryDir(entryDir);
                 Dir out = track.getDir(entryDir);
-                if (out != null) linker.setDir(out);
+                if (out != null) {
+                    linker.setDir(out);
+                }
             } else if (exitDir != null) {
                 linker.setDir(exitDir);
                 for (Dir conn : track.getConnections()) {

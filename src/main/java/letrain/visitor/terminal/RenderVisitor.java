@@ -200,7 +200,9 @@ public class RenderVisitor implements Visitor {
     }
 
     private boolean isStationActive(Station station) {
-        if (model == null) return false;
+        if (model == null) {
+            return false;
+        }
         for (letrain.vehicle.rail.impl.Locomotive loco : model.getLocomotives()) {
             if (loco.getTrain() != null
                     && loco.getTrain().getStationId() == station.getId()
@@ -320,7 +322,9 @@ public class RenderVisitor implements Visitor {
     }
 
     private String speedSignalArrow(letrain.map.Dir dir) {
-        if (dir == null) return "";
+        if (dir == null) {
+            return "";
+        }
         switch (dir) {
             case E:
                 return "→";
@@ -374,7 +378,9 @@ public class RenderVisitor implements Visitor {
             } else {
                 int count = 0;
                 for (Linker linkerToJoin : activeTrain.getLinkersToJoin()) {
-                    if (count >= activeTrain.getNumLinkersToJoin()) break;
+                    if (count >= activeTrain.getNumLinkersToJoin()) {
+                        break;
+                    }
                     if (linkerToJoin == linker) {
                         highlighted = true;
                         break;
@@ -530,9 +536,13 @@ public class RenderVisitor implements Visitor {
     }
 
     private boolean isConnected(Track track, Dir dir) {
-        if (dir == null) return false;
+        if (dir == null) {
+            return false;
+        }
         Track neighbor = track.getConnected(dir);
-        if (neighbor == null) return false;
+        if (neighbor == null) {
+            return false;
+        }
         return neighbor.getRouter().getDir(dir.inverse()) != null;
     }
 
@@ -646,7 +656,9 @@ public class RenderVisitor implements Visitor {
     }
 
     private TextColor getCargoColor(letrain.track.CargoTypes cargo, boolean isLoaded) {
-        if (cargo == null) return TextColor.ANSI.WHITE;
+        if (cargo == null) {
+            return TextColor.ANSI.WHITE;
+        }
         switch (cargo) {
             case COAL:
                 return isLoaded ? TextColor.ANSI.WHITE : TextColor.ANSI.BLACK_BRIGHT;

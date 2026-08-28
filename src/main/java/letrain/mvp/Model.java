@@ -158,19 +158,31 @@ public interface Model {
 
     default boolean canEnterLinkMode() {
         Locomotive loco = getSelectedLocomotive();
-        if (loco == null) return false;
-        if (loco.getSpeed() != 0 || loco.getTargetSpeed() != 0) return false;
+        if (loco == null) {
+            return false;
+        }
+        if (loco.getSpeed() != 0 || loco.getTargetSpeed() != 0) {
+            return false;
+        }
         letrain.vehicle.rail.impl.Train train = loco.getTrain();
-        if (train == null || train.getLinkers().isEmpty()) return false;
+        if (train == null || train.getLinkers().isEmpty()) {
+            return false;
+        }
         return train.getTrainCouplingManager().hasLinkableVehicles(train);
     }
 
     default boolean canEnterUnlinkMode() {
         Locomotive loco = getSelectedLocomotive();
-        if (loco == null) return false;
-        if (loco.getSpeed() != 0 || loco.getTargetSpeed() != 0) return false;
+        if (loco == null) {
+            return false;
+        }
+        if (loco.getSpeed() != 0 || loco.getTargetSpeed() != 0) {
+            return false;
+        }
         letrain.vehicle.rail.impl.Train train = loco.getTrain();
-        if (train == null) return false;
+        if (train == null) {
+            return false;
+        }
         return train.getLinkers().size() > 1;
     }
 

@@ -31,7 +31,9 @@ public class AudacityLabelParser {
             String line;
             while ((line = br.readLine()) != null) {
                 line = line.trim();
-                if (line.isEmpty()) continue;
+                if (line.isEmpty()) {
+                    continue;
+                }
 
                 // Format: StartTime\tEndTime\tLabelName
                 // 1.234567 2.345678 MyLabel

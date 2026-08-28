@@ -361,7 +361,9 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             return (ExecutableCommand)
                     (contextTrain) -> {
                         RailSemaphore s = model.getSemaphore(id);
-                        if (s != null) s.setOpen("open".equals(status));
+                        if (s != null) {
+                            s.setOpen("open".equals(status));
+                        }
                     };
         } else if (ctx.forkAction() != null) {
             int id = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
@@ -424,12 +426,16 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                     return (ExecutableCommand)
                             (contextTrain) -> {
                                 Train target = model.getTrainFromLocomotiveId(id);
-                                if (target != null) baseAction.execute(target);
+                                if (target != null) {
+                                    baseAction.execute(target);
+                                }
                             };
                 } else {
                     return (ExecutableCommand)
                             (contextTrain) -> {
-                                if (contextTrain != null) baseAction.execute(contextTrain);
+                                if (contextTrain != null) {
+                                    baseAction.execute(contextTrain);
+                                }
                             };
                 }
             } else if (ctx.trainExtractor() != null) {
@@ -438,7 +444,9 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                 return (ExecutableCommand)
                         (contextTrain) -> {
                             Train target = findTrainAtPlace(pCtx);
-                            if (target != null) baseAction.execute(target);
+                            if (target != null) {
+                                baseAction.execute(target);
+                            }
                         };
             }
         }
@@ -456,18 +464,24 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         } else if (actionText.contains("accelerate")) {
             return (t) -> {
                 Tractor tractor = t.getDirectorLinker();
-                if (tractor != null) tractor.incSpeed();
+                if (tractor != null) {
+                    tractor.incSpeed();
+                }
             };
         } else if (actionText.contains("decelerate")) {
             return (t) -> {
                 Tractor tractor = t.getDirectorLinker();
-                if (tractor != null) tractor.decSpeed();
+                if (tractor != null) {
+                    tractor.decSpeed();
+                }
             };
         } else if (ctx.trainSense() != null) {
             boolean forward = "forward".equals(ctx.trainSense().getText());
             return (t) -> {
                 Tractor tractor = t.getDirectorLinker();
-                if (tractor != null && tractor.isReversed() == forward) tractor.toggleReversed();
+                if (tractor != null && tractor.isReversed() == forward) {
+                    tractor.toggleReversed();
+                }
             };
         } else if (actionText.contains("stop")) {
             return (t) -> {
@@ -476,7 +490,9 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         } else if (actionText.contains("invert")) {
             return (t) -> {
                 Tractor tractor = t.getDirectorLinker();
-                if (tractor != null) tractor.toggleReversed();
+                if (tractor != null) {
+                    tractor.toggleReversed();
+                }
             };
         } else if (ctx.linkAction() != null) {
             LeTrainProgramParser.LinkActionContext lCtx = ctx.linkAction();
@@ -497,12 +513,16 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         } else if (actionText.contains("unload")) {
             return (t) -> {
                 letrain.track.Station s = t.getLogisticsManager().getStationAtTrain();
-                if (s != null) t.getLogisticsManager().startUnloadProcess(s);
+                if (s != null) {
+                    t.getLogisticsManager().startUnloadProcess(s);
+                }
             };
         } else if (actionText.contains("load")) {
             return (t) -> {
                 letrain.track.Station s = t.getLogisticsManager().getStationAtTrain();
-                if (s != null) t.getLogisticsManager().startLoadProcess(s);
+                if (s != null) {
+                    t.getLogisticsManager().startLoadProcess(s);
+                }
             };
         } else {
             return (t) -> {};
@@ -533,12 +553,16 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
 
     @Override
     public Object visitWaypoint(LeTrainProgramParser.WaypointContext ctx) {
-        if (currentItinerary == null) return null;
+        if (currentItinerary == null) {
+            return null;
+        }
 
         Waypoint wp;
         if (ctx.stationRef() != null) {
             Station st = resolveStation(ctx.stationRef());
-            if (st == null) return null;
+            if (st == null) {
+                return null;
+            }
             wp =
                     new WaypointImpl(
                             Waypoint.Type.STATION,
@@ -547,7 +571,9 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                             resolveCommands(ctx));
         } else if (ctx.sensorRef() != null) {
             Sensor se = resolveSensor(ctx.sensorRef());
-            if (se == null) return null;
+            if (se == null) {
+                return null;
+            }
             wp =
                     new WaypointImpl(
                             Waypoint.Type.SENSOR,
@@ -610,7 +636,9 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         Train train = resolveTrain(ctx.trainRef());
         if (train != null) {
             boolean on = "true".equals(ctx.bool().getText());
-            if (on != train.isAutoMode()) train.toggleAutoMode();
+            if (on != train.isAutoMode()) {
+                train.toggleAutoMode();
+            }
             log.info("[DSL] Train {} autopilot = {}", train.getId(), on);
         }
         return null;
@@ -672,7 +700,9 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     }
 
     private Train resolveTrain(LeTrainProgramParser.TrainRefContext ctx) {
-        if (ctx.STRING() != null) return model.findTrainByName(stripQuotes(ctx.STRING().getText()));
+        if (ctx.STRING() != null) {
+            return model.findTrainByName(stripQuotes(ctx.STRING().getText()));
+        }
         int id = Integer.parseInt(ctx.NUMBER().getText());
         return model.getTrainFromLocomotiveId(id);
     }
@@ -698,7 +728,9 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     }
 
     private static String stripQuotes(String s) {
-        if (s == null) return null;
+        if (s == null) {
+            return null;
+        }
         if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2)
             return s.substring(1, s.length() - 1);
         return s;
@@ -710,7 +742,9 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             letrain.track.Station s = model.getStation(id);
             if (s != null) {
                 for (Locomotive l : model.getLocomotives()) {
-                    if (l.getTrack() != null && l.getTrack().getSensor() == s) return l.getTrain();
+                    if (l.getTrack() != null && l.getTrack().getSensor() == s) {
+                        return l.getTrain();
+                    }
                 }
             }
         } else if (ctx.sensorSelector() != null) {
@@ -718,7 +752,9 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             Sensor s = model.getSensor(id);
             if (s != null) {
                 for (Locomotive l : model.getLocomotives()) {
-                    if (l.getTrack() != null && l.getTrack().getSensor() == s) return l.getTrain();
+                    if (l.getTrack() != null && l.getTrack().getSensor() == s) {
+                        return l.getTrain();
+                    }
                 }
             }
         }

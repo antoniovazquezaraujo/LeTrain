@@ -108,7 +108,9 @@ public class VehicleRenderer extends BaseSubRenderer {
                     }
                     chainDepth++;
                     letrain.track.Track nextTrack = lookTrack.getConnected(lookDir);
-                    if (nextTrack == null) break;
+                    if (nextTrack == null) {
+                        break;
+                    }
                     letrain.vehicle.rail.Linker occupyingL = nextTrack.getLinker();
                     if (occupyingL == null) break; // free cell
                     if (occupyingL == locomotive) break; // cycle detected (circular train)
@@ -385,7 +387,9 @@ public class VehicleRenderer extends BaseSubRenderer {
                     }
                     chainDepth++;
                     letrain.track.Track nextTrackLocal = lookTrack.getConnected(lookDir);
-                    if (nextTrackLocal == null) break;
+                    if (nextTrackLocal == null) {
+                        break;
+                    }
                     letrain.vehicle.rail.Linker occupyingLLocal = nextTrackLocal.getLinker();
                     if (occupyingLLocal == null) break; // free cell
                     if (occupyingLLocal == wagon) break; // cycle detected (circular train)
@@ -541,10 +545,14 @@ public class VehicleRenderer extends BaseSubRenderer {
                                 ? resourceContext.yellowSphereModel3
                                 : resourceContext.yellowFireModel3;
 
-            if (fireModel == null) continue;
+            if (fireModel == null) {
+                continue;
+            }
 
             float sizeScale = 1.0f - offsetY / 1.5f;
-            if (sizeScale <= 0) continue;
+            if (sizeScale <= 0) {
+                continue;
+            }
 
             ModelInstance firePart = resourceContext.getModelInstance(fireModel);
             firePart.transform.setToTranslation(x + offsetX, y + offsetY, z + offsetZ);
@@ -555,7 +563,9 @@ public class VehicleRenderer extends BaseSubRenderer {
     }
 
     public static Color getLibGdxColor(String colorName) {
-        if (colorName == null) return null;
+        if (colorName == null) {
+            return null;
+        }
         return switch (colorName.toUpperCase()) {
             case "RED", "RED_BRIGHT" -> Color.RED;
             case "GREEN", "GREEN_BRIGHT" -> Color.GREEN;

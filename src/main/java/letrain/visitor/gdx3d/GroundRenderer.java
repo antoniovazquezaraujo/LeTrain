@@ -24,7 +24,9 @@ public class GroundRenderer extends BaseSubRenderer {
 
     @Override
     public void visitGround(Ground ground) {
-        if (!isVisible(ground.getPosition())) return;
+        if (!isVisible(ground.getPosition())) {
+            return;
+        }
         int type = ground.getType();
         Model model = resourceContext.groundModel;
         float yPosition = 0.0f;
@@ -66,8 +68,9 @@ public class GroundRenderer extends BaseSubRenderer {
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
             com.badlogic.gdx.graphics.g3d.Model consumerModelToUse =
                     resourceContext.coalConsumerModel;
-            if (cargo == CargoTypes.GOLD) consumerModelToUse = resourceContext.goldConsumerModel;
-            else if (cargo == CargoTypes.RUBY)
+            if (cargo == CargoTypes.GOLD) {
+                consumerModelToUse = resourceContext.goldConsumerModel;
+            } else if (cargo == CargoTypes.RUBY)
                 consumerModelToUse = resourceContext.rubyConsumerModel;
 
             float x = ground.getPosition().getX() + 0.5f;
@@ -151,7 +154,9 @@ public class GroundRenderer extends BaseSubRenderer {
                             com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(
                                     color));
             wall.transform.setToTranslation(x, y, z);
-            if (rotationY != 0) wall.transform.rotate(0, 1, 0, rotationY);
+            if (rotationY != 0) {
+                wall.transform.rotate(0, 1, 0, rotationY);
+            }
             instances.add(wall);
         }
     }

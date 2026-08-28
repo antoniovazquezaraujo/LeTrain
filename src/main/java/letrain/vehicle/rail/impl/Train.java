@@ -238,7 +238,9 @@ public class Train implements Renderable {
     }
 
     private void guardNotify(Runnable block) {
-        if (isNotifying) return;
+        if (isNotifying) {
+            return;
+        }
         isNotifying = true;
         try {
             block.run();
@@ -756,9 +758,13 @@ public class Train implements Renderable {
     }
 
     public letrain.segments.Segment resolveCurrentSegmentFromGraph() {
-        if (model == null || model.getRailwayGraph() == null) return null;
+        if (model == null || model.getRailwayGraph() == null) {
+            return null;
+        }
         letrain.vehicle.rail.Linker head = getPhysicalFront();
-        if (head == null || !(head.getTrack() instanceof letrain.track.rail.RailTrack)) return null;
+        if (head == null || !(head.getTrack() instanceof letrain.track.rail.RailTrack)) {
+            return null;
+        }
         return model.getRailwayGraph().getSegment((letrain.track.rail.RailTrack) head.getTrack());
     }
 

@@ -8,7 +8,9 @@ import letrain.track.Track;
 public class PathGeometry {
 
     public static float getDirX(Dir dir) {
-        if (dir == null) return 0;
+        if (dir == null) {
+            return 0;
+        }
         switch (dir) {
             case E:
             case NE:
@@ -24,7 +26,9 @@ public class PathGeometry {
     }
 
     public static float getDirZ(Dir dir) {
-        if (dir == null) return 0;
+        if (dir == null) {
+            return 0;
+        }
         switch (dir) {
             case S:
             case SE:
@@ -66,7 +70,9 @@ public class PathGeometry {
             Vector3 outPos,
             Vector3 outTangent) {
 
-        if (dEntry == null) dEntry = dExit.inverse();
+        if (dEntry == null) {
+            dEntry = dExit.inverse();
+        }
 
         Vector3 pControl = new Vector3(cellX + 0.5f, 0, cellY + 0.5f);
         Vector3 pStart =

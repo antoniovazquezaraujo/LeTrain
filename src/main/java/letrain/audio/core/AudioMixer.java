@@ -52,7 +52,9 @@ public class AudioMixer {
     }
 
     public void start() {
-        if (running) return;
+        if (running) {
+            return;
+        }
         running = true;
         audioThread = new Thread(this::audioLoop, "AudioMixerThread");
         audioThread.setPriority(Thread.MAX_PRIORITY);
@@ -63,7 +65,9 @@ public class AudioMixer {
     public void stop() {
         running = false;
         try {
-            if (audioThread != null) audioThread.join(2000);
+            if (audioThread != null) {
+                audioThread.join(2000);
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("Audio mixer stop interrupted", e);
@@ -139,17 +143,25 @@ public class AudioMixer {
                                     volume *= Math.max(0.0f, fadeFactor);
                                 }
                             }
-                            if (volume > 1.0f) volume = 1.0f;
-                            if (volume < 0.0f) volume = 0.0f;
+                            if (volume > 1.0f) {
+                                volume = 1.0f;
+                            }
+                            if (volume < 0.0f) {
+                                volume = 0.0f;
+                            }
 
                             // NaN protection for volume
-                            if (Float.isNaN(volume) || Float.isInfinite(volume)) volume = 0;
+                            if (Float.isNaN(volume) || Float.isInfinite(volume)) {
+                                volume = 0;
+                            }
 
                             // 5. Apply to Mix (Mono to Stereo)
                             for (int i = 0; i < BUFFER_SIZE; i++) {
                                 float sample = sourceBuffer[i];
                                 // NaN protection for sample
-                                if (Float.isNaN(sample) || Float.isInfinite(sample)) sample = 0;
+                                if (Float.isNaN(sample) || Float.isInfinite(sample)) {
+                                    sample = 0;
+                                }
 
                                 mixBuffer[i * 2] += sample * volume;
                                 mixBuffer[i * 2 + 1] += sample * volume;
@@ -163,9 +175,15 @@ public class AudioMixer {
                     // Limit/Clip and Convert to Bytes
                     for (int i = 0; i < BUFFER_SIZE * 2; i++) {
                         float val = mixBuffer[i];
-                        if (Float.isNaN(val) || Float.isInfinite(val)) val = 0;
-                        if (val > 1.0f) val = 1.0f;
-                        if (val < -1.0f) val = -1.0f;
+                        if (Float.isNaN(val) || Float.isInfinite(val)) {
+                            val = 0;
+                        }
+                        if (val > 1.0f) {
+                            val = 1.0f;
+                        }
+                        if (val < -1.0f) {
+                            val = -1.0f;
+                        }
 
                         short s = (short) (val * 32767.0f);
                         outputBuffer[i * 2] = (byte) ((s >> 8) & 0xFF);

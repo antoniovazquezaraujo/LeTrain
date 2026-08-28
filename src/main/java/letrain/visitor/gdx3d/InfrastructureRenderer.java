@@ -211,12 +211,16 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
     @Override
     public void visitSensor(Sensor sensor) {
-        if (sensor.getPosition() == null) return;
+        if (sensor.getPosition() == null) {
+            return;
+        }
 
         float x = sensor.getPosition().getX();
         float y = sensor.getPosition().getY();
         Dir dir = sensor.getCreationDir();
-        if (dir == null) dir = Dir.N;
+        if (dir == null) {
+            dir = Dir.N;
+        }
 
         float dx = PathGeometry.getDirX(dir);
         float dz = PathGeometry.getDirZ(dir);
@@ -282,14 +286,18 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
     @Override
     public void visitStation(Station station) {
-        if (station.getPosition() == null) return;
+        if (station.getPosition() == null) {
+            return;
+        }
 
         letrain.track.rail.RailTrack track = (letrain.track.rail.RailTrack) station.getTrack();
         if (track == null) {
             track = modelRef.getRailMap().getTrackAt(station.getPosition());
         }
 
-        if (track == null) return;
+        if (track == null) {
+            return;
+        }
 
         drawStation(
                 station,
@@ -623,7 +631,9 @@ public class InfrastructureRenderer extends BaseSubRenderer {
     }
 
     private letrain.vehicle.rail.impl.Train getTrackOwner(letrain.track.rail.RailTrack track) {
-        if (modelRef == null || track == null) return null;
+        if (modelRef == null || track == null) {
+            return null;
+        }
         letrain.vehicle.rail.impl.Train ownerTrain = null;
         letrain.segments.RailwayGraph graph = modelRef.getRailwayGraph();
         letrain.segments.BlockManager blockManager = modelRef.getBlockManager();

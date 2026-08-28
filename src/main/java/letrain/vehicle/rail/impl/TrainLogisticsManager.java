@@ -140,20 +140,26 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
         double totalDistance = 0;
         int deliveryCount = 0;
 
-        if (this.train.getLinkers().isEmpty()) return false;
+        if (this.train.getLinkers().isEmpty()) {
+            return false;
+        }
 
         if (currentCapableWagons == null || currentCapableWagons.isEmpty()) {
             currentCapableWagons = getCapableWagons(station, isUnloadingDirection);
         }
 
-        if (currentCapableWagons.isEmpty()) return false;
+        if (currentCapableWagons.isEmpty()) {
+            return false;
+        }
 
         int numCapableWagons = currentCapableWagons.size();
         int totalTicks = MAX_LOADING_COUNT * numCapableWagons;
         int currentTickInTotal = totalTicks - loadingCount;
         int wagonIndex = (currentTickInTotal - 1) / MAX_LOADING_COUNT;
 
-        if (wagonIndex >= numCapableWagons) return false;
+        if (wagonIndex >= numCapableWagons) {
+            return false;
+        }
 
         Wagon wagon = currentCapableWagons.get(wagonIndex);
         int wagonTick = (currentTickInTotal - 1) % MAX_LOADING_COUNT;

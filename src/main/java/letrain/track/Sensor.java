@@ -157,21 +157,29 @@ public class Sensor implements Renderable {
     }
 
     public void addSensorEventListener(SensorEventListener listener) {
-        if (listeners == null) listeners = new ArrayList<>();
+        if (listeners == null) {
+            listeners = new ArrayList<>();
+        }
         this.listeners.add(listener);
     }
 
     public void addSystemSensorEventListener(SensorEventListener listener) {
-        if (systemListeners == null) systemListeners = new ArrayList<>();
+        if (systemListeners == null) {
+            systemListeners = new ArrayList<>();
+        }
         this.systemListeners.add(listener);
     }
 
     public void removeSensorEventListener(SensorEventListener listener) {
-        if (listeners != null) this.listeners.remove(listener);
+        if (listeners != null) {
+            this.listeners.remove(listener);
+        }
     }
 
     public void removeAllSensorEventListeners() {
-        if (listeners != null) this.listeners.clear();
+        if (listeners != null) {
+            this.listeners.clear();
+        }
     }
 
     // toString

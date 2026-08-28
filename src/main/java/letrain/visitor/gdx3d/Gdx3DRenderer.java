@@ -49,7 +49,9 @@ public class Gdx3DRenderer implements Visitor {
         l.text = text;
         l.normal.set(normal);
         if (up != null) {
-            if (l.up == null) l.up = new com.badlogic.gdx.math.Vector3();
+            if (l.up == null) {
+                l.up = new com.badlogic.gdx.math.Vector3();
+            }
             l.up.set(up);
         } else {
             l.up = null;
@@ -243,33 +245,45 @@ public class Gdx3DRenderer implements Visitor {
         model.getSensors()
                 .forEach(
                         t -> {
-                            if (isVisible(t.getPosition())) t.accept(infrastructureRenderer);
+                            if (isVisible(t.getPosition())) {
+                                t.accept(infrastructureRenderer);
+                            }
                         });
         model.getSemaphores()
                 .forEach(
                         t -> {
-                            if (isVisible(t.getPosition())) t.accept(infrastructureRenderer);
+                            if (isVisible(t.getPosition())) {
+                                t.accept(infrastructureRenderer);
+                            }
                         });
         model.getWagons()
                 .forEach(
                         t -> {
-                            if (isVisible(t.getPosition())) t.accept(vehicleRenderer);
+                            if (isVisible(t.getPosition())) {
+                                t.accept(vehicleRenderer);
+                            }
                         });
         model.getLocomotives()
                 .forEach(
                         t -> {
-                            if (isVisible(t.getPosition())) t.accept(vehicleRenderer);
+                            if (isVisible(t.getPosition())) {
+                                t.accept(vehicleRenderer);
+                            }
                         });
         model.getStations()
                 .forEach(
                         t -> {
-                            if (isVisible(t.getPosition())) t.accept(infrastructureRenderer);
+                            if (isVisible(t.getPosition())) {
+                                t.accept(infrastructureRenderer);
+                            }
                         });
         visitCursor(model.getCursor());
     }
 
     private boolean isVisible(letrain.map.Point pos) {
-        if (camera == null) return true;
+        if (camera == null) {
+            return true;
+        }
         return camera.frustum.boundsInFrustum(
                 pos.getX() + 0.5f, 0.5f, pos.getY() + 0.5f, 0.5f, 0.5f, 0.5f);
     }

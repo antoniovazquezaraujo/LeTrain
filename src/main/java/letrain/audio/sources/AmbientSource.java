@@ -37,7 +37,9 @@ public class AmbientSource implements AudioSource {
 
     @Override
     public boolean read(float[] buffer) {
-        if (!active || sample == null) return false;
+        if (!active || sample == null) {
+            return false;
+        }
 
         int len = buffer.length;
         for (int i = 0; i < len; i++) {

@@ -49,7 +49,9 @@ public class GraphicPresenter extends ApplicationAdapter
     private com.badlogic.gdx.graphics.g3d.decals.Decal getGlyphDecal(char c) {
         if (!glyphRegions.containsKey(c)) {
             com.badlogic.gdx.graphics.g2d.BitmapFont.Glyph glyph = font.getData().getGlyph(c);
-            if (glyph == null) return null;
+            if (glyph == null) {
+                return null;
+            }
 
             com.badlogic.gdx.graphics.g2d.TextureRegion region =
                     new com.badlogic.gdx.graphics.g2d.TextureRegion(
@@ -250,7 +252,9 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // 1. Calculate factor de interpolación
         float alpha = stateTime / 0.05f;
-        if (alpha > 1f) alpha = 1f;
+        if (alpha > 1f) {
+            alpha = 1f;
+        }
         renderer.setAnimationAlpha(alpha);
 
         // 2. ACTUALIZAR CÁMARA ANTES QUE EL AUDIO
@@ -287,7 +291,9 @@ public class GraphicPresenter extends ApplicationAdapter
         // Renderizado de Etiquetas 3D (Decals)
         if (!renderer.getLabels().isEmpty()) {
             for (letrain.visitor.gdx3d.Gdx3DRenderer.VehicleLabel label : renderer.getLabels()) {
-                if (label.text == null || label.text.isEmpty()) continue;
+                if (label.text == null || label.text.isEmpty()) {
+                    continue;
+                }
 
                 float baseCharSpacing =
                         0.50f; // Espaciado base (aumentado para evitar solapamiento)
@@ -748,15 +754,33 @@ public class GraphicPresenter extends ApplicationAdapter
         if (resourceContext != null) {
             resourceContext.dispose();
         }
-        if (modelBatch != null) modelBatch.dispose();
-        if (decalBatch != null) decalBatch.dispose();
-        if (spriteBatch != null) spriteBatch.dispose();
-        if (font != null) font.dispose();
-        if (hud != null) hud.dispose();
-        if (groundModel != null) groundModel.dispose();
-        if (gridModel != null) gridModel.dispose();
-        if (boxModel != null) boxModel.dispose();
-        if (compassModel != null) compassModel.dispose();
+        if (modelBatch != null) {
+            modelBatch.dispose();
+        }
+        if (decalBatch != null) {
+            decalBatch.dispose();
+        }
+        if (spriteBatch != null) {
+            spriteBatch.dispose();
+        }
+        if (font != null) {
+            font.dispose();
+        }
+        if (hud != null) {
+            hud.dispose();
+        }
+        if (groundModel != null) {
+            groundModel.dispose();
+        }
+        if (gridModel != null) {
+            gridModel.dispose();
+        }
+        if (boxModel != null) {
+            boxModel.dispose();
+        }
+        if (compassModel != null) {
+            compassModel.dispose();
+        }
 
         // Force exit to ensure no lingering threads (e.g. console input) keep JVM alive
         System.exit(0);

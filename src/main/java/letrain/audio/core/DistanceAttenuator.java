@@ -3,8 +3,12 @@ package letrain.audio.core;
 public class DistanceAttenuator {
 
     public static float calculateVolume(float distance, float refDistance, float maxDistance) {
-        if (distance <= refDistance) return 1.0f;
-        if (distance >= maxDistance) return 0.0f;
+        if (distance <= refDistance) {
+            return 1.0f;
+        }
+        if (distance >= maxDistance) {
+            return 0.0f;
+        }
 
         // Linear rolloff
         return 1.0f - ((distance - refDistance) / (maxDistance - refDistance));

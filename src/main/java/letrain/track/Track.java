@@ -176,7 +176,9 @@ public abstract class Track
     @JsonIgnore
     public List<Dir> getConnections() {
         List<Dir> ret = new ArrayList<>();
-        if (connections == null) return ret;
+        if (connections == null) {
+            return ret;
+        }
         for (int i = 0; i < connections.length; i++) {
             if (connections[i] != null) {
                 ret.add(Dir.values()[i]);

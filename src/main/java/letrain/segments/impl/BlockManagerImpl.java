@@ -64,7 +64,9 @@ public class BlockManagerImpl implements BlockManager {
 
     @Override
     public void releaseAll(Train train) {
-        if (train == null) return;
+        if (train == null) {
+            return;
+        }
         List<Segment> owned = trainSegments.get(train);
         if (owned != null) {
             // Use a copy to avoid ConcurrentModificationException

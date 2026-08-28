@@ -50,9 +50,15 @@ public class AStarPathfinder implements SegmentPathfinder {
     @Override
     public List<Segment> find(
             Segment from, Optional<Port> fromExitPort, Segment to, Optional<Dir> entryDir) {
-        if (from == null || to == null) return List.of();
-        if (from.equals(to)) return List.of(from);
-        if (graph == null) return List.of();
+        if (from == null || to == null) {
+            return List.of();
+        }
+        if (from.equals(to)) {
+            return List.of(from);
+        }
+        if (graph == null) {
+            return List.of();
+        }
 
         Map<NodeState, Integer> gScore = new HashMap<>();
         Map<NodeState, NodeState> cameFrom = new HashMap<>();
@@ -106,17 +112,27 @@ public class AStarPathfinder implements SegmentPathfinder {
                 break;
             }
 
-            if (!closed.add(current)) continue;
+            if (!closed.add(current)) {
+                continue;
+            }
 
             Port entryPort = current.entryPort();
-            if (entryPort == null) continue;
+            if (entryPort == null) {
+                continue;
+            }
             List<Port> nextPorts = graph.getNextPorts(entryPort);
-            if (nextPorts == null) continue;
+            if (nextPorts == null) {
+                continue;
+            }
 
             for (Port nextEntryPort : nextPorts) {
-                if (nextEntryPort == null) continue;
+                if (nextEntryPort == null) {
+                    continue;
+                }
                 Segment neighbor = graph.getSegment(nextEntryPort);
-                if (neighbor == null || neighbor.equals(current.segment())) continue;
+                if (neighbor == null || neighbor.equals(current.segment())) {
+                    continue;
+                }
 
                 // Entry direction constraint check for target segment
                 if (neighbor.equals(to) && entryDir.isPresent()) {
@@ -129,7 +145,9 @@ public class AStarPathfinder implements SegmentPathfinder {
                 }
 
                 NodeState neighborState = new NodeState(neighbor, nextEntryPort);
-                if (closed.contains(neighborState)) continue;
+                if (closed.contains(neighborState)) {
+                    continue;
+                }
 
                 int tentativeG = gScore.get(current) + segmentCost(neighbor);
                 if (tentativeG < gScore.getOrDefault(neighborState, Integer.MAX_VALUE)) {
@@ -150,9 +168,15 @@ public class AStarPathfinder implements SegmentPathfinder {
 
     private Port getOtherPort(Segment segment, Port entryPort) {
         var ports = segment.getPorts();
-        if (ports == null) return null;
-        if (entryPort.equals(ports.getFirst())) return ports.getSecond();
-        if (entryPort.equals(ports.getSecond())) return ports.getFirst();
+        if (ports == null) {
+            return null;
+        }
+        if (entryPort.equals(ports.getFirst())) {
+            return ports.getSecond();
+        }
+        if (entryPort.equals(ports.getSecond())) {
+            return ports.getFirst();
+        }
         return null;
     }
 
@@ -168,7 +192,9 @@ public class AStarPathfinder implements SegmentPathfinder {
     }
 
     private int heuristic(Segment a, Segment b) {
-        if (a == null || b == null) return 0;
+        if (a == null || b == null) {
+            return 0;
+        }
         RailNode aNode = null;
         RailNode bNode = null;
 
@@ -182,13 +208,19 @@ public class AStarPathfinder implements SegmentPathfinder {
             bNode = bPorts.getFirst().getNode();
         }
 
-        if (aNode == null || bNode == null) return 0;
+        if (aNode == null || bNode == null) {
+            return 0;
+        }
         var aTrack = aNode.getTrack();
         var bTrack = bNode.getTrack();
-        if (aTrack == null || bTrack == null) return 0;
+        if (aTrack == null || bTrack == null) {
+            return 0;
+        }
         var aPos = aTrack.getPosition();
         var bPos = bTrack.getPosition();
-        if (aPos == null || bPos == null) return 0;
+        if (aPos == null || bPos == null) {
+            return 0;
+        }
         return Math.abs(aPos.getX() - bPos.getX()) + Math.abs(aPos.getY() - bPos.getY());
     }
 

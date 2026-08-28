@@ -30,7 +30,9 @@ public class PerlinNoise {
 
         for (int i = 0; i < permutation.length; i++) permutation[i] = r.nextInt(256);
 
-        if (permutation.length != 256) throw new IllegalStateException();
+        if (permutation.length != 256) {
+            throw new IllegalStateException();
+        }
 
         for (int i = 0; i < 256; i++) perm[256 + i] = perm[i] = permutation[i];
     }
@@ -70,7 +72,9 @@ public class PerlinNoise {
         float height = 0.0f;
         for (int octave = 1; octave <= octaves; octave++) {
             float h = noise(x, y, z, octave);
-            if (h < 0.0f) h *= -1.0f;
+            if (h < 0.0f) {
+                h *= -1.0f;
+            }
             height += h;
         }
         return height;
