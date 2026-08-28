@@ -46,7 +46,7 @@ public class SegmentImpl implements Segment {
             return false;
         }
         return (java.util.Objects.equals(ports.getFirst(), segment.ports.getFirst())
-                        && java.util.Objects.equals(ports.getSecond(), segment.ports.getSecond()))
+                && java.util.Objects.equals(ports.getSecond(), segment.ports.getSecond()))
                 || (java.util.Objects.equals(ports.getFirst(), segment.ports.getSecond())
                         && java.util.Objects.equals(ports.getSecond(), segment.ports.getFirst()));
     }

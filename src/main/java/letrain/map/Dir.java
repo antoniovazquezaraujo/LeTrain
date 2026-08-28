@@ -3,32 +3,26 @@ package letrain.map;
 /**
  * letrain.map.Dir.
  *
- * <p>Representa una dirección entre las 8 del mapa (N, NE, E...) Se puede hacer girar, invertir,
- * ver si forma recta con otra, calcular la "distancia angular" entre dos, etc.
+ * <p>
+ * Representa una dirección entre las 8 del mapa (N, NE, E...) Se puede hacer girar, invertir, ver
+ * si forma recta con otra, calcular la "distancia angular" entre dos, etc.
  */
 
-//  Giran en sentido glorieta, desde E hasta SE
+// Giran en sentido glorieta, desde E hasta SE
 //
 //
-//           2-N
-//     NW-3   |   1-NE
-//         \     /
-//   W-4 -    .    - 0-E
-//         /     \
-//     SW-5   |   7-SE
-//           6-S
+// 2-N
+// NW-3 | 1-NE
+// \ /
+// W-4 - . - 0-E
+// / \
+// SW-5 | 7-SE
+// 6-S
 //
 //
 
 public enum Dir {
-    E(0),
-    NE(1),
-    N(2),
-    NW(3),
-    W(4),
-    SW(5),
-    S(6),
-    SE(7);
+    E(0), NE(1), N(2), NW(3), W(4), SW(5), S(6), SE(7);
 
     public static final int NUM_DIRS = 8;
     private static final int MIDDLE_ANGLE = NUM_DIRS / 2;

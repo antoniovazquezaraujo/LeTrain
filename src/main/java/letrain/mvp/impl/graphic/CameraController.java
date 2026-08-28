@@ -15,9 +15,7 @@ import letrain.vehicle.rail.impl.Locomotive;
 public class CameraController {
 
     public enum CameraMode {
-        ORBIT,
-        CAB,
-        MAP
+        ORBIT, CAB, MAP
     }
 
     private final Model model;
@@ -142,8 +140,8 @@ public class CameraController {
         float targetZ;
 
         if ((model.getMode() == letrain.mvp.Model.GameMode.DRIVE
-                        || model.getMode() == letrain.mvp.Model.GameMode.LINK
-                        || model.getMode() == letrain.mvp.Model.GameMode.UNLINK)
+                || model.getMode() == letrain.mvp.Model.GameMode.LINK
+                || model.getMode() == letrain.mvp.Model.GameMode.UNLINK)
                 && model.getSelectedLocomotive() != null) {
             Locomotive selected = model.getSelectedLocomotive();
             Vector2 interpPos = getInterpolatedPosition(selected, alpha);
@@ -164,9 +162,8 @@ public class CameraController {
                 if (selected.getCreationDir() != null) {
                     float dx = letrain.utils.PathGeometry.getDirX(selected.getCreationDir());
                     float dz = letrain.utils.PathGeometry.getDirZ(selected.getCreationDir());
-                    targetCameraAngle =
-                            (float) Math.atan2(dx, dz)
-                                    * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+                    targetCameraAngle = (float) Math.atan2(dx, dz)
+                            * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
                 }
             }
         } else if (model.getMode() == letrain.mvp.Model.GameMode.SPEED_SIGNALS
@@ -179,10 +176,8 @@ public class CameraController {
                 if (selected.getCreationDir() != null) {
                     float dx = letrain.utils.PathGeometry.getDirX(selected.getCreationDir());
                     float dz = letrain.utils.PathGeometry.getDirZ(selected.getCreationDir());
-                    targetCameraAngle =
-                            (float) Math.atan2(dx, dz)
-                                            * com.badlogic.gdx.math.MathUtils.radiansToDegrees
-                                    + 180f;
+                    targetCameraAngle = (float) Math.atan2(dx, dz)
+                            * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
                 }
             }
         } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS
@@ -298,16 +293,8 @@ public class CameraController {
             }
         }
 
-        PathGeometry.calculateTwoStagePath(
-                x,
-                y,
-                locomotive.getEntryDir(),
-                locomotive.getDir(),
-                locomotive.getTrack(),
-                progress,
-                locomotive.getSpeed(),
-                canEnterNext,
-                outPos,
+        PathGeometry.calculateTwoStagePath(x, y, locomotive.getEntryDir(), locomotive.getDir(),
+                locomotive.getTrack(), progress, locomotive.getSpeed(), canEnterNext, outPos,
                 outTangent);
 
         return new Vector2(outPos.x - 0.5f, outPos.z - 0.5f);

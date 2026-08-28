@@ -42,27 +42,17 @@ public class AutomationEngine {
             LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
 
             parser.removeErrorListeners();
-            parser.addErrorListener(
-                    new org.antlr.v4.runtime.BaseErrorListener() {
-                        @Override
-                        public void syntaxError(
-                                org.antlr.v4.runtime.Recognizer<?, ?> recognizer,
-                                Object offendingSymbol,
-                                int line,
-                                int charPositionInLine,
-                                String msg,
-                                org.antlr.v4.runtime.RecognitionException e) {
-                            String errorMsg =
-                                    "Syntax error at line "
-                                            + line
-                                            + ":"
-                                            + charPositionInLine
-                                            + " "
-                                            + msg;
-                            log.error(errorMsg);
-                            errors.add(errorMsg);
-                        }
-                    });
+            parser.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
+                @Override
+                public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer,
+                        Object offendingSymbol, int line, int charPositionInLine, String msg,
+                        org.antlr.v4.runtime.RecognitionException e) {
+                    String errorMsg =
+                            "Syntax error at line " + line + ":" + charPositionInLine + " " + msg;
+                    log.error(errorMsg);
+                    errors.add(errorMsg);
+                }
+            });
 
             LeTrainProgramParser.StartContext sintaxTree = parser.start();
             CommandManager manager = new CommandManager(model);

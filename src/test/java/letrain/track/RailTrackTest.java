@@ -108,8 +108,7 @@ class RailTrackTest {
 
         // El primer vehículo sigue en el track; el segundo no debe haber ingresado.
         assertEquals(track, ((Tracker) v).getTrack());
-        assertNull(
-                ((Tracker) v2).getTrack(),
+        assertNull(((Tracker) v2).getTrack(),
                 "El segundo vehículo no debe haberse montado en el track porque estaba ocupado");
     }
 

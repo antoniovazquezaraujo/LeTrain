@@ -50,7 +50,8 @@ public class AudacityLabelParser {
                         // Reassemble name if it had spaces
                         String name = parts[2].trim();
                         if (parts.length > 3) {
-                            for (int i = 3; i < parts.length; i++) name += " " + parts[i].trim();
+                            for (int i = 3; i < parts.length; i++)
+                                name += " " + parts[i].trim();
                         }
 
                         labels.add(new Label(start, end, name.trim()));

@@ -57,15 +57,8 @@ public class FontManager {
         ValidationUtils.requirePositive(size, "size");
 
         // Try common monospace fonts in order, starting with our bundled JuliaMono
-        String[] monospaceFonts = {
-            "JuliaMono-Regular",
-            "JetBrainsMono-Regular",
-            "Inconsolata-Regular",
-            "Consolas",
-            "Courier New",
-            "Menlo",
-            "DejaVu Sans Mono"
-        };
+        String[] monospaceFonts = {"JuliaMono-Regular", "JetBrainsMono-Regular",
+                "Inconsolata-Regular", "Consolas", "Courier New", "Menlo", "DejaVu Sans Mono"};
 
         for (String fontName : monospaceFonts) {
             BitmapFont font = loadFont(fontName, size);
@@ -132,8 +125,8 @@ public class FontManager {
         try {
             File systemFontFile = findSystemFont(fontName);
             if (systemFontFile != null && systemFontFile.exists()) {
-                return generateFontFromFile(
-                        Gdx.files.absolute(systemFontFile.getAbsolutePath()), size);
+                return generateFontFromFile(Gdx.files.absolute(systemFontFile.getAbsolutePath()),
+                        size);
             }
         } catch (Exception e) {
             // Silent fail, will return null
@@ -153,29 +146,17 @@ public class FontManager {
 
         if (os.contains("win")) {
             // Windows font directories
-            searchDirs =
-                    new String[] {
-                        "C:\\Windows\\Fonts",
-                        "C:\\Users\\"
-                                + System.getProperty("user.name")
-                                + "\\AppData\\Local\\Microsoft\\Windows\\Fonts"
-                    };
+            searchDirs = new String[] {"C:\\Windows\\Fonts",
+                    "C:\\Users\\" + System.getProperty("user.name")
+                            + "\\AppData\\Local\\Microsoft\\Windows\\Fonts"};
         } else if (os.contains("mac")) {
             // macOS font directories
-            searchDirs =
-                    new String[] {
-                        "/Library/Fonts",
-                        System.getProperty("user.home") + "/Library/Fonts",
-                        "/System/Library/Fonts"
-                    };
+            searchDirs = new String[] {"/Library/Fonts",
+                    System.getProperty("user.home") + "/Library/Fonts", "/System/Library/Fonts"};
         } else if (os.contains("nux") || os.contains("unix")) {
             // Linux font directories
-            searchDirs =
-                    new String[] {
-                        "/usr/share/fonts",
-                        "/usr/local/share/fonts",
-                        System.getProperty("user.home") + "/.fonts"
-                    };
+            searchDirs = new String[] {"/usr/share/fonts", "/usr/local/share/fonts",
+                    System.getProperty("user.home") + "/.fonts"};
         }
 
         // Search for font files
@@ -213,8 +194,8 @@ public class FontManager {
      * @param size the desired font size
      * @return a BitmapFont, or null if generation fails
      */
-    private static BitmapFont generateFontFromFile(
-            com.badlogic.gdx.files.FileHandle fileHandle, int size) {
+    private static BitmapFont generateFontFromFile(com.badlogic.gdx.files.FileHandle fileHandle,
+            int size) {
         try {
             FreeTypeFontGenerator generator = new FreeTypeFontGenerator(fileHandle);
             FreeTypeFontParameter parameter = new FreeTypeFontParameter();

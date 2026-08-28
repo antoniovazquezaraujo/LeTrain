@@ -15,58 +15,24 @@ class DirTest {
     }
 
     @ParameterizedTest(name = "fromInt({0}) should return {1}")
-    @CsvSource({
-        "0, E", "1, NE", "2, N", "3, NW", "4, W", "5, SW", "6, S", "7, SE", "8, E", "-1, SE",
-        "-2, S", "-3, SW", "-4, W", "-5, NW", "-6, N", "-7, NE", "-8, E"
-    })
+    @CsvSource({"0, E", "1, NE", "2, N", "3, NW", "4, W", "5, SW", "6, S", "7, SE", "8, E",
+            "-1, SE", "-2, S", "-3, SW", "-4, W", "-5, NW", "-6, N", "-7, NE", "-8, E"})
     void testFromInt(int a, Dir b) {
         Assertions.assertEquals(b, Dir.fromInt(a));
     }
 
     @ParameterizedTest(name = "add({0}, {1}) should return {2}")
-    @CsvSource({
-        "0, E, E",
-        "1, E, NE",
-        "2, E, N",
-        "3, E, NW",
-        "4, E, W",
-        "5, E, SW",
-        "6, E, S",
-        "7, E, SE",
-        "8, E, E",
-        "-1, E, SE",
-        "-2, E, S",
-        "-3, E, SW",
-        "-4, E, W",
-        "-5, E, NW",
-        "-6, E, N",
-        "-7, E, NE",
-        "-8, E, E"
-    })
+    @CsvSource({"0, E, E", "1, E, NE", "2, E, N", "3, E, NW", "4, E, W", "5, E, SW", "6, E, S",
+            "7, E, SE", "8, E, E", "-1, E, SE", "-2, E, S", "-3, E, SW", "-4, E, W", "-5, E, NW",
+            "-6, E, N", "-7, E, NE", "-8, E, E"})
     void testAdd(int a, Dir dir, Dir expected) {
         Assertions.assertEquals(expected, Dir.add(dir, a));
     }
 
     @ParameterizedTest(name = "isValidValue({0}) should return {1}")
-    @CsvSource({
-        "0, true",
-        "1, true",
-        "2, true",
-        "3, true",
-        "4, true",
-        "5, true",
-        "6, true",
-        "7, true",
-        "8, false",
-        "-1, false",
-        "-2, false",
-        "-3, false",
-        "-4, false",
-        "-5, false",
-        "-6, false",
-        "-7, false",
-        "-8, false"
-    })
+    @CsvSource({"0, true", "1, true", "2, true", "3, true", "4, true", "5, true", "6, true",
+            "7, true", "8, false", "-1, false", "-2, false", "-3, false", "-4, false", "-5, false",
+            "-6, false", "-7, false", "-8, false"})
     void testIsValidValue(int a, boolean expected) {
         Assertions.assertEquals(expected, Dir.isValidValue(a));
     }
@@ -78,10 +44,8 @@ class DirTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-        "0, 0", "1, 1", "2, 2", "3, 3", "4, 4", "5, -3", "6, -2", "7, -1", "-1, -1", "-2, -2",
-        "-3, -3", "-4, -4", "-5, 3", "-6, 2", "-7, 1"
-    })
+    @CsvSource({"0, 0", "1, 1", "2, 2", "3, 3", "4, 4", "5, -3", "6, -2", "7, -1", "-1, -1",
+            "-2, -2", "-3, -3", "-4, -4", "-5, 3", "-6, 2", "-7, 1"})
     void testShortWay(int a, int b) {
         Assertions.assertEquals(b, Dir.shortWay(a));
     }
@@ -111,31 +75,15 @@ class DirTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-        "E, false",
-        "NE, false",
-        "N, false",
-        "NW, true",
-        "W, false",
-        "SW, true",
-        "S, false",
-        "SE, false"
-    })
+    @CsvSource({"E, false", "NE, false", "N, false", "NW, true", "W, false", "SW, true", "S, false",
+            "SE, false"})
     void testIsCurve(Dir a, boolean b) {
         Assertions.assertEquals(b, dir.isCurve(a));
     }
 
     @ParameterizedTest
-    @CsvSource({
-        "E, false",
-        "NE, false",
-        "N, false",
-        "NW, false",
-        "W, true",
-        "SW, false",
-        "S, false",
-        "SE, false"
-    })
+    @CsvSource({"E, false", "NE, false", "N, false", "NW, false", "W, true", "SW, false",
+            "S, false", "SE, false"})
     void testIsStraight(Dir a, boolean b) {
         Dir dir = Dir.E;
         Assertions.assertEquals(b, dir.isStraight(a));

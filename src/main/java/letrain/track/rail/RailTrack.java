@@ -11,10 +11,7 @@ public class RailTrack extends Track {
     protected Router router;
 
     public enum TrackFormat {
-        STRAIGHT,
-        CURVE,
-        CROSS,
-        FORK
+        STRAIGHT, CURVE, CROSS, FORK
     }
 
     public RailTrack() {

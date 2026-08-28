@@ -6,13 +6,7 @@ package letrain.itinerary;
  */
 public class WaypointCommand {
     public enum Kind {
-        LOAD,
-        UNLOAD,
-        REVERSE,
-        WAIT,
-        SPEED,
-        STOP,
-        NONE
+        LOAD, UNLOAD, REVERSE, WAIT, SPEED, STOP, NONE
     }
 
     /** Simulation ticks per second. Used to convert seconds ↔ ticks. */

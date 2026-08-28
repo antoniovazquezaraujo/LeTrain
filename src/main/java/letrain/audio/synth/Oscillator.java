@@ -6,10 +6,7 @@ public class Oscillator extends AudioGenerator {
     private Waveform waveform = Waveform.SINE;
 
     public enum Waveform {
-        SINE,
-        SQUARE,
-        SAWTOOTH,
-        TRIANGLE
+        SINE, SQUARE, SAWTOOTH, TRIANGLE
     }
 
     public void setFrequency(double frequency) {

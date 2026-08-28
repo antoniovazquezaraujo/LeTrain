@@ -19,9 +19,7 @@ public enum CargoTypes {
     }
 
     public enum StationRole {
-        GENERIC,
-        PRODUCER,
-        CONSUMER
+        GENERIC, PRODUCER, CONSUMER
     }
 
     /** Map GroundMap value to CargoType and Role */

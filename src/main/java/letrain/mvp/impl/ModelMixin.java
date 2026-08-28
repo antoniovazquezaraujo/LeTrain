@@ -25,8 +25,7 @@ import letrain.vehicle.rail.impl.Wagon;
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonAutoDetect(
-        fieldVisibility = JsonAutoDetect.Visibility.ANY,
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY,
         getterVisibility = JsonAutoDetect.Visibility.NONE,
         setterVisibility = JsonAutoDetect.Visibility.NONE,
         isGetterVisibility = JsonAutoDetect.Visibility.NONE,
@@ -104,11 +103,14 @@ public abstract class ModelMixin {
     @JsonProperty("nextForkId")
     int nextForkId;
 
-    @JsonIgnore CargoTypes selectedWagonType;
+    @JsonIgnore
+    CargoTypes selectedWagonType;
 
-    @JsonIgnore com.badlogic.gdx.graphics.Camera camera;
+    @JsonIgnore
+    com.badlogic.gdx.graphics.Camera camera;
 
-    @JsonIgnore List<TrainEventListener> trainEventListeners;
+    @JsonIgnore
+    List<TrainEventListener> trainEventListeners;
 
     @JsonProperty("nextSensorId")
     int nextSensorId;
@@ -140,7 +142,9 @@ public abstract class ModelMixin {
     @JsonSerialize(using = com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer.class)
     LocalDateTime lastSaveTime;
 
-    @JsonIgnore Object automationEngine;
+    @JsonIgnore
+    Object automationEngine;
 
-    @JsonIgnore Object internalSimService;
+    @JsonIgnore
+    Object internalSimService;
 }

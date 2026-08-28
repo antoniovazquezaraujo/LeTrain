@@ -8,8 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.IOException;
 import letrain.itinerary.WaypointCommand;
 
-@JsonAutoDetect(
-        fieldVisibility = JsonAutoDetect.Visibility.ANY,
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY,
         getterVisibility = JsonAutoDetect.Visibility.NONE,
         isGetterVisibility = JsonAutoDetect.Visibility.NONE)
 @JsonDeserialize(using = WaypointCommandMixin.WaypointCommandDeserializer.class)

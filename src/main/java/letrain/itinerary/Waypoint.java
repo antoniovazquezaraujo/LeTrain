@@ -6,8 +6,7 @@ import letrain.map.Dir;
 
 public interface Waypoint {
     enum Type {
-        STATION,
-        SENSOR
+        STATION, SENSOR
     }
 
     Type type();

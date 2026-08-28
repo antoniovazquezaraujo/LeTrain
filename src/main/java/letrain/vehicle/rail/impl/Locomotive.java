@@ -11,13 +11,14 @@ import org.slf4j.LoggerFactory;
  * A locomotive (engine) that pulls or pushes a train. Implements {@link Tractor} for speed control,
  * inertia, and turn-based movement timing.
  *
- * <p>Key concepts:
+ * <p>
+ * Key concepts:
  *
  * <ul>
- *   <li>{@code currentSpeed} (0-10) — actual visual/acoustic speed
- *   <li>{@code targetSpeed} (0-10) — desired speed set by player
- *   <li>{@code turns} — countdown ticks between cell advances ({@code 50 / currentSpeed})
- *   <li>{@code stalled} — frozen after collision; must reverse to recover
+ * <li>{@code currentSpeed} (0-10) — actual visual/acoustic speed
+ * <li>{@code targetSpeed} (0-10) — desired speed set by player
+ * <li>{@code turns} — countdown ticks between cell advances ({@code 50 / currentSpeed})
+ * <li>{@code stalled} — frozen after collision; must reverse to recover
  * </ul>
  */
 public class Locomotive extends Linker implements Tractor {
@@ -47,21 +48,19 @@ public class Locomotive extends Linker implements Tractor {
     private boolean engineExplicitlyOff = false;
 
     public enum SpeedLimitType {
-        MAX_SPEED,
-        MIN_SPEED
+        MAX_SPEED, MIN_SPEED
     }
 
-    public static final String[] COLOR_PALETTE = {
-        "WHITE", // 0
-        "RED_BRIGHT", // 1
-        "GREEN_BRIGHT", // 2
-        "YELLOW_BRIGHT", // 3
-        "BLUE_BRIGHT", // 4
-        "MAGENTA_BRIGHT", // 5
-        "CYAN_BRIGHT", // 6
-        "GRAY", // 7
-        "ORANGE", // 8
-        "PINK" // 9
+    public static final String[] COLOR_PALETTE = {"WHITE", // 0
+            "RED_BRIGHT", // 1
+            "GREEN_BRIGHT", // 2
+            "YELLOW_BRIGHT", // 3
+            "BLUE_BRIGHT", // 4
+            "MAGENTA_BRIGHT", // 5
+            "CYAN_BRIGHT", // 6
+            "GRAY", // 7
+            "ORANGE", // 8
+            "PINK" // 9
     };
     private static final java.util.Random RANDOM = new java.util.Random();
 
@@ -146,8 +145,8 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     /**
-     * Main update tick. Handles acoustic signals, inertia, turn consumption, and triggers {@link
-     * Train#advance()} when it's time to move.
+     * Main update tick. Handles acoustic signals, inertia, turn consumption, and triggers
+     * {@link Train#advance()} when it's time to move.
      *
      * @return true if the train moved this tick
      */
@@ -174,17 +173,15 @@ public class Locomotive extends Linker implements Tractor {
                 if (getTrain() != null) {
                     java.util.Deque<Linker> linkers = getTrain().getLinkers();
                     if (!linkers.isEmpty()) {
-                        boolean normalSense =
-                                getTrain().getDirectorLinker() == null
-                                        || !getTrain().getDirectorLinker().isReversed();
+                        boolean normalSense = getTrain().getDirectorLinker() == null
+                                || !getTrain().getDirectorLinker().isReversed();
                         Linker head = normalSense ? linkers.getFirst() : linkers.getLast();
                         if (head != null && head.getTrack() != null) {
                             letrain.track.Track nextTrack =
                                     head.getTrack().getConnected(head.getDir());
                             if (nextTrack != null) {
                                 Linker occupant = nextTrack.getLinker();
-                                if (occupant != null
-                                        && occupant.getTrain() != null
+                                if (occupant != null && occupant.getTrain() != null
                                         && occupant.getTrain() != getTrain()) {
                                     blocked = true;
                                     log.info(
@@ -217,11 +214,7 @@ public class Locomotive extends Linker implements Tractor {
                         getTrain() != null && getTrain().getSafetyManager().hasPermissionToMove();
                 log.debug(
                         "Locomotive {}: isTimeToMove=true, currentSpeed={}, targetSpeed={}, turns={}, hasPermissionToMove={}",
-                        id,
-                        currentSpeed,
-                        targetSpeed,
-                        turns,
-                        hasPerm);
+                        id, currentSpeed, targetSpeed, turns, hasPerm);
                 if (getTrain().getMovementManager().advance()) {
                     log.debug("Locomotive {}: advance() succeeded", id);
                     moved = true;
@@ -243,8 +236,7 @@ public class Locomotive extends Linker implements Tractor {
                     setCurrentSpeed(0);
                     setTargetSpeed(0);
                 } else {
-                    log.debug(
-                            "Locomotive {}: advance() failed (AUTO mode). Letting inertia brake.",
+                    log.debug("Locomotive {}: advance() failed (AUTO mode). Letting inertia brake.",
                             id);
                     // Auto mode: don't punish, but let inertia brake
 
@@ -286,12 +278,8 @@ public class Locomotive extends Linker implements Tractor {
             } else {
                 setCurrentSpeed(currentSpeed - 1);
             }
-            log.info(
-                    "Locomotive {}: inertia speed update from {} to {} (targetSpeed={})",
-                    id,
-                    oldSpeed,
-                    currentSpeed,
-                    targetSpeed);
+            log.info("Locomotive {}: inertia speed update from {} to {} (targetSpeed={})", id,
+                    oldSpeed, currentSpeed, targetSpeed);
             railsSinceLastSpeedChange = 0;
         }
     }
@@ -348,23 +336,18 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void setTargetSpeed(int speed) {
-        if (getTrain() != null
-                && getTrain().getSafetyManager() != null
+        if (getTrain() != null && getTrain().getSafetyManager() != null
                 && getTrain().getSafetyManager().isWaitingForBlock()) {
             if (speed > 0) {
                 log.info(
                         "Locomotive {}: Train is waiting for block. Intercepting setTargetSpeed({}) and saving it instead.",
-                        id,
-                        speed);
+                        id, speed);
                 getTrain().setSavedTargetSpeed(speed);
                 speed = 0;
             }
         }
         if (this.targetSpeed != speed) {
-            log.info(
-                    "Locomotive {}: setTargetSpeed changes from {} to {}",
-                    id,
-                    this.targetSpeed,
+            log.info("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed,
                     speed);
         }
         int oldSpeed = this.targetSpeed;

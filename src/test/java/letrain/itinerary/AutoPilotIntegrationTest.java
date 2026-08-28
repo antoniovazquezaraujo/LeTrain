@@ -133,8 +133,7 @@ class AutoPilotIntegrationTest {
             Train t = makeTrainNoStation(t1, Dir.W);
             assertFalse(fork.isUsingAlternativeRoute(), "fork starts straight");
 
-            model.setProgram(
-                    """
+            model.setProgram("""
                     station %d set name "Main";
                     station %d set name "Branch";
                     create itinerary "Ruta" {
@@ -144,13 +143,8 @@ class AutoPilotIntegrationTest {
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
                     train %d set speed 3;
-                    """
-                            .formatted(
-                                    mainSt.getId(),
-                                    branchSt.getId(),
-                                    t.getId(),
-                                    t.getId(),
-                                    t.getId()));
+                    """.formatted(mainSt.getId(), branchSt.getId(), t.getId(), t.getId(),
+                    t.getId()));
 
             runTicks(600);
 
@@ -181,8 +175,7 @@ class AutoPilotIntegrationTest {
             Train t = makeTrain(t0, Dir.W); // Train starts at Start station (first waypoint)
             assertFalse(fork.isUsingAlternativeRoute(), "fork starts straight");
 
-            model.setProgram(
-                    """
+            model.setProgram("""
                     station %d set name "Start";
                     station %d set name "Main";
                     station %d set name "Branch";
@@ -193,14 +186,8 @@ class AutoPilotIntegrationTest {
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
                     train %d set speed 3;
-                    """
-                            .formatted(
-                                    startSt.getId(),
-                                    mainSt.getId(),
-                                    branchSt.getId(),
-                                    t.getId(),
-                                    t.getId(),
-                                    t.getId()));
+                    """.formatted(startSt.getId(), mainSt.getId(), branchSt.getId(), t.getId(),
+                    t.getId(), t.getId()));
 
             runTicks(600);
 
@@ -314,8 +301,7 @@ class AutoPilotIntegrationTest {
             Station a = makeStation(t0, "A");
             Station b = makeStation(t2, "B");
             Train t = makeTrain(t0, Dir.W);
-            model.setProgram(
-                    """
+            model.setProgram("""
                     station %d set name "A";
                     station %d set name "B";
                     create itinerary "Ruta" {
@@ -325,18 +311,15 @@ class AutoPilotIntegrationTest {
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
                     train %d set speed 3;
-                    """
-                            .formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
 
             runTicks(600);
 
             assertAtStation(t, b);
-            assertEquals(
-                    0,
-                    ((Locomotive) t.getDirectorLinker()).getTargetSpeed(),
+            assertEquals(0, ((Locomotive) t.getDirectorLinker()).getTargetSpeed(),
                     "train should have target speed 0 after SPEED(0) waypoint command");
-            assertEquals(
-                    0, t.getSpeed(), "train should have stopped after SPEED(0) waypoint command");
+            assertEquals(0, t.getSpeed(),
+                    "train should have stopped after SPEED(0) waypoint command");
         }
 
         @Test
@@ -352,8 +335,7 @@ class AutoPilotIntegrationTest {
             Train t = makeTrain(t0, Dir.W);
             Locomotive l = (Locomotive) t.getDirectorLinker();
 
-            model.setProgram(
-                    """
+            model.setProgram("""
                     station %d set name "A";
                     station %d set name "B";
                     create itinerary "Ruta" {
@@ -363,8 +345,7 @@ class AutoPilotIntegrationTest {
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
                     train %d set speed 3;
-                    """
-                            .formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
 
             // Run until reaching station B
             boolean reached = false;
@@ -380,11 +361,8 @@ class AutoPilotIntegrationTest {
                     for (int j = 0; j < 200; j++) {
                         runTicks(1);
                         if (t.getSpeed() > 0) {
-                            System.out.println(
-                                    "  train resumed at tick "
-                                            + (i + j)
-                                            + " speed="
-                                            + t.getSpeed());
+                            System.out.println("  train resumed at tick " + (i + j) + " speed="
+                                    + t.getSpeed());
                             break;
                         }
                     }
@@ -394,13 +372,9 @@ class AutoPilotIntegrationTest {
             assertTrue(reached, "train should reach station B");
 
             // Verify the train eventually moves again after WAIT+SPEED 3
-            assertTrue(
-                    t.getSpeed() > 0 || l.getTargetSpeed() > 0,
-                    "train should have resumed after WAIT command (speed="
-                            + t.getSpeed()
-                            + " targetSpeed="
-                            + l.getTargetSpeed()
-                            + ")");
+            assertTrue(t.getSpeed() > 0 || l.getTargetSpeed() > 0,
+                    "train should have resumed after WAIT command (speed=" + t.getSpeed()
+                            + " targetSpeed=" + l.getTargetSpeed() + ")");
         }
 
         @Test
@@ -416,8 +390,7 @@ class AutoPilotIntegrationTest {
             Train t = makeTrain(t0, Dir.W);
             Locomotive l = (Locomotive) t.getDirectorLinker();
 
-            model.setProgram(
-                    """
+            model.setProgram("""
                     station %d set name "A";
                     station %d set name "B";
                     create itinerary "Ruta" {
@@ -427,13 +400,12 @@ class AutoPilotIntegrationTest {
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
                     train %d set speed 3;
-                    """
-                            .formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
 
             runUntil(model, () -> l.getTargetSpeed() == 5, 800);
             // After WAIT 2 + SPEED 5, train should have target speed 5
-            assertEquals(
-                    5, l.getTargetSpeed(), "train target speed should be 5 after SPEED 5 command");
+            assertEquals(5, l.getTargetSpeed(),
+                    "train target speed should be 5 after SPEED 5 command");
         }
 
         @Test
@@ -453,8 +425,7 @@ class AutoPilotIntegrationTest {
             t1.setSensor(sensor);
             model.addSensor(sensor);
 
-            model.setProgram(
-                    """
+            model.setProgram("""
                     station %d set name "A";
                     sensor %d set name "S1";
                     create itinerary "Ruta" {
@@ -464,8 +435,7 @@ class AutoPilotIntegrationTest {
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
                     train %d set speed 3;
-                    """
-                            .formatted(a.getId(), sensor.getId(), t.getId(), t.getId(), t.getId()));
+                    """.formatted(a.getId(), sensor.getId(), t.getId(), t.getId(), t.getId()));
 
             runTicks(400);
 
@@ -490,8 +460,7 @@ class AutoPilotIntegrationTest {
             Train t = makeTrain(t0, Dir.W);
             Locomotive loco = (Locomotive) t.getDirectorLinker();
 
-            model.setProgram(
-                    """
+            model.setProgram("""
                     station %d set name "A";
                     station %d set name "B";
                     create itinerary "Ruta" {
@@ -501,8 +470,7 @@ class AutoPilotIntegrationTest {
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
                     train %d set speed 3;
-                    """
-                            .formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
 
             Dir originalDir = loco.getDir();
 
@@ -512,13 +480,9 @@ class AutoPilotIntegrationTest {
             Dir newDir = loco.getDir();
             assertNotNull(newDir, "direction should not be null");
             System.out.println("REVERSE test: originalDir=" + originalDir + " newDir=" + newDir);
-            assertFalse(
-                    newDir == originalDir,
-                    "direction should have flipped after REVERSE command (was "
-                            + originalDir
-                            + ", now "
-                            + newDir
-                            + ")");
+            assertFalse(newDir == originalDir,
+                    "direction should have flipped after REVERSE command (was " + originalDir
+                            + ", now " + newDir + ")");
         }
 
         @Test
@@ -534,8 +498,7 @@ class AutoPilotIntegrationTest {
             Train t = makeTrain(t0, Dir.W);
             Locomotive l = (Locomotive) t.getDirectorLinker();
 
-            model.setProgram(
-                    """
+            model.setProgram("""
                     station %d set name "A";
                     station %d set name "B";
                     create itinerary "Ruta" {
@@ -545,13 +508,12 @@ class AutoPilotIntegrationTest {
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
                     train %d set speed 3;
-                    """
-                            .formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
 
             runUntil(model, () -> !t.isAutoMode() && t.getSpeed() == 0, 800);
             assertFalse(t.isAutoMode(), "train should switch to manual mode after STOP command");
-            assertEquals(
-                    0, l.getTargetSpeed(), "train target speed should be 0 after STOP command");
+            assertEquals(0, l.getTargetSpeed(),
+                    "train target speed should be 0 after STOP command");
         }
 
         @Disabled("Auto-reverse disabled; test no longer applicable")
@@ -579,8 +541,7 @@ class AutoPilotIntegrationTest {
 
             Train t = makeTrain(branch, Dir.S);
 
-            model.setProgram(
-                    """
+            model.setProgram("""
                     station %d set name "Branch";
                     station %d set name "Main";
                     create itinerary "Ruta" {
@@ -590,13 +551,8 @@ class AutoPilotIntegrationTest {
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
                     train %d set speed 3;
-                    """
-                            .formatted(
-                                    branchSt.getId(),
-                                    mainSt.getId(),
-                                    t.getId(),
-                                    t.getId(),
-                                    t.getId()));
+                    """.formatted(branchSt.getId(), mainSt.getId(), t.getId(), t.getId(),
+                    t.getId()));
 
             assertAtStation(t, branchSt);
 
@@ -627,8 +583,7 @@ class AutoPilotIntegrationTest {
             l.setEngineOn(true);
             t.setStationId(madrid.getId());
 
-            m.setProgram(
-                    """
+            m.setProgram("""
                     station %d set name "Madrid";
                     station %d set name "Barcelona";
                     create itinerary "Ruta" {
@@ -638,13 +593,8 @@ class AutoPilotIntegrationTest {
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
                     train %d set speed 3;
-                    """
-                            .formatted(
-                                    madrid.getId(),
-                                    barcelona.getId(),
-                                    t.getId(),
-                                    t.getId(),
-                                    t.getId()));
+                    """.formatted(madrid.getId(), barcelona.getId(), t.getId(), t.getId(),
+                    t.getId()));
 
             boolean reachedBarcelona = false;
             for (int i = 0; i < 1200; i++) {
@@ -660,11 +610,7 @@ class AutoPilotIntegrationTest {
                 }
                 System.out.printf(
                         "TICK %d: speed=%d targetSpeed=%d auto=%b stationId=%d segment=%s pos=%s%n",
-                        i,
-                        t.getSpeed(),
-                        l.getTargetSpeed(),
-                        t.isAutoMode(),
-                        t.getStationId(),
+                        i, t.getSpeed(), l.getTargetSpeed(), t.isAutoMode(), t.getStationId(),
                         curSeg != null ? curSeg.getId() : "null",
                         pos != null ? pos.getX() + "," + pos.getY() : "null");
                 if (hasReached(t, barcelona)) {
@@ -687,8 +633,7 @@ class AutoPilotIntegrationTest {
             l.setEngineOn(true);
             t.setStationId(madrid.getId());
 
-            m.setProgram(
-                    """
+            m.setProgram("""
                     station %d set name "Madrid";
                     station %d set name "Barcelona";
                     station %d on train enter { train set speed 0 };
@@ -699,14 +644,8 @@ class AutoPilotIntegrationTest {
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
                     train %d set speed 3;
-                    """
-                            .formatted(
-                                    madrid.getId(),
-                                    barcelona.getId(),
-                                    barcelona.getId(),
-                                    t.getId(),
-                                    t.getId(),
-                                    t.getId()));
+                    """.formatted(madrid.getId(), barcelona.getId(), barcelona.getId(), t.getId(),
+                    t.getId(), t.getId()));
 
             boolean reachedBarcelona = false;
             for (int i = 0; i < 1200; i++) {
@@ -722,11 +661,7 @@ class AutoPilotIntegrationTest {
                 }
                 System.out.printf(
                         "TICK %d: speed=%d targetSpeed=%d auto=%b stationId=%d segment=%s pos=%s%n",
-                        i,
-                        t.getSpeed(),
-                        l.getTargetSpeed(),
-                        t.isAutoMode(),
-                        t.getStationId(),
+                        i, t.getSpeed(), l.getTargetSpeed(), t.isAutoMode(), t.getStationId(),
                         curSeg != null ? curSeg.getId() : "null",
                         pos != null ? pos.getX() + "," + pos.getY() : "null");
                 if (hasReached(t, barcelona)) {
@@ -735,12 +670,8 @@ class AutoPilotIntegrationTest {
                     for (int j = 0; j < 200; j++) {
                         runTicks(m, 1);
                         System.out.printf(
-                                "POST-TICK %d: speed=%d targetSpeed=%d auto=%b stationId=%d%n",
-                                j,
-                                t.getSpeed(),
-                                l.getTargetSpeed(),
-                                t.isAutoMode(),
-                                t.getStationId());
+                                "POST-TICK %d: speed=%d targetSpeed=%d auto=%b stationId=%d%n", j,
+                                t.getSpeed(), l.getTargetSpeed(), t.isAutoMode(), t.getStationId());
                     }
                     break;
                 }
@@ -761,8 +692,8 @@ class AutoPilotIntegrationTest {
             // Siding layout with parallel S1 and S2:
             // Station A at (0, 0) -> Fork 1 at (2, 0)
             // Fork 1 branches into:
-            //   - S1 (main line): Fork 1 at (2, 0) -> Track at (3, 0) -> Fork 2 at (4, 0)
-            //   - S2 (siding line): Fork 1 at (2, 0) -> Track at (3, 1) -> Fork 2 at (4, 0)
+            // - S1 (main line): Fork 1 at (2, 0) -> Track at (3, 0) -> Fork 2 at (4, 0)
+            // - S2 (siding line): Fork 1 at (2, 0) -> Track at (3, 1) -> Fork 2 at (4, 0)
             // Fork 2 connects to Station B at (6, 0)
 
             RailTrack tA = makeTrack(0, 0, Dir.E, Dir.W);
@@ -908,20 +839,17 @@ class AutoPilotIntegrationTest {
 
     /** Shorthand: station A → station B itinerary, assign to train, activate. */
     private void program(String nameA, int idA, String nameB, int idB, int trainId) {
-        model.setProgram(
-                """
-                 station %d set name "%s";
-                 station %d set name "%s";
-                 create itinerary "Ruta" {
-                     add station "%s"
-                     add station "%s"
-                 }
-                 assign itinerary "Ruta" to train %d;
-                 train %d set autopilot true;
-                 train %d set speed 3;
-                 """
-                        .formatted(
-                                idA, nameA, idB, nameB, nameA, nameB, trainId, trainId, trainId));
+        model.setProgram("""
+                station %d set name "%s";
+                station %d set name "%s";
+                create itinerary "Ruta" {
+                    add station "%s"
+                    add station "%s"
+                }
+                assign itinerary "Ruta" to train %d;
+                train %d set autopilot true;
+                train %d set speed 3;
+                """.formatted(idA, nameA, idB, nameB, nameA, nameB, trainId, trainId, trainId));
     }
 
     private void runTicks(int count) {
@@ -945,8 +873,10 @@ class AutoPilotIntegrationTest {
 
     private void runUntil(Model m, java.util.function.BooleanSupplier condition, int maxTicks) {
         for (int i = 0; i < maxTicks; i++) {
-            if (condition.getAsBoolean()) return;
-            if (m.getScheduler() != null) m.getScheduler().tick();
+            if (condition.getAsBoolean())
+                return;
+            if (m.getScheduler() != null)
+                m.getScheduler().tick();
             m.moveLocomotives();
             m.loadAndUnloadTrains();
         }
@@ -954,9 +884,7 @@ class AutoPilotIntegrationTest {
     }
 
     private void assertAtStation(Train t, Station st) {
-        assertEquals(
-                st.getId(),
-                t.getStationId(),
+        assertEquals(st.getId(), t.getStationId(),
                 "expected at " + st.getName() + " but was at station " + t.getStationId());
     }
 
@@ -972,8 +900,7 @@ class AutoPilotIntegrationTest {
         Locomotive loco = (Locomotive) t.getDirectorLinker();
         assertNotNull(loco, "Locomotive should exist");
 
-        m.setProgram(
-                """
+        m.setProgram("""
                 create itinerary "21" {
                     add station 2
                     add station 1
@@ -996,13 +923,10 @@ class AutoPilotIntegrationTest {
 
         // Drive back to S10
         Station st2 = m.getStation(2);
-        runUntil(
-                m,
-                () -> {
-                    Segment curSeg = m.getRailwayGraph().getSegment((RailTrack) loco.getTrack());
-                    return curSeg != null && curSeg.getId().equals("S10");
-                },
-                800);
+        runUntil(m, () -> {
+            Segment curSeg = m.getRailwayGraph().getSegment((RailTrack) loco.getTrack());
+            return curSeg != null && curSeg.getId().equals("S10");
+        }, 800);
 
         m.setProgram("train 1 set speed 0;");
         runUntil(m, () -> loco.getSpeed() == 0, 300);
@@ -1012,8 +936,7 @@ class AutoPilotIntegrationTest {
         loco.toggleReversed();
 
         // Run the script again!
-        m.setProgram(
-                """
+        m.setProgram("""
                 create itinerary "21" {
                     add station 2
                     add station 1
@@ -1024,47 +947,30 @@ class AutoPilotIntegrationTest {
                 """);
 
         // Let's run it and see if it goes to Station 2 and then Station 1!
-        System.out.println(
-                "DEBUG BEFORE SECOND RUN: autoMode="
-                        + t.isAutoMode()
-                        + ", apMode="
-                        + t.getAutopilot().mode()
-                        + ", speed="
-                        + loco.getSpeed()
-                        + ", targetSpeed="
-                        + loco.getTargetSpeed()
-                        + ", curSeg="
-                        + (t.getSafetyManager().getCurrentSegment() != null
-                                ? t.getSafetyManager().getCurrentSegment().getId()
-                                : "null")
-                        + ", nextSeg="
-                        + (t.getSafetyManager().getNextSegment() != null
-                                ? t.getSafetyManager().getNextSegment().getId()
-                                : "null")
-                        + ", waitingForBlock="
-                        + t.getSafetyManager().isWaitingForBlock());
+        System.out.println("DEBUG BEFORE SECOND RUN: autoMode=" + t.isAutoMode() + ", apMode="
+                + t.getAutopilot().mode() + ", speed=" + loco.getSpeed() + ", targetSpeed="
+                + loco.getTargetSpeed() + ", curSeg="
+                + (t.getSafetyManager().getCurrentSegment() != null
+                        ? t.getSafetyManager().getCurrentSegment().getId()
+                        : "null")
+                + ", nextSeg="
+                + (t.getSafetyManager().getNextSegment() != null
+                        ? t.getSafetyManager().getNextSegment().getId()
+                        : "null")
+                + ", waitingForBlock=" + t.getSafetyManager().isWaitingForBlock());
         runUntil(m, () -> t.getStationId() == st2.getId(), 400);
-        System.out.println(
-                "DEBUG AFTER SECOND RUN TO ST2: autoMode="
-                        + t.isAutoMode()
-                        + ", apMode="
-                        + t.getAutopilot().mode()
-                        + ", speed="
-                        + loco.getSpeed()
-                        + ", targetSpeed="
-                        + loco.getTargetSpeed()
-                        + ", curSeg="
-                        + (t.getSafetyManager().getCurrentSegment() != null
-                                ? t.getSafetyManager().getCurrentSegment().getId()
-                                : "null")
-                        + ", nextSeg="
-                        + (t.getSafetyManager().getNextSegment() != null
-                                ? t.getSafetyManager().getNextSegment().getId()
-                                : "null")
-                        + ", waitingForBlock="
-                        + t.getSafetyManager().isWaitingForBlock()
-                        + ", stationId="
-                        + t.getStationId());
+        System.out.println("DEBUG AFTER SECOND RUN TO ST2: autoMode=" + t.isAutoMode() + ", apMode="
+                + t.getAutopilot().mode() + ", speed=" + loco.getSpeed() + ", targetSpeed="
+                + loco.getTargetSpeed() + ", curSeg="
+                + (t.getSafetyManager().getCurrentSegment() != null
+                        ? t.getSafetyManager().getCurrentSegment().getId()
+                        : "null")
+                + ", nextSeg="
+                + (t.getSafetyManager().getNextSegment() != null
+                        ? t.getSafetyManager().getNextSegment().getId()
+                        : "null")
+                + ", waitingForBlock=" + t.getSafetyManager().isWaitingForBlock() + ", stationId="
+                + t.getStationId());
         assertEquals(st2.getId(), t.getStationId(), "Should have reached station 2 again");
 
         runUntil(m, () -> t.getStationId() == st1.getId(), 800);
@@ -1076,8 +982,7 @@ class AutoPilotIntegrationTest {
     class UserScenario {
 
         @Test
-        @DisplayName(
-                "User Scenario: Two sidings, two stations, head on collision in loop from bucle.json")
+        @DisplayName("User Scenario: Two sidings, two stations, head on collision in loop from bucle.json")
         void userScenario_headOnCollisionInLoop() throws Exception {
             Model loadedModel = loadFromSave("bucle.json");
             Train t1 = loadedModel.getTrainFromLocomotiveId(1);
@@ -1094,103 +999,72 @@ class AutoPilotIntegrationTest {
             for (ForkRailTrack f : loadedModel.getForks()) {
                 System.out.println("Fork " + f.getId() + " at " + f.getPosition());
             }
-            System.out.println(
-                    "Train 1 route: "
-                            + (t1.getAutopilot().currentRoute() != null
-                                    ? t1.getAutopilot().currentRoute().stream()
-                                            .map(letrain.segments.Segment::getId)
-                                            .toList()
-                                    : "none")
-                            + ", pos="
-                            + t1.getPhysicalFront().getTrack().getPosition()
-                            + ", dir="
-                            + t1.getPhysicalFront().getDir());
-            System.out.println(
-                    "Train 2 route: "
-                            + (t2.getAutopilot().currentRoute() != null
-                                    ? t2.getAutopilot().currentRoute().stream()
-                                            .map(letrain.segments.Segment::getId)
-                                            .toList()
-                                    : "none")
-                            + ", pos="
-                            + t2.getPhysicalFront().getTrack().getPosition()
-                            + ", dir="
-                            + t2.getPhysicalFront().getDir());
+            System.out
+                    .println(
+                            "Train 1 route: "
+                                    + (t1.getAutopilot().currentRoute() != null
+                                            ? t1.getAutopilot().currentRoute().stream()
+                                                    .map(letrain.segments.Segment::getId).toList()
+                                            : "none")
+                                    + ", pos=" + t1.getPhysicalFront().getTrack().getPosition()
+                                    + ", dir=" + t1.getPhysicalFront().getDir());
+            System.out
+                    .println(
+                            "Train 2 route: "
+                                    + (t2.getAutopilot().currentRoute() != null
+                                            ? t2.getAutopilot().currentRoute().stream()
+                                                    .map(letrain.segments.Segment::getId).toList()
+                                            : "none")
+                                    + ", pos=" + t2.getPhysicalFront().getTrack().getPosition()
+                                    + ", dir=" + t2.getPhysicalFront().getDir());
             System.out.println("======================");
 
             final boolean[] reached2 = {false};
             final boolean[] reached1 = {false};
             final int[] ticks = {0};
-            runUntil(
-                    loadedModel,
-                    () -> {
-                        ticks[0]++;
-                        if (ticks[0] % 100 == 0 || (ticks[0] >= 370 && ticks[0] <= 420)) {
-                            System.out.println(
-                                    "TICK "
-                                            + ticks[0]
-                                            + ": T1 head="
-                                            + t1.getPhysicalFront().getTrack().getPosition()
-                                            + " sp="
-                                            + t1.getSpeed()
-                                            + " seg="
-                                            + (t1.getSafetyManager().getCurrentSegment() != null
-                                                    ? t1.getSafetyManager()
-                                                            .getCurrentSegment()
-                                                            .getId()
-                                                    : "null")
-                                            + " next="
-                                            + (t1.getSafetyManager().getNextSegment() != null
-                                                    ? t1.getSafetyManager().getNextSegment().getId()
-                                                    : "null")
-                                            + " wait="
-                                            + t1.getSafetyManager().isWaitingForBlock()
-                                            + " wp="
-                                            + (t1.getAutopilot().currentWaypoint().isPresent()
-                                                    ? t1.getAutopilot()
-                                                            .currentWaypoint()
-                                                            .get()
-                                                            .targetId()
-                                                    : "none")
-                                            + " | T2 head="
-                                            + t2.getPhysicalFront().getTrack().getPosition()
-                                            + " sp="
-                                            + t2.getSpeed()
-                                            + " seg="
-                                            + (t2.getSafetyManager().getCurrentSegment() != null
-                                                    ? t2.getSafetyManager()
-                                                            .getCurrentSegment()
-                                                            .getId()
-                                                    : "null")
-                                            + " next="
-                                            + (t2.getSafetyManager().getNextSegment() != null
-                                                    ? t2.getSafetyManager().getNextSegment().getId()
-                                                    : "null")
-                                            + " wait="
-                                            + t2.getSafetyManager().isWaitingForBlock()
-                                            + " wp="
-                                            + (t2.getAutopilot().currentWaypoint().isPresent()
-                                                    ? t2.getAutopilot()
-                                                            .currentWaypoint()
-                                                            .get()
-                                                            .targetId()
-                                                    : "none"));
-                        }
-                        assertFalse(
-                                t1.getPhysicalFront().getTrack()
-                                        == t2.getPhysicalFront().getTrack(),
-                                "Collision detected on track: " + t1.getPhysicalFront().getTrack());
-                        if (hasReached(t1, st2) && !reached2[0]) {
-                            reached2[0] = true;
-                            System.out.println("Train 1 reached Station 2 at tick " + ticks[0]);
-                        }
-                        if (hasReached(t2, st1) && !reached1[0]) {
-                            reached1[0] = true;
-                            System.out.println("Train 2 reached Station 1 at tick " + ticks[0]);
-                        }
-                        return reached2[0] && reached1[0];
-                    },
-                    4000);
+            runUntil(loadedModel, () -> {
+                ticks[0]++;
+                if (ticks[0] % 100 == 0 || (ticks[0] >= 370 && ticks[0] <= 420)) {
+                    System.out.println("TICK " + ticks[0] + ": T1 head="
+                            + t1.getPhysicalFront().getTrack().getPosition() + " sp="
+                            + t1.getSpeed() + " seg="
+                            + (t1.getSafetyManager().getCurrentSegment() != null
+                                    ? t1.getSafetyManager().getCurrentSegment().getId()
+                                    : "null")
+                            + " next="
+                            + (t1.getSafetyManager().getNextSegment() != null
+                                    ? t1.getSafetyManager().getNextSegment().getId()
+                                    : "null")
+                            + " wait=" + t1.getSafetyManager().isWaitingForBlock() + " wp="
+                            + (t1.getAutopilot().currentWaypoint().isPresent()
+                                    ? t1.getAutopilot().currentWaypoint().get().targetId()
+                                    : "none")
+                            + " | T2 head=" + t2.getPhysicalFront().getTrack().getPosition()
+                            + " sp=" + t2.getSpeed() + " seg="
+                            + (t2.getSafetyManager().getCurrentSegment() != null
+                                    ? t2.getSafetyManager().getCurrentSegment().getId()
+                                    : "null")
+                            + " next="
+                            + (t2.getSafetyManager().getNextSegment() != null
+                                    ? t2.getSafetyManager().getNextSegment().getId()
+                                    : "null")
+                            + " wait=" + t2.getSafetyManager().isWaitingForBlock() + " wp="
+                            + (t2.getAutopilot().currentWaypoint().isPresent()
+                                    ? t2.getAutopilot().currentWaypoint().get().targetId()
+                                    : "none"));
+                }
+                assertFalse(t1.getPhysicalFront().getTrack() == t2.getPhysicalFront().getTrack(),
+                        "Collision detected on track: " + t1.getPhysicalFront().getTrack());
+                if (hasReached(t1, st2) && !reached2[0]) {
+                    reached2[0] = true;
+                    System.out.println("Train 1 reached Station 2 at tick " + ticks[0]);
+                }
+                if (hasReached(t2, st1) && !reached1[0]) {
+                    reached1[0] = true;
+                    System.out.println("Train 2 reached Station 1 at tick " + ticks[0]);
+                }
+                return reached2[0] && reached1[0];
+            }, 4000);
 
             assertTrue(reached2[0], "Train 1 did not reach Station 2");
             assertTrue(reached1[0], "Train 2 did not reach Station 1");

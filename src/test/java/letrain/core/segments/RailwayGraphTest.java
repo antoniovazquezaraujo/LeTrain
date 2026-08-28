@@ -167,9 +167,8 @@ class RailwayGraphTest {
         tIso2.connect(Dir.S, tIso1);
         RailNodeImpl nodeIso1 = new RailNodeImpl(tIso1);
         RailNodeImpl nodeIso2 = new RailNodeImpl(tIso2);
-        Segment isolatedSegment =
-                new SegmentImpl(
-                        "ISO", nodeIso1.getPortForDir(Dir.N), nodeIso2.getPortForDir(Dir.S));
+        Segment isolatedSegment = new SegmentImpl("ISO", nodeIso1.getPortForDir(Dir.N),
+                nodeIso2.getPortForDir(Dir.S));
 
         List<Segment> path = graph.findPath(segmentAB, isolatedSegment);
         assertTrue(path.isEmpty());
