@@ -41,6 +41,11 @@ public class GroundRenderer extends BaseSubRenderer {
             }
         }
 
+        boolean hasTrack = false;
+        if (modelRef != null && modelRef.getRailMap() != null) {
+            hasTrack = modelRef.getRailMap().getTrackAt(ground.getPosition().getX(), ground.getPosition().getY()) != null;
+        }
+
         if (type >= 10 && type <= 19) {
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
             tempColor.set((cargo != null) ? cargo.getColor() : Color.WHITE);
@@ -51,8 +56,9 @@ public class GroundRenderer extends BaseSubRenderer {
                     resourceContext.getModelInstance(resourceContext.wagonJewelModel);
             jewelBlock.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                     .createDiffuse(tempColor));
-            float h = 0.5f;
-            jewelBlock.transform.setToTranslation(x, h / 2f, z);
+            float h = hasTrack ? 0.02f : 0.5f;
+            float yPos = hasTrack ? 0.01f : h / 2f;
+            jewelBlock.transform.setToTranslation(x, yPos, z);
             jewelBlock.transform.scale(0.9f, h, 0.9f);
             instances.add(jewelBlock);
         } else if (type >= 20 && type <= 29) {
@@ -68,7 +74,7 @@ public class GroundRenderer extends BaseSubRenderer {
             float z = ground.getPosition().getY() + 0.5f;
             ModelInstance instance = resourceContext.getModelInstance(consumerModelToUse);
 
-            float cargoDepositElevation = 0.15f;
+            float cargoDepositElevation = hasTrack ? 0.01f : 0.15f;
             instance.transform.setToTranslation(x, cargoDepositElevation, z);
             instances.add(instance);
         }
