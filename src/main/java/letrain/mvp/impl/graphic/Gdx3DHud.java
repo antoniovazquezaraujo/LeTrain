@@ -499,6 +499,29 @@ public class Gdx3DHud {
         });
     }
 
+    public void showExitDialog() {
+        Gdx.app.postRunnable(() -> {
+            com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
+                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog("LeTrain", skin) {
+                        @Override
+                        protected void result(Object object) {
+                            if (Boolean.TRUE.equals(object)) {
+                                Gdx.app.exit();
+                            } else {
+                                this.remove();
+                            }
+                        }
+                    };
+            dialog.padTop(50).padBottom(20);
+            dialog.button("Exit", true);
+            dialog.button("Play!", false);
+            dialog.pack();
+            dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
+                    (stage.getHeight() - dialog.getHeight()) / 2);
+            stage.addActor(dialog);
+        });
+    }
+
     public void showIDE() {
         if (ideWindow != null) {
             ideWindow.toFront();

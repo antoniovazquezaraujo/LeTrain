@@ -690,7 +690,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void showExitDialog() {
-        showMessage("Exit", "Use ALT+F4 to exit the application.");
+        hud.showExitDialog();
     }
 
     @Override
