@@ -1,7 +1,6 @@
 package letrain.segments;
 
 import java.util.List;
-
 import letrain.vehicle.rail.impl.Train;
 
 /**
@@ -15,7 +14,6 @@ public interface BlockManager {
      * @return true si se obtuvo el bloqueo, false en caso contrario.
      */
     boolean tryLock(Train train, Segment segment);
-
 
     /**
      * Libera la propiedad de un segmento para un tren específico.
@@ -32,7 +30,6 @@ public interface BlockManager {
      * Devuelve la lista de trenes que poseen actualmente el segmento.
      */
     List<Train> getOwners(Segment segment);
-
 
     /**
      * Limpia todos los bloqueos registrados (Protocolo Tabula Rasa).

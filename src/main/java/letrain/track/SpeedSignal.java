@@ -1,17 +1,12 @@
 package letrain.track;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
-
-import letrain.map.Point;
-import letrain.map.Dir;
-import letrain.vehicle.rail.impl.Train;
-import letrain.visitor.Visitor;
-
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import java.io.Serializable;
+import letrain.map.Dir;
+import letrain.vehicle.rail.impl.Train;
+import letrain.visitor.Visitor;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
@@ -51,13 +46,13 @@ public class SpeedSignal extends Sensor implements Serializable {
     @Override
     public void onSensorEnter(Train train, boolean isForward) {
         super.onSensorEnter(train, isForward);
-        
+
         if (!isForward) {
             return; // Speed signal only acts in the direction it faces
         }
 
         int progSpeed = train.getProgrammedSpeed();
-        
+
         if (isMax) {
             // RED SIGNAL: Max Limit
             if (progSpeed > limit) {

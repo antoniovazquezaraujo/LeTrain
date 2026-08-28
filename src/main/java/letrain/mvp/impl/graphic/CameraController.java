@@ -145,8 +145,8 @@ public class CameraController {
         float targetZ;
 
         if ((model.getMode() == letrain.mvp.Model.GameMode.DRIVE
-                || model.getMode() == letrain.mvp.Model.GameMode.LINK
-                || model.getMode() == letrain.mvp.Model.GameMode.UNLINK)
+                        || model.getMode() == letrain.mvp.Model.GameMode.LINK
+                        || model.getMode() == letrain.mvp.Model.GameMode.UNLINK)
                 && model.getSelectedLocomotive() != null) {
             Locomotive selected = model.getSelectedLocomotive();
             Vector2 interpPos = getInterpolatedPosition(selected, alpha);
@@ -168,7 +168,8 @@ public class CameraController {
                     targetCameraAngle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
                 }
             }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SPEED_SIGNALS && model.getSelectedSpeedSignal() != null) {
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.SPEED_SIGNALS
+                && model.getSelectedSpeedSignal() != null) {
             letrain.track.SpeedSignal selected = model.getSelectedSpeedSignal();
             targetX = selected.getPosition().getX() + 0.5f;
             targetZ = selected.getPosition().getY() + 0.5f;
@@ -177,7 +178,8 @@ public class CameraController {
                 if (selected.getCreationDir() != null) {
                     float dx = letrain.utils.PathGeometry.getDirX(selected.getCreationDir());
                     float dz = letrain.utils.PathGeometry.getDirZ(selected.getCreationDir());
-                    targetCameraAngle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
+                    targetCameraAngle =
+                            (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
                 }
             }
         } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS && model.getSelectedStation() != null) {
@@ -278,7 +280,8 @@ public class CameraController {
         boolean canEnterNext = true;
         {
             letrain.track.Track currentTrack = locomotive.getTrack();
-            letrain.track.Track nextTrack = (currentTrack != null) ? currentTrack.getConnected(locomotive.getDir()) : null;
+            letrain.track.Track nextTrack =
+                    (currentTrack != null) ? currentTrack.getConnected(locomotive.getDir()) : null;
             if (nextTrack != null) {
                 letrain.vehicle.rail.Linker occupyingL = nextTrack.getLinker();
                 if (occupyingL != null && occupyingL.getTrain() != locomotive.getTrain()) {
@@ -287,9 +290,18 @@ public class CameraController {
             }
         }
 
-        PathGeometry.calculateTwoStagePath(x, y, locomotive.getEntryDir(), locomotive.getDir(), locomotive.getTrack(), 
-                                          progress, locomotive.getSpeed(), canEnterNext, outPos, outTangent);
-        
+        PathGeometry.calculateTwoStagePath(
+                x,
+                y,
+                locomotive.getEntryDir(),
+                locomotive.getDir(),
+                locomotive.getTrack(),
+                progress,
+                locomotive.getSpeed(),
+                canEnterNext,
+                outPos,
+                outTangent);
+
         return new Vector2(outPos.x - 0.5f, outPos.z - 0.5f);
     }
 }

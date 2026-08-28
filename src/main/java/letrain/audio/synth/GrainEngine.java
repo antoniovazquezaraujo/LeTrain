@@ -5,8 +5,7 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
     private volatile double position = 0.0;
 
     public float getPositionNormalized() {
-        if (sample == null || sample.getLength() == 0)
-            return 0.0f;
+        if (sample == null || sample.getLength() == 0) return 0.0f;
         return (float) (position / sample.getLength());
     }
 
@@ -119,8 +118,7 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
 
     @Override
     public void read(float[] buffer) {
-        if (sample == null)
-            return;
+        if (sample == null) return;
 
         // Simple Low Pass Filter amount based on speed
         float rawFilter = 0.8f - (speed * 0.8f);
@@ -246,8 +244,7 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
                     } else if (loopMode == LoopMode.WRAP) {
                         // WRAP
                         position = startPos + crossfadeLen + (position - endPos);
-                        if (position >= endPos)
-                            position = startPos;
+                        if (position >= endPos) position = startPos;
                     } // For PLAY_ONCE, do nothing. Let position increment out of bounds.
                 }
             } else {
@@ -258,8 +255,7 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
                     } else if (loopMode == LoopMode.WRAP) {
                         // WRAP (Reverse wrapping)
                         position = endPos - crossfadeLen + (position - startPos);
-                        if (position <= startPos)
-                            position = endPos;
+                        if (position <= startPos) position = endPos;
                     } // For PLAY_ONCE, do nothing.
                 }
             }

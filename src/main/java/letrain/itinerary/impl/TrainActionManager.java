@@ -1,14 +1,13 @@
 package letrain.itinerary.impl;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import letrain.itinerary.Waypoint;
 import letrain.itinerary.WaypointCommand;
 import letrain.track.Station;
 import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public class TrainActionManager implements letrain.itinerary.TrainActionManager {
     public static final Logger log = LoggerFactory.getLogger(Train.class);
@@ -89,7 +88,8 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
                 }
             });
 
-            if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING && this.train.getSafetyManager() != null) {
+            if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING
+                    && this.train.getSafetyManager() != null) {
                 this.train.notifyAutopilotSegmentEntered(this.train.resolveCurrentSegmentFromGraph());
                 this.train.getSafetyManager().acquireInitialLocks();
             }
@@ -104,21 +104,31 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             case LOAD:
             case UNLOAD: {
                 boolean isUnload = command.kind() == WaypointCommand.Kind.UNLOAD;
-                Station station = train.getLogisticsManager() != null ? train.getLogisticsManager().getStationAtTrain() : null;
-                if (station == null && train.getModel() != null && currentProcessingWaypoint != null && currentProcessingWaypoint.type() == Waypoint.Type.STATION) {
+                Station station = train.getLogisticsManager() != null
+                        ? train.getLogisticsManager().getStationAtTrain()
+                        : null;
+                if (station == null
+                        && train.getModel() != null
+                        && currentProcessingWaypoint != null
+                        && currentProcessingWaypoint.type() == Waypoint.Type.STATION) {
                     station = train.getModel().getStation(currentProcessingWaypoint.targetId());
                 }
 
                 if (station != null && train.getLogisticsManager() != null) {
-                    List<letrain.vehicle.rail.impl.Wagon> capableWagons = train.getLogisticsManager().getCapableWagons(station, isUnload);
+                    List<letrain.vehicle.rail.impl.Wagon> capableWagons =
+                            train.getLogisticsManager().getCapableWagons(station, isUnload);
                     if (capableWagons.isEmpty()) {
-                        log.info("Train {} has no capable wagons for {} at station {}, passing through without stopping",
-                                train.getId(), command.kind(), station.getName());
+                        log.info(
+                                "Train {} has no capable wagons for {} at station {}, passing through without stopping",
+                                train.getId(),
+                                command.kind(),
+                                station.getName());
                         return false;
                     }
                 }
 
-                if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
+                if (train.getDirectorLinker() != null
+                        && train.getDirectorLinker().getSpeed() > 0) {
                     if (savedTargetSpeed <= 0) {
                         savedTargetSpeed = train.getDirectorLinker().getTargetSpeed() > 0
                                 ? train.getDirectorLinker().getTargetSpeed()
@@ -129,14 +139,17 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
                     return true;
                 }
 
-                Station stopStation = train.getLogisticsManager() != null ? train.getLogisticsManager().getStationAtTrain() : null;
+                Station stopStation = train.getLogisticsManager() != null
+                        ? train.getLogisticsManager().getStationAtTrain()
+                        : null;
                 if (stopStation != null) {
                     if (isUnload) {
                         train.unload();
                     } else {
                         train.load();
                     }
-                    if (train.getLogisticsManager() != null && train.getLogisticsManager().isLoading()) {
+                    if (train.getLogisticsManager() != null
+                            && train.getLogisticsManager().isLoading()) {
                         return true;
                     }
                 } else {

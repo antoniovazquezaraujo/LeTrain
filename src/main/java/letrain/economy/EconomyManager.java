@@ -1,16 +1,14 @@
 package letrain.economy;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.LocalDateTime;
-import letrain.track.RailSemaphore;
-
 import letrain.mvp.Presenter;
+import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.Wagon;
-
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(as = letrain.economy.impl.EconomyManager.class)
 public interface EconomyManager {
@@ -83,17 +81,17 @@ public interface EconomyManager {
 
     void onWagonDestroyed(Wagon wagon);
 
-    void onLoadPassengers(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled,
-            double linearDistanceToStart);
+    void onLoadPassengers(
+            Train train, LocalDateTime elapsedTime, int totalDistanceTraveled, double linearDistanceToStart);
 
     void onTrainMoved(Train train);
 
     void onTrainCrashed(Train train);
-    
+
     void chargeFuel(Train train);
-    
+
     void onLoadCargo(Wagon wagon);
-    
+
     void onUnloadCargo(Wagon wagon, letrain.track.CargoTypes type, int amount, int distance);
 
     public int getConstructedNormalRailTracks();

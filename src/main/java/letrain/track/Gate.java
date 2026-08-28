@@ -5,9 +5,7 @@ import letrain.visitor.Visitor;
 
 public class Gate extends Track {
     @Override
-    public void accept(Visitor visitor) {
-
-    }
+    public void accept(Visitor visitor) {}
 
     @Override
     public Router getRouter() {

@@ -41,8 +41,7 @@ public class Cursor extends Vehicle {
     }
 
     @Override
-    public void destroy() {
-    }
+    public void destroy() {}
 
     @Override
     public boolean isDestroying() {
@@ -53,5 +52,4 @@ public class Cursor extends Vehicle {
     public boolean isDestroyed() {
         return false;
     }
-
 }

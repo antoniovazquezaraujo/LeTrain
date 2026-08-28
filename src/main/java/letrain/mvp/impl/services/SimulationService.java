@@ -1,5 +1,12 @@
 package letrain.mvp.impl.services;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import letrain.economy.EconomyManager;
 import letrain.mvp.Model;
 import letrain.track.CargoTypes;
@@ -9,15 +16,6 @@ import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Stop;
 import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.Wagon;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
 
 /**
  * Handles the core simulation logic: movement, industrial actions, and entity lifecycle.
@@ -44,7 +42,7 @@ public class SimulationService {
 
     public void handleIndustrialActions() {
         EconomyManager economyManager = model.getEconomyManager();
-        
+
         // Regenerate cargo at all stations
         if (Math.random() < 0.05) {
             model.getStations().forEach(Station::regenerateCargo);
@@ -87,7 +85,8 @@ public class SimulationService {
         }
     }
 
-    private void processCargoEconomyEvents(Train train, Map<Wagon, CargoState> wagonsPrevState, EconomyManager economyManager) {
+    private void processCargoEconomyEvents(
+            Train train, Map<Wagon, CargoState> wagonsPrevState, EconomyManager economyManager) {
         for (Linker linker : train.getLinkers()) {
             if (linker instanceof Wagon) {
                 Wagon wagon = (Wagon) linker;
@@ -112,11 +111,11 @@ public class SimulationService {
         if (train.getTrip() == null) return 0;
         List<Stop> stops = train.getTrip().getStopsList();
         if (stops.isEmpty()) return 0;
-        
+
         Stop lastStop = stops.get(stops.size() - 1);
         Locomotive director = (Locomotive) train.getDirectorLinker();
         if (director == null) return 0;
-        
+
         return director.getDistanceTraveled() - lastStop.distanceTraveled();
     }
 
@@ -171,6 +170,7 @@ public class SimulationService {
 
     private static class CargoState {
         int amount;
+
         CargoState(CargoTypes t, int a) {
             amount = a;
         }

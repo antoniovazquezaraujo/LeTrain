@@ -11,6 +11,7 @@ import letrain.visitor.Visitor;
 public class Wagon extends Linker {
     /** Maximum cargo units a wagon can hold. */
     public static final int MAX_CARGO_CAPACITY = 50;
+
     private static final int MAX_DESTROY_TURNS = 200;
     String aspect;
     float brakes;
@@ -32,7 +33,6 @@ public class Wagon extends Linker {
     /***********************************************************
      * Renderable implementation
      **********************************************************/
-
     @Override
     public void accept(Visitor visitor) {
         visitor.visitWagon(this);

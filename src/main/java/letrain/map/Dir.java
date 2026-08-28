@@ -21,7 +21,6 @@ package letrain.map;
 //
 //
 
-
 public enum Dir {
     E(0),
     NE(1),
@@ -38,7 +37,6 @@ public enum Dir {
     private static final int MAX_CURVE_ANGLE = MIDDLE_ANGLE + 1;
 
     private final int value;
-
 
     Dir(int value) {
         this.value = value;
@@ -94,7 +92,6 @@ public enum Dir {
         } else {
             throw new RuntimeException("Invalid int value for direction");
         }
-
     }
 
     public static int shortWay(int angle) {
@@ -139,5 +136,4 @@ public enum Dir {
     public boolean isStraight(Dir to) {
         return (Math.abs(this.value - to.getValue()) == MIDDLE_ANGLE);
     }
-
 }

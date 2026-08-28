@@ -1,23 +1,21 @@
 package letrain.mvp.impl.services;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import java.util.ArrayList;
+import java.util.List;
 import letrain.command.CommandManager;
 import letrain.command.LeTrainProgramLexer;
 import letrain.command.LeTrainProgramParser;
 import letrain.mvp.impl.Model;
+import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
-import letrain.track.RailSemaphore;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
 
 /**
  * Encapsulates the logic for parsing and executing LeTrain automation programs.
@@ -48,8 +46,13 @@ public class AutomationEngine {
             parser.removeErrorListeners();
             parser.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
                 @Override
-                public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer, Object offendingSymbol,
-                                        int line, int charPositionInLine, String msg, org.antlr.v4.runtime.RecognitionException e) {
+                public void syntaxError(
+                        org.antlr.v4.runtime.Recognizer<?, ?> recognizer,
+                        Object offendingSymbol,
+                        int line,
+                        int charPositionInLine,
+                        String msg,
+                        org.antlr.v4.runtime.RecognitionException e) {
                     String errorMsg = "Syntax error at line " + line + ":" + charPositionInLine + " " + msg;
                     log.error(errorMsg);
                     errors.add(errorMsg);

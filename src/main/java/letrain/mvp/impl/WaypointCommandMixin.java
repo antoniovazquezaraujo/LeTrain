@@ -1,19 +1,17 @@
 package letrain.mvp.impl;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import java.io.IOException;
 import letrain.itinerary.WaypointCommand;
 
-import java.io.IOException;
-
 @JsonAutoDetect(
-    fieldVisibility = JsonAutoDetect.Visibility.ANY,
-    getterVisibility = JsonAutoDetect.Visibility.NONE,
-    isGetterVisibility = JsonAutoDetect.Visibility.NONE
-)
+        fieldVisibility = JsonAutoDetect.Visibility.ANY,
+        getterVisibility = JsonAutoDetect.Visibility.NONE,
+        isGetterVisibility = JsonAutoDetect.Visibility.NONE)
 @JsonDeserialize(using = WaypointCommandMixin.WaypointCommandDeserializer.class)
 public abstract class WaypointCommandMixin {
 

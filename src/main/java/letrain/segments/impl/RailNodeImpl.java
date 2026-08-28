@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import letrain.map.Dir;
 import letrain.segments.Port;
 import letrain.segments.PortType;
@@ -126,8 +125,7 @@ public class RailNodeImpl implements RailNode {
 
         ForkRailTrack fork = (ForkRailTrack) track;
         boolean usingAlt = fork.isUsingAlternativeRoute();
-        return (exit.getType() == PortType.B && usingAlt) 
-            || (exit.getType() == PortType.A && !usingAlt);
+        return (exit.getType() == PortType.B && usingAlt) || (exit.getType() == PortType.A && !usingAlt);
     }
 
     @Override
@@ -136,17 +134,14 @@ public class RailNodeImpl implements RailNode {
         if (entry.getType() == PortType.A || entry.getType() == PortType.B) {
             return getPortByType(PortType.TRUNK);
         }
-        
+
         ForkRailTrack fork = (ForkRailTrack) track;
         PortType activeType = fork.isUsingAlternativeRoute() ? PortType.B : PortType.A;
         return getPortByType(activeType);
     }
 
     public Port getPortByType(PortType type) {
-        return ports.stream()
-                .filter(p -> p.getType() == type)
-                .findFirst()
-                .orElse(null);
+        return ports.stream().filter(p -> p.getType() == type).findFirst().orElse(null);
     }
 
     @Override

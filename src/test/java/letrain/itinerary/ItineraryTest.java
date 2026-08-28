@@ -1,12 +1,12 @@
 package letrain.itinerary;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.List;
 import letrain.itinerary.impl.ItineraryImpl;
 import letrain.itinerary.impl.WaypointImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.List;
 
 @DisplayName("Itinerary")
 class ItineraryTest {

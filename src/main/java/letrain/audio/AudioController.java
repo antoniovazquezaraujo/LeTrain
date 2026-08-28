@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
 import letrain.audio.core.AudioMixer;
 import letrain.audio.sources.WavSource;
 import letrain.audio.synth.AudioSample;
@@ -44,8 +43,7 @@ public class AudioController {
      */
     public void stopEngineWithSound(int id, Locomotive loco) {
         TrainSynthesizer synth = synthesizers.get(id);
-        if (synth == null)
-            return;
+        if (synth == null) return;
         loco.setEngineOn(false); // <--- Inmediatamente apagamos el estado para evitar recreaciones
         synthesizers.remove(id); // ya no recibe actualizaciones de throttle
         synth.playStopSound(() -> {
@@ -102,8 +100,7 @@ public class AudioController {
     }
 
     public void setJackhammerActive(boolean active, float x, float y) {
-        if (!enabled)
-            return;
+        if (!enabled) return;
         if (active) {
             if (jackhammerSource == null) {
                 AudioSample sample = samples.get("hammer");
@@ -157,11 +154,11 @@ public class AudioController {
     }
 
     public void update() {
-        if (!enabled)
-            return;
+        if (!enabled) return;
 
         // 1. Remove synthesizers for destroyed locomotives
-        Iterator<Map.Entry<Integer, TrainSynthesizer>> it = synthesizers.entrySet().iterator();
+        Iterator<Map.Entry<Integer, TrainSynthesizer>> it =
+                synthesizers.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Integer, TrainSynthesizer> entry = it.next();
             Integer locoId = entry.getKey();
@@ -193,8 +190,7 @@ public class AudioController {
             TrainSynthesizer synth = synthesizers.get(loco.getId());
             if (synth == null) {
                 // Solo crear el synth si el motor está encendido
-                if (!loco.isEngineOn())
-                    continue;
+                if (!loco.isEngineOn()) continue;
                 synth = new TrainSynthesizer();
 
                 synth.addListener(new TrainSynthesizer.SynthesizerListener() {
@@ -204,8 +200,7 @@ public class AudioController {
                     }
 
                     @Override
-                    public void onSpeedUpdate(float acousticSpeed) {
-                    }
+                    public void onSpeedUpdate(float acousticSpeed) {}
                 });
 
                 // Audio Physics Defaults
@@ -262,10 +257,7 @@ public class AudioController {
                 // Map Game Coordinates: X->X, Y->Y (Audio Depth), 0->Z (Audio Height/Elevation)
                 // LeTrain is 2D grid (X, Y). Camera is (X, Z=Depth, Y=Height)
                 // Consistent with setListenerPosition(cam.x, cam.z, cam.y)
-                synth.setPosition(
-                        (float) pos.getX() * SCALE_FACTOR,
-                        (float) pos.getY() * SCALE_FACTOR,
-                        0);
+                synth.setPosition((float) pos.getX() * SCALE_FACTOR, (float) pos.getY() * SCALE_FACTOR, 0);
             }
 
             // Sync States
@@ -289,10 +281,8 @@ public class AudioController {
      * @param listenerY  camera Y position in world units
      * @param listenerZ  camera Z position in world units
      */
-    public void updateAmbient(boolean isTopDown, float zoomFactor,
-            float listenerX, float listenerY, float listenerZ) {
-        if (!enabled)
-            return;
+    public void updateAmbient(boolean isTopDown, float zoomFactor, float listenerX, float listenerY, float listenerZ) {
+        if (!enabled) return;
 
         float targetBirdsVol = isTopDown ? 0.0f : 0.3f + zoomFactor * 0.5f;
         float targetWindVol = isTopDown ? 0.2f + zoomFactor * 0.4f : 0.0f;

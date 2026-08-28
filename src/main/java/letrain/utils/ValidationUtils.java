@@ -36,8 +36,7 @@ public class ValidationUtils {
      */
     public static int requirePositive(int value, String fieldName) {
         if (value <= 0) {
-            throw new IllegalArgumentException(
-                    fieldName + " must be positive, but was: " + value);
+            throw new IllegalArgumentException(fieldName + " must be positive, but was: " + value);
         }
         return value;
     }
@@ -52,8 +51,7 @@ public class ValidationUtils {
      */
     public static int requireNonNegative(int value, String fieldName) {
         if (value < 0) {
-            throw new IllegalArgumentException(
-                    fieldName + " must be non-negative, but was: " + value);
+            throw new IllegalArgumentException(fieldName + " must be non-negative, but was: " + value);
         }
         return value;
     }
@@ -68,8 +66,7 @@ public class ValidationUtils {
      */
     public static long requirePositive(long value, String fieldName) {
         if (value <= 0) {
-            throw new IllegalArgumentException(
-                    fieldName + " must be positive, but was: " + value);
+            throw new IllegalArgumentException(fieldName + " must be positive, but was: " + value);
         }
         return value;
     }
@@ -84,8 +81,7 @@ public class ValidationUtils {
      */
     public static double requirePositive(double value, String fieldName) {
         if (Double.isNaN(value) || value <= 0) {
-            throw new IllegalArgumentException(
-                    fieldName + " must be positive and not NaN, but was: " + value);
+            throw new IllegalArgumentException(fieldName + " must be positive and not NaN, but was: " + value);
         }
         return value;
     }

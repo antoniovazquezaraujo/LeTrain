@@ -1,8 +1,7 @@
 package letrain.mvp;
 
-import java.io.File;
-
 import com.googlecode.lanterna.input.KeyStroke;
+import java.io.File;
 import letrain.map.Point;
 
 public interface GameViewListener {
@@ -35,8 +34,8 @@ public interface GameViewListener {
     void onMapPageChanged(Point mapScrollPage, int columns, int rows);
 
     void onScreenResized(int columns, int rows);
-    
+
     String getGameObjectsReport();
-    
+
     java.util.List<String> getEventLogEntries();
 }

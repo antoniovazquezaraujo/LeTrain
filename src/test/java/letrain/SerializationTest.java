@@ -3,20 +3,17 @@ package letrain;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import letrain.mvp.impl.Model;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
-import letrain.vehicle.rail.impl.*;
 import letrain.vehicle.rail.ScriptTrainEventListener;
+import letrain.vehicle.rail.impl.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,12 +29,10 @@ import org.junit.jupiter.api.Test;
 class SerializationTest {
 
     @BeforeEach
-    void setUp() throws IOException {
-    }
+    void setUp() throws IOException {}
 
     @AfterEach
-    void tearDown() throws IOException {
-    }
+    void tearDown() throws IOException {}
 
     private void registerMixins(ObjectMapper mapper) {
         mapper.addMixIn(letrain.mvp.Model.class, letrain.mvp.impl.ModelMixin.class);
@@ -339,21 +334,17 @@ class SerializationTest {
 
         // Build Itinerary
         letrain.itinerary.impl.ItineraryImpl itinerary = new letrain.itinerary.impl.ItineraryImpl();
-        java.util.List<letrain.itinerary.WaypointCommand> cmds1 = java.util.List.of(letrain.itinerary.WaypointCommand.LOAD);
+        java.util.List<letrain.itinerary.WaypointCommand> cmds1 =
+                java.util.List.of(letrain.itinerary.WaypointCommand.LOAD);
         java.util.List<letrain.itinerary.WaypointCommand> cmds2 = java.util.List.of(
-            letrain.itinerary.WaypointCommand.waitSeconds(5),
-            letrain.itinerary.WaypointCommand.speed(8)
-        );
+                letrain.itinerary.WaypointCommand.waitSeconds(5), letrain.itinerary.WaypointCommand.speed(8));
         itinerary.addWaypoint(new letrain.itinerary.impl.WaypointImpl(
-            letrain.itinerary.Waypoint.Type.STATION, 10, java.util.Optional.of(letrain.map.Dir.N), cmds1
-        ));
+                letrain.itinerary.Waypoint.Type.STATION, 10, java.util.Optional.of(letrain.map.Dir.N), cmds1));
         itinerary.addWaypoint(new letrain.itinerary.impl.WaypointImpl(
-            letrain.itinerary.Waypoint.Type.SENSOR, 20, java.util.Optional.empty(), cmds2
-        ));
+                letrain.itinerary.Waypoint.Type.SENSOR, 20, java.util.Optional.empty(), cmds2));
         // Build AutoPilot
-        letrain.itinerary.impl.AutoPilotImpl ap = new letrain.itinerary.impl.AutoPilotImpl(
-            original, original.getActionManager()
-        );
+        letrain.itinerary.impl.AutoPilotImpl ap =
+                new letrain.itinerary.impl.AutoPilotImpl(original, original.getActionManager());
         ap.setItinerary(itinerary);
         original.setAutopilot(ap);
         ap.setPathfinder(org.mockito.Mockito.mock(letrain.itinerary.SegmentPathfinder.class));
@@ -390,15 +381,21 @@ class SerializationTest {
         assertEquals(20, wp2.targetId());
         assertTrue(wp2.entryDir().isEmpty());
         assertEquals(2, wp2.commands().size());
-        assertEquals(letrain.itinerary.WaypointCommand.Kind.WAIT, wp2.commands().get(0).kind());
+        assertEquals(
+                letrain.itinerary.WaypointCommand.Kind.WAIT,
+                wp2.commands().get(0).kind());
         assertEquals(5, wp2.commands().get(0).seconds());
-        assertEquals(letrain.itinerary.WaypointCommand.Kind.SPEED, wp2.commands().get(1).kind());
+        assertEquals(
+                letrain.itinerary.WaypointCommand.Kind.SPEED,
+                wp2.commands().get(1).kind());
         assertEquals(8, wp2.commands().get(1).targetSpeed());
 
         if (restoredAp instanceof letrain.itinerary.impl.AutoPilotImpl impl) {
             assertEquals(42, impl.getWaitTicks());
             assertEquals(1, impl.getPendingCommands().size());
-            assertEquals(letrain.itinerary.WaypointCommand.Kind.SPEED, impl.getPendingCommands().get(0).kind());
+            assertEquals(
+                    letrain.itinerary.WaypointCommand.Kind.SPEED,
+                    impl.getPendingCommands().get(0).kind());
             assertEquals(5, impl.getPendingCommands().get(0).targetSpeed());
         }
     }

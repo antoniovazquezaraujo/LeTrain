@@ -19,11 +19,11 @@ public class Point {
     private int x;
     private int y;
 
-    public Point() {
-    }
+    public Point() {}
 
-    public Point(@com.fasterxml.jackson.annotation.JsonProperty("x") int x, 
-                 @com.fasterxml.jackson.annotation.JsonProperty("y") int y) {
+    public Point(
+            @com.fasterxml.jackson.annotation.JsonProperty("x") int x,
+            @com.fasterxml.jackson.annotation.JsonProperty("y") int y) {
         this.y = y;
         this.x = x;
     }
@@ -74,7 +74,7 @@ public class Point {
             } else {
                 return S;
             }
-        } else {// y == p.y
+        } else { // y == p.y
             if (x > point.x) {
                 return W;
             } else if (x < point.x) {
@@ -141,9 +141,7 @@ public class Point {
     }
 
     public Point addPage(Page page) {
-        return new Point(
-                (getX() + page.getX() * Page.getWidth()),
-                (getY() + page.getY() * Page.getHeight()));
+        return new Point((getX() + page.getX() * Page.getWidth()), (getY() + page.getY() * Page.getHeight()));
     }
 
     @JsonIgnore
@@ -207,5 +205,4 @@ public class Point {
         int newY = getY() + (yOffset * Page.getHeight());
         return new Point(newX, newY);
     }
-
 }

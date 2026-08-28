@@ -2,7 +2,6 @@ package letrain.itinerary;
 
 import java.util.List;
 import java.util.Optional;
-
 import letrain.segments.Segment;
 
 /**
@@ -11,7 +10,13 @@ import letrain.segments.Segment;
  */
 public interface AutoPilot {
 
-    enum Mode { IDLE, FOLLOWING, WAITING, REVERSING, ERROR }
+    enum Mode {
+        IDLE,
+        FOLLOWING,
+        WAITING,
+        REVERSING,
+        ERROR
+    }
 
     /** The itinerary this autopilot is following. */
     Optional<Itinerary> itinerary();

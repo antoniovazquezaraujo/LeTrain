@@ -1,7 +1,6 @@
 package letrain.vehicle.rail;
 
 import java.util.List;
-
 import letrain.map.Point;
 
 /**

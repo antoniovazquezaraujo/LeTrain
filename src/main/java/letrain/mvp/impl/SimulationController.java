@@ -1,8 +1,8 @@
 package letrain.mvp.impl;
 
 import letrain.audio.AudioController;
-import letrain.vehicle.rail.impl.Locomotive;
 import letrain.mvp.impl.services.SimulationService;
+import letrain.vehicle.rail.impl.Locomotive;
 
 /**
  * Centralizes the simulation logic that runs on every game tick (approx 20 TPS).

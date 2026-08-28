@@ -1,9 +1,8 @@
 package letrain.visitor.gdx3d;
 
-import java.util.List;
-
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.math.Vector3;
+import java.util.List;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
@@ -16,20 +15,20 @@ import letrain.vehicle.rail.impl.Locomotive;
 
 public class TrackRenderer extends BaseSubRenderer {
 
-    public TrackRenderer(Gdx3DResourceContext resourceContext, 
-                       List<ModelInstance> instances, 
-                       List<ModelInstance> transparentInstances,
-                       List<Gdx3DRenderer.VehicleLabel> labels) {
+    public TrackRenderer(
+            Gdx3DResourceContext resourceContext,
+            List<ModelInstance> instances,
+            List<ModelInstance> transparentInstances,
+            List<Gdx3DRenderer.VehicleLabel> labels) {
         super(resourceContext, instances, transparentInstances, labels);
     }
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        if (!isVisible(track.getPosition()))
-            return;
-        
+        if (!isVisible(track.getPosition())) return;
+
         com.badlogic.gdx.graphics.Color blockedColor = getTrackBlockedColor(track);
-        
+
         track.forEach(route -> {
             Dir d1 = route.getFirst();
             Dir d2 = route.getSecond();
@@ -46,8 +45,16 @@ public class TrackRenderer extends BaseSubRenderer {
                 Vector3 p1 = new Vector3(PathGeometry.getDirX(d1), 0, PathGeometry.getDirZ(d1));
                 Vector3 p2 = new Vector3(PathGeometry.getDirX(d2), 0, PathGeometry.getDirZ(d2));
                 Vector3 pc = new Vector3(0, 0, 0);
-                
-                renderMultiSegmentCurve(track.getPosition(), p1, pc, p2, d1Connected && d2Connected, 0, resourceContext.railModel, blockedColor);
+
+                renderMultiSegmentCurve(
+                        track.getPosition(),
+                        p1,
+                        pc,
+                        p2,
+                        d1Connected && d2Connected,
+                        0,
+                        resourceContext.railModel,
+                        blockedColor);
             } else {
                 drawHalfTrack(track.getPosition(), d1, d1Connected, shortenL1, shortenR1, blockedColor);
                 drawHalfTrack(track.getPosition(), d2, d2Connected, shortenL2, shortenR2, blockedColor);
@@ -59,7 +66,9 @@ public class TrackRenderer extends BaseSubRenderer {
             if (terrain != null && terrain == GroundMap.WATER) {
                 ModelInstance pillar = resourceContext.getModelInstance(resourceContext.bridgePillarModel);
                 pillar.transform.setToTranslation(
-                        track.getPosition().getX() + 0.5f, -1.05f, track.getPosition().getY() + 0.5f);
+                        track.getPosition().getX() + 0.5f,
+                        -1.05f,
+                        track.getPosition().getY() + 0.5f);
                 pillar.transform.scale(1f, 1.9f, 1f);
                 instances.add(pillar);
             }
@@ -92,30 +101,70 @@ public class TrackRenderer extends BaseSubRenderer {
         drawHalfTrack(pos, dir, connected, shortenL, shortenR, null);
     }
 
-    public void drawHalfTrack(Point pos, Dir dir, boolean connected, float shortenL, float shortenR, com.badlogic.gdx.graphics.Color tintColor) {
+    public void drawHalfTrack(
+            Point pos,
+            Dir dir,
+            boolean connected,
+            float shortenL,
+            float shortenR,
+            com.badlogic.gdx.graphics.Color tintColor) {
         drawHalfTrackElevated(pos, dir, connected, 0.0f, shortenL, shortenR, resourceContext.railModel, tintColor);
     }
 
-    public void drawHalfTrackElevated(Point pos, Dir dir, boolean connected, float elevation,
-            float shortenL, float shortenR, com.badlogic.gdx.graphics.g3d.Model railModelToUse) {
+    public void drawHalfTrackElevated(
+            Point pos,
+            Dir dir,
+            boolean connected,
+            float elevation,
+            float shortenL,
+            float shortenR,
+            com.badlogic.gdx.graphics.g3d.Model railModelToUse) {
         drawHalfTrackElevated(pos, dir, connected, elevation, shortenL, shortenR, railModelToUse, null);
     }
 
-    public void drawHalfTrackElevated(Point pos, Dir dir, boolean connected, float elevation,
-            float shortenL, float shortenR, com.badlogic.gdx.graphics.g3d.Model railModelToUse, com.badlogic.gdx.graphics.Color tintColor) {
+    public void drawHalfTrackElevated(
+            Point pos,
+            Dir dir,
+            boolean connected,
+            float elevation,
+            float shortenL,
+            float shortenR,
+            com.badlogic.gdx.graphics.g3d.Model railModelToUse,
+            com.badlogic.gdx.graphics.Color tintColor) {
         float dx = PathGeometry.getDirX(dir);
         float dz = PathGeometry.getDirZ(dir);
-        renderSegment(pos, new Vector3(0, 0, 0), new Vector3(dx, 0, dz), 
-                connected, elevation, shortenL, shortenR, railModelToUse, tintColor);
+        renderSegment(
+                pos,
+                new Vector3(0, 0, 0),
+                new Vector3(dx, 0, dz),
+                connected,
+                elevation,
+                shortenL,
+                shortenR,
+                railModelToUse,
+                tintColor);
     }
 
-    public void renderMultiSegmentCurve(Point pos, Vector3 p0, Vector3 pc, Vector3 p2, 
-            boolean connected, float elevation, com.badlogic.gdx.graphics.g3d.Model railModelToUse) {
+    public void renderMultiSegmentCurve(
+            Point pos,
+            Vector3 p0,
+            Vector3 pc,
+            Vector3 p2,
+            boolean connected,
+            float elevation,
+            com.badlogic.gdx.graphics.g3d.Model railModelToUse) {
         renderMultiSegmentCurve(pos, p0, pc, p2, connected, elevation, railModelToUse, null);
     }
 
-    public void renderMultiSegmentCurve(Point pos, Vector3 p0, Vector3 pc, Vector3 p2, 
-            boolean connected, float elevation, com.badlogic.gdx.graphics.g3d.Model railModelToUse, com.badlogic.gdx.graphics.Color tintColor) {
+    public void renderMultiSegmentCurve(
+            Point pos,
+            Vector3 p0,
+            Vector3 pc,
+            Vector3 p2,
+            boolean connected,
+            float elevation,
+            com.badlogic.gdx.graphics.g3d.Model railModelToUse,
+            com.badlogic.gdx.graphics.Color tintColor) {
         int numSegments = 10;
         Vector3 pPrev = new Vector3();
         Vector3 pCurr = new Vector3();
@@ -132,7 +181,7 @@ public class TrackRenderer extends BaseSubRenderer {
             nPrev.set(-tan.z, 0, tan.x).nor();
             PathGeometry.getQuadraticBezierTangent(tan, p0, pc, p2, t1);
             nCurr.set(-tan.z, 0, tan.x).nor();
-            
+
             renderLineModel(pos, pPrev, pCurr, 0.03f + elevation, resourceContext.ballastModel, null);
             if (connected) {
                 Vector3 startOut = new Vector3(pPrev).add(nPrev.x * 0.15f, 0, nPrev.z * 0.15f);
@@ -147,11 +196,18 @@ public class TrackRenderer extends BaseSubRenderer {
         }
     }
 
-    public void renderLineModel(Point pos, Vector3 pStart, Vector3 pEnd, float y, com.badlogic.gdx.graphics.g3d.Model model) {
+    public void renderLineModel(
+            Point pos, Vector3 pStart, Vector3 pEnd, float y, com.badlogic.gdx.graphics.g3d.Model model) {
         renderLineModel(pos, pStart, pEnd, y, model, null);
     }
 
-    public void renderLineModel(Point pos, Vector3 pStart, Vector3 pEnd, float y, com.badlogic.gdx.graphics.g3d.Model model, com.badlogic.gdx.graphics.Color tintColor) {
+    public void renderLineModel(
+            Point pos,
+            Vector3 pStart,
+            Vector3 pEnd,
+            float y,
+            com.badlogic.gdx.graphics.g3d.Model model,
+            com.badlogic.gdx.graphics.Color tintColor) {
         Vector3 diff = new Vector3(pEnd).sub(pStart);
         float len = diff.len();
         if (len < 0.001f) return;
@@ -159,7 +215,9 @@ public class TrackRenderer extends BaseSubRenderer {
         Vector3 mid = new Vector3(pStart).add(pEnd).scl(0.5f);
         ModelInstance instance = resourceContext.getModelInstance(model);
         if (tintColor != null && !instance.materials.isEmpty()) {
-            instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(tintColor));
+            instance.materials
+                    .get(0)
+                    .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(tintColor));
         }
         instance.transform.setToTranslation(pos.getX() + 0.5f + mid.x, y, pos.getY() + 0.5f + mid.z);
         instance.transform.rotate(0, 1, 0, angle);
@@ -167,19 +225,34 @@ public class TrackRenderer extends BaseSubRenderer {
         instances.add(instance);
     }
 
-    public void renderSegment(Point pos, Vector3 pStart, Vector3 pEnd, 
-            boolean connected, float elevation, float shortenL, float shortenR, com.badlogic.gdx.graphics.g3d.Model railModelToUse) {
+    public void renderSegment(
+            Point pos,
+            Vector3 pStart,
+            Vector3 pEnd,
+            boolean connected,
+            float elevation,
+            float shortenL,
+            float shortenR,
+            com.badlogic.gdx.graphics.g3d.Model railModelToUse) {
         renderSegment(pos, pStart, pEnd, connected, elevation, shortenL, shortenR, railModelToUse, null);
     }
 
-    public void renderSegment(Point pos, Vector3 pStart, Vector3 pEnd, 
-            boolean connected, float elevation, float shortenL, float shortenR, com.badlogic.gdx.graphics.g3d.Model railModelToUse, com.badlogic.gdx.graphics.Color tintColor) {
+    public void renderSegment(
+            Point pos,
+            Vector3 pStart,
+            Vector3 pEnd,
+            boolean connected,
+            float elevation,
+            float shortenL,
+            float shortenR,
+            com.badlogic.gdx.graphics.g3d.Model railModelToUse,
+            com.badlogic.gdx.graphics.Color tintColor) {
         Vector3 diff = new Vector3(pEnd).sub(pStart);
         float len = diff.len();
         if (len < 0.001f) return;
         float angle = (float) Math.atan2(diff.x, diff.z) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
         Vector3 mid = new Vector3(pStart).add(pEnd).scl(0.5f);
-        
+
         float shortenB = (shortenL + shortenR) / 2f;
         float shortenBallast = connected ? shortenB : 0.95f;
         float scaleB = (len * shortenBallast) / 0.5f;
@@ -193,14 +266,19 @@ public class TrackRenderer extends BaseSubRenderer {
             float offX = (-diff.z / len) * 0.15f;
             float offZ = (diff.x / len) * 0.15f;
             float scale = len / 0.5f;
-            
+
             float shiftX_L = diff.x * (1 - shortenL) / 2f;
             float shiftZ_L = diff.z * (1 - shortenL) / 2f;
             ModelInstance railL = resourceContext.getModelInstance(railModelToUse);
             if (tintColor != null && !railL.materials.isEmpty()) {
-                railL.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(tintColor));
+                railL.materials
+                        .get(0)
+                        .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(tintColor));
             }
-            railL.transform.setToTranslation(pos.getX() + 0.5f + mid.x + offX + shiftX_L, 0.08f + elevation, pos.getY() + 0.5f + mid.z + offZ + shiftZ_L);
+            railL.transform.setToTranslation(
+                    pos.getX() + 0.5f + mid.x + offX + shiftX_L,
+                    0.08f + elevation,
+                    pos.getY() + 0.5f + mid.z + offZ + shiftZ_L);
             railL.transform.rotate(0, 1, 0, angle);
             railL.transform.scale(1, 1, scale * shortenL);
             instances.add(railL);
@@ -209,15 +287,23 @@ public class TrackRenderer extends BaseSubRenderer {
             float shiftZ_R = diff.z * (1 - shortenR) / 2f;
             ModelInstance railR = resourceContext.getModelInstance(railModelToUse);
             if (tintColor != null && !railR.materials.isEmpty()) {
-                railR.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(tintColor));
+                railR.materials
+                        .get(0)
+                        .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(tintColor));
             }
-            railR.transform.setToTranslation(pos.getX() + 0.5f + mid.x - offX + shiftX_R, 0.08f + elevation, pos.getY() + 0.5f + mid.z - offZ + shiftZ_R);
+            railR.transform.setToTranslation(
+                    pos.getX() + 0.5f + mid.x - offX + shiftX_R,
+                    0.08f + elevation,
+                    pos.getY() + 0.5f + mid.z - offZ + shiftZ_R);
             railR.transform.rotate(0, 1, 0, angle);
             railR.transform.scale(1, 1, scale * shortenR);
             instances.add(railR);
         } else {
             ModelInstance grader = resourceContext.getModelInstance(resourceContext.invalidRailModel);
-            grader.transform.setToTranslation(pos.getX() + 0.5f + pStart.x + diff.x * 0.7f, 0.2f + elevation, pos.getY() + 0.5f + pStart.z + diff.z * 0.7f);
+            grader.transform.setToTranslation(
+                    pos.getX() + 0.5f + pStart.x + diff.x * 0.7f,
+                    0.2f + elevation,
+                    pos.getY() + 0.5f + pStart.z + diff.z * 0.7f);
             grader.transform.rotate(0, 1, 0, angle);
             instances.add(grader);
         }
@@ -264,15 +350,13 @@ public class TrackRenderer extends BaseSubRenderer {
 
     public Dir getValidOrientation(RailTrack track) {
         Dir dir = track.getFirstOpenDir();
-        if (dir == null)
-            return Dir.N;
+        if (dir == null) return Dir.N;
         return dir;
     }
 
     public boolean isConnected(letrain.track.Track track, Dir dir) {
         letrain.track.Track neighbor = track.getConnected(dir);
-        if (neighbor == null)
-            return false;
+        if (neighbor == null) return false;
         return neighbor.getRouter().getDir(dir.inverse()) != null;
     }
 

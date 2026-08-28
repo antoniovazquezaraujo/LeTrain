@@ -7,5 +7,4 @@ interface LinkerCompartmentListener {
     boolean canEnter(Dir dir, Linker v);
 
     boolean canExit(Dir dir);
-
 }

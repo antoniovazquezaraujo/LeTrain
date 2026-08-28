@@ -27,7 +27,8 @@ public class LeTrain {
         }
 
         if (use3D) {
-            com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration config = new com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration();
+            com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration config =
+                    new com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration();
             config.setTitle("LeTrain 3D - Wooden Edition");
             config.setMaximized(true);
             GraphicPresenter view3D = new GraphicPresenter(this.model);
@@ -42,10 +43,11 @@ public class LeTrain {
             presenter.start();
             presenter.stop();
         }
-        
+
         try {
             Thread.sleep(100);
-        } catch (InterruptedException e) {}
+        } catch (InterruptedException e) {
+        }
         System.exit(0);
     }
 }

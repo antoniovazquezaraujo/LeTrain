@@ -10,5 +10,4 @@ public class StationRailTrack extends RailTrack {
     public void setCreationDir(letrain.map.Dir creationDir) {
         this.creationDir = creationDir;
     }
-
 }

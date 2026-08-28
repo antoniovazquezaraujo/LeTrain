@@ -1,14 +1,5 @@
 package letrain.mvp.impl.terminal;
 
-import java.awt.Font;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.List;
-
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextCharacter;
@@ -34,6 +25,14 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
+import java.awt.Font;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 import letrain.map.Page;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
@@ -81,6 +80,7 @@ public class TerminalView implements letrain.mvp.View {
             }
         }
     }
+
     static final TextColor NORMAL_MENU_FG_COLOR = ANSI.WHITE;
     static final TextColor NORMAL_MENU_BG_COLOR = ANSI.BLACK;
     static final TextColor DISABLED_FG_COLOR = ANSI.BLACK_BRIGHT;
@@ -106,9 +106,9 @@ public class TerminalView implements letrain.mvp.View {
             log.warn("Error loading custom JuliaMono font for terminal: {}", e.getMessage(), e);
         }
 
-
         try {
-            terminalFactory.setUnixTerminalCtrlCBehaviour(com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal.CtrlCBehaviour.TRAP);
+            terminalFactory.setUnixTerminalCtrlCBehaviour(
+                    com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal.CtrlCBehaviour.TRAP);
             terminal = terminalFactory.createTerminal();
             terminal.setCursorVisible(false);
             setScreen(createScreen(terminal));
@@ -247,8 +247,7 @@ public class TerminalView implements letrain.mvp.View {
         if (changedSize != null) {
             terminalSize = changedSize;
             recalculateSizes(terminalSize);
-            TerminalView.this.gameViewListener.onScreenResized(gameBoxSize.getColumns(),
-                    gameBoxSize.getRows());
+            TerminalView.this.gameViewListener.onScreenResized(gameBoxSize.getColumns(), gameBoxSize.getRows());
             gameBox.fillRectangle(gameBoxPosition, gameBoxSize, ' ');
         }
 
@@ -261,30 +260,33 @@ public class TerminalView implements letrain.mvp.View {
                     int rows = getRows();
                     int centerX = cols / 2;
                     int centerY = rows / 2;
-                    
+
                     int radiusX = (int) Math.round(radius * ((double) cols / rows));
                     int radiusY = radius;
-                    
+
                     int screenMinX = centerX - radiusX;
                     int screenMaxX = centerX + radiusX;
                     int screenMinY = centerY - radiusY;
                     int screenMaxY = centerY + radiusY;
-                    
+
                     if (radius >= 999) {
                         screenMinX = 0;
                         screenMaxX = cols - 1;
                         screenMinY = 0;
                         screenMaxY = rows - 1;
                     }
-                    
+
                     screenMinX = Math.max(0, screenMinX);
                     screenMaxX = Math.min(cols - 1, screenMaxX);
                     screenMinY = Math.max(0, screenMinY);
                     screenMaxY = Math.min(rows - 1, screenMaxY);
-                    
+
                     if (screenMinX <= screenMaxX && screenMinY <= screenMaxY) {
-                        com.googlecode.lanterna.TextColor dotColor = cameraPagination ? com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT : com.googlecode.lanterna.TextColor.ANSI.BLUE_BRIGHT;
-                        com.googlecode.lanterna.TextCharacter dot = new com.googlecode.lanterna.TextCharacter('·', dotColor, com.googlecode.lanterna.TextColor.ANSI.BLACK);
+                        com.googlecode.lanterna.TextColor dotColor = cameraPagination
+                                ? com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT
+                                : com.googlecode.lanterna.TextColor.ANSI.BLUE_BRIGHT;
+                        com.googlecode.lanterna.TextCharacter dot = new com.googlecode.lanterna.TextCharacter(
+                                '·', dotColor, com.googlecode.lanterna.TextColor.ANSI.BLACK);
                         for (int x = screenMinX; x <= screenMaxX; x++) {
                             gameBox.setCharacter(x, screenMinY, dot);
                             gameBox.setCharacter(x, screenMaxY, dot);
@@ -377,13 +379,7 @@ public class TerminalView implements letrain.mvp.View {
             com.googlecode.lanterna.SGR[] modifiers = sgrList.toArray(new com.googlecode.lanterna.SGR[0]);
             for (int i = 0; i < c.length(); i++) {
                 gameBox.setCharacter(
-                        x + i,
-                        y,
-                        TextCharacter.fromCharacter(
-                                c.charAt(i),
-                                fgColor,
-                                bgColor,
-                                modifiers)[0]);
+                        x + i, y, TextCharacter.fromCharacter(c.charAt(i), fgColor, bgColor, modifiers)[0]);
             }
         }
     }
@@ -425,18 +421,18 @@ public class TerminalView implements letrain.mvp.View {
         int cols = getCols();
         int rows = getRows();
         if (cols <= 0 || rows <= 0) return;
-        
+
         int centerX = scrollOffset.getX() + cols / 2;
         int centerY = scrollOffset.getY() + rows / 2;
-        
+
         int radiusX = (int) Math.round(radius * ((double) cols / rows));
         int radiusY = radius;
-        
+
         int minX = centerX - radiusX;
         int maxX = centerX + radiusX;
         int minY = centerY - radiusY;
         int maxY = centerY + radiusY;
-        
+
         if (radius >= 999) {
             minX = scrollOffset.getX();
             maxX = scrollOffset.getX() + cols - 1;
@@ -452,7 +448,7 @@ public class TerminalView implements letrain.mvp.View {
         } else if (x > maxX) {
             newScrollX += (paginate ? Math.max(1, maxX - minX) : (x - maxX));
         }
-        
+
         if (y < minY) {
             newScrollY -= (paginate ? Math.max(1, maxY - minY) : (minY - y));
         } else if (y > maxY) {
@@ -559,8 +555,8 @@ public class TerminalView implements letrain.mvp.View {
         Panel mainPanel = new Panel(new BorderLayout());
 
         // Editor Area
-        final TextBox editor = new TextBox(new TerminalSize(60, 20), gameViewListener.getProgram(),
-                TextBox.Style.MULTI_LINE);
+        final TextBox editor =
+                new TextBox(new TerminalSize(60, 20), gameViewListener.getProgram(), TextBox.Style.MULTI_LINE);
         mainPanel.addComponent(editor, BorderLayout.Location.CENTER);
 
         // Side Panel (Reference)
@@ -569,15 +565,18 @@ public class TerminalView implements letrain.mvp.View {
 
         ActionListBox refList = new ActionListBox(new TerminalSize(30, 20)) {
             private long lastClickTime = 0;
+
             @Override
-            public com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(com.googlecode.lanterna.input.KeyStroke ks) {
+            public com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(
+                    com.googlecode.lanterna.input.KeyStroke ks) {
                 if (ks instanceof com.googlecode.lanterna.input.MouseAction) {
                     com.googlecode.lanterna.input.MouseAction mi = (com.googlecode.lanterna.input.MouseAction) ks;
                     if (mi.getActionType() == com.googlecode.lanterna.input.MouseActionType.CLICK_RELEASE) {
                         super.handleKeyStroke(ks);
                         long now = System.currentTimeMillis();
                         if (now - lastClickTime < 500) {
-                            return super.handleKeyStroke(new com.googlecode.lanterna.input.KeyStroke(com.googlecode.lanterna.input.KeyType.Enter));
+                            return super.handleKeyStroke(new com.googlecode.lanterna.input.KeyStroke(
+                                    com.googlecode.lanterna.input.KeyType.Enter));
                         }
                         lastClickTime = now;
                         return com.googlecode.lanterna.gui2.Interactable.Result.HANDLED;
@@ -608,11 +607,13 @@ public class TerminalView implements letrain.mvp.View {
                     }
                 }
             }
+
             @Override
             public void run() {
                 int selected = refList.getSelectedIndex();
                 refList.clearItems();
-                for (letrain.command.GrammarReference.Node rootNode : letrain.command.GrammarReference.getReferenceTree()) {
+                for (letrain.command.GrammarReference.Node rootNode :
+                        letrain.command.GrammarReference.getReferenceTree()) {
                     build(rootNode, "");
                 }
                 if (selected >= 0 && selected < refList.getItems().size()) {
@@ -656,30 +657,36 @@ public class TerminalView implements letrain.mvp.View {
         };
         Runnable cancelAction = window::close;
 
-        com.googlecode.lanterna.gui2.InteractableRenderer<Button> mnemonicRenderer = new com.googlecode.lanterna.gui2.InteractableRenderer<Button>() {
-            @Override
-            public com.googlecode.lanterna.TerminalSize getPreferredSize(Button component) {
-                return new com.googlecode.lanterna.TerminalSize(component.getLabel().length() + 4, 1);
-            }
-            @Override
-            public void drawComponent(com.googlecode.lanterna.gui2.TextGUIGraphics graphics, Button component) {
-                if (component.isFocused()) {
-                    graphics.applyThemeStyle(component.getThemeDefinition().getActive());
-                } else {
-                    graphics.applyThemeStyle(component.getThemeDefinition().getNormal());
-                }
-                String label = component.getLabel();
-                graphics.putString(0, 0, "< " + label + " >");
-                graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
-                if (label.length() > 0) {
-                    graphics.putString(2, 0, label.substring(0, 1));
-                }
-            }
-            @Override
-            public com.googlecode.lanterna.TerminalPosition getCursorLocation(Button component) {
-                return null;
-            }
-        };
+        com.googlecode.lanterna.gui2.InteractableRenderer<Button> mnemonicRenderer =
+                new com.googlecode.lanterna.gui2.InteractableRenderer<Button>() {
+                    @Override
+                    public com.googlecode.lanterna.TerminalSize getPreferredSize(Button component) {
+                        return new com.googlecode.lanterna.TerminalSize(
+                                component.getLabel().length() + 4, 1);
+                    }
+
+                    @Override
+                    public void drawComponent(com.googlecode.lanterna.gui2.TextGUIGraphics graphics, Button component) {
+                        if (component.isFocused()) {
+                            graphics.applyThemeStyle(
+                                    component.getThemeDefinition().getActive());
+                        } else {
+                            graphics.applyThemeStyle(
+                                    component.getThemeDefinition().getNormal());
+                        }
+                        String label = component.getLabel();
+                        graphics.putString(0, 0, "< " + label + " >");
+                        graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+                        if (label.length() > 0) {
+                            graphics.putString(2, 0, label.substring(0, 1));
+                        }
+                    }
+
+                    @Override
+                    public com.googlecode.lanterna.TerminalPosition getCursorLocation(Button component) {
+                        return null;
+                    }
+                };
 
         Runnable togglePanelsAction = () -> {
             if (sidePanel.getParent() != null) {
@@ -711,16 +718,34 @@ public class TerminalView implements letrain.mvp.View {
         footer.addComponent(cancelBtn);
         window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
             @Override
-            public void onInput(com.googlecode.lanterna.gui2.Window w, com.googlecode.lanterna.input.KeyStroke ks, java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
+            public void onInput(
+                    com.googlecode.lanterna.gui2.Window w,
+                    com.googlecode.lanterna.input.KeyStroke ks,
+                    java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
                 if (ks.isAltDown() && ks.getCharacter() != null) {
                     char c = Character.toLowerCase(ks.getCharacter());
-                    if (c == 't') { togglePanelsAction.run(); deliverEvent.set(false); }
-                    else if (c == 'r') { refList.takeFocus(); deliverEvent.set(false); }
-                    else if (c == 'e') { editor.takeFocus(); deliverEvent.set(false); }
-                    else if (c == 'a') { applyAction.run(); deliverEvent.set(false); }
-                    else if (c == 's') { saveAction.run(); deliverEvent.set(false); }
-                    else if (c == 'l') { loadAction.run(); deliverEvent.set(false); }
-                    else if (c == 'c') { cancelAction.run(); deliverEvent.set(false); }
+                    if (c == 't') {
+                        togglePanelsAction.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'r') {
+                        refList.takeFocus();
+                        deliverEvent.set(false);
+                    } else if (c == 'e') {
+                        editor.takeFocus();
+                        deliverEvent.set(false);
+                    } else if (c == 'a') {
+                        applyAction.run();
+                        deliverEvent.set(false);
+                    } else if (c == 's') {
+                        saveAction.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'l') {
+                        loadAction.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'c') {
+                        cancelAction.run();
+                        deliverEvent.set(false);
+                    }
                 }
             }
         });
@@ -818,5 +843,4 @@ public class TerminalView implements letrain.mvp.View {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
         com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui, title, message);
     }
-
 }

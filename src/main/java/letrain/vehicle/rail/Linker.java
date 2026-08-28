@@ -1,17 +1,17 @@
 package letrain.vehicle.rail;
 
-import letrain.map.Dir;
-import letrain.track.Track;
-import letrain.vehicle.Linkable;
-import letrain.vehicle.Cursor;
-import letrain.vehicle.Tracker;
-import letrain.vehicle.rail.impl.Locomotive;
-import letrain.vehicle.rail.impl.Wagon;
-import letrain.vehicle.rail.impl.Train;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import letrain.map.Dir;
+import letrain.track.Track;
+import letrain.vehicle.Cursor;
+import letrain.vehicle.Linkable;
+import letrain.vehicle.Tracker;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.Wagon;
 
 /**
  * Abstract base for any vehicle that can be linked into a train
@@ -35,10 +35,7 @@ public abstract class Linker extends Tracker implements Linkable {
 
     @Override
     public String toString() {
-        return "Linker{" +
-                ", pos=" + pos +
-                ", dir=" + dir +
-                '}';
+        return "Linker{" + ", pos=" + pos + ", dir=" + dir + '}';
     }
 
     @Override

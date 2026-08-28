@@ -1,7 +1,6 @@
 package letrain.track;
 
 import java.util.List;
-
 import letrain.map.Dir;
 
 interface Connectable {

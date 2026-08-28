@@ -1,7 +1,6 @@
 package letrain.mvp;
 
 import java.util.List;
-
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
 
@@ -34,7 +33,6 @@ public interface View {
         setPageOfPos(x, y);
     }
 
-
     default void ensureVisible(int x, int y, int radius, boolean paginate) {
         setPageOfPos(x, y);
     }
@@ -43,18 +41,15 @@ public interface View {
         return false;
     }
 
-    default void setCameraPagination(boolean paginate) {
-    }
+    default void setCameraPagination(boolean paginate) {}
 
     default int getCameraDeadzone() {
         return 0;
     }
 
-    default void setCameraDeadzone(int margin) {
-    }
+    default void setCameraDeadzone(int margin) {}
 
-    default void flashCameraDeadzone() {
-    }
+    default void flashCameraDeadzone() {}
 
     void clear(int x, int y);
 
@@ -69,7 +64,7 @@ public interface View {
     void setMenu(List<GameModeMenuOption> options);
 
     void setHelpBarText(String info);
-    
+
     default void setHelpLevel(int helpLevel) {}
 
     void showSaveDialog();
@@ -85,5 +80,4 @@ public interface View {
     public int getRows();
 
     void showMessage(String title, String message);
-
 }

@@ -1,7 +1,6 @@
 package letrain.vehicle.rail;
 
 import java.util.List;
-
 import letrain.track.Track;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

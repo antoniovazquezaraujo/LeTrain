@@ -1,30 +1,30 @@
 package letrain.visitor.gdx3d;
 
-import java.util.List;
-import letrain.visitor.Visitor;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import java.util.List;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
 import letrain.track.CargoTypes;
 
 public class GroundRenderer extends BaseSubRenderer {
 
-    public GroundRenderer(Gdx3DResourceContext resourceContext, 
-                        List<ModelInstance> instances, 
-                        List<ModelInstance> transparentInstances,
-                        List<Gdx3DRenderer.VehicleLabel> labels) {
+    public GroundRenderer(
+            Gdx3DResourceContext resourceContext,
+            List<ModelInstance> instances,
+            List<ModelInstance> transparentInstances,
+            List<Gdx3DRenderer.VehicleLabel> labels) {
         super(resourceContext, instances, transparentInstances, labels);
     }
 
     private final Color tempColor = new Color();
-    private final com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute rockXRayBlending = new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f);
+    private final com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute rockXRayBlending =
+            new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f);
 
     @Override
     public void visitGround(Ground ground) {
-        if (!isVisible(ground.getPosition()))
-            return;
+        if (!isVisible(ground.getPosition())) return;
         int type = ground.getType();
         Model model = resourceContext.groundModel;
         float yPosition = 0.0f;
@@ -35,7 +35,10 @@ public class GroundRenderer extends BaseSubRenderer {
         int backgroundType = type;
         if (type >= 10 && type <= 29) {
             if (modelRef != null && modelRef.getGroundMap() != null) {
-                backgroundType = modelRef.getGroundMap().getBackgroundTerrain(ground.getPosition().getX(), ground.getPosition().getY());
+                backgroundType = modelRef.getGroundMap()
+                        .getBackgroundTerrain(
+                                ground.getPosition().getX(),
+                                ground.getPosition().getY());
             } else {
                 backgroundType = letrain.ground.GroundMap.GROUND;
             }
@@ -48,7 +51,10 @@ public class GroundRenderer extends BaseSubRenderer {
             float z = ground.getPosition().getY() + 0.5f;
 
             ModelInstance jewelBlock = resourceContext.getModelInstance(resourceContext.wagonJewelModel);
-            jewelBlock.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(tempColor));
+            jewelBlock
+                    .materials
+                    .get(0)
+                    .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(tempColor));
             float h = 0.5f;
             jewelBlock.transform.setToTranslation(x, h / 2f, z);
             jewelBlock.transform.scale(0.9f, h, 0.9f);
@@ -62,12 +68,12 @@ public class GroundRenderer extends BaseSubRenderer {
             float x = ground.getPosition().getX() + 0.5f;
             float z = ground.getPosition().getY() + 0.5f;
             ModelInstance instance = resourceContext.getModelInstance(consumerModelToUse);
-            
+
             float cargoDepositElevation = 0.15f;
             instance.transform.setToTranslation(x, cargoDepositElevation, z);
             instances.add(instance);
         }
-        
+
         switch (backgroundType) {
             case letrain.ground.GroundMap.GROUND:
                 model = resourceContext.groundModel;
@@ -111,7 +117,9 @@ public class GroundRenderer extends BaseSubRenderer {
                 instances.add(instance);
             }
 
-            if (backgroundType != letrain.ground.GroundMap.WATER && modelRef != null && modelRef.getGroundMap() != null) {
+            if (backgroundType != letrain.ground.GroundMap.WATER
+                    && modelRef != null
+                    && modelRef.getGroundMap() != null) {
                 int gx = ground.getPosition().getX();
                 int gy = ground.getPosition().getY();
                 if (backgroundType == letrain.ground.GroundMap.ROCK) tempColor.set(0.5f, 0.4f, 0.3f, 1f);

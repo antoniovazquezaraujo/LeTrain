@@ -8,6 +8,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.time.LocalDateTime;
+import java.util.List;
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.impl.RailMap;
@@ -21,18 +23,14 @@ import letrain.vehicle.rail.TrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Wagon;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonAutoDetect(
-    fieldVisibility = JsonAutoDetect.Visibility.ANY,
-    getterVisibility = JsonAutoDetect.Visibility.NONE,
-    setterVisibility = JsonAutoDetect.Visibility.NONE,
-    isGetterVisibility = JsonAutoDetect.Visibility.NONE,
-    creatorVisibility = JsonAutoDetect.Visibility.NONE
-)
+        fieldVisibility = JsonAutoDetect.Visibility.ANY,
+        getterVisibility = JsonAutoDetect.Visibility.NONE,
+        setterVisibility = JsonAutoDetect.Visibility.NONE,
+        isGetterVisibility = JsonAutoDetect.Visibility.NONE,
+        creatorVisibility = JsonAutoDetect.Visibility.NONE)
 public abstract class ModelMixin {
     @JsonProperty("economyManager")
     @JsonDeserialize(as = letrain.economy.impl.EconomyManager.class)
@@ -40,10 +38,13 @@ public abstract class ModelMixin {
 
     @JsonProperty("selectedLocomotive")
     Locomotive selectedLocomotive;
+
     @JsonProperty("selectedFork")
     ForkRailTrack selectedFork;
+
     @JsonProperty("selectedSemaphore")
     RailSemaphore selectedSemaphore;
+
     @JsonProperty("selectedStation")
     Station selectedStation;
 
@@ -52,12 +53,16 @@ public abstract class ModelMixin {
 
     @JsonProperty("selectedLocomotiveIndex")
     int selectedLocomotiveIndex;
+
     @JsonProperty("selectedForkIndex")
     int selectedForkIndex;
+
     @JsonProperty("selectedSemaphoreIndex")
     int selectedSemaphoreIndex;
+
     @JsonProperty("selectedStationIndex")
     int selectedStationIndex;
+
     @JsonProperty("showId")
     boolean showId;
 
@@ -110,18 +115,25 @@ public abstract class ModelMixin {
 
     @JsonProperty("nextSensorId")
     int nextSensorId;
+
     @JsonProperty("nextSemaphoreId")
     int nextSemaphoreId;
+
     @JsonProperty("nextTrainId")
     int nextTrainId;
+
     @JsonProperty("nextStationId")
     int nextStationId;
+
     @JsonProperty("program")
     String program;
+
     @JsonProperty("seed")
     int seed;
+
     @JsonProperty("quantifier")
     int quantifier;
+
     @JsonProperty("quantifierSteps")
     int quantifierSteps;
 
@@ -132,6 +144,7 @@ public abstract class ModelMixin {
 
     @JsonIgnore
     Object automationEngine;
+
     @JsonIgnore
     Object internalSimService;
 }

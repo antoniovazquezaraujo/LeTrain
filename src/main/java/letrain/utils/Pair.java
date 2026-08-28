@@ -5,8 +5,7 @@ public class Pair<T1, T2> {
     private T1 first;
     private T2 second;
 
-    public Pair() {
-    }
+    public Pair() {}
 
     public Pair(T1 first, T2 second) {
         this.first = first;
@@ -50,8 +49,7 @@ public class Pair<T1, T2> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Pair<?, ?> pair = (Pair<?, ?>) o;
-        return java.util.Objects.equals(first, pair.first) &&
-               java.util.Objects.equals(second, pair.second);
+        return java.util.Objects.equals(first, pair.first) && java.util.Objects.equals(second, pair.second);
     }
 
     @Override

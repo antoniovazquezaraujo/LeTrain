@@ -1,7 +1,6 @@
 package letrain.segments;
 
 import java.util.List;
-
 import letrain.track.Track;
 
 /**
@@ -14,8 +13,12 @@ public interface RailNode {
     Track getTrack();
 
     List<Port> getPorts();
+
     TransitionType getTransitionType(Port entry, Port exit);
+
     boolean setRoute(Port entry, Port exit);
+
     boolean isRouteActive(Port entry, Port exit);
+
     Port getActiveExit(Port entry);
 }

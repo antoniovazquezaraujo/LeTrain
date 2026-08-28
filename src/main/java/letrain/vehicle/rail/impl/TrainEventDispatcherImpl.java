@@ -3,14 +3,13 @@ package letrain.vehicle.rail.impl;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
+import letrain.itinerary.Waypoint;
 import letrain.map.Point;
 import letrain.utils.SerializationHelper;
 import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.ScriptTrainEventListener;
 import letrain.vehicle.rail.TrainEventDispatcher;
 import letrain.vehicle.rail.TrainEventListener;
-import letrain.itinerary.Waypoint;
 
 /**
  * Manages event listener registrations and broadcasts train events.

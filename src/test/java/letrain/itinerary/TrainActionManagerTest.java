@@ -1,5 +1,9 @@
 package letrain.itinerary;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.util.List;
 import letrain.itinerary.impl.TrainActionManager;
 import letrain.itinerary.impl.WaypointImpl;
 import letrain.track.Station;
@@ -10,11 +14,6 @@ import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @DisplayName("TrainActionManager")
 class TrainActionManagerTest {

@@ -9,12 +9,10 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.concurrent.atomic.AtomicReference;
-
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.track.Track;
@@ -67,8 +65,7 @@ class TrainMoveLinkersTest {
 
         boolean result = train.getMovementManager().moveLinkers(true);
 
-        assertFalse(result,
-                "Should return false: null-track detected in post-move check");
+        assertFalse(result, "Should return false: null-track detected in post-move check");
         verify(trackB, atLeastOnce()).setReservation(null);
         verify(trackC, atLeastOnce()).setReservation(null);
     }
@@ -89,8 +86,7 @@ class TrainMoveLinkersTest {
 
         boolean result = train.getMovementManager().moveLinkers(true);
 
-        assertFalse(result,
-                "moveLinkers should return false — head target track is occupied");
+        assertFalse(result, "moveLinkers should return false — head target track is occupied");
     }
 
     // ---------- Test 3: Happy path ----------
@@ -117,20 +113,15 @@ class TrainMoveLinkersTest {
         boolean result = train.getMovementManager().moveLinkers(true);
 
         // --- Assert ---
-        assertTrue(result,
-                "Should return true: all linkers moved successfully");
+        assertTrue(result, "Should return true: all linkers moved successfully");
 
         // Verify first linker ended up on trackB
-        assertNotNull(firstLinkerTrack.get(),
-                "First linker should have a track after move");
-        assertTrue(firstLinkerTrack.get() == trackB,
-                "First linker should be on trackB");
+        assertNotNull(firstLinkerTrack.get(), "First linker should have a track after move");
+        assertTrue(firstLinkerTrack.get() == trackB, "First linker should be on trackB");
 
         // Verify second linker ended up on trackC
-        assertNotNull(secondLinkerTrack.get(),
-                "Second linker should have a track after move");
-        assertTrue(secondLinkerTrack.get() == trackC,
-                "Second linker should be on trackC");
+        assertNotNull(secondLinkerTrack.get(), "Second linker should have a track after move");
+        assertTrue(secondLinkerTrack.get() == trackC, "Second linker should be on trackC");
 
         // Verify reservations were cleared after successful move
         verify(trackB).setReservation(null);
@@ -161,16 +152,20 @@ class TrainMoveLinkersTest {
 
         // Correlate setTrack / getTrack for firstLinker
         doAnswer(inv -> {
-            firstLinkerTrack.set(inv.getArgument(0));
-            return null;
-        }).when(firstLinker).setTrack(any(Track.class));
+                    firstLinkerTrack.set(inv.getArgument(0));
+                    return null;
+                })
+                .when(firstLinker)
+                .setTrack(any(Track.class));
         when(firstLinker.getTrack()).thenAnswer(inv -> firstLinkerTrack.get());
 
         // Correlate setTrack / getTrack for secondLinker
         doAnswer(inv -> {
-            secondLinkerTrack.set(inv.getArgument(0));
-            return null;
-        }).when(secondLinker).setTrack(any(Track.class));
+                    secondLinkerTrack.set(inv.getArgument(0));
+                    return null;
+                })
+                .when(secondLinker)
+                .setTrack(any(Track.class));
         when(secondLinker.getTrack()).thenAnswer(inv -> secondLinkerTrack.get());
 
         // Common linker stubs
@@ -234,17 +229,23 @@ class TrainMoveLinkersTest {
         when(trackC.getLinker()).thenAnswer(inv -> linkerOnTrackC.get());
 
         doAnswer(inv -> {
-            linkerOnTrackA.set(inv.getArgument(0));
-            return null;
-        }).when(trackA).setLinker(any(Linker.class));
+                    linkerOnTrackA.set(inv.getArgument(0));
+                    return null;
+                })
+                .when(trackA)
+                .setLinker(any(Linker.class));
         doAnswer(inv -> {
-            linkerOnTrackB.set(inv.getArgument(0));
-            return null;
-        }).when(trackB).setLinker(any(Linker.class));
+                    linkerOnTrackB.set(inv.getArgument(0));
+                    return null;
+                })
+                .when(trackB)
+                .setLinker(any(Linker.class));
         doAnswer(inv -> {
-            linkerOnTrackC.set(inv.getArgument(0));
-            return null;
-        }).when(trackC).setLinker(any(Linker.class));
+                    linkerOnTrackC.set(inv.getArgument(0));
+                    return null;
+                })
+                .when(trackC)
+                .setLinker(any(Linker.class));
 
         // Initial track assignments
         firstLinkerTrack.set(trackA);
@@ -275,18 +276,18 @@ class TrainMoveLinkersTest {
      * the track's recorded linker.
      */
     private void setupRemoveLinkerSetsTrackToNull(
-            Track track,
-            AtomicReference<Linker> trackLinkerRef,
-            AtomicReference<Track> linkerTrackRef) {
+            Track track, AtomicReference<Linker> trackLinkerRef, AtomicReference<Track> linkerTrackRef) {
 
         doAnswer(inv -> {
-            Linker removed = trackLinkerRef.get();
-            if (removed != null) {
-                linkerTrackRef.set(null);
-            }
-            trackLinkerRef.set(null);
-            return removed;
-        }).when(track).removeLinker();
+                    Linker removed = trackLinkerRef.get();
+                    if (removed != null) {
+                        linkerTrackRef.set(null);
+                    }
+                    trackLinkerRef.set(null);
+                    return removed;
+                })
+                .when(track)
+                .removeLinker();
     }
 
     /**
@@ -300,13 +301,15 @@ class TrainMoveLinkersTest {
             Linker expectedLinker) {
 
         doAnswer(inv -> {
-            Linker removed = trackLinkerRef.get();
-            if (removed != null) {
-                linkerTrackRef.set(null);
-            }
-            trackLinkerRef.set(null);
-            return removed;
-        }).when(track).removeLinker();
+                    Linker removed = trackLinkerRef.get();
+                    if (removed != null) {
+                        linkerTrackRef.set(null);
+                    }
+                    trackLinkerRef.set(null);
+                    return removed;
+                })
+                .when(track)
+                .removeLinker();
     }
 
     /**
@@ -320,12 +323,14 @@ class TrainMoveLinkersTest {
             Linker linker) {
 
         doAnswer(inv -> {
-            Dir dir = inv.getArgument(0);
-            Linker v = inv.getArgument(1);
-            linkerTrackRef.set(targetTrack);
-            targetTrackLinkerRef.set(v);
-            return true;
-        }).when(targetTrack).enterLinkerFromDir(any(Dir.class), any(Linker.class));
+                    Dir dir = inv.getArgument(0);
+                    Linker v = inv.getArgument(1);
+                    linkerTrackRef.set(targetTrack);
+                    targetTrackLinkerRef.set(v);
+                    return true;
+                })
+                .when(targetTrack)
+                .enterLinkerFromDir(any(Dir.class), any(Linker.class));
     }
 
     @Test

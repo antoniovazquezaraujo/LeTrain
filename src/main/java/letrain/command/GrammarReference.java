@@ -31,7 +31,7 @@ public class GrammarReference {
             this.expanded = expanded;
             return this;
         }
-        
+
         public Node setHeading(boolean heading) {
             this.isHeading = heading;
             return this;
@@ -159,7 +159,7 @@ public class GrammarReference {
         // SET NAMES
         Node namesHeading = new Node("SET NAMES").setHeading(true);
         root.add(namesHeading);
-        
+
         root.add(new Node("station", "station # set name \"\";"));
         root.add(new Node("sensor", "sensor # set name \"\";"));
         root.add(new Node("train", "train # set name \"\";"));
@@ -173,11 +173,11 @@ public class GrammarReference {
         for (Node node : getReferenceTree()) {
             if (node.isHeading) {
                 if (!flat.isEmpty()) {
-                    flat.add(new String[] { "", "" });
+                    flat.add(new String[] {"", ""});
                 }
-                flat.add(new String[] { node.label, "" });
+                flat.add(new String[] {node.label, ""});
             } else if (node.snippet != null && node.children.isEmpty()) {
-                flat.add(new String[] { "  " + node.label, node.snippet });
+                flat.add(new String[] {"  " + node.label, node.snippet});
             } else {
                 flatten(node, flat, "  ");
             }
@@ -187,17 +187,15 @@ public class GrammarReference {
 
     private static void flatten(Node node, List<String[]> list, String indent) {
         if (node.snippet != null && node.children.isEmpty()) {
-            list.add(new String[] { indent + node.label, node.snippet });
+            list.add(new String[] {indent + node.label, node.snippet});
             return;
         }
         for (Node child : node.children) {
             if (child.snippet != null) {
-                list.add(new String[] { indent + node.label + " " + child.label, child.snippet });
+                list.add(new String[] {indent + node.label + " " + child.label, child.snippet});
             } else {
                 flatten(child, list, indent + node.label + " ");
             }
         }
     }
-
-
 }

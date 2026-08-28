@@ -2,7 +2,6 @@ package letrain.itinerary;
 
 import java.util.List;
 import java.util.Optional;
-
 import letrain.map.Dir;
 import letrain.segments.Segment;
 
@@ -19,7 +18,8 @@ public interface SegmentPathfinder {
      */
     List<Segment> find(Segment from, Segment to, Optional<Dir> entryDir);
 
-    default List<Segment> find(Segment from, Optional<letrain.segments.Port> fromExitPort, Segment to, Optional<Dir> entryDir) {
+    default List<Segment> find(
+            Segment from, Optional<letrain.segments.Port> fromExitPort, Segment to, Optional<Dir> entryDir) {
         return find(from, to, entryDir);
     }
 }

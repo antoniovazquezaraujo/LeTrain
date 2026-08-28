@@ -29,5 +29,4 @@ public interface Tractor extends Reversible {
     void incDistanceTraveled();
 
     int getId();
-
 }

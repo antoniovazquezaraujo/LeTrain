@@ -2,21 +2,19 @@ package letrain.mvp.impl;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
 import letrain.itinerary.Waypoint;
 import letrain.itinerary.WaypointCommand;
 import letrain.itinerary.impl.WaypointImpl;
 import letrain.map.Dir;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
 
 @JsonSerialize(using = WaypointMixin.WaypointSerializer.class)
 @JsonDeserialize(using = WaypointMixin.WaypointDeserializer.class)
@@ -59,7 +57,8 @@ public abstract class WaypointMixin {
             if (node.has("commands")) {
                 JsonParser listParser = node.get("commands").traverse(p.getCodec());
                 listParser.nextToken();
-                commands = ctxt.readValue(listParser, ctxt.getTypeFactory().constructCollectionType(List.class, WaypointCommand.class));
+                commands = ctxt.readValue(
+                        listParser, ctxt.getTypeFactory().constructCollectionType(List.class, WaypointCommand.class));
             }
 
             return new WaypointImpl(type, targetId, entryDir, commands);

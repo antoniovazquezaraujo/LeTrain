@@ -3,7 +3,6 @@ package letrain.mvp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.function.Supplier;
-
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Point;
@@ -15,10 +14,10 @@ import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Cursor;
-import letrain.vehicle.rail.impl.Locomotive;
-import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.ScriptTrainEventListener;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.Wagon;
 
 public interface Model {
@@ -40,11 +39,13 @@ public interface Model {
     public int nextStationId();
 
     public int nextLocomotiveId();
+
     public int peekNextLocomotiveId();
 
     public int nextSensorId();
 
     public int nextTrainId();
+
     public int peekNextTrainId();
 
     void addTrack(Point point, RailTrack track);
@@ -59,7 +60,10 @@ public interface Model {
 
     List<Wagon> getWagons();
 
-    default int getHelpLevel() { return 2; }
+    default int getHelpLevel() {
+        return 2;
+    }
+
     default void setHelpLevel(int helpLevel) {}
 
     Cursor getCursor();
@@ -123,10 +127,13 @@ public interface Model {
     RailSemaphore getSemaphoreAt(Point point);
 
     boolean selectNextSemaphore();
+
     boolean selectPrevSemaphore();
-    
+
     boolean selectSpeedSignal(int id);
+
     boolean selectNextSpeedSignal();
+
     boolean selectPrevSpeedSignal();
 
     boolean selectSemaphore(int id);
@@ -136,18 +143,18 @@ public interface Model {
     void setSelectedSemaphore(RailSemaphore selectedSemaphore);
 
     letrain.track.SpeedSignal getSelectedSpeedSignal();
+
     void setSelectedSpeedSignal(letrain.track.SpeedSignal selectedSpeedSignal);
 
     void moveLocomotives();
 
     GameMode getMode();
+
     GameMode getPreviousMode();
 
     void setMode(GameMode mode);
 
     Locomotive getSelectedLocomotive();
-
-
 
     default boolean canEnterLinkMode() {
         Locomotive loco = getSelectedLocomotive();
@@ -229,8 +236,7 @@ public interface Model {
             String gameModeDescription,
             Supplier<Boolean> enabledIf,
             Supplier<Boolean> selectedIf,
-            Supplier<GameMode> doWhenSelected) {
-    }
+            Supplier<GameMode> doWhenSelected) {}
 
     public List<GameModeMenuOption> getMenuModel();
 
@@ -261,11 +267,13 @@ public interface Model {
     void setSelectedWagonType(CargoTypes type);
 
     boolean isXRayActive();
+
     void setXRayActive(boolean xRayActive);
 
     void updateGroundMap(Point point, int type, int variation);
 
     boolean isMapChanged();
+
     void setMapChanged(boolean mapChanged);
 
     letrain.segments.BlockManager getBlockManager();
@@ -273,5 +281,6 @@ public interface Model {
     letrain.segments.RailwayGraph getRailwayGraph();
 
     letrain.utils.SimulationScheduler getScheduler();
+
     public java.util.List<letrain.track.SpeedSignal> getSpeedSignals();
 }

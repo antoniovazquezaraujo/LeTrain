@@ -8,8 +8,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
-
 import letrain.map.Dir;
 import letrain.map.RailMap;
 import letrain.segments.Port;
@@ -41,9 +39,9 @@ public class TopologyServiceImpl implements TopologyService {
         int segmentCounter = 0;
 
         List<Map.Entry<RailTrack, RailNodeImpl>> sortedNodes = new ArrayList<>(trackToNode.entrySet());
-        sortedNodes.sort(Comparator.comparingInt(
-            (Map.Entry<RailTrack, RailNodeImpl> e) -> e.getKey().getPosition().getY())
-            .thenComparingInt(e -> e.getKey().getPosition().getX()));
+        sortedNodes.sort(Comparator.comparingInt((Map.Entry<RailTrack, RailNodeImpl> e) ->
+                        e.getKey().getPosition().getY())
+                .thenComparingInt(e -> e.getKey().getPosition().getX()));
         for (Map.Entry<RailTrack, RailNodeImpl> entry : sortedNodes) {
             RailTrack startTrack = entry.getKey();
             RailNodeImpl startNode = entry.getValue();
@@ -51,14 +49,14 @@ public class TopologyServiceImpl implements TopologyService {
             for (Dir dir : startTrack.getConnections()) {
                 Port startPort = startNode.getPortForDir(dir);
                 if (startPort == null) continue;
-                
+
                 CrawlResult result = crawl(startTrack, dir, trackToNode);
                 if (result != null) {
                     Port endPort = result.endNode.getPortForDir(result.incomingDir);
                     if (endPort == null) continue;
-                    
+
                     Set<Port> segmentKey = new HashSet<>(Arrays.asList(startPort, endPort));
-                    
+
                     if (!discoveredSegments.contains(segmentKey)) {
                         String segmentId = "S" + (segmentCounter++);
                         Segment segment = new SegmentImpl(segmentId, startPort, endPort);
@@ -118,7 +116,7 @@ public class TopologyServiceImpl implements TopologyService {
             visited.add(currentTrack);
             Dir nextDir = currentTrack.getDir(incomingDir);
             if (nextDir == null) return null;
-            
+
             RailTrack nextTrack = (RailTrack) currentTrack.getConnected(nextDir);
             incomingDir = nextDir.inverse();
             currentTrack = nextTrack;

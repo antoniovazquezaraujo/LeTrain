@@ -12,7 +12,7 @@ public interface RailwayGraph {
     Segment getSegment(Port port);
 
     /**
-     * Dado un puerto actual, devuelve los posibles puertos siguientes 
+     * Dado un puerto actual, devuelve los posibles puertos siguientes
      * al final del segmento. Devuelve null si es fin de vía.
      */
     List<Port> getNextPorts(Port current);

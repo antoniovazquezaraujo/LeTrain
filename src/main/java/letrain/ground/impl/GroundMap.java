@@ -1,5 +1,7 @@
 package letrain.ground.impl;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,9 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.PerlinNoise;
@@ -23,12 +22,16 @@ import org.slf4j.LoggerFactory;
 public class GroundMap implements letrain.ground.GroundMap, Serializable {
     private static final long serialVersionUID = 1L;
     Logger log = LoggerFactory.getLogger(getClass());
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     Map<Integer, Map<Integer, Integer>> cells;
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     PerlinNoise noise = null;
+
     @com.fasterxml.jackson.annotation.JsonProperty("blocks")
     Set<Block> blocks;
+
     private EconomyManager economyManager;
 
     int OCTAVES = 5;
@@ -54,12 +57,9 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         blocks = new HashSet<>();
     }
 
-    record CellEnv(int ground, int rock, int water) {
+    record CellEnv(int ground, int rock, int water) {}
 
-    }
-
-    record Block(int x, int y, int width, int height) {
-    }
+    record Block(int x, int y, int width, int height) {}
 
     @Override
     public void forEach(Consumer<Ground> c) {
@@ -175,14 +175,14 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                 } else {
                     // GROUND - check for industries
                     int terrain = 0; // Default Ground
-                    
+
                     float goldThreshold = (economyManager != null) ? economyManager.getGoldThreshold() : 0.28f;
                     float coalThreshold = (economyManager != null) ? economyManager.getCoalThreshold() : 0.28f;
                     float rubyThreshold = (economyManager != null) ? economyManager.getRubyThreshold() : 0.28f;
 
                     // LAYER 1: Gold Industry (z=1)
-                    float woodNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 1,
-                            OCTAVES);
+                    float woodNoise =
+                            noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 1, OCTAVES);
                     if (woodNoise > goldThreshold) {
                         terrain = GOLD_MINE;
                     } else if (woodNoise < -goldThreshold) {
@@ -191,8 +191,8 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
 
                     // LAYER 2: Coal Industry (z=2) - Only if no gold
                     if (terrain == 0) {
-                        float coalNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 2,
-                                OCTAVES);
+                        float coalNoise =
+                                noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 2, OCTAVES);
                         if (coalNoise > coalThreshold) {
                             terrain = MINE;
                         } else if (coalNoise < -coalThreshold) {
@@ -202,8 +202,8 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
 
                     // LAYER 3: Ruby Industry (z=3) - Only if no gold or coal
                     if (terrain == 0) {
-                        float fishNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 3,
-                                OCTAVES);
+                        float fishNoise =
+                                noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 3, OCTAVES);
                         if (fishNoise > rubyThreshold) {
                             terrain = RUBY_MINE;
                         } else if (fishNoise < -rubyThreshold) {
@@ -219,7 +219,7 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
 
     public void compactBlocks() {
         if (cells == null || cells.isEmpty()) return;
-        
+
         Set<Long> explored = new HashSet<>();
         for (Integer r : cells.keySet()) {
             Map<Integer, Integer> rowCells = cells.get(r);
@@ -230,7 +230,7 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                 }
             }
         }
-        
+
         List<Long> sortedCells = new ArrayList<>(explored);
         sortedCells.sort((a, b) -> {
             int yA = (int) (a.longValue());
@@ -240,23 +240,23 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
             int xB = (int) (b.longValue() >> 32);
             return Integer.compare(xA, xB);
         });
-        
+
         Set<Block> compacted = new HashSet<>();
-        
+
         for (Long p : sortedCells) {
             if (!explored.contains(p)) continue;
-            
+
             int startX = (int) (p >> 32);
             int startY = (int) (p.longValue());
-            
+
             int maxX = startX;
             int maxY = startY;
-            
+
             // Expand right
             while (explored.contains(((long) (maxX + 1) << 32) | (startY & 0xFFFFFFFFL))) {
                 maxX++;
             }
-            
+
             // Expand down
             boolean canExpandY = true;
             while (canExpandY) {
@@ -271,17 +271,17 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                     maxY++;
                 }
             }
-            
+
             // Mark as covered
             for (int y = startY; y <= maxY; y++) {
                 for (int x = startX; x <= maxX; x++) {
                     explored.remove(((long) x << 32) | (y & 0xFFFFFFFFL));
                 }
             }
-            
+
             compacted.add(new Block(startX, startY, maxX - startX + 1, maxY - startY + 1));
         }
-        
+
         this.blocks = compacted;
     }
 

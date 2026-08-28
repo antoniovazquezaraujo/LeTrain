@@ -1,18 +1,16 @@
 package letrain.itinerary;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.util.List;
 import letrain.itinerary.impl.AutoPilotImpl;
 import letrain.itinerary.impl.ItineraryImpl;
 import letrain.itinerary.impl.WaypointImpl;
+import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import letrain.vehicle.rail.impl.Train;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @DisplayName("AutoPilot")
 class AutoPilotTest {

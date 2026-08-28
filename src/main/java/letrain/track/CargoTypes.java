@@ -45,10 +45,8 @@ public enum CargoTypes {
         }
 
         public static StationRole getRoleForTerrain(int terrainType) {
-            if (terrainType >= 10 && terrainType <= 19)
-                return StationRole.PRODUCER;
-            if (terrainType >= 20 && terrainType <= 29)
-                return StationRole.CONSUMER;
+            if (terrainType >= 10 && terrainType <= 19) return StationRole.PRODUCER;
+            if (terrainType >= 20 && terrainType <= 29) return StationRole.CONSUMER;
             return StationRole.GENERIC;
         }
     }

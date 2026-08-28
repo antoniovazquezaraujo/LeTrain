@@ -5,5 +5,6 @@ package letrain.segments;
  */
 public interface Port {
     RailNode getNode();
+
     PortType getType();
 }

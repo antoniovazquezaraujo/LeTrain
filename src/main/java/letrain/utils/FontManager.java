@@ -1,12 +1,11 @@
 package letrain.utils;
 
-import java.io.File;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
+import java.io.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +58,15 @@ public class FontManager {
         ValidationUtils.requirePositive(size, "size");
 
         // Try common monospace fonts in order, starting with our bundled JuliaMono
-        String[] monospaceFonts = { "JuliaMono-Regular", "JetBrainsMono-Regular", "Inconsolata-Regular", "Consolas", "Courier New", "Menlo", "DejaVu Sans Mono" };
+        String[] monospaceFonts = {
+            "JuliaMono-Regular",
+            "JetBrainsMono-Regular",
+            "Inconsolata-Regular",
+            "Consolas",
+            "Courier New",
+            "Menlo",
+            "DejaVu Sans Mono"
+        };
 
         for (String fontName : monospaceFonts) {
             BitmapFont font = loadFont(fontName, size);
@@ -85,7 +92,7 @@ public class FontManager {
     private static BitmapFont loadFontFromAssets(String fontName, int size) {
         try {
             // Try common font file extensions
-            String[] extensions = { ".ttf", ".otf", ".woff", ".woff2" };
+            String[] extensions = {".ttf", ".otf", ".woff", ".woff2"};
             for (String ext : extensions) {
                 String path = "fonts/" + fontName + ext;
                 log.debug("Checking for font asset: {}", path);
@@ -148,27 +155,23 @@ public class FontManager {
         if (os.contains("win")) {
             // Windows font directories
             searchDirs = new String[] {
-                    "C:\\Windows\\Fonts",
-                    "C:\\Users\\" + System.getProperty("user.name") + "\\AppData\\Local\\Microsoft\\Windows\\Fonts"
+                "C:\\Windows\\Fonts",
+                "C:\\Users\\" + System.getProperty("user.name") + "\\AppData\\Local\\Microsoft\\Windows\\Fonts"
             };
         } else if (os.contains("mac")) {
             // macOS font directories
             searchDirs = new String[] {
-                    "/Library/Fonts",
-                    System.getProperty("user.home") + "/Library/Fonts",
-                    "/System/Library/Fonts"
+                "/Library/Fonts", System.getProperty("user.home") + "/Library/Fonts", "/System/Library/Fonts"
             };
         } else if (os.contains("nux") || os.contains("unix")) {
             // Linux font directories
             searchDirs = new String[] {
-                    "/usr/share/fonts",
-                    "/usr/local/share/fonts",
-                    System.getProperty("user.home") + "/.fonts"
+                "/usr/share/fonts", "/usr/local/share/fonts", System.getProperty("user.home") + "/.fonts"
             };
         }
 
         // Search for font files
-        String[] extensions = { ".ttf", ".otf" };
+        String[] extensions = {".ttf", ".otf"};
         for (String dir : searchDirs) {
             for (String ext : extensions) {
                 // Try exact name

@@ -14,5 +14,4 @@ public interface Rotatable {
     Dir getDir();
 
     void setDir(Dir dir);
-
 }

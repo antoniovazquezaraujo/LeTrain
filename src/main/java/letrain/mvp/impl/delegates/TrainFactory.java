@@ -1,6 +1,5 @@
 package letrain.mvp.impl.delegates;
 
-
 import letrain.map.Point;
 
 public class TrainFactory {

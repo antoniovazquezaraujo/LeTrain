@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import letrain.itinerary.Itinerary;
 import letrain.itinerary.Waypoint;
 import letrain.itinerary.WaypointCommand;
@@ -88,17 +87,22 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             int id = Integer.parseInt(ctx.sensorSelector().NUMBER().getText());
             Sensor sensor = model.getSensor(id);
             if (sensor != null) {
-                Integer filterTrainId = (ctx.trainSelector() != null && ctx.trainSelector().NUMBER() != null)
-                        ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
-                        : null;
+                Integer filterTrainId =
+                        (ctx.trainSelector() != null && ctx.trainSelector().NUMBER() != null)
+                                ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
+                                : null;
                 String event = ctx.trainEvent().getChild(0).getText();
-                String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
+                String sense = ctx.trainEvent().sense() != null
+                        ? ctx.trainEvent().sense().getText()
+                        : null;
                 sensor.addSensorEventListener(new SensorEventListener() {
                     @Override
                     public void onEnterTrain(Train train, boolean isForward) {
-                        boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                        boolean senseMatch = (sense == null)
+                                || (sense.equals("forward") && isForward)
                                 || (sense.equals("backward") && !isForward);
-                        if ("enter".equals(event) && senseMatch
+                        if ("enter".equals(event)
+                                && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
                         }
@@ -106,9 +110,11 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
 
                     @Override
                     public void onExitTrain(Train train, boolean isForward) {
-                        boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                        boolean senseMatch = (sense == null)
+                                || (sense.equals("forward") && isForward)
                                 || (sense.equals("backward") && !isForward);
-                        if ("exit".equals(event) && senseMatch
+                        if ("exit".equals(event)
+                                && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
                         }
@@ -120,17 +126,22 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             letrain.track.Station station = model.getStation(id);
             if (station != null) {
                 if (ctx.trainEvent() != null) {
-                    Integer filterTrainId = (ctx.trainSelector() != null && ctx.trainSelector().NUMBER() != null)
+                    Integer filterTrainId = (ctx.trainSelector() != null
+                                    && ctx.trainSelector().NUMBER() != null)
                             ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
                             : null;
                     String event = ctx.trainEvent().getChild(0).getText();
-                    String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
+                    String sense = ctx.trainEvent().sense() != null
+                            ? ctx.trainEvent().sense().getText()
+                            : null;
                     station.addStationEventListener(new StationEventListener() {
                         @Override
                         public void onEnterTrain(Train train, boolean isForward) {
-                            boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                            boolean senseMatch = (sense == null)
+                                    || (sense.equals("forward") && isForward)
                                     || (sense.equals("backward") && !isForward);
-                            if ("enter".equals(event) && senseMatch
+                            if ("enter".equals(event)
+                                    && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
                             }
@@ -138,9 +149,11 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
 
                         @Override
                         public void onExitTrain(Train train, boolean isForward) {
-                            boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                            boolean senseMatch = (sense == null)
+                                    || (sense.equals("forward") && isForward)
                                     || (sense.equals("backward") && !isForward);
-                            if ("exit".equals(event) && senseMatch
+                            if ("exit".equals(event)
+                                    && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
                             }
@@ -153,17 +166,22 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             ForkRailTrack fork = model.getFork(id);
             if (fork != null) {
                 if (ctx.trainEvent() != null) {
-                    Integer filterTrainId = (ctx.trainSelector() != null && ctx.trainSelector().NUMBER() != null)
+                    Integer filterTrainId = (ctx.trainSelector() != null
+                                    && ctx.trainSelector().NUMBER() != null)
                             ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
                             : null;
                     String event = ctx.trainEvent().getChild(0).getText();
-                    String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
+                    String sense = ctx.trainEvent().sense() != null
+                            ? ctx.trainEvent().sense().getText()
+                            : null;
                     fork.addForkEventListener(new ForkEventListener() {
                         @Override
                         public void onEnterTrain(Train train, boolean isForward) {
-                            boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                            boolean senseMatch = (sense == null)
+                                    || (sense.equals("forward") && isForward)
                                     || (sense.equals("backward") && !isForward);
-                            if ("enter".equals(event) && senseMatch
+                            if ("enter".equals(event)
+                                    && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
                             }
@@ -171,9 +189,11 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
 
                         @Override
                         public void onExitTrain(Train train, boolean isForward) {
-                            boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                            boolean senseMatch = (sense == null)
+                                    || (sense.equals("forward") && isForward)
                                     || (sense.equals("backward") && !isForward);
-                            if ("exit".equals(event) && senseMatch
+                            if ("exit".equals(event)
+                                    && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
                             }
@@ -186,17 +206,22 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             RailSemaphore semaphore = model.getSemaphore(id);
             if (semaphore != null) {
                 if (ctx.trainEvent() != null) {
-                    Integer filterTrainId = (ctx.trainSelector() != null && ctx.trainSelector().NUMBER() != null)
+                    Integer filterTrainId = (ctx.trainSelector() != null
+                                    && ctx.trainSelector().NUMBER() != null)
                             ? Integer.parseInt(ctx.trainSelector().NUMBER().getText())
                             : null;
                     String event = ctx.trainEvent().getChild(0).getText();
-                    String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
+                    String sense = ctx.trainEvent().sense() != null
+                            ? ctx.trainEvent().sense().getText()
+                            : null;
                     semaphore.addSemaphoreEventListener(new letrain.track.SemaphoreEventListener() {
                         @Override
                         public void onEnterTrain(Train train, boolean isForward) {
-                            boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                            boolean senseMatch = (sense == null)
+                                    || (sense.equals("forward") && isForward)
                                     || (sense.equals("backward") && !isForward);
-                            if ("enter".equals(event) && senseMatch
+                            if ("enter".equals(event)
+                                    && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
                             }
@@ -204,9 +229,11 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
 
                         @Override
                         public void onExitTrain(Train train, boolean isForward) {
-                            boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                            boolean senseMatch = (sense == null)
+                                    || (sense.equals("forward") && isForward)
                                     || (sense.equals("backward") && !isForward);
-                            if ("exit".equals(event) && senseMatch
+                            if ("exit".equals(event)
+                                    && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
                             }
@@ -221,13 +248,17 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
 
             if (ctx.trainEvent() != null) {
                 String event = ctx.trainEvent().getChild(0).getText();
-                String sense = ctx.trainEvent().sense() != null ? ctx.trainEvent().sense().getText() : null;
+                String sense = ctx.trainEvent().sense() != null
+                        ? ctx.trainEvent().sense().getText()
+                        : null;
                 model.addScriptTrainEventListener(new ScriptTrainEventListener() {
                     @Override
                     public void onSensorEnter(Train train, boolean isForward) {
-                        boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                        boolean senseMatch = (sense == null)
+                                || (sense.equals("forward") && isForward)
                                 || (sense.equals("backward") && !isForward);
-                        if ("enter".equals(event) && senseMatch
+                        if ("enter".equals(event)
+                                && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
                         }
@@ -235,9 +266,11 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
 
                     @Override
                     public void onSensorExit(Train train, boolean isForward) {
-                        boolean senseMatch = (sense == null) || (sense.equals("forward") && isForward)
+                        boolean senseMatch = (sense == null)
+                                || (sense.equals("forward") && isForward)
                                 || (sense.equals("backward") && !isForward);
-                        if ("exit".equals(event) && senseMatch
+                        if ("exit".equals(event)
+                                && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
                         }
@@ -285,31 +318,39 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             String status = ctx.semaphoreAction().semaphoreStatus().getText();
             return (ExecutableCommand) (contextTrain) -> {
                 RailSemaphore s = model.getSemaphore(id);
-                if (s != null)
-                    s.setOpen("open".equals(status));
+                if (s != null) s.setOpen("open".equals(status));
             };
         } else if (ctx.forkAction() != null) {
             int id = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
-            String dirText = ctx.forkAction().forkDirection() != null ? ctx.forkAction().forkDirection().getText()
+            String dirText = ctx.forkAction().forkDirection() != null
+                    ? ctx.forkAction().forkDirection().getText()
                     : null;
             return (ExecutableCommand) (contextTrain) -> {
                 ForkRailTrack f = model.getFork(id);
                 if (f != null) {
                     if ("straight".equals(dirText)) {
                         if (f.getOriginalRoute() != null
-                                && f.getOriginalRoute().getFirst().isStraight(f.getOriginalRoute().getSecond())) {
+                                && f.getOriginalRoute()
+                                        .getFirst()
+                                        .isStraight(f.getOriginalRoute().getSecond())) {
                             f.setNormalRoute();
                         } else if (f.getAlternativeRoute() != null
-                                && f.getAlternativeRoute().getFirst().isStraight(f.getAlternativeRoute().getSecond())) {
+                                && f.getAlternativeRoute()
+                                        .getFirst()
+                                        .isStraight(f.getAlternativeRoute().getSecond())) {
                             f.setAlternativeRoute();
                         } else {
                             f.setNormalRoute();
                         }
                     } else if ("curved".equals(dirText)) {
                         boolean originalIsStraight = f.getOriginalRoute() != null
-                                && f.getOriginalRoute().getFirst().isStraight(f.getOriginalRoute().getSecond());
+                                && f.getOriginalRoute()
+                                        .getFirst()
+                                        .isStraight(f.getOriginalRoute().getSecond());
                         boolean alternativeIsStraight = f.getAlternativeRoute() != null
-                                && f.getAlternativeRoute().getFirst().isStraight(f.getAlternativeRoute().getSecond());
+                                && f.getAlternativeRoute()
+                                        .getFirst()
+                                        .isStraight(f.getAlternativeRoute().getSecond());
 
                         if (f.getOriginalRoute() != null && !originalIsStraight) {
                             f.setNormalRoute();
@@ -331,26 +372,23 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                     int id = Integer.parseInt(ctx.trainSelector().NUMBER().getText());
                     return (ExecutableCommand) (contextTrain) -> {
                         Train target = model.getTrainFromLocomotiveId(id);
-                        if (target != null)
-                            baseAction.execute(target);
+                        if (target != null) baseAction.execute(target);
                     };
                 } else {
                     return (ExecutableCommand) (contextTrain) -> {
-                        if (contextTrain != null)
-                            baseAction.execute(contextTrain);
+                        if (contextTrain != null) baseAction.execute(contextTrain);
                     };
                 }
             } else if (ctx.trainExtractor() != null) {
-                LeTrainProgramParser.PlaceSelectorContext pCtx = ctx.trainExtractor().placeSelector();
+                LeTrainProgramParser.PlaceSelectorContext pCtx =
+                        ctx.trainExtractor().placeSelector();
                 return (ExecutableCommand) (contextTrain) -> {
                     Train target = findTrainAtPlace(pCtx);
-                    if (target != null)
-                        baseAction.execute(target);
+                    if (target != null) baseAction.execute(target);
                 };
             }
         }
-        return (ExecutableCommand) (ct) -> {
-        };
+        return (ExecutableCommand) (ct) -> {};
     }
 
     private ExecutableCommand buildTrainAction(LeTrainProgramParser.TrainActionContext ctx) {
@@ -375,8 +413,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             boolean forward = "forward".equals(ctx.trainSense().getText());
             return (t) -> {
                 Tractor tractor = t.getDirectorLinker();
-                if (tractor != null && tractor.isReversed() == forward)
-                    tractor.toggleReversed();
+                if (tractor != null && tractor.isReversed() == forward) tractor.toggleReversed();
             };
         } else if (actionText.contains("stop")) {
             return (t) -> {
@@ -406,18 +443,15 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         } else if (actionText.contains("unload")) {
             return (t) -> {
                 letrain.track.Station s = t.getLogisticsManager().getStationAtTrain();
-                if (s != null)
-                    t.getLogisticsManager().startUnloadProcess(s);
+                if (s != null) t.getLogisticsManager().startUnloadProcess(s);
             };
         } else if (actionText.contains("load")) {
             return (t) -> {
                 letrain.track.Station s = t.getLogisticsManager().getStationAtTrain();
-                if (s != null)
-                    t.getLogisticsManager().startLoadProcess(s);
+                if (s != null) t.getLogisticsManager().startLoadProcess(s);
             };
         } else {
-            return (t) -> {
-            };
+            return (t) -> {};
         }
     }
 
@@ -432,7 +466,10 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         }
         if (currentItinerary.isValid()) {
             itineraries.put(name, currentItinerary);
-            log.info("[DSL] Created itinerary '{}' with {} waypoints", name, currentItinerary.waypoints().size());
+            log.info(
+                    "[DSL] Created itinerary '{}' with {} waypoints",
+                    name,
+                    currentItinerary.waypoints().size());
         } else {
             log.warn("[DSL] Itinerary '{}' is invalid (<2 waypoints)", name);
         }
@@ -490,8 +527,9 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         }
         // Autopilot is always instantiated. Set pathfinder and assign itinerary
         if (model.getRailwayGraph() != null) {
-            train.getAutopilot().setPathfinder(
-                new letrain.itinerary.AStarPathfinder(model.getRailwayGraph(), model.getBlockManager(), train));
+            train.getAutopilot()
+                    .setPathfinder(new letrain.itinerary.AStarPathfinder(
+                            model.getRailwayGraph(), model.getBlockManager(), train));
         }
         train.getAutopilot().setItinerary(it);
         // Re-activate if autopilot was on (itinerary change resets to IDLE)
@@ -521,7 +559,9 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             action.execute(train);
             log.info("[DSL] Direct command executed on Train {}", train.getId());
         } else {
-            log.warn("[DSL] Direct command failed: Train not found for '{}'", ctx.trainRef().getText());
+            log.warn(
+                    "[DSL] Direct command failed: Train not found for '{}'",
+                    ctx.trainRef().getText());
         }
         return null;
     }
@@ -532,13 +572,22 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         int id = Integer.parseInt(ctx.NUMBER().getText());
         if (ctx.getChild(0).getText().equals("station")) {
             Station s = model.getStation(id);
-            if (s != null) { s.setName(name); log.info("[DSL] Station {} named '{}'", id, name); }
+            if (s != null) {
+                s.setName(name);
+                log.info("[DSL] Station {} named '{}'", id, name);
+            }
         } else if (ctx.getChild(0).getText().equals("sensor")) {
             Sensor s = model.getSensor(id);
-            if (s != null) { s.setName(name); log.info("[DSL] Sensor {} named '{}'", id, name); }
+            if (s != null) {
+                s.setName(name);
+                log.info("[DSL] Sensor {} named '{}'", id, name);
+            }
         } else if (ctx.getChild(0).getText().equals("train")) {
             Train t = model.getTrainFromLocomotiveId(id);
-            if (t != null) { t.setName(name); log.info("[DSL] Train {} named '{}'", id, name); }
+            if (t != null) {
+                t.setName(name);
+                log.info("[DSL] Train {} named '{}'", id, name);
+            }
         }
         return null;
     }
@@ -567,10 +616,10 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     private List<WaypointCommand> toCommands(LeTrainProgramParser.ActionContext ctx) {
         String text = ctx.getText().toLowerCase();
         return switch (text) {
-            case "load"     -> List.of(WaypointCommand.LOAD);
-            case "unload"   -> List.of(WaypointCommand.UNLOAD);
-            case "reverse"  -> List.of(WaypointCommand.REVERSE);
-            case "stop"     -> List.of(WaypointCommand.STOP);
+            case "load" -> List.of(WaypointCommand.LOAD);
+            case "unload" -> List.of(WaypointCommand.UNLOAD);
+            case "reverse" -> List.of(WaypointCommand.REVERSE);
+            case "stop" -> List.of(WaypointCommand.STOP);
             default -> {
                 if (text.startsWith("wait")) {
                     int seconds = Integer.parseInt(ctx.NUMBER().getText());
@@ -586,8 +635,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
 
     private static String stripQuotes(String s) {
         if (s == null) return null;
-        if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2)
-            return s.substring(1, s.length() - 1);
+        if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2) return s.substring(1, s.length() - 1);
         return s;
     }
 
@@ -597,8 +645,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             letrain.track.Station s = model.getStation(id);
             if (s != null) {
                 for (Locomotive l : model.getLocomotives()) {
-                    if (l.getTrack() != null && l.getTrack().getSensor() == s)
-                        return l.getTrain();
+                    if (l.getTrack() != null && l.getTrack().getSensor() == s) return l.getTrain();
                 }
             }
         } else if (ctx.sensorSelector() != null) {
@@ -606,8 +653,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
             Sensor s = model.getSensor(id);
             if (s != null) {
                 for (Locomotive l : model.getLocomotives()) {
-                    if (l.getTrack() != null && l.getTrack().getSensor() == s)
-                        return l.getTrain();
+                    if (l.getTrack() != null && l.getTrack().getSensor() == s) return l.getTrain();
                 }
             }
         }

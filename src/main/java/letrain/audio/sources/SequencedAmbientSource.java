@@ -7,7 +7,10 @@ import letrain.audio.synth.AudioSample;
 public class SequencedAmbientSource implements AudioSource {
 
     public enum State {
-        IDLE, STARTING, WORKING, ENDING
+        IDLE,
+        STARTING,
+        WORKING,
+        ENDING
     }
 
     private State state = State.IDLE;
@@ -104,8 +107,7 @@ public class SequencedAmbientSource implements AudioSource {
             } else if (state == State.ENDING && cursor >= endEnd) {
                 state = State.IDLE;
                 // Fill rest of buffer with silence
-                for (int j = i; j < len; j++)
-                    buffer[j] = 0;
+                for (int j = i; j < len; j++) buffer[j] = 0;
                 return true;
             }
 

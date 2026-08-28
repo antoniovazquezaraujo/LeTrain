@@ -4,8 +4,8 @@ import letrain.map.Dir;
 import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.Linker;
 import letrain.visitor.Visitor;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A locomotive (engine) that pulls or pushes a train. Implements {@link Tractor}
@@ -26,7 +26,8 @@ public class Locomotive extends Linker implements Tractor {
     private static final long serialVersionUID = 1L;
     /** Maximum speed in game units (notches 0-10). */
     public static final int MAX_SPEED = 10;
-    final static int SPEED_CHANGE_MAX_RELUCTANCE = 2;
+
+    static final int SPEED_CHANGE_MAX_RELUCTANCE = 2;
     int currentSpeed;
     int targetSpeed;
     int railsSinceLastSpeedChange = 0;
@@ -50,16 +51,16 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public static final String[] COLOR_PALETTE = {
-        "WHITE",         // 0
-        "RED_BRIGHT",    // 1
-        "GREEN_BRIGHT",  // 2
+        "WHITE", // 0
+        "RED_BRIGHT", // 1
+        "GREEN_BRIGHT", // 2
         "YELLOW_BRIGHT", // 3
-        "BLUE_BRIGHT",   // 4
-        "MAGENTA_BRIGHT",// 5
-        "CYAN_BRIGHT",   // 6
-        "GRAY",          // 7
-        "ORANGE",        // 8
-        "PINK"           // 9
+        "BLUE_BRIGHT", // 4
+        "MAGENTA_BRIGHT", // 5
+        "CYAN_BRIGHT", // 6
+        "GRAY", // 7
+        "ORANGE", // 8
+        "PINK" // 9
     };
     private static final java.util.Random RANDOM = new java.util.Random();
 
@@ -82,8 +83,7 @@ public class Locomotive extends Linker implements Tractor {
         resetTurns();
     }
 
-    protected Locomotive() {
-    }
+    protected Locomotive() {}
 
     public Locomotive(int id, char c) {
         this(id, "" + c, pickRandomColor());
@@ -128,7 +128,6 @@ public class Locomotive extends Linker implements Tractor {
     /***********************************************************
      * Renderable implementation
      **********************************************************/
-
     @Override
     public void accept(Visitor visitor) {
         visitor.visitLocomotive(this);
@@ -163,12 +162,10 @@ public class Locomotive extends Linker implements Tractor {
                 return moved;
             }
 
-
             // Punto 15: Mientras se está cargando o descargando, el tren no podrá moverse.
             if (getTrain() != null && getTrain().getLogisticsManager().isLoading()) {
                 return moved;
             }
-
 
             // Handle acceleration from 0 - allows getting unstuck from speed 0
             if (currentSpeed == 0 && targetSpeed > 0) {
@@ -176,17 +173,21 @@ public class Locomotive extends Linker implements Tractor {
                 if (getTrain() != null) {
                     java.util.Deque<Linker> linkers = getTrain().getLinkers();
                     if (!linkers.isEmpty()) {
-                        boolean normalSense = getTrain().getDirectorLinker() == null || !getTrain().getDirectorLinker().isReversed();
+                        boolean normalSense = getTrain().getDirectorLinker() == null
+                                || !getTrain().getDirectorLinker().isReversed();
                         Linker head = normalSense ? linkers.getFirst() : linkers.getLast();
                         if (head != null && head.getTrack() != null) {
                             letrain.track.Track nextTrack = head.getTrack().getConnected(head.getDir());
                             if (nextTrack != null) {
                                 Linker occupant = nextTrack.getLinker();
-                                if (occupant != null && occupant.getTrain() != null && occupant.getTrain() != getTrain()) {
+                                if (occupant != null
+                                        && occupant.getTrain() != null
+                                        && occupant.getTrain() != getTrain()) {
                                     blocked = true;
-                                    log.info("[CONTACT-TIMING] Instant contact check on start: next cell is occupied. Firing contact sound immediately.");
+                                    log.info(
+                                            "[CONTACT-TIMING] Instant contact check on start: next cell is occupied. Firing contact sound immediately.");
                                     getTrain().notifyContact(nextTrack.getPosition(), targetSpeed);
-                                    
+
                                     // Stop the train immediately
                                     setCurrentSpeed(0);
                                     setTargetSpeed(0);
@@ -209,15 +210,19 @@ public class Locomotive extends Linker implements Tractor {
             }
 
             if (isTimeToMove()) {
-                boolean hasPerm = getTrain() != null && getTrain().getSafetyManager().hasPermissionToMove();
-                log.debug("Locomotive {}: isTimeToMove=true, currentSpeed={}, targetSpeed={}, turns={}, hasPermissionToMove={}",
-                        id, currentSpeed, targetSpeed, turns, hasPerm);
+                boolean hasPerm =
+                        getTrain() != null && getTrain().getSafetyManager().hasPermissionToMove();
+                log.debug(
+                        "Locomotive {}: isTimeToMove=true, currentSpeed={}, targetSpeed={}, turns={}, hasPermissionToMove={}",
+                        id,
+                        currentSpeed,
+                        targetSpeed,
+                        turns,
+                        hasPerm);
                 if (getTrain().getMovementManager().advance()) {
                     log.debug("Locomotive {}: advance() succeeded", id);
                     moved = true;
                     incDistanceTraveled();
-
-
 
                     updateInertia();
                     resetTurns();
@@ -263,8 +268,6 @@ public class Locomotive extends Linker implements Tractor {
 
         railsSinceLastSpeedChange++;
 
-
-
         // Factor de inercia fallback only if audio is disabled
         int factor = isBraking() ? 1 : 2;
         int neededRails = Math.max(1, currentSpeed * factor);
@@ -276,7 +279,12 @@ public class Locomotive extends Linker implements Tractor {
             } else {
                 setCurrentSpeed(currentSpeed - 1);
             }
-            log.info("Locomotive {}: inertia speed update from {} to {} (targetSpeed={})", id, oldSpeed, currentSpeed, targetSpeed);
+            log.info(
+                    "Locomotive {}: inertia speed update from {} to {} (targetSpeed={})",
+                    id,
+                    oldSpeed,
+                    currentSpeed,
+                    targetSpeed);
             railsSinceLastSpeedChange = 0;
         }
     }
@@ -333,9 +341,14 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void setTargetSpeed(int speed) {
-        if (getTrain() != null && getTrain().getSafetyManager() != null && getTrain().getSafetyManager().isWaitingForBlock()) {
+        if (getTrain() != null
+                && getTrain().getSafetyManager() != null
+                && getTrain().getSafetyManager().isWaitingForBlock()) {
             if (speed > 0) {
-                log.info("Locomotive {}: Train is waiting for block. Intercepting setTargetSpeed({}) and saving it instead.", id, speed);
+                log.info(
+                        "Locomotive {}: Train is waiting for block. Intercepting setTargetSpeed({}) and saving it instead.",
+                        id,
+                        speed);
                 getTrain().setSavedTargetSpeed(speed);
                 speed = 0;
             }

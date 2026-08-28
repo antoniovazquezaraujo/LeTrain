@@ -1,9 +1,7 @@
 package letrain.vehicle.rail;
 
-import letrain.segments.BlockManager;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
-import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

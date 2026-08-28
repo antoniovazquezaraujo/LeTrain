@@ -1,7 +1,6 @@
 package letrain.map.impl;
- 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.utils.Pair;
@@ -10,8 +9,10 @@ import letrain.utils.Pair;
 public class ForkRouter extends SimpleRouter implements DynamicRouter {
     @com.fasterxml.jackson.annotation.JsonProperty("alternativeRoute")
     private Pair<Dir, Dir> alternativeRoute = null;
+
     @com.fasterxml.jackson.annotation.JsonProperty("originalRoute")
     private Pair<Dir, Dir> originalRoute = null;
+
     @com.fasterxml.jackson.annotation.JsonProperty("usingAlternativeRoute")
     private boolean usingAlternativeRoute = false;
 
@@ -113,23 +114,26 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
         if (dirMap.containsKey(from) && dirMap.get(from).equals(to)) {
             return;
         }
-        if (originalRoute != null && originalRoute.getKey().equals(from) && originalRoute.getValue().equals(to)) {
+        if (originalRoute != null
+                && originalRoute.getKey().equals(from)
+                && originalRoute.getValue().equals(to)) {
             return;
         }
-        if (alternativeRoute != null && alternativeRoute.getKey().equals(from)
+        if (alternativeRoute != null
+                && alternativeRoute.getKey().equals(from)
                 && alternativeRoute.getValue().equals(to)) {
             return;
         }
 
         // ruta adicional para la ruta from
-        if (dirMap.containsKey(from)) {// && !dirMap.containsKey(to)) {
+        if (dirMap.containsKey(from)) { // && !dirMap.containsKey(to)) {
             originalRoute = new Pair<>(from, dirMap.get(from));
             alternativeRoute = new Pair<>(from, to);
             usingAlternativeRoute = true;
         }
 
         // ruta adicional para la ruta to
-        if (dirMap.containsKey(to)) {// && !dirMap.containsKey(from)) {
+        if (dirMap.containsKey(to)) { // && !dirMap.containsKey(from)) {
             originalRoute = new Pair<>(to, dirMap.get(to));
             alternativeRoute = new Pair<>(to, from);
             usingAlternativeRoute = true;
@@ -150,5 +154,4 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
             }
         }
     }
-
 }

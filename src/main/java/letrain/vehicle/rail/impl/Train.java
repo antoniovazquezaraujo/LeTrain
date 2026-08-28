@@ -1,28 +1,25 @@
 package letrain.vehicle.rail.impl;
 
+import java.time.LocalDateTime;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.List;
+import letrain.itinerary.Waypoint;
 import letrain.mvp.Model;
-import letrain.utils.SerializationHelper;
+import letrain.track.Sensor;
+import letrain.track.Station;
 import letrain.utils.ValidationUtils;
 import letrain.vehicle.Tractor;
-import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.CoreTrainEventListener;
+import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.ScriptTrainEventListener;
 import letrain.vehicle.rail.TrainEventDispatcher;
 import letrain.vehicle.rail.TrainMovementManager;
 import letrain.vehicle.rail.TrainSafetyManager;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
-import letrain.itinerary.Waypoint;
-import letrain.track.Station;
-import letrain.track.Sensor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.time.LocalDateTime;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Core train entity that groups locomotives and wagons ({@link Linker}s)
@@ -38,7 +35,8 @@ public class Train implements Renderable {
     public static final Logger log = LoggerFactory.getLogger(Train.class);
 
     enum LinkersSense {
-        FRONT, BACK
+        FRONT,
+        BACK
     }
 
     private int id;
@@ -49,6 +47,7 @@ public class Train implements Renderable {
     private letrain.itinerary.AutoPilot autopilot;
     private int railStationId = 0;
     private boolean stalled = false;
+
     @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = letrain.vehicle.rail.impl.Trip.class)
     private letrain.vehicle.rail.Trip trip;
 
@@ -86,8 +85,10 @@ public class Train implements Renderable {
     public transient boolean joined = false;
     private int savedSpeedBeforeReverse = -1;
     private int savedTargetSpeed = -1;
+
     @com.fasterxml.jackson.annotation.JsonProperty("programmedSpeed")
     private int programmedSpeed = 0;
+
     private transient java.util.Set<Sensor> activeSensors = new java.util.HashSet<>();
 
     public void setSavedTargetSpeed(int speed) {
@@ -115,6 +116,7 @@ public class Train implements Renderable {
     protected Train() {
         this(1);
     }
+
     public letrain.vehicle.rail.TrainLogisticsManager getLogisticsManager() {
         return logisticsManager;
     }
@@ -426,11 +428,13 @@ public class Train implements Renderable {
         if (this.eventDispatcher == null) {
             this.eventDispatcher = new TrainEventDispatcherImpl(this);
         } else {
-            java.util.List<letrain.vehicle.rail.CoreTrainEventListener> coreList = new java.util.ArrayList<>(this.eventDispatcher.getCoreTrainListeners());
+            java.util.List<letrain.vehicle.rail.CoreTrainEventListener> coreList =
+                    new java.util.ArrayList<>(this.eventDispatcher.getCoreTrainListeners());
             for (letrain.vehicle.rail.CoreTrainEventListener l : coreList) {
                 this.eventDispatcher.removeCoreTrainEventListener(l);
             }
-            java.util.List<letrain.vehicle.rail.ScriptTrainEventListener> scriptList = new java.util.ArrayList<>(this.eventDispatcher.getScriptTrainListeners());
+            java.util.List<letrain.vehicle.rail.ScriptTrainEventListener> scriptList =
+                    new java.util.ArrayList<>(this.eventDispatcher.getScriptTrainListeners());
             for (letrain.vehicle.rail.ScriptTrainEventListener l : scriptList) {
                 this.eventDispatcher.removeScriptTrainEventListener(l);
             }
@@ -445,12 +449,11 @@ public class Train implements Renderable {
         if (this.autopilot == null) {
             this.autopilot = new letrain.itinerary.impl.AutoPilotImpl(this, this.actionManager);
         } else if (this.autopilot instanceof letrain.itinerary.impl.AutoPilotImpl) {
-            ((letrain.itinerary.impl.AutoPilotImpl) this.autopilot).reinitialize(
-                    this, this.actionManager);
+            ((letrain.itinerary.impl.AutoPilotImpl) this.autopilot).reinitialize(this, this.actionManager);
         }
         if (getModel() != null && getModel().getRailwayGraph() != null) {
-            this.autopilot.setPathfinder(
-                    new letrain.itinerary.AStarPathfinder(getModel().getRailwayGraph(), getModel().getBlockManager(), this));
+            this.autopilot.setPathfinder(new letrain.itinerary.AStarPathfinder(
+                    getModel().getRailwayGraph(), getModel().getBlockManager(), this));
         }
     }
 
@@ -461,7 +464,6 @@ public class Train implements Renderable {
     /***********************************************************
      * Train physical layout and vehicle details
      **********************************************************/
-
     public Deque<Linker> getLinkers() {
         return linkers;
     }
@@ -563,12 +565,14 @@ public class Train implements Renderable {
     }
 
     public Linker getPhysicalFront() {
-        boolean normalSense = getDirectorLinker() == null || !getDirectorLinker().isReversed();
+        boolean normalSense =
+                getDirectorLinker() == null || !getDirectorLinker().isReversed();
         return normalSense ? getFront() : getBack();
     }
 
     public Linker getPhysicalRear() {
-        boolean normalSense = getDirectorLinker() == null || !getDirectorLinker().isReversed();
+        boolean normalSense =
+                getDirectorLinker() == null || !getDirectorLinker().isReversed();
         return normalSense ? getBack() : getFront();
     }
 
@@ -713,7 +717,6 @@ public class Train implements Renderable {
     /***********************************************************
      * Renderable implementation
      **********************************************************/
-
     @Override
     public void accept(Visitor visitor) {
         visitor.visitLocomotive((Locomotive) this.getDirectorLinker());
@@ -754,7 +757,6 @@ public class Train implements Renderable {
             linkers.forEach(linker -> linker.syncPosition());
         }
     }
-
 
     public letrain.segments.Segment resolveCurrentSegmentFromGraph() {
         if (model == null || model.getRailwayGraph() == null) return null;
@@ -816,5 +818,4 @@ public class Train implements Renderable {
         }
         return false;
     }
-
 }

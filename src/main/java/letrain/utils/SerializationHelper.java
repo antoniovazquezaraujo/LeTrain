@@ -70,7 +70,7 @@ public class SerializationHelper {
      * </p>
      * <p>
      * Example usage in readObject():
-     * 
+     *
      * <pre>
      * private void readObject(ObjectInputStream ois)
      *         throws IOException, ClassNotFoundException {
@@ -97,7 +97,7 @@ public class SerializationHelper {
      * </p>
      * <p>
      * Example usage in readObject():
-     * 
+     *
      * <pre>
      * private void readObject(ObjectInputStream ois)
      *         throws IOException, ClassNotFoundException {

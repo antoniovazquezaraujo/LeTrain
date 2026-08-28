@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.segments.RailwayGraph;
@@ -138,10 +137,14 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                 if (headNextTrack instanceof ForkRailTrack) {
                     train.getSafetyManager().onForkEntered((ForkRailTrack) headNextTrack);
                     train.notifyAutopilotSegmentEntered(train.getSafetyManager().getCurrentSegment());
-                } else if (headNextTrack instanceof RailTrack && train.getModel() != null && train.getModel().getRailwayGraph() != null) {
+                } else if (headNextTrack instanceof RailTrack
+                        && train.getModel() != null
+                        && train.getModel().getRailwayGraph() != null) {
                     RailwayGraph graph = train.getModel().getRailwayGraph();
                     Segment newSeg = graph.getSegment((RailTrack) headNextTrack);
-                    Segment oldSeg = (headCurrentTrack instanceof RailTrack) ? graph.getSegment((RailTrack) headCurrentTrack) : null;
+                    Segment oldSeg = (headCurrentTrack instanceof RailTrack)
+                            ? graph.getSegment((RailTrack) headCurrentTrack)
+                            : null;
                     if (newSeg != null && !newSeg.equals(oldSeg)) {
                         train.getSafetyManager().onSegmentEntered(newSeg);
                         train.notifyAutopilotSegmentEntered(newSeg);
@@ -162,8 +165,12 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                     }
                     if (train.getModel() != null && train.getModel().getRailwayGraph() != null) {
                         RailwayGraph graph = train.getModel().getRailwayGraph();
-                        Segment segExited = (headCurrentTrack instanceof RailTrack) ? graph.getSegment((RailTrack) headCurrentTrack) : null;
-                        Segment segEntered = (headNextTrack instanceof RailTrack) ? graph.getSegment((RailTrack) headNextTrack) : null;
+                        Segment segExited = (headCurrentTrack instanceof RailTrack)
+                                ? graph.getSegment((RailTrack) headCurrentTrack)
+                                : null;
+                        Segment segEntered = (headNextTrack instanceof RailTrack)
+                                ? graph.getSegment((RailTrack) headNextTrack)
+                                : null;
                         if (segExited != null && !segExited.equals(segEntered)) {
                             train.getSafetyManager().onSegmentExited(segExited);
                         }
@@ -226,8 +233,12 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                 }
                 if (train.getModel() != null && train.getModel().getRailwayGraph() != null) {
                     RailwayGraph graph = train.getModel().getRailwayGraph();
-                    Segment segExited = (lastLinkerTrack instanceof RailTrack) ? graph.getSegment((RailTrack) lastLinkerTrack) : null;
-                    Segment segEntered = (lastLinkerNextTrack instanceof RailTrack) ? graph.getSegment((RailTrack) lastLinkerNextTrack) : null;
+                    Segment segExited = (lastLinkerTrack instanceof RailTrack)
+                            ? graph.getSegment((RailTrack) lastLinkerTrack)
+                            : null;
+                    Segment segEntered = (lastLinkerNextTrack instanceof RailTrack)
+                            ? graph.getSegment((RailTrack) lastLinkerNextTrack)
+                            : null;
                     if (segExited != null && !segExited.equals(segEntered)) {
                         train.getSafetyManager().onSegmentExited(segExited);
                     }
@@ -315,12 +326,10 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
     @Override
     public void correctDirection(Linker linker) {
-        if (linker == null)
-            return;
+        if (linker == null) return;
         Track t = linker.getTrack();
         Dir d = linker.getDir();
-        if (t == null || t.getConnected(d) != null)
-            return;
+        if (t == null || t.getConnected(d) != null) return;
         // Skip the entry direction (where we came from) — pick the exit
         Dir entryDir = linker.getEntryDir();
         for (Dir conn : t.getConnections()) {
@@ -353,7 +362,8 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             if (train.getSafetyManager() != null) {
                 train.getSafetyManager().onEmergencyStop();
             }
-            Train.log.warn("Train {} activated emergency stop. Will switch to manual mode when fully stopped.", train.getId());
+            Train.log.warn(
+                    "Train {} activated emergency stop. Will switch to manual mode when fully stopped.", train.getId());
         }
     }
 
@@ -372,7 +382,9 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
         if (train.getModel() != null) {
             if (!train.getSafetyManager().hasPermissionToMove()) {
-                Train.log.info("Train {} advance: cannot move because hasPermissionToMove is false. Forcing brake", train.getId());
+                Train.log.info(
+                        "Train {} advance: cannot move because hasPermissionToMove is false. Forcing brake",
+                        train.getId());
                 train.brake();
                 return false;
             }
@@ -399,10 +411,10 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         boolean moved = moveLinkers(normalSense);
 
         if (!moved || train.isStalled()) {
-            Linker first = train.getLinkers().isEmpty() ? null : train.getLinkers().getFirst();
+            Linker first =
+                    train.getLinkers().isEmpty() ? null : train.getLinkers().getFirst();
             for (Linker l : train.getLinkers()) {
-                if (train.isStalled() && l == first)
-                    continue; // skip first linker on crash
+                if (train.isStalled() && l == first) continue; // skip first linker on crash
                 Dir savedDir = savedDirs.get(l);
                 Dir savedEntry = savedEntryDirs.get(l);
                 if (savedDir != null) {
@@ -483,5 +495,4 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         train.brake();
         Train.log.info("Train {} initiateBraking: target speed set to 0", train.getId());
     }
-
 }

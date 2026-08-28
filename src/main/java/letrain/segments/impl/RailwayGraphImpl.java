@@ -1,18 +1,15 @@
 package letrain.segments.impl;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.ArrayList;
 import java.util.Queue;
-import java.util.LinkedList;
+import java.util.Set;
 import java.util.stream.Collectors;
-
 import letrain.segments.Port;
-import letrain.segments.PortType;
 import letrain.segments.RailNode;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
@@ -83,13 +80,13 @@ public class RailwayGraphImpl implements RailwayGraph {
     public List<Port> getNextPorts(Port current) {
         Segment s = getSegment(current);
         if (s == null) return null;
-        
-        Port targetPort = current.equals(s.getPorts().getFirst()) 
-                ? s.getPorts().getSecond() 
+
+        Port targetPort = current.equals(s.getPorts().getFirst())
+                ? s.getPorts().getSecond()
                 : s.getPorts().getFirst();
-        
+
         RailNode destinationNode = targetPort.getNode();
-        
+
         return destinationNode.getPorts().stream()
                 .filter(port -> getSegment(port) != null && getSegment(port) != s)
                 .filter(port -> destinationNode.getTransitionType(targetPort, port) != TransitionType.BLOCKED)
@@ -132,7 +129,7 @@ public class RailwayGraphImpl implements RailwayGraph {
         RailNode node1 = (s.getPorts() != null && s.getPorts().getFirst() != null)
                 ? s.getPorts().getFirst().getNode()
                 : null;
-                
+
         RailNode node2 = (s.getPorts() != null && s.getPorts().getSecond() != null)
                 ? s.getPorts().getSecond().getNode()
                 : null;
@@ -166,33 +163,39 @@ public class RailwayGraphImpl implements RailwayGraph {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("--- RAILWAY GRAPH TOPOLOGY ---\n");
-        
+
         List<Segment> segments = portToSegment.values().stream().distinct().collect(Collectors.toList());
         sb.append("SEGMENTS (").append(segments.size()).append("):\n");
         for (Segment s : segments) {
-            sb.append("  ").append(s.getId()).append(": ")
-              .append(s.getPorts().getFirst().getNode()).append(" -> ")
-              .append(s.getPorts().getSecond().getNode()).append("\n");
-            
+            sb.append("  ")
+                    .append(s.getId())
+                    .append(": ")
+                    .append(s.getPorts().getFirst().getNode())
+                    .append(" -> ")
+                    .append(s.getPorts().getSecond().getNode())
+                    .append("\n");
+
             List<letrain.track.Station> stations = getStations(s);
             if (!stations.isEmpty()) {
-                sb.append("    Stations: ").append(stations.stream().map(st -> "ID=" + st.getId()).collect(Collectors.joining(", "))).append("\n");
+                sb.append("    Stations: ")
+                        .append(stations.stream().map(st -> "ID=" + st.getId()).collect(Collectors.joining(", ")))
+                        .append("\n");
             }
-            
+
             List<letrain.track.Sensor> sensors = getSensors(s);
             if (!sensors.isEmpty()) {
-                sb.append("    Sensors: ").append(sensors.stream().map(se -> "ID=" + se.getId()).collect(Collectors.joining(", "))).append("\n");
+                sb.append("    Sensors: ")
+                        .append(sensors.stream().map(se -> "ID=" + se.getId()).collect(Collectors.joining(", ")))
+                        .append("\n");
             }
         }
-        
+
         sb.append("NODES (").append(nodeToSegments.size()).append("):\n");
         for (Map.Entry<RailNode, List<Segment>> entry : nodeToSegments.entrySet()) {
             sb.append("  ").append(entry.getKey()).append(" connects to segments: ");
-            String segIds = entry.getValue().stream()
-                    .map(Segment::getId)
-                    .collect(Collectors.joining(", "));
+            String segIds = entry.getValue().stream().map(Segment::getId).collect(Collectors.joining(", "));
             sb.append(segIds).append("\n");
-            
+
             sb.append("    Ports: ");
             String portsStr = entry.getKey().getPorts().stream()
                     .map(p -> p.getType().toString())

@@ -1,16 +1,12 @@
 package letrain.ground;
 
 import java.io.Serializable;
-
 import letrain.map.Mappable;
 import letrain.map.Point;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 
-public class Ground implements
-        Serializable,
-        Mappable,
-        Renderable {
+public class Ground implements Serializable, Mappable, Renderable {
 
     int type;
     int x;
@@ -18,9 +14,7 @@ public class Ground implements
     Point pos = new Point(x, y);
     private static final long serialVersionUID = 1L;
 
-    private Ground() {
-
-    }
+    private Ground() {}
 
     public Ground(int x, int y, int type) {
         this.x = x;
@@ -61,5 +55,4 @@ public class Ground implements
     public void accept(Visitor visitor) {
         visitor.visitGround(this);
     }
-
 }

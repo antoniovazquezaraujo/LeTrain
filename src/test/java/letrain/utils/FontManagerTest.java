@@ -77,8 +77,8 @@ class FontManagerTest {
         } catch (Exception e) {
             // Expected in test environment without LibGDX application context
             // but validation should have passed
-            assertFalse(e.getMessage().contains("cannot be null"),
-                    "Should not fail on validation, only on LibGDX context");
+            assertFalse(
+                    e.getMessage().contains("cannot be null"), "Should not fail on validation, only on LibGDX context");
         }
     }
 
@@ -91,8 +91,7 @@ class FontManagerTest {
             font.dispose();
         } catch (Exception e) {
             // Expected in test environment without LibGDX context
-            assertFalse(e.getMessage().contains("must be positive"),
-                    "Should not fail validation");
+            assertFalse(e.getMessage().contains("must be positive"), "Should not fail validation");
         }
     }
 
@@ -104,11 +103,11 @@ class FontManagerTest {
         assertFalse(osName.isEmpty());
 
         // Should be one of the expected OS types
-        boolean isKnownOS = osName.contains("win") ||
-                osName.contains("mac") ||
-                osName.contains("linux") ||
-                osName.contains("nux") ||
-                osName.contains("unix");
+        boolean isKnownOS = osName.contains("win")
+                || osName.contains("mac")
+                || osName.contains("linux")
+                || osName.contains("nux")
+                || osName.contains("unix");
         assertTrue(isKnownOS, "OS name should be recognized: " + osName);
     }
 
@@ -116,12 +115,18 @@ class FontManagerTest {
     @DisplayName("FontManager validation uses ValidationUtils")
     void testValidationIntegration() {
         // Verify that ValidationUtils is properly integrated
-        assertThrows(NullPointerException.class, () -> {
-            FontManager.loadFont(null, 12);
-        }, "Should use ValidationUtils.requireNonNull()");
+        assertThrows(
+                NullPointerException.class,
+                () -> {
+                    FontManager.loadFont(null, 12);
+                },
+                "Should use ValidationUtils.requireNonNull()");
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            FontManager.loadFont("Arial", -1);
-        }, "Should use ValidationUtils.requirePositive()");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    FontManager.loadFont("Arial", -1);
+                },
+                "Should use ValidationUtils.requirePositive()");
     }
 }

@@ -1,10 +1,9 @@
 package letrain.visitor.gdx3d;
 
-import java.util.List;
-
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.math.Vector3;
+import java.util.List;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.track.CargoTypes;
@@ -21,17 +20,22 @@ import letrain.vehicle.rail.impl.Train;
 public class InfrastructureRenderer extends BaseSubRenderer {
     private final TrackRenderer trackRenderer;
 
-    public InfrastructureRenderer(Gdx3DResourceContext resourceContext, 
-                                List<ModelInstance> instances, 
-                                List<ModelInstance> transparentInstances,
-                                List<Gdx3DRenderer.VehicleLabel> labels,
-                                TrackRenderer trackRenderer) {
+    public InfrastructureRenderer(
+            Gdx3DResourceContext resourceContext,
+            List<ModelInstance> instances,
+            List<ModelInstance> transparentInstances,
+            List<Gdx3DRenderer.VehicleLabel> labels,
+            TrackRenderer trackRenderer) {
         super(resourceContext, instances, transparentInstances, labels);
         this.trackRenderer = trackRenderer;
     }
 
     @Override
-    public void updateState(letrain.mvp.Model modelRef, com.badlogic.gdx.graphics.Camera camera, float animationAlpha, boolean isXRayActive) {
+    public void updateState(
+            letrain.mvp.Model modelRef,
+            com.badlogic.gdx.graphics.Camera camera,
+            float animationAlpha,
+            boolean isXRayActive) {
         super.updateState(modelRef, camera, animationAlpha, isXRayActive);
         trackRenderer.updateState(modelRef, camera, animationAlpha, isXRayActive);
     }
@@ -48,8 +52,8 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
         ModelInstance base = resourceContext.getModelInstance(
                 isSelected ? resourceContext.selectedForkBaseModel : resourceContext.forkBaseModel);
-        base.transform.setToTranslation(track.getPosition().getX() + 0.5f, 0.03f,
-                track.getPosition().getY() + 0.5f);
+        base.transform.setToTranslation(
+                track.getPosition().getX() + 0.5f, 0.03f, track.getPosition().getY() + 0.5f);
         instances.add(base);
 
         float bx = track.getPosition().getX() + 0.5f;
@@ -63,12 +67,10 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
         ModelInstance box = resourceContext.getModelInstance(
                 isSelected ? resourceContext.selectedForkBoxModel : resourceContext.forkBoxModel);
-        box.transform.setToTranslation(bx, 0.07f, bz); 
+        box.transform.setToTranslation(bx, 0.07f, bz);
         instances.add(box);
 
-        Pair<Dir, Dir> route = track.isUsingAlternativeRoute()
-                ? track.getAlternativeRoute()
-                : track.getOriginalRoute();
+        Pair<Dir, Dir> route = track.isUsingAlternativeRoute() ? track.getAlternativeRoute() : track.getOriginalRoute();
 
         if (route != null) {
             Dir d1 = route.getFirst();
@@ -82,7 +84,15 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 v1.set(PathGeometry.getDirX(d1), 0, PathGeometry.getDirZ(d1));
                 v2.set(PathGeometry.getDirX(d2), 0, PathGeometry.getDirZ(d2));
                 v3.set(0, 0, 0);
-                trackRenderer.renderMultiSegmentCurve(track.getPosition(), v1, v3, v2, d1Connected && d2Connected, 0, resourceContext.railModel, blockedColor);
+                trackRenderer.renderMultiSegmentCurve(
+                        track.getPosition(),
+                        v1,
+                        v3,
+                        v2,
+                        d1Connected && d2Connected,
+                        0,
+                        resourceContext.railModel,
+                        blockedColor);
             } else {
                 trackRenderer.drawHalfTrack(track.getPosition(), d1, d1Connected, 1.0f, 1.0f, blockedColor);
                 trackRenderer.drawHalfTrack(track.getPosition(), d2, d2Connected, 1.0f, 1.0f, blockedColor);
@@ -92,15 +102,21 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             Dir rootDir = track.getOriginalRoute().getFirst();
             Dir branch1Dir = track.getOriginalRoute().getSecond();
             Dir branch2Dir = track.getAlternativeRoute().getSecond();
-            
+
             letrain.vehicle.rail.impl.Train ownerTrain = getTrackOwner(track);
-            
-            for (Dir entryDir : new Dir[]{ rootDir, branch1Dir, branch2Dir }) {
+
+            for (Dir entryDir : new Dir[] {rootDir, branch1Dir, branch2Dir}) {
                 Dir rightSideDir = entryDir.turnLeft().turnLeft();
                 // Move further out (0.65) and to the right side (0.35)
-                float sx = track.getPosition().getX() + 0.5f + PathGeometry.getDirX(entryDir) * 0.65f + PathGeometry.getDirX(rightSideDir) * 0.35f;
-                float sz = track.getPosition().getY() + 0.5f + PathGeometry.getDirZ(entryDir) * 0.65f + PathGeometry.getDirZ(rightSideDir) * 0.35f;
-                
+                float sx = track.getPosition().getX()
+                        + 0.5f
+                        + PathGeometry.getDirX(entryDir) * 0.65f
+                        + PathGeometry.getDirX(rightSideDir) * 0.35f;
+                float sz = track.getPosition().getY()
+                        + 0.5f
+                        + PathGeometry.getDirZ(entryDir) * 0.65f
+                        + PathGeometry.getDirZ(rightSideDir) * 0.35f;
+
                 boolean isGreen = true;
                 if (ownerTrain != null) {
                     isGreen = false;
@@ -112,19 +128,20 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                         }
                     }
                     if (!onFork && ownerTrain.getDirectorLinker() instanceof letrain.vehicle.rail.Linker) {
-                        letrain.vehicle.rail.Linker director = (letrain.vehicle.rail.Linker) ownerTrain.getDirectorLinker();
+                        letrain.vehicle.rail.Linker director =
+                                (letrain.vehicle.rail.Linker) ownerTrain.getDirectorLinker();
                         if (director.getTrack() != null) {
                             letrain.map.Point trainPos = director.getTrack().getPosition();
                             float minDist = Float.MAX_VALUE;
                             Dir closestDir = null;
-                            for (Dir d : new Dir[]{ rootDir, branch1Dir, branch2Dir }) {
-                                 float tdx = track.getPosition().getX() + PathGeometry.getDirX(d) - trainPos.getX();
-                                 float tdy = track.getPosition().getY() + PathGeometry.getDirZ(d) - trainPos.getY();
-                                 float dDist = tdx * tdx + tdy * tdy;
-                                 if (dDist < minDist) {
-                                     minDist = dDist;
-                                     closestDir = d;
-                                 }
+                            for (Dir d : new Dir[] {rootDir, branch1Dir, branch2Dir}) {
+                                float tdx = track.getPosition().getX() + PathGeometry.getDirX(d) - trainPos.getX();
+                                float tdy = track.getPosition().getY() + PathGeometry.getDirZ(d) - trainPos.getY();
+                                float dDist = tdx * tdx + tdy * tdy;
+                                if (dDist < minDist) {
+                                    minDist = dDist;
+                                    closestDir = d;
+                                }
                             }
                             if (entryDir == closestDir) {
                                 isGreen = true;
@@ -132,11 +149,11 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                         }
                     }
                 }
-                
+
                 ModelInstance autoSemaphore = resourceContext.getModelInstance(
                         isGreen ? resourceContext.semaphoreOpenModel : resourceContext.semaphoreClosedModel);
                 autoSemaphore.transform.setToTranslation(sx, 0.5f, sz);
-                
+
                 float sdx = PathGeometry.getDirX(entryDir);
                 float sdz = PathGeometry.getDirZ(entryDir);
                 float sAngle = (float) Math.atan2(sdx, sdz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
@@ -155,7 +172,9 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             Integer terrain = modelRef.getGroundMap().getValueAt(track.getPosition());
             if (terrain != null && terrain == letrain.ground.GroundMap.WATER) {
                 ModelInstance pillar = resourceContext.getModelInstance(resourceContext.bridgePillarModel);
-                pillar.transform.setToTranslation(track.getPosition().getX() + 0.5f, -1.05f,
+                pillar.transform.setToTranslation(
+                        track.getPosition().getX() + 0.5f,
+                        -1.05f,
                         track.getPosition().getY() + 0.5f);
                 pillar.transform.scale(1f, 1.9f, 1f);
                 instances.add(pillar);
@@ -165,23 +184,21 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
     @Override
     public void visitSensor(Sensor sensor) {
-        if (sensor.getPosition() == null)
-            return;
+        if (sensor.getPosition() == null) return;
 
         float x = sensor.getPosition().getX();
         float y = sensor.getPosition().getY();
         Dir dir = sensor.getCreationDir();
-        if (dir == null)
-            dir = Dir.N;
+        if (dir == null) dir = Dir.N;
 
         float dx = PathGeometry.getDirX(dir);
         float dz = PathGeometry.getDirZ(dir);
         float angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
 
         ModelInstance instance = resourceContext.getModelInstance(resourceContext.sensorModel);
-        instance.materials.get(0)
-                .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                        .createDiffuse(Color.YELLOW));
+        instance.materials
+                .get(0)
+                .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(Color.YELLOW));
         float sensorBottomHeight = 0.09f;
         instance.transform.setToTranslation(x + 0.5f, sensorBottomHeight, y + 0.5f);
         instance.transform.rotate(0, 1, 0, angle - 90f);
@@ -189,10 +206,14 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         instances.add(instance);
 
         String idText = String.valueOf(sensor.getId());
-        float labelHeight = 0.19f; 
-        labels.add(new Gdx3DRenderer.VehicleLabel(new Vector3(x + 0.5f, labelHeight, y + 0.5f), idText,
-                new Vector3(0, 1, 0), new Vector3(0, 0, -1),
-                Color.BLACK, 0.4f));
+        float labelHeight = 0.19f;
+        labels.add(new Gdx3DRenderer.VehicleLabel(
+                new Vector3(x + 0.5f, labelHeight, y + 0.5f),
+                idText,
+                new Vector3(0, 1, 0),
+                new Vector3(0, 0, -1),
+                Color.BLACK,
+                0.4f));
     }
 
     @Override
@@ -200,8 +221,8 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         float x = semaphore.getPosition().getX();
         float y = semaphore.getPosition().getY();
 
-        com.badlogic.gdx.graphics.g3d.Model modelToUse = semaphore.isOpen() ? resourceContext.semaphoreOpenModel
-                : resourceContext.semaphoreClosedModel;
+        com.badlogic.gdx.graphics.g3d.Model modelToUse =
+                semaphore.isOpen() ? resourceContext.semaphoreOpenModel : resourceContext.semaphoreClosedModel;
         ModelInstance instance = resourceContext.getModelInstance(modelToUse);
 
         float offsetX = 0;
@@ -229,25 +250,37 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
     @Override
     public void visitStation(Station station) {
-        if (station.getPosition() == null)
-            return;
+        if (station.getPosition() == null) return;
 
         letrain.track.rail.RailTrack track = (letrain.track.rail.RailTrack) station.getTrack();
         if (track == null) {
             track = modelRef.getRailMap().getTrackAt(station.getPosition());
         }
 
-        if (track == null)
-            return;
+        if (track == null) return;
 
-        drawStation(station, station.getPosition(), station.getCargoType(), station.getRole(), track,
-                station.getId(), station.getName(), (modelRef != null && modelRef.getSelectedStation() == station),
+        drawStation(
+                station,
+                station.getPosition(),
+                station.getCargoType(),
+                station.getRole(),
+                track,
+                station.getId(),
+                station.getName(),
+                (modelRef != null && modelRef.getSelectedStation() == station),
                 1.0f);
     }
 
-    private void drawStation(Station station, Point pos, CargoTypes cargo,
+    private void drawStation(
+            Station station,
+            Point pos,
+            CargoTypes cargo,
             CargoTypes.StationRole role,
-            letrain.track.rail.RailTrack track, int id, String name, boolean selected, float alpha) {
+            letrain.track.rail.RailTrack track,
+            int id,
+            String name,
+            boolean selected,
+            float alpha) {
 
         float xIndex = pos.getX();
         float zIndex = pos.getY();
@@ -284,8 +317,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             mastHeight = 2.0f;
         }
 
-        Color structureColor = (cargo != null) ? cargo.getColor().cpy()
-                : Color.WHITE.cpy();
+        Color structureColor = (cargo != null) ? cargo.getColor().cpy() : Color.WHITE.cpy();
         structureColor.a = alpha;
 
         boolean isActionActive = false;
@@ -319,9 +351,10 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         float plateAngle = (float) Math.atan2(perpX, perpZ) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
 
         ModelInstance plate = resourceContext.getModelInstance(resourceContext.wagonJewelModel);
-        plate.materials.get(0)
+        plate.materials
+                .get(0)
                 .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(structureColor));
-        
+
         float cargoPlateElevation = 0.05f; // Reverted back to original
         plate.transform.setToTranslation(plateMidX, cargoPlateElevation, plateMidZ);
         plate.transform.rotate(0, 1, 0, plateAngle);
@@ -357,31 +390,43 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         labelColor.a = alpha;
 
         String idText = (id >= 0) ? String.valueOf(id) : "?";
-        
+
         float zFightingLabelOffset = 0.05f;
         float labelOffset = boardSize / 2f + zFightingLabelOffset;
 
         float stationLabelScale = 0.5f;
-        
-        labels.add(new Gdx3DRenderer.VehicleLabel(
-                new Vector3(centerX + perpX * labelOffset, boardCenterY,
-                        centerZ + perpZ * labelOffset),
-                idText, new Vector3(perpX, 0, perpZ), null, labelColor, stationLabelScale));
 
         labels.add(new Gdx3DRenderer.VehicleLabel(
-                new Vector3(centerX - perpX * labelOffset, boardCenterY,
-                        centerZ - perpZ * labelOffset),
-                idText, new Vector3(-perpX, 0, -perpZ), null, labelColor, stationLabelScale));
+                new Vector3(centerX + perpX * labelOffset, boardCenterY, centerZ + perpZ * labelOffset),
+                idText,
+                new Vector3(perpX, 0, perpZ),
+                null,
+                labelColor,
+                stationLabelScale));
 
         labels.add(new Gdx3DRenderer.VehicleLabel(
-                new Vector3(centerX + paraX * labelOffset, boardCenterY,
-                        centerZ + paraZ * labelOffset),
-                idText, new Vector3(paraX, 0, paraZ), null, labelColor, stationLabelScale));
+                new Vector3(centerX - perpX * labelOffset, boardCenterY, centerZ - perpZ * labelOffset),
+                idText,
+                new Vector3(-perpX, 0, -perpZ),
+                null,
+                labelColor,
+                stationLabelScale));
 
         labels.add(new Gdx3DRenderer.VehicleLabel(
-                new Vector3(centerX - paraX * labelOffset, boardCenterY,
-                        centerZ - paraZ * labelOffset),
-                idText, new Vector3(-paraX, 0, -paraZ), null, labelColor, stationLabelScale));
+                new Vector3(centerX + paraX * labelOffset, boardCenterY, centerZ + paraZ * labelOffset),
+                idText,
+                new Vector3(paraX, 0, paraZ),
+                null,
+                labelColor,
+                stationLabelScale));
+
+        labels.add(new Gdx3DRenderer.VehicleLabel(
+                new Vector3(centerX - paraX * labelOffset, boardCenterY, centerZ - paraZ * labelOffset),
+                idText,
+                new Vector3(-paraX, 0, -paraZ),
+                null,
+                labelColor,
+                stationLabelScale));
     }
 
     @Override
@@ -409,24 +454,22 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             if (terrain != null && terrain != letrain.ground.GroundMap.ROCK) {
                 // The exit gate is placed on GROUND. Visually shift it 1 block backwards into the mountain.
                 letrain.map.Dir opposite = dir.inverse();
-                
+
                 float dx1 = dx * 2;
                 float dz1 = dz * 2;
                 letrain.map.Point p1 = new letrain.map.Point(
-                    tunnelGateRailTrack.getPosition().getX() + (int)dx1,
-                    tunnelGateRailTrack.getPosition().getY() + (int)dz1
-                );
-                
+                        tunnelGateRailTrack.getPosition().getX() + (int) dx1,
+                        tunnelGateRailTrack.getPosition().getY() + (int) dz1);
+
                 float dx2 = letrain.utils.PathGeometry.getDirX(opposite) * 2;
                 float dz2 = letrain.utils.PathGeometry.getDirZ(opposite) * 2;
                 letrain.map.Point p2 = new letrain.map.Point(
-                    tunnelGateRailTrack.getPosition().getX() + (int)dx2,
-                    tunnelGateRailTrack.getPosition().getY() + (int)dz2
-                );
-                
+                        tunnelGateRailTrack.getPosition().getX() + (int) dx2,
+                        tunnelGateRailTrack.getPosition().getY() + (int) dz2);
+
                 Integer t1 = modelRef.getGroundMap().getValueAt(p1);
                 Integer t2 = modelRef.getGroundMap().getValueAt(p2);
-                
+
                 if (t1 != null && t1 == letrain.ground.GroundMap.ROCK) {
                     tx += dx1;
                     tz += dz1;
@@ -485,8 +528,10 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
         ModelInstance ghost = resourceContext.getModelInstance(resourceContext.cursorModel);
         ghost.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f));
-        ghost.materials.get(0).set(new com.badlogic.gdx.graphics.g3d.attributes.DepthTestAttribute(
-                com.badlogic.gdx.graphics.GL20.GL_GREATER, false));
+        ghost.materials
+                .get(0)
+                .set(new com.badlogic.gdx.graphics.g3d.attributes.DepthTestAttribute(
+                        com.badlogic.gdx.graphics.GL20.GL_GREATER, false));
         ghost.transform.set(instance.transform);
         instances.add(ghost);
     }
@@ -516,8 +561,8 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         float x = speedSignal.getPosition().getX();
         float y = speedSignal.getPosition().getY();
 
-        com.badlogic.gdx.graphics.g3d.Model modelToUse = speedSignal.isMax() ? resourceContext.speedSignalMaxModel
-                : resourceContext.speedSignalMinModel;
+        com.badlogic.gdx.graphics.g3d.Model modelToUse =
+                speedSignal.isMax() ? resourceContext.speedSignalMaxModel : resourceContext.speedSignalMinModel;
         ModelInstance instance = resourceContext.getModelInstance(modelToUse);
 
         float offsetX = 0;
@@ -537,7 +582,6 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         instance.transform.setToTranslation(x + 0.5f + offsetX, 0.5f, y + 0.5f + offsetZ);
         instance.transform.rotate(0, 1, 0, angle);
 
-
         float scale = (modelRef != null && modelRef.getSelectedSpeedSignal() == speedSignal) ? 1.5f : 1.0f;
         if (scale > 1.0f) {
             instance.transform.scale(scale, scale, scale);
@@ -548,18 +592,19 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         // Add label for the speed limit
         int limit = speedSignal.getLimit();
         String limitText = limit >= 1 && limit <= 10 ? String.valueOf(limit) : "?";
-        
+
         float rad = (float) Math.toRadians(angle);
         float localZ = 0.05f * scale + 0.05f; // Just outside the scaled plate
         float labelOffsetX = (float) Math.sin(rad) * localZ;
         float labelOffsetZ = (float) Math.cos(rad) * localZ;
-        
-        float worldY = 0.5f + 0.5f * scale; 
-        
+
+        float worldY = 0.5f + 0.5f * scale;
+
         Vector3 labelPos = new Vector3(x + 0.5f + offsetX + labelOffsetX, worldY, y + 0.5f + offsetZ + labelOffsetZ);
         Vector3 labelNormal = new Vector3((float) Math.sin(rad), 0, (float) Math.cos(rad));
-        
+
         Color textColor = com.badlogic.gdx.graphics.Color.BLACK;
-        labels.add(new Gdx3DRenderer.VehicleLabel(labelPos, limitText, labelNormal, new Vector3(0, 1, 0), textColor, 0.30f * scale));
+        labels.add(new Gdx3DRenderer.VehicleLabel(
+                labelPos, limitText, labelNormal, new Vector3(0, 1, 0), textColor, 0.30f * scale));
     }
 }

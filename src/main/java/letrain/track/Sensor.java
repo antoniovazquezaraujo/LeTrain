@@ -1,13 +1,12 @@
 package letrain.track;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.utils.SerializationHelper;
@@ -16,21 +15,27 @@ import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-@com.fasterxml.jackson.annotation.JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME, include = com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY, property = "@type")
+@com.fasterxml.jackson.annotation.JsonTypeInfo(
+        use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME,
+        include = com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY,
+        property = "@type")
 @com.fasterxml.jackson.annotation.JsonSubTypes({
-        @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Sensor.class, name = "Sensor"),
-        @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Station.class, name = "Station"),
-        @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.SpeedSignal.class, name = "SpeedSignal")
+    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Sensor.class, name = "Sensor"),
+    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Station.class, name = "Station"),
+    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.SpeedSignal.class, name = "SpeedSignal")
 })
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class Sensor implements Renderable {
     private int id;
     private String name;
     Track track;
+
     @JsonIgnore
     transient List<SensorEventListener> listeners = new ArrayList<>();
+
     @JsonIgnore
     transient List<SensorEventListener> systemListeners = new ArrayList<>();
+
     private Dir sideDir;
     private Dir creationDir = Dir.E;
 
@@ -38,8 +43,7 @@ public class Sensor implements Renderable {
         return track;
     }
 
-    public Sensor() {
-    }
+    public Sensor() {}
 
     public void setTrack(Track track) {
         this.track = track;
@@ -53,8 +57,7 @@ public class Sensor implements Renderable {
      * Reinitializes transient fields after deserialization.
      * Ensures listener collections are not null to prevent NPE.
      */
-    private void readObject(ObjectInputStream ois)
-            throws IOException, ClassNotFoundException {
+    private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();
         this.listeners = SerializationHelper.ensureListInitialized(listeners);
         this.systemListeners = SerializationHelper.ensureListInitialized(systemListeners);
@@ -150,25 +153,21 @@ public class Sensor implements Renderable {
     }
 
     public void addSensorEventListener(SensorEventListener listener) {
-        if (listeners == null)
-            listeners = new ArrayList<>();
+        if (listeners == null) listeners = new ArrayList<>();
         this.listeners.add(listener);
     }
 
     public void addSystemSensorEventListener(SensorEventListener listener) {
-        if (systemListeners == null)
-            systemListeners = new ArrayList<>();
+        if (systemListeners == null) systemListeners = new ArrayList<>();
         this.systemListeners.add(listener);
     }
 
     public void removeSensorEventListener(SensorEventListener listener) {
-        if (listeners != null)
-            this.listeners.remove(listener);
+        if (listeners != null) this.listeners.remove(listener);
     }
 
     public void removeAllSensorEventListeners() {
-        if (listeners != null)
-            this.listeners.clear();
+        if (listeners != null) this.listeners.clear();
     }
 
     // toString
@@ -176,5 +175,4 @@ public class Sensor implements Renderable {
     public String toString() {
         return "Sensor [id=" + id + "]";
     }
-
 }

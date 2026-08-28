@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.segments.Port;
@@ -26,23 +25,26 @@ class RailwayGraphTest {
     private RailNodeImpl nodeB;
     private RailNodeImpl nodeC;
     private ForkRailTrack trackB;
-    
+
     private Port pA_E;
     private Port pB_W;
     private Port pB_E;
     private Port pC_W;
-    
+
     private Segment segmentAB;
     private Segment segmentBC;
 
     @BeforeEach
     void setUp() {
         graph = new RailwayGraphImpl();
-        
+
         // Tracks físicos para los nodos
-        RailTrack trackA = new RailTrack(); trackA.setPosition(new Point(0,0));
-        trackB = new ForkRailTrack(1); trackB.setPosition(new Point(1,0));
-        RailTrack trackC = new RailTrack(); trackC.setPosition(new Point(2,0));
+        RailTrack trackA = new RailTrack();
+        trackA.setPosition(new Point(0, 0));
+        trackB = new ForkRailTrack(1);
+        trackB.setPosition(new Point(1, 0));
+        RailTrack trackC = new RailTrack();
+        trackC.setPosition(new Point(2, 0));
 
         // Conectar tracks físicamente primero
         trackA.connect(Dir.E, trackB);
@@ -97,7 +99,8 @@ class RailwayGraphTest {
 
     @Test
     void testMultipleExitsFromFork() {
-        RailTrack trackD = new RailTrack(); trackD.setPosition(new Point(1,1));
+        RailTrack trackD = new RailTrack();
+        trackD.setPosition(new Point(1, 1));
         trackD.connect(Dir.N, trackB);
         trackB.connect(Dir.S, trackD);
 
@@ -106,13 +109,13 @@ class RailwayGraphTest {
         Port pD_N = nodeD.getPortForDir(Dir.N);
         assertNotNull(pB_S);
         assertNotNull(pD_N);
-        
+
         Segment segmentBD = new SegmentImpl("BD", pB_S, pD_N);
         graph.registerSegment(pB_S, segmentBD);
         graph.registerSegment(pD_N, segmentBD);
-        
+
         List<Port> nextPorts = graph.getNextPorts(pA_E);
-        
+
         assertEquals(2, nextPorts.size());
         assertTrue(nextPorts.contains(pB_E));
         assertTrue(nextPorts.contains(pB_S));
@@ -124,15 +127,15 @@ class RailwayGraphTest {
         letrain.segments.RailNode circularNode = org.mockito.Mockito.mock(letrain.segments.RailNode.class);
         Port exit1 = org.mockito.Mockito.mock(Port.class);
         Port exit2 = org.mockito.Mockito.mock(Port.class);
-        
+
         org.mockito.Mockito.when(exit1.getNode()).thenReturn(circularNode);
         org.mockito.Mockito.when(exit2.getNode()).thenReturn(circularNode);
         org.mockito.Mockito.when(circularNode.getPorts()).thenReturn(List.of(exit1, exit2));
-        
+
         Segment circularSegment = new SegmentImpl("CIRCLE", exit1, exit2);
         graph.registerSegment(exit1, circularSegment);
         graph.registerSegment(exit2, circularSegment);
-        
+
         List<Port> nextPorts = graph.getNextPorts(exit1);
         assertTrue(nextPorts.isEmpty());
     }
@@ -155,24 +158,24 @@ class RailwayGraphTest {
 
     @Test
     void testFindNonExistentPath() {
-        RailTrack tIso1 = new RailTrack(); tIso1.setPosition(new Point(10,10));
-        RailTrack tIso2 = new RailTrack(); tIso2.setPosition(new Point(10,11));
+        RailTrack tIso1 = new RailTrack();
+        tIso1.setPosition(new Point(10, 10));
+        RailTrack tIso2 = new RailTrack();
+        tIso2.setPosition(new Point(10, 11));
         tIso1.connect(Dir.N, tIso2);
         tIso2.connect(Dir.S, tIso1);
         RailNodeImpl nodeIso1 = new RailNodeImpl(tIso1);
         RailNodeImpl nodeIso2 = new RailNodeImpl(tIso2);
-        Segment isolatedSegment = new SegmentImpl("ISO", 
-            nodeIso1.getPortForDir(Dir.N),
-            nodeIso2.getPortForDir(Dir.S)
-        );
-        
+        Segment isolatedSegment = new SegmentImpl("ISO", nodeIso1.getPortForDir(Dir.N), nodeIso2.getPortForDir(Dir.S));
+
         List<Segment> path = graph.findPath(segmentAB, isolatedSegment);
         assertTrue(path.isEmpty());
     }
 
     @Test
     void testNonExistentPort() {
-        RailTrack tGhost = new RailTrack(); tGhost.setPosition(new Point(100,100));
+        RailTrack tGhost = new RailTrack();
+        tGhost.setPosition(new Point(100, 100));
         tGhost.connect(Dir.NE, tGhost);
         RailNodeImpl ghostNode = new RailNodeImpl(tGhost);
         Port ghostPort = ghostNode.getPortForDir(Dir.NE);

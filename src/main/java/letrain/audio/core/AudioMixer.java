@@ -2,12 +2,10 @@ package letrain.audio.core;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,9 +17,12 @@ public class AudioMixer {
 
     static {
         try {
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                shutdownInProgress = true;
-            }, "AudioMixer-ShutdownHook"));
+            Runtime.getRuntime()
+                    .addShutdownHook(new Thread(
+                            () -> {
+                                shutdownInProgress = true;
+                            },
+                            "AudioMixer-ShutdownHook"));
         } catch (Exception e) {
             // Ignore if JVM is already shutting down
         }
@@ -50,8 +51,7 @@ public class AudioMixer {
     }
 
     public void start() {
-        if (running)
-            return;
+        if (running) return;
         running = true;
         audioThread = new Thread(this::audioLoop, "AudioMixerThread");
         audioThread.setPriority(Thread.MAX_PRIORITY);
@@ -62,8 +62,7 @@ public class AudioMixer {
     public void stop() {
         running = false;
         try {
-            if (audioThread != null)
-                audioThread.join(2000);
+            if (audioThread != null) audioThread.join(2000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("Audio mixer stop interrupted", e);
@@ -103,15 +102,13 @@ public class AudioMixer {
             while (running) {
                 try {
                     // Clear mix buffer
-                    for (int i = 0; i < mixBuffer.length; i++)
-                        mixBuffer[i] = 0;
+                    for (int i = 0; i < mixBuffer.length; i++) mixBuffer[i] = 0;
 
                     // Mix sources
                     for (AudioSource source : sources) {
                         try {
                             // Reset source buffer
-                            for (int i = 0; i < sourceBuffer.length; i++)
-                                sourceBuffer[i] = 0;
+                            for (int i = 0; i < sourceBuffer.length; i++) sourceBuffer[i] = 0;
 
                             boolean active = source.read(sourceBuffer);
                             if (!active) {
@@ -140,21 +137,17 @@ public class AudioMixer {
                                     volume *= Math.max(0.0f, fadeFactor);
                                 }
                             }
-                            if (volume > 1.0f)
-                                volume = 1.0f;
-                            if (volume < 0.0f)
-                                volume = 0.0f;
+                            if (volume > 1.0f) volume = 1.0f;
+                            if (volume < 0.0f) volume = 0.0f;
 
                             // NaN protection for volume
-                            if (Float.isNaN(volume) || Float.isInfinite(volume))
-                                volume = 0;
+                            if (Float.isNaN(volume) || Float.isInfinite(volume)) volume = 0;
 
                             // 5. Apply to Mix (Mono to Stereo)
                             for (int i = 0; i < BUFFER_SIZE; i++) {
                                 float sample = sourceBuffer[i];
                                 // NaN protection for sample
-                                if (Float.isNaN(sample) || Float.isInfinite(sample))
-                                    sample = 0;
+                                if (Float.isNaN(sample) || Float.isInfinite(sample)) sample = 0;
 
                                 mixBuffer[i * 2] += sample * volume;
                                 mixBuffer[i * 2 + 1] += sample * volume;
@@ -168,12 +161,9 @@ public class AudioMixer {
                     // Limit/Clip and Convert to Bytes
                     for (int i = 0; i < BUFFER_SIZE * 2; i++) {
                         float val = mixBuffer[i];
-                        if (Float.isNaN(val) || Float.isInfinite(val))
-                            val = 0;
-                        if (val > 1.0f)
-                            val = 1.0f;
-                        if (val < -1.0f)
-                            val = -1.0f;
+                        if (Float.isNaN(val) || Float.isInfinite(val)) val = 0;
+                        if (val > 1.0f) val = 1.0f;
+                        if (val < -1.0f) val = -1.0f;
 
                         short s = (short) (val * 32767.0f);
                         outputBuffer[i * 2] = (byte) ((s >> 8) & 0xFF);

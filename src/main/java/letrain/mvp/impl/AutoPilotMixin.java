@@ -2,20 +2,18 @@ package letrain.mvp.impl;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.io.IOException;
+import java.util.List;
 import letrain.itinerary.AutoPilot;
 import letrain.itinerary.Itinerary;
 import letrain.itinerary.WaypointCommand;
 import letrain.itinerary.impl.AutoPilotImpl;
-
-import java.io.IOException;
-import java.util.List;
 
 @JsonSerialize(using = AutoPilotMixin.AutoPilotSerializer.class)
 @JsonDeserialize(using = AutoPilotMixin.AutoPilotDeserializer.class)
@@ -70,7 +68,8 @@ public abstract class AutoPilotMixin {
             if (node.has("pendingCommands") && !node.get("pendingCommands").isNull()) {
                 JsonParser parser = node.get("pendingCommands").traverse(p.getCodec());
                 parser.nextToken();
-                pendingCommands = ctxt.readValue(parser, ctxt.getTypeFactory().constructCollectionType(List.class, WaypointCommand.class));
+                pendingCommands = ctxt.readValue(
+                        parser, ctxt.getTypeFactory().constructCollectionType(List.class, WaypointCommand.class));
             }
 
             return new AutoPilotImpl(itinerary, mode, waitTicks, pendingCommands, currentIndex);

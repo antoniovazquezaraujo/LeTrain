@@ -2,7 +2,6 @@ package letrain.utils.impl;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import letrain.utils.ValidationUtils;
 
 /**

@@ -2,8 +2,6 @@ package letrain.vehicle.rail.rail2;
 
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
-
 import letrain.mvp.Model;
 import letrain.segments.BlockManager;
 import letrain.segments.Segment;
@@ -30,7 +28,7 @@ class ShuntingAutomationOperationsTest {
 
         segment = Mockito.mock(Segment.class);
         when(segment.getId()).thenReturn("S1");
-        
+
         letrain.segments.Port p1 = Mockito.mock(letrain.segments.Port.class);
         letrain.segments.Port p2 = Mockito.mock(letrain.segments.Port.class);
         letrain.segments.RailNode rn1 = Mockito.mock(letrain.segments.RailNode.class);
@@ -41,12 +39,11 @@ class ShuntingAutomationOperationsTest {
 
         trainA = new Train(1);
         trainA.setModel(model);
-        
+
         trainB = new Train(2);
         trainB.setModel(model);
 
         // Configure graph to return segment for any RailTrack
         when(graph.getSegment(Mockito.any(letrain.track.rail.RailTrack.class))).thenReturn(segment);
     }
-
 }
