@@ -86,10 +86,7 @@ class TestCircuit1TraitTest {
             final ForkRailTrack myNewTrack = new ForkRailTrack(1);
             // Modmodel.addFork(myNewTrack)
             final Router router = track.getRouter();
-            // TODO: recover this!
-            // router.forEach({ t ->
-            // myNewTrack.getRouter().addRoute(t.getKey(), t.getValue());
-            // })
+            router.forEach(t -> myNewTrack.getRouter().addRoute(t.getKey(), t.getValue()));
             myNewTrack.setNormalRoute();
             railMap.removeTrack(track.getPosition());
             railMap.addTrack(cursor.getPosition(), myNewTrack);
@@ -124,8 +121,7 @@ class TestCircuit1TraitTest {
 
     public boolean canBeAFork(Track track, Dir from, Dir to) {
         final Router r = new SimpleRouter();
-        // TODO: recover this!
-        // track.getRouter().forEach({ t -> r.addRoute(t.getKey(), t.getValue()) });
+        track.getRouter().forEach(t -> r.addRoute(t.getKey(), t.getValue()));
         r.addRoute(from, to);
         return r.getNumRoutes() == 3;
     }

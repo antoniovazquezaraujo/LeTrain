@@ -25,8 +25,12 @@ public class ForkRouterTest {
         Dir toTurnedLeft = to.turnLeft();
         router.addRoute(from, to);
         router.addRoute(from, toTurnedLeft);
-        // TODO: to assertions here!
-        // System.out.println(router.toString());
+        
+        router.setNormalRoute();
+        org.junit.jupiter.api.Assertions.assertEquals(to, router.getDir(from));
+        
+        router.setAlternativeRoute();
+        org.junit.jupiter.api.Assertions.assertEquals(toTurnedLeft, router.getDir(from));
     }
 
 }
