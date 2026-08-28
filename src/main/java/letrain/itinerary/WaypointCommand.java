@@ -6,13 +6,7 @@ package letrain.itinerary;
  */
 public class WaypointCommand {
     public enum Kind {
-        LOAD,
-        UNLOAD,
-        REVERSE,
-        WAIT,
-        SPEED,
-        STOP,
-        NONE
+        LOAD, UNLOAD, REVERSE, WAIT, SPEED, STOP, NONE
     }
 
     /** Simulation ticks per second. Used to convert seconds ↔ ticks. */
@@ -64,7 +58,8 @@ public class WaypointCommand {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof WaypointCommand c)) return false;
+        if (!(o instanceof WaypointCommand c))
+            return false;
         return kind == c.kind && seconds == c.seconds && targetSpeed == c.targetSpeed;
     }
 

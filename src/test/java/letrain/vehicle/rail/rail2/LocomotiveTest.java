@@ -16,8 +16,7 @@ class LocomotiveTest {
         assertFalse(locomotive.isEngineOn(), "engine should be off initially");
 
         locomotive.setTargetSpeed(5);
-        assertTrue(
-                locomotive.isEngineOn(),
+        assertTrue(locomotive.isEngineOn(),
                 "engine should turn on automatically when setting speed > 0");
         assertEquals(5, locomotive.getTargetSpeed(), "target speed should be updated correctly");
     }

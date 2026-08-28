@@ -8,11 +8,7 @@ import letrain.segments.Segment;
 public interface AutoPilot {
 
     enum Mode {
-        IDLE,
-        FOLLOWING,
-        WAITING,
-        REVERSING,
-        ERROR
+        IDLE, FOLLOWING, WAITING, REVERSING, ERROR
     }
 
     /** The itinerary this autopilot is following. */

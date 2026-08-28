@@ -41,7 +41,8 @@ public class GrammarReference {
     private static List<Node> cachedTree = null;
 
     public static List<Node> getReferenceTree() {
-        if (cachedTree != null) return cachedTree;
+        if (cachedTree != null)
+            return cachedTree;
         List<Node> root = new ArrayList<>();
 
         Node itinHeading = new Node("ITINERARY DSL").setHeading(true);

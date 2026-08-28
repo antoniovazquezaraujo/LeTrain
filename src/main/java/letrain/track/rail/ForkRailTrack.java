@@ -24,21 +24,25 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     private transient List<ForkEventListener> systemListeners = new ArrayList<>();
 
     public void addForkEventListener(ForkEventListener listener) {
-        if (listeners == null) listeners = new ArrayList<>();
+        if (listeners == null)
+            listeners = new ArrayList<>();
         listeners.add(listener);
     }
 
     public void addSystemForkEventListener(ForkEventListener listener) {
-        if (systemListeners == null) systemListeners = new ArrayList<>();
+        if (systemListeners == null)
+            systemListeners = new ArrayList<>();
         systemListeners.add(listener);
     }
 
     public void removeForkEventListener(ForkEventListener listener) {
-        if (listeners != null) listeners.remove(listener);
+        if (listeners != null)
+            listeners.remove(listener);
     }
 
     public void removeAllForkEventListeners() {
-        if (listeners != null) listeners.clear();
+        if (listeners != null)
+            listeners.clear();
     }
 
     public ForkRailTrack(int id) {

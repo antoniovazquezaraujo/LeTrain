@@ -31,7 +31,8 @@ public class AudacityLabelParser {
             String line;
             while ((line = br.readLine()) != null) {
                 line = line.trim();
-                if (line.isEmpty()) continue;
+                if (line.isEmpty())
+                    continue;
 
                 // Format: StartTime\tEndTime\tLabelName
                 // 1.234567 2.345678 MyLabel
@@ -48,7 +49,8 @@ public class AudacityLabelParser {
                         // Reassemble name if it had spaces
                         String name = parts[2].trim();
                         if (parts.length > 3) {
-                            for (int i = 3; i < parts.length; i++) name += " " + parts[i].trim();
+                            for (int i = 3; i < parts.length; i++)
+                                name += " " + parts[i].trim();
                         }
 
                         labels.add(new Label(start, end, name.trim()));

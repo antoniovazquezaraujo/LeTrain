@@ -26,8 +26,10 @@ public class PortImpl implements Port {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         PortImpl port = (PortImpl) o;
         return type == port.type && Objects.equals(node, port.node);
     }

@@ -51,8 +51,7 @@ class TrainMoveLinkersTest {
      * movement. The train moves successfully and the method returns true.
      */
     @Test
-    @DisplayName(
-            "should return false when first linker's track is null after move (defensive null-check)")
+    @DisplayName("should return false when first linker's track is null after move (defensive null-check)")
     void shouldReturnFalse_When_FirstLinkerTrackIsNull_AfterMove() {
         setupTwoLinkerScenario();
         setupPass1Success();
@@ -128,14 +127,15 @@ class TrainMoveLinkersTest {
     }
 
     // ================================================================
-    //  Helper methods
+    // Helper methods
     // ================================================================
 
     /**
      * Creates a Train with 2 linkers on 3 tracks: linker1 on trackA → (target) trackB linker2 on
      * trackB → (target) trackC
      *
-     * <p>linkers are added in order: firstLinker, secondLinker.
+     * <p>
+     * linkers are added in order: firstLinker, secondLinker.
      */
     private void setupTwoLinkerScenario() {
         train = new Train(1);
@@ -149,23 +149,17 @@ class TrainMoveLinkersTest {
         secondLinker = mock(Linker.class);
 
         // Correlate setTrack / getTrack for firstLinker
-        doAnswer(
-                        inv -> {
-                            firstLinkerTrack.set(inv.getArgument(0));
-                            return null;
-                        })
-                .when(firstLinker)
-                .setTrack(any(Track.class));
+        doAnswer(inv -> {
+            firstLinkerTrack.set(inv.getArgument(0));
+            return null;
+        }).when(firstLinker).setTrack(any(Track.class));
         when(firstLinker.getTrack()).thenAnswer(inv -> firstLinkerTrack.get());
 
         // Correlate setTrack / getTrack for secondLinker
-        doAnswer(
-                        inv -> {
-                            secondLinkerTrack.set(inv.getArgument(0));
-                            return null;
-                        })
-                .when(secondLinker)
-                .setTrack(any(Track.class));
+        doAnswer(inv -> {
+            secondLinkerTrack.set(inv.getArgument(0));
+            return null;
+        }).when(secondLinker).setTrack(any(Track.class));
         when(secondLinker.getTrack()).thenAnswer(inv -> secondLinkerTrack.get());
 
         // Common linker stubs
@@ -228,27 +222,18 @@ class TrainMoveLinkersTest {
         when(trackB.getLinker()).thenAnswer(inv -> linkerOnTrackB.get());
         when(trackC.getLinker()).thenAnswer(inv -> linkerOnTrackC.get());
 
-        doAnswer(
-                        inv -> {
-                            linkerOnTrackA.set(inv.getArgument(0));
-                            return null;
-                        })
-                .when(trackA)
-                .setLinker(any(Linker.class));
-        doAnswer(
-                        inv -> {
-                            linkerOnTrackB.set(inv.getArgument(0));
-                            return null;
-                        })
-                .when(trackB)
-                .setLinker(any(Linker.class));
-        doAnswer(
-                        inv -> {
-                            linkerOnTrackC.set(inv.getArgument(0));
-                            return null;
-                        })
-                .when(trackC)
-                .setLinker(any(Linker.class));
+        doAnswer(inv -> {
+            linkerOnTrackA.set(inv.getArgument(0));
+            return null;
+        }).when(trackA).setLinker(any(Linker.class));
+        doAnswer(inv -> {
+            linkerOnTrackB.set(inv.getArgument(0));
+            return null;
+        }).when(trackB).setLinker(any(Linker.class));
+        doAnswer(inv -> {
+            linkerOnTrackC.set(inv.getArgument(0));
+            return null;
+        }).when(trackC).setLinker(any(Linker.class));
 
         // Initial track assignments
         firstLinkerTrack.set(trackA);
@@ -277,72 +262,55 @@ class TrainMoveLinkersTest {
      * Stubs removeLinker() so that it sets the tracked linker's track to null (simulating the real
      * TrackDirector.removeLinker side-effect) and clears the track's recorded linker.
      */
-    private void setupRemoveLinkerSetsTrackToNull(
-            Track track,
-            AtomicReference<Linker> trackLinkerRef,
-            AtomicReference<Track> linkerTrackRef) {
+    private void setupRemoveLinkerSetsTrackToNull(Track track,
+            AtomicReference<Linker> trackLinkerRef, AtomicReference<Track> linkerTrackRef) {
 
-        doAnswer(
-                        inv -> {
-                            Linker removed = trackLinkerRef.get();
-                            if (removed != null) {
-                                linkerTrackRef.set(null);
-                            }
-                            trackLinkerRef.set(null);
-                            return removed;
-                        })
-                .when(track)
-                .removeLinker();
+        doAnswer(inv -> {
+            Linker removed = trackLinkerRef.get();
+            if (removed != null) {
+                linkerTrackRef.set(null);
+            }
+            trackLinkerRef.set(null);
+            return removed;
+        }).when(track).removeLinker();
     }
 
     /**
      * Stubs removeLinker() with realistic behavior: sets the specific linker's track to null and
      * clears the track's recorded linker.
      */
-    private void setupRealisticRemoveLinker(
-            Track track,
-            AtomicReference<Linker> trackLinkerRef,
-            AtomicReference<Track> linkerTrackRef,
-            Linker expectedLinker) {
+    private void setupRealisticRemoveLinker(Track track, AtomicReference<Linker> trackLinkerRef,
+            AtomicReference<Track> linkerTrackRef, Linker expectedLinker) {
 
-        doAnswer(
-                        inv -> {
-                            Linker removed = trackLinkerRef.get();
-                            if (removed != null) {
-                                linkerTrackRef.set(null);
-                            }
-                            trackLinkerRef.set(null);
-                            return removed;
-                        })
-                .when(track)
-                .removeLinker();
+        doAnswer(inv -> {
+            Linker removed = trackLinkerRef.get();
+            if (removed != null) {
+                linkerTrackRef.set(null);
+            }
+            trackLinkerRef.set(null);
+            return removed;
+        }).when(track).removeLinker();
     }
 
     /**
      * Stubs enterLinkerFromDir() with realistic behavior: sets the linker's track and position,
      * records the linker on the target track.
      */
-    private void setupRealisticEnterLinker(
-            Track targetTrack,
-            AtomicReference<Linker> targetTrackLinkerRef,
-            AtomicReference<Track> linkerTrackRef,
+    private void setupRealisticEnterLinker(Track targetTrack,
+            AtomicReference<Linker> targetTrackLinkerRef, AtomicReference<Track> linkerTrackRef,
             Linker linker) {
 
-        doAnswer(
-                        inv -> {
-                            Dir dir = inv.getArgument(0);
-                            Linker v = inv.getArgument(1);
-                            linkerTrackRef.set(targetTrack);
-                            targetTrackLinkerRef.set(v);
-                            return true;
-                        })
-                .when(targetTrack)
-                .enterLinkerFromDir(any(Dir.class), any(Linker.class));
+        doAnswer(inv -> {
+            Dir dir = inv.getArgument(0);
+            Linker v = inv.getArgument(1);
+            linkerTrackRef.set(targetTrack);
+            targetTrackLinkerRef.set(v);
+            return true;
+        }).when(targetTrack).enterLinkerFromDir(any(Dir.class), any(Linker.class));
     }
 
     @Test
-    @DisplayName(
-            "should return correct physical front depending on director linker reversed status")
+    @DisplayName("should return correct physical front depending on director linker reversed status")
     void shouldReturnCorrectPhysicalFront_DependingOnReversedStatus() {
         setupTwoLinkerScenario();
         letrain.vehicle.Tractor mockLoco = mock(letrain.vehicle.Tractor.class);

@@ -25,15 +25,14 @@ public class TopologyServiceImpl implements TopologyService {
         Map<RailTrack, RailNodeImpl> trackToNode = new HashMap<>();
 
         // 1. Identificar todos los nodos basándose en la estructura física
-        railMap.forEach(
-                obj -> {
-                    if (obj instanceof RailTrack) {
-                        RailTrack track = (RailTrack) obj;
-                        if (isNode(track)) {
-                            trackToNode.put(track, new RailNodeImpl(track));
-                        }
-                    }
-                });
+        railMap.forEach(obj -> {
+            if (obj instanceof RailTrack) {
+                RailTrack track = (RailTrack) obj;
+                if (isNode(track)) {
+                    trackToNode.put(track, new RailNodeImpl(track));
+                }
+            }
+        });
 
         // 2. Rastrear conexiones para crear Segments usando puertos
         Set<Set<Port>> discoveredSegments = new HashSet<>();
@@ -41,23 +40,24 @@ public class TopologyServiceImpl implements TopologyService {
 
         List<Map.Entry<RailTrack, RailNodeImpl>> sortedNodes =
                 new ArrayList<>(trackToNode.entrySet());
-        sortedNodes.sort(
-                Comparator.comparingInt(
-                                (Map.Entry<RailTrack, RailNodeImpl> e) ->
-                                        e.getKey().getPosition().getY())
-                        .thenComparingInt(e -> e.getKey().getPosition().getX()));
+        sortedNodes.sort(Comparator
+                .comparingInt(
+                        (Map.Entry<RailTrack, RailNodeImpl> e) -> e.getKey().getPosition().getY())
+                .thenComparingInt(e -> e.getKey().getPosition().getX()));
         for (Map.Entry<RailTrack, RailNodeImpl> entry : sortedNodes) {
             RailTrack startTrack = entry.getKey();
             RailNodeImpl startNode = entry.getValue();
 
             for (Dir dir : startTrack.getConnections()) {
                 Port startPort = startNode.getPortForDir(dir);
-                if (startPort == null) continue;
+                if (startPort == null)
+                    continue;
 
                 CrawlResult result = crawl(startTrack, dir, trackToNode);
                 if (result != null) {
                     Port endPort = result.endNode.getPortForDir(result.incomingDir);
-                    if (endPort == null) continue;
+                    if (endPort == null)
+                        continue;
 
                     Set<Port> segmentKey = new HashSet<>(Arrays.asList(startPort, endPort));
 
@@ -103,8 +103,8 @@ public class TopologyServiceImpl implements TopologyService {
         return (track instanceof ForkRailTrack) || (track.getConnections().size() != 2);
     }
 
-    private CrawlResult crawl(
-            RailTrack startTrack, Dir startDir, Map<RailTrack, RailNodeImpl> trackToNode) {
+    private CrawlResult crawl(RailTrack startTrack, Dir startDir,
+            Map<RailTrack, RailNodeImpl> trackToNode) {
         List<RailTrack> visited = new ArrayList<>();
         java.util.Set<RailTrack> seen = new java.util.HashSet<>();
         RailTrack currentTrack = (RailTrack) startTrack.getConnected(startDir);
@@ -120,14 +120,16 @@ public class TopologyServiceImpl implements TopologyService {
             }
             visited.add(currentTrack);
             Dir nextDir = currentTrack.getDir(incomingDir);
-            if (nextDir == null) return null;
+            if (nextDir == null)
+                return null;
 
             RailTrack nextTrack = (RailTrack) currentTrack.getConnected(nextDir);
             incomingDir = nextDir.inverse();
             currentTrack = nextTrack;
         }
 
-        if (currentTrack == null) return null;
+        if (currentTrack == null)
+            return null;
 
         return new CrawlResult(trackToNode.get(currentTrack), incomingDir, visited);
     }

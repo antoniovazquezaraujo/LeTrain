@@ -58,12 +58,8 @@ public abstract class WaypointMixin {
             if (node.has("commands")) {
                 JsonParser listParser = node.get("commands").traverse(p.getCodec());
                 listParser.nextToken();
-                commands =
-                        ctxt.readValue(
-                                listParser,
-                                ctxt.getTypeFactory()
-                                        .constructCollectionType(
-                                                List.class, WaypointCommand.class));
+                commands = ctxt.readValue(listParser, ctxt.getTypeFactory()
+                        .constructCollectionType(List.class, WaypointCommand.class));
             }
 
             return new WaypointImpl(type, targetId, entryDir, commands);

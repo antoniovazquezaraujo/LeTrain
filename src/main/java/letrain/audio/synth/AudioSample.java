@@ -80,14 +80,16 @@ public class AudioSample {
     }
 
     public float getSample(int index) {
-        if (index < 0 || index >= samples.length) return 0.0f;
+        if (index < 0 || index >= samples.length)
+            return 0.0f;
         return samples[index];
     }
 
     // Linear Interpolation for smooth pitch shifting
     public float getSampleLinear(float index) {
         int i = (int) index;
-        if (i < 0 || i >= samples.length - 1) return 0.0f;
+        if (i < 0 || i >= samples.length - 1)
+            return 0.0f;
 
         float frac = index - i;
         float s1 = samples[i];

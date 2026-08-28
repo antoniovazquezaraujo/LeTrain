@@ -95,8 +95,7 @@ class SerializationHelperTest {
     }
 
     @Test
-    @DisplayName(
-            "reinitializeTransientListConcurrent - delegates to ensureListInitializedConcurrent")
+    @DisplayName("reinitializeTransientListConcurrent - delegates to ensureListInitializedConcurrent")
     void testReinitializeTransientListConcurrent() {
         List<String> result = SerializationHelper.reinitializeTransientListConcurrent(null);
 

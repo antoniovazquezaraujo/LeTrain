@@ -49,11 +49,12 @@ public class GraphicPresenter extends ApplicationAdapter
     private com.badlogic.gdx.graphics.g3d.decals.Decal getGlyphDecal(char c) {
         if (!glyphRegions.containsKey(c)) {
             com.badlogic.gdx.graphics.g2d.BitmapFont.Glyph glyph = font.getData().getGlyph(c);
-            if (glyph == null) return null;
+            if (glyph == null)
+                return null;
 
             com.badlogic.gdx.graphics.g2d.TextureRegion region =
-                    new com.badlogic.gdx.graphics.g2d.TextureRegion(
-                            font.getRegion().getTexture(), glyph.u, glyph.v, glyph.u2, glyph.v2);
+                    new com.badlogic.gdx.graphics.g2d.TextureRegion(font.getRegion().getTexture(),
+                            glyph.u, glyph.v, glyph.u2, glyph.v2);
             region.flip(false, true); // Corregir inversión vertical
             glyphRegions.put(c, region);
         }
@@ -110,12 +111,8 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Use the initial cursor position as the center for initial ground loading
         letrain.map.Point startPos = model.getCursor().getPosition();
-        model.getGroundMap()
-                .renderBlock(
-                        startPos.getX() - getCols() / 2,
-                        startPos.getY() - getRows() / 2,
-                        getCols(),
-                        getRows());
+        model.getGroundMap().renderBlock(startPos.getX() - getCols() / 2,
+                startPos.getY() - getRows() / 2, getCols(), getRows());
 
         // Register as listener for audio events
         model.addCoreTrainEventListener(this);
@@ -156,34 +153,16 @@ public class GraphicPresenter extends ApplicationAdapter
         modelBuilder = new ModelBuilder();
 
         // Suelo de madera o tablero
-        groundModel =
-                modelBuilder.createRect(
-                        -500f,
-                        0,
-                        -500f,
-                        500f,
-                        0,
-                        -500f,
-                        500f,
-                        0,
-                        500f,
-                        -500f,
-                        0,
-                        500f,
-                        0,
-                        1,
-                        0,
-                        new com.badlogic.gdx.graphics.g3d.Material(
-                                ColorAttribute.createDiffuse(new Color(0.4f, 0.3f, 0.1f, 1f))),
-                        Usage.Position | Usage.Normal);
+        groundModel = modelBuilder.createRect(-500f, 0, -500f, 500f, 0, -500f, 500f, 0, 500f, -500f,
+                0, 500f, 0, 1, 0,
+                new com.badlogic.gdx.graphics.g3d.Material(
+                        ColorAttribute.createDiffuse(new Color(0.4f, 0.3f, 0.1f, 1f))),
+                Usage.Position | Usage.Normal);
 
         // Rejilla para orientación (1x1 para coincidir con las celdas)
         modelBuilder.begin();
         com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpb =
-                modelBuilder.part(
-                        "grid",
-                        GL20.GL_LINES,
-                        Usage.Position | Usage.ColorUnpacked,
+                modelBuilder.part("grid", GL20.GL_LINES, Usage.Position | Usage.ColorUnpacked,
                         new com.badlogic.gdx.graphics.g3d.Material());
         mpb.setColor(Color.LIGHT_GRAY);
         for (int i = -100; i <= 100; i += 1) {
@@ -196,10 +175,7 @@ public class GraphicPresenter extends ApplicationAdapter
         decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(cameraGroupStrategy);
 
         boxModel =
-                modelBuilder.createBox(
-                        0.8f,
-                        0.8f,
-                        0.8f,
+                modelBuilder.createBox(0.8f, 0.8f, 0.8f,
                         new com.badlogic.gdx.graphics.g3d.Material(
                                 ColorAttribute.createDiffuse(Color.FOREST)),
                         Usage.Position | Usage.Normal);
@@ -236,21 +212,22 @@ public class GraphicPresenter extends ApplicationAdapter
             // movemos
             letrain.map.Point cp = model.getCursor().getPosition();
             int radius = model.getEconomyManager().getViewRadius();
-            model.getGroundMap()
-                    .renderBlock(
-                            cp.getX() - radius, cp.getY() - radius, radius * 2 + 1, radius * 2 + 1);
+            model.getGroundMap().renderBlock(cp.getX() - radius, cp.getY() - radius, radius * 2 + 1,
+                    radius * 2 + 1);
 
             simulationController.tick();
             inputHandler.update();
             hud.updateIDE();
 
             stateTime -= 0.05f;
-            if (stateTime > 0.05f) stateTime = 0.05f; // Evitar espiral de la muerte
+            if (stateTime > 0.05f)
+                stateTime = 0.05f; // Evitar espiral de la muerte
         }
 
         // 1. Calculate factor de interpolación
         float alpha = stateTime / 0.05f;
-        if (alpha > 1f) alpha = 1f;
+        if (alpha > 1f)
+            alpha = 1f;
         renderer.setAnimationAlpha(alpha);
 
         // 2. ACTUALIZAR CÁMARA ANTES QUE EL AUDIO
@@ -258,15 +235,11 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // 3. Sincronizar Audio con la posición REAL de la cámara de este frame
         float camAngle = cameraController.getListenerAngle();
-        audioController.setListenerPosition(
-                cam.position.x, cam.position.z, cam.position.y, camAngle);
+        audioController.setListenerPosition(cam.position.x, cam.position.z, cam.position.y,
+                camAngle);
         audioController.update();
-        audioController.updateAmbient(
-                cameraController.getMode() == CameraController.CameraMode.MAP,
-                cameraController.getZoomFactor(),
-                cam.position.x,
-                cam.position.z,
-                cam.position.y);
+        audioController.updateAmbient(cameraController.getMode() == CameraController.CameraMode.MAP,
+                cameraController.getZoomFactor(), cam.position.x, cam.position.z, cam.position.y);
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
@@ -287,10 +260,11 @@ public class GraphicPresenter extends ApplicationAdapter
         // Renderizado de Etiquetas 3D (Decals)
         if (!renderer.getLabels().isEmpty()) {
             for (letrain.visitor.gdx3d.Gdx3DRenderer.VehicleLabel label : renderer.getLabels()) {
-                if (label.text == null || label.text.isEmpty()) continue;
+                if (label.text == null || label.text.isEmpty())
+                    continue;
 
-                float baseCharSpacing =
-                        0.50f; // Espaciado base (aumentado para evitar solapamiento)
+                float baseCharSpacing = 0.50f; // Espaciado base (aumentado para evitar
+                                               // solapamiento)
                 float charSpacing = baseCharSpacing * label.scale;
                 float totalWidth = label.text.length() * charSpacing;
                 float startOffset = -totalWidth / 2f + charSpacing / 2f;
@@ -324,21 +298,15 @@ public class GraphicPresenter extends ApplicationAdapter
                     char c = label.text.charAt(i);
                     com.badlogic.gdx.graphics.g3d.decals.Decal d = getGlyphDecal(c);
                     if (d != null) {
-                        d.setColor(
-                                label.color != null
-                                        ? label.color
-                                        : com.badlogic.gdx.graphics.Color.WHITE);
+                        d.setColor(label.color != null ? label.color
+                                : com.badlogic.gdx.graphics.Color.WHITE);
                         d.setScale(label.scale);
 
                         // Posición con desplazamiento horizontal para centrar el texto
                         float offset = startOffset + i * charSpacing;
                         com.badlogic.gdx.math.Vector3 charPos =
-                                label.pos
-                                        .cpy()
-                                        .add(
-                                                horizontal.x * offset,
-                                                horizontal.y * offset,
-                                                horizontal.z * offset);
+                                label.pos.cpy().add(horizontal.x * offset, horizontal.y * offset,
+                                        horizontal.z * offset);
                         d.setPosition(charPos);
 
                         // Orientar el decal para que mire hacia afuera de la superficie
@@ -647,12 +615,8 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Render initial ground around cursor
         letrain.map.Point startPos = model.getCursor().getPosition();
-        model.getGroundMap()
-                .renderBlock(
-                        startPos.getX() - getCols() / 2,
-                        startPos.getY() - getRows() / 2,
-                        getCols(),
-                        getRows());
+        model.getGroundMap().renderBlock(startPos.getX() - getCols() / 2,
+                startPos.getY() - getRows() / 2, getCols(), getRows());
     }
 
     @Override
@@ -671,22 +635,17 @@ public class GraphicPresenter extends ApplicationAdapter
         try {
             applyLoadedModel(loadedModel, file);
         } catch (Exception e) {
-            log.error(
-                    "Critical error updating model reference after loading game from {}",
-                    file != null ? file.getAbsolutePath() : "<null>",
-                    e);
-            showMessage(
-                    "Load Error", "A critical error occurred while applying loaded game state.");
+            log.error("Critical error updating model reference after loading game from {}",
+                    file != null ? file.getAbsolutePath() : "<null>", e);
+            showMessage("Load Error",
+                    "A critical error occurred while applying loaded game state.");
         }
     }
 
     @Override
     public void showSaveDialog() {
-        hud.showFileDialog(
-                "Save Game",
-                com.kotcrab.vis.ui.widget.file.FileChooser.Mode.SAVE,
-                DEFAULT_SAVEGAME_FILENAME,
-                (text) -> {
+        hud.showFileDialog("Save Game", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.SAVE,
+                DEFAULT_SAVEGAME_FILENAME, (text) -> {
                     if (text != null && !text.trim().isEmpty()) {
                         File file = new File(text);
                         log.info("Saving game to {}", file.getAbsolutePath());
@@ -697,11 +656,8 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void showLoadDialog() {
-        hud.showFileDialog(
-                "Load Game",
-                com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN,
-                DEFAULT_SAVEGAME_FILENAME,
-                (text) -> {
+        hud.showFileDialog("Load Game", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN,
+                DEFAULT_SAVEGAME_FILENAME, (text) -> {
                     if (text != null && !text.trim().isEmpty()) {
                         File file = new File(text);
                         log.info("Loading game from {}", file.getAbsolutePath());
@@ -748,15 +704,24 @@ public class GraphicPresenter extends ApplicationAdapter
         if (resourceContext != null) {
             resourceContext.dispose();
         }
-        if (modelBatch != null) modelBatch.dispose();
-        if (decalBatch != null) decalBatch.dispose();
-        if (spriteBatch != null) spriteBatch.dispose();
-        if (font != null) font.dispose();
-        if (hud != null) hud.dispose();
-        if (groundModel != null) groundModel.dispose();
-        if (gridModel != null) gridModel.dispose();
-        if (boxModel != null) boxModel.dispose();
-        if (compassModel != null) compassModel.dispose();
+        if (modelBatch != null)
+            modelBatch.dispose();
+        if (decalBatch != null)
+            decalBatch.dispose();
+        if (spriteBatch != null)
+            spriteBatch.dispose();
+        if (font != null)
+            font.dispose();
+        if (hud != null)
+            hud.dispose();
+        if (groundModel != null)
+            groundModel.dispose();
+        if (gridModel != null)
+            gridModel.dispose();
+        if (boxModel != null)
+            boxModel.dispose();
+        if (compassModel != null)
+            compassModel.dispose();
 
         // Force exit to ensure no lingering threads (e.g. console input) keep JVM alive
         System.exit(0);
@@ -793,17 +758,13 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void onLink(Train train) {
-        audioController.playOneShot(
-                "link",
-                model.getCursor().getPosition().getX(),
+        audioController.playOneShot("link", model.getCursor().getPosition().getX(),
                 model.getCursor().getPosition().getY());
     }
 
     @Override
     public void onUnlink(Train train) {
-        audioController.playOneShot(
-                "link",
-                model.getCursor().getPosition().getX(),
+        audioController.playOneShot("link", model.getCursor().getPosition().getX(),
                 model.getCursor().getPosition().getY());
     }
 
@@ -825,52 +786,35 @@ public class GraphicPresenter extends ApplicationAdapter
         mb.begin();
 
         // Base Circle
-        com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpb =
-                mb.part(
-                        "base",
-                        GL20.GL_LINES,
-                        Usage.Position | Usage.ColorUnpacked,
-                        new com.badlogic.gdx.graphics.g3d.Material());
+        com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpb = mb.part("base", GL20.GL_LINES,
+                Usage.Position | Usage.ColorUnpacked, new com.badlogic.gdx.graphics.g3d.Material());
         mpb.setColor(Color.WHITE);
         float radius = 0.8f;
         int segments = 32;
         for (int i = 0; i < segments; i++) {
             float a1 = (float) i / segments * com.badlogic.gdx.math.MathUtils.PI2;
             float a2 = (float) (i + 1) / segments * com.badlogic.gdx.math.MathUtils.PI2;
-            mpb.line(
-                    com.badlogic.gdx.math.MathUtils.cos(a1) * radius,
-                    0,
+            mpb.line(com.badlogic.gdx.math.MathUtils.cos(a1) * radius, 0,
                     com.badlogic.gdx.math.MathUtils.sin(a1) * radius,
-                    com.badlogic.gdx.math.MathUtils.cos(a2) * radius,
-                    0,
+                    com.badlogic.gdx.math.MathUtils.cos(a2) * radius, 0,
                     com.badlogic.gdx.math.MathUtils.sin(a2) * radius);
         }
 
         // Needle North (Red)
-        mpb =
-                mb.part(
-                        "needleN",
-                        GL20.GL_TRIANGLES,
-                        Usage.Position | Usage.ColorUnpacked,
-                        new com.badlogic.gdx.graphics.g3d.Material());
+        mpb = mb.part("needleN", GL20.GL_TRIANGLES, Usage.Position | Usage.ColorUnpacked,
+                new com.badlogic.gdx.graphics.g3d.Material());
         mpb.setColor(Color.RED);
         float needleLength = 0.45f;
         float needleWidth = 0.10f;
-        mpb.triangle(
-                new com.badlogic.gdx.math.Vector3(-needleWidth, 0, 0),
+        mpb.triangle(new com.badlogic.gdx.math.Vector3(-needleWidth, 0, 0),
                 new com.badlogic.gdx.math.Vector3(needleWidth, 0, 0),
                 new com.badlogic.gdx.math.Vector3(0, 0, -needleLength));
 
         // Needle South (White)
-        mpb =
-                mb.part(
-                        "needleS",
-                        GL20.GL_TRIANGLES,
-                        Usage.Position | Usage.ColorUnpacked,
-                        new com.badlogic.gdx.graphics.g3d.Material());
+        mpb = mb.part("needleS", GL20.GL_TRIANGLES, Usage.Position | Usage.ColorUnpacked,
+                new com.badlogic.gdx.graphics.g3d.Material());
         mpb.setColor(Color.WHITE);
-        mpb.triangle(
-                new com.badlogic.gdx.math.Vector3(-needleWidth, 0, 0),
+        mpb.triangle(new com.badlogic.gdx.math.Vector3(-needleWidth, 0, 0),
                 new com.badlogic.gdx.math.Vector3(needleWidth, 0, 0),
                 new com.badlogic.gdx.math.Vector3(0, 0, needleLength));
 
@@ -936,8 +880,7 @@ public class GraphicPresenter extends ApplicationAdapter
             d.setScale(0.4f);
             d.setColor(com.badlogic.gdx.graphics.Color.WHITE);
             // Flat on the compass floor, North is -Z
-            d.lookAt(
-                    new com.badlogic.gdx.math.Vector3(x, y + 1, z),
+            d.lookAt(new com.badlogic.gdx.math.Vector3(x, y + 1, z),
                     new com.badlogic.gdx.math.Vector3(0, 0, -1));
             decalBatch.add(d);
         }

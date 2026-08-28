@@ -42,7 +42,8 @@ public class TrainSynth {
 
     public void read(float[] buffer) {
         // Clear buffer first
-        for (int i = 0; i < buffer.length; i++) buffer[i] = 0.0f;
+        for (int i = 0; i < buffer.length; i++)
+            buffer[i] = 0.0f;
 
         // --- Logic Update (Per buffer to save CPU, sound changes slowly anyway) ---
 
@@ -72,7 +73,8 @@ public class TrainSynth {
         // We'll add hiss directly
         float[] hissBuf = new float[buffer.length];
         hiss.read(hissBuf);
-        for (int i = 0; i < buffer.length; i++) buffer[i] += hissBuf[i];
+        for (int i = 0; i < buffer.length; i++)
+            buffer[i] += hissBuf[i];
 
         // C. Generate Chug (Amplitude Modulated Noise)
         float[] noiseBuf = new float[buffer.length];
@@ -95,15 +97,18 @@ public class TrainSynth {
             buffer[i] += noiseBuf[i] * chugVol;
 
             chugPhase += phaseInc;
-            if (chugPhase > Math.PI * 2) chugPhase -= Math.PI * 2;
+            if (chugPhase > Math.PI * 2)
+                chugPhase -= Math.PI * 2;
         }
 
         // D. Master Volume
         for (int i = 0; i < buffer.length; i++) {
             buffer[i] *= masterVolume;
             // Hard limiter to prevent clipping
-            if (buffer[i] > 1.0f) buffer[i] = 1.0f;
-            if (buffer[i] < -1.0f) buffer[i] = -1.0f;
+            if (buffer[i] > 1.0f)
+                buffer[i] = 1.0f;
+            if (buffer[i] < -1.0f)
+                buffer[i] = -1.0f;
         }
     }
 }

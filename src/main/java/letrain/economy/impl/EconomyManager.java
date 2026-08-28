@@ -311,10 +311,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     }
 
     @Override
-    public void onLoadPassengers(
-            Train train,
-            LocalDateTime elapsedTime,
-            int totalDistanceTraveled,
+    public void onLoadPassengers(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled,
             double linearDistanceToStart) {
         // We keep this for compatibility if needed, but logic moves to cargo
     }
@@ -453,16 +450,12 @@ public class EconomyManager implements letrain.economy.EconomyManager {
             log.info("Loading economy configuration from {}", configFile.getAbsolutePath());
 
             // Load general costs
-            fuelCostPerMeter =
-                    Float.parseFloat(
-                            props.getProperty(
-                                    "fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
-            cargoLoadingFee =
-                    Float.parseFloat(
-                            props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
-            float newStartingBalance =
-                    Float.parseFloat(
-                            props.getProperty("startingBalance", String.valueOf(startingBalance)));
+            fuelCostPerMeter = Float.parseFloat(
+                    props.getProperty("fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
+            cargoLoadingFee = Float.parseFloat(
+                    props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
+            float newStartingBalance = Float.parseFloat(
+                    props.getProperty("startingBalance", String.valueOf(startingBalance)));
 
             // Only update current balance if it's the very beginning of the game (total
             // income/expenses are zero)

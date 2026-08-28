@@ -16,11 +16,8 @@ import letrain.vehicle.rail.impl.Wagon;
 
 public class VehicleRenderer extends BaseSubRenderer {
 
-    public VehicleRenderer(
-            Gdx3DResourceContext resourceContext,
-            List<ModelInstance> instances,
-            List<ModelInstance> transparentInstances,
-            List<Gdx3DRenderer.VehicleLabel> labels) {
+    public VehicleRenderer(Gdx3DResourceContext resourceContext, List<ModelInstance> instances,
+            List<ModelInstance> transparentInstances, List<Gdx3DRenderer.VehicleLabel> labels) {
         super(resourceContext, instances, transparentInstances, labels);
     }
 
@@ -38,8 +35,8 @@ public class VehicleRenderer extends BaseSubRenderer {
                     // linkersToJoin is populated in order of distance from train.
                     // so we just take the first N.
                     Train train = selected.getTrain();
-                    for (Linker l :
-                            train.getTrainCouplingManager().getSelectedLinkersToJoin(train)) {
+                    for (Linker l : train.getTrainCouplingManager()
+                            .getSelectedLinkersToJoin(train)) {
                         if (l == locomotive) {
                             highlight = true;
                             break;
@@ -88,9 +85,7 @@ public class VehicleRenderer extends BaseSubRenderer {
         // If the train is not moving, skip ALL interpolation.
         int locoSpeed = locomotive.getSpeed();
         if (locoSpeed == 0) {
-            renderTangent.set(
-                    PathGeometry.getDirX(locomotive.getDir()),
-                    0,
+            renderTangent.set(PathGeometry.getDirX(locomotive.getDir()), 0,
                     PathGeometry.getDirZ(locomotive.getDir()));
         } else {
             // Follow the chain of same-train linkers forward until we find
@@ -108,10 +103,13 @@ public class VehicleRenderer extends BaseSubRenderer {
                     }
                     chainDepth++;
                     letrain.track.Track nextTrack = lookTrack.getConnected(lookDir);
-                    if (nextTrack == null) break;
+                    if (nextTrack == null)
+                        break;
                     letrain.vehicle.rail.Linker occupyingL = nextTrack.getLinker();
-                    if (occupyingL == null) break; // free cell
-                    if (occupyingL == locomotive) break; // cycle detected (circular train)
+                    if (occupyingL == null)
+                        break; // free cell
+                    if (occupyingL == locomotive)
+                        break; // cycle detected (circular train)
                     if (occupyingL.getTrain() != train) {
                         canEnterNext = false; // different train blocks the chain
                         break;
@@ -130,24 +128,16 @@ public class VehicleRenderer extends BaseSubRenderer {
                 }
             }
 
-            PathGeometry.calculateTwoStagePath(
-                    locomotive.getPosition().getX(),
-                    locomotive.getPosition().getY(),
-                    locomotive.getEntryDir(),
-                    locomotive.getDir(),
-                    locomotive.getTrack(),
-                    progress,
-                    locoSpeed,
-                    canEnterNext,
-                    pComputed,
+            PathGeometry.calculateTwoStagePath(locomotive.getPosition().getX(),
+                    locomotive.getPosition().getY(), locomotive.getEntryDir(), locomotive.getDir(),
+                    locomotive.getTrack(), progress, locoSpeed, canEnterNext, pComputed,
                     renderTangent);
 
             if (pComputed.x != 0 || pComputed.z != 0) {
                 renderX = pComputed.x;
                 renderY = pComputed.z;
-                angle =
-                        (float) Math.atan2(-renderTangent.z, renderTangent.x)
-                                * MathUtils.radiansToDegrees;
+                angle = (float) Math.atan2(-renderTangent.z, renderTangent.x)
+                        * MathUtils.radiansToDegrees;
             }
         }
 
@@ -157,11 +147,9 @@ public class VehicleRenderer extends BaseSubRenderer {
         if (locomotive.getColor() != null && !instance.materials.isEmpty()) {
             Color locoColor = getLibGdxColor(locomotive.getColor());
             if (locoColor != null) {
-                instance.materials
-                        .get(0)
-                        .set(
-                                com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                                        .createDiffuse(locoColor));
+                instance.materials.get(0)
+                        .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                                .createDiffuse(locoColor));
             }
         }
         if (locomotive.isDestroying()) {
@@ -180,10 +168,8 @@ public class VehicleRenderer extends BaseSubRenderer {
         instances.add(instance);
 
         if (unlinkHighlight || highlight) {
-            Model overlayModel =
-                    unlinkHighlight
-                            ? resourceContext.locomotiveUnlinkModel
-                            : resourceContext.locomotiveHighlightModel;
+            Model overlayModel = unlinkHighlight ? resourceContext.locomotiveUnlinkModel
+                    : resourceContext.locomotiveHighlightModel;
             ModelInstance overlay = resourceContext.getModelInstance(overlayModel);
             overlay.transform.set(instance.transform);
             transparentInstances.add(overlay);
@@ -210,26 +196,19 @@ public class VehicleRenderer extends BaseSubRenderer {
             float dxL = v1.x;
             float dzL = v1.z;
             float lineOffset = 0.25f;
-            selectionLine.transform.setToTranslation(
-                    renderX + dxL * lineOffset, 1.05f, renderY + dzL * lineOffset);
+            selectionLine.transform.setToTranslation(renderX + dxL * lineOffset, 1.05f,
+                    renderY + dzL * lineOffset);
             selectionLine.transform.rotate(0, 1, 0, angle);
 
-            if (locomotive.getColor() != null
-                    && (locomotive.getColor().equalsIgnoreCase("GREEN")
-                            || locomotive.getColor().equalsIgnoreCase("GREEN_BRIGHT"))) {
-                selectionLine
-                        .materials
-                        .get(0)
-                        .set(
-                                com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                                        .createDiffuse(Color.BLUE));
+            if (locomotive.getColor() != null && (locomotive.getColor().equalsIgnoreCase("GREEN")
+                    || locomotive.getColor().equalsIgnoreCase("GREEN_BRIGHT"))) {
+                selectionLine.materials.get(0)
+                        .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                                .createDiffuse(Color.BLUE));
             } else {
-                selectionLine
-                        .materials
-                        .get(0)
-                        .set(
-                                com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                                        .createDiffuse(Color.GREEN));
+                selectionLine.materials.get(0)
+                        .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                                .createDiffuse(Color.GREEN));
             }
 
             instances.add(selectionLine);
@@ -250,10 +229,9 @@ public class VehicleRenderer extends BaseSubRenderer {
             v3.set(dxL, 0, dzL).nor();
 
             Color labelColor = Color.WHITE;
-            if (locomotive.getColor() != null
-                    && (locomotive.getColor().equalsIgnoreCase("WHITE")
-                            || locomotive.getColor().equalsIgnoreCase("YELLOW")
-                            || locomotive.getColor().equalsIgnoreCase("YELLOW_BRIGHT"))) {
+            if (locomotive.getColor() != null && (locomotive.getColor().equalsIgnoreCase("WHITE")
+                    || locomotive.getColor().equalsIgnoreCase("YELLOW")
+                    || locomotive.getColor().equalsIgnoreCase("YELLOW_BRIGHT"))) {
                 labelColor = Color.BLACK;
             }
 
@@ -286,8 +264,8 @@ public class VehicleRenderer extends BaseSubRenderer {
                     // linkersToJoin is populated in order of distance from train.
                     // so we just take the first N.
                     Train train = selected.getTrain();
-                    for (Linker l :
-                            train.getTrainCouplingManager().getSelectedLinkersToJoin(train)) {
+                    for (Linker l : train.getTrainCouplingManager()
+                            .getSelectedLinkersToJoin(train)) {
                         if (l == wagon) {
                             highlight = true;
                             break;
@@ -316,11 +294,8 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
 
         ModelInstance instance = resourceContext.getModelInstance(chassisModel);
-        instance.materials
-                .get(0)
-                .set(
-                        com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(
-                                chassisColor));
+        instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                .createDiffuse(chassisColor));
 
         float renderX = wagon.getPosition().getX() + 0.5f;
         float renderY = wagon.getPosition().getY() + 0.5f;
@@ -355,8 +330,8 @@ public class VehicleRenderer extends BaseSubRenderer {
 
         // If the train is stalled, stopped, or has no active turns, skip ALL interpolation.
         if (speed == 0 || totalTurns <= 0 || (train != null && train.isStalled())) {
-            renderTangent.set(
-                    PathGeometry.getDirX(wagon.getDir()), 0, PathGeometry.getDirZ(wagon.getDir()));
+            renderTangent.set(PathGeometry.getDirX(wagon.getDir()), 0,
+                    PathGeometry.getDirZ(wagon.getDir()));
         } else {
             // Check whether the next cell is blocked by another train.
             // Follow the chain of same-train linkers forward until we find
@@ -368,15 +343,9 @@ public class VehicleRenderer extends BaseSubRenderer {
                 int chainDepth = 0;
                 while (lookTrack != null) {
                     if (chainDepth >= 90) {
-                        System.out.println(
-                                "DEBUG LOOP: chainDepth="
-                                        + chainDepth
-                                        + ", lookTrack="
-                                        + lookTrack.getPosition()
-                                        + ", lookDir="
-                                        + lookDir
-                                        + ", entry="
-                                        + lookDir.inverse());
+                        System.out.println("DEBUG LOOP: chainDepth=" + chainDepth + ", lookTrack="
+                                + lookTrack.getPosition() + ", lookDir=" + lookDir + ", entry="
+                                + lookDir.inverse());
                     }
                     if (chainDepth >= 100) {
                         throw new IllegalStateException(
@@ -385,10 +354,13 @@ public class VehicleRenderer extends BaseSubRenderer {
                     }
                     chainDepth++;
                     letrain.track.Track nextTrackLocal = lookTrack.getConnected(lookDir);
-                    if (nextTrackLocal == null) break;
+                    if (nextTrackLocal == null)
+                        break;
                     letrain.vehicle.rail.Linker occupyingLLocal = nextTrackLocal.getLinker();
-                    if (occupyingLLocal == null) break; // free cell
-                    if (occupyingLLocal == wagon) break; // cycle detected (circular train)
+                    if (occupyingLLocal == null)
+                        break; // free cell
+                    if (occupyingLLocal == wagon)
+                        break; // cycle detected (circular train)
                     if (occupyingLLocal.getTrain() != train) {
                         canEnterNext = false; // different train blocks the chain
                         break;
@@ -407,28 +379,17 @@ public class VehicleRenderer extends BaseSubRenderer {
                 }
             }
 
-            PathGeometry.calculateTwoStagePath(
-                    wagon.getPosition().getX(),
-                    wagon.getPosition().getY(),
-                    wagon.getEntryDir(),
-                    wagon.getDir(),
-                    wagon.getTrack(),
-                    progress,
-                    speed,
-                    canEnterNext,
-                    pComputed,
-                    renderTangent);
+            PathGeometry.calculateTwoStagePath(wagon.getPosition().getX(),
+                    wagon.getPosition().getY(), wagon.getEntryDir(), wagon.getDir(),
+                    wagon.getTrack(), progress, speed, canEnterNext, pComputed, renderTangent);
 
             if (pComputed.x != 0 || pComputed.z != 0) {
                 renderX = pComputed.x;
                 renderY = pComputed.z;
-                angle =
-                        (float) Math.atan2(-renderTangent.z, renderTangent.x)
-                                * MathUtils.radiansToDegrees;
+                angle = (float) Math.atan2(-renderTangent.z, renderTangent.x)
+                        * MathUtils.radiansToDegrees;
             } else {
-                renderTangent.set(
-                        PathGeometry.getDirX(wagon.getDir()),
-                        0,
+                renderTangent.set(PathGeometry.getDirX(wagon.getDir()), 0,
                         PathGeometry.getDirZ(wagon.getDir()));
             }
         }
@@ -450,10 +411,8 @@ public class VehicleRenderer extends BaseSubRenderer {
         instances.add(instance);
 
         if (unlinkHighlight || highlight) {
-            Model overlayModel =
-                    unlinkHighlight
-                            ? resourceContext.wagonUnlinkModel
-                            : resourceContext.wagonHighlightModel;
+            Model overlayModel = unlinkHighlight ? resourceContext.wagonUnlinkModel
+                    : resourceContext.wagonHighlightModel;
             ModelInstance overlay = resourceContext.getModelInstance(overlayModel);
             overlay.transform.set(instance.transform);
             transparentInstances.add(overlay);
@@ -471,12 +430,8 @@ public class VehicleRenderer extends BaseSubRenderer {
 
             ModelInstance jewelBlock =
                     resourceContext.getModelInstance(resourceContext.wagonJewelModel);
-            jewelBlock
-                    .materials
-                    .get(0)
-                    .set(
-                            com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(
-                                    cargoColor));
+            jewelBlock.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                    .createDiffuse(cargoColor));
             float jewelY = 0.26f + (currentHeight / 2f);
             jewelBlock.transform.setToTranslation(renderX, jewelY, renderY);
             jewelBlock.transform.rotate(0, 1, 0, angle);
@@ -526,25 +481,21 @@ public class VehicleRenderer extends BaseSubRenderer {
                 fireModel =
                         isSphere ? resourceContext.redSphereModel3 : resourceContext.redFireModel3;
             else if (colorPick == 3)
-                fireModel =
-                        isSphere
-                                ? resourceContext.yellowSphereModel1
-                                : resourceContext.yellowFireModel1;
+                fireModel = isSphere ? resourceContext.yellowSphereModel1
+                        : resourceContext.yellowFireModel1;
             else if (colorPick == 4)
-                fireModel =
-                        isSphere
-                                ? resourceContext.yellowSphereModel2
-                                : resourceContext.yellowFireModel2;
+                fireModel = isSphere ? resourceContext.yellowSphereModel2
+                        : resourceContext.yellowFireModel2;
             else
-                fireModel =
-                        isSphere
-                                ? resourceContext.yellowSphereModel3
-                                : resourceContext.yellowFireModel3;
+                fireModel = isSphere ? resourceContext.yellowSphereModel3
+                        : resourceContext.yellowFireModel3;
 
-            if (fireModel == null) continue;
+            if (fireModel == null)
+                continue;
 
             float sizeScale = 1.0f - offsetY / 1.5f;
-            if (sizeScale <= 0) continue;
+            if (sizeScale <= 0)
+                continue;
 
             ModelInstance firePart = resourceContext.getModelInstance(fireModel);
             firePart.transform.setToTranslation(x + offsetX, y + offsetY, z + offsetZ);
@@ -555,7 +506,8 @@ public class VehicleRenderer extends BaseSubRenderer {
     }
 
     public static Color getLibGdxColor(String colorName) {
-        if (colorName == null) return null;
+        if (colorName == null)
+            return null;
         return switch (colorName.toUpperCase()) {
             case "RED", "RED_BRIGHT" -> Color.RED;
             case "GREEN", "GREEN_BRIGHT" -> Color.GREEN;

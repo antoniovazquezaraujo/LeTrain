@@ -7,9 +7,8 @@ import letrain.utils.Pair;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = letrain.map.impl.SimpleRouter.class, name = "SimpleRouter"),
-    @JsonSubTypes.Type(value = letrain.map.impl.ForkRouter.class, name = "ForkRouter")
-})
+        @JsonSubTypes.Type(value = letrain.map.impl.SimpleRouter.class, name = "SimpleRouter"),
+        @JsonSubTypes.Type(value = letrain.map.impl.ForkRouter.class, name = "ForkRouter")})
 public interface Router {
     Dir getDir(Dir dir);
 

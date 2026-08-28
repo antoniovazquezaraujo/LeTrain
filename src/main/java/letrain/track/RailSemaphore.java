@@ -34,21 +34,25 @@ public class RailSemaphore implements Renderable, Serializable {
             new java.util.ArrayList<>();
 
     public void addSemaphoreEventListener(SemaphoreEventListener listener) {
-        if (listeners == null) listeners = new java.util.ArrayList<>();
+        if (listeners == null)
+            listeners = new java.util.ArrayList<>();
         listeners.add(listener);
     }
 
     public void addSystemSemaphoreEventListener(SemaphoreEventListener listener) {
-        if (systemListeners == null) systemListeners = new java.util.ArrayList<>();
+        if (systemListeners == null)
+            systemListeners = new java.util.ArrayList<>();
         systemListeners.add(listener);
     }
 
     public void removeSemaphoreEventListener(SemaphoreEventListener listener) {
-        if (listeners != null) listeners.remove(listener);
+        if (listeners != null)
+            listeners.remove(listener);
     }
 
     public void removeAllSemaphoreEventListeners() {
-        if (listeners != null) listeners.clear();
+        if (listeners != null)
+            listeners.clear();
     }
 
     public void setOpen(boolean open) {

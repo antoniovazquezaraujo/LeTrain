@@ -26,54 +26,42 @@ class FontManagerTest {
     @DisplayName("loadFont rejects null font name")
     void testLoadFontNullNameThrows() {
         // FontManager uses ValidationUtils which throws NullPointerException
-        assertThrows(
-                NullPointerException.class,
-                () -> {
-                    FontManager.loadFont(null, 14);
-                });
+        assertThrows(NullPointerException.class, () -> {
+            FontManager.loadFont(null, 14);
+        });
     }
 
     @Test
     @DisplayName("loadFont rejects empty font name")
     void testLoadFontEmptyNameThrows() {
         // FontManager uses ValidationUtils which throws IllegalArgumentException
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> {
-                    FontManager.loadFont("", 14);
-                });
+        assertThrows(IllegalArgumentException.class, () -> {
+            FontManager.loadFont("", 14);
+        });
     }
 
     @Test
     @DisplayName("loadFont rejects non-positive size")
     void testLoadFontNegativeSizeThrows() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> {
-                    FontManager.loadFont("Arial", 0);
-                });
+        assertThrows(IllegalArgumentException.class, () -> {
+            FontManager.loadFont("Arial", 0);
+        });
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> {
-                    FontManager.loadFont("Arial", -10);
-                });
+        assertThrows(IllegalArgumentException.class, () -> {
+            FontManager.loadFont("Arial", -10);
+        });
     }
 
     @Test
     @DisplayName("loadMonospaceFont rejects non-positive size")
     void testLoadMonospaceFontNegativeSizeThrows() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> {
-                    FontManager.loadMonospaceFont(0);
-                });
+        assertThrows(IllegalArgumentException.class, () -> {
+            FontManager.loadMonospaceFont(0);
+        });
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> {
-                    FontManager.loadMonospaceFont(-5);
-                });
+        assertThrows(IllegalArgumentException.class, () -> {
+            FontManager.loadMonospaceFont(-5);
+        });
     }
 
     @Test
@@ -89,8 +77,7 @@ class FontManagerTest {
         } catch (Exception e) {
             // Expected in test environment without LibGDX application context
             // but validation should have passed
-            assertFalse(
-                    e.getMessage().contains("cannot be null"),
+            assertFalse(e.getMessage().contains("cannot be null"),
                     "Should not fail on validation, only on LibGDX context");
         }
     }
@@ -116,12 +103,8 @@ class FontManagerTest {
         assertFalse(osName.isEmpty());
 
         // Should be one of the expected OS types
-        boolean isKnownOS =
-                osName.contains("win")
-                        || osName.contains("mac")
-                        || osName.contains("linux")
-                        || osName.contains("nux")
-                        || osName.contains("unix");
+        boolean isKnownOS = osName.contains("win") || osName.contains("mac")
+                || osName.contains("linux") || osName.contains("nux") || osName.contains("unix");
         assertTrue(isKnownOS, "OS name should be recognized: " + osName);
     }
 
@@ -129,18 +112,12 @@ class FontManagerTest {
     @DisplayName("FontManager validation uses ValidationUtils")
     void testValidationIntegration() {
         // Verify that ValidationUtils is properly integrated
-        assertThrows(
-                NullPointerException.class,
-                () -> {
-                    FontManager.loadFont(null, 12);
-                },
-                "Should use ValidationUtils.requireNonNull()");
+        assertThrows(NullPointerException.class, () -> {
+            FontManager.loadFont(null, 12);
+        }, "Should use ValidationUtils.requireNonNull()");
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> {
-                    FontManager.loadFont("Arial", -1);
-                },
-                "Should use ValidationUtils.requirePositive()");
+        assertThrows(IllegalArgumentException.class, () -> {
+            FontManager.loadFont("Arial", -1);
+        }, "Should use ValidationUtils.requirePositive()");
     }
 }

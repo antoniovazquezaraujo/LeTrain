@@ -27,10 +27,9 @@
                 <version>2.43.0</version>
                 <configuration>
                     <java>
-                        <googleJavaFormat>
-                            <version>1.17.0</version>
-                            <style>AOSP</style>
-                        </googleJavaFormat>
+                        <eclipse>
+                            <file>eclipse-java-google-style.xml</file>
+                        </eclipse>
                         <removeUnusedImports/>
                     </java>
                 </configuration>

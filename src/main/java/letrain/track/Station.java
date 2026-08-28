@@ -21,27 +21,32 @@ public class Station extends Sensor {
     private static final int BASE_TRANSFER_RATE = 1;
     private static final int TRANSFER_RATE_PER_INDUSTRY_DIVISOR = 3;
 
-    @JsonIgnore private transient List<StationEventListener> stationListeners = new ArrayList<>();
+    @JsonIgnore
+    private transient List<StationEventListener> stationListeners = new ArrayList<>();
 
     @JsonIgnore
     private transient List<StationEventListener> systemStationListeners = new ArrayList<>();
 
     public void addStationEventListener(StationEventListener listener) {
-        if (stationListeners == null) stationListeners = new ArrayList<>();
+        if (stationListeners == null)
+            stationListeners = new ArrayList<>();
         stationListeners.add(listener);
     }
 
     public void addSystemStationEventListener(StationEventListener listener) {
-        if (systemStationListeners == null) systemStationListeners = new ArrayList<>();
+        if (systemStationListeners == null)
+            systemStationListeners = new ArrayList<>();
         systemStationListeners.add(listener);
     }
 
     public void removeStationEventListener(StationEventListener listener) {
-        if (stationListeners != null) stationListeners.remove(listener);
+        if (stationListeners != null)
+            stationListeners.remove(listener);
     }
 
     public void removeAllStationEventListeners() {
-        if (stationListeners != null) stationListeners.clear();
+        if (stationListeners != null)
+            stationListeners.clear();
     }
 
     public void notifyLoad(Train train) {
@@ -156,14 +161,18 @@ public class Station extends Sensor {
     public void notifyStationEvent(Train train, boolean isEnter, boolean isForward) {
         if (stationListeners != null) {
             for (StationEventListener l : stationListeners) {
-                if (isEnter) l.onEnterTrain(train, isForward);
-                else l.onExitTrain(train, isForward);
+                if (isEnter)
+                    l.onEnterTrain(train, isForward);
+                else
+                    l.onExitTrain(train, isForward);
             }
         }
         if (systemStationListeners != null) {
             for (StationEventListener l : systemStationListeners) {
-                if (isEnter) l.onEnterTrain(train, isForward);
-                else l.onExitTrain(train, isForward);
+                if (isEnter)
+                    l.onEnterTrain(train, isForward);
+                else
+                    l.onExitTrain(train, isForward);
             }
         }
     }
@@ -247,7 +256,8 @@ public class Station extends Sensor {
             // Regeneration scales with density: Base + bonus per block
             int increment = BASE_REGEN_RATE + (industryCount / REGEN_RATE_PER_INDUSTRY_DIVISOR);
             storage += increment;
-            if (storage > maxStorage) storage = maxStorage;
+            if (storage > maxStorage)
+                storage = maxStorage;
         }
         // Consumers might "consume" their delivery over time to create more demand
         // space,
