@@ -1,1 +1,11 @@
-{"java.format.settings.url": "eclipse-java-google-style.xml","editor.formatOnSave": true}
+{
+    "java.format.settings.url": "eclipse-java-google-style.xml",
+    "editor.formatOnSave": true,
+    "java.cleanup.actionsOnSave": [
+        "addMissingBraces"
+    ],
+    "editor.codeActionsOnSave": {
+        "source.cleanUp": "always"
+    },
+    "java.configuration.updateBuildConfiguration": "interactive"
+}
