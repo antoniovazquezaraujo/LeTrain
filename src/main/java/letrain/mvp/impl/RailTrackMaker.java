@@ -508,11 +508,6 @@ public class RailTrackMaker {
         Integer actualGroundType =
                 presenter.getModel().getGroundMap().getValueAt(actualCursorPosition);
 
-        // STRICT BLOCK construction on industrial tiles
-        if (actualGroundType != null && actualGroundType >= 10 && actualGroundType <= 29) {
-            return false;
-        }
-
         if (oldGroundType == null) {
             oldGroundType = actualGroundType;
         }
@@ -540,7 +535,8 @@ public class RailTrackMaker {
                 }
             }
         } else {
-            if (actualGroundType != GroundMap.GROUND) {
+            int mappedGroundType = (actualGroundType != null && actualGroundType >= 10 && actualGroundType <= 29) ? GroundMap.GROUND : actualGroundType;
+            if (mappedGroundType != GroundMap.GROUND) {
                 // si la dirección del cursor es distinta de la del track actual retornamos
                 if (track != null && !track.canExit(presenter.getModel().getCursor().getDir())) {
                     return false;
