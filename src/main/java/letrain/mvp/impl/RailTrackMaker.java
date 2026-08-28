@@ -539,9 +539,22 @@ public class RailTrackMaker {
                     return false;
                 }
             }
-            // si había un fork no seguimos
+            // si había un fork, validamos que la ruta que intentamos trazar ya existe en el fork
             if (ForkRailTrack.class.isAssignableFrom(track.getClass())) {
-                return false;
+                boolean routeExists = false;
+                if (oldDir != null && dir != null) {
+                    letrain.map.Router r = track.getRouter();
+                    if (r instanceof letrain.map.impl.ForkRouter) {
+                        letrain.map.impl.ForkRouter fr = (letrain.map.impl.ForkRouter) r;
+                        letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> orig = fr.getOriginalRoute();
+                        letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> alt = fr.getAlternativeRoute();
+                        if (orig != null && ((orig.getKey() == oldDir && orig.getValue() == dir) || (orig.getKey() == dir && orig.getValue() == oldDir))) routeExists = true;
+                        if (alt != null && ((alt.getKey() == oldDir && alt.getValue() == dir) || (alt.getKey() == dir && alt.getValue() == oldDir))) routeExists = true;
+                    }
+                }
+                if (!routeExists) {
+                    return false;
+                }
             }
         }
         // al track que había (o al que hemos creado normal) le agregamos la ruta entre
@@ -552,12 +565,14 @@ public class RailTrackMaker {
                 log.warn("Illegal rail2 curvature attempted: > 45 degrees. Aborting placement.");
                 return false;
             }
-            track.addRoute(oldDir, dir);
+            if (!ForkRailTrack.class.isAssignableFrom(track.getClass())) {
+                track.addRoute(oldDir, dir);
+            }
         }
         track.setPosition(actualCursorPosition);
         presenter.getModel().addTrack(actualCursorPosition, track);
         presenter.getModel().getEconomyManager().onRailTrackConstructed(newTrackType);
-        if (canBeAFork(track, oldDir, dir)) {
+        if (!ForkRailTrack.class.isAssignableFrom(track.getClass()) && canBeAFork(track, oldDir, dir)) {
             RailTrack trackToSubstitute = track;
             final ForkRailTrack fork = createForkRailTrack(actualCursorPosition, trackToSubstitute);
             addRoutesToFork(trackToSubstitute, fork);
