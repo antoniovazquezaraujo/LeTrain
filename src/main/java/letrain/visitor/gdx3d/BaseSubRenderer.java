@@ -128,20 +128,26 @@ public abstract class BaseSubRenderer implements Visitor {
             letrain.track.rail.TunnelGateRailTrack tunnelGateRailTrack) {}
 
     protected boolean isVisible(letrain.map.Point pos) {
-        if (camera == null) return true;
+        if (camera == null) {
+            return true;
+        }
         return camera.frustum.boundsInFrustum(
                 pos.getX() + 0.5f, 0.5f, pos.getY() + 0.5f, 0.5f, 0.5f, 0.5f);
     }
 
     protected boolean isConnected(letrain.track.Track track, letrain.map.Dir dir) {
         letrain.track.Track neighbor = track.getConnected(dir);
-        if (neighbor == null) return false;
+        if (neighbor == null) {
+            return false;
+        }
         return neighbor.getRouter().getDir(dir.inverse()) != null;
     }
 
     protected letrain.map.Dir getValidOrientation(letrain.track.rail.RailTrack track) {
         letrain.map.Dir dir = track.getFirstOpenDir();
-        if (dir == null) return letrain.map.Dir.N;
+        if (dir == null) {
+            return letrain.map.Dir.N;
+        }
         return dir;
     }
 

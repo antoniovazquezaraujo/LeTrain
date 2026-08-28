@@ -52,12 +52,16 @@ public class TopologyServiceImpl implements TopologyService {
 
             for (Dir dir : startTrack.getConnections()) {
                 Port startPort = startNode.getPortForDir(dir);
-                if (startPort == null) continue;
+                if (startPort == null) {
+                    continue;
+                }
 
                 CrawlResult result = crawl(startTrack, dir, trackToNode);
                 if (result != null) {
                     Port endPort = result.endNode.getPortForDir(result.incomingDir);
-                    if (endPort == null) continue;
+                    if (endPort == null) {
+                        continue;
+                    }
 
                     Set<Port> segmentKey = new HashSet<>(Arrays.asList(startPort, endPort));
 
@@ -120,14 +124,18 @@ public class TopologyServiceImpl implements TopologyService {
             }
             visited.add(currentTrack);
             Dir nextDir = currentTrack.getDir(incomingDir);
-            if (nextDir == null) return null;
+            if (nextDir == null) {
+                return null;
+            }
 
             RailTrack nextTrack = (RailTrack) currentTrack.getConnected(nextDir);
             incomingDir = nextDir.inverse();
             currentTrack = nextTrack;
         }
 
-        if (currentTrack == null) return null;
+        if (currentTrack == null) {
+            return null;
+        }
 
         return new CrawlResult(trackToNode.get(currentTrack), incomingDir, visited);
     }

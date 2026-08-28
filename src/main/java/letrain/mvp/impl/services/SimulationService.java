@@ -97,7 +97,9 @@ public class SimulationService {
             if (linker instanceof Wagon) {
                 Wagon wagon = (Wagon) linker;
                 CargoState prevState = wagonsPrevState.get(wagon);
-                if (prevState == null) continue;
+                if (prevState == null) {
+                    continue;
+                }
 
                 int currentAmount = wagon.getCargoAmount();
                 if (currentAmount > prevState.amount) {
@@ -115,13 +117,19 @@ public class SimulationService {
     }
 
     private int calculateDistanceSinceLastStop(Train train) {
-        if (train.getTrip() == null) return 0;
+        if (train.getTrip() == null) {
+            return 0;
+        }
         List<Stop> stops = train.getTrip().getStopsList();
-        if (stops.isEmpty()) return 0;
+        if (stops.isEmpty()) {
+            return 0;
+        }
 
         Stop lastStop = stops.get(stops.size() - 1);
         Locomotive director = (Locomotive) train.getDirectorLinker();
-        if (director == null) return 0;
+        if (director == null) {
+            return 0;
+        }
 
         return director.getDistanceTraveled() - lastStop.distanceTraveled();
     }

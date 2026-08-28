@@ -144,7 +144,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private boolean stopped = false;
 
     public void stop() {
-        if (stopped) return;
+        if (stopped) {
+            return;
+        }
         stopped = true;
         running = false;
         if (audioController != null) {
@@ -285,7 +287,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void cycleCameraDeadzone() {
         int maxRadius = view.getRows() / 2 - 1;
-        if (maxRadius < 1) maxRadius = 1;
+        if (maxRadius < 1) {
+            maxRadius = 1;
+        }
 
         int deadzone;
         do {
@@ -487,7 +491,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     if (model.getSelectedSpeedSignal() != null) {
                         int val = keyEvent.getCharacter() - '0';
-                        if (val == 0) val = 10;
+                        if (val == 0) {
+                            val = 10;
+                        }
                         model.getSelectedSpeedSignal().setLimit(val);
                     } else {
                         speedSignalId = speedSignalId * 10 + (keyEvent.getCharacter() - '0');
@@ -504,13 +510,17 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             case ArrowUp:
                 if (model.getSelectedSpeedSignal() != null) {
                     int l = model.getSelectedSpeedSignal().getLimit();
-                    if (l < 10) model.getSelectedSpeedSignal().setLimit(l + 1);
+                    if (l < 10) {
+                        model.getSelectedSpeedSignal().setLimit(l + 1);
+                    }
                 }
                 break;
             case ArrowDown:
                 if (model.getSelectedSpeedSignal() != null) {
                     int l = model.getSelectedSpeedSignal().getLimit();
-                    if (l > 1) model.getSelectedSpeedSignal().setLimit(l - 1);
+                    if (l > 1) {
+                        model.getSelectedSpeedSignal().setLimit(l - 1);
+                    }
                 }
                 break;
             default:
@@ -655,8 +665,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                         Locomotive.COLOR_PALETTE[colorIdx % Locomotive.COLOR_PALETTE.length]);
                 return;
             }
-            if (c.equals("1")) model.setSelectedWagonType(letrain.track.CargoTypes.GOLD);
-            else if (c.equals("2")) model.setSelectedWagonType(letrain.track.CargoTypes.COAL);
+            if (c.equals("1")) {
+                model.setSelectedWagonType(letrain.track.CargoTypes.GOLD);
+            } else if (c.equals("2")) model.setSelectedWagonType(letrain.track.CargoTypes.COAL);
             else if (c.equals("3")) model.setSelectedWagonType(letrain.track.CargoTypes.RUBY);
             return;
         }
@@ -1110,12 +1121,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void decelerateLocomotive() {
-        if (model.getSelectedLocomotive() == null) return;
+        if (model.getSelectedLocomotive() == null) {
+            return;
+        }
         model.getSelectedLocomotive().decSpeed();
     }
 
     private void accelerateLocomotive() {
-        if (model.getSelectedLocomotive() == null) return;
+        if (model.getSelectedLocomotive() == null) {
+            return;
+        }
         model.getSelectedLocomotive().incSpeed();
     }
 

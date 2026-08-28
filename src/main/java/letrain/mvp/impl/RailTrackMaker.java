@@ -632,7 +632,9 @@ public class RailTrackMaker {
     }
 
     private void convertOldTrackToGate(Presenter.TrackType gateType) {
-        if (oldTrack == null) return;
+        if (oldTrack == null) {
+            return;
+        }
         RailTrack newGate;
         if (gateType == Presenter.TrackType.TUNNEL_GATE_TRACK) {
             newGate = new letrain.track.rail.TunnelGateRailTrack();

@@ -64,7 +64,9 @@ public class WaypointCommand {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof WaypointCommand c)) return false;
+        if (!(o instanceof WaypointCommand c)) {
+            return false;
+        }
         return kind == c.kind && seconds == c.seconds && targetSpeed == c.targetSpeed;
     }
 

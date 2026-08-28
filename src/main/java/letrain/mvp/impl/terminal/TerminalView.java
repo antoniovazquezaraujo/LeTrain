@@ -71,7 +71,9 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void setHelpLevel(int helpLevel) {
-        if (this.helpLevel == helpLevel) return;
+        if (this.helpLevel == helpLevel) {
+            return;
+        }
         this.helpLevel = helpLevel;
         if (terminalSize != null) {
             recalculateSizes(terminalSize);
@@ -210,7 +212,9 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void setInfoBarText(String text) {
-        if (helpLevel == 0) return;
+        if (helpLevel == 0) {
+            return;
+        }
         String[] lines = text.split("\n");
         int offset = 2; // Always start at row 2
         for (int i = 0; i < lines.length; i++) {
@@ -329,7 +333,9 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void setMenu(List<GameModeMenuOption> options) {
-        if (helpLevel == 0) return;
+        if (helpLevel == 0) {
+            return;
+        }
         int length = 1;
         for (GameModeMenuOption option : options) {
             String[] parts = option.gameModeName().split("&");
@@ -373,7 +379,9 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void setHelpBarText(String text) {
-        if (helpLevel < 2) return;
+        if (helpLevel < 2) {
+            return;
+        }
         menuBox.setForegroundColor(DISABLED_FG_COLOR);
         menuBox.putString(menuBoxPosition.withRelative(1, 4), text);
         menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
@@ -385,8 +393,12 @@ public class TerminalView implements letrain.mvp.View {
         y -= scrollOffset.getY();
         if (x >= 0 && x < getCols() && y >= 0 && y < getRows()) {
             java.util.List<com.googlecode.lanterna.SGR> sgrList = new java.util.ArrayList<>();
-            if (isUnderline) sgrList.add(com.googlecode.lanterna.SGR.UNDERLINE);
-            if (isBlink) sgrList.add(com.googlecode.lanterna.SGR.BLINK);
+            if (isUnderline) {
+                sgrList.add(com.googlecode.lanterna.SGR.UNDERLINE);
+            }
+            if (isBlink) {
+                sgrList.add(com.googlecode.lanterna.SGR.BLINK);
+            }
             com.googlecode.lanterna.SGR[] modifiers =
                     sgrList.toArray(new com.googlecode.lanterna.SGR[0]);
             for (int i = 0; i < c.length(); i++) {
@@ -434,7 +446,9 @@ public class TerminalView implements letrain.mvp.View {
     public void ensureVisible(int x, int y, int radius, boolean paginate) {
         int cols = getCols();
         int rows = getRows();
-        if (cols <= 0 || rows <= 0) return;
+        if (cols <= 0 || rows <= 0) {
+            return;
+        }
 
         int centerX = scrollOffset.getX() + cols / 2;
         int centerY = scrollOffset.getY() + rows / 2;

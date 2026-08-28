@@ -95,15 +95,21 @@ public class TrainSynth {
             buffer[i] += noiseBuf[i] * chugVol;
 
             chugPhase += phaseInc;
-            if (chugPhase > Math.PI * 2) chugPhase -= Math.PI * 2;
+            if (chugPhase > Math.PI * 2) {
+                chugPhase -= Math.PI * 2;
+            }
         }
 
         // D. Master Volume
         for (int i = 0; i < buffer.length; i++) {
             buffer[i] *= masterVolume;
             // Hard limiter to prevent clipping
-            if (buffer[i] > 1.0f) buffer[i] = 1.0f;
-            if (buffer[i] < -1.0f) buffer[i] = -1.0f;
+            if (buffer[i] > 1.0f) {
+                buffer[i] = 1.0f;
+            }
+            if (buffer[i] < -1.0f) {
+                buffer[i] = -1.0f;
+            }
         }
     }
 }

@@ -120,7 +120,9 @@ public class AutoPilotImpl implements AutoPilot {
 
     @Override
     public void advanceWaypoint() {
-        if (itinerary == null || itinerary.waypoints().isEmpty()) return;
+        if (itinerary == null || itinerary.waypoints().isEmpty()) {
+            return;
+        }
         currentIndex++;
         if (currentIndex >= itinerary.waypoints().size()) {
             currentIndex = 0;
@@ -151,7 +153,9 @@ public class AutoPilotImpl implements AutoPilot {
 
     @Override
     public boolean activate() {
-        if (train == null) return false;
+        if (train == null) {
+            return false;
+        }
         log.info(
                 "[AP] activate() speed="
                         + getTrainSpeed()
@@ -159,8 +163,12 @@ public class AutoPilotImpl implements AutoPilot {
                         + (itinerary != null && itinerary.isValid())
                         + " pf="
                         + (pathfinder != null));
-        if (itinerary == null || !itinerary.isValid()) return false;
-        if (pathfinder == null) return false;
+        if (itinerary == null || !itinerary.isValid()) {
+            return false;
+        }
+        if (pathfinder == null) {
+            return false;
+        }
         mode = Mode.FOLLOWING;
         currentRoute = List.of();
         lastSegment = null;
@@ -204,9 +212,13 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     private Segment getTrainTargetSegment(Waypoint wp) {
-        if (train == null || train.getModel() == null) return null;
+        if (train == null || train.getModel() == null) {
+            return null;
+        }
         letrain.segments.RailwayGraph graph = train.getModel().getRailwayGraph();
-        if (graph == null) return null;
+        if (graph == null) {
+            return null;
+        }
 
         letrain.map.Point pos = null;
         switch (wp.type()) {
@@ -219,7 +231,9 @@ public class AutoPilotImpl implements AutoPilot {
                 pos = sensor != null ? sensor.getPosition() : null;
                 break;
         }
-        if (pos == null) return null;
+        if (pos == null) {
+            return null;
+        }
 
         letrain.track.rail.RailTrack track = train.getModel().getRailMap().getTrackAt(pos);
         return track != null ? graph.getSegment(track) : null;
@@ -295,9 +309,13 @@ public class AutoPilotImpl implements AutoPilot {
 
     @Override
     public void ensureForkRoute(Segment from, Segment to) {
-        if (train == null || train.getModel() == null) return;
+        if (train == null || train.getModel() == null) {
+            return;
+        }
         RailwayGraph graph = train.getModel().getRailwayGraph();
-        if (graph == null) return;
+        if (graph == null) {
+            return;
+        }
 
         var fromPorts = from.getPorts();
         var toPorts = to.getPorts();
@@ -308,9 +326,13 @@ public class AutoPilotImpl implements AutoPilot {
 
         if (fromPorts != null && toPorts != null) {
             for (Port pFrom : new Port[] {fromPorts.getFirst(), fromPorts.getSecond()}) {
-                if (pFrom == null) continue;
+                if (pFrom == null) {
+                    continue;
+                }
                 for (Port pTo : new Port[] {toPorts.getFirst(), toPorts.getSecond()}) {
-                    if (pTo == null) continue;
+                    if (pTo == null) {
+                        continue;
+                    }
                     if (pFrom.getNode().equals(pTo.getNode())) {
                         node = pFrom.getNode();
                         entryPort = pFrom;
@@ -318,7 +340,9 @@ public class AutoPilotImpl implements AutoPilot {
                         break;
                     }
                 }
-                if (node != null) break;
+                if (node != null) {
+                    break;
+                }
             }
         }
 
@@ -385,17 +409,29 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     private Port getTrainExitPort(Segment currentSeg) {
-        if (train == null || currentSeg == null) return null;
+        if (train == null || currentSeg == null) {
+            return null;
+        }
         var physicalFront = train.getPhysicalFront();
-        if (physicalFront == null || physicalFront.getTrack() == null) return null;
+        if (physicalFront == null || physicalFront.getTrack() == null) {
+            return null;
+        }
 
         Dir dir = physicalFront.getRealDir();
-        if (dir == null) return null;
+        if (dir == null) {
+            return null;
+        }
 
-        if (!(physicalFront.getTrack() instanceof RailTrack headTrack)) return null;
-        if (train.getModel() == null) return null;
+        if (!(physicalFront.getTrack() instanceof RailTrack headTrack)) {
+            return null;
+        }
+        if (train.getModel() == null) {
+            return null;
+        }
         RailwayGraph graph = train.getModel().getRailwayGraph();
-        if (graph == null) return null;
+        if (graph == null) {
+            return null;
+        }
 
         letrain.vehicle.rail.RailIterator it =
                 new letrain.vehicle.rail.RailIterator(headTrack, dir);
@@ -440,9 +476,13 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     private boolean calculateRoute() {
-        if (pathfinder == null || itinerary == null) return false;
+        if (pathfinder == null || itinerary == null) {
+            return false;
+        }
         Waypoint wp = currentWaypoint().orElse(null);
-        if (wp == null) return false;
+        if (wp == null) {
+            return false;
+        }
 
         Segment currentSeg = getTrainCurrentSegment();
         Segment targetSeg = getTrainTargetSegment(wp);

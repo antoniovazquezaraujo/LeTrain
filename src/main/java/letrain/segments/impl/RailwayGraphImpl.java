@@ -79,7 +79,9 @@ public class RailwayGraphImpl implements RailwayGraph {
     @Override
     public List<Port> getNextPorts(Port current) {
         Segment s = getSegment(current);
-        if (s == null) return null;
+        if (s == null) {
+            return null;
+        }
 
         Port targetPort =
                 current.equals(s.getPorts().getFirst())
@@ -99,8 +101,12 @@ public class RailwayGraphImpl implements RailwayGraph {
 
     @Override
     public List<Segment> findPath(Segment start, Segment end) {
-        if (start == null || end == null) return new ArrayList<>();
-        if (start.equals(end)) return List.of(start);
+        if (start == null || end == null) {
+            return new ArrayList<>();
+        }
+        if (start.equals(end)) {
+            return List.of(start);
+        }
 
         Queue<Segment> queue = new java.util.LinkedList<>();
         Map<Segment, Segment> parentMap = new HashMap<>();

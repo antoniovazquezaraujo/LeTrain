@@ -295,10 +295,14 @@ public class Gdx3DInputHandler implements InputProcessor {
                         model.setMode(Model.GameMode.RAILS);
                         return;
                     case 'd':
-                        if (!model.getLocomotives().isEmpty()) model.setMode(Model.GameMode.DRIVE);
+                        if (!model.getLocomotives().isEmpty()) {
+                            model.setMode(Model.GameMode.DRIVE);
+                        }
                         return;
                     case 'f':
-                        if (!model.getForks().isEmpty()) model.setMode(Model.GameMode.FORKS);
+                        if (!model.getForks().isEmpty()) {
+                            model.setMode(Model.GameMode.FORKS);
+                        }
                         return;
                     case 'g':
                         if (!model.getSpeedSignals().isEmpty())
@@ -335,7 +339,9 @@ public class Gdx3DInputHandler implements InputProcessor {
                         }
                         return;
                     case 'n':
-                        if (!model.getStations().isEmpty()) model.setMode(Model.GameMode.STATIONS);
+                        if (!model.getStations().isEmpty()) {
+                            model.setMode(Model.GameMode.STATIONS);
+                        }
                         return;
                     case 'p':
                         model.setMode(Model.GameMode.PROGRAM);
@@ -478,7 +484,9 @@ public class Gdx3DInputHandler implements InputProcessor {
             // Toggle autopilot
             if (model.getSelectedLocomotive() != null) {
                 Train t = model.getSelectedLocomotive().getTrain();
-                if (t != null) t.toggleAutoMode();
+                if (t != null) {
+                    t.toggleAutoMode();
+                }
             }
         } else if (stroke.getKeyType() == KeyType.Backspace) {
             locomotiveIdAccumulator = locomotiveIdAccumulator / 10;
@@ -655,7 +663,9 @@ public class Gdx3DInputHandler implements InputProcessor {
                 } else if (stroke.getCharacter() >= '0' && stroke.getCharacter() <= '9') {
                     if (model.getSelectedSpeedSignal() != null) {
                         int val = stroke.getCharacter() - '0';
-                        if (val == 0) val = 10;
+                        if (val == 0) {
+                            val = 10;
+                        }
                         model.getSelectedSpeedSignal().setLimit(val);
                     } else {
                         speedSignalId = speedSignalId * 10 + (stroke.getCharacter() - '0');
@@ -672,13 +682,17 @@ public class Gdx3DInputHandler implements InputProcessor {
             case ArrowUp:
                 if (model.getSelectedSpeedSignal() != null) {
                     int l = model.getSelectedSpeedSignal().getLimit();
-                    if (l < 10) model.getSelectedSpeedSignal().setLimit(l + 1);
+                    if (l < 10) {
+                        model.getSelectedSpeedSignal().setLimit(l + 1);
+                    }
                 }
                 break;
             case ArrowDown:
                 if (model.getSelectedSpeedSignal() != null) {
                     int l = model.getSelectedSpeedSignal().getLimit();
-                    if (l > 1) model.getSelectedSpeedSignal().setLimit(l - 1);
+                    if (l > 1) {
+                        model.getSelectedSpeedSignal().setLimit(l - 1);
+                    }
                 }
                 break;
             default:
@@ -803,7 +817,9 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     private void createVehicle(char c) {
         RailTrack track = model.getCursorRailTrack();
-        if (track == null || track.getLinker() != null) return;
+        if (track == null || track.getLinker() != null) {
+            return;
+        }
 
         Dir cursorDir = model.getCursor().getDir();
 
@@ -862,7 +878,9 @@ public class Gdx3DInputHandler implements InputProcessor {
             Linker linker = track.getLinker();
             if (linker instanceof Locomotive) {
                 model.removeLocomotive((Locomotive) linker);
-                if (lastCreatedLoco == linker) lastCreatedLoco = null;
+                if (lastCreatedLoco == linker) {
+                    lastCreatedLoco = null;
+                }
             } else if (linker instanceof Wagon) {
                 model.removeWagon((Wagon) linker);
             }

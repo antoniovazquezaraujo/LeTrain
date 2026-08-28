@@ -919,7 +919,9 @@ public class Gdx3DHud {
                                         refNode.children) {
                                     n.add(build(child, indent + "  "));
                                 }
-                                if (refNode.expanded) n.setExpanded(true);
+                                if (refNode.expanded) {
+                                    n.setExpanded(true);
+                                }
                                 return n;
                             }
                         }
@@ -1110,10 +1112,18 @@ public class Gdx3DHud {
 
                                     // Side panels stack logic
                                     List<Actor> visibleSidePanels = new ArrayList<>();
-                                    if (toggleRef.isChecked()) visibleSidePanels.add(refTable);
-                                    if (toggleObjs.isChecked()) visibleSidePanels.add(objsTable);
-                                    if (toggleEx.isChecked()) visibleSidePanels.add(examplesTable);
-                                    if (toggleLog.isChecked()) visibleSidePanels.add(logTable);
+                                    if (toggleRef.isChecked()) {
+                                        visibleSidePanels.add(refTable);
+                                    }
+                                    if (toggleObjs.isChecked()) {
+                                        visibleSidePanels.add(objsTable);
+                                    }
+                                    if (toggleEx.isChecked()) {
+                                        visibleSidePanels.add(examplesTable);
+                                    }
+                                    if (toggleLog.isChecked()) {
+                                        visibleSidePanels.add(logTable);
+                                    }
 
                                     if (visibleSidePanels.isEmpty()) {
                                         mainContent.add(editorScroll).grow();
@@ -1387,7 +1397,9 @@ public class Gdx3DHud {
     }
 
     public void updateIDE() {
-        if (ideWindow == null || !ideWindow.isVisible() || ideWindow.getStage() == null) return;
+        if (ideWindow == null || !ideWindow.isVisible() || ideWindow.getStage() == null) {
+            return;
+        }
 
         if (ideObjsContent != null) {
             ideObjsContent.setText(model.getGameObjectsReport());
@@ -1409,7 +1421,9 @@ public class Gdx3DHud {
         String after = text.substring(pos);
         textArea.setText(before + insertion + after);
         textArea.setCursorPosition(pos + insertion.length());
-        if (stage != null) stage.setKeyboardFocus(textArea);
+        if (stage != null) {
+            stage.setKeyboardFocus(textArea);
+        }
     }
 
     public void showFileDialog(
@@ -1517,9 +1531,15 @@ public class Gdx3DHud {
     }
 
     public void dispose() {
-        if (stage != null) stage.dispose();
-        if (skin != null) skin.dispose();
-        if (shapeRenderer != null) shapeRenderer.dispose();
+        if (stage != null) {
+            stage.dispose();
+        }
+        if (skin != null) {
+            skin.dispose();
+        }
+        if (shapeRenderer != null) {
+            shapeRenderer.dispose();
+        }
     }
 
     private class NotchLever extends Actor {

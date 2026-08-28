@@ -196,8 +196,12 @@ public class InfoVisitor implements Visitor {
         StringBuilder bar = new StringBuilder("[");
         for (int i = 1; i <= max; i++) {
             char c = ' ';
-            if (i <= current) c = '=';
-            if (i == target) c = '!';
+            if (i <= current) {
+                c = '=';
+            }
+            if (i == target) {
+                c = '!';
+            }
             bar.append(c);
         }
         bar.append("]");

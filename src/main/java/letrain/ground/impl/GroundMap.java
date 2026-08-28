@@ -141,14 +141,20 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
     }
 
     public int getBackgroundTerrain(int col, int row) {
-        if (noise == null) return letrain.ground.GroundMap.GROUND;
+        if (noise == null) {
+            return letrain.ground.GroundMap.GROUND;
+        }
         float baseNoise =
                 noise.smoothNoise(Math.abs(col * 0.01F), Math.abs(row * 0.02F), 0, OCTAVES);
         float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
         float waterThreshold = (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
         float rockThreshold = (economyManager != null) ? economyManager.getRockThreshold() : 180f;
-        if (scaledBase < waterThreshold) return letrain.ground.GroundMap.WATER;
-        if (scaledBase > rockThreshold) return letrain.ground.GroundMap.ROCK;
+        if (scaledBase < waterThreshold) {
+            return letrain.ground.GroundMap.WATER;
+        }
+        if (scaledBase > rockThreshold) {
+            return letrain.ground.GroundMap.ROCK;
+        }
         return letrain.ground.GroundMap.GROUND;
     }
 
@@ -234,7 +240,9 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
     }
 
     public void compactBlocks() {
-        if (cells == null || cells.isEmpty()) return;
+        if (cells == null || cells.isEmpty()) {
+            return;
+        }
 
         Set<Long> explored = new HashSet<>();
         for (Integer r : cells.keySet()) {
@@ -252,7 +260,9 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                 (a, b) -> {
                     int yA = (int) (a.longValue());
                     int yB = (int) (b.longValue());
-                    if (yA != yB) return Integer.compare(yA, yB);
+                    if (yA != yB) {
+                        return Integer.compare(yA, yB);
+                    }
                     int xA = (int) (a.longValue() >> 32);
                     int xB = (int) (b.longValue() >> 32);
                     return Integer.compare(xA, xB);
@@ -261,7 +271,9 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         Set<Block> compacted = new HashSet<>();
 
         for (Long p : sortedCells) {
-            if (!explored.contains(p)) continue;
+            if (!explored.contains(p)) {
+                continue;
+            }
 
             int startX = (int) (p >> 32);
             int startY = (int) (p.longValue());

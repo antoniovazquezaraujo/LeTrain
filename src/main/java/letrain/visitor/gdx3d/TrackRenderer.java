@@ -25,7 +25,9 @@ public class TrackRenderer extends BaseSubRenderer {
 
     @Override
     public void visitRailTrack(RailTrack track) {
-        if (!isVisible(track.getPosition())) return;
+        if (!isVisible(track.getPosition())) {
+            return;
+        }
 
         com.badlogic.gdx.graphics.Color blockedColor = getTrackBlockedColor(track);
 
@@ -248,7 +250,9 @@ public class TrackRenderer extends BaseSubRenderer {
             com.badlogic.gdx.graphics.Color tintColor) {
         Vector3 diff = new Vector3(pEnd).sub(pStart);
         float len = diff.len();
-        if (len < 0.001f) return;
+        if (len < 0.001f) {
+            return;
+        }
         float angle =
                 (float) Math.atan2(diff.x, diff.z)
                         * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
@@ -293,7 +297,9 @@ public class TrackRenderer extends BaseSubRenderer {
             com.badlogic.gdx.graphics.Color tintColor) {
         Vector3 diff = new Vector3(pEnd).sub(pStart);
         float len = diff.len();
-        if (len < 0.001f) return;
+        if (len < 0.001f) {
+            return;
+        }
         float angle =
                 (float) Math.atan2(diff.x, diff.z)
                         * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
@@ -402,13 +408,17 @@ public class TrackRenderer extends BaseSubRenderer {
 
     public Dir getValidOrientation(RailTrack track) {
         Dir dir = track.getFirstOpenDir();
-        if (dir == null) return Dir.N;
+        if (dir == null) {
+            return Dir.N;
+        }
         return dir;
     }
 
     public boolean isConnected(letrain.track.Track track, Dir dir) {
         letrain.track.Track neighbor = track.getConnected(dir);
-        if (neighbor == null) return false;
+        if (neighbor == null) {
+            return false;
+        }
         return neighbor.getRouter().getDir(dir.inverse()) != null;
     }
 

@@ -120,8 +120,12 @@ public class RailNodeImpl implements RailNode {
     @Override
     public boolean isRouteActive(Port entry, Port exit) {
         TransitionType type = getTransitionType(entry, exit);
-        if (type == TransitionType.BLOCKED) return false;
-        if (type == TransitionType.CONVERGING) return true;
+        if (type == TransitionType.BLOCKED) {
+            return false;
+        }
+        if (type == TransitionType.CONVERGING) {
+            return true;
+        }
 
         ForkRailTrack fork = (ForkRailTrack) track;
         boolean usingAlt = fork.isUsingAlternativeRoute();
@@ -131,7 +135,9 @@ public class RailNodeImpl implements RailNode {
 
     @Override
     public Port getActiveExit(Port entry) {
-        if (!(track instanceof ForkRailTrack)) return null;
+        if (!(track instanceof ForkRailTrack)) {
+            return null;
+        }
         if (entry.getType() == PortType.A || entry.getType() == PortType.B) {
             return getPortByType(PortType.TRUNK);
         }
@@ -156,8 +162,12 @@ public class RailNodeImpl implements RailNode {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         RailNodeImpl railNode = (RailNodeImpl) o;
         return Objects.equals(track.getPosition(), railNode.track.getPosition());
     }

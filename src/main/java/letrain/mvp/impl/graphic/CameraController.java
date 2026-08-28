@@ -276,8 +276,12 @@ public class CameraController {
             float totalDelay = (float) locomotive.getTotalTurns();
             float currentDelay = (float) locomotive.getTurns() - alpha;
             progress = 1.0f - (currentDelay / totalDelay);
-            if (progress < 0) progress = 0;
-            if (progress > 1) progress = 1;
+            if (progress < 0) {
+                progress = 0;
+            }
+            if (progress > 1) {
+                progress = 1;
+            }
         }
 
         // Check whether the next cell is blocked by another train

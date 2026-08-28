@@ -534,7 +534,9 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         RailwayGraph graph = this.train.getModel().getRailwayGraph();
         Linker head = train.getPhysicalFront();
 
-        if (head == null) return;
+        if (head == null) {
+            return;
+        }
 
         if (nextSegment != null && !nextSegment.equals(currentSegment)) {
             bm.release(train, nextSegment);
@@ -560,16 +562,22 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     }
 
     private boolean isForkOccupied(Segment from, Segment to, RailwayGraph graph) {
-        if (from == null || to == null || graph == null) return false;
+        if (from == null || to == null || graph == null) {
+            return false;
+        }
         var fromPorts = from.getPorts();
         var toPorts = to.getPorts();
         if (fromPorts != null && toPorts != null) {
             for (letrain.segments.Port pFrom :
                     new letrain.segments.Port[] {fromPorts.getFirst(), fromPorts.getSecond()}) {
-                if (pFrom == null) continue;
+                if (pFrom == null) {
+                    continue;
+                }
                 for (letrain.segments.Port pTo :
                         new letrain.segments.Port[] {toPorts.getFirst(), toPorts.getSecond()}) {
-                    if (pTo == null) continue;
+                    if (pTo == null) {
+                        continue;
+                    }
                     if (pFrom.getNode().equals(pTo.getNode())) {
                         var node = pFrom.getNode();
                         if (node != null
@@ -785,19 +793,27 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
 
     private Segment getWaypointSegment(Waypoint wp) {
         RailwayGraph graph = this.train.getModel().getRailwayGraph();
-        if (graph == null) return null;
+        if (graph == null) {
+            return null;
+        }
         letrain.map.Point pos = null;
         switch (wp.type()) {
             case STATION:
                 letrain.track.Station st = this.train.getModel().getStation(wp.targetId());
-                if (st != null) pos = st.getPosition();
+                if (st != null) {
+                    pos = st.getPosition();
+                }
                 break;
             case SENSOR:
                 letrain.track.Sensor sensor = this.train.getModel().getSensor(wp.targetId());
-                if (sensor != null) pos = sensor.getPosition();
+                if (sensor != null) {
+                    pos = sensor.getPosition();
+                }
                 break;
         }
-        if (pos == null) return null;
+        if (pos == null) {
+            return null;
+        }
         letrain.track.rail.RailTrack track = this.train.getModel().getRailMap().getTrackAt(pos);
         return track != null ? graph.getSegment(track) : null;
     }

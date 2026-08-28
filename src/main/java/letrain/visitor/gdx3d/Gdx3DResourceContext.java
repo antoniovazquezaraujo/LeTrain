@@ -51,7 +51,9 @@ public class Gdx3DResourceContext implements Disposable {
     private final List<Decal> activeDecals = new ArrayList<>();
 
     public ModelInstance getModelInstance(Model model) {
-        if (model == null) return null;
+        if (model == null) {
+            return null;
+        }
         Pool<ModelInstance> pool =
                 pools.computeIfAbsent(
                         model,
