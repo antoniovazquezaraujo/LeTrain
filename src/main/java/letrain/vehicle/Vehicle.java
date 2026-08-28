@@ -1,9 +1,8 @@
 package letrain.vehicle;
 
-import java.io.Serializable;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.io.Serializable;
 import letrain.map.Dir;
 import letrain.map.Mappable;
 import letrain.map.Point;
@@ -14,23 +13,21 @@ import letrain.visitor.Renderable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class Vehicle<T extends Track>
-        implements
-        Serializable,
-        Rotatable,
-        Reversible,
-        Selectable,
-        Mappable,
-        Transportable,
-        Renderable,
-        Destructible {
+        implements Serializable,
+                Rotatable,
+                Reversible,
+                Selectable,
+                Mappable,
+                Transportable,
+                Renderable,
+                Destructible {
     protected Point pos = new Point(0, 0);
     protected Point previousPos = new Point(0, 0);
     protected Dir dir;
     private boolean selected = false;
     private boolean reversed = false;
 
-    protected Vehicle() {
-    }
+    protected Vehicle() {}
 
     /***********************************************************
      * Transportable implementation
@@ -38,7 +35,8 @@ public abstract class Vehicle<T extends Track>
     @Override
     public boolean advance() {
         return true;
-    };
+    }
+    ;
 
     /***********************************************************
      * Mappable implementation
@@ -117,7 +115,6 @@ public abstract class Vehicle<T extends Track>
     /***********************************************************
      * Reversible implementation
      **********************************************************/
-
     @Override
     public void setReversed(boolean reversed) {
         this.reversed = reversed;
@@ -151,5 +148,4 @@ public abstract class Vehicle<T extends Track>
     public boolean isDestroyed() {
         return false;
     }
-
 }

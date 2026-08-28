@@ -52,7 +52,9 @@ public class RailIterator implements Transportable, Trackable, Rotatable, Mappab
             // keep moving in the same direction. This matches TrackDirector's behavior.
             log.warn(
                     "Kink or missing route detected at {}. Entry port {} not found in router. Falling back to movement dir {}.",
-                    nextTrack.getPosition(), entryPort, movementDir);
+                    nextTrack.getPosition(),
+                    entryPort,
+                    movementDir);
             nextExitDir = movementDir;
         }
 
@@ -117,5 +119,4 @@ public class RailIterator implements Transportable, Trackable, Rotatable, Mappab
     public Track getTrack() {
         return this.track;
     }
-
 }

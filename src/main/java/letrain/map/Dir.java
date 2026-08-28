@@ -2,10 +2,9 @@ package letrain.map;
 
 /**
  * letrain.map.Dir.
- * <p>
- * Representa una dirección entre las 8 del mapa (N, NE, E...)
- * Se puede hacer girar, invertir, ver si forma recta con otra,
- * calcular la "distancia angular" entre dos, etc.
+ *
+ * <p>Representa una dirección entre las 8 del mapa (N, NE, E...) Se puede hacer girar, invertir,
+ * ver si forma recta con otra, calcular la "distancia angular" entre dos, etc.
  */
 
 //  Giran en sentido glorieta, desde E hasta SE
@@ -20,7 +19,6 @@ package letrain.map;
 //           6-S
 //
 //
-
 
 public enum Dir {
     E(0),
@@ -38,7 +36,6 @@ public enum Dir {
     private static final int MAX_CURVE_ANGLE = MIDDLE_ANGLE + 1;
 
     private final int value;
-
 
     Dir(int value) {
         this.value = value;
@@ -94,7 +91,6 @@ public enum Dir {
         } else {
             throw new RuntimeException("Invalid int value for direction");
         }
-
     }
 
     public static int shortWay(int angle) {
@@ -139,5 +135,4 @@ public enum Dir {
     public boolean isStraight(Dir to) {
         return (Math.abs(this.value - to.getValue()) == MIDDLE_ANGLE);
     }
-
 }

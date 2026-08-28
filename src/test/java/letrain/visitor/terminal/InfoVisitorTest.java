@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.Collections;
-import java.util.List;
 import letrain.economy.EconomyManager;
 import letrain.map.Point;
 import letrain.mvp.Model;
@@ -19,7 +18,8 @@ import org.mockito.ArgumentCaptor;
 class InfoVisitorTest {
 
     @Test
-    @DisplayName("visitModel should render Notch and Speed on left, and Finances right-aligned in English")
+    @DisplayName(
+            "visitModel should render Notch and Speed on left, and Finances right-aligned in English")
     void visitModel_shouldRenderNotchSpeedLeft_andFinancesRight() {
         TerminalView view = mock(TerminalView.class);
         when(view.getCols()).thenReturn(100);
@@ -63,13 +63,22 @@ class InfoVisitorTest {
         assertTrue(firstLine.contains("Notch:"), "Should contain Notch bar");
         assertTrue(firstLine.contains("Speed: 3->5"), "Should contain speed progression");
         assertTrue(firstLine.contains("Wagons: 0"), "Should contain wagon count in English");
-        assertTrue(firstLine.contains("|Page:0,0|Pos:10,20|Step:1/1|"), "Page info should be in English and new format");
+        assertTrue(
+                firstLine.contains("|Page:0,0|Pos:10,20|Step:1/1|"),
+                "Page info should be in English and new format");
 
         String secondLine = lines[1];
-        assertTrue(secondLine.contains("|In:200.00|Out:50.00|$:1,500.50|"), "Should contain financial info in new format");
-        assertTrue(secondLine.endsWith("|In:200.00|Out:50.00|$:1,500.50|"), "Financial info should be right aligned");
+        assertTrue(
+                secondLine.contains("|In:200.00|Out:50.00|$:1,500.50|"),
+                "Should contain financial info in new format");
+        assertTrue(
+                secondLine.endsWith("|In:200.00|Out:50.00|$:1,500.50|"),
+                "Financial info should be right aligned");
 
         // Verify translations on other lines
-        assertTrue(lines[3].contains("[PgUp/Dn]: Scroll | [c/C]: Camera | [r/d/f/s/t/l/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit"), "Global help should be in English");
+        assertTrue(
+                lines[3].contains(
+                        "[PgUp/Dn]: Scroll | [c/C]: Camera | [r/d/f/s/t/l/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit"),
+                "Global help should be in English");
     }
 }

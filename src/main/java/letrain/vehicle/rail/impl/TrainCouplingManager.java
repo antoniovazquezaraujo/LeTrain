@@ -1,14 +1,11 @@
 package letrain.vehicle.rail.impl;
 
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-
 import letrain.map.Dir;
 import letrain.track.Track;
 import letrain.vehicle.rail.CoreTrainEventListener;
@@ -40,7 +37,8 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         train.setJoined(false);
         Linker lastLinker = null;
         Dir dir = Dir.E;
-        boolean normalSense = train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
+        boolean normalSense =
+                train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
 
         if (train.getLinkers().size() == 1) {
             lastLinker = (Linker) train.getDirectorLinker();
@@ -66,10 +64,12 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                     lastLinker = train.getLinkers().getLast();
                     train.setLinkerJoinSense(Train.LinkersSense.BACK);
                 }
-                
+
                 Dir preferredDir = lastLinker.getDir();
                 Track connected = lastLinker.getTrack().getConnected(preferredDir);
-                if (connected != null && (connected.getLinker() == null || connected.getLinker().getTrain() != train)) {
+                if (connected != null
+                        && (connected.getLinker() == null
+                                || connected.getLinker().getTrain() != train)) {
                     dir = preferredDir;
                 } else {
                     Track lastTrack = lastLinker.getTrack();
@@ -92,11 +92,13 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                     lastLinker = train.getLinkers().getFirst();
                     train.setLinkerJoinSense(Train.LinkersSense.FRONT);
                 }
-                
+
                 Dir preferredDir = lastLinker.getEntryDir();
                 if (preferredDir == null) preferredDir = lastLinker.getRealDir().inverse();
                 Track connected = lastLinker.getTrack().getConnected(preferredDir);
-                if (connected != null && (connected.getLinker() == null || connected.getLinker().getTrain() != train)) {
+                if (connected != null
+                        && (connected.getLinker() == null
+                                || connected.getLinker().getTrain() != train)) {
                     dir = preferredDir;
                 } else {
                     Track lastTrack = lastLinker.getTrack();
@@ -162,7 +164,8 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
     private boolean hasLinkable(Train train, boolean forwardDirection) {
         Linker lastLinker = null;
         Dir dir = Dir.E;
-        boolean normalSense = train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
+        boolean normalSense =
+                train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
 
         if (train.getLinkers().size() == 1) {
             lastLinker = (Linker) train.getDirectorLinker();
@@ -182,10 +185,12 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 } else {
                     lastLinker = train.getLinkers().getLast();
                 }
-                
+
                 Dir preferredDir = lastLinker.getDir();
                 Track connected = lastLinker.getTrack().getConnected(preferredDir);
-                if (connected != null && (connected.getLinker() == null || connected.getLinker().getTrain() != train)) {
+                if (connected != null
+                        && (connected.getLinker() == null
+                                || connected.getLinker().getTrain() != train)) {
                     dir = preferredDir;
                 } else {
                     Track lastTrack = lastLinker.getTrack();
@@ -206,11 +211,13 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 } else {
                     lastLinker = train.getLinkers().getFirst();
                 }
-                
+
                 Dir preferredDir = lastLinker.getEntryDir();
                 if (preferredDir == null) preferredDir = lastLinker.getRealDir().inverse();
                 Track connected = lastLinker.getTrack().getConnected(preferredDir);
-                if (connected != null && (connected.getLinker() == null || connected.getLinker().getTrain() != train)) {
+                if (connected != null
+                        && (connected.getLinker() == null
+                                || connected.getLinker().getTrain() != train)) {
                     dir = preferredDir;
                 } else {
                     Track lastTrack = lastLinker.getTrack();
@@ -263,10 +270,9 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
             int count = 0;
             boolean linkersActuallyAdded = false;
             Set<Train> affectedOldTrains = new HashSet<Train>();
-            
+
             for (Linker linkerToJoin : train.getLinkersToJoin()) {
-                if (count >= train.getNumLinkersToJoin())
-                    break;
+                if (count >= train.getNumLinkersToJoin()) break;
 
                 if (train.getLinkerJoinSense() == Train.LinkersSense.FRONT) {
                     train.getLinkers().addFirst(linkerToJoin);
@@ -325,7 +331,8 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
             return;
         }
 
-        boolean normalSense = train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
+        boolean normalSense =
+                train.getDirectorLinker() == null || !train.getDirectorLinker().isReversed();
 
         if (forward) {
             if (normalSense) train.setLinkerDivisionSense(Train.LinkersSense.FRONT);
@@ -369,7 +376,8 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
 
     @Override
     public void resetUnlinkState(Train train) {
-        if (!train.getLinkers().isEmpty() && train.getLinkers().peekLast() == train.getDirectorLinker()) {
+        if (!train.getLinkers().isEmpty()
+                && train.getLinkers().peekLast() == train.getDirectorLinker()) {
             train.setLinkerDivisionSense(Train.LinkersSense.FRONT);
         } else {
             train.setLinkerDivisionSense(Train.LinkersSense.BACK);
@@ -462,7 +470,11 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                     newTrain.getLinkers().addLast(linkerToRemove);
                 }
                 linkerToRemove.setTrain(newTrain);
-                Train.log.info("Train {}: unlinked {} to new Train {}", train.getId(), linkerToRemove, newTrain.getId());
+                Train.log.info(
+                        "Train {}: unlinked {} to new Train {}",
+                        train.getId(),
+                        linkerToRemove,
+                        newTrain.getId());
             }
             newTrain.assignDefaultDirectorLinker();
             newTrain.rebind();
@@ -519,7 +531,6 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
         train.setNumLinkersToRemove(0);
         return linkersToDestroy;
     }
-
 
     @Override
     public Linker getAdjacentLinker(Linker linker, Dir dir) {

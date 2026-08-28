@@ -3,18 +3,15 @@ package letrain.vehicle.rail.impl;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
+import letrain.itinerary.Waypoint;
 import letrain.map.Point;
 import letrain.utils.SerializationHelper;
 import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.ScriptTrainEventListener;
 import letrain.vehicle.rail.TrainEventDispatcher;
 import letrain.vehicle.rail.TrainEventListener;
-import letrain.itinerary.Waypoint;
 
-/**
- * Manages event listener registrations and broadcasts train events.
- */
+/** Manages event listener registrations and broadcasts train events. */
 public class TrainEventDispatcherImpl implements TrainEventDispatcher {
     private final Train train;
     private List<ScriptTrainEventListener> scriptTrainListeners;
@@ -81,8 +78,10 @@ public class TrainEventDispatcherImpl implements TrainEventDispatcher {
 
     @Override
     public void postLoadInit() {
-        scriptTrainListeners = SerializationHelper.ensureListInitializedConcurrent(scriptTrainListeners);
-        coreTrainListeners = SerializationHelper.ensureListInitializedConcurrent(coreTrainListeners);
+        scriptTrainListeners =
+                SerializationHelper.ensureListInitializedConcurrent(scriptTrainListeners);
+        coreTrainListeners =
+                SerializationHelper.ensureListInitializedConcurrent(coreTrainListeners);
     }
 
     private void notifyAll(java.util.function.Consumer<TrainEventListener> notification) {

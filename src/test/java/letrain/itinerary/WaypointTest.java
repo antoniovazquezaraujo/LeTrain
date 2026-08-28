@@ -1,11 +1,11 @@
 package letrain.itinerary;
 
-import letrain.itinerary.impl.WaypointImpl;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
+import letrain.itinerary.impl.WaypointImpl;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 @DisplayName("Waypoint")
 class WaypointTest {
@@ -57,7 +57,8 @@ class WaypointTest {
     @Test
     @DisplayName("should allow WAIT with seconds")
     void withWaitCommand() {
-        Waypoint wp = new WaypointImpl(Waypoint.Type.SENSOR, 1, List.of(WaypointCommand.waitSeconds(15)));
+        Waypoint wp =
+                new WaypointImpl(Waypoint.Type.SENSOR, 1, List.of(WaypointCommand.waitSeconds(15)));
 
         assertEquals(15, wp.commands().get(0).seconds());
     }

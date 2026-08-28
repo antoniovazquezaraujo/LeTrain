@@ -48,7 +48,6 @@ class PointTest {
         Assertions.assertEquals(new Page(0, -1), new Point(0, -1).getPage());
         Assertions.assertEquals(new Page(-1, 0), new Point(-1, 0).getPage());
         Assertions.assertEquals(new Page(-1, -1), new Point(-1, -1).getPage());
-
     }
 
     @Test
@@ -71,7 +70,6 @@ class PointTest {
         Assertions.assertEquals(new Point(3, -3), new Point(0, 0).setPage(new Page(1, -1)));
         Assertions.assertEquals(new Point(30, 0), new Point(0, 0).setPage(new Page(10, 0)));
         Assertions.assertEquals(new Point(31, 0), new Point(1, 0).setPage(new Page(10, 0)));
-
     }
 
     @Test
@@ -124,7 +122,6 @@ class PointTest {
         Assertions.assertEquals(new Point(1, 1), p1.moveByPages(0, 0));
         p1 = new Point(1, 1);
         Assertions.assertEquals(new Point(-4, -4), p1.moveByPages(-1, -1));
-
     }
 
     @Test

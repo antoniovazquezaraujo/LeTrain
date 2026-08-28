@@ -1,17 +1,16 @@
 package letrain.track;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-
 import letrain.map.Point;
 import letrain.utils.SerializationHelper;
 import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
@@ -27,30 +26,29 @@ public class RailSemaphore implements Renderable, Serializable {
     }
 
     @JsonIgnore
-    private transient java.util.List<SemaphoreEventListener> listeners = new java.util.ArrayList<>();
+    private transient java.util.List<SemaphoreEventListener> listeners =
+            new java.util.ArrayList<>();
+
     @JsonIgnore
-    private transient java.util.List<SemaphoreEventListener> systemListeners = new java.util.ArrayList<>();
+    private transient java.util.List<SemaphoreEventListener> systemListeners =
+            new java.util.ArrayList<>();
 
     public void addSemaphoreEventListener(SemaphoreEventListener listener) {
-        if (listeners == null)
-            listeners = new java.util.ArrayList<>();
+        if (listeners == null) listeners = new java.util.ArrayList<>();
         listeners.add(listener);
     }
 
     public void addSystemSemaphoreEventListener(SemaphoreEventListener listener) {
-        if (systemListeners == null)
-            systemListeners = new java.util.ArrayList<>();
+        if (systemListeners == null) systemListeners = new java.util.ArrayList<>();
         systemListeners.add(listener);
     }
 
     public void removeSemaphoreEventListener(SemaphoreEventListener listener) {
-        if (listeners != null)
-            listeners.remove(listener);
+        if (listeners != null) listeners.remove(listener);
     }
 
     public void removeAllSemaphoreEventListeners() {
-        if (listeners != null)
-            listeners.clear();
+        if (listeners != null) listeners.clear();
     }
 
     public void setOpen(boolean open) {
@@ -85,8 +83,7 @@ public class RailSemaphore implements Renderable, Serializable {
         this.position = position;
     }
 
-    public RailSemaphore() {
-    }
+    public RailSemaphore() {}
 
     public RailSemaphore(int id, Point position) {
         setId(id);
@@ -94,11 +91,10 @@ public class RailSemaphore implements Renderable, Serializable {
     }
 
     /**
-     * Reinitializes transient fields after deserialization.
-     * Ensures listener collections are not null to prevent NPE.
+     * Reinitializes transient fields after deserialization. Ensures listener collections are not
+     * null to prevent NPE.
      */
-    private void readObject(ObjectInputStream ois)
-            throws IOException, ClassNotFoundException {
+    private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();
         this.listeners = SerializationHelper.ensureListInitialized(listeners);
         this.systemListeners = SerializationHelper.ensureListInitialized(systemListeners);
@@ -171,5 +167,4 @@ public class RailSemaphore implements Renderable, Serializable {
     public String toString() {
         return "Semaphore [id=" + id + "]";
     }
-
 }

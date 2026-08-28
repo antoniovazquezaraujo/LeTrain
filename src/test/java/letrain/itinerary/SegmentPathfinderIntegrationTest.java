@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
-
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
@@ -45,12 +44,18 @@ class SegmentPathfinderIntegrationTest {
         t5 = makeTrack(railMap, 3, 1);
         RailTrack t6 = makeTrack(railMap, 4, 2);
 
-        t0.connect(Dir.E, t1);   t1.connect(Dir.W, t0);
-        t1.connect(Dir.E, fork); fork.connect(Dir.W, t1);
-        fork.connect(Dir.E, t3); t3.connect(Dir.W, fork);
-        t3.connect(Dir.E, t4);  t4.connect(Dir.W, t3);
-        fork.connect(Dir.SE, t5); t5.connect(Dir.NW, fork);
-        t5.connect(Dir.SE, t6); t6.connect(Dir.NW, t5);
+        t0.connect(Dir.E, t1);
+        t1.connect(Dir.W, t0);
+        t1.connect(Dir.E, fork);
+        fork.connect(Dir.W, t1);
+        fork.connect(Dir.E, t3);
+        t3.connect(Dir.W, fork);
+        t3.connect(Dir.E, t4);
+        t4.connect(Dir.W, t3);
+        fork.connect(Dir.SE, t5);
+        t5.connect(Dir.NW, fork);
+        t5.connect(Dir.SE, t6);
+        t6.connect(Dir.NW, t5);
 
         TopologyService topo = new TopologyServiceImpl();
         graph = topo.discover(railMap);

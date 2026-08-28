@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import letrain.segments.BlockManager;
 import letrain.segments.Segment;
 import letrain.vehicle.rail.impl.Train;
@@ -26,7 +25,8 @@ public class BlockManagerImpl implements BlockManager {
 
     @Override
     public boolean tryLock(Train train, Segment segment) {
-        List<Train> owners = segmentOwners.computeIfAbsent(segment, k -> new CopyOnWriteArrayList<>());
+        List<Train> owners =
+                segmentOwners.computeIfAbsent(segment, k -> new CopyOnWriteArrayList<>());
 
         if (!owners.isEmpty() && !owners.contains(train)) {
             return false;
@@ -38,7 +38,6 @@ public class BlockManagerImpl implements BlockManager {
         }
         return true;
     }
-
 
     @Override
     public void release(Train train, Segment segment) {
@@ -80,7 +79,6 @@ public class BlockManagerImpl implements BlockManager {
     public List<Train> getOwners(Segment segment) {
         return segmentOwners.getOrDefault(segment, Collections.emptyList());
     }
-
 
     @Override
     public void clearAll() {

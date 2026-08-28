@@ -1,12 +1,10 @@
 package letrain.map.impl;
 
-import java.util.HashMap;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
-
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import letrain.map.Point;
 import letrain.track.rail.RailTrack;
 import letrain.visitor.Renderable;
@@ -81,7 +79,6 @@ public class RailMap implements letrain.map.RailMap<RailTrack>, Renderable {
         } else {
             cols.remove(x);
         }
-
     }
 
     @Override
@@ -94,7 +91,6 @@ public class RailMap implements letrain.map.RailMap<RailTrack>, Renderable {
     /***********************************************************
      * Renderable implementation
      **********************************************************/
-
     @Override
     public void accept(Visitor visitor) {
         visitor.visitRailMap(this);

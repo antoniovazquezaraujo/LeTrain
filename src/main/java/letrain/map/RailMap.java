@@ -1,7 +1,6 @@
 package letrain.map;
 
 import java.util.function.Consumer;
-
 import letrain.visitor.Renderable;
 
 public interface RailMap<T> extends Renderable {

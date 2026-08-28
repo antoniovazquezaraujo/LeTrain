@@ -1,5 +1,7 @@
 package letrain.economy.impl;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,9 +9,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-
 import letrain.mvp.Presenter;
 import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
@@ -25,77 +24,107 @@ import org.slf4j.LoggerFactory;
 public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("totalIncome")
     float totalIncome = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("totalExpenses")
     float totalExpenses = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("balance")
     float balance = 1000000f; // Initial balance as requested
 
     @com.fasterxml.jackson.annotation.JsonProperty("prices")
     Map<ExpenseType, Float> prices = new HashMap<>();
+
     @com.fasterxml.jackson.annotation.JsonProperty("cargoBaseValues")
     Map<CargoTypes, Float> cargoBaseValues = new HashMap<>();
+
     @com.fasterxml.jackson.annotation.JsonProperty("fuelCostPerMeter")
     private float fuelCostPerMeter = 0.5f;
+
     @com.fasterxml.jackson.annotation.JsonProperty("cargoLoadingFee")
     private float cargoLoadingFee = 100f;
+
     @com.fasterxml.jackson.annotation.JsonProperty("startingBalance")
     private float startingBalance = 0f;
+
     @com.fasterxml.jackson.annotation.JsonProperty("goldThreshold")
     private float goldThreshold = 0.30f;
+
     @com.fasterxml.jackson.annotation.JsonProperty("coalThreshold")
     private float coalThreshold = 0.25f;
+
     @com.fasterxml.jackson.annotation.JsonProperty("rubyThreshold")
     private float rubyThreshold = 0.35f;
+
     @com.fasterxml.jackson.annotation.JsonProperty("waterThreshold")
     private float waterThreshold = 110f;
+
     @com.fasterxml.jackson.annotation.JsonProperty("rockThreshold")
     private float rockThreshold = 130f;
+
     @com.fasterxml.jackson.annotation.JsonProperty("viewRadius")
     private int viewRadius = 15;
+
     private static final Logger log = LoggerFactory.getLogger(EconomyManager.class);
+
     @com.fasterxml.jackson.annotation.JsonProperty("eventLogManager")
     private letrain.mvp.impl.EventLogManager eventLogManager;
 
     @com.fasterxml.jackson.annotation.JsonProperty("constructedNormalRailTracks")
     int constructedNormalRailTracks = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("constructedBridgeRailTracks")
     int constructedBridgeRailTracks = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("constructedTunnelRailTracks")
     int constructedTunnelRailTracks = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("constructedForks")
     int constructedForks = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("constructedStations")
     int constructedStations = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("constructedSensors")
     int constructedSensors = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("constructedSemaphores")
     int constructedSemaphores = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("constructedLocomotives")
     int constructedLocomotives = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("constructedWagons")
     int constructedWagons = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("destroyedNormalRailTracks")
     int destroyedNormalRailTracks = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("destroyedBridgeRailTracks")
     int destroyedBridgeRailTracks = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("destroyedTunnelRailTracks")
     int destroyedTunnelRailTracks = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("destroyedForks")
     int destroyedForks = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("destroyedStations")
     int destroyedStations = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("destroyedSensors")
     int destroyedSensors = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("destroyedSemaphores")
     int destroyedSemaphores = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("destroyedLocomotives")
     int destroyedLocomotives = 0;
+
     @com.fasterxml.jackson.annotation.JsonProperty("destroyedWagons")
     int destroyedWagons = 0;
 
-    protected EconomyManager() {
-    }
- 
+    protected EconomyManager() {}
+
     public EconomyManager(letrain.mvp.impl.EventLogManager eventLogManager) {
         this.eventLogManager = eventLogManager;
         prices.put(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK, 100f);
@@ -282,7 +311,10 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     }
 
     @Override
-    public void onLoadPassengers(Train train, LocalDateTime elapsedTime, int totalDistanceTraveled,
+    public void onLoadPassengers(
+            Train train,
+            LocalDateTime elapsedTime,
+            int totalDistanceTraveled,
             double linearDistanceToStart) {
         // We keep this for compatibility if needed, but logic moves to cargo
     }
@@ -421,11 +453,16 @@ public class EconomyManager implements letrain.economy.EconomyManager {
             log.info("Loading economy configuration from {}", configFile.getAbsolutePath());
 
             // Load general costs
-            fuelCostPerMeter = Float
-                    .parseFloat(props.getProperty("fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
-            cargoLoadingFee = Float.parseFloat(props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
-            float newStartingBalance = Float
-                    .parseFloat(props.getProperty("startingBalance", String.valueOf(startingBalance)));
+            fuelCostPerMeter =
+                    Float.parseFloat(
+                            props.getProperty(
+                                    "fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
+            cargoLoadingFee =
+                    Float.parseFloat(
+                            props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
+            float newStartingBalance =
+                    Float.parseFloat(
+                            props.getProperty("startingBalance", String.valueOf(startingBalance)));
 
             // Only update current balance if it's the very beginning of the game (total
             // income/expenses are zero)
@@ -491,5 +528,4 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     public int getViewRadius() {
         return viewRadius;
     }
-
 }

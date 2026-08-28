@@ -9,12 +9,10 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.concurrent.atomic.AtomicReference;
-
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.track.Track;
@@ -49,12 +47,12 @@ class TrainMoveLinkersTest {
     // ---------- Test 1: Null-check defensivo ----------
 
     /**
-     * With the post-move check removed, moveLinkers no longer detects
-     * a null linker track after movement. The train moves successfully
-     * and the method returns true.
+     * With the post-move check removed, moveLinkers no longer detects a null linker track after
+     * movement. The train moves successfully and the method returns true.
      */
     @Test
-    @DisplayName("should return false when first linker's track is null after move (defensive null-check)")
+    @DisplayName(
+            "should return false when first linker's track is null after move (defensive null-check)")
     void shouldReturnFalse_When_FirstLinkerTrackIsNull_AfterMove() {
         setupTwoLinkerScenario();
         setupPass1Success();
@@ -67,8 +65,7 @@ class TrainMoveLinkersTest {
 
         boolean result = train.getMovementManager().moveLinkers(true);
 
-        assertFalse(result,
-                "Should return false: null-track detected in post-move check");
+        assertFalse(result, "Should return false: null-track detected in post-move check");
         verify(trackB, atLeastOnce()).setReservation(null);
         verify(trackC, atLeastOnce()).setReservation(null);
     }
@@ -76,8 +73,8 @@ class TrainMoveLinkersTest {
     // ---------- Test 2: head occupant detection ----------
 
     /**
-     * If the head's target track has an occupant (any train), moveLinkers
-     * treats it as a collision and returns false.
+     * If the head's target track has an occupant (any train), moveLinkers treats it as a collision
+     * and returns false.
      */
     @Test
     @DisplayName("should return false when head's target track has an occupant")
@@ -89,16 +86,14 @@ class TrainMoveLinkersTest {
 
         boolean result = train.getMovementManager().moveLinkers(true);
 
-        assertFalse(result,
-                "moveLinkers should return false — head target track is occupied");
+        assertFalse(result, "moveLinkers should return false — head target track is occupied");
     }
 
     // ---------- Test 3: Happy path ----------
 
     /**
-     * All linkers move successfully: Pass 1 preconditions are met, all
-     * enterLinkerFromDir calls return true and properly set the linkers on
-     * their new tracks. The method returns true.
+     * All linkers move successfully: Pass 1 preconditions are met, all enterLinkerFromDir calls
+     * return true and properly set the linkers on their new tracks. The method returns true.
      */
     @Test
     @DisplayName("should move all linkers and return true when all targets are empty")
@@ -117,20 +112,15 @@ class TrainMoveLinkersTest {
         boolean result = train.getMovementManager().moveLinkers(true);
 
         // --- Assert ---
-        assertTrue(result,
-                "Should return true: all linkers moved successfully");
+        assertTrue(result, "Should return true: all linkers moved successfully");
 
         // Verify first linker ended up on trackB
-        assertNotNull(firstLinkerTrack.get(),
-                "First linker should have a track after move");
-        assertTrue(firstLinkerTrack.get() == trackB,
-                "First linker should be on trackB");
+        assertNotNull(firstLinkerTrack.get(), "First linker should have a track after move");
+        assertTrue(firstLinkerTrack.get() == trackB, "First linker should be on trackB");
 
         // Verify second linker ended up on trackC
-        assertNotNull(secondLinkerTrack.get(),
-                "Second linker should have a track after move");
-        assertTrue(secondLinkerTrack.get() == trackC,
-                "Second linker should be on trackC");
+        assertNotNull(secondLinkerTrack.get(), "Second linker should have a track after move");
+        assertTrue(secondLinkerTrack.get() == trackC, "Second linker should be on trackC");
 
         // Verify reservations were cleared after successful move
         verify(trackB).setReservation(null);
@@ -142,11 +132,10 @@ class TrainMoveLinkersTest {
     // ================================================================
 
     /**
-     * Creates a Train with 2 linkers on 3 tracks:
-     *   linker1 on trackA → (target) trackB
-     *   linker2 on trackB → (target) trackC
+     * Creates a Train with 2 linkers on 3 tracks: linker1 on trackA → (target) trackB linker2 on
+     * trackB → (target) trackC
      *
-     * linkers are added in order: firstLinker, secondLinker.
+     * <p>linkers are added in order: firstLinker, secondLinker.
      */
     private void setupTwoLinkerScenario() {
         train = new Train(1);
@@ -160,17 +149,23 @@ class TrainMoveLinkersTest {
         secondLinker = mock(Linker.class);
 
         // Correlate setTrack / getTrack for firstLinker
-        doAnswer(inv -> {
-            firstLinkerTrack.set(inv.getArgument(0));
-            return null;
-        }).when(firstLinker).setTrack(any(Track.class));
+        doAnswer(
+                        inv -> {
+                            firstLinkerTrack.set(inv.getArgument(0));
+                            return null;
+                        })
+                .when(firstLinker)
+                .setTrack(any(Track.class));
         when(firstLinker.getTrack()).thenAnswer(inv -> firstLinkerTrack.get());
 
         // Correlate setTrack / getTrack for secondLinker
-        doAnswer(inv -> {
-            secondLinkerTrack.set(inv.getArgument(0));
-            return null;
-        }).when(secondLinker).setTrack(any(Track.class));
+        doAnswer(
+                        inv -> {
+                            secondLinkerTrack.set(inv.getArgument(0));
+                            return null;
+                        })
+                .when(secondLinker)
+                .setTrack(any(Track.class));
         when(secondLinker.getTrack()).thenAnswer(inv -> secondLinkerTrack.get());
 
         // Common linker stubs
@@ -233,18 +228,27 @@ class TrainMoveLinkersTest {
         when(trackB.getLinker()).thenAnswer(inv -> linkerOnTrackB.get());
         when(trackC.getLinker()).thenAnswer(inv -> linkerOnTrackC.get());
 
-        doAnswer(inv -> {
-            linkerOnTrackA.set(inv.getArgument(0));
-            return null;
-        }).when(trackA).setLinker(any(Linker.class));
-        doAnswer(inv -> {
-            linkerOnTrackB.set(inv.getArgument(0));
-            return null;
-        }).when(trackB).setLinker(any(Linker.class));
-        doAnswer(inv -> {
-            linkerOnTrackC.set(inv.getArgument(0));
-            return null;
-        }).when(trackC).setLinker(any(Linker.class));
+        doAnswer(
+                        inv -> {
+                            linkerOnTrackA.set(inv.getArgument(0));
+                            return null;
+                        })
+                .when(trackA)
+                .setLinker(any(Linker.class));
+        doAnswer(
+                        inv -> {
+                            linkerOnTrackB.set(inv.getArgument(0));
+                            return null;
+                        })
+                .when(trackB)
+                .setLinker(any(Linker.class));
+        doAnswer(
+                        inv -> {
+                            linkerOnTrackC.set(inv.getArgument(0));
+                            return null;
+                        })
+                .when(trackC)
+                .setLinker(any(Linker.class));
 
         // Initial track assignments
         firstLinkerTrack.set(trackA);
@@ -256,8 +260,8 @@ class TrainMoveLinkersTest {
     }
 
     /**
-     * Sets up Pass 1 (preflight) to succeed: canEnter returns true for both
-     * target tracks, and target tracks have no foreign occupying linkers.
+     * Sets up Pass 1 (preflight) to succeed: canEnter returns true for both target tracks, and
+     * target tracks have no foreign occupying linkers.
      */
     private void setupPass1Success() {
         // Both target tracks return no occupying linker (checked at line 662)
@@ -270,28 +274,30 @@ class TrainMoveLinkersTest {
     }
 
     /**
-     * Stubs removeLinker() so that it sets the tracked linker's track to null
-     * (simulating the real TrackDirector.removeLinker side-effect) and clears
-     * the track's recorded linker.
+     * Stubs removeLinker() so that it sets the tracked linker's track to null (simulating the real
+     * TrackDirector.removeLinker side-effect) and clears the track's recorded linker.
      */
     private void setupRemoveLinkerSetsTrackToNull(
             Track track,
             AtomicReference<Linker> trackLinkerRef,
             AtomicReference<Track> linkerTrackRef) {
 
-        doAnswer(inv -> {
-            Linker removed = trackLinkerRef.get();
-            if (removed != null) {
-                linkerTrackRef.set(null);
-            }
-            trackLinkerRef.set(null);
-            return removed;
-        }).when(track).removeLinker();
+        doAnswer(
+                        inv -> {
+                            Linker removed = trackLinkerRef.get();
+                            if (removed != null) {
+                                linkerTrackRef.set(null);
+                            }
+                            trackLinkerRef.set(null);
+                            return removed;
+                        })
+                .when(track)
+                .removeLinker();
     }
 
     /**
-     * Stubs removeLinker() with realistic behavior: sets the specific linker's
-     * track to null and clears the track's recorded linker.
+     * Stubs removeLinker() with realistic behavior: sets the specific linker's track to null and
+     * clears the track's recorded linker.
      */
     private void setupRealisticRemoveLinker(
             Track track,
@@ -299,19 +305,22 @@ class TrainMoveLinkersTest {
             AtomicReference<Track> linkerTrackRef,
             Linker expectedLinker) {
 
-        doAnswer(inv -> {
-            Linker removed = trackLinkerRef.get();
-            if (removed != null) {
-                linkerTrackRef.set(null);
-            }
-            trackLinkerRef.set(null);
-            return removed;
-        }).when(track).removeLinker();
+        doAnswer(
+                        inv -> {
+                            Linker removed = trackLinkerRef.get();
+                            if (removed != null) {
+                                linkerTrackRef.set(null);
+                            }
+                            trackLinkerRef.set(null);
+                            return removed;
+                        })
+                .when(track)
+                .removeLinker();
     }
 
     /**
-     * Stubs enterLinkerFromDir() with realistic behavior: sets the linker's
-     * track and position, records the linker on the target track.
+     * Stubs enterLinkerFromDir() with realistic behavior: sets the linker's track and position,
+     * records the linker on the target track.
      */
     private void setupRealisticEnterLinker(
             Track targetTrack,
@@ -319,17 +328,21 @@ class TrainMoveLinkersTest {
             AtomicReference<Track> linkerTrackRef,
             Linker linker) {
 
-        doAnswer(inv -> {
-            Dir dir = inv.getArgument(0);
-            Linker v = inv.getArgument(1);
-            linkerTrackRef.set(targetTrack);
-            targetTrackLinkerRef.set(v);
-            return true;
-        }).when(targetTrack).enterLinkerFromDir(any(Dir.class), any(Linker.class));
+        doAnswer(
+                        inv -> {
+                            Dir dir = inv.getArgument(0);
+                            Linker v = inv.getArgument(1);
+                            linkerTrackRef.set(targetTrack);
+                            targetTrackLinkerRef.set(v);
+                            return true;
+                        })
+                .when(targetTrack)
+                .enterLinkerFromDir(any(Dir.class), any(Linker.class));
     }
 
     @Test
-    @DisplayName("should return correct physical front depending on director linker reversed status")
+    @DisplayName(
+            "should return correct physical front depending on director linker reversed status")
     void shouldReturnCorrectPhysicalFront_DependingOnReversedStatus() {
         setupTwoLinkerScenario();
         letrain.vehicle.Tractor mockLoco = mock(letrain.vehicle.Tractor.class);

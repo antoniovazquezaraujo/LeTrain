@@ -18,7 +18,7 @@ public abstract class AudioGenerator {
 
     /**
      * Fills the buffer with the next chunk of audio.
-     * 
+     *
      * @param buffer The buffer to fill.
      */
     public abstract void read(float[] buffer);

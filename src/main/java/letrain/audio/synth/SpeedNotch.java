@@ -11,8 +11,16 @@ public class SpeedNotch {
 
     public float rampTime; // Seconds per phase
 
-    public SpeedNotch(String name, float startSpeed, float cruiseSpeed, float endSpeed,
-            float start, float end, float coachStart, float coachEnd, float rampTime) {
+    public SpeedNotch(
+            String name,
+            float startSpeed,
+            float cruiseSpeed,
+            float endSpeed,
+            float start,
+            float end,
+            float coachStart,
+            float coachEnd,
+            float rampTime) {
         this.name = name;
         this.startSpeed = startSpeed;
         this.cruiseSpeed = cruiseSpeed;

@@ -2,16 +2,18 @@ package letrain.itinerary;
 
 import java.util.List;
 import java.util.Optional;
-
 import letrain.segments.Segment;
 
-/**
- * Drives a train automatically along an itinerary.
- * Called each tick by the locomotive.
- */
+/** Drives a train automatically along an itinerary. Called each tick by the locomotive. */
 public interface AutoPilot {
 
-    enum Mode { IDLE, FOLLOWING, WAITING, REVERSING, ERROR }
+    enum Mode {
+        IDLE,
+        FOLLOWING,
+        WAITING,
+        REVERSING,
+        ERROR
+    }
 
     /** The itinerary this autopilot is following. */
     Optional<Itinerary> itinerary();
@@ -49,7 +51,10 @@ public interface AutoPilot {
 
     void clearRoute();
 
-    /** Replaces a segment in the current route (e.g. when bypassing a blocked segment with an alternative). */
+    /**
+     * Replaces a segment in the current route (e.g. when bypassing a blocked segment with an
+     * alternative).
+     */
     void replaceRouteSegment(Segment oldSeg, Segment newSeg);
 
     /** Ensure the fork between 'from' and 'to' segments is oriented correctly. */

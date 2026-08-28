@@ -3,57 +3,54 @@ package letrain;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import letrain.mvp.impl.Model;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
-import letrain.vehicle.rail.impl.*;
 import letrain.vehicle.rail.ScriptTrainEventListener;
+import letrain.vehicle.rail.impl.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration tests for serialization and deserialization of core game objects.
- * Verifies that transient fields are properly reinitialized after
- * deserialization,
- * preventing NullPointerExceptions when accessing listener collections.
+ * Integration tests for serialization and deserialization of core game objects. Verifies that
+ * transient fields are properly reinitialized after deserialization, preventing
+ * NullPointerExceptions when accessing listener collections.
  */
 @DisplayName("Serialization/Deserialization Integration Tests")
 class SerializationTest {
 
     @BeforeEach
-    void setUp() throws IOException {
-    }
+    void setUp() throws IOException {}
 
     @AfterEach
-    void tearDown() throws IOException {
-    }
+    void tearDown() throws IOException {}
 
     private void registerMixins(ObjectMapper mapper) {
         mapper.addMixIn(letrain.mvp.Model.class, letrain.mvp.impl.ModelMixin.class);
         mapper.addMixIn(Train.class, letrain.mvp.impl.TrainMixin.class);
         mapper.addMixIn(letrain.itinerary.Waypoint.class, letrain.mvp.impl.WaypointMixin.class);
-        mapper.addMixIn(letrain.itinerary.impl.WaypointImpl.class, letrain.mvp.impl.WaypointMixin.class);
+        mapper.addMixIn(
+                letrain.itinerary.impl.WaypointImpl.class, letrain.mvp.impl.WaypointMixin.class);
         mapper.addMixIn(letrain.itinerary.Itinerary.class, letrain.mvp.impl.ItineraryMixin.class);
-        mapper.addMixIn(letrain.itinerary.impl.ItineraryImpl.class, letrain.mvp.impl.ItineraryMixin.class);
+        mapper.addMixIn(
+                letrain.itinerary.impl.ItineraryImpl.class, letrain.mvp.impl.ItineraryMixin.class);
         mapper.addMixIn(letrain.itinerary.AutoPilot.class, letrain.mvp.impl.AutoPilotMixin.class);
-        mapper.addMixIn(letrain.itinerary.impl.AutoPilotImpl.class, letrain.mvp.impl.AutoPilotMixin.class);
-        mapper.addMixIn(letrain.itinerary.WaypointCommand.class, letrain.mvp.impl.WaypointCommandMixin.class);
+        mapper.addMixIn(
+                letrain.itinerary.impl.AutoPilotImpl.class, letrain.mvp.impl.AutoPilotMixin.class);
+        mapper.addMixIn(
+                letrain.itinerary.WaypointCommand.class,
+                letrain.mvp.impl.WaypointCommandMixin.class);
     }
 
-    /**
-     * Serialize an object to bytes using Jackson.
-     */
+    /** Serialize an object to bytes using Jackson. */
     private byte[] serialize(Object obj) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
@@ -61,9 +58,7 @@ class SerializationTest {
         return mapper.writeValueAsBytes(obj);
     }
 
-    /**
-     * Deserialize bytes to an object using Jackson.
-     */
+    /** Deserialize bytes to an object using Jackson. */
     private <T> T deserialize(byte[] data, Class<T> clazz) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
@@ -109,11 +104,12 @@ class SerializationTest {
         assertNotNull(restored);
 
         // Attempting to call methods that access the listeners should not throw NPE
-        assertDoesNotThrow(() -> {
-            // notifyLink/notifyUnlink use the trainListeners list
-            // If transient initialization failed, these would throw NPE
-            original.getId(); // Basic getter should work
-        });
+        assertDoesNotThrow(
+                () -> {
+                    // notifyLink/notifyUnlink use the trainListeners list
+                    // If transient initialization failed, these would throw NPE
+                    original.getId(); // Basic getter should work
+                });
     }
 
     @Test
@@ -123,12 +119,13 @@ class SerializationTest {
 
         // Add a listener
         AtomicBoolean listenerCalled = new AtomicBoolean(false);
-        original.addScriptTrainEventListener(new ScriptTrainEventListener() {
-            @Override
-            public void onSpeedChanged(int speed) {
-                listenerCalled.set(true);
-            }
-        });
+        original.addScriptTrainEventListener(
+                new ScriptTrainEventListener() {
+                    @Override
+                    public void onSpeedChanged(int speed) {
+                        listenerCalled.set(true);
+                    }
+                });
 
         // Serialize and deserialize
         byte[] serialized = serialize(original);
@@ -169,10 +166,11 @@ class SerializationTest {
         assertNotNull(restored);
 
         // Should be able to access model without NPE
-        assertDoesNotThrow(() -> {
-            // If trainEventListeners was not reinitialized, this could throw NPE
-            restored.toString();
-        });
+        assertDoesNotThrow(
+                () -> {
+                    // If trainEventListeners was not reinitialized, this could throw NPE
+                    restored.toString();
+                });
     }
 
     @Test
@@ -211,10 +209,11 @@ class SerializationTest {
         assertNotNull(restored);
 
         // Should handle listener operations without throwing
-        assertDoesNotThrow(() -> {
-            // Listener operations should not throw NPE
-            restored.getId();
-        });
+        assertDoesNotThrow(
+                () -> {
+                    // Listener operations should not throw NPE
+                    restored.getId();
+                });
     }
 
     @Test
@@ -325,7 +324,10 @@ class SerializationTest {
 
         train.getTrainCouplingManager().divideTrain(train, () -> 501);
 
-        assertEquals(2, train.getLinkers().size(), "Train should keep two linkers after unlinking one from front");
+        assertEquals(
+                2,
+                train.getLinkers().size(),
+                "Train should keep two linkers after unlinking one from front");
         assertTrue(train.getLinkers().contains(loco));
         assertTrue(train.getLinkers().contains(backWagon));
         assertNotNull(frontWagon.getTrain(), "Front-side wagon should belong to a new train");
@@ -339,21 +341,27 @@ class SerializationTest {
 
         // Build Itinerary
         letrain.itinerary.impl.ItineraryImpl itinerary = new letrain.itinerary.impl.ItineraryImpl();
-        java.util.List<letrain.itinerary.WaypointCommand> cmds1 = java.util.List.of(letrain.itinerary.WaypointCommand.LOAD);
-        java.util.List<letrain.itinerary.WaypointCommand> cmds2 = java.util.List.of(
-            letrain.itinerary.WaypointCommand.waitSeconds(5),
-            letrain.itinerary.WaypointCommand.speed(8)
-        );
-        itinerary.addWaypoint(new letrain.itinerary.impl.WaypointImpl(
-            letrain.itinerary.Waypoint.Type.STATION, 10, java.util.Optional.of(letrain.map.Dir.N), cmds1
-        ));
-        itinerary.addWaypoint(new letrain.itinerary.impl.WaypointImpl(
-            letrain.itinerary.Waypoint.Type.SENSOR, 20, java.util.Optional.empty(), cmds2
-        ));
+        java.util.List<letrain.itinerary.WaypointCommand> cmds1 =
+                java.util.List.of(letrain.itinerary.WaypointCommand.LOAD);
+        java.util.List<letrain.itinerary.WaypointCommand> cmds2 =
+                java.util.List.of(
+                        letrain.itinerary.WaypointCommand.waitSeconds(5),
+                        letrain.itinerary.WaypointCommand.speed(8));
+        itinerary.addWaypoint(
+                new letrain.itinerary.impl.WaypointImpl(
+                        letrain.itinerary.Waypoint.Type.STATION,
+                        10,
+                        java.util.Optional.of(letrain.map.Dir.N),
+                        cmds1));
+        itinerary.addWaypoint(
+                new letrain.itinerary.impl.WaypointImpl(
+                        letrain.itinerary.Waypoint.Type.SENSOR,
+                        20,
+                        java.util.Optional.empty(),
+                        cmds2));
         // Build AutoPilot
-        letrain.itinerary.impl.AutoPilotImpl ap = new letrain.itinerary.impl.AutoPilotImpl(
-            original, original.getActionManager()
-        );
+        letrain.itinerary.impl.AutoPilotImpl ap =
+                new letrain.itinerary.impl.AutoPilotImpl(original, original.getActionManager());
         ap.setItinerary(itinerary);
         original.setAutopilot(ap);
         ap.setPathfinder(org.mockito.Mockito.mock(letrain.itinerary.SegmentPathfinder.class));
@@ -398,7 +406,9 @@ class SerializationTest {
         if (restoredAp instanceof letrain.itinerary.impl.AutoPilotImpl impl) {
             assertEquals(42, impl.getWaitTicks());
             assertEquals(1, impl.getPendingCommands().size());
-            assertEquals(letrain.itinerary.WaypointCommand.Kind.SPEED, impl.getPendingCommands().get(0).kind());
+            assertEquals(
+                    letrain.itinerary.WaypointCommand.Kind.SPEED,
+                    impl.getPendingCommands().get(0).kind());
             assertEquals(5, impl.getPendingCommands().get(0).targetSpeed());
         }
     }

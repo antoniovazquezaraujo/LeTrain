@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
 import letrain.vehicle.rail.impl.Stop;
 import letrain.vehicle.rail.impl.Trip;
 import org.junit.jupiter.api.DisplayName;

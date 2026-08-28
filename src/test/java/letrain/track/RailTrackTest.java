@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import letrain.map.Dir;
 import letrain.track.rail.RailTrack;
-import letrain.vehicle.rail.Linker;
 import letrain.vehicle.Tracker;
+import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.impl.Wagon;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -108,7 +108,8 @@ class RailTrackTest {
 
         // El primer vehículo sigue en el track; el segundo no debe haber ingresado.
         assertEquals(track, ((Tracker) v).getTrack());
-        assertNull(((Tracker) v2).getTrack(),
+        assertNull(
+                ((Tracker) v2).getTrack(),
                 "El segundo vehículo no debe haberse montado en el track porque estaba ocupado");
     }
 
@@ -125,5 +126,4 @@ class RailTrackTest {
         track.removeLinker();
         assertNull(track.getLinker());
     }
-
 }

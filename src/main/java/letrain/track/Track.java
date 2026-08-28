@@ -1,15 +1,14 @@
 package letrain.track;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import letrain.map.Dir;
 import letrain.map.Mappable;
 import letrain.map.Point;
@@ -23,33 +22,38 @@ import letrain.visitor.Renderable;
     @JsonSubTypes.Type(value = letrain.track.rail.RailTrack.class, name = "RailTrack"),
     @JsonSubTypes.Type(value = letrain.track.rail.ForkRailTrack.class, name = "ForkRailTrack"),
     @JsonSubTypes.Type(value = letrain.track.rail.BridgeRailTrack.class, name = "BridgeRailTrack"),
-    @JsonSubTypes.Type(value = letrain.track.rail.BridgeGateRailTrack.class, name = "BridgeGateRailTrack"),
+    @JsonSubTypes.Type(
+            value = letrain.track.rail.BridgeGateRailTrack.class,
+            name = "BridgeGateRailTrack"),
     @JsonSubTypes.Type(value = letrain.track.rail.TunnelRailTrack.class, name = "TunnelRailTrack"),
-    @JsonSubTypes.Type(value = letrain.track.rail.TunnelGateRailTrack.class, name = "TunnelGateRailTrack"),
+    @JsonSubTypes.Type(
+            value = letrain.track.rail.TunnelGateRailTrack.class,
+            name = "TunnelGateRailTrack"),
     @JsonSubTypes.Type(value = letrain.track.rail.StationRailTrack.class, name = "StationRailTrack")
 })
-
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public abstract class Track implements
-        Router,
-        Connectable,
-        LinkerCompartment,
-        Mappable,
-        LinkerCompartmentListener,
-        Renderable {
-    @JsonIgnore
-    private TrackDirector trackDirector;
+public abstract class Track
+        implements Router,
+                Connectable,
+                LinkerCompartment,
+                Mappable,
+                LinkerCompartmentListener,
+                Renderable {
+    @JsonIgnore private TrackDirector trackDirector;
 
     private Linker linker = null;
-    private Linker reservation = null; // NEW: Track reservation to prevent race conditions during multi-train ticks
+    private Linker reservation =
+            null; // NEW: Track reservation to prevent race conditions during multi-train ticks
     private Sensor sensor = null;
     private RailSemaphore semaphore = null;
     private Point pos = new Point(0, 0);
+
     @com.fasterxml.jackson.annotation.JsonProperty("connectedTracks")
     protected Track[] connections;
-    @JsonIgnore
-    List<Pair<Dir, Point>> connectedPositions = new ArrayList<>();
+
+    @JsonIgnore List<Pair<Dir, Point>> connectedPositions = new ArrayList<>();
+
     private final List<LinkerCompartmentListener> trackableCompartmentListeners = new ArrayList<>();
 
     protected Track() {
@@ -148,7 +152,6 @@ public abstract class Track implements
      **************************************************************
      * @return
      */
-
     @Override
     public Track getConnected(Dir dir) {
         return connections[dir.getValue()];
@@ -200,7 +203,8 @@ public abstract class Track implements
                     }
                 }
                 if (!alreadyAdded) {
-                    this.connectedPositions.add(new Pair<Dir, Point>(Dir.values()[i], connected.getPosition()));
+                    this.connectedPositions.add(
+                            new Pair<Dir, Point>(Dir.values()[i], connected.getPosition()));
                 }
             }
         }
@@ -225,7 +229,6 @@ public abstract class Track implements
      **************************************************************
      * @return
      */
-
     @Override
     public Linker getLinker() {
         return linker;
@@ -292,5 +295,4 @@ public abstract class Track implements
     public void setSemaphore(RailSemaphore semaphore) {
         this.semaphore = semaphore;
     }
-
 }

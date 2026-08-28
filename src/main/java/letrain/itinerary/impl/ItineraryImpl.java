@@ -1,16 +1,15 @@
 package letrain.itinerary.impl;
 
-import letrain.itinerary.Itinerary;
-import letrain.itinerary.Waypoint;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import letrain.itinerary.Itinerary;
+import letrain.itinerary.Waypoint;
 
 public class ItineraryImpl implements Itinerary {
     private final List<Waypoint> waypoints = new ArrayList<>();
 
-    public ItineraryImpl() {
-    }
+    public ItineraryImpl() {}
 
     public ItineraryImpl(List<Waypoint> waypoints) {
         if (waypoints != null) {

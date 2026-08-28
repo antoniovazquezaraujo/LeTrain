@@ -1,16 +1,12 @@
 package letrain.track;
 
 import java.io.Serializable;
-
 import letrain.vehicle.rail.impl.Train;
 
 public interface ForkEventListener extends Serializable {
-    default public void onEnterTrain(Train train, boolean isForward) {
-    }
+    public default void onEnterTrain(Train train, boolean isForward) {}
 
-    default public void onExitTrain(Train train, boolean isForward) {
-    }
+    public default void onExitTrain(Train train, boolean isForward) {}
 
-    default public void onDirectionChanged(boolean normal) {
-    }
+    public default void onDirectionChanged(boolean normal) {}
 }

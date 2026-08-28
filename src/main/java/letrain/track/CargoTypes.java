@@ -24,9 +24,7 @@ public enum CargoTypes {
         CONSUMER
     }
 
-    /**
-     * Map GroundMap value to CargoType and Role
-     */
+    /** Map GroundMap value to CargoType and Role */
     public static class IndustryMapper {
         public static CargoTypes getCargoForTerrain(int terrainType) {
             switch (terrainType) {
@@ -45,10 +43,8 @@ public enum CargoTypes {
         }
 
         public static StationRole getRoleForTerrain(int terrainType) {
-            if (terrainType >= 10 && terrainType <= 19)
-                return StationRole.PRODUCER;
-            if (terrainType >= 20 && terrainType <= 29)
-                return StationRole.CONSUMER;
+            if (terrainType >= 10 && terrainType <= 19) return StationRole.PRODUCER;
+            if (terrainType >= 20 && terrainType <= 29) return StationRole.CONSUMER;
             return StationRole.GENERIC;
         }
     }

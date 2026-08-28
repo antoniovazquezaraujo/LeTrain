@@ -2,11 +2,11 @@ package letrain.visitor.terminal;
 
 import static org.mockito.Mockito.*;
 
-import java.util.List;
 import com.googlecode.lanterna.TextColor;
+import java.util.List;
+import letrain.map.Point;
 import letrain.mvp.Model;
 import letrain.mvp.impl.terminal.TerminalView;
-import letrain.map.Point;
 import letrain.segments.BlockManager;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
@@ -19,7 +19,8 @@ import org.junit.jupiter.api.Test;
 class RenderVisitorTest {
 
     @Test
-    @DisplayName("visitRailTrack should paint rail with locomotive color when segment is locked by a train")
+    @DisplayName(
+            "visitRailTrack should paint rail with locomotive color when segment is locked by a train")
     void visitRailTrack_shouldPaintWithLocomotiveColor_whenSegmentIsLocked() {
         TerminalView view = mock(TerminalView.class);
         RenderVisitor visitor = new RenderVisitor(view);

@@ -1,9 +1,5 @@
 package letrain.mvp.impl.graphic;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -25,6 +21,9 @@ import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.utils.FontManager;
@@ -141,7 +140,8 @@ public class Gdx3DHud {
         monoToggleStyle.font = skin.getFont("monospace-font");
         skin.add("monospace-toggle", monoToggleStyle);
 
-        TextButton.TextButtonStyle monoButtonStyle = new TextButton.TextButtonStyle(textButtonStyle);
+        TextButton.TextButtonStyle monoButtonStyle =
+                new TextButton.TextButtonStyle(textButtonStyle);
         monoButtonStyle.font = skin.getFont("monospace-font");
         monoButtonStyle.up = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.2f, 1f));
         skin.add("monospace-button", monoButtonStyle);
@@ -192,8 +192,10 @@ public class Gdx3DHud {
         pixWhite.fill();
         pixWhite.setColor(Color.BLACK);
         pixWhite.fillRectangle(6, 6, 8, 8);
-        com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowWhite = new com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable(
-                new com.badlogic.gdx.graphics.g2d.NinePatch(new Texture(pixWhite), 6, 6, 6, 6));
+        com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowWhite =
+                new com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable(
+                        new com.badlogic.gdx.graphics.g2d.NinePatch(
+                                new Texture(pixWhite), 6, 6, 6, 6));
         skin.add("window-white", windowWhite);
 
         // Window Background - Cyan Border (Hover)
@@ -202,8 +204,10 @@ public class Gdx3DHud {
         pixCyan.fill();
         pixCyan.setColor(Color.BLACK);
         pixCyan.fillRectangle(6, 6, 8, 8);
-        com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowCyan = new com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable(
-                new com.badlogic.gdx.graphics.g2d.NinePatch(new Texture(pixCyan), 6, 6, 6, 6));
+        com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowCyan =
+                new com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable(
+                        new com.badlogic.gdx.graphics.g2d.NinePatch(
+                                new Texture(pixCyan), 6, 6, 6, 6));
         skin.add("window-cyan", windowCyan);
 
         // Window Background - Blue Border (Resize Hover)
@@ -212,8 +216,10 @@ public class Gdx3DHud {
         pixBlue.fill();
         pixBlue.setColor(Color.BLACK);
         pixBlue.fillRectangle(6, 6, 8, 8);
-        com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowBlue = new com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable(
-                new com.badlogic.gdx.graphics.g2d.NinePatch(new Texture(pixBlue), 6, 6, 6, 6));
+        com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowBlue =
+                new com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable(
+                        new com.badlogic.gdx.graphics.g2d.NinePatch(
+                                new Texture(pixBlue), 6, 6, 6, 6));
         skin.add("window-blue", windowBlue);
 
         windowStyle.background = windowWhite;
@@ -236,8 +242,9 @@ public class Gdx3DHud {
         scrollPaneStyle.vScrollKnob = skin.newDrawable("white", Color.LIGHT_GRAY);
         // SplitPane Style
         SplitPane.SplitPaneStyle splitPaneStyle = new SplitPane.SplitPaneStyle();
-        com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable handle = (com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable) skin
-                .newDrawable("white", Color.WHITE);
+        com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable handle =
+                (com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable)
+                        skin.newDrawable("white", Color.WHITE);
         handle.setMinWidth(6f);
         handle.setMinHeight(6f);
         splitPaneStyle.handle = handle;
@@ -245,8 +252,9 @@ public class Gdx3DHud {
         skin.add("default-vertical", splitPaneStyle);
 
         SplitPane.SplitPaneStyle splitPaneStyleHover = new SplitPane.SplitPaneStyle(splitPaneStyle);
-        com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable handleHover = (com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable) skin
-                .newDrawable("white", Color.CYAN);
+        com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable handleHover =
+                (com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable)
+                        skin.newDrawable("white", Color.CYAN);
         handleHover.setMinWidth(6f);
         handleHover.setMinHeight(6f);
         splitPaneStyleHover.handle = handleHover;
@@ -256,7 +264,8 @@ public class Gdx3DHud {
         skin.add("default", scrollPaneStyle);
 
         // ProgressBar Style
-        com.badlogic.gdx.scenes.scene2d.ui.ProgressBar.ProgressBarStyle progressBarStyle = new com.badlogic.gdx.scenes.scene2d.ui.ProgressBar.ProgressBarStyle();
+        com.badlogic.gdx.scenes.scene2d.ui.ProgressBar.ProgressBarStyle progressBarStyle =
+                new com.badlogic.gdx.scenes.scene2d.ui.ProgressBar.ProgressBarStyle();
         progressBarStyle.background = skin.newDrawable("white", Color.DARK_GRAY);
         progressBarStyle.knobBefore = skin.newDrawable("white", Color.CYAN);
         skin.add("default-horizontal", progressBarStyle);
@@ -284,10 +293,11 @@ public class Gdx3DHud {
         descLabel = new Label("", skin, "small");
         descLabel.setWrap(true);
         descLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
-        globalHelpLabel = new Label(
-                "[LIGHT_GRAY][ALT+UP/DOWN / MOUSE WHEEL]: ZOOM | [ALT+LEFT/RIGHT]: ROTATE CAMERA | [C]: CHANGE CAMERA VIEW[]",
-                skin,
-                "tiny");
+        globalHelpLabel =
+                new Label(
+                        "[LIGHT_GRAY][ALT+UP/DOWN / MOUSE WHEEL]: ZOOM | [ALT+LEFT/RIGHT]: ROTATE CAMERA | [C]: CHANGE CAMERA VIEW[]",
+                        skin,
+                        "tiny");
         globalHelpLabel.setWrap(true);
         globalHelpLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
 
@@ -303,15 +313,18 @@ public class Gdx3DHud {
         Table financeArea = new Table();
 
         // Create separate styles to avoid sharing and overwriting skin styles
-        Label.LabelStyle incomeStyle = new Label.LabelStyle(skin.get("small", Label.LabelStyle.class));
+        Label.LabelStyle incomeStyle =
+                new Label.LabelStyle(skin.get("small", Label.LabelStyle.class));
         incomeStyle.fontColor = com.badlogic.gdx.graphics.Color.GREEN;
         incomeLabel = new Label("+ $0", incomeStyle);
 
-        Label.LabelStyle expensesStyle = new Label.LabelStyle(skin.get("small", Label.LabelStyle.class));
+        Label.LabelStyle expensesStyle =
+                new Label.LabelStyle(skin.get("small", Label.LabelStyle.class));
         expensesStyle.fontColor = com.badlogic.gdx.graphics.Color.RED;
         expensesLabel = new Label("- $0", expensesStyle);
 
-        Label.LabelStyle balanceStyle = new Label.LabelStyle(skin.get("medium", Label.LabelStyle.class));
+        Label.LabelStyle balanceStyle =
+                new Label.LabelStyle(skin.get("medium", Label.LabelStyle.class));
         balanceLabel = new Label("$ 0", balanceStyle);
 
         Table subFinance = new Table();
@@ -322,9 +335,6 @@ public class Gdx3DHud {
         financeArea.add(balanceLabel).right().padTop(5);
 
         bottomContainer.add(financeArea).width(200).left().bottom().padLeft(20).padRight(20);
-
-
-
 
         Table labelArea = new Table();
         labelArea.add(menuTable).padBottom(5).row();
@@ -359,7 +369,15 @@ public class Gdx3DHud {
 
         if (isEnabled) {
             // Enabled: White text with Cyan hotkey
-            return "[WHITE]" + prefix + "[]" + "[CYAN]" + hotkeyChar + "[]" + "[WHITE]" + suffix + "[]";
+            return "[WHITE]"
+                    + prefix
+                    + "[]"
+                    + "[CYAN]"
+                    + hotkeyChar
+                    + "[]"
+                    + "[WHITE]"
+                    + suffix
+                    + "[]";
         } else {
             // When disabled, everything is gray, no blue hotkey
             return "[LIGHT_GRAY]" + capitalized + "[]";
@@ -376,31 +394,32 @@ public class Gdx3DHud {
             button.setName(option.gameModeName().replace("&", "").toLowerCase());
             button.setDisabled(!isEnabled);
 
-            button.addListener(new ClickListener() {
-                @Override
-                public void clicked(InputEvent event, float x, float y) {
-                    if (!button.isDisabled()) {
-                        letrain.mvp.Model.GameMode newMode = option.doWhenSelected().get();
-                        model.setMode(newMode);
-                        view.onGameModeSelected(newMode);
+            button.addListener(
+                    new ClickListener() {
+                        @Override
+                        public void clicked(InputEvent event, float x, float y) {
+                            if (!button.isDisabled()) {
+                                letrain.mvp.Model.GameMode newMode = option.doWhenSelected().get();
+                                model.setMode(newMode);
+                                view.onGameModeSelected(newMode);
 
-                        // Inicialización de estados al cambiar de modo mediante botones
-                        if (newMode == letrain.mvp.Model.GameMode.LINK) {
-                            if (model.getSelectedLocomotive() != null
-                                    && model.getSelectedLocomotive().getTrain() != null) {
-                                Train train = model.getSelectedLocomotive().getTrain();
-                                train.getTrainCouplingManager().resetLinkState(train);
-                            }
-                        } else if (newMode == letrain.mvp.Model.GameMode.UNLINK) {
-                            if (model.getSelectedLocomotive() != null
-                                    && model.getSelectedLocomotive().getTrain() != null) {
-                                Train train = model.getSelectedLocomotive().getTrain();
-                                train.getTrainCouplingManager().resetUnlinkState(train);
+                                // Inicialización de estados al cambiar de modo mediante botones
+                                if (newMode == letrain.mvp.Model.GameMode.LINK) {
+                                    if (model.getSelectedLocomotive() != null
+                                            && model.getSelectedLocomotive().getTrain() != null) {
+                                        Train train = model.getSelectedLocomotive().getTrain();
+                                        train.getTrainCouplingManager().resetLinkState(train);
+                                    }
+                                } else if (newMode == letrain.mvp.Model.GameMode.UNLINK) {
+                                    if (model.getSelectedLocomotive() != null
+                                            && model.getSelectedLocomotive().getTrain() != null) {
+                                        Train train = model.getSelectedLocomotive().getTrain();
+                                        train.getTrainCouplingManager().resetUnlinkState(train);
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-            });
+                    });
 
             menuTable.add(button).pad(5).height(30);
         }
@@ -433,10 +452,9 @@ public class Gdx3DHud {
             notchLever.setVisible(true);
             notchLever.setNotch(loco.getSpeed());
             notchLever.setTargetNotch(loco.getTargetSpeed());
-            
+
         } else {
             notchLever.setVisible(false);
-
         }
 
         // Marcamos el botón seleccionado según el modo y actualizamos textos
@@ -461,7 +479,10 @@ public class Gdx3DHud {
                             String desc = option.gameModeDescription();
                             if (model.getMode() == letrain.mvp.Model.GameMode.TRAINS) {
                                 String colorName = model.getSelectedWagonType().name();
-                                String colorMarkup = "[#" + model.getSelectedWagonType().getColor().toString() + "]";
+                                String colorMarkup =
+                                        "[#"
+                                                + model.getSelectedWagonType().getColor().toString()
+                                                + "]";
                                 desc = "Selected: " + colorMarkup + colorName + "[] | " + desc;
                             }
                             descLabel.setText(desc);
@@ -473,674 +494,900 @@ public class Gdx3DHud {
     }
 
     public void showMessage(String title, String message) {
-        Gdx.app.postRunnable(() -> {
-            com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog = new com.badlogic.gdx.scenes.scene2d.ui.Dialog(title,
-                    skin) {
-                @Override
-                protected void result(Object object) {
-                    this.remove();
-                }
-            };
-            dialog.text(message);
-            dialog.button("OK");
-            dialog.pack();
-            dialog.setPosition(
-                    (stage.getWidth() - dialog.getWidth()) / 2,
-                    (stage.getHeight() - dialog.getHeight()) / 2);
-            stage.addActor(dialog);
-        });
+        Gdx.app.postRunnable(
+                () -> {
+                    com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
+                            new com.badlogic.gdx.scenes.scene2d.ui.Dialog(title, skin) {
+                                @Override
+                                protected void result(Object object) {
+                                    this.remove();
+                                }
+                            };
+                    dialog.text(message);
+                    dialog.button("OK");
+                    dialog.pack();
+                    dialog.setPosition(
+                            (stage.getWidth() - dialog.getWidth()) / 2,
+                            (stage.getHeight() - dialog.getHeight()) / 2);
+                    stage.addActor(dialog);
+                });
     }
 
     public void showIDE() {
         if (ideWindow != null) {
             ideWindow.toFront();
-            stage.setKeyboardFocus(ideWindow.findActor("editorTextArea")); // Need to name the textArea
+            stage.setKeyboardFocus(
+                    ideWindow.findActor("editorTextArea")); // Need to name the textArea
             return;
         }
-        Gdx.app.postRunnable(() -> {
-            if (ideWindow != null)
-                return; // double check inside runnable
-            final Window window = new Window("LT-IDE v1.1 - LeTrain Integrated Development Environment", skin);
-            window.setModal(true);
-            window.setMovable(true);
-            window.setResizable(true);
-            window.padTop(35);
+        Gdx.app.postRunnable(
+                () -> {
+                    if (ideWindow != null) return; // double check inside runnable
+                    final Window window =
+                            new Window(
+                                    "LT-IDE v1.1 - LeTrain Integrated Development Environment",
+                                    skin);
+                    window.setModal(true);
+                    window.setMovable(true);
+                    window.setResizable(true);
+                    window.padTop(35);
 
-            final com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowWhite = skin.get("window-white", com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable.class);
-            final com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowBlue = skin.get("window-blue", com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable.class);
-            final Window.WindowStyle ideWindowStyle = new Window.WindowStyle(skin.get(Window.WindowStyle.class));
-            ideWindowStyle.background = windowWhite;
-            window.setStyle(ideWindowStyle);
+                    final com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowWhite =
+                            skin.get(
+                                    "window-white",
+                                    com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable.class);
+                    final com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable windowBlue =
+                            skin.get(
+                                    "window-blue",
+                                    com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable.class);
+                    final Window.WindowStyle ideWindowStyle =
+                            new Window.WindowStyle(skin.get(Window.WindowStyle.class));
+                    ideWindowStyle.background = windowWhite;
+                    window.setStyle(ideWindowStyle);
 
-            // Title bar buttons
-            Table titleTable = window.getTitleTable();
-            TextButton.TextButtonStyle titleBtnStyle = new TextButton.TextButtonStyle(
-                    skin.get(TextButton.TextButtonStyle.class));
-            titleBtnStyle.font = skin.getFont("monospace-font");
-            titleBtnStyle.up = skin.newDrawable("white", Color.DARK_GRAY);
-            TextButton closeBtnTitle = new TextButton(" X ", titleBtnStyle);
-            TextButton maxBtnTitle = new TextButton(" [ ] ", titleBtnStyle);
-            titleTable.add(maxBtnTitle).size(30, 22).right().padRight(5);
-            titleTable.add(closeBtnTitle).size(30, 22).right().padRight(10);
+                    // Title bar buttons
+                    Table titleTable = window.getTitleTable();
+                    TextButton.TextButtonStyle titleBtnStyle =
+                            new TextButton.TextButtonStyle(
+                                    skin.get(TextButton.TextButtonStyle.class));
+                    titleBtnStyle.font = skin.getFont("monospace-font");
+                    titleBtnStyle.up = skin.newDrawable("white", Color.DARK_GRAY);
+                    TextButton closeBtnTitle = new TextButton(" X ", titleBtnStyle);
+                    TextButton maxBtnTitle = new TextButton(" [ ] ", titleBtnStyle);
+                    titleTable.add(maxBtnTitle).size(30, 22).right().padRight(5);
+                    titleTable.add(closeBtnTitle).size(30, 22).right().padRight(10);
 
-            closeBtnTitle.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    ideWindow = null;
-                    ideLogContent = null;
-                    ideObjsContent = null;
-                    window.remove();
-                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                    view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
-                }
-            });
-
-            final boolean[] isMaximized = { false };
-            final float[] prevX = { 0 }, prevY = { 0 }, prevW = { 0 }, prevH = { 0 };
-            maxBtnTitle.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    if (!isMaximized[0]) {
-                        prevX[0] = window.getX();
-                        prevY[0] = window.getY();
-                        prevW[0] = window.getWidth();
-                        prevH[0] = window.getHeight();
-                        window.setBounds(0, 0, stage.getWidth(), stage.getHeight());
-                        window.setResizable(false);
-                        window.setMovable(false);
-                        isMaximized[0] = true;
-                        maxBtnTitle.setText(" [-] ");
-                        ideWindowStyle.background = windowWhite;
-                        window.setBackground(windowWhite);
-                    } else {
-                        window.setResizable(true);
-                        window.setMovable(true);
-                        window.setBounds(prevX[0], prevY[0], prevW[0], prevH[0]);
-                        isMaximized[0] = false;
-                        maxBtnTitle.setText(" [ ] ");
-                    }
-                    window.invalidateHierarchy();
-                }
-            });
-
-            window.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
-                @Override
-                public boolean mouseMoved(InputEvent event, float x, float y) {
-                    if (!isMaximized[0]) {
-                        // Use a 20px margin to make it easy to trigger and visible
-                        boolean nearBorder = (x <= 20 || x >= window.getWidth() - 20 || y <= 20 || y >= window.getHeight() - 20);
-                        if (nearBorder) {
-                            ideWindowStyle.background = windowBlue;
-                            window.setBackground(windowBlue);
-                        } else {
-                            ideWindowStyle.background = windowWhite;
-                            window.setBackground(windowWhite);
-                        }
-                    } else {
-                        ideWindowStyle.background = windowWhite;
-                        window.setBackground(windowWhite);
-                    }
-                    return false;
-                }
-
-                @Override
-                public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
-                    if (toActor == null || !toActor.isDescendantOf(window)) {
-                        ideWindowStyle.background = windowWhite;
-                        window.setBackground(windowWhite);
-                    }
-                }
-            });
-
-            // Toggle Buttons Bar
-            Table toggleBar = new Table();
-            final TextButton toggleRef = new TextButton("Ref", skin, "monospace-toggle");
-            final TextButton toggleObjs = new TextButton("Objs", skin, "monospace-toggle");
-            final TextButton toggleEx = new TextButton("Ex", skin, "monospace-toggle");
-            final TextButton toggleLog = new TextButton("Logs", skin, "monospace-toggle");
-
-            // Toggles automatically managed by "toggle" style and its internal listeners
-
-            toggleRef.setChecked(true);
-            toggleObjs.setChecked(true);
-            toggleEx.setChecked(false);
-
-            toggleBar.add(new Label("Panels: ", skin, "monospace")).padRight(5);
-            toggleBar.add(toggleRef).padRight(5);
-            toggleBar.add(toggleObjs).padRight(5);
-            toggleBar.add(toggleEx).padRight(5);
-            toggleBar.add(toggleLog);
-
-            // Editor Area
-            final com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea = new com.badlogic.gdx.scenes.scene2d.ui.TextArea(
-                    view.getProgram(), skin, "monospace-textarea");
-            textArea.setName("editorTextArea");
-
-            // Line numbers in a separate table for perfect row-by-row alignment
-            final Table lineNumbersTable = new Table();
-            lineNumbersTable.top().right();
-
-            Table editorSubContainer = new Table();
-            editorSubContainer.top().left();
-
-            Runnable updateLineNumbers = () -> {
-                lineNumbersTable.clearChildren();
-                String text = textArea.getText();
-                int lines = text.split("\n", -1).length;
-                float lineHeight = textArea.getStyle().font.getLineHeight();
-                for (int i = 1; i <= lines; i++) {
-                    Label l = new Label(String.valueOf(i), skin, "monospace");
-                    l.setColor(com.badlogic.gdx.graphics.Color.GRAY);
-                    lineNumbersTable.add(l).height(lineHeight).top().right().padRight(10).row();
-                }
-            };
-            textArea.setTextFieldListener((textField, c) -> updateLineNumbers.run());
-            updateLineNumbers.run();
-
-            float topPad = textArea.getStyle().background != null ? textArea.getStyle().background.getTopHeight() : 0;
-            // Add a small manual adjustment (2px) often helps with multi-line alignment in
-            // Scene2D
-            editorSubContainer.add(lineNumbersTable).top().padTop(topPad + 2.5f);
-            editorSubContainer.add(textArea).grow().top();
-
-            ScrollPane editorScroll = new ScrollPane(editorSubContainer, skin);
-            editorScroll.setFadeScrollBars(false);
-
-            // Side Panels
-            final Table sideTable = new Table();
-
-            // 1. Reference
-            final Table refTable = new Table();
-            refTable.setBackground(skin.newDrawable("white", new Color(0.1f, 0.1f, 0.1f, 0.95f)));
-            Label refTitle = new Label("QUICK REFERENCE", skin, "monospace");
-            refTitle.setColor(Color.YELLOW);
-            refTable.add(refTitle).pad(5).row();
-
-            com.badlogic.gdx.scenes.scene2d.ui.Tree.TreeStyle treeStyle = new com.badlogic.gdx.scenes.scene2d.ui.Tree.TreeStyle();
-            treeStyle.plus = skin.newDrawable("white", new Color(0.6f, 0.6f, 0.6f, 1f));
-            treeStyle.minus = skin.newDrawable("white", new Color(0.6f, 0.6f, 0.6f, 1f));
-            treeStyle.selection = skin.newDrawable("white", new Color(0.2f, 0.4f, 0.6f, 0.8f));
-            Tree refTree = new Tree(treeStyle);
-            refTree.setPadding(5f);
-            refTree.setIconSpacing(6f, 0);
-            refTree.setIndentSpacing(12f);
-            
-            final ScrollPane[] scrollPaneHolder = new ScrollPane[1];
-
-            refTree.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
-                private Tree.Node getNextVisible(Tree.Node current) {
-                    if (current == null) return refTree.getRootNodes().size > 0 ? (Tree.Node) refTree.getRootNodes().get(0) : null;
-                    if (current.isExpanded() && current.getChildren().size > 0) return (Tree.Node) current.getChildren().get(0);
-                    Tree.Node node = current;
-                    while (node != null) {
-                        Tree.Node p = node.getParent();
-                        com.badlogic.gdx.utils.Array siblings = p == null ? refTree.getRootNodes() : p.getChildren();
-                        int idx = siblings.indexOf(node, true);
-                        if (idx < siblings.size - 1) return (Tree.Node) siblings.get(idx + 1);
-                        node = p;
-                    }
-                    return null;
-                }
-                private Tree.Node getPrevVisible(Tree.Node current) {
-                    if (current == null) return refTree.getRootNodes().size > 0 ? (Tree.Node) refTree.getRootNodes().get(0) : null;
-                    Tree.Node p = current.getParent();
-                    com.badlogic.gdx.utils.Array siblings = p == null ? refTree.getRootNodes() : p.getChildren();
-                    int idx = siblings.indexOf(current, true);
-                    if (idx > 0) {
-                        Tree.Node node = (Tree.Node) siblings.get(idx - 1);
-                        while (node.isExpanded() && node.getChildren().size > 0) node = (Tree.Node) node.getChildren().peek();
-                        return node;
-                    }
-                    return p;
-                }
-
-                @Override
-                public boolean keyDown(com.badlogic.gdx.scenes.scene2d.InputEvent event, int keycode) {
-                    com.badlogic.gdx.utils.Array<Tree.Node> selection = refTree.getSelection().toArray();
-                    Tree.Node current = selection.size > 0 ? selection.get(0) : null;
-
-                    if (keycode == com.badlogic.gdx.Input.Keys.DOWN) {
-                        Tree.Node next = getNextVisible(current);
-                        if (next != null) {
-                            refTree.getSelection().set(next);
-                            if (scrollPaneHolder[0] != null && next.getActor() != null) {
-                                scrollPaneHolder[0].scrollTo(next.getActor().getX(), next.getActor().getY(), next.getActor().getWidth(), next.getActor().getHeight());
-                            }
-                        }
-                        return true;
-                    } else if (keycode == com.badlogic.gdx.Input.Keys.UP) {
-                        Tree.Node prev = getPrevVisible(current);
-                        if (prev != null) {
-                            refTree.getSelection().set(prev);
-                            if (scrollPaneHolder[0] != null && prev.getActor() != null) {
-                                scrollPaneHolder[0].scrollTo(prev.getActor().getX(), prev.getActor().getY(), prev.getActor().getWidth(), prev.getActor().getHeight());
-                            }
-                        }
-                        return true;
-                    } else if (keycode == com.badlogic.gdx.Input.Keys.ENTER && current != null) {
-                        if (current.getValue() instanceof String) {
-                            insertAtCursor(textArea, (String) current.getValue() + "\n");
-                            return true;
-                        } else if (current.getActor() instanceof Label) {
-                            Label l = (Label) current.getActor();
-                            String text = l.getText().toString();
-                            if (text.contains("[+]") || text.contains("[-]")) {
-                                current.setExpanded(!current.isExpanded());
-                                l.setText(current.isExpanded() ? text.replace("[+]", "[-]") : text.replace("[-]", "[+]"));
-                                return true;
-                            }
-                        }
-                    }
-                    return false;
-                }
-            });
-
-            // Helper: creates a clickable leaf node that inserts a snippet on click
-            java.util.function.BiFunction<String, String, Tree.Node> leaf = (labelText, snippet) -> {
-                Label l = new Label("   " + labelText, skin, "monospace");
-                Tree.Node n = new Tree.Node(l) {};
-                n.setValue(snippet);
-                l.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-                    @Override
-                    public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
-                        insertAtCursor(textArea, snippet + "\n");
-                        event.stop();
-                    }
-                    @Override
-                    public void enter(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y, int pointer, com.badlogic.gdx.scenes.scene2d.Actor fromActor) {
-                        refTree.getSelection().set(n);
-                    }
-                });
-                return n;
-            };
-            // Helper: section heading (non-clickable, orange)
-            java.util.function.Function<String, Tree.Node> heading = (text) -> {
-                Label l = new Label(text, skin, "monospace");
-                l.setColor(Color.ORANGE);
-                return new Tree.Node(l) {};
-            };
-            // Helper: creates a parent node (click to expand/collapse, toggles +/-)
-            java.util.function.Function<String, Tree.Node> parent = (text) -> {
-                Label l = new Label(text, skin, "monospace");
-                Tree.Node n = new Tree.Node(l) {};
-                l.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-                    @Override
-                    public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
-                        n.setExpanded(!n.isExpanded());
-                        l.setText(n.isExpanded()
-                            ? text.replace("[+]", "[-]")
-                            : text.replace("[-]", "[+]"));
-                        event.stop();
-                    }
-                    @Override
-                    public void enter(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y, int pointer, com.badlogic.gdx.scenes.scene2d.Actor fromActor) {
-                        refTree.getSelection().set(n);
-                    }
-                });
-                return n;
-            };
-
-            // ── BUILD TREE ──
-            class TreeBuilder {
-                Tree.Node build(letrain.command.GrammarReference.Node refNode, String indent) {
-                    if (refNode.isHeading) {
-                        return heading.apply(refNode.label);
-                    } else if (refNode.snippet != null && refNode.children.isEmpty()) {
-                        return leaf.apply(refNode.label, refNode.snippet);
-                    } else {
-                        String prefix = refNode.expanded ? "[-]" : "[+]";
-                        Tree.Node n = parent.apply(indent + prefix + " " + refNode.label);
-                        for (letrain.command.GrammarReference.Node child : refNode.children) {
-                            n.add(build(child, indent + "  "));
-                        }
-                        if (refNode.expanded) n.setExpanded(true);
-                        return n;
-                    }
-                }
-            }
-            TreeBuilder tb = new TreeBuilder();
-            for (letrain.command.GrammarReference.Node rootNode : letrain.command.GrammarReference.getReferenceTree()) {
-                refTree.add(tb.build(rootNode, "  "));
-            }
-
-            ScrollPane refScroll = new ScrollPane(refTree, skin);
-            scrollPaneHolder[0] = refScroll;
-            refTable.add(refScroll).grow().pad(5);
-
-            // 2. Objects
-            final Table objsTable = new Table();
-            objsTable.setBackground(skin.newDrawable("white", new Color(0.12f, 0.12f, 0.12f, 0.95f)));
-            Label objsTitle = new Label("OBJECTS STATUS", skin, "monospace");
-            objsTitle.setColor(Color.CYAN);
-            final Label objsContent = new Label("", skin, "monospace");
-            objsContent.setFontScale(1.0f);
-            objsTable.add(objsTitle).pad(5).row();
-            ScrollPane objsScroll = new ScrollPane(objsContent, skin);
-            objsTable.add(objsScroll).grow().pad(5);
-
-            // 3. Examples
-            final Table examplesTable = new Table();
-            examplesTable.setBackground(skin.newDrawable("white", new Color(0.14f, 0.14f, 0.14f, 0.95f)));
-            Label examplesTitle = new Label("EXAMPLES", skin, "monospace");
-            examplesTitle.setColor(Color.GREEN);
-            Label examplesContent = new Label(
-                    "station 1 on train enter {\n" +
-                            "  train unlink backward 1;\n" +
-                            "  train set speed 2;\n" +
-                            "}\n" +
-                            "sensor 5 on train enter {\n" +
-                            "  train stop;\n" +
-                            "}",
-                    skin, "monospace");
-            examplesContent.setFontScale(1.0f);
-            examplesContent.setWrap(true);
-            examplesTable.add(examplesTitle).pad(5).row();
-            ScrollPane examplesScroll = new ScrollPane(examplesContent, skin);
-            examplesTable.add(examplesScroll).grow().pad(5);
-
-            // 4. Logs
-            final Table logTable = new Table();
-            logTable.setBackground(skin.newDrawable("white", new Color(0.08f, 0.08f, 0.08f, 0.95f)));
-            Label logTitle = new Label("LOGS", skin, "monospace");
-            logTitle.setColor(Color.ORANGE);
-            final Label logContent = new Label("", skin, "monospace");
-            logContent.setWrap(true);
-            logTable.add(logTitle).pad(5).row();
-            ScrollPane logScroll = new ScrollPane(logContent, skin);
-            logTable.add(logScroll).grow().pad(5);
-
-            // Hover focus listeners for all panels and editor
-            java.util.function.Function<ScrollPane, com.badlogic.gdx.scenes.scene2d.InputListener> createScrollFocusListener = (sp) -> new com.badlogic.gdx.scenes.scene2d.InputListener() {
-                @Override
-                public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-                    if (pointer == -1 && stage != null) {
-                        stage.setScrollFocus(sp);
-                    }
-                }
-            };
-
-            refTable.addListener(createScrollFocusListener.apply(refScroll));
-            refScroll.addListener(createScrollFocusListener.apply(refScroll));
-            objsTable.addListener(createScrollFocusListener.apply(objsScroll));
-            objsScroll.addListener(createScrollFocusListener.apply(objsScroll));
-            examplesTable.addListener(createScrollFocusListener.apply(examplesScroll));
-            examplesScroll.addListener(createScrollFocusListener.apply(examplesScroll));
-            logTable.addListener(createScrollFocusListener.apply(logScroll));
-            logScroll.addListener(createScrollFocusListener.apply(logScroll));
-            editorScroll.addListener(createScrollFocusListener.apply(editorScroll));
-            textArea.addListener(createScrollFocusListener.apply(editorScroll));
-
-            sideTable.add(refTable).grow().row();
-            sideTable.add(objsTable).grow().row();
-            sideTable.add(examplesTable).grow().row();
-
-            // Error Table
-            final Table errorTable = new Table();
-            errorTable.setBackground(skin.newDrawable("white", Color.MAROON));
-            final Label errorLabel = new Label("", skin, "monospace");
-            errorLabel.setWrap(true);
-            errorTable.add(new Label("ERRORS:", skin, "monospace")).left().padLeft(5).row();
-            errorLabel.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-                @Override
-                public void clicked(InputEvent event, float x, float y) {
-                    String text = textArea.getText();
-                    String[] errorLines = errorLabel.getText().toString().split("\n");
-                    for (String err : errorLines) {
-                        java.util.regex.Matcher m = java.util.regex.Pattern.compile("line (\\d+):(\\d+)").matcher(err);
-                        if (m.find()) {
-                            int lineNum = Integer.parseInt(m.group(1));
-                            int colNum = Integer.parseInt(m.group(2));
-                            // Convert line:col to character position in the text area
-                            int pos = 0;
-                            String[] srcLines = text.split("\n", -1);
-                            for (int i = 0; i < Math.min(lineNum - 1, srcLines.length); i++) {
-                                pos += srcLines[i].length() + 1; // +1 for the newline
-                            }
-                            pos += Math.max(0, colNum - 1);
-                            textArea.setCursorPosition(Math.min(pos, text.length()));
-                            textArea.getStage().setKeyboardFocus(textArea);
-                            break;
-                        }
-                    }
-                }
-            });
-            ScrollPane errorScroll = new ScrollPane(errorLabel, skin);
-            errorScroll.setFadeScrollBars(false);
-            errorScroll.setScrollingDisabled(true, false);
-            errorTable.add(errorScroll).left().padLeft(15).padBottom(5).growX().minHeight(100f);
-            errorTable.setVisible(false);
-
-            // Footer
-            Table footer = new Table();
-            final TextButton applyBtn = new TextButton(" APPLY ", skin, "monospace-button");
-            final TextButton saveBtn = new TextButton(" SAVE ", skin, "monospace-button");
-            final TextButton loadBtn = new TextButton(" LOAD ", skin, "monospace-button");
-            final TextButton okBtn = new TextButton(" OK ", skin, "monospace-button");
-            okBtn.setColor(Color.GREEN);
-            final TextButton cancelBtn = new TextButton(" CANCEL ", skin, "monospace-button");
-            applyBtn.getLabel().getStyle().font.getData().markupEnabled = true;
-            footer.add(applyBtn).pad(5);
-            footer.add(saveBtn).pad(5);
-            footer.add(loadBtn).pad(5);
-            footer.add(okBtn).pad(5);
-            footer.add(cancelBtn).pad(5);
-
-            // ASSEMBLY & VISIBILITY SYNC
-            Table mainContent = new Table();
-
-            ChangeListener visibilitySync = new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    mainContent.clear();
-
-                    refTable.setVisible(toggleRef.isChecked());
-                    objsTable.setVisible(toggleObjs.isChecked());
-                    examplesTable.setVisible(toggleEx.isChecked());
-                    logTable.setVisible(toggleLog.isChecked());
-
-                    if (toggleObjs.isChecked()) {
-                        objsContent.setText(model.getGameObjectsReport());
-                    }
-                    if (toggleLog.isChecked()) {
-                        logContent.setText(String.join("\n", model.getEventLogManager().getEntries()));
-                    }
-
-                    // Side panels stack logic
-                    List<Actor> visibleSidePanels = new ArrayList<>();
-                    if (toggleRef.isChecked())
-                        visibleSidePanels.add(refTable);
-                    if (toggleObjs.isChecked())
-                        visibleSidePanels.add(objsTable);
-                    if (toggleEx.isChecked())
-                        visibleSidePanels.add(examplesTable);
-                    if (toggleLog.isChecked())
-                        visibleSidePanels.add(logTable);
-
-                    if (visibleSidePanels.isEmpty()) {
-                        mainContent.add(editorScroll).grow();
-                    } else {
-                        // Create Side Component (Nested vertical split panes)
-                        Actor sideComponent = visibleSidePanels.get(visibleSidePanels.size() - 1);
-                        for (int i = visibleSidePanels.size() - 2; i >= 0; i--) {
-                            final SplitPane sp = new SplitPane(visibleSidePanels.get(i), sideComponent, true, skin,
-                                    "default-vertical");
-                            sp.setSplitAmount(0.5f);
-                            sp.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                    closeBtnTitle.addListener(
+                            new ChangeListener() {
                                 @Override
-                                public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-                                    sp.setStyle(skin.get("default-vertical-hover", SplitPane.SplitPaneStyle.class));
-                                }
-
-                                @Override
-                                public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
-                                    sp.setStyle(skin.get("default-vertical", SplitPane.SplitPaneStyle.class));
+                                public void changed(ChangeEvent event, Actor actor) {
+                                    ideWindow = null;
+                                    ideLogContent = null;
+                                    ideObjsContent = null;
+                                    window.remove();
+                                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                                    view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
                                 }
                             });
-                            sideComponent = sp;
-                        }
 
-                        final SplitPane mainSplit = new SplitPane(editorScroll, sideComponent, false, skin,
-                                "default-horizontal");
-                        mainSplit.setSplitAmount(0.75f);
-                        mainSplit.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
-                            @Override
-                            public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-                                mainSplit
-                                        .setStyle(skin.get("default-horizontal-hover", SplitPane.SplitPaneStyle.class));
-                            }
-
-                            @Override
-                            public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
-                                mainSplit.setStyle(skin.get("default-horizontal", SplitPane.SplitPaneStyle.class));
-                            }
-                        });
-                        mainContent.add(mainSplit).grow();
-                    }
-                    window.invalidateHierarchy();
-                }
-            };
-
-            toggleRef.addListener(visibilitySync);
-            toggleObjs.addListener(visibilitySync);
-            toggleEx.addListener(visibilitySync);
-            toggleLog.addListener(visibilitySync);
-            visibilitySync.changed(null, null);
-
-            window.add(toggleBar).right().padRight(10).padBottom(5).row();
-            window.add(mainContent).grow().row();
-            window.add(errorTable).growX().row();
-            window.add(footer).growX().pad(10);
-
-            // Actions
-            applyBtn.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    List<String> errors = model.setProgram(textArea.getText());
-                    if (errors != null && !errors.isEmpty()) {
-                        errorLabel.setText(String.join("\n", errors));
-                        errorTable.setVisible(true);
-                    } else {
-                        errorTable.setVisible(false);
-                    }
-                }
-            });
-
-            saveBtn.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    model.setProgram(textArea.getText());
-                    view.showSaveDialog();
-                }
-            });
-
-            loadBtn.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    view.showLoadDialog();
-                }
-            });
-
-            okBtn.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    List<String> errors = model.setProgram(textArea.getText());
-                    if (errors != null && !errors.isEmpty()) {
-                        errorLabel.setText(String.join("\n", errors));
-                        errorTable.setVisible(true);
-                    } else {
-                        errorTable.setVisible(false);
-                        ideWindow = null;
-                        ideLogContent = null;
-                        ideObjsContent = null;
-                        window.remove();
-                        model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                        view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
-                    }
-                }
-            });
-
-            cancelBtn.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    ideWindow = null;
-                    ideLogContent = null;
-                    ideObjsContent = null;
-                    window.remove();
-                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                    view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
-                }
-            });
-
-            window.addAction(com.badlogic.gdx.scenes.scene2d.actions.Actions.forever(
-                com.badlogic.gdx.scenes.scene2d.actions.Actions.run(new Runnable() {
-                    @Override
-                    public void run() {
-                        boolean altDown = com.badlogic.gdx.Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT) 
-                                       || com.badlogic.gdx.Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
-                        applyBtn.setText(altDown ? " [YELLOW]A[]PPLY " : " APPLY ");
-                        saveBtn.setText(altDown ? " [YELLOW]S[]AVE " : " SAVE ");
-                        loadBtn.setText(altDown ? " [YELLOW]L[]OAD " : " LOAD ");
-                        okBtn.setText(altDown ? " [YELLOW]O[]K " : " OK ");
-                        cancelBtn.setText(altDown ? " [YELLOW]C[]ANCEL " : " CANCEL ");
-                    }
-                })
-            ));
-
-            window.addCaptureListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
-                @Override
-                public boolean keyDown(InputEvent event, int keycode) {
-                    boolean altDown = com.badlogic.gdx.Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT) 
-                                   || com.badlogic.gdx.Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
-                    if (altDown) {
-                        if (keycode == com.badlogic.gdx.Input.Keys.A) {
-                            applyBtn.fire(new ChangeListener.ChangeEvent());
-                            return true;
-                        } else if (keycode == com.badlogic.gdx.Input.Keys.S) {
-                            saveBtn.fire(new ChangeListener.ChangeEvent());
-                            return true;
-                        } else if (keycode == com.badlogic.gdx.Input.Keys.L) {
-                            loadBtn.fire(new ChangeListener.ChangeEvent());
-                            return true;
-                        } else if (keycode == com.badlogic.gdx.Input.Keys.O) {
-                            okBtn.fire(new ChangeListener.ChangeEvent());
-                            return true;
-                        } else if (keycode == com.badlogic.gdx.Input.Keys.C) {
-                            cancelBtn.fire(new ChangeListener.ChangeEvent());
-                            return true;
-                        } else if (keycode == com.badlogic.gdx.Input.Keys.R) {
-                            stage.setKeyboardFocus(refTree);
-                            if (refTree.getSelection().isEmpty() && refTree.getRootNodes().size > 0) {
-                                Tree.Node root = (Tree.Node) refTree.getRootNodes().get(0);
-                                refTree.getSelection().set(root);
-                                if (scrollPaneHolder[0] != null && root.getActor() != null) {
-                                    scrollPaneHolder[0].scrollTo(root.getActor().getX(), root.getActor().getY(), root.getActor().getWidth(), root.getActor().getHeight());
+                    final boolean[] isMaximized = {false};
+                    final float[] prevX = {0}, prevY = {0}, prevW = {0}, prevH = {0};
+                    maxBtnTitle.addListener(
+                            new ChangeListener() {
+                                @Override
+                                public void changed(ChangeEvent event, Actor actor) {
+                                    if (!isMaximized[0]) {
+                                        prevX[0] = window.getX();
+                                        prevY[0] = window.getY();
+                                        prevW[0] = window.getWidth();
+                                        prevH[0] = window.getHeight();
+                                        window.setBounds(0, 0, stage.getWidth(), stage.getHeight());
+                                        window.setResizable(false);
+                                        window.setMovable(false);
+                                        isMaximized[0] = true;
+                                        maxBtnTitle.setText(" [-] ");
+                                        ideWindowStyle.background = windowWhite;
+                                        window.setBackground(windowWhite);
+                                    } else {
+                                        window.setResizable(true);
+                                        window.setMovable(true);
+                                        window.setBounds(prevX[0], prevY[0], prevW[0], prevH[0]);
+                                        isMaximized[0] = false;
+                                        maxBtnTitle.setText(" [ ] ");
+                                    }
+                                    window.invalidateHierarchy();
                                 }
+                            });
+
+                    window.addListener(
+                            new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                                @Override
+                                public boolean mouseMoved(InputEvent event, float x, float y) {
+                                    if (!isMaximized[0]) {
+                                        // Use a 20px margin to make it easy to trigger and visible
+                                        boolean nearBorder =
+                                                (x <= 20
+                                                        || x >= window.getWidth() - 20
+                                                        || y <= 20
+                                                        || y >= window.getHeight() - 20);
+                                        if (nearBorder) {
+                                            ideWindowStyle.background = windowBlue;
+                                            window.setBackground(windowBlue);
+                                        } else {
+                                            ideWindowStyle.background = windowWhite;
+                                            window.setBackground(windowWhite);
+                                        }
+                                    } else {
+                                        ideWindowStyle.background = windowWhite;
+                                        window.setBackground(windowWhite);
+                                    }
+                                    return false;
+                                }
+
+                                @Override
+                                public void exit(
+                                        InputEvent event,
+                                        float x,
+                                        float y,
+                                        int pointer,
+                                        Actor toActor) {
+                                    if (toActor == null || !toActor.isDescendantOf(window)) {
+                                        ideWindowStyle.background = windowWhite;
+                                        window.setBackground(windowWhite);
+                                    }
+                                }
+                            });
+
+                    // Toggle Buttons Bar
+                    Table toggleBar = new Table();
+                    final TextButton toggleRef = new TextButton("Ref", skin, "monospace-toggle");
+                    final TextButton toggleObjs = new TextButton("Objs", skin, "monospace-toggle");
+                    final TextButton toggleEx = new TextButton("Ex", skin, "monospace-toggle");
+                    final TextButton toggleLog = new TextButton("Logs", skin, "monospace-toggle");
+
+                    // Toggles automatically managed by "toggle" style and its internal listeners
+
+                    toggleRef.setChecked(true);
+                    toggleObjs.setChecked(true);
+                    toggleEx.setChecked(false);
+
+                    toggleBar.add(new Label("Panels: ", skin, "monospace")).padRight(5);
+                    toggleBar.add(toggleRef).padRight(5);
+                    toggleBar.add(toggleObjs).padRight(5);
+                    toggleBar.add(toggleEx).padRight(5);
+                    toggleBar.add(toggleLog);
+
+                    // Editor Area
+                    final com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea =
+                            new com.badlogic.gdx.scenes.scene2d.ui.TextArea(
+                                    view.getProgram(), skin, "monospace-textarea");
+                    textArea.setName("editorTextArea");
+
+                    // Line numbers in a separate table for perfect row-by-row alignment
+                    final Table lineNumbersTable = new Table();
+                    lineNumbersTable.top().right();
+
+                    Table editorSubContainer = new Table();
+                    editorSubContainer.top().left();
+
+                    Runnable updateLineNumbers =
+                            () -> {
+                                lineNumbersTable.clearChildren();
+                                String text = textArea.getText();
+                                int lines = text.split("\n", -1).length;
+                                float lineHeight = textArea.getStyle().font.getLineHeight();
+                                for (int i = 1; i <= lines; i++) {
+                                    Label l = new Label(String.valueOf(i), skin, "monospace");
+                                    l.setColor(com.badlogic.gdx.graphics.Color.GRAY);
+                                    lineNumbersTable
+                                            .add(l)
+                                            .height(lineHeight)
+                                            .top()
+                                            .right()
+                                            .padRight(10)
+                                            .row();
+                                }
+                            };
+                    textArea.setTextFieldListener((textField, c) -> updateLineNumbers.run());
+                    updateLineNumbers.run();
+
+                    float topPad =
+                            textArea.getStyle().background != null
+                                    ? textArea.getStyle().background.getTopHeight()
+                                    : 0;
+                    // Add a small manual adjustment (2px) often helps with multi-line alignment in
+                    // Scene2D
+                    editorSubContainer.add(lineNumbersTable).top().padTop(topPad + 2.5f);
+                    editorSubContainer.add(textArea).grow().top();
+
+                    ScrollPane editorScroll = new ScrollPane(editorSubContainer, skin);
+                    editorScroll.setFadeScrollBars(false);
+
+                    // Side Panels
+                    final Table sideTable = new Table();
+
+                    // 1. Reference
+                    final Table refTable = new Table();
+                    refTable.setBackground(
+                            skin.newDrawable("white", new Color(0.1f, 0.1f, 0.1f, 0.95f)));
+                    Label refTitle = new Label("QUICK REFERENCE", skin, "monospace");
+                    refTitle.setColor(Color.YELLOW);
+                    refTable.add(refTitle).pad(5).row();
+
+                    com.badlogic.gdx.scenes.scene2d.ui.Tree.TreeStyle treeStyle =
+                            new com.badlogic.gdx.scenes.scene2d.ui.Tree.TreeStyle();
+                    treeStyle.plus = skin.newDrawable("white", new Color(0.6f, 0.6f, 0.6f, 1f));
+                    treeStyle.minus = skin.newDrawable("white", new Color(0.6f, 0.6f, 0.6f, 1f));
+                    treeStyle.selection =
+                            skin.newDrawable("white", new Color(0.2f, 0.4f, 0.6f, 0.8f));
+                    Tree refTree = new Tree(treeStyle);
+                    refTree.setPadding(5f);
+                    refTree.setIconSpacing(6f, 0);
+                    refTree.setIndentSpacing(12f);
+
+                    final ScrollPane[] scrollPaneHolder = new ScrollPane[1];
+
+                    refTree.addListener(
+                            new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                                private Tree.Node getNextVisible(Tree.Node current) {
+                                    if (current == null)
+                                        return refTree.getRootNodes().size > 0
+                                                ? (Tree.Node) refTree.getRootNodes().get(0)
+                                                : null;
+                                    if (current.isExpanded() && current.getChildren().size > 0)
+                                        return (Tree.Node) current.getChildren().get(0);
+                                    Tree.Node node = current;
+                                    while (node != null) {
+                                        Tree.Node p = node.getParent();
+                                        com.badlogic.gdx.utils.Array siblings =
+                                                p == null
+                                                        ? refTree.getRootNodes()
+                                                        : p.getChildren();
+                                        int idx = siblings.indexOf(node, true);
+                                        if (idx < siblings.size - 1)
+                                            return (Tree.Node) siblings.get(idx + 1);
+                                        node = p;
+                                    }
+                                    return null;
+                                }
+
+                                private Tree.Node getPrevVisible(Tree.Node current) {
+                                    if (current == null)
+                                        return refTree.getRootNodes().size > 0
+                                                ? (Tree.Node) refTree.getRootNodes().get(0)
+                                                : null;
+                                    Tree.Node p = current.getParent();
+                                    com.badlogic.gdx.utils.Array siblings =
+                                            p == null ? refTree.getRootNodes() : p.getChildren();
+                                    int idx = siblings.indexOf(current, true);
+                                    if (idx > 0) {
+                                        Tree.Node node = (Tree.Node) siblings.get(idx - 1);
+                                        while (node.isExpanded() && node.getChildren().size > 0)
+                                            node = (Tree.Node) node.getChildren().peek();
+                                        return node;
+                                    }
+                                    return p;
+                                }
+
+                                @Override
+                                public boolean keyDown(
+                                        com.badlogic.gdx.scenes.scene2d.InputEvent event,
+                                        int keycode) {
+                                    com.badlogic.gdx.utils.Array<Tree.Node> selection =
+                                            refTree.getSelection().toArray();
+                                    Tree.Node current =
+                                            selection.size > 0 ? selection.get(0) : null;
+
+                                    if (keycode == com.badlogic.gdx.Input.Keys.DOWN) {
+                                        Tree.Node next = getNextVisible(current);
+                                        if (next != null) {
+                                            refTree.getSelection().set(next);
+                                            if (scrollPaneHolder[0] != null
+                                                    && next.getActor() != null) {
+                                                scrollPaneHolder[0].scrollTo(
+                                                        next.getActor().getX(),
+                                                        next.getActor().getY(),
+                                                        next.getActor().getWidth(),
+                                                        next.getActor().getHeight());
+                                            }
+                                        }
+                                        return true;
+                                    } else if (keycode == com.badlogic.gdx.Input.Keys.UP) {
+                                        Tree.Node prev = getPrevVisible(current);
+                                        if (prev != null) {
+                                            refTree.getSelection().set(prev);
+                                            if (scrollPaneHolder[0] != null
+                                                    && prev.getActor() != null) {
+                                                scrollPaneHolder[0].scrollTo(
+                                                        prev.getActor().getX(),
+                                                        prev.getActor().getY(),
+                                                        prev.getActor().getWidth(),
+                                                        prev.getActor().getHeight());
+                                            }
+                                        }
+                                        return true;
+                                    } else if (keycode == com.badlogic.gdx.Input.Keys.ENTER
+                                            && current != null) {
+                                        if (current.getValue() instanceof String) {
+                                            insertAtCursor(
+                                                    textArea, (String) current.getValue() + "\n");
+                                            return true;
+                                        } else if (current.getActor() instanceof Label) {
+                                            Label l = (Label) current.getActor();
+                                            String text = l.getText().toString();
+                                            if (text.contains("[+]") || text.contains("[-]")) {
+                                                current.setExpanded(!current.isExpanded());
+                                                l.setText(
+                                                        current.isExpanded()
+                                                                ? text.replace("[+]", "[-]")
+                                                                : text.replace("[-]", "[+]"));
+                                                return true;
+                                            }
+                                        }
+                                    }
+                                    return false;
+                                }
+                            });
+
+                    // Helper: creates a clickable leaf node that inserts a snippet on click
+                    java.util.function.BiFunction<String, String, Tree.Node> leaf =
+                            (labelText, snippet) -> {
+                                Label l = new Label("   " + labelText, skin, "monospace");
+                                Tree.Node n = new Tree.Node(l) {};
+                                n.setValue(snippet);
+                                l.addListener(
+                                        new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+                                            @Override
+                                            public void clicked(
+                                                    com.badlogic.gdx.scenes.scene2d.InputEvent
+                                                            event,
+                                                    float x,
+                                                    float y) {
+                                                insertAtCursor(textArea, snippet + "\n");
+                                                event.stop();
+                                            }
+
+                                            @Override
+                                            public void enter(
+                                                    com.badlogic.gdx.scenes.scene2d.InputEvent
+                                                            event,
+                                                    float x,
+                                                    float y,
+                                                    int pointer,
+                                                    com.badlogic.gdx.scenes.scene2d.Actor
+                                                            fromActor) {
+                                                refTree.getSelection().set(n);
+                                            }
+                                        });
+                                return n;
+                            };
+                    // Helper: section heading (non-clickable, orange)
+                    java.util.function.Function<String, Tree.Node> heading =
+                            (text) -> {
+                                Label l = new Label(text, skin, "monospace");
+                                l.setColor(Color.ORANGE);
+                                return new Tree.Node(l) {};
+                            };
+                    // Helper: creates a parent node (click to expand/collapse, toggles +/-)
+                    java.util.function.Function<String, Tree.Node> parent =
+                            (text) -> {
+                                Label l = new Label(text, skin, "monospace");
+                                Tree.Node n = new Tree.Node(l) {};
+                                l.addListener(
+                                        new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+                                            @Override
+                                            public void clicked(
+                                                    com.badlogic.gdx.scenes.scene2d.InputEvent
+                                                            event,
+                                                    float x,
+                                                    float y) {
+                                                n.setExpanded(!n.isExpanded());
+                                                l.setText(
+                                                        n.isExpanded()
+                                                                ? text.replace("[+]", "[-]")
+                                                                : text.replace("[-]", "[+]"));
+                                                event.stop();
+                                            }
+
+                                            @Override
+                                            public void enter(
+                                                    com.badlogic.gdx.scenes.scene2d.InputEvent
+                                                            event,
+                                                    float x,
+                                                    float y,
+                                                    int pointer,
+                                                    com.badlogic.gdx.scenes.scene2d.Actor
+                                                            fromActor) {
+                                                refTree.getSelection().set(n);
+                                            }
+                                        });
+                                return n;
+                            };
+
+                    // ── BUILD TREE ──
+                    class TreeBuilder {
+                        Tree.Node build(
+                                letrain.command.GrammarReference.Node refNode, String indent) {
+                            if (refNode.isHeading) {
+                                return heading.apply(refNode.label);
+                            } else if (refNode.snippet != null && refNode.children.isEmpty()) {
+                                return leaf.apply(refNode.label, refNode.snippet);
+                            } else {
+                                String prefix = refNode.expanded ? "[-]" : "[+]";
+                                Tree.Node n = parent.apply(indent + prefix + " " + refNode.label);
+                                for (letrain.command.GrammarReference.Node child :
+                                        refNode.children) {
+                                    n.add(build(child, indent + "  "));
+                                }
+                                if (refNode.expanded) n.setExpanded(true);
+                                return n;
                             }
-                            return true;
-                        } else if (keycode == com.badlogic.gdx.Input.Keys.E) {
-                            stage.setKeyboardFocus(textArea);
-                            return true;
                         }
                     }
-                    return false;
-                }
-            });
+                    TreeBuilder tb = new TreeBuilder();
+                    for (letrain.command.GrammarReference.Node rootNode :
+                            letrain.command.GrammarReference.getReferenceTree()) {
+                        refTree.add(tb.build(rootNode, "  "));
+                    }
 
-            ideWindow = window;
-            ideLogContent = logContent;
-            ideObjsContent = objsContent;
+                    ScrollPane refScroll = new ScrollPane(refTree, skin);
+                    scrollPaneHolder[0] = refScroll;
+                    refTable.add(refScroll).grow().pad(5);
 
-            window.setSize(1200, 800);
-            window.setPosition((stage.getWidth() - window.getWidth()) / 2,
-                    (stage.getHeight() - window.getHeight()) / 2);
-            stage.addActor(window);
-            stage.setKeyboardFocus(textArea);
-        });
+                    // 2. Objects
+                    final Table objsTable = new Table();
+                    objsTable.setBackground(
+                            skin.newDrawable("white", new Color(0.12f, 0.12f, 0.12f, 0.95f)));
+                    Label objsTitle = new Label("OBJECTS STATUS", skin, "monospace");
+                    objsTitle.setColor(Color.CYAN);
+                    final Label objsContent = new Label("", skin, "monospace");
+                    objsContent.setFontScale(1.0f);
+                    objsTable.add(objsTitle).pad(5).row();
+                    ScrollPane objsScroll = new ScrollPane(objsContent, skin);
+                    objsTable.add(objsScroll).grow().pad(5);
+
+                    // 3. Examples
+                    final Table examplesTable = new Table();
+                    examplesTable.setBackground(
+                            skin.newDrawable("white", new Color(0.14f, 0.14f, 0.14f, 0.95f)));
+                    Label examplesTitle = new Label("EXAMPLES", skin, "monospace");
+                    examplesTitle.setColor(Color.GREEN);
+                    Label examplesContent =
+                            new Label(
+                                    "station 1 on train enter {\n"
+                                            + "  train unlink backward 1;\n"
+                                            + "  train set speed 2;\n"
+                                            + "}\n"
+                                            + "sensor 5 on train enter {\n"
+                                            + "  train stop;\n"
+                                            + "}",
+                                    skin,
+                                    "monospace");
+                    examplesContent.setFontScale(1.0f);
+                    examplesContent.setWrap(true);
+                    examplesTable.add(examplesTitle).pad(5).row();
+                    ScrollPane examplesScroll = new ScrollPane(examplesContent, skin);
+                    examplesTable.add(examplesScroll).grow().pad(5);
+
+                    // 4. Logs
+                    final Table logTable = new Table();
+                    logTable.setBackground(
+                            skin.newDrawable("white", new Color(0.08f, 0.08f, 0.08f, 0.95f)));
+                    Label logTitle = new Label("LOGS", skin, "monospace");
+                    logTitle.setColor(Color.ORANGE);
+                    final Label logContent = new Label("", skin, "monospace");
+                    logContent.setWrap(true);
+                    logTable.add(logTitle).pad(5).row();
+                    ScrollPane logScroll = new ScrollPane(logContent, skin);
+                    logTable.add(logScroll).grow().pad(5);
+
+                    // Hover focus listeners for all panels and editor
+                    java.util.function.Function<
+                                    ScrollPane, com.badlogic.gdx.scenes.scene2d.InputListener>
+                            createScrollFocusListener =
+                                    (sp) ->
+                                            new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                                                @Override
+                                                public void enter(
+                                                        InputEvent event,
+                                                        float x,
+                                                        float y,
+                                                        int pointer,
+                                                        Actor fromActor) {
+                                                    if (pointer == -1 && stage != null) {
+                                                        stage.setScrollFocus(sp);
+                                                    }
+                                                }
+                                            };
+
+                    refTable.addListener(createScrollFocusListener.apply(refScroll));
+                    refScroll.addListener(createScrollFocusListener.apply(refScroll));
+                    objsTable.addListener(createScrollFocusListener.apply(objsScroll));
+                    objsScroll.addListener(createScrollFocusListener.apply(objsScroll));
+                    examplesTable.addListener(createScrollFocusListener.apply(examplesScroll));
+                    examplesScroll.addListener(createScrollFocusListener.apply(examplesScroll));
+                    logTable.addListener(createScrollFocusListener.apply(logScroll));
+                    logScroll.addListener(createScrollFocusListener.apply(logScroll));
+                    editorScroll.addListener(createScrollFocusListener.apply(editorScroll));
+                    textArea.addListener(createScrollFocusListener.apply(editorScroll));
+
+                    sideTable.add(refTable).grow().row();
+                    sideTable.add(objsTable).grow().row();
+                    sideTable.add(examplesTable).grow().row();
+
+                    // Error Table
+                    final Table errorTable = new Table();
+                    errorTable.setBackground(skin.newDrawable("white", Color.MAROON));
+                    final Label errorLabel = new Label("", skin, "monospace");
+                    errorLabel.setWrap(true);
+                    errorTable.add(new Label("ERRORS:", skin, "monospace")).left().padLeft(5).row();
+                    errorLabel.addListener(
+                            new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+                                @Override
+                                public void clicked(InputEvent event, float x, float y) {
+                                    String text = textArea.getText();
+                                    String[] errorLines =
+                                            errorLabel.getText().toString().split("\n");
+                                    for (String err : errorLines) {
+                                        java.util.regex.Matcher m =
+                                                java.util.regex.Pattern.compile(
+                                                                "line (\\d+):(\\d+)")
+                                                        .matcher(err);
+                                        if (m.find()) {
+                                            int lineNum = Integer.parseInt(m.group(1));
+                                            int colNum = Integer.parseInt(m.group(2));
+                                            // Convert line:col to character position in the text
+                                            // area
+                                            int pos = 0;
+                                            String[] srcLines = text.split("\n", -1);
+                                            for (int i = 0;
+                                                    i < Math.min(lineNum - 1, srcLines.length);
+                                                    i++) {
+                                                pos +=
+                                                        srcLines[i].length()
+                                                                + 1; // +1 for the newline
+                                            }
+                                            pos += Math.max(0, colNum - 1);
+                                            textArea.setCursorPosition(
+                                                    Math.min(pos, text.length()));
+                                            textArea.getStage().setKeyboardFocus(textArea);
+                                            break;
+                                        }
+                                    }
+                                }
+                            });
+                    ScrollPane errorScroll = new ScrollPane(errorLabel, skin);
+                    errorScroll.setFadeScrollBars(false);
+                    errorScroll.setScrollingDisabled(true, false);
+                    errorTable
+                            .add(errorScroll)
+                            .left()
+                            .padLeft(15)
+                            .padBottom(5)
+                            .growX()
+                            .minHeight(100f);
+                    errorTable.setVisible(false);
+
+                    // Footer
+                    Table footer = new Table();
+                    final TextButton applyBtn = new TextButton(" APPLY ", skin, "monospace-button");
+                    final TextButton saveBtn = new TextButton(" SAVE ", skin, "monospace-button");
+                    final TextButton loadBtn = new TextButton(" LOAD ", skin, "monospace-button");
+                    final TextButton okBtn = new TextButton(" OK ", skin, "monospace-button");
+                    okBtn.setColor(Color.GREEN);
+                    final TextButton cancelBtn =
+                            new TextButton(" CANCEL ", skin, "monospace-button");
+                    applyBtn.getLabel().getStyle().font.getData().markupEnabled = true;
+                    footer.add(applyBtn).pad(5);
+                    footer.add(saveBtn).pad(5);
+                    footer.add(loadBtn).pad(5);
+                    footer.add(okBtn).pad(5);
+                    footer.add(cancelBtn).pad(5);
+
+                    // ASSEMBLY & VISIBILITY SYNC
+                    Table mainContent = new Table();
+
+                    ChangeListener visibilitySync =
+                            new ChangeListener() {
+                                @Override
+                                public void changed(ChangeEvent event, Actor actor) {
+                                    mainContent.clear();
+
+                                    refTable.setVisible(toggleRef.isChecked());
+                                    objsTable.setVisible(toggleObjs.isChecked());
+                                    examplesTable.setVisible(toggleEx.isChecked());
+                                    logTable.setVisible(toggleLog.isChecked());
+
+                                    if (toggleObjs.isChecked()) {
+                                        objsContent.setText(model.getGameObjectsReport());
+                                    }
+                                    if (toggleLog.isChecked()) {
+                                        logContent.setText(
+                                                String.join(
+                                                        "\n",
+                                                        model.getEventLogManager().getEntries()));
+                                    }
+
+                                    // Side panels stack logic
+                                    List<Actor> visibleSidePanels = new ArrayList<>();
+                                    if (toggleRef.isChecked()) visibleSidePanels.add(refTable);
+                                    if (toggleObjs.isChecked()) visibleSidePanels.add(objsTable);
+                                    if (toggleEx.isChecked()) visibleSidePanels.add(examplesTable);
+                                    if (toggleLog.isChecked()) visibleSidePanels.add(logTable);
+
+                                    if (visibleSidePanels.isEmpty()) {
+                                        mainContent.add(editorScroll).grow();
+                                    } else {
+                                        // Create Side Component (Nested vertical split panes)
+                                        Actor sideComponent =
+                                                visibleSidePanels.get(visibleSidePanels.size() - 1);
+                                        for (int i = visibleSidePanels.size() - 2; i >= 0; i--) {
+                                            final SplitPane sp =
+                                                    new SplitPane(
+                                                            visibleSidePanels.get(i),
+                                                            sideComponent,
+                                                            true,
+                                                            skin,
+                                                            "default-vertical");
+                                            sp.setSplitAmount(0.5f);
+                                            sp.addListener(
+                                                    new com.badlogic.gdx.scenes.scene2d
+                                                            .InputListener() {
+                                                        @Override
+                                                        public void enter(
+                                                                InputEvent event,
+                                                                float x,
+                                                                float y,
+                                                                int pointer,
+                                                                Actor fromActor) {
+                                                            sp.setStyle(
+                                                                    skin.get(
+                                                                            "default-vertical-hover",
+                                                                            SplitPane.SplitPaneStyle
+                                                                                    .class));
+                                                        }
+
+                                                        @Override
+                                                        public void exit(
+                                                                InputEvent event,
+                                                                float x,
+                                                                float y,
+                                                                int pointer,
+                                                                Actor toActor) {
+                                                            sp.setStyle(
+                                                                    skin.get(
+                                                                            "default-vertical",
+                                                                            SplitPane.SplitPaneStyle
+                                                                                    .class));
+                                                        }
+                                                    });
+                                            sideComponent = sp;
+                                        }
+
+                                        final SplitPane mainSplit =
+                                                new SplitPane(
+                                                        editorScroll,
+                                                        sideComponent,
+                                                        false,
+                                                        skin,
+                                                        "default-horizontal");
+                                        mainSplit.setSplitAmount(0.75f);
+                                        mainSplit.addListener(
+                                                new com.badlogic.gdx.scenes.scene2d
+                                                        .InputListener() {
+                                                    @Override
+                                                    public void enter(
+                                                            InputEvent event,
+                                                            float x,
+                                                            float y,
+                                                            int pointer,
+                                                            Actor fromActor) {
+                                                        mainSplit.setStyle(
+                                                                skin.get(
+                                                                        "default-horizontal-hover",
+                                                                        SplitPane.SplitPaneStyle
+                                                                                .class));
+                                                    }
+
+                                                    @Override
+                                                    public void exit(
+                                                            InputEvent event,
+                                                            float x,
+                                                            float y,
+                                                            int pointer,
+                                                            Actor toActor) {
+                                                        mainSplit.setStyle(
+                                                                skin.get(
+                                                                        "default-horizontal",
+                                                                        SplitPane.SplitPaneStyle
+                                                                                .class));
+                                                    }
+                                                });
+                                        mainContent.add(mainSplit).grow();
+                                    }
+                                    window.invalidateHierarchy();
+                                }
+                            };
+
+                    toggleRef.addListener(visibilitySync);
+                    toggleObjs.addListener(visibilitySync);
+                    toggleEx.addListener(visibilitySync);
+                    toggleLog.addListener(visibilitySync);
+                    visibilitySync.changed(null, null);
+
+                    window.add(toggleBar).right().padRight(10).padBottom(5).row();
+                    window.add(mainContent).grow().row();
+                    window.add(errorTable).growX().row();
+                    window.add(footer).growX().pad(10);
+
+                    // Actions
+                    applyBtn.addListener(
+                            new ChangeListener() {
+                                @Override
+                                public void changed(ChangeEvent event, Actor actor) {
+                                    List<String> errors = model.setProgram(textArea.getText());
+                                    if (errors != null && !errors.isEmpty()) {
+                                        errorLabel.setText(String.join("\n", errors));
+                                        errorTable.setVisible(true);
+                                    } else {
+                                        errorTable.setVisible(false);
+                                    }
+                                }
+                            });
+
+                    saveBtn.addListener(
+                            new ChangeListener() {
+                                @Override
+                                public void changed(ChangeEvent event, Actor actor) {
+                                    model.setProgram(textArea.getText());
+                                    view.showSaveDialog();
+                                }
+                            });
+
+                    loadBtn.addListener(
+                            new ChangeListener() {
+                                @Override
+                                public void changed(ChangeEvent event, Actor actor) {
+                                    view.showLoadDialog();
+                                }
+                            });
+
+                    okBtn.addListener(
+                            new ChangeListener() {
+                                @Override
+                                public void changed(ChangeEvent event, Actor actor) {
+                                    List<String> errors = model.setProgram(textArea.getText());
+                                    if (errors != null && !errors.isEmpty()) {
+                                        errorLabel.setText(String.join("\n", errors));
+                                        errorTable.setVisible(true);
+                                    } else {
+                                        errorTable.setVisible(false);
+                                        ideWindow = null;
+                                        ideLogContent = null;
+                                        ideObjsContent = null;
+                                        window.remove();
+                                        model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                                        view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
+                                    }
+                                }
+                            });
+
+                    cancelBtn.addListener(
+                            new ChangeListener() {
+                                @Override
+                                public void changed(ChangeEvent event, Actor actor) {
+                                    ideWindow = null;
+                                    ideLogContent = null;
+                                    ideObjsContent = null;
+                                    window.remove();
+                                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                                    view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
+                                }
+                            });
+
+                    window.addAction(
+                            com.badlogic.gdx.scenes.scene2d.actions.Actions.forever(
+                                    com.badlogic.gdx.scenes.scene2d.actions.Actions.run(
+                                            new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    boolean altDown =
+                                                            com.badlogic.gdx.Gdx.input.isKeyPressed(
+                                                                            com.badlogic.gdx.Input
+                                                                                    .Keys.ALT_LEFT)
+                                                                    || com.badlogic.gdx.Gdx.input
+                                                                            .isKeyPressed(
+                                                                                    com.badlogic.gdx
+                                                                                            .Input
+                                                                                            .Keys
+                                                                                            .ALT_RIGHT);
+                                                    applyBtn.setText(
+                                                            altDown
+                                                                    ? " [YELLOW]A[]PPLY "
+                                                                    : " APPLY ");
+                                                    saveBtn.setText(
+                                                            altDown
+                                                                    ? " [YELLOW]S[]AVE "
+                                                                    : " SAVE ");
+                                                    loadBtn.setText(
+                                                            altDown
+                                                                    ? " [YELLOW]L[]OAD "
+                                                                    : " LOAD ");
+                                                    okBtn.setText(
+                                                            altDown ? " [YELLOW]O[]K " : " OK ");
+                                                    cancelBtn.setText(
+                                                            altDown
+                                                                    ? " [YELLOW]C[]ANCEL "
+                                                                    : " CANCEL ");
+                                                }
+                                            })));
+
+                    window.addCaptureListener(
+                            new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                                @Override
+                                public boolean keyDown(InputEvent event, int keycode) {
+                                    boolean altDown =
+                                            com.badlogic.gdx.Gdx.input.isKeyPressed(
+                                                            com.badlogic.gdx.Input.Keys.ALT_LEFT)
+                                                    || com.badlogic.gdx.Gdx.input.isKeyPressed(
+                                                            com.badlogic.gdx.Input.Keys.ALT_RIGHT);
+                                    if (altDown) {
+                                        if (keycode == com.badlogic.gdx.Input.Keys.A) {
+                                            applyBtn.fire(new ChangeListener.ChangeEvent());
+                                            return true;
+                                        } else if (keycode == com.badlogic.gdx.Input.Keys.S) {
+                                            saveBtn.fire(new ChangeListener.ChangeEvent());
+                                            return true;
+                                        } else if (keycode == com.badlogic.gdx.Input.Keys.L) {
+                                            loadBtn.fire(new ChangeListener.ChangeEvent());
+                                            return true;
+                                        } else if (keycode == com.badlogic.gdx.Input.Keys.O) {
+                                            okBtn.fire(new ChangeListener.ChangeEvent());
+                                            return true;
+                                        } else if (keycode == com.badlogic.gdx.Input.Keys.C) {
+                                            cancelBtn.fire(new ChangeListener.ChangeEvent());
+                                            return true;
+                                        } else if (keycode == com.badlogic.gdx.Input.Keys.R) {
+                                            stage.setKeyboardFocus(refTree);
+                                            if (refTree.getSelection().isEmpty()
+                                                    && refTree.getRootNodes().size > 0) {
+                                                Tree.Node root =
+                                                        (Tree.Node) refTree.getRootNodes().get(0);
+                                                refTree.getSelection().set(root);
+                                                if (scrollPaneHolder[0] != null
+                                                        && root.getActor() != null) {
+                                                    scrollPaneHolder[0].scrollTo(
+                                                            root.getActor().getX(),
+                                                            root.getActor().getY(),
+                                                            root.getActor().getWidth(),
+                                                            root.getActor().getHeight());
+                                                }
+                                            }
+                                            return true;
+                                        } else if (keycode == com.badlogic.gdx.Input.Keys.E) {
+                                            stage.setKeyboardFocus(textArea);
+                                            return true;
+                                        }
+                                    }
+                                    return false;
+                                }
+                            });
+
+                    ideWindow = window;
+                    ideLogContent = logContent;
+                    ideObjsContent = objsContent;
+
+                    window.setSize(1200, 800);
+                    window.setPosition(
+                            (stage.getWidth() - window.getWidth()) / 2,
+                            (stage.getHeight() - window.getHeight()) / 2);
+                    stage.addActor(window);
+                    stage.setKeyboardFocus(textArea);
+                });
     }
 
     public void updateIDE() {
-        if (ideWindow == null || !ideWindow.isVisible() || ideWindow.getStage() == null)
-            return;
+        if (ideWindow == null || !ideWindow.isVisible() || ideWindow.getStage() == null) return;
 
         if (ideObjsContent != null) {
             ideObjsContent.setText(model.getGameObjectsReport());
@@ -1154,70 +1401,109 @@ public class Gdx3DHud {
         }
     }
 
-    private void insertAtCursor(com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea, String insertion) {
+    private void insertAtCursor(
+            com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea, String insertion) {
         int pos = textArea.getCursorPosition();
         String text = textArea.getText();
         String before = text.substring(0, pos);
         String after = text.substring(pos);
         textArea.setText(before + insertion + after);
         textArea.setCursorPosition(pos + insertion.length());
-        if (stage != null)
-            stage.setKeyboardFocus(textArea);
+        if (stage != null) stage.setKeyboardFocus(textArea);
     }
 
-    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode, String defaultText, Consumer<String> onResult) {
-        Gdx.app.postRunnable(() -> {
-            if (!com.kotcrab.vis.ui.VisUI.isLoaded()) {
-                com.kotcrab.vis.ui.VisUI.load();
-                com.kotcrab.vis.ui.widget.file.FileChooser.setDefaultPrefsName("letrain.filechooser");
-                
-                // Override VisUI fonts with our monospace font to keep aesthetic consistency
-                com.badlogic.gdx.scenes.scene2d.ui.Skin visSkin = com.kotcrab.vis.ui.VisUI.getSkin();
-                com.badlogic.gdx.graphics.g2d.BitmapFont font = letrain.utils.FontManager.loadFont("JuliaMono-Regular", 18);
-                
-                for (com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle.class).values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle.class).values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle.class).values()) {
-                    style.titleFont = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle.class).values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle.class).values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle style : visSkin.getAll(com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle.class).values()) {
-                    style.font = font;
-                }
-            }
-            com.kotcrab.vis.ui.widget.file.FileChooser fileChooser = new com.kotcrab.vis.ui.widget.file.FileChooser(
-                    title, mode);
-            fileChooser.setSelectionMode(com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode.FILES);
-            
-            // Only show .dat files by default
-            com.kotcrab.vis.ui.widget.file.FileTypeFilter filter = new com.kotcrab.vis.ui.widget.file.FileTypeFilter(true);
-            filter.addRule("Data files (*.dat)", "dat");
-            fileChooser.setFileTypeFilter(filter);
-            
-            fileChooser.setDirectory(Gdx.files.local("."));
-            
-            fileChooser.setListener(new com.kotcrab.vis.ui.widget.file.FileChooserAdapter() {
-                @Override
-                public void selected(com.badlogic.gdx.utils.Array<com.badlogic.gdx.files.FileHandle> files) {
-                    if (files.size > 0) {
-                        onResult.accept(files.get(0).file().getAbsolutePath());
+    public void showFileDialog(
+            String title,
+            com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
+            String defaultText,
+            Consumer<String> onResult) {
+        Gdx.app.postRunnable(
+                () -> {
+                    if (!com.kotcrab.vis.ui.VisUI.isLoaded()) {
+                        com.kotcrab.vis.ui.VisUI.load();
+                        com.kotcrab.vis.ui.widget.file.FileChooser.setDefaultPrefsName(
+                                "letrain.filechooser");
+
+                        // Override VisUI fonts with our monospace font to keep aesthetic
+                        // consistency
+                        com.badlogic.gdx.scenes.scene2d.ui.Skin visSkin =
+                                com.kotcrab.vis.ui.VisUI.getSkin();
+                        com.badlogic.gdx.graphics.g2d.BitmapFont font =
+                                letrain.utils.FontManager.loadFont("JuliaMono-Regular", 18);
+
+                        for (com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle style :
+                                visSkin.getAll(
+                                                com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle
+                                                        .class)
+                                        .values()) {
+                            style.font = font;
+                        }
+                        for (com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle style :
+                                visSkin.getAll(
+                                                com.badlogic.gdx.scenes.scene2d.ui.TextButton
+                                                        .TextButtonStyle.class)
+                                        .values()) {
+                            style.font = font;
+                        }
+                        for (com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle style :
+                                visSkin.getAll(
+                                                com.badlogic.gdx.scenes.scene2d.ui.Window
+                                                        .WindowStyle.class)
+                                        .values()) {
+                            style.titleFont = font;
+                        }
+                        for (com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle style :
+                                visSkin.getAll(
+                                                com.badlogic.gdx.scenes.scene2d.ui.TextField
+                                                        .TextFieldStyle.class)
+                                        .values()) {
+                            style.font = font;
+                        }
+                        for (com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle style :
+                                visSkin.getAll(
+                                                com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle
+                                                        .class)
+                                        .values()) {
+                            style.font = font;
+                        }
+                        for (com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle style :
+                                visSkin.getAll(
+                                                com.badlogic.gdx.scenes.scene2d.ui.SelectBox
+                                                        .SelectBoxStyle.class)
+                                        .values()) {
+                            style.font = font;
+                        }
                     }
-                }
-            });
-            
-            fileChooser.setSize(750, 500);
-            fileChooser.centerWindow();
-            stage.addActor(fileChooser.fadeIn());
-        });
+                    com.kotcrab.vis.ui.widget.file.FileChooser fileChooser =
+                            new com.kotcrab.vis.ui.widget.file.FileChooser(title, mode);
+                    fileChooser.setSelectionMode(
+                            com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode.FILES);
+
+                    // Only show .dat files by default
+                    com.kotcrab.vis.ui.widget.file.FileTypeFilter filter =
+                            new com.kotcrab.vis.ui.widget.file.FileTypeFilter(true);
+                    filter.addRule("Data files (*.dat)", "dat");
+                    fileChooser.setFileTypeFilter(filter);
+
+                    fileChooser.setDirectory(Gdx.files.local("."));
+
+                    fileChooser.setListener(
+                            new com.kotcrab.vis.ui.widget.file.FileChooserAdapter() {
+                                @Override
+                                public void selected(
+                                        com.badlogic.gdx.utils.Array<
+                                                        com.badlogic.gdx.files.FileHandle>
+                                                files) {
+                                    if (files.size > 0) {
+                                        onResult.accept(files.get(0).file().getAbsolutePath());
+                                    }
+                                }
+                            });
+
+                    fileChooser.setSize(750, 500);
+                    fileChooser.centerWindow();
+                    stage.addActor(fileChooser.fadeIn());
+                });
     }
 
     public void render(float delta) {
@@ -1231,12 +1517,9 @@ public class Gdx3DHud {
     }
 
     public void dispose() {
-        if (stage != null)
-            stage.dispose();
-        if (skin != null)
-            skin.dispose();
-        if (shapeRenderer != null)
-            shapeRenderer.dispose();
+        if (stage != null) stage.dispose();
+        if (skin != null) skin.dispose();
+        if (shapeRenderer != null) shapeRenderer.dispose();
     }
 
     private class NotchLever extends Actor {
@@ -1264,7 +1547,8 @@ public class Gdx3DHud {
 
             com.badlogic.gdx.graphics.GL20 gl = Gdx.gl;
             gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
-            gl.glBlendFunc(com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
+            gl.glBlendFunc(
+                    com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
                     com.badlogic.gdx.graphics.GL20.GL_ONE_MINUS_SRC_ALPHA);
 
             shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
@@ -1275,7 +1559,8 @@ public class Gdx3DHud {
 
             // Background slot
             shapeRenderer.setColor(0.2f, 0.2f, 0.2f, 0.4f * parentAlpha); // Translucent gray
-            shapeRenderer.rect(x - 40, y - 20, 65, h + 40); // Even taller to fully enclose labels 0 and 10
+            shapeRenderer.rect(
+                    x - 40, y - 20, 65, h + 40); // Even taller to fully enclose labels 0 and 10
 
             // Tick marks
             shapeRenderer.end();
@@ -1298,8 +1583,8 @@ public class Gdx3DHud {
             for (int i = 0; i <= 10; i++) {
                 float ty = y + (i / 10f) * h;
                 String txt = String.valueOf(i);
-                com.badlogic.gdx.graphics.g2d.GlyphLayout layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout(font,
-                        txt);
+                com.badlogic.gdx.graphics.g2d.GlyphLayout layout =
+                        new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, txt);
                 font.draw(batch, txt, x - 25 - layout.width, ty + layout.height / 2);
             }
             font.getData().setScale(oldScaleX, oldScaleY);

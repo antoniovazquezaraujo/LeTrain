@@ -1,5 +1,9 @@
 package letrain.itinerary;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.util.List;
 import letrain.itinerary.impl.TrainActionManager;
 import letrain.itinerary.impl.WaypointImpl;
 import letrain.track.Station;
@@ -10,11 +14,6 @@ import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @DisplayName("TrainActionManager")
 class TrainActionManagerTest {
@@ -44,7 +43,8 @@ class TrainActionManagerTest {
     }
 
     @Test
-    @DisplayName("should pass through without braking when train has no capable wagons or is already full")
+    @DisplayName(
+            "should pass through without braking when train has no capable wagons or is already full")
     void shouldPassThroughWithoutBrakingWhenTrainIsFull() {
         when(loco.getSpeed()).thenReturn(3);
         when(loco.getTargetSpeed()).thenReturn(3);
@@ -52,9 +52,11 @@ class TrainActionManagerTest {
         Station station = mock(Station.class);
         when(station.getName()).thenReturn("Station A");
         when(logisticsManager.getStationAtTrain()).thenReturn(station);
-        when(logisticsManager.getCapableWagons(station, false)).thenReturn(List.of()); // No capable wagons / full
+        when(logisticsManager.getCapableWagons(station, false))
+                .thenReturn(List.of()); // No capable wagons / full
 
-        Waypoint waypoint = new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.LOAD));
+        Waypoint waypoint =
+                new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.LOAD));
 
         actionManager.onWaypointReached(train, waypoint);
 
@@ -64,7 +66,8 @@ class TrainActionManagerTest {
     }
 
     @Test
-    @DisplayName("should initiate natural braking when waypoint has LOAD command and train has space in capable wagons")
+    @DisplayName(
+            "should initiate natural braking when waypoint has LOAD command and train has space in capable wagons")
     void shouldInitiateBrakingWhenMovingWithSpaceInCapableWagons() {
         when(loco.getSpeed()).thenReturn(3);
         when(loco.getTargetSpeed()).thenReturn(3);
@@ -74,7 +77,8 @@ class TrainActionManagerTest {
         when(logisticsManager.getStationAtTrain()).thenReturn(station);
         when(logisticsManager.getCapableWagons(station, false)).thenReturn(List.of(wagon));
 
-        Waypoint waypoint = new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.LOAD));
+        Waypoint waypoint =
+                new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.LOAD));
 
         actionManager.onWaypointReached(train, waypoint);
 
@@ -93,7 +97,8 @@ class TrainActionManagerTest {
         when(logisticsManager.getStationAtTrain()).thenReturn(station);
         when(logisticsManager.getCapableWagons(station, false)).thenReturn(List.of(wagon));
 
-        Waypoint waypoint = new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.LOAD));
+        Waypoint waypoint =
+                new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.LOAD));
 
         actionManager.onWaypointReached(train, waypoint);
         verify(movementManager).initiateBraking();
@@ -120,7 +125,8 @@ class TrainActionManagerTest {
         when(loco.getSpeed()).thenReturn(4);
         when(loco.getTargetSpeed()).thenReturn(4);
 
-        Waypoint waypoint = new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.LOAD));
+        Waypoint waypoint =
+                new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.LOAD));
 
         actionManager.onWaypointReached(train, waypoint);
         verify(movementManager).initiateBraking();
@@ -139,7 +145,8 @@ class TrainActionManagerTest {
     @Test
     @DisplayName("should execute STOP command with natural braking and deactivate autopilot")
     void shouldExecuteStopCommandWithNaturalBraking() {
-        Waypoint waypoint = new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.STOP));
+        Waypoint waypoint =
+                new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.STOP));
 
         actionManager.onWaypointReached(train, waypoint);
 

@@ -1,8 +1,6 @@
 package letrain.audio.sources;
 
-/**
- * A one-shot WAV audio source that plays once and then deactivates.
- */
+/** A one-shot WAV audio source that plays once and then deactivates. */
 import letrain.audio.core.AudioMixer;
 import letrain.audio.core.AudioSource;
 import letrain.audio.synth.AudioSample;

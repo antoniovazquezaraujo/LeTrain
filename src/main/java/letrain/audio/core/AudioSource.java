@@ -2,18 +2,15 @@ package letrain.audio.core;
 
 public interface AudioSource {
     /**
-     * Fills the buffer with the next chunk of audio.
-     * The buffer is expected to be stereo interleaved if the mixer is stereo.
-     * 
+     * Fills the buffer with the next chunk of audio. The buffer is expected to be stereo
+     * interleaved if the mixer is stereo.
+     *
      * @param buffer The buffer to fill.
-     * @return true if the source is active and produced sound, false if it's
-     *         finished/silent.
+     * @return true if the source is active and produced sound, false if it's finished/silent.
      */
     boolean read(float[] buffer);
 
-    /**
-     * Sets the world position of this sound source.
-     */
+    /** Sets the world position of this sound source. */
     void setPosition(float x, float y, float z);
 
     float getX();
@@ -34,12 +31,12 @@ public interface AudioSource {
 
     /**
      * Sets the amount of low-pass filtering due to distance.
-     * 
+     *
      * @param amount 0.0 (no filter, close) to 1.0 (max filter, far)
      */
     /**
      * Sets the amount of low-pass filtering due to distance.
-     * 
+     *
      * @param amount 0.0 (no filter, close) to 1.0 (max filter, far)
      */
     void setDistanceFilter(float amount);

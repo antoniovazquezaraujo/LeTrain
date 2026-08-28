@@ -1,14 +1,14 @@
 package letrain.mvp.impl;
 
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import java.util.ArrayList;
+import java.util.List;
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class EventLogManager {
-    public EventLogManager() {
-    }
+    public EventLogManager() {}
+
     private final int MAX_ENTRIES = 100;
     private List<String> entries = new ArrayList<>();
 

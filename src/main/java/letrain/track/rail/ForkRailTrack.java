@@ -1,12 +1,11 @@
 package letrain.track.rail;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import letrain.map.Dir;
 import letrain.map.DynamicRouter;
 import letrain.map.impl.ForkRouter;
@@ -25,43 +24,35 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     private transient List<ForkEventListener> systemListeners = new ArrayList<>();
 
     public void addForkEventListener(ForkEventListener listener) {
-        if (listeners == null)
-            listeners = new ArrayList<>();
+        if (listeners == null) listeners = new ArrayList<>();
         listeners.add(listener);
     }
 
     public void addSystemForkEventListener(ForkEventListener listener) {
-        if (systemListeners == null)
-            systemListeners = new ArrayList<>();
+        if (systemListeners == null) systemListeners = new ArrayList<>();
         systemListeners.add(listener);
     }
 
     public void removeForkEventListener(ForkEventListener listener) {
-        if (listeners != null)
-            listeners.remove(listener);
+        if (listeners != null) listeners.remove(listener);
     }
 
     public void removeAllForkEventListeners() {
-        if (listeners != null)
-            listeners.clear();
+        if (listeners != null) listeners.clear();
     }
 
     public ForkRailTrack(int id) {
         setId(id);
     }
 
-    /**
-     * Protected default constructor for Jackson deserialization.
-     */
-    protected ForkRailTrack() {
-    }
+    /** Protected default constructor for Jackson deserialization. */
+    protected ForkRailTrack() {}
 
     /**
-     * Reinitializes transient fields after deserialization.
-     * Ensures listener collections are not null to prevent NPE.
+     * Reinitializes transient fields after deserialization. Ensures listener collections are not
+     * null to prevent NPE.
      */
-    private void readObject(ObjectInputStream ois)
-            throws IOException, ClassNotFoundException {
+    private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();
         this.listeners = SerializationHelper.ensureListInitialized(listeners);
         this.systemListeners = SerializationHelper.ensureListInitialized(systemListeners);
@@ -149,7 +140,6 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
     /***********************************************************
      * Router implementation
      **********************************************************/
-
     @Override
     @JsonIgnore
     public int getNumRoutes() {

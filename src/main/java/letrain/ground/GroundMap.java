@@ -1,11 +1,9 @@
 package letrain.ground;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.function.Consumer;
-
 import letrain.map.Point;
 import letrain.visitor.Renderable;
-
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(as = letrain.ground.impl.GroundMap.class)
 public interface GroundMap extends Renderable {

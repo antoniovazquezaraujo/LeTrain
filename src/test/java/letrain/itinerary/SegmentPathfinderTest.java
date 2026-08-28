@@ -6,12 +6,10 @@ import static org.mockito.Mockito.*;
 
 import java.util.List;
 import java.util.Optional;
-
 import letrain.map.Dir;
 import letrain.segments.Port;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
-import letrain.segments.impl.RailNodeImpl;
 import letrain.utils.Pair;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,8 +51,6 @@ class SegmentPathfinderTest {
         Segment b = mock(Segment.class);
         assertTrue(pf.find(a, b, Optional.empty()).isEmpty());
     }
-
-
 
     @Test
     @DisplayName("should choose route with lower physical track cost using ports")
@@ -135,10 +131,10 @@ class SegmentPathfinderTest {
 
         // from connects to to via toPort1
         when(graph.getNextPorts(fromPort1)).thenReturn(List.of(toPort1));
-        
+
         letrain.segments.impl.RailNodeImpl toNode = mock(letrain.segments.impl.RailNodeImpl.class);
         when(toPort1.getNode()).thenReturn(toNode);
-        
+
         letrain.segments.PortType portType = letrain.segments.PortType.A;
         when(toPort1.getType()).thenReturn(portType);
         when(toNode.getDirForPort(portType)).thenReturn(Dir.E); // Entry direction is East

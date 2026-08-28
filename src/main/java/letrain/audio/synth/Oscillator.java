@@ -6,7 +6,10 @@ public class Oscillator extends AudioGenerator {
     private Waveform waveform = Waveform.SINE;
 
     public enum Waveform {
-        SINE, SQUARE, SAWTOOTH, TRIANGLE
+        SINE,
+        SQUARE,
+        SAWTOOTH,
+        TRIANGLE
     }
 
     public void setFrequency(double frequency) {
@@ -23,7 +26,7 @@ public class Oscillator extends AudioGenerator {
 
         for (int i = 0; i < buffer.length; i++) {
             float sample = 0.0f;
-            
+
             switch (waveform) {
                 case SINE:
                     sample = (float) Math.sin(phase);
@@ -33,12 +36,12 @@ public class Oscillator extends AudioGenerator {
                     break;
                 case SAWTOOTH:
                     // Normalize phase to 0-1 for saw calculation
-                    double normalizedPhase = (phase / (Math.PI * 2)); 
+                    double normalizedPhase = (phase / (Math.PI * 2));
                     sample = (float) (2.0 * (normalizedPhase - Math.floor(normalizedPhase + 0.5)));
                     break;
                 case TRIANGLE:
-                     sample = (float) (2.0 / Math.PI * Math.asin(Math.sin(phase)));
-                     break;
+                    sample = (float) (2.0 / Math.PI * Math.asin(Math.sin(phase)));
+                    break;
             }
 
             buffer[i] += sample * volume;

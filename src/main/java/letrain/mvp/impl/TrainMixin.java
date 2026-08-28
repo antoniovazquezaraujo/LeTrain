@@ -8,14 +8,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.Deque;
 import letrain.itinerary.AutoPilot;
-import letrain.vehicle.rail.Linker;
 import letrain.vehicle.Tractor;
+import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.TrainLogisticsManager;
 import letrain.vehicle.rail.Trip;
 import letrain.vehicle.rail.impl.Locomotive;
-
-import java.util.Deque;
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @JsonIgnoreProperties(ignoreUnknown = true)

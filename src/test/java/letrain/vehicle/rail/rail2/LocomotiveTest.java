@@ -1,9 +1,10 @@
 package letrain.vehicle.rail.rail2;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import letrain.vehicle.rail.impl.Locomotive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Locomotive Engine and Speed Logic Tests")
 class LocomotiveTest {
@@ -15,7 +16,9 @@ class LocomotiveTest {
         assertFalse(locomotive.isEngineOn(), "engine should be off initially");
 
         locomotive.setTargetSpeed(5);
-        assertTrue(locomotive.isEngineOn(), "engine should turn on automatically when setting speed > 0");
+        assertTrue(
+                locomotive.isEngineOn(),
+                "engine should turn on automatically when setting speed > 0");
         assertEquals(5, locomotive.getTargetSpeed(), "target speed should be updated correctly");
     }
 

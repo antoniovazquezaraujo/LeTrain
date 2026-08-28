@@ -80,7 +80,7 @@ class TestCircuit1TraitTest {
         }
         track.addRoute(oldDir, cursorDir);
 
-            oldTrack.connect(track.getDir(cursorDir).inverse(), track);
+        oldTrack.connect(track.getDir(cursorDir).inverse(), track);
 
         if (canBeAFork(track, oldDir, cursorDir)) {
             final ForkRailTrack myNewTrack = new ForkRailTrack(1);
@@ -107,7 +107,6 @@ class TestCircuit1TraitTest {
         cursor.setPosition(newPos);
         oldTrack = track;
         return true;
-
     }
 
     public RailTrack createTrackOfSelectedType() {
@@ -125,5 +124,4 @@ class TestCircuit1TraitTest {
         r.addRoute(from, to);
         return r.getNumRoutes() == 3;
     }
-
 }

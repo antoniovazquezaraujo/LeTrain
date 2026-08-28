@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
 import letrain.audio.core.AudioMixer;
 import letrain.audio.sources.WavSource;
 import letrain.audio.synth.AudioSample;
@@ -39,23 +38,21 @@ public class AudioController {
     }
 
     /**
-     * Apaga el motor reproduciendo primero el segmento 'stop' del WAV.
-     * Una vez finalizado el sonido, retira el sintetizador del mixer.
+     * Apaga el motor reproduciendo primero el segmento 'stop' del WAV. Una vez finalizado el
+     * sonido, retira el sintetizador del mixer.
      */
     public void stopEngineWithSound(int id, Locomotive loco) {
         TrainSynthesizer synth = synthesizers.get(id);
-        if (synth == null)
-            return;
+        if (synth == null) return;
         loco.setEngineOn(false); // <--- Inmediatamente apagamos el estado para evitar recreaciones
         synthesizers.remove(id); // ya no recibe actualizaciones de throttle
-        synth.playStopSound(() -> {
-            mixer.removeSource(synth);
-        });
+        synth.playStopSound(
+                () -> {
+                    mixer.removeSource(synth);
+                });
     }
 
-    /**
-     * Enciende el motor de una locomotora (crea su sintetizador si no existe).
-     */
+    /** Enciende el motor de una locomotora (crea su sintetizador si no existe). */
     public void startEngine(Locomotive loco) {
         loco.setEngineOn(true);
         // El synth se creará en el próximo ciclo de update()
@@ -102,8 +99,7 @@ public class AudioController {
     }
 
     public void setJackhammerActive(boolean active, float x, float y) {
-        if (!enabled)
-            return;
+        if (!enabled) return;
         if (active) {
             if (jackhammerSource == null) {
                 AudioSample sample = samples.get("hammer");
@@ -157,8 +153,7 @@ public class AudioController {
     }
 
     public void update() {
-        if (!enabled)
-            return;
+        if (!enabled) return;
 
         // 1. Remove synthesizers for destroyed locomotives
         Iterator<Map.Entry<Integer, TrainSynthesizer>> it = synthesizers.entrySet().iterator();
@@ -193,20 +188,19 @@ public class AudioController {
             TrainSynthesizer synth = synthesizers.get(loco.getId());
             if (synth == null) {
                 // Solo crear el synth si el motor está encendido
-                if (!loco.isEngineOn())
-                    continue;
+                if (!loco.isEngineOn()) continue;
                 synth = new TrainSynthesizer();
 
-                synth.addListener(new TrainSynthesizer.SynthesizerListener() {
-                    @Override
-                    public void onNotchChanged(int notch) {
-                        // Sound notch changed - no-op on locomotive physics
-                    }
+                synth.addListener(
+                        new TrainSynthesizer.SynthesizerListener() {
+                            @Override
+                            public void onNotchChanged(int notch) {
+                                // Sound notch changed - no-op on locomotive physics
+                            }
 
-                    @Override
-                    public void onSpeedUpdate(float acousticSpeed) {
-                    }
-                });
+                            @Override
+                            public void onSpeedUpdate(float acousticSpeed) {}
+                        });
 
                 // Audio Physics Defaults
                 // 3m Ref Distance (Full volume), 1000m Max Distance (Silence)
@@ -226,7 +220,8 @@ public class AudioController {
             synth.update();
 
             // Dynamic Volume based on Director Status
-            boolean isDirector = loco.getTrain() != null && loco.getTrain().getDirectorLinker() == loco;
+            boolean isDirector =
+                    loco.getTrain() != null && loco.getTrain().getDirectorLinker() == loco;
             float locoVolume = 0.8f;
             float coachVolume = 0.6f;
             if (!isDirector && loco.getTrain() != null) {
@@ -263,9 +258,7 @@ public class AudioController {
                 // LeTrain is 2D grid (X, Y). Camera is (X, Z=Depth, Y=Height)
                 // Consistent with setListenerPosition(cam.x, cam.z, cam.y)
                 synth.setPosition(
-                        (float) pos.getX() * SCALE_FACTOR,
-                        (float) pos.getY() * SCALE_FACTOR,
-                        0);
+                        (float) pos.getX() * SCALE_FACTOR, (float) pos.getY() * SCALE_FACTOR, 0);
             }
 
             // Sync States
@@ -279,20 +272,22 @@ public class AudioController {
     }
 
     /**
-     * Updates ambient sounds based on camera mode and zoom level.
-     * Birds play in perspective/orbit mode, wind in top-down/map mode.
-     * Volume increases with camera distance (zoom out = louder).
+     * Updates ambient sounds based on camera mode and zoom level. Birds play in perspective/orbit
+     * mode, wind in top-down/map mode. Volume increases with camera distance (zoom out = louder).
      *
      * @param isTopDown true for MAP/cenital mode, false for ORBIT/CAB
      * @param zoomFactor 0.0 (close) to 1.0 (far)
-     * @param listenerX  camera X position in world units
-     * @param listenerY  camera Y position in world units
-     * @param listenerZ  camera Z position in world units
+     * @param listenerX camera X position in world units
+     * @param listenerY camera Y position in world units
+     * @param listenerZ camera Z position in world units
      */
-    public void updateAmbient(boolean isTopDown, float zoomFactor,
-            float listenerX, float listenerY, float listenerZ) {
-        if (!enabled)
-            return;
+    public void updateAmbient(
+            boolean isTopDown,
+            float zoomFactor,
+            float listenerX,
+            float listenerY,
+            float listenerZ) {
+        if (!enabled) return;
 
         float targetBirdsVol = isTopDown ? 0.0f : 0.3f + zoomFactor * 0.5f;
         float targetWindVol = isTopDown ? 0.2f + zoomFactor * 0.4f : 0.0f;
@@ -313,7 +308,10 @@ public class AudioController {
             if (birdsSource != null) {
                 birdsSource.setActive(true);
                 birdsSource.setVolume(targetBirdsVol);
-                birdsSource.setPosition(listenerX * SCALE_FACTOR, listenerY * SCALE_FACTOR, listenerZ * SCALE_FACTOR);
+                birdsSource.setPosition(
+                        listenerX * SCALE_FACTOR,
+                        listenerY * SCALE_FACTOR,
+                        listenerZ * SCALE_FACTOR);
             }
         } else {
             if (birdsSource != null) {
@@ -337,7 +335,10 @@ public class AudioController {
             if (windSource != null) {
                 windSource.setActive(true);
                 windSource.setVolume(targetWindVol);
-                windSource.setPosition(listenerX * SCALE_FACTOR, listenerY * SCALE_FACTOR, listenerZ * SCALE_FACTOR);
+                windSource.setPosition(
+                        listenerX * SCALE_FACTOR,
+                        listenerY * SCALE_FACTOR,
+                        listenerZ * SCALE_FACTOR);
             }
         } else {
             if (windSource != null) {

@@ -6,7 +6,6 @@ public class BridgeGateRailTrack extends RailTrack {
     /***********************************************************
      * Renderable implementation
      **********************************************************/
-
     @Override
     public void accept(Visitor visitor) {
         visitor.visitBridgeGateRailTrack(this);

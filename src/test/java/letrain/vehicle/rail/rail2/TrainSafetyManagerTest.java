@@ -1,23 +1,18 @@
 package letrain.vehicle.rail.rail2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
-
 import letrain.mvp.impl.Model;
 import letrain.segments.BlockManager;
 import letrain.segments.Port;
-import letrain.segments.PortType;
 import letrain.segments.RailNode;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.utils.Pair;
-import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.TrainSafetyManager;
@@ -62,18 +57,18 @@ class TrainSafetyManagerTest {
 
         when(graph.getSegment(track)).thenReturn(current);
         when(graph.getSegment(nextTrack)).thenReturn(next);
-        
+
         when(blockManager.tryLock(train, current)).thenReturn(true);
         when(blockManager.tryLock(train, next)).thenReturn(true);
-        
+
         safety.acquireInitialLocks();
-        
+
         assertEquals(current, safety.getCurrentSegment());
         assertEquals(next, safety.getNextSegment());
-        
+
         ForkRailTrack fork = mock(ForkRailTrack.class);
         safety.onForkEntered(fork);
-        
+
         assertEquals(next, safety.getCurrentSegment());
     }
 
@@ -95,11 +90,11 @@ class TrainSafetyManagerTest {
 
         ForkRailTrack fork = mock(ForkRailTrack.class);
         RailNode node = mock(RailNode.class);
-        
+
         Port trunkPort = mock(Port.class, "trunk");
         Port aPort = mock(Port.class, "a");
         Port bPort = mock(Port.class, "b");
-        
+
         when(node.getTrack()).thenReturn(fork);
         when(node.getPorts()).thenReturn(List.of(trunkPort, aPort, bPort));
         when(trunkPort.getNode()).thenReturn(node);
@@ -110,7 +105,7 @@ class TrainSafetyManagerTest {
         RailNode dummyNode1 = mock(RailNode.class);
         when(currentOtherPort.getNode()).thenReturn(dummyNode1);
         when(current.getPorts()).thenReturn(new Pair<>(currentOtherPort, trunkPort));
-        
+
         Port nextOtherPort = mock(Port.class);
         RailNode dummyNode2 = mock(RailNode.class);
         when(nextOtherPort.getNode()).thenReturn(dummyNode2);

@@ -1,11 +1,9 @@
 package letrain.map.impl;
- 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-
 import letrain.map.Dir;
 import letrain.map.Router;
 import letrain.utils.Pair;
@@ -17,24 +15,31 @@ public class SimpleRouter implements Router {
     @com.fasterxml.jackson.annotation.JsonProperty("dirMap")
     protected Map<Dir, Dir> dirMap = new HashMap<>();
 
-    public SimpleRouter() {
-
-    }
+    public SimpleRouter() {}
 
     @JsonIgnore
     public boolean isHorizontalOrVertical() {
         return dirMap.keySet().stream()
-                .filter(t -> {
-                    return (t == Dir.N) || t == Dir.S || t == Dir.E || t == Dir.W;
-                }).count() > 0;
+                        .filter(
+                                t -> {
+                                    return (t == Dir.N) || t == Dir.S || t == Dir.E || t == Dir.W;
+                                })
+                        .count()
+                > 0;
     }
 
     @JsonIgnore
     public boolean isDiagonal() {
         return dirMap.keySet().stream()
-                .filter(t -> {
-                    return (t == Dir.NE) || t == Dir.NW || t == Dir.SE || t == Dir.SW;
-                }).count() > 0;
+                        .filter(
+                                t -> {
+                                    return (t == Dir.NE)
+                                            || t == Dir.NW
+                                            || t == Dir.SE
+                                            || t == Dir.SW;
+                                })
+                        .count()
+                > 0;
     }
 
     @JsonIgnore
@@ -56,17 +61,13 @@ public class SimpleRouter implements Router {
     @Override
     @JsonIgnore
     public boolean isStraight() {
-        return getNumRoutes() <= 2
-                &&
-                allRoutesAreStright();
+        return getNumRoutes() <= 2 && allRoutesAreStright();
     }
 
     @Override
     @JsonIgnore
     public boolean isCurve() {
-        return getNumRoutes() == 2
-                &&
-                !allRoutesAreStright();
+        return getNumRoutes() == 2 && !allRoutesAreStright();
     }
 
     @Override

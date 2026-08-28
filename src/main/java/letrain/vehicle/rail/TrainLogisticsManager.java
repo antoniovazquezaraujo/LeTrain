@@ -1,12 +1,11 @@
 package letrain.vehicle.rail;
 
+import java.util.List;
 import letrain.track.CargoTypes;
 import letrain.track.Station;
 import letrain.vehicle.rail.impl.Wagon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 public interface TrainLogisticsManager {
     Logger log = LoggerFactory.getLogger(letrain.vehicle.rail.impl.TrainLogisticsManager.class);
@@ -35,7 +34,6 @@ public interface TrainLogisticsManager {
     boolean performIndustrialAction(Station station);
 
     Station getStationAtTrain();
-
 
     CargoTypes getTrainCargoType();
 }

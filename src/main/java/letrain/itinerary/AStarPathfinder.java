@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
 import letrain.map.Dir;
 import letrain.segments.BlockManager;
 import letrain.segments.Port;
@@ -21,8 +20,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A* pathfinder over the railway segment graph.
- * Explores neighbors from both ends of each segment (circuits).
+ * A* pathfinder over the railway segment graph. Explores neighbors from both ends of each segment
+ * (circuits).
  */
 public class AStarPathfinder implements SegmentPathfinder {
 
@@ -49,7 +48,8 @@ public class AStarPathfinder implements SegmentPathfinder {
     }
 
     @Override
-    public List<Segment> find(Segment from, Optional<Port> fromExitPort, Segment to, Optional<Dir> entryDir) {
+    public List<Segment> find(
+            Segment from, Optional<Port> fromExitPort, Segment to, Optional<Dir> entryDir) {
         if (from == null || to == null) return List.of();
         if (from.equals(to)) return List.of(from);
         if (graph == null) return List.of();
@@ -71,7 +71,7 @@ public class AStarPathfinder implements SegmentPathfinder {
         if (openMap.isEmpty()) {
             var ports = from.getPorts();
             if (ports != null) {
-                for (Port p : new Port[]{ports.getFirst(), ports.getSecond()}) {
+                for (Port p : new Port[] {ports.getFirst(), ports.getSecond()}) {
                     if (p != null) {
                         NodeState startState = new NodeState(from, p);
                         gScore.put(startState, 0);
@@ -171,12 +171,12 @@ public class AStarPathfinder implements SegmentPathfinder {
         if (a == null || b == null) return 0;
         RailNode aNode = null;
         RailNode bNode = null;
-        
+
         var aPorts = a.getPorts();
         if (aPorts != null && aPorts.getFirst() != null) {
             aNode = aPorts.getFirst().getNode();
         }
-        
+
         var bPorts = b.getPorts();
         if (bPorts != null && bPorts.getFirst() != null) {
             bNode = bPorts.getFirst().getNode();

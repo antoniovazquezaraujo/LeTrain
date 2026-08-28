@@ -37,10 +37,10 @@ public class SegmentImpl implements Segment {
         if (id != null && id.equals(segment.id)) return true;
         // Compare by ports (order-independent)
         if (ports == null || segment.ports == null) return false;
-        return (java.util.Objects.equals(ports.getFirst(), segment.ports.getFirst()) && 
-                java.util.Objects.equals(ports.getSecond(), segment.ports.getSecond())) ||
-               (java.util.Objects.equals(ports.getFirst(), segment.ports.getSecond()) && 
-                java.util.Objects.equals(ports.getSecond(), segment.ports.getFirst()));
+        return (java.util.Objects.equals(ports.getFirst(), segment.ports.getFirst())
+                        && java.util.Objects.equals(ports.getSecond(), segment.ports.getSecond()))
+                || (java.util.Objects.equals(ports.getFirst(), segment.ports.getSecond())
+                        && java.util.Objects.equals(ports.getSecond(), segment.ports.getFirst()));
     }
 
     @Override

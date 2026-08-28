@@ -1,25 +1,25 @@
 package letrain.mvp.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Encapsula la lógica de persistencia de partidas para desacoplarla de la vista 3D.
- */
+/** Encapsula la lógica de persistencia de partidas para desacoplarla de la vista 3D. */
 public class GameSaveService {
 
     private static final Logger log = LoggerFactory.getLogger(GameSaveService.class);
 
     private void configureObjectMapper(ObjectMapper mapper) {
         mapper.registerModule(new JavaTimeModule());
-        mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.configure(
+                com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+                false);
         mapper.addMixIn(letrain.mvp.Model.class, ModelMixin.class);
         mapper.addMixIn(letrain.mvp.impl.Model.class, ModelMixin.class);
         mapper.addMixIn(Train.class, TrainMixin.class);
@@ -50,7 +50,8 @@ public class GameSaveService {
         } catch (Exception e) {
             log.error("Error saving game to {}", file.getAbsolutePath(), e);
             // Diagnostic logging to file for the AI agent to read
-            try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter("save_error.log"))) {
+            try (java.io.PrintWriter pw =
+                    new java.io.PrintWriter(new java.io.FileWriter("save_error.log"))) {
                 e.printStackTrace(pw);
                 if (e.getCause() != null) {
                     pw.println("--- CAUSE ---");
@@ -76,7 +77,8 @@ public class GameSaveService {
         try {
             ObjectMapper mapper = new ObjectMapper();
             configureObjectMapper(mapper);
-            letrain.mvp.impl.Model loadedModel = mapper.readValue(file, letrain.mvp.impl.Model.class);
+            letrain.mvp.impl.Model loadedModel =
+                    mapper.readValue(file, letrain.mvp.impl.Model.class);
             loadedModel.postLoadInit();
             log.info("Game loaded successfully from {} (JSON)", file.getAbsolutePath());
             return Optional.of(loadedModel);
@@ -104,4 +106,3 @@ public class GameSaveService {
         }
     }
 }
-

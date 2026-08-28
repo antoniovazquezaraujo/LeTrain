@@ -55,7 +55,6 @@ public class RailTrack extends Track {
     /***********************************************************
      * Renderable implementation
      **********************************************************/
-
     @Override
     public void accept(Visitor visitor) {
         visitor.visitRailTrack(this);

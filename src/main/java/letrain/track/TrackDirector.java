@@ -1,6 +1,5 @@
 package letrain.track;
 
-
 import letrain.map.Dir;
 import letrain.vehicle.rail.Linker;
 import org.slf4j.Logger;
@@ -9,9 +8,7 @@ import org.slf4j.LoggerFactory;
 public class TrackDirector<T extends Track> {
     private static TrackDirector instance;
 
-    public TrackDirector() {
-
-    }
+    public TrackDirector() {}
 
     public static <X extends Track> TrackDirector getInstance() {
         if (instance == null) {
@@ -24,7 +21,10 @@ public class TrackDirector<T extends Track> {
 
     public boolean enterLinkerFromDir(T track, Dir dir, Linker vehicle) {
         if (!track.canEnter(dir, vehicle)) {
-            log.debug("Cannot enter linker {} from {} into track {}: occupied or reserved.", vehicle, dir,
+            log.debug(
+                    "Cannot enter linker {} from {} into track {}: occupied or reserved.",
+                    vehicle,
+                    dir,
                     track.getPosition());
             return false;
         }
