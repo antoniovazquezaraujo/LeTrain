@@ -259,11 +259,8 @@ public class RailTrackMaker {
             if (sensor != null && sensor instanceof Station) {
                 presenter.getModel().removeStation((Station) sensor);
             } else if (sensor == null) {
-                // BLOCK if building on industry
+                // Allow building on industry (removed the block)
                 Integer terrainAtPos = presenter.getModel().getGroundMap().getValueAt(position);
-                if (terrainAtPos != null && terrainAtPos >= 10 && terrainAtPos <= 29) {
-                    return;
-                }
 
                 // Direction validation: cursor must be aligned with track
                 letrain.map.Dir cursorDir = presenter.getModel().getCursor().getDir();
