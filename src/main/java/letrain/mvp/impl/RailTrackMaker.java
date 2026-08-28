@@ -201,9 +201,6 @@ public class RailTrackMaker {
         }
     }
 
-    private void createStation() {
-        // Obsolete
-    }
 
     void manageSpeedSignal() {
         Point position = presenter.getModel().getCursor().getPosition();

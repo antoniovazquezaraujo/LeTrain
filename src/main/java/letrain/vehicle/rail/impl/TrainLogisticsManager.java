@@ -135,8 +135,6 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
             return false;
 
         boolean anyActionTaken = false;
-        double totalDistance = 0;
-        int deliveryCount = 0;
 
         if (this.train.getLinkers().isEmpty()) {
             return false;
@@ -184,11 +182,6 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
                 station.receiveImportCargo(toUnload);
 
                 if (wagon.getLoadingPoint() != null) {
-                    totalDistance += letrain.map.Point.distance(wagon.getLoadingPoint(),
-                            station.getTrack().getPosition());
-                    deliveryCount++;
-                }
-                if (wagon.getCargoAmount() == 0) {
                     wagon.setCargoType(CargoTypes.NONE);
                     wagon.setLoadingPoint(null);
                 }

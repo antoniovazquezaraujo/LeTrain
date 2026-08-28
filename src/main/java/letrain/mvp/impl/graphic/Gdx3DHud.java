@@ -29,11 +29,8 @@ import letrain.mvp.Model.GameModeMenuOption;
 import letrain.utils.FontManager;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Gdx3DHud {
-    private static final Logger log = LoggerFactory.getLogger(Gdx3DHud.class);
 
     private final Model model;
     private final GraphicPresenter view;

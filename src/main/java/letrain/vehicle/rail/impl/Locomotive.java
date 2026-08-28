@@ -350,7 +350,6 @@ public class Locomotive extends Linker implements Tractor {
             log.info("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed,
                     speed);
         }
-        int oldSpeed = this.targetSpeed;
         this.targetSpeed = speed;
         if (this.targetSpeed > 0) {
             if (!engineExplicitlyOff) {
