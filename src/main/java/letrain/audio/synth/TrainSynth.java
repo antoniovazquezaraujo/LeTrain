@@ -10,7 +10,6 @@ public class TrainSynth {
     private float chugPhase = 0.0f;
 
     // Synthesis Parameters
-    private float chuffRateResult = 0.0f; // Calculated chuffs per second
 
     public TrainSynth() {
         engineHum = new Oscillator();

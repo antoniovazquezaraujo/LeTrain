@@ -5,8 +5,6 @@ import com.googlecode.lanterna.TextColor.ANSI;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
-import letrain.map.Dir;
-import letrain.map.DynamicRouter;
 import letrain.map.Router;
 import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
@@ -14,7 +12,6 @@ import letrain.mvp.impl.terminal.TerminalView;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
-import letrain.track.Track;
 import letrain.track.rail.BridgeGateRailTrack;
 import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
@@ -213,34 +210,12 @@ public class InfoVisitor implements Visitor {
         return ret.toString();
     }
 
-    private String getTrackConnectionsAspect(RailTrack track) {
-        StringBuffer ret = new StringBuffer();
-        for (Dir dir : Dir.values()) {
-            Track connected = track.getConnected(dir);
-            if (connected != null) {
-                ret.append("(" + dir + "->" + connected + ")");
-            }
-        }
-        return ret.toString();
-    }
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
         infoBarText += "Fork " + track.getId() + " Dirs "
                 + (track.isUsingAlternativeRoute() ? track.getAlternativeRoute()
                         : track.getOriginalRoute());
-    }
-
-    private String getDynamicRouterAspect(DynamicRouter router) {
-        StringBuffer ret = new StringBuffer();
-        router.forEach(t -> {
-            if (t.getValue() != null) {
-                ret.append("(" + t.getKey() + ">" + t.getValue() + ") ");
-            }
-        });
-        ret.append("\nNorm:" + router.getOriginalRoute() + " Alt:" + router.getAlternativeRoute()
-                + " Using Alt:" + (router.isUsingAlternativeRoute() ? "TRUE" : "FALSE"));
-        return ret.toString();
     }
 
     @Override

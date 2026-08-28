@@ -40,7 +40,6 @@ public class Gdx3DInputHandler implements InputProcessor {
     private int semaphoreIdAccumulator = 0;
     private int stationIdAccumulator = 0;
     private int speedSignalId = 0;
-    private long speedSignalInputTimeout = 0;
     private int locomotiveIdAccumulator = 0;
     private long forkInputTimeout = 0;
     private long semaphoreInputTimeout = 0;
@@ -633,7 +632,6 @@ public class Gdx3DInputHandler implements InputProcessor {
                     if (speedSignalId > 0) {
                         model.selectSpeedSignal(speedSignalId);
                         speedSignalId = 0;
-                        speedSignalInputTimeout = 0;
                     }
                     if (model.getSelectedSpeedSignal() != null) {
                         letrain.track.SpeedSignal sig = model.getSelectedSpeedSignal();
@@ -649,7 +647,6 @@ public class Gdx3DInputHandler implements InputProcessor {
                         model.getSelectedSpeedSignal().setLimit(val);
                     } else {
                         speedSignalId = speedSignalId * 10 + (stroke.getCharacter() - '0');
-                        speedSignalInputTimeout = System.currentTimeMillis() + 1000;
                     }
                 }
                 break;

@@ -28,17 +28,15 @@ public class AutoPilotImpl implements AutoPilot {
     private Mode mode = Mode.IDLE;
     private SegmentPathfinder pathfinder;
     private List<Segment> currentRoute = List.of();
-    private Segment lastSegment;
     private int currentIndex = 0;
 
     private Train train;
-    private TrainActionManager actionManager;
     private final List<WaypointCommand> pendingCommands = new java.util.ArrayList<>();
     private int waitTicks = 0;
 
     public AutoPilotImpl() {
         this.train = null;
-        this.actionManager = null;
+
         log.info("[AP] created empty");
     }
 
@@ -48,14 +46,14 @@ public class AutoPilotImpl implements AutoPilot {
 
     public AutoPilotImpl(Train train, TrainActionManager actionManager) {
         this.train = train;
-        this.actionManager = actionManager;
+
         log.info("[AP] created");
     }
 
     public AutoPilotImpl(Itinerary itinerary, Mode mode, int waitTicks,
             List<WaypointCommand> pendingCommands, int currentIndex) {
         this.train = null;
-        this.actionManager = null;
+
         this.itinerary = itinerary;
         this.mode = mode;
         this.waitTicks = waitTicks;
@@ -68,7 +66,7 @@ public class AutoPilotImpl implements AutoPilot {
 
     public void reinitialize(Train train, TrainActionManager actionManager) {
         this.train = train;
-        this.actionManager = actionManager;
+
         log.info("[AP] reinitialized");
     }
 
@@ -141,7 +139,7 @@ public class AutoPilotImpl implements AutoPilot {
         this.itinerary = it;
         this.mode = Mode.IDLE;
         this.currentRoute = List.of();
-        this.lastSegment = null;
+
         this.waitTicks = 0;
         this.pendingCommands.clear();
         this.currentIndex = 0;
@@ -162,7 +160,6 @@ public class AutoPilotImpl implements AutoPilot {
         }
         mode = Mode.FOLLOWING;
         currentRoute = List.of();
-        lastSegment = null;
         waitTicks = 0;
         pendingCommands.clear();
         currentIndex = 0;
@@ -245,7 +242,6 @@ public class AutoPilotImpl implements AutoPilot {
             return;
         }
 
-        lastSegment = currentSeg;
 
         Optional<Waypoint> currentWpOpt = currentWaypoint();
         if (currentWpOpt.isEmpty()) {
@@ -291,7 +287,7 @@ public class AutoPilotImpl implements AutoPilot {
     @Override
     public void clearRoute() {
         this.currentRoute = List.of();
-        this.lastSegment = null;
+
     }
 
     @Override

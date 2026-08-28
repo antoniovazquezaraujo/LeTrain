@@ -31,7 +31,6 @@ public class AudioSample {
         this.sampleRate = format.getSampleRate();
 
         boolean isBigEndian = format.isBigEndian();
-        int channels = format.getChannels();
 
         for (int i = 0; i < frames; i++) {
             float sample = 0.0f;

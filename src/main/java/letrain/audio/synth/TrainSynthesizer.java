@@ -567,10 +567,6 @@ public class TrainSynthesizer implements AudioSource {
         listeners.add(l);
     }
 
-    private void notifySpeed(float speed) {
-        for (SynthesizerListener l : listeners)
-            l.onSpeedUpdate(speed);
-    }
 
     private void notifyNotch(int idx) {
         for (SynthesizerListener l : listeners)
@@ -739,30 +735,6 @@ public class TrainSynthesizer implements AudioSource {
      * Rampa de pitch durante durationSec segundos. Simultáneamente notifica la velocidad para que
      * la locomotora y la palanca se actualicen.
      */
-    private void performRampSync(float startSpeed, float targetSpeed, float durationSec) {
-        /*
-         * int interval = 33; // ms (~30fps) int steps = Math.max(1, (int)((durationSec * 1000) /
-         * interval)); float speedStep = (targetSpeed - startSpeed) / steps;
-         *
-         * // Para los vagones: volumen proporcional a la velocidad float startCoachVol =
-         * coachEngine.getVolume(); float targetCoachVol = (targetNotchIndex > 0) ? baseCoachVolume
-         * : 0.0f; float coachStep = (targetCoachVol - startCoachVol) / steps;
-         *
-         * for (int i = 1; i <= steps; i++) { if (Thread.currentThread().isInterrupted()) { return;
-         * } try { Thread.sleep(interval); } catch (InterruptedException e) { return; }
-         *
-         * float newSpeed = startSpeed + speedStep * i; // Clamp if (speedStep > 0 && newSpeed >
-         * targetSpeed) { newSpeed = targetSpeed; } if (speedStep < 0 && newSpeed < targetSpeed) {
-         * newSpeed = targetSpeed; }
-         *
-         * locoEngine.setSpeed(newSpeed); notifySpeed(newSpeed);
-         *
-         * // Actualizar volumen de vagones proporcionalmente float newCoachVol = startCoachVol +
-         * coachStep * i; if (newCoachVol < 0) { newCoachVol = 0; } if (newCoachVol >
-         * baseCoachVolume) { newCoachVol = baseCoachVolume; } coachEngine.setVolume(newCoachVol); }
-         */
-    }
-
     /** Actualiza el loopPoint de los vagones según velocidad de movimiento. */
     public void setMotionSpeed(int speed) {
         if (isStopping) {

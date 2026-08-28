@@ -243,7 +243,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
 
-        boolean isAMenuKey = true;
         if (keyEvent.getKeyType() == KeyType.Enter) {
             // In DRIVE mode, Enter is for loading/unloading, not for switching to MENU.
             // The logic is handled inside trainDriverOnChar.
