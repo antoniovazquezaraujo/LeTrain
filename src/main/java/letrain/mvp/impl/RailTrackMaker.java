@@ -259,11 +259,8 @@ public class RailTrackMaker {
             if (sensor != null && sensor instanceof Station) {
                 presenter.getModel().removeStation((Station) sensor);
             } else if (sensor == null) {
-                // BLOCK if building on industry
+                // Allow building on industry (removed the block)
                 Integer terrainAtPos = presenter.getModel().getGroundMap().getValueAt(position);
-                if (terrainAtPos != null && terrainAtPos >= 10 && terrainAtPos <= 29) {
-                    return;
-                }
 
                 // Direction validation: cursor must be aligned with track
                 letrain.map.Dir cursorDir = presenter.getModel().getCursor().getDir();
@@ -444,16 +441,12 @@ public class RailTrackMaker {
             oldGroundType = actualGroundType;
         }
 
-        // BLOCK construction on industrial tiles
-        if (actualGroundType != null && actualGroundType >= 10 && actualGroundType <= 29) {
-            return null;
-        }
-
         if (actualGroundType == null || oldGroundType == null) {
             return null;
         }
 
-        int effectiveActualType = actualGroundType;
+        int effectiveActualType =
+                (actualGroundType >= 10 && actualGroundType <= 29) ? GroundMap.GROUND : actualGroundType;
         int effectiveOldType =
                 (oldGroundType >= 10 && oldGroundType <= 29) ? GroundMap.GROUND : oldGroundType;
 
@@ -512,11 +505,6 @@ public class RailTrackMaker {
         Integer actualGroundType =
                 presenter.getModel().getGroundMap().getValueAt(actualCursorPosition);
 
-        // STRICT BLOCK construction on industrial tiles
-        if (actualGroundType != null && actualGroundType >= 10 && actualGroundType <= 29) {
-            return false;
-        }
-
         if (oldGroundType == null) {
             oldGroundType = actualGroundType;
         }
@@ -544,7 +532,8 @@ public class RailTrackMaker {
                 }
             }
         } else {
-            if (actualGroundType != GroundMap.GROUND) {
+            int mappedGroundType = (actualGroundType != null && actualGroundType >= 10 && actualGroundType <= 29) ? GroundMap.GROUND : actualGroundType;
+            if (mappedGroundType != GroundMap.GROUND) {
                 // si la dirección del cursor es distinta de la del track actual retornamos
                 if (track != null && !track.canExit(presenter.getModel().getCursor().getDir())) {
                     return false;
