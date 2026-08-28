@@ -121,8 +121,4 @@ public class AmbientSource implements AudioSource {
         this.refDistance = ref;
         this.maxDistance = max;
     }
-
-    public void setStartDelay(int delay) {
-        // TODO: Implement delay logic if needed
-    }
 }
