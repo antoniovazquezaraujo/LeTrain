@@ -1,12 +1,6 @@
 {
-    "editor.defaultFormatter": "redhat.java",
     "java.format.settings.url": "eclipse-java-google-style.xml",
     "editor.formatOnSave": true,
-    "java.cleanup.actionsOnSave": [
-        "addMissingBraces"
-    ],
-    "editor.codeActionsOnSave": {
-        "source.cleanUp": "always"
-    },
+    "editor.defaultFormatter": "redhat.java",
     "java.configuration.updateBuildConfiguration": "interactive"
 }
