@@ -120,7 +120,7 @@ public class Gdx3DInputHandler implements InputProcessor {
     @Override
     public boolean keyTyped(char character) {
         // 1. Toggle de cámara
-        if (character == 'c' || character == 'C') {
+        if (character == 'v' || character == 'V') {
             cameraController.cycleMode(!model.getLocomotives().isEmpty());
             return true;
         }
@@ -181,12 +181,16 @@ public class Gdx3DInputHandler implements InputProcessor {
     private KeyStroke translateKeyCode(int keycode) {
         switch (keycode) {
             case Input.Keys.UP:
+            case Input.Keys.K:
                 return new KeyStroke(KeyType.ArrowUp);
             case Input.Keys.DOWN:
+            case Input.Keys.J:
                 return new KeyStroke(KeyType.ArrowDown);
             case Input.Keys.LEFT:
+            case Input.Keys.H:
                 return new KeyStroke(KeyType.ArrowLeft);
             case Input.Keys.RIGHT:
+            case Input.Keys.L:
                 return new KeyStroke(KeyType.ArrowRight);
             case Input.Keys.ENTER:
                 return new KeyStroke(KeyType.Enter);
@@ -220,12 +224,16 @@ public class Gdx3DInputHandler implements InputProcessor {
     private KeyStroke translateKeyCodeForUp(int keycode) {
         switch (keycode) {
             case Input.Keys.UP:
+            case Input.Keys.K:
                 return new KeyStroke(KeyType.ArrowUp);
             case Input.Keys.DOWN:
+            case Input.Keys.J:
                 return new KeyStroke(KeyType.ArrowDown);
             case Input.Keys.LEFT:
+            case Input.Keys.H:
                 return new KeyStroke(KeyType.ArrowLeft);
             case Input.Keys.RIGHT:
+            case Input.Keys.L:
                 return new KeyStroke(KeyType.ArrowRight);
             case Input.Keys.CONTROL_LEFT:
             case Input.Keys.CONTROL_RIGHT:
@@ -259,6 +267,11 @@ public class Gdx3DInputHandler implements InputProcessor {
                 cameraController.zoomStep(1f);
                 return;
             }
+        }
+
+        if (stroke.getKeyType() == KeyType.Escape) {
+            view.showExitDialog();
+            return;
         }
 
         // Global Enter to Menu (matches TerminalPresenter)
