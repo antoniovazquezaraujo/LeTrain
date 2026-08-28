@@ -444,16 +444,12 @@ public class RailTrackMaker {
             oldGroundType = actualGroundType;
         }
 
-        // BLOCK construction on industrial tiles
-        if (actualGroundType != null && actualGroundType >= 10 && actualGroundType <= 29) {
-            return null;
-        }
-
         if (actualGroundType == null || oldGroundType == null) {
             return null;
         }
 
-        int effectiveActualType = actualGroundType;
+        int effectiveActualType =
+                (actualGroundType >= 10 && actualGroundType <= 29) ? GroundMap.GROUND : actualGroundType;
         int effectiveOldType =
                 (oldGroundType >= 10 && oldGroundType <= 29) ? GroundMap.GROUND : oldGroundType;
 
