@@ -10,9 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Cross-platform font loader that manages font loading from multiple sources.
- * Attempts to load from bundled assets first, then system fonts, with fallback
- * to default BitmapFont.
+ * Cross-platform font loader that manages font loading from multiple sources. Attempts to load from
+ * bundled assets first, then system fonts, with fallback to default BitmapFont.
  */
 public class FontManager {
     private static final Logger log = LoggerFactory.getLogger(FontManager.class);
@@ -25,7 +24,7 @@ public class FontManager {
      * Loads a font by name and size with cross-platform fallback.
      *
      * @param fontName the name of the font (e.g., "Arial", "Consolas")
-     * @param size     the font size in points
+     * @param size the font size in points
      * @return a BitmapFont instance, never null
      */
     public static BitmapFont loadFont(String fontName, int size) {
@@ -86,7 +85,7 @@ public class FontManager {
      * Attempts to load a font from bundled assets (assets/fonts/).
      *
      * @param fontName the font name (e.g., "Arial")
-     * @param size     the font size
+     * @param size the font size
      * @return the loaded font, or null if not found in assets
      */
     private static BitmapFont loadFontFromAssets(String fontName, int size) {
@@ -126,14 +125,15 @@ public class FontManager {
      * Attempts to load a font from system fonts directory.
      *
      * @param fontName the font name (e.g., "Arial")
-     * @param size     the font size
+     * @param size the font size
      * @return the loaded font, or null if not found
      */
     private static BitmapFont loadFontFromSystem(String fontName, int size) {
         try {
             File systemFontFile = findSystemFont(fontName);
             if (systemFontFile != null && systemFontFile.exists()) {
-                return generateFontFromFile(Gdx.files.absolute(systemFontFile.getAbsolutePath()), size);
+                return generateFontFromFile(
+                        Gdx.files.absolute(systemFontFile.getAbsolutePath()), size);
             }
         } catch (Exception e) {
             // Silent fail, will return null
@@ -142,8 +142,7 @@ public class FontManager {
     }
 
     /**
-     * Searches for a system font file across Windows, macOS, and Linux font
-     * directories.
+     * Searches for a system font file across Windows, macOS, and Linux font directories.
      *
      * @param fontName the font name to search for
      * @return the File if found, or null
@@ -154,20 +153,29 @@ public class FontManager {
 
         if (os.contains("win")) {
             // Windows font directories
-            searchDirs = new String[] {
-                "C:\\Windows\\Fonts",
-                "C:\\Users\\" + System.getProperty("user.name") + "\\AppData\\Local\\Microsoft\\Windows\\Fonts"
-            };
+            searchDirs =
+                    new String[] {
+                        "C:\\Windows\\Fonts",
+                        "C:\\Users\\"
+                                + System.getProperty("user.name")
+                                + "\\AppData\\Local\\Microsoft\\Windows\\Fonts"
+                    };
         } else if (os.contains("mac")) {
             // macOS font directories
-            searchDirs = new String[] {
-                "/Library/Fonts", System.getProperty("user.home") + "/Library/Fonts", "/System/Library/Fonts"
-            };
+            searchDirs =
+                    new String[] {
+                        "/Library/Fonts",
+                        System.getProperty("user.home") + "/Library/Fonts",
+                        "/System/Library/Fonts"
+                    };
         } else if (os.contains("nux") || os.contains("unix")) {
             // Linux font directories
-            searchDirs = new String[] {
-                "/usr/share/fonts", "/usr/local/share/fonts", System.getProperty("user.home") + "/.fonts"
-            };
+            searchDirs =
+                    new String[] {
+                        "/usr/share/fonts",
+                        "/usr/local/share/fonts",
+                        System.getProperty("user.home") + "/.fonts"
+                    };
         }
 
         // Search for font files
@@ -202,10 +210,11 @@ public class FontManager {
      * Generates a BitmapFont from a font file path using FreeTypeFontGenerator.
      *
      * @param fontFilePath the absolute path to the font file
-     * @param size         the desired font size
+     * @param size the desired font size
      * @return a BitmapFont, or null if generation fails
      */
-    private static BitmapFont generateFontFromFile(com.badlogic.gdx.files.FileHandle fileHandle, int size) {
+    private static BitmapFont generateFontFromFile(
+            com.badlogic.gdx.files.FileHandle fileHandle, int size) {
         try {
             FreeTypeFontGenerator generator = new FreeTypeFontGenerator(fileHandle);
             FreeTypeFontParameter parameter = new FreeTypeFontParameter();
@@ -223,9 +232,8 @@ public class FontManager {
     }
 
     /**
-     * Creates a default BitmapFont with appropriate scaling for the given size.
-     * The default BitmapFont is small, so we scale it up relative to the requested
-     * size.
+     * Creates a default BitmapFont with appropriate scaling for the given size. The default
+     * BitmapFont is small, so we scale it up relative to the requested size.
      *
      * @param size the desired logical font size
      * @return a scaled BitmapFont

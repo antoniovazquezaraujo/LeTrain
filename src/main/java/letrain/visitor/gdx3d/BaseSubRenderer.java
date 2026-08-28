@@ -10,8 +10,8 @@ import letrain.vehicle.rail.impl.Wagon;
 import letrain.visitor.Visitor;
 
 /**
- * Base class for specialized 3D sub-renderers.
- * Holds shared state and common utilities used by the Gdx3D rendering system.
+ * Base class for specialized 3D sub-renderers. Holds shared state and common utilities used by the
+ * Gdx3D rendering system.
  */
 public abstract class BaseSubRenderer implements Visitor {
     protected final Gdx3DResourceContext resourceContext;
@@ -60,11 +60,13 @@ public abstract class BaseSubRenderer implements Visitor {
         }
     }
 
-    protected void addLabel(com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal) {
+    protected void addLabel(
+            com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal) {
         addLabel(pos, text, normal, null, com.badlogic.gdx.graphics.Color.WHITE, 1.0f);
     }
 
-    public void updateState(Model modelRef, Camera camera, float animationAlpha, boolean isXRayActive) {
+    public void updateState(
+            Model modelRef, Camera camera, float animationAlpha, boolean isXRayActive) {
         this.modelRef = modelRef;
         this.camera = camera;
         this.animationAlpha = animationAlpha;
@@ -115,17 +117,20 @@ public abstract class BaseSubRenderer implements Visitor {
     public void visitGround(letrain.ground.Ground ground) {}
 
     @Override
-    public void visitBridgeGateRailTrack(letrain.track.rail.BridgeGateRailTrack bridgeGateRailTrack) {}
+    public void visitBridgeGateRailTrack(
+            letrain.track.rail.BridgeGateRailTrack bridgeGateRailTrack) {}
 
     @Override
     public void visitBridgeRailTrack(letrain.track.rail.BridgeRailTrack bridgeRailTrack) {}
 
     @Override
-    public void visitTunnelGateRailTrack(letrain.track.rail.TunnelGateRailTrack tunnelGateRailTrack) {}
+    public void visitTunnelGateRailTrack(
+            letrain.track.rail.TunnelGateRailTrack tunnelGateRailTrack) {}
 
     protected boolean isVisible(letrain.map.Point pos) {
         if (camera == null) return true;
-        return camera.frustum.boundsInFrustum(pos.getX() + 0.5f, 0.5f, pos.getY() + 0.5f, 0.5f, 0.5f, 0.5f);
+        return camera.frustum.boundsInFrustum(
+                pos.getX() + 0.5f, 0.5f, pos.getY() + 0.5f, 0.5f, 0.5f, 0.5f);
     }
 
     protected boolean isConnected(letrain.track.Track track, letrain.map.Dir dir) {

@@ -124,7 +124,8 @@ class RailwayGraphTest {
 
     @Test
     void testCircularSegment() {
-        letrain.segments.RailNode circularNode = org.mockito.Mockito.mock(letrain.segments.RailNode.class);
+        letrain.segments.RailNode circularNode =
+                org.mockito.Mockito.mock(letrain.segments.RailNode.class);
         Port exit1 = org.mockito.Mockito.mock(Port.class);
         Port exit2 = org.mockito.Mockito.mock(Port.class);
 
@@ -166,7 +167,9 @@ class RailwayGraphTest {
         tIso2.connect(Dir.S, tIso1);
         RailNodeImpl nodeIso1 = new RailNodeImpl(tIso1);
         RailNodeImpl nodeIso2 = new RailNodeImpl(tIso2);
-        Segment isolatedSegment = new SegmentImpl("ISO", nodeIso1.getPortForDir(Dir.N), nodeIso2.getPortForDir(Dir.S));
+        Segment isolatedSegment =
+                new SegmentImpl(
+                        "ISO", nodeIso1.getPortForDir(Dir.N), nodeIso2.getPortForDir(Dir.S));
 
         List<Segment> path = graph.findPath(segmentAB, isolatedSegment);
         assertTrue(path.isEmpty());

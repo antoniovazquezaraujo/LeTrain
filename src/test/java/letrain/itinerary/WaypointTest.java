@@ -57,7 +57,8 @@ class WaypointTest {
     @Test
     @DisplayName("should allow WAIT with seconds")
     void withWaitCommand() {
-        Waypoint wp = new WaypointImpl(Waypoint.Type.SENSOR, 1, List.of(WaypointCommand.waitSeconds(15)));
+        Waypoint wp =
+                new WaypointImpl(Waypoint.Type.SENSOR, 1, List.of(WaypointCommand.waitSeconds(15)));
 
         assertEquals(15, wp.commands().get(0).seconds());
     }

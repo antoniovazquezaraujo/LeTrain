@@ -22,20 +22,29 @@ import letrain.visitor.Renderable;
     @JsonSubTypes.Type(value = letrain.track.rail.RailTrack.class, name = "RailTrack"),
     @JsonSubTypes.Type(value = letrain.track.rail.ForkRailTrack.class, name = "ForkRailTrack"),
     @JsonSubTypes.Type(value = letrain.track.rail.BridgeRailTrack.class, name = "BridgeRailTrack"),
-    @JsonSubTypes.Type(value = letrain.track.rail.BridgeGateRailTrack.class, name = "BridgeGateRailTrack"),
+    @JsonSubTypes.Type(
+            value = letrain.track.rail.BridgeGateRailTrack.class,
+            name = "BridgeGateRailTrack"),
     @JsonSubTypes.Type(value = letrain.track.rail.TunnelRailTrack.class, name = "TunnelRailTrack"),
-    @JsonSubTypes.Type(value = letrain.track.rail.TunnelGateRailTrack.class, name = "TunnelGateRailTrack"),
+    @JsonSubTypes.Type(
+            value = letrain.track.rail.TunnelGateRailTrack.class,
+            name = "TunnelGateRailTrack"),
     @JsonSubTypes.Type(value = letrain.track.rail.StationRailTrack.class, name = "StationRailTrack")
 })
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class Track
-        implements Router, Connectable, LinkerCompartment, Mappable, LinkerCompartmentListener, Renderable {
-    @JsonIgnore
-    private TrackDirector trackDirector;
+        implements Router,
+                Connectable,
+                LinkerCompartment,
+                Mappable,
+                LinkerCompartmentListener,
+                Renderable {
+    @JsonIgnore private TrackDirector trackDirector;
 
     private Linker linker = null;
-    private Linker reservation = null; // NEW: Track reservation to prevent race conditions during multi-train ticks
+    private Linker reservation =
+            null; // NEW: Track reservation to prevent race conditions during multi-train ticks
     private Sensor sensor = null;
     private RailSemaphore semaphore = null;
     private Point pos = new Point(0, 0);
@@ -43,8 +52,7 @@ public abstract class Track
     @com.fasterxml.jackson.annotation.JsonProperty("connectedTracks")
     protected Track[] connections;
 
-    @JsonIgnore
-    List<Pair<Dir, Point>> connectedPositions = new ArrayList<>();
+    @JsonIgnore List<Pair<Dir, Point>> connectedPositions = new ArrayList<>();
 
     private final List<LinkerCompartmentListener> trackableCompartmentListeners = new ArrayList<>();
 
@@ -195,7 +203,8 @@ public abstract class Track
                     }
                 }
                 if (!alreadyAdded) {
-                    this.connectedPositions.add(new Pair<Dir, Point>(Dir.values()[i], connected.getPosition()));
+                    this.connectedPositions.add(
+                            new Pair<Dir, Point>(Dir.values()[i], connected.getPosition()));
                 }
             }
         }

@@ -22,7 +22,9 @@ class ValidationUtilsTest {
     @DisplayName("requireNonNull - throws NPE for null value")
     void testRequireNonNull_InvalidNull() {
         NullPointerException ex =
-                assertThrows(NullPointerException.class, () -> ValidationUtils.requireNonNull(null, "testField"));
+                assertThrows(
+                        NullPointerException.class,
+                        () -> ValidationUtils.requireNonNull(null, "testField"));
         assertEquals("testField must not be null", ex.getMessage());
     }
 
@@ -37,7 +39,9 @@ class ValidationUtilsTest {
     @DisplayName("requirePositive - rejects zero")
     void testRequirePositive_Int_InvalidZero() {
         IllegalArgumentException ex =
-                assertThrows(IllegalArgumentException.class, () -> ValidationUtils.requirePositive(0, "count"));
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> ValidationUtils.requirePositive(0, "count"));
         assertEquals("count must be positive, but was: 0", ex.getMessage());
     }
 
@@ -45,7 +49,9 @@ class ValidationUtilsTest {
     @DisplayName("requirePositive - rejects negative integer")
     void testRequirePositive_Int_InvalidNegative() {
         IllegalArgumentException ex =
-                assertThrows(IllegalArgumentException.class, () -> ValidationUtils.requirePositive(-10, "count"));
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> ValidationUtils.requirePositive(-10, "count"));
         assertEquals("count must be positive, but was: -10", ex.getMessage());
     }
 
@@ -67,7 +73,9 @@ class ValidationUtilsTest {
     @DisplayName("requireNonNegative - rejects negative")
     void testRequireNonNegative_InvalidNegative() {
         IllegalArgumentException ex =
-                assertThrows(IllegalArgumentException.class, () -> ValidationUtils.requireNonNegative(-1, "offset"));
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> ValidationUtils.requireNonNegative(-1, "offset"));
         assertEquals("offset must be non-negative, but was: -1", ex.getMessage());
     }
 
@@ -88,8 +96,10 @@ class ValidationUtilsTest {
     @Test
     @DisplayName("requirePositive double - rejects NaN")
     void testRequirePositive_Double_InvalidNaN() {
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class, () -> ValidationUtils.requirePositive(Double.NaN, "value"));
+        IllegalArgumentException ex =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> ValidationUtils.requirePositive(Double.NaN, "value"));
         assertTrue(ex.getMessage().contains("must be positive and not NaN"));
     }
 
@@ -104,7 +114,9 @@ class ValidationUtilsTest {
     @DisplayName("requireNonEmpty - rejects empty string")
     void testRequireNonEmpty_InvalidEmpty() {
         IllegalArgumentException ex =
-                assertThrows(IllegalArgumentException.class, () -> ValidationUtils.requireNonEmpty("", "message"));
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> ValidationUtils.requireNonEmpty("", "message"));
         assertEquals("message must not be empty", ex.getMessage());
     }
 
@@ -112,7 +124,9 @@ class ValidationUtilsTest {
     @DisplayName("requireNonEmpty - rejects null string")
     void testRequireNonEmpty_InvalidNull() {
         NullPointerException ex =
-                assertThrows(NullPointerException.class, () -> ValidationUtils.requireNonEmpty(null, "message"));
+                assertThrows(
+                        NullPointerException.class,
+                        () -> ValidationUtils.requireNonEmpty(null, "message"));
         assertEquals("message must not be null", ex.getMessage());
     }
 
@@ -126,8 +140,10 @@ class ValidationUtilsTest {
     @Test
     @DisplayName("require - condition false throws IAE")
     void testRequire_Invalid() {
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class, () -> ValidationUtils.require(false, "Custom error message"));
+        IllegalArgumentException ex =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> ValidationUtils.require(false, "Custom error message"));
         assertEquals("Custom error message", ex.getMessage());
     }
 
@@ -141,8 +157,10 @@ class ValidationUtilsTest {
     @Test
     @DisplayName("requireState - condition false throws ISE")
     void testRequireState_Invalid() {
-        IllegalStateException ex = assertThrows(
-                IllegalStateException.class, () -> ValidationUtils.requireState(false, "Invalid state error"));
+        IllegalStateException ex =
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> ValidationUtils.requireState(false, "Invalid state error"));
         assertEquals("Invalid state error", ex.getMessage());
     }
 }

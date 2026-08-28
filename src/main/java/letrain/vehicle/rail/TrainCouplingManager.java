@@ -8,8 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Service providing stateless operations for coupling and uncoupling trains.
- * Transient state is stored directly in the Train instances.
+ * Service providing stateless operations for coupling and uncoupling trains. Transient state is
+ * stored directly in the Train instances.
  */
 public interface TrainCouplingManager {
     Logger log = LoggerFactory.getLogger(letrain.vehicle.rail.impl.TrainCouplingManager.class);

@@ -131,7 +131,8 @@ public class Point {
     }
 
     public static double distance(Point from, Point to) {
-        return Math.sqrt(Math.pow((to.getX() - from.getX()), 2) + Math.pow((to.getY() - from.getY()), 2));
+        return Math.sqrt(
+                Math.pow((to.getX() - from.getX()), 2) + Math.pow((to.getY() - from.getY()), 2));
     }
 
     public Page getPage() {
@@ -141,7 +142,9 @@ public class Point {
     }
 
     public Point addPage(Page page) {
-        return new Point((getX() + page.getX() * Page.getWidth()), (getY() + page.getY() * Page.getHeight()));
+        return new Point(
+                (getX() + page.getX() * Page.getWidth()),
+                (getY() + page.getY() * Page.getHeight()));
     }
 
     @JsonIgnore

@@ -17,9 +17,7 @@ import letrain.vehicle.rail.impl.Stop;
 import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.Wagon;
 
-/**
- * Handles the core simulation logic: movement, industrial actions, and entity lifecycle.
- */
+/** Handles the core simulation logic: movement, industrial actions, and entity lifecycle. */
 @JsonIgnoreType
 public class SimulationService {
     private final Model model;
@@ -30,14 +28,16 @@ public class SimulationService {
 
     public void moveVehicles() {
         EconomyManager economyManager = model.getEconomyManager();
-        model.getLocomotives().forEach(locomotive -> {
-            if (locomotive.update()) {
-                if (locomotive.isDirectorLinker()) {
-                    economyManager.onTrainMoved(locomotive.getTrain());
-                    economyManager.chargeFuel(locomotive.getTrain());
-                }
-            }
-        });
+        model.getLocomotives()
+                .forEach(
+                        locomotive -> {
+                            if (locomotive.update()) {
+                                if (locomotive.isDirectorLinker()) {
+                                    economyManager.onTrainMoved(locomotive.getTrain());
+                                    economyManager.chargeFuel(locomotive.getTrain());
+                                }
+                            }
+                        });
     }
 
     public void handleIndustrialActions() {
@@ -49,17 +49,23 @@ public class SimulationService {
         }
 
         Map<Wagon, CargoState> wagonsPrevState = new HashMap<>();
-        model.getWagons().forEach(w -> wagonsPrevState.put(w, new CargoState(w.getCargoType(), w.getCargoAmount())));
+        model.getWagons()
+                .forEach(
+                        w ->
+                                wagonsPrevState.put(
+                                        w, new CargoState(w.getCargoType(), w.getCargoAmount())));
 
         Set<Train> processedTrains = new HashSet<>();
-        model.getLocomotives().forEach(locomotive -> {
-            Train train = locomotive.getTrain();
-            if (train != null && !processedTrains.contains(train)) {
-                processedTrains.add(train);
-                processTrainLoading(train);
-                processCargoEconomyEvents(train, wagonsPrevState, economyManager);
-            }
-        });
+        model.getLocomotives()
+                .forEach(
+                        locomotive -> {
+                            Train train = locomotive.getTrain();
+                            if (train != null && !processedTrains.contains(train)) {
+                                processedTrains.add(train);
+                                processTrainLoading(train);
+                                processCargoEconomyEvents(train, wagonsPrevState, economyManager);
+                            }
+                        });
     }
 
     private void processTrainLoading(Train train) {
@@ -101,7 +107,8 @@ public class SimulationService {
                 } else if (currentAmount < prevState.amount) {
                     int unitsUnloaded = prevState.amount - currentAmount;
                     int distance = calculateDistanceSinceLastStop(train);
-                    economyManager.onUnloadCargo(wagon, wagon.getCargoType(), unitsUnloaded, distance);
+                    economyManager.onUnloadCargo(
+                            wagon, wagon.getCargoType(), unitsUnloaded, distance);
                 }
             }
         }
@@ -123,39 +130,43 @@ public class SimulationService {
         AtomicBoolean removed = new AtomicBoolean(false);
         Set<Train> affectedTrains = new HashSet<>();
 
-        model.getLocomotives().removeIf(locomotive -> {
-            locomotive.updateDestroyTimer();
-            if (locomotive.isDestroyed()) {
-                Train train = locomotive.getTrain();
-                if (train != null) {
-                    affectedTrains.add(train);
-                    train.getLinkers().remove(locomotive);
-                    train.assignDefaultDirectorLinker();
-                }
-                if (locomotive.getTrack() != null) {
-                    locomotive.getTrack().removeLinker();
-                }
-                removed.set(true);
-                return true;
-            }
-            return false;
-        });
+        model.getLocomotives()
+                .removeIf(
+                        locomotive -> {
+                            locomotive.updateDestroyTimer();
+                            if (locomotive.isDestroyed()) {
+                                Train train = locomotive.getTrain();
+                                if (train != null) {
+                                    affectedTrains.add(train);
+                                    train.getLinkers().remove(locomotive);
+                                    train.assignDefaultDirectorLinker();
+                                }
+                                if (locomotive.getTrack() != null) {
+                                    locomotive.getTrack().removeLinker();
+                                }
+                                removed.set(true);
+                                return true;
+                            }
+                            return false;
+                        });
 
-        model.getWagons().removeIf(wagon -> {
-            wagon.updateDestroyTimer();
-            if (wagon.isDestroyed()) {
-                Train train = wagon.getTrain();
-                if (train != null) {
-                    affectedTrains.add(train);
-                    train.getLinkers().remove(wagon);
-                }
-                if (wagon.getTrack() != null) {
-                    wagon.getTrack().removeLinker();
-                }
-                return true;
-            }
-            return false;
-        });
+        model.getWagons()
+                .removeIf(
+                        wagon -> {
+                            wagon.updateDestroyTimer();
+                            if (wagon.isDestroyed()) {
+                                Train train = wagon.getTrain();
+                                if (train != null) {
+                                    affectedTrains.add(train);
+                                    train.getLinkers().remove(wagon);
+                                }
+                                if (wagon.getTrack() != null) {
+                                    wagon.getTrack().removeLinker();
+                                }
+                                return true;
+                            }
+                            return false;
+                        });
 
         for (Train train : affectedTrains) {
             if (train.isEmpty()) {

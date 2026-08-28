@@ -4,9 +4,7 @@ import com.badlogic.gdx.math.Vector3;
 import letrain.map.Dir;
 import letrain.track.Track;
 
-/**
- * Centrailizes all path geometry and Bezier interpolation logic.
- */
+/** Centrailizes all path geometry and Bezier interpolation logic. */
 public class PathGeometry {
 
     public static float getDirX(Dir dir) {
@@ -41,7 +39,8 @@ public class PathGeometry {
         }
     }
 
-    public static void getQuadraticBezier(Vector3 out, Vector3 p0, Vector3 p1, Vector3 p2, float t) {
+    public static void getQuadraticBezier(
+            Vector3 out, Vector3 p0, Vector3 p1, Vector3 p2, float t) {
         float invT = 1f - t;
         out.set(p0)
                 .scl(invT * invT)
@@ -49,18 +48,29 @@ public class PathGeometry {
                 .add(p2.x * t * t, p2.y * t * t, p2.z * t * t);
     }
 
-    public static void getQuadraticBezierTangent(Vector3 out, Vector3 p0, Vector3 p1, Vector3 p2, float t) {
+    public static void getQuadraticBezierTangent(
+            Vector3 out, Vector3 p0, Vector3 p1, Vector3 p2, float t) {
         float invT = 1f - t;
-        out.set(p1).sub(p0).scl(2f * invT).add((p2.x - p1.x) * 2f * t, (p2.y - p1.y) * 2f * t, (p2.z - p1.z) * 2f * t);
+        out.set(p1)
+                .sub(p0)
+                .scl(2f * invT)
+                .add((p2.x - p1.x) * 2f * t, (p2.y - p1.y) * 2f * t, (p2.z - p1.z) * 2f * t);
     }
 
     public static void calculateBezierPoint(
-            float cellX, float cellY, Dir dEntry, Dir dExit, float t, Vector3 outPos, Vector3 outTangent) {
+            float cellX,
+            float cellY,
+            Dir dEntry,
+            Dir dExit,
+            float t,
+            Vector3 outPos,
+            Vector3 outTangent) {
 
         if (dEntry == null) dEntry = dExit.inverse();
 
         Vector3 pControl = new Vector3(cellX + 0.5f, 0, cellY + 0.5f);
-        Vector3 pStart = new Vector3(cellX + 0.5f + getDirX(dEntry), 0, cellY + 0.5f + getDirZ(dEntry));
+        Vector3 pStart =
+                new Vector3(cellX + 0.5f + getDirX(dEntry), 0, cellY + 0.5f + getDirZ(dEntry));
         Vector3 pEnd = new Vector3(cellX + 0.5f + getDirX(dExit), 0, cellY + 0.5f + getDirZ(dExit));
 
         getQuadraticBezier(outPos, pStart, pControl, pEnd, t);

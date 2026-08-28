@@ -18,11 +18,12 @@ public class AudioMixer {
     static {
         try {
             Runtime.getRuntime()
-                    .addShutdownHook(new Thread(
-                            () -> {
-                                shutdownInProgress = true;
-                            },
-                            "AudioMixer-ShutdownHook"));
+                    .addShutdownHook(
+                            new Thread(
+                                    () -> {
+                                        shutdownInProgress = true;
+                                    },
+                                    "AudioMixer-ShutdownHook"));
         } catch (Exception e) {
             // Ignore if JVM is already shutting down
         }
@@ -133,7 +134,8 @@ public class AudioMixer {
                             if (distance > refDist) {
                                 volume = refDist / distance;
                                 if (distance > maxDist) {
-                                    float fadeFactor = 1.0f - ((distance - maxDist) / (maxDist * 0.2f));
+                                    float fadeFactor =
+                                            1.0f - ((distance - maxDist) / (maxDist * 0.2f));
                                     volume *= Math.max(0.0f, fadeFactor);
                                 }
                             }
@@ -197,7 +199,8 @@ public class AudioMixer {
                     if (!shutdownInProgress) {
                         line.close();
                     } else {
-                        log.info("JVM shutdown in progress; bypassing line.close() to prevent PulseAudio native crash");
+                        log.info(
+                                "JVM shutdown in progress; bypassing line.close() to prevent PulseAudio native crash");
                     }
                 } catch (Exception e) {
                     log.warn("Error closing audio line", e);

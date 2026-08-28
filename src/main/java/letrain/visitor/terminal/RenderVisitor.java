@@ -67,7 +67,9 @@ public class RenderVisitor implements Visitor {
         TextColor.ANSI.BLACK
     };
 
-    public static final char[] CRASH_ASPECTS = {'⁖', '⁘', '⁙', '⁚', '⁛', '⁝', '⁞', '․', '‥', '…', '⋯', '⋰', '⋱'};
+    public static final char[] CRASH_ASPECTS = {
+        '⁖', '⁘', '⁙', '⁚', '⁛', '⁝', '⁞', '․', '‥', '…', '⋯', '⋰', '⋱'
+    };
 
     public static String TUNNEL_RAILTRACK_ASPECT = ".";
     public static String GROUND_ASPECT = " ";
@@ -280,7 +282,10 @@ public class RenderVisitor implements Visitor {
         } else {
             view.setFgColor(SEMAPHORE_COLOR);
         }
-        view.set(pos.getX() + 1, pos.getY(), "" + (mode.equals(GameMode.SEMAPHORES) ? semaphore.getId() : ""));
+        view.set(
+                pos.getX() + 1,
+                pos.getY(),
+                "" + (mode.equals(GameMode.SEMAPHORES) ? semaphore.getId() : ""));
         resetColors();
     }
 
@@ -349,9 +354,13 @@ public class RenderVisitor implements Visitor {
                 view.setFgColor(FORK_COLOR);
             }
         }
-        view.set(track.getPosition().getX(), track.getPosition().getY(), dirGraphicAspect(track.getFirstOpenDir()));
+        view.set(
+                track.getPosition().getX(),
+                track.getPosition().getY(),
+                dirGraphicAspect(track.getFirstOpenDir()));
         if (this.mode == GameMode.FORKS) {
-            view.set(track.getPosition().getX() + 1, track.getPosition().getY(), "" + track.getId());
+            view.set(
+                    track.getPosition().getX() + 1, track.getPosition().getY(), "" + track.getId());
         }
         resetColors();
     }
@@ -391,7 +400,10 @@ public class RenderVisitor implements Visitor {
         if (locomotive.isDestroying()) {
             view.setFgColor(getCrashColor());
             // view.setBgColor(getCrashColor());
-            view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), getCrashAspect());
+            view.set(
+                    locomotive.getPosition().getX(),
+                    locomotive.getPosition().getY(),
+                    getCrashAspect());
             resetColors();
             return;
         }
@@ -407,7 +419,10 @@ public class RenderVisitor implements Visitor {
                     locomotive.getPosition().getY(),
                     cursorGraphicAspect(locomotive.getDir()));
         } else {
-            view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(), locomotive.getAspect());
+            view.set(
+                    locomotive.getPosition().getX(),
+                    locomotive.getPosition().getY(),
+                    locomotive.getAspect());
             view.set(
                     locomotive.getPosition().getX() + 1,
                     locomotive.getPosition().getY(),
@@ -433,10 +448,12 @@ public class RenderVisitor implements Visitor {
             boolean isLoaded = wagon.getCargoAmount() > 0;
             view.setFgColor(getCargoColor(wagon.getExclusiveCargoType(), true));
             if (isLoaded) {
-                boolean isLoadingProcess = wagon.getTrain() != null
-                        && wagon.getTrain().getLogisticsManager().isLoading();
+                boolean isLoadingProcess =
+                        wagon.getTrain() != null
+                                && wagon.getTrain().getLogisticsManager().isLoading();
                 if (isLoadingProcess && !wagon.isFull()) {
-                    // Lanterna's Swing emulator often ignores SGR.BLINK. We manually toggle underline every 500ms.
+                    // Lanterna's Swing emulator often ignores SGR.BLINK. We manually toggle
+                    // underline every 500ms.
                     boolean blinkState = (System.currentTimeMillis() / 300) % 2 == 0;
                     view.setUnderline(blinkState);
                 } else {
@@ -460,7 +477,8 @@ public class RenderVisitor implements Visitor {
                 view.setFgColor(CURSOR_DRAWING_COLOR);
                 break;
             case MAKING_TRACKS:
-                view.setBgColor(Math.random() > 0.5 ? TextColor.ANSI.BLACK_BRIGHT : TextColor.ANSI.BLACK);
+                view.setBgColor(
+                        Math.random() > 0.5 ? TextColor.ANSI.BLACK_BRIGHT : TextColor.ANSI.BLACK);
                 break;
             case ERASING:
                 view.setFgColor(CURSOR_ERASING_COLOR);
@@ -469,7 +487,10 @@ public class RenderVisitor implements Visitor {
                 view.setFgColor(CURSOR_MOVING_COLOR);
                 break;
         }
-        view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), cursorGraphicAspect(cursor.getDir()));
+        view.set(
+                cursor.getPosition().getX(),
+                cursor.getPosition().getY(),
+                cursorGraphicAspect(cursor.getDir()));
         resetColors();
     }
 
@@ -479,12 +500,15 @@ public class RenderVisitor implements Visitor {
             return STATION_RAIL_TRACK_ASPECT;
         }
 
-        java.util.concurrent.atomic.AtomicBoolean isDisconnected = new java.util.concurrent.atomic.AtomicBoolean(false);
-        track.forEach(route -> {
-            if (!isConnected(track, route.getFirst()) || !isConnected(track, route.getSecond())) {
-                isDisconnected.set(true);
-            }
-        });
+        java.util.concurrent.atomic.AtomicBoolean isDisconnected =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+        track.forEach(
+                route -> {
+                    if (!isConnected(track, route.getFirst())
+                            || !isConnected(track, route.getSecond())) {
+                        isDisconnected.set(true);
+                    }
+                });
         if (track.getNumRoutes() == 0) {
             Dir dir = track.getFirstOpenDir();
             if (dir != null && !isConnected(track, dir)) {
@@ -591,11 +615,13 @@ public class RenderVisitor implements Visitor {
         TextColor color = GROUND_COLOR;
 
         if (type >= 10 && type <= 19) {
-            letrain.track.CargoTypes cargo = letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
+            letrain.track.CargoTypes cargo =
+                    letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
             color = getCargoColor(cargo, true);
             aspect = PRODUCER_ASPECT;
         } else if (type >= 20 && type <= 29) {
-            letrain.track.CargoTypes cargo = letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
+            letrain.track.CargoTypes cargo =
+                    letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
             color = getCargoColor(cargo, true);
             aspect = CONSUMER_ASPECT;
         } else {
@@ -638,7 +664,10 @@ public class RenderVisitor implements Visitor {
     public void visitBridgeGateRailTrack(BridgeGateRailTrack track) {
         TextColor blockedColor = getTrackBlockedColor(track);
         view.setFgColor(blockedColor != null ? blockedColor : RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), BRIDGE_GATE_RAILTRACK_ASPECT);
+        view.set(
+                track.getPosition().getX(),
+                track.getPosition().getY(),
+                BRIDGE_GATE_RAILTRACK_ASPECT);
         resetColors();
     }
 
@@ -654,7 +683,10 @@ public class RenderVisitor implements Visitor {
     public void visitTunnelGateRailTrack(TunnelGateRailTrack track) {
         TextColor blockedColor = getTrackBlockedColor(track);
         view.setFgColor(blockedColor != null ? blockedColor : RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), TUNNEL_GATE_RAILTRACK_ASPECT);
+        view.set(
+                track.getPosition().getX(),
+                track.getPosition().getY(),
+                TUNNEL_GATE_RAILTRACK_ASPECT);
         resetColors();
     }
 
@@ -663,7 +695,10 @@ public class RenderVisitor implements Visitor {
         if (this.mode == GameMode.RAILS) {
             TextColor blockedColor = getTrackBlockedColor(track);
             view.setFgColor(blockedColor != null ? blockedColor : RAIL_TRACK_COLOR);
-            view.set(track.getPosition().getX(), track.getPosition().getY(), TUNNEL_RAILTRACK_ASPECT);
+            view.set(
+                    track.getPosition().getX(),
+                    track.getPosition().getY(),
+                    TUNNEL_RAILTRACK_ASPECT);
             resetColors();
         }
     }
@@ -715,7 +750,8 @@ public class RenderVisitor implements Visitor {
         if (upper.equals("GRAY") || upper.equals("GREY")) {
             return TextColor.ANSI.BLACK_BRIGHT;
         } else if (upper.equals("ORANGE")) {
-            return new TextColor.RGB(255, 165, 0); // Lanterna will downsample this automatically if needed
+            return new TextColor.RGB(
+                    255, 165, 0); // Lanterna will downsample this automatically if needed
         } else if (upper.equals("PINK")) {
             return new TextColor.RGB(255, 192, 203);
         }

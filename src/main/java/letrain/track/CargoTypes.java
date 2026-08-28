@@ -24,9 +24,7 @@ public enum CargoTypes {
         CONSUMER
     }
 
-    /**
-     * Map GroundMap value to CargoType and Role
-     */
+    /** Map GroundMap value to CargoType and Role */
     public static class IndustryMapper {
         public static CargoTypes getCargoForTerrain(int terrainType) {
             switch (terrainType) {

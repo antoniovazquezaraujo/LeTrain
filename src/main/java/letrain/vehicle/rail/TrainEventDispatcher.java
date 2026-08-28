@@ -3,9 +3,7 @@ package letrain.vehicle.rail;
 import java.util.List;
 import letrain.map.Point;
 
-/**
- * Manages event listener registrations and broadcasts train events.
- */
+/** Manages event listener registrations and broadcasts train events. */
 public interface TrainEventDispatcher {
 
     List<ScriptTrainEventListener> getScriptTrainListeners();

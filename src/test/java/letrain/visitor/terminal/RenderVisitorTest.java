@@ -19,7 +19,8 @@ import org.junit.jupiter.api.Test;
 class RenderVisitorTest {
 
     @Test
-    @DisplayName("visitRailTrack should paint rail with locomotive color when segment is locked by a train")
+    @DisplayName(
+            "visitRailTrack should paint rail with locomotive color when segment is locked by a train")
     void visitRailTrack_shouldPaintWithLocomotiveColor_whenSegmentIsLocked() {
         TerminalView view = mock(TerminalView.class);
         RenderVisitor visitor = new RenderVisitor(view);

@@ -25,7 +25,8 @@ public class BlockManagerImpl implements BlockManager {
 
     @Override
     public boolean tryLock(Train train, Segment segment) {
-        List<Train> owners = segmentOwners.computeIfAbsent(segment, k -> new CopyOnWriteArrayList<>());
+        List<Train> owners =
+                segmentOwners.computeIfAbsent(segment, k -> new CopyOnWriteArrayList<>());
 
         if (!owners.isEmpty() && !owners.contains(train)) {
             return false;

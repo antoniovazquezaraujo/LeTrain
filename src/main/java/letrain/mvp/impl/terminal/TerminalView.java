@@ -41,8 +41,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Modernized Terminal implementation of the View interface using Lanterna.
- * This class isolates terminal-specific logic and UI handling.
+ * Modernized Terminal implementation of the View interface using Lanterna. This class isolates
+ * terminal-specific logic and UI handling.
  */
 public class TerminalView implements letrain.mvp.View {
     private static final Logger log = LoggerFactory.getLogger(TerminalView.class);
@@ -76,7 +76,8 @@ public class TerminalView implements letrain.mvp.View {
         if (terminalSize != null) {
             recalculateSizes(terminalSize);
             if (this.gameViewListener != null) {
-                this.gameViewListener.onScreenResized(gameBoxSize.getColumns(), gameBoxSize.getRows());
+                this.gameViewListener.onScreenResized(
+                        gameBoxSize.getColumns(), gameBoxSize.getRows());
             }
         }
     }
@@ -97,7 +98,8 @@ public class TerminalView implements letrain.mvp.View {
             if (is != null) {
                 Font customFont = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(20f);
                 terminalFactory.setTerminalEmulatorFontConfiguration(
-                        com.googlecode.lanterna.terminal.swing.SwingTerminalFontConfiguration.newInstance(customFont));
+                        com.googlecode.lanterna.terminal.swing.SwingTerminalFontConfiguration
+                                .newInstance(customFont));
             } else {
                 log.warn("Font resource /fonts/JuliaMono-Regular.ttf not found in classpath!");
             }
@@ -120,21 +122,25 @@ public class TerminalView implements letrain.mvp.View {
                 // Lanterna Swing terminals typically have a component or are a JFrame
                 Object t = terminal;
                 if (t instanceof javax.swing.JFrame) {
-                    ((javax.swing.JFrame) t).addWindowListener(new WindowAdapter() {
-                        @Override
-                        public void windowClosing(WindowEvent e) {
-                            setEndOfGame(true);
-                        }
-                    });
+                    ((javax.swing.JFrame) t)
+                            .addWindowListener(
+                                    new WindowAdapter() {
+                                        @Override
+                                        public void windowClosing(WindowEvent e) {
+                                            setEndOfGame(true);
+                                        }
+                                    });
                 } else if (t.getClass().getMethod("getJFrame") != null) {
                     Object frame = t.getClass().getMethod("getJFrame").invoke(t);
                     if (frame instanceof javax.swing.JFrame) {
-                        ((javax.swing.JFrame) frame).addWindowListener(new WindowAdapter() {
-                            @Override
-                            public void windowClosing(WindowEvent e) {
-                                setEndOfGame(true);
-                            }
-                        });
+                        ((javax.swing.JFrame) frame)
+                                .addWindowListener(
+                                        new WindowAdapter() {
+                                            @Override
+                                            public void windowClosing(WindowEvent e) {
+                                                setEndOfGame(true);
+                                            }
+                                        });
                     }
                 }
             } catch (Exception e) {
@@ -247,7 +253,8 @@ public class TerminalView implements letrain.mvp.View {
         if (changedSize != null) {
             terminalSize = changedSize;
             recalculateSizes(terminalSize);
-            TerminalView.this.gameViewListener.onScreenResized(gameBoxSize.getColumns(), gameBoxSize.getRows());
+            TerminalView.this.gameViewListener.onScreenResized(
+                    gameBoxSize.getColumns(), gameBoxSize.getRows());
             gameBox.fillRectangle(gameBoxPosition, gameBoxSize, ' ');
         }
 
@@ -282,11 +289,15 @@ public class TerminalView implements letrain.mvp.View {
                     screenMaxY = Math.min(rows - 1, screenMaxY);
 
                     if (screenMinX <= screenMaxX && screenMinY <= screenMaxY) {
-                        com.googlecode.lanterna.TextColor dotColor = cameraPagination
-                                ? com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT
-                                : com.googlecode.lanterna.TextColor.ANSI.BLUE_BRIGHT;
-                        com.googlecode.lanterna.TextCharacter dot = new com.googlecode.lanterna.TextCharacter(
-                                '·', dotColor, com.googlecode.lanterna.TextColor.ANSI.BLACK);
+                        com.googlecode.lanterna.TextColor dotColor =
+                                cameraPagination
+                                        ? com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT
+                                        : com.googlecode.lanterna.TextColor.ANSI.BLUE_BRIGHT;
+                        com.googlecode.lanterna.TextCharacter dot =
+                                new com.googlecode.lanterna.TextCharacter(
+                                        '·',
+                                        dotColor,
+                                        com.googlecode.lanterna.TextColor.ANSI.BLACK);
                         for (int x = screenMinX; x <= screenMaxX; x++) {
                             gameBox.setCharacter(x, screenMinY, dot);
                             gameBox.setCharacter(x, screenMaxY, dot);
@@ -376,10 +387,13 @@ public class TerminalView implements letrain.mvp.View {
             java.util.List<com.googlecode.lanterna.SGR> sgrList = new java.util.ArrayList<>();
             if (isUnderline) sgrList.add(com.googlecode.lanterna.SGR.UNDERLINE);
             if (isBlink) sgrList.add(com.googlecode.lanterna.SGR.BLINK);
-            com.googlecode.lanterna.SGR[] modifiers = sgrList.toArray(new com.googlecode.lanterna.SGR[0]);
+            com.googlecode.lanterna.SGR[] modifiers =
+                    sgrList.toArray(new com.googlecode.lanterna.SGR[0]);
             for (int i = 0; i < c.length(); i++) {
                 gameBox.setCharacter(
-                        x + i, y, TextCharacter.fromCharacter(c.charAt(i), fgColor, bgColor, modifiers)[0]);
+                        x + i,
+                        y,
+                        TextCharacter.fromCharacter(c.charAt(i), fgColor, bgColor, modifiers)[0]);
             }
         }
     }
@@ -508,8 +522,12 @@ public class TerminalView implements letrain.mvp.View {
         gameBoxPosition = TerminalPosition.TOP_LEFT_CORNER;
         Page.setWidth(gameBoxSize.getColumns());
         Page.setHeight(gameBoxSize.getRows());
-        menuBoxSize = new TerminalSize(terminalSize.getColumns(), Math.min(reservedRows, terminalSize.getRows()));
-        menuBoxPosition = new TerminalPosition(0, Math.max(0, terminalSize.getRows() - menuBoxSize.getRows()));
+        menuBoxSize =
+                new TerminalSize(
+                        terminalSize.getColumns(), Math.min(reservedRows, terminalSize.getRows()));
+        menuBoxPosition =
+                new TerminalPosition(
+                        0, Math.max(0, terminalSize.getRows() - menuBoxSize.getRows()));
     }
 
     Screen createScreen(Terminal terminal) throws IOException {
@@ -523,12 +541,13 @@ public class TerminalView implements letrain.mvp.View {
     @Override
     public void showSaveDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        File result = new FileDialogBuilder()
-                .setTitle("Save File")
-                .setDescription("Choose a file:")
-                .setActionLabel(LocalizedString.Save.toString())
-                .build()
-                .showDialog(gui);
+        File result =
+                new FileDialogBuilder()
+                        .setTitle("Save File")
+                        .setDescription("Choose a file:")
+                        .setActionLabel(LocalizedString.Save.toString())
+                        .build()
+                        .showDialog(gui);
         TerminalView.this.gameViewListener.onSaveGame(result);
     }
 
@@ -536,12 +555,13 @@ public class TerminalView implements letrain.mvp.View {
     public void showLoadDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
 
-        File result = new FileDialogBuilder()
-                .setTitle("Open File")
-                .setDescription("Choose a file:")
-                .setActionLabel(LocalizedString.Open.toString())
-                .build()
-                .showDialog(gui);
+        File result =
+                new FileDialogBuilder()
+                        .setTitle("Open File")
+                        .setDescription("Choose a file:")
+                        .setActionLabel(LocalizedString.Open.toString())
+                        .build()
+                        .showDialog(gui);
         TerminalView.this.gameViewListener.onLoadGame(result);
     }
 
@@ -556,77 +576,91 @@ public class TerminalView implements letrain.mvp.View {
 
         // Editor Area
         final TextBox editor =
-                new TextBox(new TerminalSize(60, 20), gameViewListener.getProgram(), TextBox.Style.MULTI_LINE);
+                new TextBox(
+                        new TerminalSize(60, 20),
+                        gameViewListener.getProgram(),
+                        TextBox.Style.MULTI_LINE);
         mainPanel.addComponent(editor, BorderLayout.Location.CENTER);
 
         // Side Panel (Reference)
         Panel sidePanel = new Panel(new LinearLayout(Direction.VERTICAL));
         sidePanel.addComponent(new Label("QUICK REFERENCE").setLabelWidth(30));
 
-        ActionListBox refList = new ActionListBox(new TerminalSize(30, 20)) {
-            private long lastClickTime = 0;
+        ActionListBox refList =
+                new ActionListBox(new TerminalSize(30, 20)) {
+                    private long lastClickTime = 0;
 
-            @Override
-            public com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(
-                    com.googlecode.lanterna.input.KeyStroke ks) {
-                if (ks instanceof com.googlecode.lanterna.input.MouseAction) {
-                    com.googlecode.lanterna.input.MouseAction mi = (com.googlecode.lanterna.input.MouseAction) ks;
-                    if (mi.getActionType() == com.googlecode.lanterna.input.MouseActionType.CLICK_RELEASE) {
-                        super.handleKeyStroke(ks);
-                        long now = System.currentTimeMillis();
-                        if (now - lastClickTime < 500) {
-                            return super.handleKeyStroke(new com.googlecode.lanterna.input.KeyStroke(
-                                    com.googlecode.lanterna.input.KeyType.Enter));
+                    @Override
+                    public com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(
+                            com.googlecode.lanterna.input.KeyStroke ks) {
+                        if (ks instanceof com.googlecode.lanterna.input.MouseAction) {
+                            com.googlecode.lanterna.input.MouseAction mi =
+                                    (com.googlecode.lanterna.input.MouseAction) ks;
+                            if (mi.getActionType()
+                                    == com.googlecode.lanterna.input.MouseActionType
+                                            .CLICK_RELEASE) {
+                                super.handleKeyStroke(ks);
+                                long now = System.currentTimeMillis();
+                                if (now - lastClickTime < 500) {
+                                    return super.handleKeyStroke(
+                                            new com.googlecode.lanterna.input.KeyStroke(
+                                                    com.googlecode.lanterna.input.KeyType.Enter));
+                                }
+                                lastClickTime = now;
+                                return com.googlecode.lanterna.gui2.Interactable.Result.HANDLED;
+                            }
                         }
-                        lastClickTime = now;
-                        return com.googlecode.lanterna.gui2.Interactable.Result.HANDLED;
+                        return super.handleKeyStroke(ks);
                     }
-                }
-                return super.handleKeyStroke(ks);
-            }
-        };
-        Runnable updateList = new Runnable() {
-            private void build(letrain.command.GrammarReference.Node node, String indent) {
-                if (node.isHeading) {
-                    refList.addItem(node.label, () -> {});
-                } else if (node.snippet != null && node.children.isEmpty()) {
-                    refList.addItem(indent + node.label, () -> {
-                        insertAtCaret(editor, node.snippet);
-                    });
-                } else {
-                    String prefix = node.expanded ? "[-]" : "[+]";
-                    refList.addItem(indent + prefix + " " + node.label, () -> {
-                        node.setExpanded(!node.expanded);
-                        this.run();
-                        refList.takeFocus();
-                    });
-                    if (node.expanded) {
-                        for (letrain.command.GrammarReference.Node child : node.children) {
-                            build(child, indent + "  ");
+                };
+        Runnable updateList =
+                new Runnable() {
+                    private void build(letrain.command.GrammarReference.Node node, String indent) {
+                        if (node.isHeading) {
+                            refList.addItem(node.label, () -> {});
+                        } else if (node.snippet != null && node.children.isEmpty()) {
+                            refList.addItem(
+                                    indent + node.label,
+                                    () -> {
+                                        insertAtCaret(editor, node.snippet);
+                                    });
+                        } else {
+                            String prefix = node.expanded ? "[-]" : "[+]";
+                            refList.addItem(
+                                    indent + prefix + " " + node.label,
+                                    () -> {
+                                        node.setExpanded(!node.expanded);
+                                        this.run();
+                                        refList.takeFocus();
+                                    });
+                            if (node.expanded) {
+                                for (letrain.command.GrammarReference.Node child : node.children) {
+                                    build(child, indent + "  ");
+                                }
+                            }
                         }
                     }
-                }
-            }
 
-            @Override
-            public void run() {
-                int selected = refList.getSelectedIndex();
-                refList.clearItems();
-                for (letrain.command.GrammarReference.Node rootNode :
-                        letrain.command.GrammarReference.getReferenceTree()) {
-                    build(rootNode, "");
-                }
-                if (selected >= 0 && selected < refList.getItems().size()) {
-                    refList.setSelectedIndex(selected);
-                }
-            }
-        };
+                    @Override
+                    public void run() {
+                        int selected = refList.getSelectedIndex();
+                        refList.clearItems();
+                        for (letrain.command.GrammarReference.Node rootNode :
+                                letrain.command.GrammarReference.getReferenceTree()) {
+                            build(rootNode, "");
+                        }
+                        if (selected >= 0 && selected < refList.getItems().size()) {
+                            refList.setSelectedIndex(selected);
+                        }
+                    }
+                };
         updateList.run();
         sidePanel.addComponent(refList);
 
         sidePanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
         sidePanel.addComponent(new Label("OBJECTS STATUS:"));
-        TextBox objectsStatus = new TextBox(new TerminalSize(30, 4), gameViewListener.getGameObjectsReport());
+        TextBox objectsStatus =
+                new TextBox(new TerminalSize(30, 4), gameViewListener.getGameObjectsReport());
         objectsStatus.setReadOnly(true);
         sidePanel.addComponent(objectsStatus);
 
@@ -643,18 +677,21 @@ public class TerminalView implements letrain.mvp.View {
 
         // Footer (Buttons)
         Panel footer = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        Runnable applyAction = () -> {
-            gameViewListener.onEditCommands(editor.getText());
-            window.close();
-        };
-        Runnable saveAction = () -> {
-            gameViewListener.onEditCommands(editor.getText());
-            showSaveDialog();
-        };
-        Runnable loadAction = () -> {
-            showLoadDialog();
-            window.close();
-        };
+        Runnable applyAction =
+                () -> {
+                    gameViewListener.onEditCommands(editor.getText());
+                    window.close();
+                };
+        Runnable saveAction =
+                () -> {
+                    gameViewListener.onEditCommands(editor.getText());
+                    showSaveDialog();
+                };
+        Runnable loadAction =
+                () -> {
+                    showLoadDialog();
+                    window.close();
+                };
         Runnable cancelAction = window::close;
 
         com.googlecode.lanterna.gui2.InteractableRenderer<Button> mnemonicRenderer =
@@ -666,37 +703,40 @@ public class TerminalView implements letrain.mvp.View {
                     }
 
                     @Override
-                    public void drawComponent(com.googlecode.lanterna.gui2.TextGUIGraphics graphics, Button component) {
+                    public void drawComponent(
+                            com.googlecode.lanterna.gui2.TextGUIGraphics graphics,
+                            Button component) {
                         if (component.isFocused()) {
-                            graphics.applyThemeStyle(
-                                    component.getThemeDefinition().getActive());
+                            graphics.applyThemeStyle(component.getThemeDefinition().getActive());
                         } else {
-                            graphics.applyThemeStyle(
-                                    component.getThemeDefinition().getNormal());
+                            graphics.applyThemeStyle(component.getThemeDefinition().getNormal());
                         }
                         String label = component.getLabel();
                         graphics.putString(0, 0, "< " + label + " >");
-                        graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+                        graphics.setForegroundColor(
+                                com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
                         if (label.length() > 0) {
                             graphics.putString(2, 0, label.substring(0, 1));
                         }
                     }
 
                     @Override
-                    public com.googlecode.lanterna.TerminalPosition getCursorLocation(Button component) {
+                    public com.googlecode.lanterna.TerminalPosition getCursorLocation(
+                            Button component) {
                         return null;
                     }
                 };
 
-        Runnable togglePanelsAction = () -> {
-            if (sidePanel.getParent() != null) {
-                mainPanel.removeComponent(sidePanel);
-                editor.setPreferredSize(new TerminalSize(90, 20));
-            } else {
-                mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
-                editor.setPreferredSize(new TerminalSize(60, 20));
-            }
-        };
+        Runnable togglePanelsAction =
+                () -> {
+                    if (sidePanel.getParent() != null) {
+                        mainPanel.removeComponent(sidePanel);
+                        editor.setPreferredSize(new TerminalSize(90, 20));
+                    } else {
+                        mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
+                        editor.setPreferredSize(new TerminalSize(60, 20));
+                    }
+                };
         Button togglePanelsBtn = new Button("Toggle", togglePanelsAction);
         togglePanelsBtn.setRenderer(mnemonicRenderer);
         footer.addComponent(togglePanelsBtn);
@@ -716,39 +756,40 @@ public class TerminalView implements letrain.mvp.View {
         Button cancelBtn = new Button("Cancel", cancelAction);
         cancelBtn.setRenderer(mnemonicRenderer);
         footer.addComponent(cancelBtn);
-        window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
-            @Override
-            public void onInput(
-                    com.googlecode.lanterna.gui2.Window w,
-                    com.googlecode.lanterna.input.KeyStroke ks,
-                    java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
-                if (ks.isAltDown() && ks.getCharacter() != null) {
-                    char c = Character.toLowerCase(ks.getCharacter());
-                    if (c == 't') {
-                        togglePanelsAction.run();
-                        deliverEvent.set(false);
-                    } else if (c == 'r') {
-                        refList.takeFocus();
-                        deliverEvent.set(false);
-                    } else if (c == 'e') {
-                        editor.takeFocus();
-                        deliverEvent.set(false);
-                    } else if (c == 'a') {
-                        applyAction.run();
-                        deliverEvent.set(false);
-                    } else if (c == 's') {
-                        saveAction.run();
-                        deliverEvent.set(false);
-                    } else if (c == 'l') {
-                        loadAction.run();
-                        deliverEvent.set(false);
-                    } else if (c == 'c') {
-                        cancelAction.run();
-                        deliverEvent.set(false);
+        window.addWindowListener(
+                new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
+                    @Override
+                    public void onInput(
+                            com.googlecode.lanterna.gui2.Window w,
+                            com.googlecode.lanterna.input.KeyStroke ks,
+                            java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
+                        if (ks.isAltDown() && ks.getCharacter() != null) {
+                            char c = Character.toLowerCase(ks.getCharacter());
+                            if (c == 't') {
+                                togglePanelsAction.run();
+                                deliverEvent.set(false);
+                            } else if (c == 'r') {
+                                refList.takeFocus();
+                                deliverEvent.set(false);
+                            } else if (c == 'e') {
+                                editor.takeFocus();
+                                deliverEvent.set(false);
+                            } else if (c == 'a') {
+                                applyAction.run();
+                                deliverEvent.set(false);
+                            } else if (c == 's') {
+                                saveAction.run();
+                                deliverEvent.set(false);
+                            } else if (c == 'l') {
+                                loadAction.run();
+                                deliverEvent.set(false);
+                            } else if (c == 'c') {
+                                cancelAction.run();
+                                deliverEvent.set(false);
+                            }
+                        }
                     }
-                }
-            }
-        });
+                });
 
         mainPanel.addComponent(footer, BorderLayout.Location.BOTTOM);
 
@@ -789,19 +830,25 @@ public class TerminalView implements letrain.mvp.View {
         Panel contentPanel = new Panel();
         contentPanel.setLayoutManager(new LinearLayout(Direction.VERTICAL));
         contentPanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        contentPanel.addComponent(new Button("Exit", new Runnable() {
-            @Override
-            public void run() {
-                setEndOfGame(true);
-                window.close();
-            }
-        }));
-        contentPanel.addComponent(new Button("Play!", new Runnable() {
-            @Override
-            public void run() {
-                window.close();
-            }
-        }));
+        contentPanel.addComponent(
+                new Button(
+                        "Exit",
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                setEndOfGame(true);
+                                window.close();
+                            }
+                        }));
+        contentPanel.addComponent(
+                new Button(
+                        "Play!",
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                window.close();
+                            }
+                        }));
 
         window.setComponent(contentPanel);
         gui.addWindowAndWait(window);

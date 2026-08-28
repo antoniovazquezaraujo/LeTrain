@@ -16,8 +16,8 @@ class DirTest {
 
     @ParameterizedTest(name = "fromInt({0}) should return {1}")
     @CsvSource({
-        "0, E", "1, NE", "2, N", "3, NW", "4, W", "5, SW", "6, S", "7, SE", "8, E", "-1, SE", "-2, S", "-3, SW",
-        "-4, W", "-5, NW", "-6, N", "-7, NE", "-8, E"
+        "0, E", "1, NE", "2, N", "3, NW", "4, W", "5, SW", "6, S", "7, SE", "8, E", "-1, SE",
+        "-2, S", "-3, SW", "-4, W", "-5, NW", "-6, N", "-7, NE", "-8, E"
     })
     void testFromInt(int a, Dir b) {
         Assertions.assertEquals(b, Dir.fromInt(a));
@@ -79,8 +79,8 @@ class DirTest {
 
     @ParameterizedTest
     @CsvSource({
-        "0, 0", "1, 1", "2, 2", "3, 3", "4, 4", "5, -3", "6, -2", "7, -1", "-1, -1", "-2, -2", "-3, -3", "-4, -4",
-        "-5, 3", "-6, 2", "-7, 1"
+        "0, 0", "1, 1", "2, 2", "3, 3", "4, 4", "5, -3", "6, -2", "7, -1", "-1, -1", "-2, -2",
+        "-3, -3", "-4, -4", "-5, 3", "-6, 2", "-7, 1"
     })
     void testShortWay(int a, int b) {
         Assertions.assertEquals(b, Dir.shortWay(a));
@@ -111,13 +111,31 @@ class DirTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"E, false", "NE, false", "N, false", "NW, true", "W, false", "SW, true", "S, false", "SE, false"})
+    @CsvSource({
+        "E, false",
+        "NE, false",
+        "N, false",
+        "NW, true",
+        "W, false",
+        "SW, true",
+        "S, false",
+        "SE, false"
+    })
     void testIsCurve(Dir a, boolean b) {
         Assertions.assertEquals(b, dir.isCurve(a));
     }
 
     @ParameterizedTest
-    @CsvSource({"E, false", "NE, false", "N, false", "NW, false", "W, true", "SW, false", "S, false", "SE, false"})
+    @CsvSource({
+        "E, false",
+        "NE, false",
+        "N, false",
+        "NW, false",
+        "W, true",
+        "SW, false",
+        "S, false",
+        "SE, false"
+    })
     void testIsStraight(Dir a, boolean b) {
         Dir dir = Dir.E;
         Assertions.assertEquals(b, dir.isStraight(a));

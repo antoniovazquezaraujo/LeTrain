@@ -13,7 +13,14 @@ import letrain.visitor.Renderable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class Vehicle<T extends Track>
-        implements Serializable, Rotatable, Reversible, Selectable, Mappable, Transportable, Renderable, Destructible {
+        implements Serializable,
+                Rotatable,
+                Reversible,
+                Selectable,
+                Mappable,
+                Transportable,
+                Renderable,
+                Destructible {
     protected Point pos = new Point(0, 0);
     protected Point previousPos = new Point(0, 0);
     protected Dir dir;

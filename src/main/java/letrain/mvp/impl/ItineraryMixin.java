@@ -20,7 +20,8 @@ public abstract class ItineraryMixin {
 
     public static class ItinerarySerializer extends JsonSerializer<Itinerary> {
         @Override
-        public void serialize(Itinerary value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        public void serialize(Itinerary value, JsonGenerator gen, SerializerProvider serializers)
+                throws IOException {
             gen.writeStartObject();
             serializers.defaultSerializeField("waypoints", value.waypoints(), gen);
             gen.writeEndObject();
@@ -36,8 +37,11 @@ public abstract class ItineraryMixin {
             if (node.has("waypoints")) {
                 JsonParser parser = node.get("waypoints").traverse(p.getCodec());
                 parser.nextToken();
-                waypoints = ctxt.readValue(
-                        parser, ctxt.getTypeFactory().constructCollectionType(List.class, Waypoint.class));
+                waypoints =
+                        ctxt.readValue(
+                                parser,
+                                ctxt.getTypeFactory()
+                                        .constructCollectionType(List.class, Waypoint.class));
             }
 
             return new ItineraryImpl(waypoints);

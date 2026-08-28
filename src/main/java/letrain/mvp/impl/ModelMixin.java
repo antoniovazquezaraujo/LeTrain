@@ -104,14 +104,11 @@ public abstract class ModelMixin {
     @JsonProperty("nextForkId")
     int nextForkId;
 
-    @JsonIgnore
-    CargoTypes selectedWagonType;
+    @JsonIgnore CargoTypes selectedWagonType;
 
-    @JsonIgnore
-    com.badlogic.gdx.graphics.Camera camera;
+    @JsonIgnore com.badlogic.gdx.graphics.Camera camera;
 
-    @JsonIgnore
-    List<TrainEventListener> trainEventListeners;
+    @JsonIgnore List<TrainEventListener> trainEventListeners;
 
     @JsonProperty("nextSensorId")
     int nextSensorId;
@@ -138,13 +135,12 @@ public abstract class ModelMixin {
     int quantifierSteps;
 
     @JsonProperty("lastSaveTime")
-    @JsonDeserialize(using = com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer.class)
+    @JsonDeserialize(
+            using = com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer.class)
     @JsonSerialize(using = com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer.class)
     LocalDateTime lastSaveTime;
 
-    @JsonIgnore
-    Object automationEngine;
+    @JsonIgnore Object automationEngine;
 
-    @JsonIgnore
-    Object internalSimService;
+    @JsonIgnore Object internalSimService;
 }

@@ -5,8 +5,8 @@ import letrain.mvp.impl.services.SimulationService;
 import letrain.vehicle.rail.impl.Locomotive;
 
 /**
- * Centralizes the simulation logic that runs on every game tick (approx 20 TPS).
- * This ensures that both 2D and 3D views behave identically regarding physics and logic.
+ * Centralizes the simulation logic that runs on every game tick (approx 20 TPS). This ensures that
+ * both 2D and 3D views behave identically regarding physics and logic.
  */
 public class SimulationController {
     private final letrain.mvp.Model model;
@@ -14,16 +14,15 @@ public class SimulationController {
     private final RailTrackMaker trackMaker;
     private final SimulationService simulationService;
 
-    public SimulationController(letrain.mvp.Model model, AudioController audioController, RailTrackMaker trackMaker) {
+    public SimulationController(
+            letrain.mvp.Model model, AudioController audioController, RailTrackMaker trackMaker) {
         this.model = model;
         this.audioController = audioController;
         this.trackMaker = trackMaker;
         this.simulationService = new SimulationService(model);
     }
 
-    /**
-     * Performs one simulation tick.
-     */
+    /** Performs one simulation tick. */
     public void tick() {
         // 0. Update the scheduler
         if (model.getScheduler() != null) {

@@ -21,7 +21,8 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
 
     @Override
     public List<Linker> getSelectedLinkersToJoin(Train train) {
-        if (train.getLinkersToJoin().isEmpty() || train.getNumLinkersToJoin() == 0) return new ArrayList<Linker>();
+        if (train.getLinkersToJoin().isEmpty() || train.getNumLinkersToJoin() == 0)
+            return new ArrayList<Linker>();
         // Convert deque to list to slice it
         List<Linker> all = new ArrayList<Linker>(train.getLinkersToJoin());
         // Logic might differ based on iteration order of deque vs join sense
@@ -293,8 +294,7 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
             // Cleanup affected old trains
             for (Train oldTrain : affectedOldTrains) {
                 oldTrain.assignDefaultDirectorLinker();
-                if (oldTrain.getDirectorLinker() == null
-                        || oldTrain.getLinkers().isEmpty()) {
+                if (oldTrain.getDirectorLinker() == null || oldTrain.getLinkers().isEmpty()) {
                     Train.log.info("Cleaning up dead train {}", oldTrain.getId());
                     // If no locomotives left or no linkers at all, the train is dead
                     oldTrain.getLinkers().forEach(linker -> linker.setTrain(null));
@@ -376,7 +376,8 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
 
     @Override
     public void resetUnlinkState(Train train) {
-        if (!train.getLinkers().isEmpty() && train.getLinkers().peekLast() == train.getDirectorLinker()) {
+        if (!train.getLinkers().isEmpty()
+                && train.getLinkers().peekLast() == train.getDirectorLinker()) {
             train.setLinkerDivisionSense(Train.LinkersSense.FRONT);
         } else {
             train.setLinkerDivisionSense(Train.LinkersSense.BACK);
@@ -470,7 +471,10 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 }
                 linkerToRemove.setTrain(newTrain);
                 Train.log.info(
-                        "Train {}: unlinked {} to new Train {}", train.getId(), linkerToRemove, newTrain.getId());
+                        "Train {}: unlinked {} to new Train {}",
+                        train.getId(),
+                        linkerToRemove,
+                        newTrain.getId());
             }
             newTrain.assignDefaultDirectorLinker();
             newTrain.rebind();

@@ -1,9 +1,8 @@
 package letrain.itinerary;
 
 /**
- * A command to execute when a waypoint is reached.
- * Simple commands (LOAD, UNLOAD, REVERSE, NONE) are constants.
- * Parameterized commands (WAIT, SPEED) use factory methods.
+ * A command to execute when a waypoint is reached. Simple commands (LOAD, UNLOAD, REVERSE, NONE)
+ * are constants. Parameterized commands (WAIT, SPEED) use factory methods.
  */
 public class WaypointCommand {
     public enum Kind {

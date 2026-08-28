@@ -48,7 +48,9 @@ public class ForkRouter extends SimpleRouter implements DynamicRouter {
                 return alternativeRoute.getKey();
             }
             if (dir.equals(originalRoute.getKey())) {
-                return usingAlternativeRoute ? alternativeRoute.getValue() : originalRoute.getValue();
+                return usingAlternativeRoute
+                        ? alternativeRoute.getValue()
+                        : originalRoute.getValue();
             }
         }
         return dirMap.get(dir);

@@ -40,8 +40,8 @@ public class SequencedAmbientSource implements AudioSource {
     }
 
     /**
-     * Creates a looping ambient source that plays the entire sample with no
-     * start/end sequencing. The sound starts immediately and loops forever.
+     * Creates a looping ambient source that plays the entire sample with no start/end sequencing.
+     * The sound starts immediately and loops forever.
      */
     public SequencedAmbientSource(AudioSample sample, boolean simpleLoop) {
         this.sample = sample;

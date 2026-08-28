@@ -45,12 +45,17 @@ public class Terrain2D {
         }
         for (int i = 0; i < w; i++) {
             for (int j = 0; j < h; j++) {
-                System.out.println(":"
-                        + tiles[i + j * w] + "," + ((i - buffer / 2) * tileSize - xRO)
-                        + ", " + ((j - buffer / 2) * tileSize - yRO)
-                        + ", "
-                        + tileSize
-                        + "," + tileSize);
+                System.out.println(
+                        ":"
+                                + tiles[i + j * w]
+                                + ","
+                                + ((i - buffer / 2) * tileSize - xRO)
+                                + ", "
+                                + ((j - buffer / 2) * tileSize - yRO)
+                                + ", "
+                                + tileSize
+                                + ","
+                                + tileSize);
             }
         }
     }

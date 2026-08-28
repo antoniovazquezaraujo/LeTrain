@@ -43,13 +43,14 @@ public class RailTrackMaker {
     Point lastCursorPosition = null;
     Integer oldGroundType = null;
     int trackConstructionTimeCounter = 0;
-    Map<TrackType, Integer> trackConstructionTime = Map.of(
-            TrackType.NORMAL_TRACK, 0,
-            TrackType.BRIDGE_TRACK, 0,
-            TrackType.BRIDGE_GATE_TRACK, 0,
-            TrackType.TUNNEL_TRACK, 0,
-            TrackType.TUNNEL_GATE_TRACK, 0,
-            TrackType.STATION_TRACK, 0);
+    Map<TrackType, Integer> trackConstructionTime =
+            Map.of(
+                    TrackType.NORMAL_TRACK, 0,
+                    TrackType.BRIDGE_TRACK, 0,
+                    TrackType.BRIDGE_GATE_TRACK, 0,
+                    TrackType.TUNNEL_TRACK, 0,
+                    TrackType.TUNNEL_GATE_TRACK, 0,
+                    TrackType.STATION_TRACK, 0);
 
     public void startTrackConstruction(TrackType type) {
         if (type == null) {
@@ -128,7 +129,8 @@ public class RailTrackMaker {
                 } else if (keyEvent.getCharacter() == 'w' || keyEvent.getCharacter() == 'W') {
                     manageStationSensor();
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
-                    if (keyEvent.getCharacter() == '0' && presenter.getModel().getQuantifier() == 0) {
+                    if (keyEvent.getCharacter() == '0'
+                            && presenter.getModel().getQuantifier() == 0) {
                         presenter.getModel().setShowId(true);
                     } else {
                         if (quantifierReset) {
@@ -137,8 +139,9 @@ public class RailTrackMaker {
                         } else {
                             presenter
                                     .getModel()
-                                    .setQuantifier(presenter.getModel().getQuantifier() * 10
-                                            + (keyEvent.getCharacter() - '0'));
+                                    .setQuantifier(
+                                            presenter.getModel().getQuantifier() * 10
+                                                    + (keyEvent.getCharacter() - '0'));
                         }
                     }
                 }
@@ -211,17 +214,19 @@ public class RailTrackMaker {
 
     void manageSpeedSignal() {
         Point position = presenter.getModel().getCursor().getPosition();
-        Track track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
+        Track track =
+                presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
             Sensor sensor = track.getSensor();
             if (sensor != null && sensor instanceof letrain.track.SpeedSignal) {
                 presenter.getModel().removeSensor(sensor);
             } else if (sensor == null) {
-                letrain.track.SpeedSignal speedSignal = new letrain.track.SpeedSignal(
-                        presenter.getModel().nextSensorId(),
-                        presenter.getModel().getCursor().getDir(),
-                        3,
-                        true);
+                letrain.track.SpeedSignal speedSignal =
+                        new letrain.track.SpeedSignal(
+                                presenter.getModel().nextSensorId(),
+                                presenter.getModel().getCursor().getDir(),
+                                3,
+                                true);
                 speedSignal.setTrack(track);
                 presenter.getModel().addSensor(speedSignal);
             }
@@ -230,7 +235,8 @@ public class RailTrackMaker {
 
     void manageSensor() {
         Point position = presenter.getModel().getCursor().getPosition();
-        Track track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
+        Track track =
+                presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
             Sensor sensor = track.getSensor();
             if (sensor != null) {
@@ -259,7 +265,8 @@ public class RailTrackMaker {
 
     void manageStationSensor() {
         Point position = presenter.getModel().getCursor().getPosition();
-        Track track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
+        Track track =
+                presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
             Sensor sensor = track.getSensor();
             if (sensor != null && sensor instanceof Station) {
@@ -282,14 +289,22 @@ public class RailTrackMaker {
                 station.setCreationDir(presenter.getModel().getCursor().getDir());
                 station.setSideDir(
                         presenter.getModel().getCursor().getDir().turnRight().turnRight());
-                Integer foundTerrain = presenter.getModel().getGroundMap().findClosestIndustry(position, 5);
+                Integer foundTerrain =
+                        presenter.getModel().getGroundMap().findClosestIndustry(position, 5);
 
                 // If found, count density for THAT type
                 if (foundTerrain != null) {
                     int densityCount =
-                            presenter.getModel().getGroundMap().countIndustryDensity(position, 5, foundTerrain);
-                    station.setCargoType(letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(foundTerrain));
-                    station.setRole(letrain.track.CargoTypes.IndustryMapper.getRoleForTerrain(foundTerrain));
+                            presenter
+                                    .getModel()
+                                    .getGroundMap()
+                                    .countIndustryDensity(position, 5, foundTerrain);
+                    station.setCargoType(
+                            letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(
+                                    foundTerrain));
+                    station.setRole(
+                            letrain.track.CargoTypes.IndustryMapper.getRoleForTerrain(
+                                    foundTerrain));
                     station.setIndustryCount(densityCount);
                     if (station.getRole() == CargoTypes.StationRole.PRODUCER) {
                         station.setStorage(50);
@@ -328,7 +343,8 @@ public class RailTrackMaker {
                 canResume = false;
                 degreesOfRotation = 0;
             } else {
-                oldGroundType = presenter.getModel().getGroundMap().getValueAt(oldTrack.getPosition());
+                oldGroundType =
+                        presenter.getModel().getGroundMap().getValueAt(oldTrack.getPosition());
                 // ADR-005 / Infrastructure rule: Initialize rotation degrees based on entry angle
                 degreesOfRotation = oldDir.inverse().angularDistance(dir);
             }
@@ -346,7 +362,8 @@ public class RailTrackMaker {
 
     void removeTrack(boolean moveCursor) {
         Point position = presenter.getModel().getCursor().getPosition();
-        RailTrack track = presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
+        RailTrack track =
+                presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
             // ADR-005: Prohibido modificar o eliminar raíles con vehículos encima
             if (track.getLinker() != null) {
@@ -385,7 +402,9 @@ public class RailTrackMaker {
         if (caterpillarCounter > 0) {
             Point point = presenter.getModel().getCursor().getPosition();
             if (presenter.getAudioController() != null) {
-                presenter.getAudioController().setJackhammerActive(true, point.getX(), point.getY());
+                presenter
+                        .getAudioController()
+                        .setJackhammerActive(true, point.getX(), point.getY());
             }
             caterpillarCounter--;
         } else {
@@ -441,7 +460,8 @@ public class RailTrackMaker {
 
     public TrackType detectTrackType() {
         Point actualCursorPosition = presenter.getModel().getCursor().getPosition();
-        Integer actualGroundType = presenter.getModel().getGroundMap().getValueAt(actualCursorPosition);
+        Integer actualGroundType =
+                presenter.getModel().getGroundMap().getValueAt(actualCursorPosition);
 
         if (oldGroundType == null) {
             oldGroundType = actualGroundType;
@@ -457,7 +477,8 @@ public class RailTrackMaker {
         }
 
         int effectiveActualType = actualGroundType;
-        int effectiveOldType = (oldGroundType >= 10 && oldGroundType <= 29) ? GroundMap.GROUND : oldGroundType;
+        int effectiveOldType =
+                (oldGroundType >= 10 && oldGroundType <= 29) ? GroundMap.GROUND : oldGroundType;
 
         // Si venimos de algún track, obtenemos la dirección de salida
         if (oldTrack != null) {
@@ -511,7 +532,8 @@ public class RailTrackMaker {
         makingTracks = true;
 
         Point actualCursorPosition = presenter.getModel().getCursor().getPosition();
-        Integer actualGroundType = presenter.getModel().getGroundMap().getValueAt(actualCursorPosition);
+        Integer actualGroundType =
+                presenter.getModel().getGroundMap().getValueAt(actualCursorPosition);
 
         // STRICT BLOCK construction on industrial tiles
         if (actualGroundType != null && actualGroundType >= 10 && actualGroundType <= 29) {
@@ -547,8 +569,7 @@ public class RailTrackMaker {
         } else {
             if (actualGroundType != GroundMap.GROUND) {
                 // si la dirección del cursor es distinta de la del track actual retornamos
-                if (track != null
-                        && !track.canExit(presenter.getModel().getCursor().getDir())) {
+                if (track != null && !track.canExit(presenter.getModel().getCursor().getDir())) {
                     return false;
                 }
             }
@@ -621,9 +642,10 @@ public class RailTrackMaker {
         newGate.setPosition(oldTrack.getPosition());
 
         final letrain.map.Router router = oldTrack.getRouter();
-        router.forEach(t -> {
-            newGate.addRoute(t.getKey(), t.getValue());
-        });
+        router.forEach(
+                t -> {
+                    newGate.addRoute(t.getKey(), t.getValue());
+                });
 
         presenter.getModel().removeTrack(oldTrack.getPosition());
 
@@ -641,9 +663,10 @@ public class RailTrackMaker {
 
     private void addRoutesToFork(RailTrack track, final ForkRailTrack fork) {
         final Router router = track.getRouter();
-        router.forEach(t -> {
-            fork.addRoute(t.getKey(), t.getValue());
-        });
+        router.forEach(
+                t -> {
+                    fork.addRoute(t.getKey(), t.getValue());
+                });
     }
 
     void addTrackConnectionsToFork(RailTrack track, final ForkRailTrack fork) {
@@ -780,8 +803,8 @@ public class RailTrackMaker {
         Point offset = presenter.getView().getScrollOffset();
         presenter
                 .getView()
-                .setScrollOffset(new Point(
-                        offset.getX(), offset.getY() + presenter.getView().getRows()));
+                .setScrollOffset(
+                        new Point(offset.getX(), offset.getY() + presenter.getView().getRows()));
         varyCursorPosition(new Point(0, 1 * presenter.getView().getRows()));
         presenter.getView().clear();
     }
@@ -791,7 +814,8 @@ public class RailTrackMaker {
         Point offset = presenter.getView().getScrollOffset();
         presenter
                 .getView()
-                .setScrollOffset(new Point(offset.getX() - presenter.getView().getCols(), offset.getY()));
+                .setScrollOffset(
+                        new Point(offset.getX() - presenter.getView().getCols(), offset.getY()));
         varyCursorPosition(new Point((-1 * presenter.getView().getCols()), 0));
         presenter.getView().clear();
     }
@@ -801,8 +825,8 @@ public class RailTrackMaker {
         Point offset = presenter.getView().getScrollOffset();
         presenter
                 .getView()
-                .setScrollOffset(new Point(
-                        offset.getX(), offset.getY() - presenter.getView().getRows()));
+                .setScrollOffset(
+                        new Point(offset.getX(), offset.getY() - presenter.getView().getRows()));
         varyCursorPosition(new Point(0, -1 * presenter.getView().getRows()));
         presenter.getView().clear();
     }
@@ -812,7 +836,8 @@ public class RailTrackMaker {
         Point offset = presenter.getView().getScrollOffset();
         presenter
                 .getView()
-                .setScrollOffset(new Point(offset.getX() + presenter.getView().getCols(), offset.getY()));
+                .setScrollOffset(
+                        new Point(offset.getX() + presenter.getView().getCols(), offset.getY()));
         varyCursorPosition(new Point((1 * presenter.getView().getCols()), 0));
         presenter.getView().clear();
     }

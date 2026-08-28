@@ -17,7 +17,8 @@ public abstract class WaypointCommandMixin {
 
     public static class WaypointCommandDeserializer extends JsonDeserializer<WaypointCommand> {
         @Override
-        public WaypointCommand deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        public WaypointCommand deserialize(JsonParser p, DeserializationContext ctxt)
+                throws IOException {
             com.fasterxml.jackson.databind.JsonNode node = p.readValueAsTree();
             WaypointCommand.Kind kind = WaypointCommand.Kind.NONE;
             if (node.has("kind")) {

@@ -15,7 +15,8 @@ public interface View {
 
     void set(int x, int y, String c);
 
-    // Removed Lanterna specific color methods, will use abstract semantic styles or implementation specifics
+    // Removed Lanterna specific color methods, will use abstract semantic styles or implementation
+    // specifics
     // void setFgColor(TextColor color);
     // void setBgColor(TextColor color);
 

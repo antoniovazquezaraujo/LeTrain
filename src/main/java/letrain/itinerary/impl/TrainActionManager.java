@@ -79,18 +79,23 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             autopilot.clearRoute();
             currentProcessingWaypoint = null;
 
-            autopilot.currentWaypoint().ifPresent(wp -> {
-                if (train.isCurrentlyOn(wp)) {
-                    log.info("Train {} consecutive waypoint reached", train.getId());
-                    pendingCommands.clear();
-                    pendingCommands.addAll(wp.commands());
-                    runPendingCommands();
-                }
-            });
+            autopilot
+                    .currentWaypoint()
+                    .ifPresent(
+                            wp -> {
+                                if (train.isCurrentlyOn(wp)) {
+                                    log.info(
+                                            "Train {} consecutive waypoint reached", train.getId());
+                                    pendingCommands.clear();
+                                    pendingCommands.addAll(wp.commands());
+                                    runPendingCommands();
+                                }
+                            });
 
             if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING
                     && this.train.getSafetyManager() != null) {
-                this.train.notifyAutopilotSegmentEntered(this.train.resolveCurrentSegmentFromGraph());
+                this.train.notifyAutopilotSegmentEntered(
+                        this.train.resolveCurrentSegmentFromGraph());
                 this.train.getSafetyManager().acquireInitialLocks();
             }
         }
@@ -102,61 +107,68 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         }
         switch (command.kind()) {
             case LOAD:
-            case UNLOAD: {
-                boolean isUnload = command.kind() == WaypointCommand.Kind.UNLOAD;
-                Station station = train.getLogisticsManager() != null
-                        ? train.getLogisticsManager().getStationAtTrain()
-                        : null;
-                if (station == null
-                        && train.getModel() != null
-                        && currentProcessingWaypoint != null
-                        && currentProcessingWaypoint.type() == Waypoint.Type.STATION) {
-                    station = train.getModel().getStation(currentProcessingWaypoint.targetId());
-                }
-
-                if (station != null && train.getLogisticsManager() != null) {
-                    List<letrain.vehicle.rail.impl.Wagon> capableWagons =
-                            train.getLogisticsManager().getCapableWagons(station, isUnload);
-                    if (capableWagons.isEmpty()) {
-                        log.info(
-                                "Train {} has no capable wagons for {} at station {}, passing through without stopping",
-                                train.getId(),
-                                command.kind(),
-                                station.getName());
-                        return false;
+            case UNLOAD:
+                {
+                    boolean isUnload = command.kind() == WaypointCommand.Kind.UNLOAD;
+                    Station station =
+                            train.getLogisticsManager() != null
+                                    ? train.getLogisticsManager().getStationAtTrain()
+                                    : null;
+                    if (station == null
+                            && train.getModel() != null
+                            && currentProcessingWaypoint != null
+                            && currentProcessingWaypoint.type() == Waypoint.Type.STATION) {
+                        station = train.getModel().getStation(currentProcessingWaypoint.targetId());
                     }
-                }
 
-                if (train.getDirectorLinker() != null
-                        && train.getDirectorLinker().getSpeed() > 0) {
-                    if (savedTargetSpeed <= 0) {
-                        savedTargetSpeed = train.getDirectorLinker().getTargetSpeed() > 0
-                                ? train.getDirectorLinker().getTargetSpeed()
-                                : train.getDirectorLinker().getSpeed();
+                    if (station != null && train.getLogisticsManager() != null) {
+                        List<letrain.vehicle.rail.impl.Wagon> capableWagons =
+                                train.getLogisticsManager().getCapableWagons(station, isUnload);
+                        if (capableWagons.isEmpty()) {
+                            log.info(
+                                    "Train {} has no capable wagons for {} at station {}, passing through without stopping",
+                                    train.getId(),
+                                    command.kind(),
+                                    station.getName());
+                            return false;
+                        }
                     }
-                    this.pendingCommandToResume = command;
-                    train.getMovementManager().initiateBraking();
-                    return true;
-                }
 
-                Station stopStation = train.getLogisticsManager() != null
-                        ? train.getLogisticsManager().getStationAtTrain()
-                        : null;
-                if (stopStation != null) {
-                    if (isUnload) {
-                        train.unload();
-                    } else {
-                        train.load();
-                    }
-                    if (train.getLogisticsManager() != null
-                            && train.getLogisticsManager().isLoading()) {
+                    if (train.getDirectorLinker() != null
+                            && train.getDirectorLinker().getSpeed() > 0) {
+                        if (savedTargetSpeed <= 0) {
+                            savedTargetSpeed =
+                                    train.getDirectorLinker().getTargetSpeed() > 0
+                                            ? train.getDirectorLinker().getTargetSpeed()
+                                            : train.getDirectorLinker().getSpeed();
+                        }
+                        this.pendingCommandToResume = command;
+                        train.getMovementManager().initiateBraking();
                         return true;
                     }
-                } else {
-                    log.info("Train {} stopped outside station for {}, skipping action", train.getId(), command.kind());
+
+                    Station stopStation =
+                            train.getLogisticsManager() != null
+                                    ? train.getLogisticsManager().getStationAtTrain()
+                                    : null;
+                    if (stopStation != null) {
+                        if (isUnload) {
+                            train.unload();
+                        } else {
+                            train.load();
+                        }
+                        if (train.getLogisticsManager() != null
+                                && train.getLogisticsManager().isLoading()) {
+                            return true;
+                        }
+                    } else {
+                        log.info(
+                                "Train {} stopped outside station for {}, skipping action",
+                                train.getId(),
+                                command.kind());
+                    }
+                    return false;
                 }
-                return false;
-            }
             case WAIT:
                 this.waitTicks = command.seconds() * WaypointCommand.TICKS_PER_SECOND;
                 scheduleResume(this.waitTicks);
@@ -183,10 +195,14 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
 
     private void scheduleResume(int ticks) {
         if (train.getModel() != null && train.getModel().getScheduler() != null) {
-            train.getModel().getScheduler().schedule(ticks, () -> {
-                resumeWaiting();
-                this.acquireInitialLocks();
-            });
+            train.getModel()
+                    .getScheduler()
+                    .schedule(
+                            ticks,
+                            () -> {
+                                resumeWaiting();
+                                this.acquireInitialLocks();
+                            });
         }
     }
 

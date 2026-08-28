@@ -65,10 +65,9 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
     }
 
     /**
-     * Resetea el estado interno de reproducción.
-     * Crucial al cambiar entre segmentos (start/stop/ralenti) para evitar que
-     * herede
-     * una dirección reversa aleatoria o una posición fuera de rango.
+     * Resetea el estado interno de reproducción. Crucial al cambiar entre segmentos
+     * (start/stop/ralenti) para evitar que herede una dirección reversa aleatoria o una posición
+     * fuera de rango.
      */
     public void resetState() {
         this.position = 0.0;
@@ -106,7 +105,8 @@ public class GrainEngine extends AudioGenerator { // keeping name to avoid break
     // Internal state for randomness
     private int samplesSinceLastCheck = 0;
     private static final int CHECK_INTERVAL = 4410; // Check ~10 times/sec at 44.1k
-    private boolean isInRandomReverse = false; // Track if we are in a forced reverse state due to randomness
+    private boolean isInRandomReverse =
+            false; // Track if we are in a forced reverse state due to randomness
 
     public void setTurnProbability(float prob) {
         this.turnProb = Math.max(0.0f, Math.min(1.0f, prob));

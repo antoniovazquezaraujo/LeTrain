@@ -20,8 +20,7 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
         this.train = train;
     }
 
-    @JsonIgnore
-    private transient List<Wagon> currentCapableWagons = null;
+    @JsonIgnore private transient List<Wagon> currentCapableWagons = null;
 
     @Override
     public boolean isLoading() {
@@ -118,7 +117,9 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
                     }
                 } else {
                     boolean canLoadMore =
-                            !wagon.isFull() && (wagon.getCargoAmount() == 0 || wagon.getCargoType() == stationCargo);
+                            !wagon.isFull()
+                                    && (wagon.getCargoAmount() == 0
+                                            || wagon.getCargoType() == stationCargo);
                     if (canLoadMore
                             && (wagon.getExclusiveCargoType() == CargoTypes.NONE
                                     || wagon.getExclusiveCargoType() == stationCargo)) {
@@ -171,15 +172,18 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
             }
         } else if (station.getRole() == CargoTypes.StationRole.CONSUMER) {
             int targetRemaining =
-                    Wagon.MAX_CARGO_CAPACITY - ((wagonTick + 1) * Wagon.MAX_CARGO_CAPACITY) / MAX_LOADING_COUNT;
-            if (wagon.getCargoAmount() > targetRemaining && wagon.getCargoType() == station.getCargoType()) {
+                    Wagon.MAX_CARGO_CAPACITY
+                            - ((wagonTick + 1) * Wagon.MAX_CARGO_CAPACITY) / MAX_LOADING_COUNT;
+            if (wagon.getCargoAmount() > targetRemaining
+                    && wagon.getCargoType() == station.getCargoType()) {
                 int toUnload = wagon.getCargoAmount() - targetRemaining;
                 wagon.unload(toUnload);
                 station.receiveImportCargo(toUnload);
 
                 if (wagon.getLoadingPoint() != null) {
-                    totalDistance += letrain.map.Point.distance(
-                            wagon.getLoadingPoint(), station.getTrack().getPosition());
+                    totalDistance +=
+                            letrain.map.Point.distance(
+                                    wagon.getLoadingPoint(), station.getTrack().getPosition());
                     deliveryCount++;
                 }
                 if (wagon.getCargoAmount() == 0) {

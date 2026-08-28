@@ -19,7 +19,8 @@ public class NoiseGenerator extends AudioGenerator {
 
             // Simple Low Pass Filter: y[n] = x[n]*a + y[n-1]*(1-a)
             // Here 'filterCoeff' acts as the brightness control.
-            // Closer to 1.0 passes more high freq (white noise), closer to 0.0 is smoother (pink-ish)
+            // Closer to 1.0 passes more high freq (white noise), closer to 0.0 is smoother
+            // (pink-ish)
             float sample = (white * filterCoeff) + (lastSample * (1.0f - filterCoeff));
             lastSample = sample;
 

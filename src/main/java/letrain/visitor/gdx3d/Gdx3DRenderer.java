@@ -31,7 +31,9 @@ public class Gdx3DRenderer implements Visitor {
                 @Override
                 protected VehicleLabel newObject() {
                     return new VehicleLabel(
-                            new com.badlogic.gdx.math.Vector3(), "", new com.badlogic.gdx.math.Vector3());
+                            new com.badlogic.gdx.math.Vector3(),
+                            "",
+                            new com.badlogic.gdx.math.Vector3());
                 }
             };
 
@@ -68,11 +70,15 @@ public class Gdx3DRenderer implements Visitor {
 
     public Gdx3DRenderer(Gdx3DResourceContext resourceContext) {
         this.resourceContext = resourceContext;
-        this.trackRenderer = new TrackRenderer(resourceContext, instances, transparentInstances, labels);
-        this.vehicleRenderer = new VehicleRenderer(resourceContext, instances, transparentInstances, labels);
+        this.trackRenderer =
+                new TrackRenderer(resourceContext, instances, transparentInstances, labels);
+        this.vehicleRenderer =
+                new VehicleRenderer(resourceContext, instances, transparentInstances, labels);
         this.infrastructureRenderer =
-                new InfrastructureRenderer(resourceContext, instances, transparentInstances, labels, trackRenderer);
-        this.groundRenderer = new GroundRenderer(resourceContext, instances, transparentInstances, labels);
+                new InfrastructureRenderer(
+                        resourceContext, instances, transparentInstances, labels, trackRenderer);
+        this.groundRenderer =
+                new GroundRenderer(resourceContext, instances, transparentInstances, labels);
 
         this.trackRenderer.setParentRenderer(this);
         this.vehicleRenderer.setParentRenderer(this);
@@ -88,7 +94,10 @@ public class Gdx3DRenderer implements Visitor {
         public com.badlogic.gdx.graphics.Color color;
         public float scale = 1.0f;
 
-        public VehicleLabel(com.badlogic.gdx.math.Vector3 pos, String text, com.badlogic.gdx.math.Vector3 normal) {
+        public VehicleLabel(
+                com.badlogic.gdx.math.Vector3 pos,
+                String text,
+                com.badlogic.gdx.math.Vector3 normal) {
             this(pos, text, normal, com.badlogic.gdx.graphics.Color.WHITE);
         }
 
@@ -197,7 +206,8 @@ public class Gdx3DRenderer implements Visitor {
         infrastructureRenderer.updateState(model, camera, animationAlpha, isXRayActive);
         groundRenderer.updateState(model, camera, animationAlpha, isXRayActive);
 
-        // DYNAMIC SPATIAL OPTIMIZATION: Calculate the bounding box of the camera frustum on the ground plane (Y=0)
+        // DYNAMIC SPATIAL OPTIMIZATION: Calculate the bounding box of the camera frustum on the
+        // ground plane (Y=0)
         // We take the 8 corners of the frustum and find the min/max X and Z.
         float minX_f = Float.MAX_VALUE;
         float maxX_f = -Float.MAX_VALUE;
@@ -230,27 +240,38 @@ public class Gdx3DRenderer implements Visitor {
         model.getGroundMap().forEachInRange(minX, minY, maxX, maxY, groundRenderer::visitGround);
         model.getRailMap().forEachInRange(minX, minY, maxX, maxY, track -> track.accept(this));
 
-        model.getSensors().forEach(t -> {
-            if (isVisible(t.getPosition())) t.accept(infrastructureRenderer);
-        });
-        model.getSemaphores().forEach(t -> {
-            if (isVisible(t.getPosition())) t.accept(infrastructureRenderer);
-        });
-        model.getWagons().forEach(t -> {
-            if (isVisible(t.getPosition())) t.accept(vehicleRenderer);
-        });
-        model.getLocomotives().forEach(t -> {
-            if (isVisible(t.getPosition())) t.accept(vehicleRenderer);
-        });
-        model.getStations().forEach(t -> {
-            if (isVisible(t.getPosition())) t.accept(infrastructureRenderer);
-        });
+        model.getSensors()
+                .forEach(
+                        t -> {
+                            if (isVisible(t.getPosition())) t.accept(infrastructureRenderer);
+                        });
+        model.getSemaphores()
+                .forEach(
+                        t -> {
+                            if (isVisible(t.getPosition())) t.accept(infrastructureRenderer);
+                        });
+        model.getWagons()
+                .forEach(
+                        t -> {
+                            if (isVisible(t.getPosition())) t.accept(vehicleRenderer);
+                        });
+        model.getLocomotives()
+                .forEach(
+                        t -> {
+                            if (isVisible(t.getPosition())) t.accept(vehicleRenderer);
+                        });
+        model.getStations()
+                .forEach(
+                        t -> {
+                            if (isVisible(t.getPosition())) t.accept(infrastructureRenderer);
+                        });
         visitCursor(model.getCursor());
     }
 
     private boolean isVisible(letrain.map.Point pos) {
         if (camera == null) return true;
-        return camera.frustum.boundsInFrustum(pos.getX() + 0.5f, 0.5f, pos.getY() + 0.5f, 0.5f, 0.5f, 0.5f);
+        return camera.frustum.boundsInFrustum(
+                pos.getX() + 0.5f, 0.5f, pos.getY() + 0.5f, 0.5f, 0.5f, 0.5f);
     }
 
     @Override

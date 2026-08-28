@@ -3,13 +3,10 @@ package letrain.ground;
 import java.util.Random;
 
 /**
- * <p>
- * Adapted from Riven's Implementation of Perlin noise. Modified it to be more
- * OOP rather than C like.
- * </p>
+ * Adapted from Riven's Implementation of Perlin noise. Modified it to be more OOP rather than C
+ * like.
  *
  * @author Matthew A. Johnston (WarmWaffles)
- *
  */
 public class PerlinNoise {
     private float xo, yo, zo;
@@ -39,7 +36,6 @@ public class PerlinNoise {
     }
 
     /**
-     *
      * @param x
      * @param y
      * @param z
@@ -51,7 +47,6 @@ public class PerlinNoise {
     }
 
     /**
-     *
      * @param x
      * @param y
      * @param z
@@ -65,7 +60,6 @@ public class PerlinNoise {
     }
 
     /**
-     *
      * @param x
      * @param y
      * @param z
@@ -83,7 +77,6 @@ public class PerlinNoise {
     }
 
     /**
-     *
      * @param x
      * @param y
      * @param z
@@ -134,7 +127,6 @@ public class PerlinNoise {
     // ========================================================================
 
     /**
-     *
      * @param x
      * @param y
      * @param z
@@ -147,7 +139,6 @@ public class PerlinNoise {
     }
 
     /**
-     *
      * @param v
      * @return
      */
@@ -156,7 +147,6 @@ public class PerlinNoise {
     }
 
     /**
-     *
      * @param t
      * @return
      */
@@ -165,7 +155,6 @@ public class PerlinNoise {
     }
 
     /**
-     *
      * @param t
      * @param a
      * @param b
@@ -176,7 +165,6 @@ public class PerlinNoise {
     }
 
     /**
-     *
      * @param hash
      * @param x
      * @param y

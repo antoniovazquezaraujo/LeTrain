@@ -5,8 +5,8 @@ import letrain.vehicle.rail.Linker;
 import letrain.visitor.Visitor;
 
 /**
- * A cargo wagon attached to a train. Holds up to {@link #MAX_CARGO_CAPACITY}
- * units of a single cargo type and can be loaded/unloaded at stations.
+ * A cargo wagon attached to a train. Holds up to {@link #MAX_CARGO_CAPACITY} units of a single
+ * cargo type and can be loaded/unloaded at stations.
  */
 public class Wagon extends Linker {
     /** Maximum cargo units a wagon can hold. */

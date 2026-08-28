@@ -22,7 +22,8 @@ public abstract class WaypointMixin {
 
     public static class WaypointSerializer extends JsonSerializer<Waypoint> {
         @Override
-        public void serialize(Waypoint value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        public void serialize(Waypoint value, JsonGenerator gen, SerializerProvider serializers)
+                throws IOException {
             gen.writeStartObject();
             gen.writeStringField("type", value.type().name());
             gen.writeNumberField("targetId", value.targetId());
@@ -57,8 +58,12 @@ public abstract class WaypointMixin {
             if (node.has("commands")) {
                 JsonParser listParser = node.get("commands").traverse(p.getCodec());
                 listParser.nextToken();
-                commands = ctxt.readValue(
-                        listParser, ctxt.getTypeFactory().constructCollectionType(List.class, WaypointCommand.class));
+                commands =
+                        ctxt.readValue(
+                                listParser,
+                                ctxt.getTypeFactory()
+                                        .constructCollectionType(
+                                                List.class, WaypointCommand.class));
             }
 
             return new WaypointImpl(type, targetId, entryDir, commands);

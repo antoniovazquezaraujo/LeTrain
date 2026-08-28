@@ -81,6 +81,8 @@ public class BlockReleaseIntegrationTest {
         assertFalse(model.getLocomotives().contains(loco));
 
         // THE FIX: The segment should be released.
-        assertFalse(bm.getOwners(segment).contains(train), "Segment should be released after train destruction");
+        assertFalse(
+                bm.getOwners(segment).contains(train),
+                "Segment should be released after train destruction");
     }
 }

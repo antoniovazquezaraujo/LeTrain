@@ -9,9 +9,8 @@ import letrain.utils.PathGeometry;
 import letrain.vehicle.rail.impl.Locomotive;
 
 /**
- * Se encarga de gestionar la cámara 3D (modos ORBIT, CAB, MAP) a partir del
- * estado del modelo.
- * No toca audio ni renderizado; solo actualiza una {@link PerspectiveCamera}.
+ * Se encarga de gestionar la cámara 3D (modos ORBIT, CAB, MAP) a partir del estado del modelo. No
+ * toca audio ni renderizado; solo actualiza una {@link PerspectiveCamera}.
  */
 public class CameraController {
 
@@ -113,9 +112,7 @@ public class CameraController {
         return (float) Math.atan2(cam.direction.z, cam.direction.x);
     }
 
-    /**
-     * Returns a normalized zoom factor [0, 1] where 0 = closest and 1 = farthest.
-     */
+    /** Returns a normalized zoom factor [0, 1] where 0 = closest and 1 = farthest. */
     public float getZoomFactor() {
         if (cameraMode == CameraMode.MAP) {
             return (mapCameraHeight - 3f) / (100f - 3f);
@@ -152,11 +149,13 @@ public class CameraController {
             Vector2 interpPos = getInterpolatedPosition(selected, alpha);
             targetX = interpPos.x + 0.5f;
             targetZ = interpPos.y + 0.5f;
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS && model.getSelectedFork() != null) {
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS
+                && model.getSelectedFork() != null) {
             letrain.track.rail.ForkRailTrack selected = model.getSelectedFork();
             targetX = selected.getPosition().getX() + 0.5f;
             targetZ = selected.getPosition().getY() + 0.5f;
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES && model.getSelectedSemaphore() != null) {
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES
+                && model.getSelectedSemaphore() != null) {
             letrain.track.RailSemaphore selected = model.getSelectedSemaphore();
             targetX = selected.getPosition().getX() + 0.5f;
             targetZ = selected.getPosition().getY() + 0.5f;
@@ -165,7 +164,9 @@ public class CameraController {
                 if (selected.getCreationDir() != null) {
                     float dx = letrain.utils.PathGeometry.getDirX(selected.getCreationDir());
                     float dz = letrain.utils.PathGeometry.getDirZ(selected.getCreationDir());
-                    targetCameraAngle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+                    targetCameraAngle =
+                            (float) Math.atan2(dx, dz)
+                                    * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
                 }
             }
         } else if (model.getMode() == letrain.mvp.Model.GameMode.SPEED_SIGNALS
@@ -179,10 +180,13 @@ public class CameraController {
                     float dx = letrain.utils.PathGeometry.getDirX(selected.getCreationDir());
                     float dz = letrain.utils.PathGeometry.getDirZ(selected.getCreationDir());
                     targetCameraAngle =
-                            (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
+                            (float) Math.atan2(dx, dz)
+                                            * com.badlogic.gdx.math.MathUtils.radiansToDegrees
+                                    + 180f;
                 }
             }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS && model.getSelectedStation() != null) {
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS
+                && model.getSelectedStation() != null) {
             letrain.track.Station selected = model.getSelectedStation();
             targetX = selected.getPosition().getX() + 0.5f;
             targetZ = selected.getPosition().getY() + 0.5f;

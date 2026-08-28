@@ -8,22 +8,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A locomotive (engine) that pulls or pushes a train. Implements {@link Tractor}
- * for speed control, inertia, and turn-based movement timing.
+ * A locomotive (engine) that pulls or pushes a train. Implements {@link Tractor} for speed control,
+ * inertia, and turn-based movement timing.
  *
  * <p>Key concepts:
+ *
  * <ul>
- *   <li>{@code currentSpeed} (0-10) — actual visual/acoustic speed</li>
- *   <li>{@code targetSpeed} (0-10) — desired speed set by player</li>
- *   <li>{@code turns} — countdown ticks between cell advances
- *       ({@code 50 / currentSpeed})</li>
- *   <li>{@code stalled} — frozen after collision; must reverse to recover</li>
+ *   <li>{@code currentSpeed} (0-10) — actual visual/acoustic speed
+ *   <li>{@code targetSpeed} (0-10) — desired speed set by player
+ *   <li>{@code turns} — countdown ticks between cell advances ({@code 50 / currentSpeed})
+ *   <li>{@code stalled} — frozen after collision; must reverse to recover
  * </ul>
  */
 public class Locomotive extends Linker implements Tractor {
     private static final Logger log = LoggerFactory.getLogger(Locomotive.class);
     private static final int MAX_DESTROY_TURNS = 200;
     private static final long serialVersionUID = 1L;
+
     /** Maximum speed in game units (notches 0-10). */
     public static final int MAX_SPEED = 10;
 
@@ -145,8 +146,8 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     /**
-     * Main update tick. Handles acoustic signals, inertia, turn consumption,
-     * and triggers {@link Train#advance()} when it's time to move.
+     * Main update tick. Handles acoustic signals, inertia, turn consumption, and triggers {@link
+     * Train#advance()} when it's time to move.
      *
      * @return true if the train moved this tick
      */
@@ -173,11 +174,13 @@ public class Locomotive extends Linker implements Tractor {
                 if (getTrain() != null) {
                     java.util.Deque<Linker> linkers = getTrain().getLinkers();
                     if (!linkers.isEmpty()) {
-                        boolean normalSense = getTrain().getDirectorLinker() == null
-                                || !getTrain().getDirectorLinker().isReversed();
+                        boolean normalSense =
+                                getTrain().getDirectorLinker() == null
+                                        || !getTrain().getDirectorLinker().isReversed();
                         Linker head = normalSense ? linkers.getFirst() : linkers.getLast();
                         if (head != null && head.getTrack() != null) {
-                            letrain.track.Track nextTrack = head.getTrack().getConnected(head.getDir());
+                            letrain.track.Track nextTrack =
+                                    head.getTrack().getConnected(head.getDir());
                             if (nextTrack != null) {
                                 Linker occupant = nextTrack.getLinker();
                                 if (occupant != null
@@ -233,12 +236,16 @@ public class Locomotive extends Linker implements Tractor {
                             .filter(t -> t instanceof Locomotive && t != this)
                             .forEach(t -> ((Locomotive) t).resetTurns());
                 } else if (getTrain() == null || !getTrain().isAutoMode()) {
-                    log.debug("Locomotive {}: advance() failed (manual mode or null train). Setting speed to 0", id);
+                    log.debug(
+                            "Locomotive {}: advance() failed (manual mode or null train). Setting speed to 0",
+                            id);
                     // Blocked/Collision — stop the train (only in manual mode)
                     setCurrentSpeed(0);
                     setTargetSpeed(0);
                 } else {
-                    log.debug("Locomotive {}: advance() failed (AUTO mode). Letting inertia brake.", id);
+                    log.debug(
+                            "Locomotive {}: advance() failed (AUTO mode). Letting inertia brake.",
+                            id);
                     // Auto mode: don't punish, but let inertia brake
 
                     updateInertia();
@@ -354,7 +361,11 @@ public class Locomotive extends Linker implements Tractor {
             }
         }
         if (this.targetSpeed != speed) {
-            log.info("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed, speed);
+            log.info(
+                    "Locomotive {}: setTargetSpeed changes from {} to {}",
+                    id,
+                    this.targetSpeed,
+                    speed);
         }
         int oldSpeed = this.targetSpeed;
         this.targetSpeed = speed;

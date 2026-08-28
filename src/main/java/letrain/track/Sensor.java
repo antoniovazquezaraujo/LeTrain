@@ -20,9 +20,15 @@ import letrain.visitor.Visitor;
         include = com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY,
         property = "@type")
 @com.fasterxml.jackson.annotation.JsonSubTypes({
-    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Sensor.class, name = "Sensor"),
-    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Station.class, name = "Station"),
-    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.SpeedSignal.class, name = "SpeedSignal")
+    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(
+            value = letrain.track.Sensor.class,
+            name = "Sensor"),
+    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(
+            value = letrain.track.Station.class,
+            name = "Station"),
+    @com.fasterxml.jackson.annotation.JsonSubTypes.Type(
+            value = letrain.track.SpeedSignal.class,
+            name = "SpeedSignal")
 })
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class Sensor implements Renderable {
@@ -30,11 +36,9 @@ public class Sensor implements Renderable {
     private String name;
     Track track;
 
-    @JsonIgnore
-    transient List<SensorEventListener> listeners = new ArrayList<>();
+    @JsonIgnore transient List<SensorEventListener> listeners = new ArrayList<>();
 
-    @JsonIgnore
-    transient List<SensorEventListener> systemListeners = new ArrayList<>();
+    @JsonIgnore transient List<SensorEventListener> systemListeners = new ArrayList<>();
 
     private Dir sideDir;
     private Dir creationDir = Dir.E;
@@ -54,8 +58,8 @@ public class Sensor implements Renderable {
     }
 
     /**
-     * Reinitializes transient fields after deserialization.
-     * Ensures listener collections are not null to prevent NPE.
+     * Reinitializes transient fields after deserialization. Ensures listener collections are not
+     * null to prevent NPE.
      */
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();

@@ -9,16 +9,12 @@ import org.slf4j.LoggerFactory;
 /**
  * TrainSynthesizer — motor de síntesis de sonido de tren.
  *
- * Arquitectura de un único GrainEngine para la locomotora (locoEngine),
- * más un GrainEngine de vagones (coachEngine).
+ * <p>Arquitectura de un único GrainEngine para la locomotora (locoEngine), más un GrainEngine de
+ * vagones (coachEngine).
  *
- * Estados:
- * OFF → sin sonido
- * STARTING → reproduce segmento 'start' una vez, luego → RALENTI
- * RALENTI → loop del segmento 'ralenti' (notch 0)
- * CRUISE_N → loop del segmento 'cruise' con pitch del notch N, con ramp entre
- * notches
- * STOPPING → reproduce segmento 'stop' una vez, luego → OFF
+ * <p>Estados: OFF → sin sonido STARTING → reproduce segmento 'start' una vez, luego → RALENTI
+ * RALENTI → loop del segmento 'ralenti' (notch 0) CRUISE_N → loop del segmento 'cruise' con pitch
+ * del notch N, con ramp entre notches STOPPING → reproduce segmento 'stop' una vez, luego → OFF
  */
 public class TrainSynthesizer implements AudioSource {
 
@@ -156,7 +152,8 @@ public class TrainSynthesizer implements AudioSource {
             }
 
             // Labels
-            java.io.InputStream labelsStream = getClass().getResourceAsStream("/sound/train-sound-labels.txt");
+            java.io.InputStream labelsStream =
+                    getClass().getResourceAsStream("/sound/train-sound-labels.txt");
             if (labelsStream != null) {
                 sharedLabels = letrain.audio.util.AudacityLabelParser.parse(labelsStream);
             } else {
@@ -172,8 +169,8 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     /**
-     * Permite inyectar un AudioSample externo (usado por TestSynth).
-     * Actualiza los engines y re-inicializa los notches con las labels existentes.
+     * Permite inyectar un AudioSample externo (usado por TestSynth). Actualiza los engines y
+     * re-inicializa los notches con las labels existentes.
      */
     public void setSample(AudioSample sample) {
         sharedSample = sample;
@@ -236,7 +233,8 @@ public class TrainSynthesizer implements AudioSource {
     // Inicialización de notches
     // =====================================================================
 
-    private void initNotchesFromLabels(List<letrain.audio.util.AudacityLabelParser.Label> labels, AudioSample sample) {
+    private void initNotchesFromLabels(
+            List<letrain.audio.util.AudacityLabelParser.Label> labels, AudioSample sample) {
 
         for (letrain.audio.util.AudacityLabelParser.Label l : labels) {
             switch (l.name.toLowerCase()) {
@@ -267,9 +265,8 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     /**
-     * Pitchs: notch 0 = ralenti (1.0), notch 1..10 = cruise a distintas
-     * velocidades.
-     * Rango 0.7 → 1.5 (80% de rango tonal, claramente audible).
+     * Pitchs: notch 0 = ralenti (1.0), notch 1..10 = cruise a distintas velocidades. Rango 0.7 →
+     * 1.5 (80% de rango tonal, claramente audible).
      */
     private void buildNotches(AudioSample sample) {
         float sampleRate = sample.getSampleRate();
@@ -287,7 +284,9 @@ public class TrainSynthesizer implements AudioSource {
         // Notchs 1-10 — pitch range 1.1 → 2.0
         for (int i = 1; i <= 10; i++) {
             float pitch = 1.1f + (i - 1) * (0.9f / 9f); // 1.10 … 2.00
-            notches[i] = new SpeedNotch("Notch " + i, pitch, pitch, pitch, cStart, cEnd, wStart, wEnd, 2.0f);
+            notches[i] =
+                    new SpeedNotch(
+                            "Notch " + i, pitch, pitch, pitch, cStart, cEnd, wStart, wEnd, 2.0f);
         }
     }
 
@@ -297,7 +296,16 @@ public class TrainSynthesizer implements AudioSource {
         for (int i = 0; i < 11; i++) {
             float pitch = (i == 0) ? 1.0f : 1.1f + (i - 1) * (0.9f / 9f);
             notches[i] =
-                    new SpeedNotch("Notch " + i, pitch, pitch, pitch, locoStart, locoEnd, coachStart, coachEnd, 2.0f);
+                    new SpeedNotch(
+                            "Notch " + i,
+                            pitch,
+                            pitch,
+                            pitch,
+                            locoStart,
+                            locoEnd,
+                            coachStart,
+                            coachEnd,
+                            2.0f);
         }
         notches[0].name = "Ralenti";
 
@@ -307,7 +315,10 @@ public class TrainSynthesizer implements AudioSource {
         startSegStart = 0;
         startSegEnd = ralentiStart;
         stopSegStart = ralentiEnd;
-        stopSegEnd = sharedSample != null ? sharedSample.getLength() / sharedSample.getSampleRate() : ralentiEnd + 1.0;
+        stopSegEnd =
+                sharedSample != null
+                        ? sharedSample.getLength() / sharedSample.getSampleRate()
+                        : ralentiEnd + 1.0;
     }
 
     // =====================================================================
@@ -423,9 +434,7 @@ public class TrainSynthesizer implements AudioSource {
         coachEngine.setVolume(0f);
     }
 
-    /**
-     * Reproduce el segmento STOP una vez y luego llama a onFinished.
-     */
+    /** Reproduce el segmento STOP una vez y luego llama a onFinished. */
     public void playStopSound(Runnable onFinished) {
         if (state == State.STOPPING) return;
         if (stopSegEnd <= stopSegStart || sharedSample == null) {
@@ -563,13 +572,12 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     /**
-     * Solicita cambiar al notch 'index'.
-     * Si ya hay transición en curso, actualiza el target y deja que el hilo
-     * la detecte en el siguiente paso.
+     * Solicita cambiar al notch 'index'. Si ya hay transición en curso, actualiza el target y deja
+     * que el hilo la detecte en el siguiente paso.
      */
     /**
-     * Fuerza una transición inmediata a ralentí (notch 0), saltándose cualquier
-     * rampa en curso. Se usa cuando un tren choca o llega a un fin de vía.
+     * Fuerza una transición inmediata a ralentí (notch 0), saltándose cualquier rampa en curso. Se
+     * usa cuando un tren choca o llega a un fin de vía.
      */
     public synchronized void forceIdle() {
         if (state == State.OFF || state == State.STOPPING) return;
@@ -609,7 +617,10 @@ public class TrainSynthesizer implements AudioSource {
         }
 
         int nextNotch = currentNotchIndex + (targetNotchIndex > currentNotchIndex ? 1 : -1);
-        state = (targetNotchIndex > currentNotchIndex) ? State.TRANSITIONING_UP : State.TRANSITIONING_DOWN;
+        state =
+                (targetNotchIndex > currentNotchIndex)
+                        ? State.TRANSITIONING_UP
+                        : State.TRANSITIONING_DOWN;
 
         SpeedNotch target = notches[nextNotch];
         rampStartSpeed = locoEngine.getSpeed();
@@ -690,7 +701,8 @@ public class TrainSynthesizer implements AudioSource {
                 } else {
                     float newSpeed = rampStartSpeed + (rampTargetSpeed - rampStartSpeed) * progress;
                     locoEngine.setSpeed(newSpeed);
-                    float newCoachVol = rampStartCoachVol + (rampTargetCoachVol - rampStartCoachVol) * progress;
+                    float newCoachVol =
+                            rampStartCoachVol + (rampTargetCoachVol - rampStartCoachVol) * progress;
                     coachEngine.setVolume(newCoachVol);
                 }
                 break;
@@ -698,9 +710,8 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     /**
-     * Rampa de pitch durante durationSec segundos.
-     * Simultáneamente notifica la velocidad para que la locomotora y la palanca se
-     * actualicen.
+     * Rampa de pitch durante durationSec segundos. Simultáneamente notifica la velocidad para que
+     * la locomotora y la palanca se actualicen.
      */
     private void performRampSync(float startSpeed, float targetSpeed, float durationSec) {
         /*

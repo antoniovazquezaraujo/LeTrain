@@ -22,9 +22,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comprehensive integration tests for AutoPilot following itineraries.
- */
+/** Comprehensive integration tests for AutoPilot following itineraries. */
 @DisplayName("AutoPilot Integration Tests")
 class AutoPilotIntegrationTest {
 
@@ -147,7 +145,12 @@ class AutoPilotIntegrationTest {
                     train %d set autopilot true;
                     train %d set speed 3;
                     """
-                            .formatted(mainSt.getId(), branchSt.getId(), t.getId(), t.getId(), t.getId()));
+                            .formatted(
+                                    mainSt.getId(),
+                                    branchSt.getId(),
+                                    t.getId(),
+                                    t.getId(),
+                                    t.getId()));
 
             runTicks(600);
 
@@ -332,7 +335,8 @@ class AutoPilotIntegrationTest {
                     0,
                     ((Locomotive) t.getDirectorLinker()).getTargetSpeed(),
                     "train should have target speed 0 after SPEED(0) waypoint command");
-            assertEquals(0, t.getSpeed(), "train should have stopped after SPEED(0) waypoint command");
+            assertEquals(
+                    0, t.getSpeed(), "train should have stopped after SPEED(0) waypoint command");
         }
 
         @Test
@@ -376,7 +380,11 @@ class AutoPilotIntegrationTest {
                     for (int j = 0; j < 200; j++) {
                         runTicks(1);
                         if (t.getSpeed() > 0) {
-                            System.out.println("  train resumed at tick " + (i + j) + " speed=" + t.getSpeed());
+                            System.out.println(
+                                    "  train resumed at tick "
+                                            + (i + j)
+                                            + " speed="
+                                            + t.getSpeed());
                             break;
                         }
                     }
@@ -388,8 +396,11 @@ class AutoPilotIntegrationTest {
             // Verify the train eventually moves again after WAIT+SPEED 3
             assertTrue(
                     t.getSpeed() > 0 || l.getTargetSpeed() > 0,
-                    "train should have resumed after WAIT command (speed=" + t.getSpeed() + " targetSpeed="
-                            + l.getTargetSpeed() + ")");
+                    "train should have resumed after WAIT command (speed="
+                            + t.getSpeed()
+                            + " targetSpeed="
+                            + l.getTargetSpeed()
+                            + ")");
         }
 
         @Test
@@ -421,7 +432,8 @@ class AutoPilotIntegrationTest {
 
             runUntil(model, () -> l.getTargetSpeed() == 5, 800);
             // After WAIT 2 + SPEED 5, train should have target speed 5
-            assertEquals(5, l.getTargetSpeed(), "train target speed should be 5 after SPEED 5 command");
+            assertEquals(
+                    5, l.getTargetSpeed(), "train target speed should be 5 after SPEED 5 command");
         }
 
         @Test
@@ -502,7 +514,10 @@ class AutoPilotIntegrationTest {
             System.out.println("REVERSE test: originalDir=" + originalDir + " newDir=" + newDir);
             assertFalse(
                     newDir == originalDir,
-                    "direction should have flipped after REVERSE command (was " + originalDir + ", now " + newDir
+                    "direction should have flipped after REVERSE command (was "
+                            + originalDir
+                            + ", now "
+                            + newDir
                             + ")");
         }
 
@@ -535,7 +550,8 @@ class AutoPilotIntegrationTest {
 
             runUntil(model, () -> !t.isAutoMode() && t.getSpeed() == 0, 800);
             assertFalse(t.isAutoMode(), "train should switch to manual mode after STOP command");
-            assertEquals(0, l.getTargetSpeed(), "train target speed should be 0 after STOP command");
+            assertEquals(
+                    0, l.getTargetSpeed(), "train target speed should be 0 after STOP command");
         }
 
         @Disabled("Auto-reverse disabled; test no longer applicable")
@@ -575,7 +591,12 @@ class AutoPilotIntegrationTest {
                     train %d set autopilot true;
                     train %d set speed 3;
                     """
-                            .formatted(branchSt.getId(), mainSt.getId(), t.getId(), t.getId(), t.getId()));
+                            .formatted(
+                                    branchSt.getId(),
+                                    mainSt.getId(),
+                                    t.getId(),
+                                    t.getId(),
+                                    t.getId()));
 
             assertAtStation(t, branchSt);
 
@@ -618,13 +639,19 @@ class AutoPilotIntegrationTest {
                     train %d set autopilot true;
                     train %d set speed 3;
                     """
-                            .formatted(madrid.getId(), barcelona.getId(), t.getId(), t.getId(), t.getId()));
+                            .formatted(
+                                    madrid.getId(),
+                                    barcelona.getId(),
+                                    t.getId(),
+                                    t.getId(),
+                                    t.getId()));
 
             boolean reachedBarcelona = false;
             for (int i = 0; i < 1200; i++) {
                 runTicks(m, 1);
                 Segment curSeg = null;
-                if (!t.getLinkers().isEmpty() && t.getLinkers().getFirst().getTrack() instanceof RailTrack rt) {
+                if (!t.getLinkers().isEmpty()
+                        && t.getLinkers().getFirst().getTrack() instanceof RailTrack rt) {
                     curSeg = m.getRailwayGraph().getSegment(rt);
                 }
                 Point pos = null;
@@ -685,7 +712,8 @@ class AutoPilotIntegrationTest {
             for (int i = 0; i < 1200; i++) {
                 runTicks(m, 1);
                 Segment curSeg = null;
-                if (!t.getLinkers().isEmpty() && t.getLinkers().getFirst().getTrack() instanceof RailTrack rt) {
+                if (!t.getLinkers().isEmpty()
+                        && t.getLinkers().getFirst().getTrack() instanceof RailTrack rt) {
                     curSeg = m.getRailwayGraph().getSegment(rt);
                 }
                 Point pos = null;
@@ -708,7 +736,11 @@ class AutoPilotIntegrationTest {
                         runTicks(m, 1);
                         System.out.printf(
                                 "POST-TICK %d: speed=%d targetSpeed=%d auto=%b stationId=%d%n",
-                                j, t.getSpeed(), l.getTargetSpeed(), t.isAutoMode(), t.getStationId());
+                                j,
+                                t.getSpeed(),
+                                l.getTargetSpeed(),
+                                t.isAutoMode(),
+                                t.getStationId());
                     }
                     break;
                 }
@@ -888,7 +920,8 @@ class AutoPilotIntegrationTest {
                  train %d set autopilot true;
                  train %d set speed 3;
                  """
-                        .formatted(idA, nameA, idB, nameB, nameA, nameB, trainId, trainId, trainId));
+                        .formatted(
+                                idA, nameA, idB, nameB, nameA, nameB, trainId, trainId, trainId));
     }
 
     private void runTicks(int count) {
@@ -991,29 +1024,47 @@ class AutoPilotIntegrationTest {
                 """);
 
         // Let's run it and see if it goes to Station 2 and then Station 1!
-        System.out.println("DEBUG BEFORE SECOND RUN: autoMode=" + t.isAutoMode() + ", apMode="
-                + t.getAutopilot().mode() + ", speed=" + loco.getSpeed() + ", targetSpeed=" + loco.getTargetSpeed()
-                + ", curSeg="
-                + (t.getSafetyManager().getCurrentSegment() != null
-                        ? t.getSafetyManager().getCurrentSegment().getId()
-                        : "null")
-                + ", nextSeg="
-                + (t.getSafetyManager().getNextSegment() != null
-                        ? t.getSafetyManager().getNextSegment().getId()
-                        : "null")
-                + ", waitingForBlock=" + t.getSafetyManager().isWaitingForBlock());
+        System.out.println(
+                "DEBUG BEFORE SECOND RUN: autoMode="
+                        + t.isAutoMode()
+                        + ", apMode="
+                        + t.getAutopilot().mode()
+                        + ", speed="
+                        + loco.getSpeed()
+                        + ", targetSpeed="
+                        + loco.getTargetSpeed()
+                        + ", curSeg="
+                        + (t.getSafetyManager().getCurrentSegment() != null
+                                ? t.getSafetyManager().getCurrentSegment().getId()
+                                : "null")
+                        + ", nextSeg="
+                        + (t.getSafetyManager().getNextSegment() != null
+                                ? t.getSafetyManager().getNextSegment().getId()
+                                : "null")
+                        + ", waitingForBlock="
+                        + t.getSafetyManager().isWaitingForBlock());
         runUntil(m, () -> t.getStationId() == st2.getId(), 400);
-        System.out.println("DEBUG AFTER SECOND RUN TO ST2: autoMode=" + t.isAutoMode() + ", apMode="
-                + t.getAutopilot().mode() + ", speed=" + loco.getSpeed() + ", targetSpeed=" + loco.getTargetSpeed()
-                + ", curSeg="
-                + (t.getSafetyManager().getCurrentSegment() != null
-                        ? t.getSafetyManager().getCurrentSegment().getId()
-                        : "null")
-                + ", nextSeg="
-                + (t.getSafetyManager().getNextSegment() != null
-                        ? t.getSafetyManager().getNextSegment().getId()
-                        : "null")
-                + ", waitingForBlock=" + t.getSafetyManager().isWaitingForBlock() + ", stationId=" + t.getStationId());
+        System.out.println(
+                "DEBUG AFTER SECOND RUN TO ST2: autoMode="
+                        + t.isAutoMode()
+                        + ", apMode="
+                        + t.getAutopilot().mode()
+                        + ", speed="
+                        + loco.getSpeed()
+                        + ", targetSpeed="
+                        + loco.getTargetSpeed()
+                        + ", curSeg="
+                        + (t.getSafetyManager().getCurrentSegment() != null
+                                ? t.getSafetyManager().getCurrentSegment().getId()
+                                : "null")
+                        + ", nextSeg="
+                        + (t.getSafetyManager().getNextSegment() != null
+                                ? t.getSafetyManager().getNextSegment().getId()
+                                : "null")
+                        + ", waitingForBlock="
+                        + t.getSafetyManager().isWaitingForBlock()
+                        + ", stationId="
+                        + t.getStationId());
         assertEquals(st2.getId(), t.getStationId(), "Should have reached station 2 again");
 
         runUntil(m, () -> t.getStationId() == st1.getId(), 800);
@@ -1025,7 +1076,8 @@ class AutoPilotIntegrationTest {
     class UserScenario {
 
         @Test
-        @DisplayName("User Scenario: Two sidings, two stations, head on collision in loop from bucle.json")
+        @DisplayName(
+                "User Scenario: Two sidings, two stations, head on collision in loop from bucle.json")
         void userScenario_headOnCollisionInLoop() throws Exception {
             Model loadedModel = loadFromSave("bucle.json");
             Train t1 = loadedModel.getTrainFromLocomotiveId(1);
@@ -1042,22 +1094,28 @@ class AutoPilotIntegrationTest {
             for (ForkRailTrack f : loadedModel.getForks()) {
                 System.out.println("Fork " + f.getId() + " at " + f.getPosition());
             }
-            System.out.println("Train 1 route: "
-                    + (t1.getAutopilot().currentRoute() != null
-                            ? t1.getAutopilot().currentRoute().stream()
-                                    .map(letrain.segments.Segment::getId)
-                                    .toList()
-                            : "none")
-                    + ", pos=" + t1.getPhysicalFront().getTrack().getPosition() + ", dir="
-                    + t1.getPhysicalFront().getDir());
-            System.out.println("Train 2 route: "
-                    + (t2.getAutopilot().currentRoute() != null
-                            ? t2.getAutopilot().currentRoute().stream()
-                                    .map(letrain.segments.Segment::getId)
-                                    .toList()
-                            : "none")
-                    + ", pos=" + t2.getPhysicalFront().getTrack().getPosition() + ", dir="
-                    + t2.getPhysicalFront().getDir());
+            System.out.println(
+                    "Train 1 route: "
+                            + (t1.getAutopilot().currentRoute() != null
+                                    ? t1.getAutopilot().currentRoute().stream()
+                                            .map(letrain.segments.Segment::getId)
+                                            .toList()
+                                    : "none")
+                            + ", pos="
+                            + t1.getPhysicalFront().getTrack().getPosition()
+                            + ", dir="
+                            + t1.getPhysicalFront().getDir());
+            System.out.println(
+                    "Train 2 route: "
+                            + (t2.getAutopilot().currentRoute() != null
+                                    ? t2.getAutopilot().currentRoute().stream()
+                                            .map(letrain.segments.Segment::getId)
+                                            .toList()
+                                    : "none")
+                            + ", pos="
+                            + t2.getPhysicalFront().getTrack().getPosition()
+                            + ", dir="
+                            + t2.getPhysicalFront().getDir());
             System.out.println("======================");
 
             final boolean[] reached2 = {false};
@@ -1068,52 +1126,60 @@ class AutoPilotIntegrationTest {
                     () -> {
                         ticks[0]++;
                         if (ticks[0] % 100 == 0 || (ticks[0] >= 370 && ticks[0] <= 420)) {
-                            System.out.println("TICK " + ticks[0] + ": T1 head="
-                                    + t1.getPhysicalFront().getTrack().getPosition() + " sp=" + t1.getSpeed() + " seg="
-                                    + (t1.getSafetyManager().getCurrentSegment() != null
-                                            ? t1.getSafetyManager()
-                                                    .getCurrentSegment()
-                                                    .getId()
-                                            : "null")
-                                    + " next="
-                                    + (t1.getSafetyManager().getNextSegment() != null
-                                            ? t1.getSafetyManager()
-                                                    .getNextSegment()
-                                                    .getId()
-                                            : "null")
-                                    + " wait=" + t1.getSafetyManager().isWaitingForBlock() + " wp="
-                                    + (t1.getAutopilot().currentWaypoint().isPresent()
-                                            ? t1.getAutopilot()
-                                                    .currentWaypoint()
-                                                    .get()
-                                                    .targetId()
-                                            : "none")
-                                    + " | T2 head="
-                                    + t2.getPhysicalFront().getTrack().getPosition() + " sp=" + t2.getSpeed() + " seg="
-                                    + (t2.getSafetyManager().getCurrentSegment() != null
-                                            ? t2.getSafetyManager()
-                                                    .getCurrentSegment()
-                                                    .getId()
-                                            : "null")
-                                    + " next="
-                                    + (t2.getSafetyManager().getNextSegment() != null
-                                            ? t2.getSafetyManager()
-                                                    .getNextSegment()
-                                                    .getId()
-                                            : "null")
-                                    + " wait=" + t2.getSafetyManager().isWaitingForBlock() + " wp="
-                                    + (t2.getAutopilot().currentWaypoint().isPresent()
-                                            ? t2.getAutopilot()
-                                                    .currentWaypoint()
-                                                    .get()
-                                                    .targetId()
-                                            : "none"));
+                            System.out.println(
+                                    "TICK "
+                                            + ticks[0]
+                                            + ": T1 head="
+                                            + t1.getPhysicalFront().getTrack().getPosition()
+                                            + " sp="
+                                            + t1.getSpeed()
+                                            + " seg="
+                                            + (t1.getSafetyManager().getCurrentSegment() != null
+                                                    ? t1.getSafetyManager()
+                                                            .getCurrentSegment()
+                                                            .getId()
+                                                    : "null")
+                                            + " next="
+                                            + (t1.getSafetyManager().getNextSegment() != null
+                                                    ? t1.getSafetyManager().getNextSegment().getId()
+                                                    : "null")
+                                            + " wait="
+                                            + t1.getSafetyManager().isWaitingForBlock()
+                                            + " wp="
+                                            + (t1.getAutopilot().currentWaypoint().isPresent()
+                                                    ? t1.getAutopilot()
+                                                            .currentWaypoint()
+                                                            .get()
+                                                            .targetId()
+                                                    : "none")
+                                            + " | T2 head="
+                                            + t2.getPhysicalFront().getTrack().getPosition()
+                                            + " sp="
+                                            + t2.getSpeed()
+                                            + " seg="
+                                            + (t2.getSafetyManager().getCurrentSegment() != null
+                                                    ? t2.getSafetyManager()
+                                                            .getCurrentSegment()
+                                                            .getId()
+                                                    : "null")
+                                            + " next="
+                                            + (t2.getSafetyManager().getNextSegment() != null
+                                                    ? t2.getSafetyManager().getNextSegment().getId()
+                                                    : "null")
+                                            + " wait="
+                                            + t2.getSafetyManager().isWaitingForBlock()
+                                            + " wp="
+                                            + (t2.getAutopilot().currentWaypoint().isPresent()
+                                                    ? t2.getAutopilot()
+                                                            .currentWaypoint()
+                                                            .get()
+                                                            .targetId()
+                                                    : "none"));
                         }
                         assertFalse(
                                 t1.getPhysicalFront().getTrack()
                                         == t2.getPhysicalFront().getTrack(),
-                                "Collision detected on track: "
-                                        + t1.getPhysicalFront().getTrack());
+                                "Collision detected on track: " + t1.getPhysicalFront().getTrack());
                         if (hasReached(t1, st2) && !reached2[0]) {
                             reached2[0] = true;
                             System.out.println("Train 1 reached Station 2 at tick " + ticks[0]);

@@ -49,7 +49,8 @@ public class Pair<T1, T2> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Pair<?, ?> pair = (Pair<?, ?>) o;
-        return java.util.Objects.equals(first, pair.first) && java.util.Objects.equals(second, pair.second);
+        return java.util.Objects.equals(first, pair.first)
+                && java.util.Objects.equals(second, pair.second);
     }
 
     @Override

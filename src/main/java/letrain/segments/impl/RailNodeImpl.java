@@ -125,7 +125,8 @@ public class RailNodeImpl implements RailNode {
 
         ForkRailTrack fork = (ForkRailTrack) track;
         boolean usingAlt = fork.isUsingAlternativeRoute();
-        return (exit.getType() == PortType.B && usingAlt) || (exit.getType() == PortType.A && !usingAlt);
+        return (exit.getType() == PortType.B && usingAlt)
+                || (exit.getType() == PortType.A && !usingAlt);
     }
 
     @Override

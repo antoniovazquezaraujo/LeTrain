@@ -45,14 +45,12 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
         setId(id);
     }
 
-    /**
-     * Protected default constructor for Jackson deserialization.
-     */
+    /** Protected default constructor for Jackson deserialization. */
     protected ForkRailTrack() {}
 
     /**
-     * Reinitializes transient fields after deserialization.
-     * Ensures listener collections are not null to prevent NPE.
+     * Reinitializes transient fields after deserialization. Ensures listener collections are not
+     * null to prevent NPE.
      */
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();

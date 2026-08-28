@@ -20,8 +20,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A* pathfinder over the railway segment graph.
- * Explores neighbors from both ends of each segment (circuits).
+ * A* pathfinder over the railway segment graph. Explores neighbors from both ends of each segment
+ * (circuits).
  */
 public class AStarPathfinder implements SegmentPathfinder {
 
@@ -48,7 +48,8 @@ public class AStarPathfinder implements SegmentPathfinder {
     }
 
     @Override
-    public List<Segment> find(Segment from, Optional<Port> fromExitPort, Segment to, Optional<Dir> entryDir) {
+    public List<Segment> find(
+            Segment from, Optional<Port> fromExitPort, Segment to, Optional<Dir> entryDir) {
         if (from == null || to == null) return List.of();
         if (from.equals(to)) return List.of(from);
         if (graph == null) return List.of();

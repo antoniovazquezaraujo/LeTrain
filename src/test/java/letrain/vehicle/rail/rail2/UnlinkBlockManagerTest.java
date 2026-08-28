@@ -99,6 +99,7 @@ class UnlinkBlockManagerTest {
         assertEquals(1, owners.size(), "Segment should be owned by original train after unlink");
         assertTrue(owners.contains(train));
         assertFalse(owners.contains(newTrain));
-        assertFalse(newTrain.isAutoMode(), "New train should be in manual mode due to block conflict");
+        assertFalse(
+                newTrain.isAutoMode(), "New train should be in manual mode due to block conflict");
     }
 }

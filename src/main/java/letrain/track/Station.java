@@ -21,8 +21,7 @@ public class Station extends Sensor {
     private static final int BASE_TRANSFER_RATE = 1;
     private static final int TRANSFER_RATE_PER_INDUSTRY_DIVISOR = 3;
 
-    @JsonIgnore
-    private transient List<StationEventListener> stationListeners = new ArrayList<>();
+    @JsonIgnore private transient List<StationEventListener> stationListeners = new ArrayList<>();
 
     @JsonIgnore
     private transient List<StationEventListener> systemStationListeners = new ArrayList<>();
@@ -130,13 +129,14 @@ public class Station extends Sensor {
     }
 
     /**
-     * Reinitializes transient fields after deserialization.
-     * Ensures listener collections are not null to prevent NPE.
+     * Reinitializes transient fields after deserialization. Ensures listener collections are not
+     * null to prevent NPE.
      */
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();
         this.stationListeners = SerializationHelper.ensureListInitialized(stationListeners);
-        this.systemStationListeners = SerializationHelper.ensureListInitialized(systemStationListeners);
+        this.systemStationListeners =
+                SerializationHelper.ensureListInitialized(systemStationListeners);
     }
 
     @Override
@@ -276,8 +276,8 @@ public class Station extends Sensor {
     }
 
     /**
-     * Returns the number of cargo units that can be transferred per tick.
-     * Scales with surrounding industry density.
+     * Returns the number of cargo units that can be transferred per tick. Scales with surrounding
+     * industry density.
      */
     @JsonIgnore
     public int getTransferRate() {

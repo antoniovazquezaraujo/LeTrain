@@ -26,10 +26,12 @@ public class RailSemaphore implements Renderable, Serializable {
     }
 
     @JsonIgnore
-    private transient java.util.List<SemaphoreEventListener> listeners = new java.util.ArrayList<>();
+    private transient java.util.List<SemaphoreEventListener> listeners =
+            new java.util.ArrayList<>();
 
     @JsonIgnore
-    private transient java.util.List<SemaphoreEventListener> systemListeners = new java.util.ArrayList<>();
+    private transient java.util.List<SemaphoreEventListener> systemListeners =
+            new java.util.ArrayList<>();
 
     public void addSemaphoreEventListener(SemaphoreEventListener listener) {
         if (listeners == null) listeners = new java.util.ArrayList<>();
@@ -89,8 +91,8 @@ public class RailSemaphore implements Renderable, Serializable {
     }
 
     /**
-     * Reinitializes transient fields after deserialization.
-     * Ensures listener collections are not null to prevent NPE.
+     * Reinitializes transient fields after deserialization. Ensures listener collections are not
+     * null to prevent NPE.
      */
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();

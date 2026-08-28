@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import letrain.utils.ValidationUtils;
 
-/**
- * Implementación básica y segura del planificador de tareas por ticks.
- */
+/** Implementación básica y segura del planificador de tareas por ticks. */
 public class SimulationScheduler implements letrain.utils.SimulationScheduler {
 
     // Clase auxiliar interna para representar una tarea y sus ticks restantes

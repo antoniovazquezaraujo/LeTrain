@@ -6,10 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import letrain.map.Point;
 
-/**
- * Utilidad para calcular trayectorias suaves (Splines) a partir de la
- * cuadrícula de vías.
- */
+/** Utilidad para calcular trayectorias suaves (Splines) a partir de la cuadrícula de vías. */
 public class SplinePath {
     private final CatmullRomSpline<Vector3> spline;
     private final Vector3[] controlPoints;
@@ -22,7 +19,9 @@ public class SplinePath {
             this.controlPoints = computeDefaultControlPoints(points);
         } else {
             this.controlPoints =
-                    points.stream().map(p -> new Vector3(p.getX(), 0, p.getY())).toArray(Vector3[]::new);
+                    points.stream()
+                            .map(p -> new Vector3(p.getX(), 0, p.getY()))
+                            .toArray(Vector3[]::new);
         }
         this.spline = new CatmullRomSpline<>(controlPoints, true);
     }

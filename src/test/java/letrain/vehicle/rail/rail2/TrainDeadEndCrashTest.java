@@ -51,10 +51,11 @@ class TrainDeadEndCrashTest {
         doNothing().when(loco).destroy();
 
         when(loco.getTrack()).thenAnswer(inv -> locoTrack.get());
-        doAnswer(inv -> {
-                    locoTrack.set(inv.getArgument(0));
-                    return null;
-                })
+        doAnswer(
+                        inv -> {
+                            locoTrack.set(inv.getArgument(0));
+                            return null;
+                        })
                 .when(loco)
                 .setTrack(any(Track.class));
 
@@ -87,20 +88,22 @@ class TrainDeadEndCrashTest {
         when(trackB.getLinker()).thenAnswer(inv -> linkerOnB.get());
         when(trackB.canEnter(any(Dir.class), any(Linker.class))).thenReturn(true);
 
-        doAnswer(inv -> {
-                    Linker removed = linkerOnA.get();
-                    linkerOnA.set(null);
-                    return removed;
-                })
+        doAnswer(
+                        inv -> {
+                            Linker removed = linkerOnA.get();
+                            linkerOnA.set(null);
+                            return removed;
+                        })
                 .when(trackA)
                 .removeLinker();
 
-        doAnswer(inv -> {
-                    Linker v = inv.getArgument(1);
-                    locoTrack.set(trackB);
-                    linkerOnB.set(v);
-                    return true;
-                })
+        doAnswer(
+                        inv -> {
+                            Linker v = inv.getArgument(1);
+                            locoTrack.set(trackB);
+                            linkerOnB.set(v);
+                            return true;
+                        })
                 .when(trackB)
                 .enterLinkerFromDir(any(Dir.class), any(Linker.class));
 
@@ -114,7 +117,8 @@ class TrainDeadEndCrashTest {
 
         assertTrue(moved, "moveLinkers should succeed — train moves to last track");
         assertSame(trackB, loco.getTrack(), "Locomotive should have moved to trackB");
-        assertTrue(train.isStalled(), "Train should be stalled after high-speed crash into dead-end");
+        assertTrue(
+                train.isStalled(), "Train should be stalled after high-speed crash into dead-end");
         verify(listener).onCrash(eq(train), any(Point.class), eq(8));
         verify(loco).destroy();
         verify(loco).setForceIdleSound(true);
@@ -143,10 +147,11 @@ class TrainDeadEndCrashTest {
         when(loco.getSpeed()).thenReturn(3);
 
         when(loco.getTrack()).thenAnswer(inv -> locoTrack.get());
-        doAnswer(inv -> {
-                    locoTrack.set(inv.getArgument(0));
-                    return null;
-                })
+        doAnswer(
+                        inv -> {
+                            locoTrack.set(inv.getArgument(0));
+                            return null;
+                        })
                 .when(loco)
                 .setTrack(any(Track.class));
 
@@ -179,19 +184,21 @@ class TrainDeadEndCrashTest {
         when(trackB.getLinker()).thenAnswer(inv -> linkerOnB.get());
         when(trackB.canEnter(any(Dir.class), any(Linker.class))).thenReturn(true);
 
-        doAnswer(inv -> {
-                    linkerOnA.set(null);
-                    return loco;
-                })
+        doAnswer(
+                        inv -> {
+                            linkerOnA.set(null);
+                            return loco;
+                        })
                 .when(trackA)
                 .removeLinker();
 
-        doAnswer(inv -> {
-                    Linker v = inv.getArgument(1);
-                    locoTrack.set(trackB);
-                    linkerOnB.set(v);
-                    return true;
-                })
+        doAnswer(
+                        inv -> {
+                            Linker v = inv.getArgument(1);
+                            locoTrack.set(trackB);
+                            linkerOnB.set(v);
+                            return true;
+                        })
                 .when(trackB)
                 .enterLinkerFromDir(any(Dir.class), any(Linker.class));
 
@@ -240,10 +247,11 @@ class TrainDeadEndCrashTest {
         when(linker.getRailsSinceStop()).thenReturn(0);
 
         when(linker.getTrack()).thenAnswer(inv -> linkerTrack.get());
-        doAnswer(inv -> {
-                    linkerTrack.set(inv.getArgument(0));
-                    return null;
-                })
+        doAnswer(
+                        inv -> {
+                            linkerTrack.set(inv.getArgument(0));
+                            return null;
+                        })
                 .when(linker)
                 .setTrack(any(Track.class));
 
@@ -277,19 +285,21 @@ class TrainDeadEndCrashTest {
         when(trackB.getLinker()).thenAnswer(inv -> linkerOnB.get());
         when(trackB.canEnter(any(Dir.class), any(Linker.class))).thenReturn(true);
 
-        doAnswer(inv -> {
-                    linkerOnA.set(null);
-                    return linker;
-                })
+        doAnswer(
+                        inv -> {
+                            linkerOnA.set(null);
+                            return linker;
+                        })
                 .when(trackA)
                 .removeLinker();
 
-        doAnswer(inv -> {
-                    Linker v = inv.getArgument(1);
-                    linkerTrack.set(trackB);
-                    linkerOnB.set(v);
-                    return true;
-                })
+        doAnswer(
+                        inv -> {
+                            Linker v = inv.getArgument(1);
+                            linkerTrack.set(trackB);
+                            linkerOnB.set(v);
+                            return true;
+                        })
                 .when(trackB)
                 .enterLinkerFromDir(any(Dir.class), any(Linker.class));
 
@@ -339,10 +349,11 @@ class TrainDeadEndCrashTest {
         when(loco.getSpeed()).thenReturn(3);
 
         when(loco.getTrack()).thenAnswer(inv -> locoTrack.get());
-        doAnswer(inv -> {
-                    locoTrack.set(inv.getArgument(0));
-                    return null;
-                })
+        doAnswer(
+                        inv -> {
+                            locoTrack.set(inv.getArgument(0));
+                            return null;
+                        })
                 .when(loco)
                 .setTrack(any(Track.class));
 
@@ -374,19 +385,21 @@ class TrainDeadEndCrashTest {
         when(trackA.getLinker()).thenAnswer(inv -> linkerOnA.get());
         when(trackA.canEnter(any(Dir.class), any(Linker.class))).thenReturn(true);
 
-        doAnswer(inv -> {
-                    linkerOnB.set(null);
-                    return loco;
-                })
+        doAnswer(
+                        inv -> {
+                            linkerOnB.set(null);
+                            return loco;
+                        })
                 .when(trackB)
                 .removeLinker();
 
-        doAnswer(inv -> {
-                    Linker v = inv.getArgument(1);
-                    locoTrack.set(trackA);
-                    linkerOnA.set(v);
-                    return true;
-                })
+        doAnswer(
+                        inv -> {
+                            Linker v = inv.getArgument(1);
+                            locoTrack.set(trackA);
+                            linkerOnA.set(v);
+                            return true;
+                        })
                 .when(trackA)
                 .enterLinkerFromDir(any(Dir.class), any(Linker.class));
 

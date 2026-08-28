@@ -35,10 +35,10 @@ public class GroundRenderer extends BaseSubRenderer {
         int backgroundType = type;
         if (type >= 10 && type <= 29) {
             if (modelRef != null && modelRef.getGroundMap() != null) {
-                backgroundType = modelRef.getGroundMap()
-                        .getBackgroundTerrain(
-                                ground.getPosition().getX(),
-                                ground.getPosition().getY());
+                backgroundType =
+                        modelRef.getGroundMap()
+                                .getBackgroundTerrain(
+                                        ground.getPosition().getX(), ground.getPosition().getY());
             } else {
                 backgroundType = letrain.ground.GroundMap.GROUND;
             }
@@ -50,20 +50,25 @@ public class GroundRenderer extends BaseSubRenderer {
             float x = ground.getPosition().getX() + 0.5f;
             float z = ground.getPosition().getY() + 0.5f;
 
-            ModelInstance jewelBlock = resourceContext.getModelInstance(resourceContext.wagonJewelModel);
+            ModelInstance jewelBlock =
+                    resourceContext.getModelInstance(resourceContext.wagonJewelModel);
             jewelBlock
                     .materials
                     .get(0)
-                    .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(tempColor));
+                    .set(
+                            com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(
+                                    tempColor));
             float h = 0.5f;
             jewelBlock.transform.setToTranslation(x, h / 2f, z);
             jewelBlock.transform.scale(0.9f, h, 0.9f);
             instances.add(jewelBlock);
         } else if (type >= 20 && type <= 29) {
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            com.badlogic.gdx.graphics.g3d.Model consumerModelToUse = resourceContext.coalConsumerModel;
+            com.badlogic.gdx.graphics.g3d.Model consumerModelToUse =
+                    resourceContext.coalConsumerModel;
             if (cargo == CargoTypes.GOLD) consumerModelToUse = resourceContext.goldConsumerModel;
-            else if (cargo == CargoTypes.RUBY) consumerModelToUse = resourceContext.rubyConsumerModel;
+            else if (cargo == CargoTypes.RUBY)
+                consumerModelToUse = resourceContext.rubyConsumerModel;
 
             float x = ground.getPosition().getX() + 0.5f;
             float z = ground.getPosition().getY() + 0.5f;
@@ -97,7 +102,8 @@ public class GroundRenderer extends BaseSubRenderer {
 
             if (type == GroundMap.ROCK || model == resourceContext.tunnelPortalModel) {
                 if (isXRayActive) {
-                    ModelInstance groundBelow = resourceContext.getModelInstance(resourceContext.groundModel);
+                    ModelInstance groundBelow =
+                            resourceContext.getModelInstance(resourceContext.groundModel);
                     groundBelow.transform.setToTranslation(x, 0.0f, z);
                     groundBelow.transform.scale(scaleX, scaleY, scaleZ);
                     instances.add(groundBelow);
@@ -122,7 +128,8 @@ public class GroundRenderer extends BaseSubRenderer {
                     && modelRef.getGroundMap() != null) {
                 int gx = ground.getPosition().getX();
                 int gy = ground.getPosition().getY();
-                if (backgroundType == letrain.ground.GroundMap.ROCK) tempColor.set(0.5f, 0.4f, 0.3f, 1f);
+                if (backgroundType == letrain.ground.GroundMap.ROCK)
+                    tempColor.set(0.5f, 0.4f, 0.3f, 1f);
                 else tempColor.set(0.4f, 0.6f, 0.3f, 1f);
 
                 checkAndAddWall(gx, gy - 1, x, -1.05f, z - 0.5f, 0, tempColor);
@@ -133,11 +140,16 @@ public class GroundRenderer extends BaseSubRenderer {
         }
     }
 
-    private void checkAndAddWall(int gx, int gy, float x, float y, float z, float rotationY, Color color) {
+    private void checkAndAddWall(
+            int gx, int gy, float x, float y, float z, float rotationY, Color color) {
         Integer neighborType = modelRef.getGroundMap().getValueAt(gx, gy);
         if (neighborType != null && neighborType == GroundMap.WATER) {
             ModelInstance wall = resourceContext.getModelInstance(resourceContext.terrainWallModel);
-            wall.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
+            wall.materials
+                    .get(0)
+                    .set(
+                            com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(
+                                    color));
             wall.transform.setToTranslation(x, y, z);
             if (rotationY != 0) wall.transform.rotate(0, 1, 0, rotationY);
             instances.add(wall);

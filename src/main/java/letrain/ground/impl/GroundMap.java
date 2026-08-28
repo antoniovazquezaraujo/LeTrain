@@ -23,11 +23,9 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
     private static final long serialVersionUID = 1L;
     Logger log = LoggerFactory.getLogger(getClass());
 
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    Map<Integer, Map<Integer, Integer>> cells;
+    @com.fasterxml.jackson.annotation.JsonIgnore Map<Integer, Map<Integer, Integer>> cells;
 
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    PerlinNoise noise = null;
+    @com.fasterxml.jackson.annotation.JsonIgnore PerlinNoise noise = null;
 
     @com.fasterxml.jackson.annotation.JsonProperty("blocks")
     Set<Block> blocks;
@@ -49,9 +47,7 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         this.economyManager = economyManager;
     }
 
-    /**
-     * Public default constructor for Jackson deserialization.
-     */
+    /** Public default constructor for Jackson deserialization. */
     public GroundMap() {
         cells = new HashMap<>();
         blocks = new HashSet<>();
@@ -146,7 +142,8 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
 
     public int getBackgroundTerrain(int col, int row) {
         if (noise == null) return letrain.ground.GroundMap.GROUND;
-        float baseNoise = noise.smoothNoise(Math.abs(col * 0.01F), Math.abs(row * 0.02F), 0, OCTAVES);
+        float baseNoise =
+                noise.smoothNoise(Math.abs(col * 0.01F), Math.abs(row * 0.02F), 0, OCTAVES);
         float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
         float waterThreshold = (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
         float rockThreshold = (economyManager != null) ? economyManager.getRockThreshold() : 180f;
@@ -162,11 +159,15 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                 int rowIndex = ((startY) + row);
 
                 // LAYER 0: Base Terrain
-                float baseNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 0, OCTAVES);
+                float baseNoise =
+                        noise.smoothNoise(
+                                Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 0, OCTAVES);
                 float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
 
-                float waterThreshold = (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
-                float rockThreshold = (economyManager != null) ? economyManager.getRockThreshold() : 180f;
+                float waterThreshold =
+                        (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
+                float rockThreshold =
+                        (economyManager != null) ? economyManager.getRockThreshold() : 180f;
 
                 if (scaledBase < waterThreshold) {
                     setValueAt(colIndex, rowIndex, 1);
@@ -176,13 +177,20 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                     // GROUND - check for industries
                     int terrain = 0; // Default Ground
 
-                    float goldThreshold = (economyManager != null) ? economyManager.getGoldThreshold() : 0.28f;
-                    float coalThreshold = (economyManager != null) ? economyManager.getCoalThreshold() : 0.28f;
-                    float rubyThreshold = (economyManager != null) ? economyManager.getRubyThreshold() : 0.28f;
+                    float goldThreshold =
+                            (economyManager != null) ? economyManager.getGoldThreshold() : 0.28f;
+                    float coalThreshold =
+                            (economyManager != null) ? economyManager.getCoalThreshold() : 0.28f;
+                    float rubyThreshold =
+                            (economyManager != null) ? economyManager.getRubyThreshold() : 0.28f;
 
                     // LAYER 1: Gold Industry (z=1)
                     float woodNoise =
-                            noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 1, OCTAVES);
+                            noise.smoothNoise(
+                                    Math.abs(colIndex * 0.01F),
+                                    Math.abs(rowIndex * 0.02F),
+                                    1,
+                                    OCTAVES);
                     if (woodNoise > goldThreshold) {
                         terrain = GOLD_MINE;
                     } else if (woodNoise < -goldThreshold) {
@@ -192,7 +200,11 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                     // LAYER 2: Coal Industry (z=2) - Only if no gold
                     if (terrain == 0) {
                         float coalNoise =
-                                noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 2, OCTAVES);
+                                noise.smoothNoise(
+                                        Math.abs(colIndex * 0.01F),
+                                        Math.abs(rowIndex * 0.02F),
+                                        2,
+                                        OCTAVES);
                         if (coalNoise > coalThreshold) {
                             terrain = MINE;
                         } else if (coalNoise < -coalThreshold) {
@@ -203,7 +215,11 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                     // LAYER 3: Ruby Industry (z=3) - Only if no gold or coal
                     if (terrain == 0) {
                         float fishNoise =
-                                noise.smoothNoise(Math.abs(colIndex * 0.01F), Math.abs(rowIndex * 0.02F), 3, OCTAVES);
+                                noise.smoothNoise(
+                                        Math.abs(colIndex * 0.01F),
+                                        Math.abs(rowIndex * 0.02F),
+                                        3,
+                                        OCTAVES);
                         if (fishNoise > rubyThreshold) {
                             terrain = RUBY_MINE;
                         } else if (fishNoise < -rubyThreshold) {
@@ -232,14 +248,15 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         }
 
         List<Long> sortedCells = new ArrayList<>(explored);
-        sortedCells.sort((a, b) -> {
-            int yA = (int) (a.longValue());
-            int yB = (int) (b.longValue());
-            if (yA != yB) return Integer.compare(yA, yB);
-            int xA = (int) (a.longValue() >> 32);
-            int xB = (int) (b.longValue() >> 32);
-            return Integer.compare(xA, xB);
-        });
+        sortedCells.sort(
+                (a, b) -> {
+                    int yA = (int) (a.longValue());
+                    int yB = (int) (b.longValue());
+                    if (yA != yB) return Integer.compare(yA, yB);
+                    int xA = (int) (a.longValue() >> 32);
+                    int xB = (int) (b.longValue() >> 32);
+                    return Integer.compare(xA, xB);
+                });
 
         Set<Block> compacted = new HashSet<>();
 

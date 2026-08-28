@@ -2,10 +2,9 @@ package letrain.map;
 
 /**
  * letrain.map.Dir.
- * <p>
- * Representa una dirección entre las 8 del mapa (N, NE, E...)
- * Se puede hacer girar, invertir, ver si forma recta con otra,
- * calcular la "distancia angular" entre dos, etc.
+ *
+ * <p>Representa una dirección entre las 8 del mapa (N, NE, E...) Se puede hacer girar, invertir,
+ * ver si forma recta con otra, calcular la "distancia angular" entre dos, etc.
  */
 
 //  Giran en sentido glorieta, desde E hasta SE

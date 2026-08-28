@@ -14,9 +14,8 @@ import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.Wagon;
 
 /**
- * Abstract base for any vehicle that can be linked into a train
- * (locomotives, wagons, cursors). Tracks its current position,
- * direction, previous cell, and the train it belongs to.
+ * Abstract base for any vehicle that can be linked into a train (locomotives, wagons, cursors).
+ * Tracks its current position, direction, previous cell, and the train it belongs to.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({

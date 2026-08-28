@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import letrain.vehicle.rail.impl.Stop;
 
-@com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = letrain.vehicle.rail.impl.Trip.class)
+@com.fasterxml.jackson.databind.annotation.JsonDeserialize(
+        as = letrain.vehicle.rail.impl.Trip.class)
 public interface Trip {
     void setStops(List<Stop> stops);
 

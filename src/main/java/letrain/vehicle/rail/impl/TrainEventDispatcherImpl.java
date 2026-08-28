@@ -11,9 +11,7 @@ import letrain.vehicle.rail.ScriptTrainEventListener;
 import letrain.vehicle.rail.TrainEventDispatcher;
 import letrain.vehicle.rail.TrainEventListener;
 
-/**
- * Manages event listener registrations and broadcasts train events.
- */
+/** Manages event listener registrations and broadcasts train events. */
 public class TrainEventDispatcherImpl implements TrainEventDispatcher {
     private final Train train;
     private List<ScriptTrainEventListener> scriptTrainListeners;
@@ -80,8 +78,10 @@ public class TrainEventDispatcherImpl implements TrainEventDispatcher {
 
     @Override
     public void postLoadInit() {
-        scriptTrainListeners = SerializationHelper.ensureListInitializedConcurrent(scriptTrainListeners);
-        coreTrainListeners = SerializationHelper.ensureListInitializedConcurrent(coreTrainListeners);
+        scriptTrainListeners =
+                SerializationHelper.ensureListInitializedConcurrent(scriptTrainListeners);
+        coreTrainListeners =
+                SerializationHelper.ensureListInitializedConcurrent(coreTrainListeners);
     }
 
     private void notifyAll(java.util.function.Consumer<TrainEventListener> notification) {

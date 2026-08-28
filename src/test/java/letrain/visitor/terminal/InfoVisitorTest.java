@@ -18,7 +18,8 @@ import org.mockito.ArgumentCaptor;
 class InfoVisitorTest {
 
     @Test
-    @DisplayName("visitModel should render Notch and Speed on left, and Finances right-aligned in English")
+    @DisplayName(
+            "visitModel should render Notch and Speed on left, and Finances right-aligned in English")
     void visitModel_shouldRenderNotchSpeedLeft_andFinancesRight() {
         TerminalView view = mock(TerminalView.class);
         when(view.getCols()).thenReturn(100);
@@ -63,12 +64,16 @@ class InfoVisitorTest {
         assertTrue(firstLine.contains("Speed: 3->5"), "Should contain speed progression");
         assertTrue(firstLine.contains("Wagons: 0"), "Should contain wagon count in English");
         assertTrue(
-                firstLine.contains("|Page:0,0|Pos:10,20|Step:1/1|"), "Page info should be in English and new format");
+                firstLine.contains("|Page:0,0|Pos:10,20|Step:1/1|"),
+                "Page info should be in English and new format");
 
         String secondLine = lines[1];
         assertTrue(
-                secondLine.contains("|In:200.00|Out:50.00|$:1,500.50|"), "Should contain financial info in new format");
-        assertTrue(secondLine.endsWith("|In:200.00|Out:50.00|$:1,500.50|"), "Financial info should be right aligned");
+                secondLine.contains("|In:200.00|Out:50.00|$:1,500.50|"),
+                "Should contain financial info in new format");
+        assertTrue(
+                secondLine.endsWith("|In:200.00|Out:50.00|$:1,500.50|"),
+                "Financial info should be right aligned");
 
         // Verify translations on other lines
         assertTrue(

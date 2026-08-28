@@ -3,8 +3,8 @@ package letrain.segments;
 import letrain.map.RailMap;
 
 /**
- * Servicio encargado de analizar el RailMap físico para construir
- * la topología lógica del RailwayGraph.
+ * Servicio encargado de analizar el RailMap físico para construir la topología lógica del
+ * RailwayGraph.
  */
 public interface TopologyService {
     /**
