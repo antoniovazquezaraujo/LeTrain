@@ -426,9 +426,11 @@ public class RailTrackMaker {
 
     void showAnimation() {
         presenter.getModel().getCursor().setMode(CursorMode.MAKING_TRACKS);
-        if (lastCursorPosition != null) {
-            presenter.getModel().getCursor().setConstructionPosition(new Point(lastCursorPosition));
-        }
+        // The tile being worked on is one step BEHIND the cursor
+        Point pos = new Point(presenter.getModel().getCursor().getPosition());
+        letrain.map.Dir dir = presenter.getModel().getCursor().getDir();
+        pos.move(dir.inverse(), 1);
+        presenter.getModel().getCursor().setConstructionPosition(pos);
     }
 
     boolean createTrack(TrackType type) {
