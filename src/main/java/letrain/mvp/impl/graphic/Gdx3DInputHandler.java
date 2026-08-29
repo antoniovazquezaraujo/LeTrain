@@ -36,6 +36,10 @@ public class Gdx3DInputHandler implements InputProcessor {
     private final AudioController audioController;
 
     // Multi-digit selection state
+    private final com.badlogic.gdx.utils.IntMap<Long> pressedKeys = new com.badlogic.gdx.utils.IntMap<>();
+    private static final long INITIAL_REPEAT_DELAY_MS = 400;
+    private static final long REPEAT_INTERVAL_MS = 50;
+
     private int forkIdAccumulator = 0;
     private int semaphoreIdAccumulator = 0;
     private int stationIdAccumulator = 0;
@@ -58,6 +62,13 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     public void update() {
         updateSelectionTimeouts();
+        long now = System.currentTimeMillis();
+        for (com.badlogic.gdx.utils.IntMap.Entry<Long> entry : pressedKeys.entries()) {
+            if (now >= entry.value) {
+                entry.value = now + REPEAT_INTERVAL_MS;
+                triggerKeyDown(entry.key);
+            }
+        }
     }
 
     private void updateSelectionTimeouts() {
@@ -84,8 +95,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
-    @Override
-    public boolean keyDown(int keycode) {
+    private boolean triggerKeyDown(int keycode) {
         KeyStroke keyStroke = translateKeyCode(keycode);
         if (keyStroke != null) {
             boolean ctrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)
@@ -103,7 +113,14 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     @Override
+    public boolean keyDown(int keycode) {
+        pressedKeys.put(keycode, System.currentTimeMillis() + INITIAL_REPEAT_DELAY_MS);
+        return triggerKeyDown(keycode);
+    }
+
+    @Override
     public boolean keyUp(int keycode) {
+        pressedKeys.remove(keycode);
         KeyStroke keyStroke = translateKeyCodeForUp(keycode);
         if (keyStroke != null) {
             boolean ctrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)
