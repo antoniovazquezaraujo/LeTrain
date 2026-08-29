@@ -3,6 +3,7 @@
 ## 1. Contexto
 
 **Interfaz de Usuario (Hotkeys):** Al igual que en la consola clásica de UNIX, la pulsación de la tecla `:` durante el juego abrirá un *prompt* en la parte inferior de la pantalla. Todos los comandos (ej. `w`, `wq`, `new st 1`) se teclearán tras esos dos puntos iniciales.
+*   **Historial de Comandos:** Pulsar las flechas Arriba/Abajo mientras el prompt está abierto navegará por el historial de los últimos comandos introducidos, permitiendo recuperar y editar secuencias largas fácilmente.
 
 
 El simulador LeTrain requiere un sistema avanzado para la construcción masiva y la automatización de la red ferroviaria. Se ha propuesto la implementación de una consola de comandos (CLI) que siga la filosofía de herramientas UNIX y `vi`, permitiendo interacciones rápidas basadas en texto (Turtle Graphics).
@@ -39,7 +40,7 @@ El cursor actúa como un lápiz (estado persistente). Los comandos de avance (`f
 1.  **`mode move`:** Navegación pura. No altera el mapa.
 2.  **`mode write`:** Bajar el lápiz. Cualquier movimiento instanciará vías.
 3.  **`mode del (borrar)`:** Goma de borrar. Destruye la vía por la que pasa (`backward 5`). No hacen falta instrucciones de giro porque sigue el trazado de la vía existente.
-4.  **`mode clear` (aspiradora):** Deja la vía intacta, pero **elimina cualquier tren o vagón suelto** que pise. Ideal para limpiar playas de vías sin conocer IDs.
+4.  **`mode clear` (triturador):** Deja la vía intacta, pero **elimina pieza a pieza** cualquier vehículo (locomotora o vagón individual) que pise el cursor. Si quieres borrar un tren entero de golpe usarías `del tr here`, pero `mode clear` te da precisión quirúrgica: te permite "comer" solo la locomotora dejando el resto de vagones intactos, o recorrer un tren entero para triturarlo paso a paso.
 
 ### 3.4. Atajos de Secuencia (El fin de `new rail`)
 Al utilizar la máquina de modos, el comando `new rail` se vuelve redundante y pesado. Se introduce en ANTLR4 una regla de **Secuencia de Movimiento**.
@@ -74,6 +75,7 @@ El resultado dependerá del modo activo:
 ### Abreviaturas de Objetos (Nota de Diseño)
 Todos los objetos físicos tienen un alias estricto de dos letras para agilizar la escritura en comandos complejos:
 * `fo` (fork)
+* `ra` (rail)
 * `sn` (sensor)
 * `sm` (semaphore)
 * `si` (signal)
@@ -93,6 +95,7 @@ Todos los objetos físicos tienen un alias estricto de dos letras para agilizar 
 * `go 232,34`: Salto a coordenadas absolutas.
 * `go m-1`: Ir a la marca 1.
 * `gn fo`: Alias de "go next fork".
+* `gn ra`: Alias de "go next rail" (Avanza hasta otra vía. Si estás en una avanza 1).
 * `gn sn`: Alias de "go next sensor".
 * `gn sm`: Alias de "go next semaphore".
 * `gn si`: Alias de "go next signal".
@@ -117,8 +120,8 @@ Todos los objetos físicos tienen un alias estricto de dos letras para agilizar 
 * `14, l, 2`: Se desplaza por la red sin construir.
 * `mode del`: Entra en modo goma de borrar.
 * `backward 5`: Borra 5 unidades hacia atrás.
-* `mode clear`: Pasa la "aspiradora" (borra vehículos, deja la vía).
-* `forward 20`: Aspirará todos los vagones sueltos en los próximos 20 pasos.
+* `mode clear`: Pasa el "triturador" (borra vehículos, deja la vía).
+* `forward 20`: Triturará todos los vagones sueltos en los próximos 20 pasos.
 
 ### Creación / Asignación
 * `new st 1`: Crea la estación 1.
