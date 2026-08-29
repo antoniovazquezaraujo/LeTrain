@@ -498,7 +498,8 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
 
         float cursorY = 0.10f;
-        instance.transform.setToTranslation(pos.getX() + 0.5f, cursorY, pos.getY() + 0.5f);
+        float p = cursor.getMode() == letrain.vehicle.Cursor.CursorMode.MAKING_TRACKS ? cursor.getProgress() : 0f;
+        instance.transform.setToTranslation(pos.getX() + 0.5f + dx * p, cursorY, pos.getY() + 0.5f + dz * p);
         instance.transform.rotate(0, 1, 0, angle - 90f);
         instance.transform.scale(1.6f, 1f, 0.6f);
         instances.add(instance);

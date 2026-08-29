@@ -9,6 +9,9 @@ public class Cursor extends Vehicle {
     }
 
     private CursorMode mode;
+    private float progress = 0f;
+    public void setProgress(float p) { this.progress = p; }
+    public float getProgress() { return this.progress; }
 
     public Cursor() {
         this.mode = CursorMode.DRAWING;

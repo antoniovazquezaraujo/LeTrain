@@ -454,13 +454,16 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitCursor(Cursor cursor) {
+        String aspect = cursorGraphicAspect(cursor.getDir());
         switch (cursor.getMode()) {
             case DRAWING:
                 view.setFgColor(CURSOR_DRAWING_COLOR);
                 break;
             case MAKING_TRACKS:
-                view.setBgColor(
-                        Math.random() > 0.5 ? TextColor.ANSI.BLACK_BRIGHT : TextColor.ANSI.BLACK);
+                view.setFgColor(TextColor.ANSI.YELLOW);
+                String[] braille = {"⡀", "⣀", "⣄", "⣤", "⣦", "⣶", "⣾", "⣿"};
+                int index = (int) (cursor.getProgress() * (braille.length - 1));
+                aspect = braille[Math.max(0, Math.min(index, braille.length - 1))];
                 break;
             case ERASING:
                 view.setFgColor(CURSOR_ERASING_COLOR);
@@ -469,8 +472,7 @@ public class RenderVisitor implements Visitor {
                 view.setFgColor(CURSOR_MOVING_COLOR);
                 break;
         }
-        view.set(cursor.getPosition().getX(), cursor.getPosition().getY(),
-                cursorGraphicAspect(cursor.getDir()));
+        view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), aspect);
         resetColors();
     }
 

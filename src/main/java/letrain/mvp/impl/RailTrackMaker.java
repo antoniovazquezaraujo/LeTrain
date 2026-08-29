@@ -359,6 +359,10 @@ public class RailTrackMaker {
                 caterpillarCounter = 5;
                 if (isTrackConstructionPending()) {
                     showAnimation();
+                    TrackType type = detectTrackType();
+                    float delay = presenter.getModel().getEconomyManager().getConstructionDelay(type);
+                    float progress = delay > 0 ? (1.0f - (trackConstructionTimeCounter / delay)) : 1.0f;
+                    presenter.getModel().getCursor().setProgress(progress);
                     decrementTrackConstructionTime();
                 } else {
                     TrackType type = detectTrackType();
