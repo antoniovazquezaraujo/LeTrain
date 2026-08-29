@@ -460,10 +460,18 @@ public class RenderVisitor implements Visitor {
                 view.setFgColor(CURSOR_DRAWING_COLOR);
                 break;
             case MAKING_TRACKS:
-                view.setFgColor(TextColor.ANSI.YELLOW);
-                String[] braille = {"⡀", "⣀", "⣄", "⣤", "⣦", "⣶", "⣾", "⣿"};
-                int index = (int) (cursor.getProgress() * (braille.length - 1));
-                aspect = braille[Math.max(0, Math.min(index, braille.length - 1))];
+                // Draw braille on the tile being constructed (previous position)
+                letrain.map.Point cp = cursor.getConstructionPosition();
+                if (cp != null) {
+                    String[] braille = {"⡀", "⢀", "⡄", "⣤", "⣦", "⣶", "⣾", "⣿"};
+                    int idx2 = (int) (cursor.getProgress() * (braille.length - 1));
+                    String brailleChar = braille[Math.max(0, Math.min(idx2, braille.length - 1))];
+                    view.setFgColor(TextColor.ANSI.YELLOW);
+                    view.set(cp.getX(), cp.getY(), brailleChar);
+                    resetColors();
+                }
+                // Draw cursor normally on its own position
+                view.setFgColor(CURSOR_DRAWING_COLOR);
                 break;
             case ERASING:
                 view.setFgColor(CURSOR_ERASING_COLOR);

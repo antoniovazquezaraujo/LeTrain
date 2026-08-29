@@ -363,7 +363,7 @@ public class RailTrackMaker {
                     showAnimation();
                     TrackType type = detectTrackType();
                     float delay = presenter.getModel().getEconomyManager().getConstructionDelay(type);
-                    float progress = delay > 0 ? (1.0f - (trackConstructionTimeCounter / delay)) : 1.0f;
+                    float progress = delay > 0 ? (1.0f - ((float) trackConstructionTimeCounter / delay)) : 1.0f;
                     presenter.getModel().getCursor().setProgress(progress);
                     decrementTrackConstructionTime();
                 } else {
@@ -375,9 +375,9 @@ public class RailTrackMaker {
                         return;
                     }
                     selectNewTrackType(type);
-                    TrackType builtType = createTrack(type);
+                    createTrack(type);
                     decrementQuantifierSteps();
-                    resetTrackConstructionTime(builtType != null ? builtType : type);
+                    resetTrackConstructionTime(type);
                     if (!isQuantifierPending()) {
                         presenter.getModel().getCursor().setMode(letrain.vehicle.Cursor.CursorMode.DRAWING);
                         presenter.getModel().getCursor().setProgress(0f);
@@ -426,25 +426,21 @@ public class RailTrackMaker {
 
     void showAnimation() {
         presenter.getModel().getCursor().setMode(CursorMode.MAKING_TRACKS);
+        if (lastCursorPosition != null) {
+            presenter.getModel().getCursor().setConstructionPosition(new Point(lastCursorPosition));
+        }
     }
 
-    TrackType createTrack(TrackType type) {
+    boolean createTrack(TrackType type) {
         degreesOfRotation = 0;
         if (makeTrack(type)) {
             Point position = presenter.getModel().getCursor().getPosition();
             presenter.getView().ensureVisible(position.getX(), position.getY(),
                     presenter.getView().getCameraDeadzone(),
                     presenter.getView().isCameraPagination());
-            // If a gate was retroactively created on oldTrack, return the gate type
-            // so that the next construction delay uses the gate's configured value.
-            if (oldTrack instanceof letrain.track.rail.TunnelGateRailTrack) {
-                return Presenter.TrackType.TUNNEL_GATE_TRACK;
-            } else if (oldTrack instanceof letrain.track.rail.BridgeGateRailTrack) {
-                return Presenter.TrackType.BRIDGE_GATE_TRACK;
-            }
-            return type;
+            return true;
         }
-        return null;
+        return false;
     }
 
     public TrackType detectTrackType() {

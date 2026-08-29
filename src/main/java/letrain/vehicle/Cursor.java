@@ -13,6 +13,10 @@ public class Cursor extends Vehicle {
     public void setProgress(float p) { this.progress = p; }
     public float getProgress() { return this.progress; }
 
+    private Point constructionPosition = null;
+    public void setConstructionPosition(Point p) { this.constructionPosition = p; }
+    public Point getConstructionPosition() { return this.constructionPosition; }
+
     public Cursor() {
         this.mode = CursorMode.DRAWING;
     }
