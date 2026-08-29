@@ -2,6 +2,9 @@
 
 ## 1. Contexto
 
+**Interfaz de Usuario (Hotkeys):** Al igual que en la consola clásica de UNIX, la pulsación de la tecla `:` durante el juego abrirá un *prompt* en la parte inferior de la pantalla. Todos los comandos (ej. `w`, `wq`, `new st 1`) se teclearán tras esos dos puntos iniciales.
+
+
 El simulador LeTrain requiere un sistema avanzado para la construcción masiva y la automatización de la red ferroviaria. Se ha propuesto la implementación de una consola de comandos (CLI) que siga la filosofía de herramientas UNIX y `vi`, permitiendo interacciones rápidas basadas en texto (Turtle Graphics).
 
 El reto principal radica en integrar un intérprete de comandos que interactúe de forma segura con el motor físico, el renderizado y el motor económico del juego.
@@ -20,7 +23,7 @@ El desarrollo se abordará mediante un enfoque iterativo por fases (MVP).
 ### 3.1. Separación Hardware vs. Software (Ciclo de Vida)
 Si un script crea trenes y se ejecuta dos veces, ¿se llena el juego de trenes clonados destruyendo la economía? Para evitar esto:
 *   **Capa Hardware (Física y Persistente):** Vías, estaciones, sensores, trenes. Son persistentes. Una vez construidos (por ratón o consola), se quedan en el mapa generando dinero.
-*   **Capa Software (Lógica Volátil):** Triggers (`on sensor X...`), itinerarios. Residen en el **Modo Program** (Editor de scripts). **Se prohíbe crear objetos físicos en esta capa**. Así, cada vez que el jugador da a "Aplicar", el motor borra toda la lógica antigua y carga la nueva de forma segura, sin tocar los trenes que ya están circulando.
+*   **Capa Software (Lógica Volátil):** Triggers (`on sensor X...`), itinerarios. Residen en el **Modo Program** (Editor de scripts). **Se prohíbe crear, destruir o navegar físicamente en esta capa**. Es decir, los comandos de Cursor (`go`, `gn`, `mode...`) y los de instanciación/borrado (`new`, `del`) están vetados en los scripts en segundo plano. Así, cada vez que el jugador da a "Aplicar", el motor borra toda la lógica antigua y carga la nueva de forma segura sin riesgo de alterar el terreno ni arruinar la economía.
 
 ### 3.2. Gestión de Entidades, Variables y Memoria
 Para evitar trabajar siempre con IDs numéricos (ej. `station 34`), la consola tendrá estado y memoria:
@@ -135,7 +138,11 @@ Todos los objetos físicos tienen un alias estricto de dos letras para agilizar 
 * `new`: Reinicio total.
 * `new keep-map`: Borra entidades, conserva el terreno.
 * `new map mountains=high rivers=low gold=high`: Genera un nuevo mapa procedural.
-* `save`: Guarda la partida actual.
+* `w` (o `save`): Guarda la partida actual.
+* `q`: Cierra la consola.
+* `wq`: Guarda la partida y cierra la consola.
+
+
 * `save "partida1"`: Exporta la partida a JSON.
 * `load "partida1"`: Carga el JSON.
 * `game stop`: Botón del pánico global (pausa/parada de emergencia).
