@@ -88,7 +88,9 @@ public class RailTrackMaker {
                         resetTrackConstructionTime(type);
                     }
                     resetQuantifierSteps();
-                    presenter.getModel().getCursor().setMode(Cursor.CursorMode.DRAWING);
+                    if (presenter.getModel().getCursor().getMode() != Cursor.CursorMode.MAKING_TRACKS) {
+                        presenter.getModel().getCursor().setMode(Cursor.CursorMode.DRAWING);
+                    }
                     makingTracks = true;
                     caterpillarCounter = 5;
 
