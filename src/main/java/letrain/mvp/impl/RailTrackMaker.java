@@ -43,16 +43,12 @@ public class RailTrackMaker {
     Point lastCursorPosition = null;
     Integer oldGroundType = null;
     int trackConstructionTimeCounter = 0;
-    Map<TrackType, Integer> trackConstructionTime = Map.of(TrackType.NORMAL_TRACK, 0,
-            TrackType.BRIDGE_TRACK, 0, TrackType.BRIDGE_GATE_TRACK, 0, TrackType.TUNNEL_TRACK, 0,
-            TrackType.TUNNEL_GATE_TRACK, 0, TrackType.STATION_TRACK, 0);
-
     public void startTrackConstruction(TrackType type) {
         if (type == null) {
             this.trackConstructionTimeCounter = 0;
             return;
         }
-        this.trackConstructionTimeCounter = trackConstructionTime.get(type);
+        this.trackConstructionTimeCounter = presenter.getModel().getEconomyManager().getConstructionDelay(type);
     }
 
     public boolean isTrackConstructionFinished() {
