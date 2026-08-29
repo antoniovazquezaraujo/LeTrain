@@ -1210,6 +1210,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     setModel(loadedModel);
                     // View specific listener
                     loadedModel.addCoreTrainEventListener(this);
+                    letrain.map.Point startPos = getActiveFocusPoint();
+                    if (startPos != null) {
+                        view.centerOn(startPos.getX(), startPos.getY());
+                    }
+                    loadedModel.updateGroundMap(view.getScrollOffset(), view.getCols(), view.getRows());
                 } else {
                     view.showMessage("Load Error",
                             "Could not load game from\n" + file.getAbsolutePath());
