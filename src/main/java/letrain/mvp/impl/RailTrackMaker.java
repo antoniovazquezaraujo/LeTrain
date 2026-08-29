@@ -370,12 +370,18 @@ public class RailTrackMaker {
                     TrackType type = detectTrackType();
                     if (type == null) {
                         makingTracks = false;
+                        presenter.getModel().getCursor().setMode(letrain.vehicle.Cursor.CursorMode.DRAWING);
+                        presenter.getModel().getCursor().setProgress(0f);
                         return;
                     }
                     selectNewTrackType(type);
-                    createTrack(type);
+                    TrackType builtType = createTrack(type);
                     decrementQuantifierSteps();
-                    resetTrackConstructionTime(type);
+                    resetTrackConstructionTime(builtType != null ? builtType : type);
+                    if (!isQuantifierPending()) {
+                        presenter.getModel().getCursor().setMode(letrain.vehicle.Cursor.CursorMode.DRAWING);
+                        presenter.getModel().getCursor().setProgress(0f);
+                    }
                 }
             }
         }
@@ -422,16 +428,23 @@ public class RailTrackMaker {
         presenter.getModel().getCursor().setMode(CursorMode.MAKING_TRACKS);
     }
 
-    boolean createTrack(TrackType type) {
+    TrackType createTrack(TrackType type) {
         degreesOfRotation = 0;
         if (makeTrack(type)) {
             Point position = presenter.getModel().getCursor().getPosition();
             presenter.getView().ensureVisible(position.getX(), position.getY(),
                     presenter.getView().getCameraDeadzone(),
                     presenter.getView().isCameraPagination());
-            return true;
+            // If a gate was retroactively created on oldTrack, return the gate type
+            // so that the next construction delay uses the gate's configured value.
+            if (oldTrack instanceof letrain.track.rail.TunnelGateRailTrack) {
+                return Presenter.TrackType.TUNNEL_GATE_TRACK;
+            } else if (oldTrack instanceof letrain.track.rail.BridgeGateRailTrack) {
+                return Presenter.TrackType.BRIDGE_GATE_TRACK;
+            }
+            return type;
         }
-        return false;
+        return null;
     }
 
     public TrackType detectTrackType() {
