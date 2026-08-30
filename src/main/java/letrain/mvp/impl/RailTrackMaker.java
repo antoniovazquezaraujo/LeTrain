@@ -360,12 +360,19 @@ public class RailTrackMaker {
             if (isQuantifierPending()) {
                 caterpillarCounter = 5;
                 if (isTrackConstructionPending()) {
-                    showAnimation();
                     TrackType type = detectTrackType();
-                    float delay = presenter.getModel().getEconomyManager().getConstructionDelay(type);
-                    float progress = delay > 0 ? (1.0f - ((float) trackConstructionTimeCounter / delay)) : 1.0f;
-                    presenter.getModel().getCursor().setProgress(progress);
-                    decrementTrackConstructionTime();
+                    boolean needsDelay = type == Presenter.TrackType.TUNNEL_TRACK
+                            || type == Presenter.TrackType.BRIDGE_TRACK;
+                    if (needsDelay) {
+                        showAnimation();
+                        float delay = presenter.getModel().getEconomyManager().getConstructionDelay(type);
+                        float progress = delay > 0 ? (1.0f - ((float) trackConstructionTimeCounter / delay)) : 1.0f;
+                        presenter.getModel().getCursor().setProgress(progress);
+                        decrementTrackConstructionTime();
+                    } else {
+                        // Gate / normal track: skip remaining timer immediately
+                        trackConstructionTimeCounter = 0;
+                    }
                 } else {
                     TrackType type = detectTrackType();
                     if (type == null) {
