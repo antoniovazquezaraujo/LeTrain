@@ -37,6 +37,14 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("cargoBaseValues")
     Map<CargoTypes, Float> cargoBaseValues = new HashMap<>();
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    Map<Presenter.TrackType, Integer> constructionDelays = new HashMap<>();
+
+    @Override
+    public int getConstructionDelay(Presenter.TrackType type) {
+        return constructionDelays.getOrDefault(type, 0);
+    }
+
     @com.fasterxml.jackson.annotation.JsonProperty("fuelCostPerMeter")
     private float fuelCostPerMeter = 0.5f;
 
@@ -471,6 +479,13 @@ public class EconomyManager implements letrain.economy.EconomyManager {
             waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER", "130"));
             rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK", "180"));
             viewRadius = Integer.parseInt(props.getProperty("map.VIEW_RADIUS", "5"));
+
+            // Load Construction Delays
+            for (Presenter.TrackType type : Presenter.TrackType.values()) {
+                String key = "delay." + type.name();
+                int delay = Integer.parseInt(props.getProperty(key, "0"));
+                constructionDelays.put(type, delay);
+            }
 
             // Load ExpenseType prices
             for (ExpenseType type : ExpenseType.values()) {

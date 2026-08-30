@@ -43,16 +43,12 @@ public class RailTrackMaker {
     Point lastCursorPosition = null;
     Integer oldGroundType = null;
     int trackConstructionTimeCounter = 0;
-    Map<TrackType, Integer> trackConstructionTime = Map.of(TrackType.NORMAL_TRACK, 0,
-            TrackType.BRIDGE_TRACK, 0, TrackType.BRIDGE_GATE_TRACK, 0, TrackType.TUNNEL_TRACK, 0,
-            TrackType.TUNNEL_GATE_TRACK, 0, TrackType.STATION_TRACK, 0);
-
     public void startTrackConstruction(TrackType type) {
         if (type == null) {
             this.trackConstructionTimeCounter = 0;
             return;
         }
-        this.trackConstructionTimeCounter = trackConstructionTime.get(type);
+        this.trackConstructionTimeCounter = presenter.getModel().getEconomyManager().getConstructionDelay(type);
     }
 
     public boolean isTrackConstructionFinished() {
@@ -92,7 +88,9 @@ public class RailTrackMaker {
                         resetTrackConstructionTime(type);
                     }
                     resetQuantifierSteps();
-                    presenter.getModel().getCursor().setMode(Cursor.CursorMode.DRAWING);
+                    if (presenter.getModel().getCursor().getMode() != Cursor.CursorMode.MAKING_TRACKS) {
+                        presenter.getModel().getCursor().setMode(Cursor.CursorMode.DRAWING);
+                    }
                     makingTracks = true;
                     caterpillarCounter = 5;
 
@@ -362,18 +360,35 @@ public class RailTrackMaker {
             if (isQuantifierPending()) {
                 caterpillarCounter = 5;
                 if (isTrackConstructionPending()) {
-                    showAnimation();
-                    decrementTrackConstructionTime();
+                    TrackType type = detectTrackType();
+                    boolean needsDelay = type == Presenter.TrackType.TUNNEL_TRACK
+                            || type == Presenter.TrackType.BRIDGE_TRACK;
+                    if (needsDelay) {
+                        showAnimation();
+                        float delay = presenter.getModel().getEconomyManager().getConstructionDelay(type);
+                        float progress = delay > 0 ? (1.0f - ((float) trackConstructionTimeCounter / delay)) : 1.0f;
+                        presenter.getModel().getCursor().setProgress(progress);
+                        decrementTrackConstructionTime();
+                    } else {
+                        // Gate / normal track: skip remaining timer immediately
+                        trackConstructionTimeCounter = 0;
+                    }
                 } else {
                     TrackType type = detectTrackType();
                     if (type == null) {
                         makingTracks = false;
+                        presenter.getModel().getCursor().setMode(letrain.vehicle.Cursor.CursorMode.DRAWING);
+                        presenter.getModel().getCursor().setProgress(0f);
                         return;
                     }
                     selectNewTrackType(type);
                     createTrack(type);
                     decrementQuantifierSteps();
                     resetTrackConstructionTime(type);
+                    if (!isQuantifierPending()) {
+                        presenter.getModel().getCursor().setMode(letrain.vehicle.Cursor.CursorMode.DRAWING);
+                        presenter.getModel().getCursor().setProgress(0f);
+                    }
                 }
             }
         }
@@ -418,6 +433,11 @@ public class RailTrackMaker {
 
     void showAnimation() {
         presenter.getModel().getCursor().setMode(CursorMode.MAKING_TRACKS);
+        // The tile being worked on is one step BEHIND the cursor
+        Point pos = new Point(presenter.getModel().getCursor().getPosition());
+        letrain.map.Dir dir = presenter.getModel().getCursor().getDir();
+        pos.move(dir.inverse(), 1);
+        presenter.getModel().getCursor().setConstructionPosition(pos);
     }
 
     boolean createTrack(TrackType type) {

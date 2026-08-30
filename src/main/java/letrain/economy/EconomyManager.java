@@ -121,5 +121,7 @@ public interface EconomyManager {
 
     public float getRockThreshold();
 
+    int getConstructionDelay(Presenter.TrackType type);
+
     public int getViewRadius();
 }
