@@ -297,7 +297,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             mastHeight = 2.0f;
         }
 
-        Color structureColor = (cargo != null) ? cargo.getColor().cpy() : Color.WHITE.cpy();
+        Color structureColor = (cargo != null) ? Color.valueOf(cargo.getColor()) : Color.WHITE.cpy();
         structureColor.a = alpha;
 
         boolean isActionActive = false;

@@ -467,7 +467,7 @@ public class Gdx3DHud {
                             if (model.getMode() == letrain.mvp.Model.GameMode.TRAINS) {
                                 String colorName = model.getSelectedWagonType().name();
                                 String colorMarkup = "[#"
-                                        + model.getSelectedWagonType().getColor().toString() + "]";
+                                        + model.getSelectedWagonType().getColor() + "]";
                                 desc = "Selected: " + colorMarkup + colorName + "[] | " + desc;
                             }
                             descLabel.setText(desc);

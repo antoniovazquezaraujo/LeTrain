@@ -1,20 +1,20 @@
 package letrain.track;
 
-import com.badlogic.gdx.graphics.Color;
+
 
 public enum CargoTypes {
-    NONE(new Color(0.9f, 0.9f, 0.8f, 1f)), // Ivory/Off-white
-    GOLD(new Color(1f, 0.85f, 0f, 1f)), // Bright Gold/Yellow
-    COAL(new Color(0.1f, 0.1f, 0.1f, 1f)), // Shiny Black (Charcoal)
-    RUBY(new Color(1f, 0f, 0.3f, 1f)); // Bright Ruby Red
+    NONE("E5E5CCFF"), // Ivory/Off-white
+    GOLD("FFD800FF"), // Bright Gold/Yellow
+    COAL("191919FF"), // Shiny Black (Charcoal)
+    RUBY("FF004CFF"); // Bright Ruby Red
 
-    private final Color color;
+    private final String color;
 
-    CargoTypes(Color color) {
+    CargoTypes(String color) {
         this.color = color;
     }
 
-    public Color getColor() {
+    public String getColor() {
         return color;
     }
 

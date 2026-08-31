@@ -317,9 +317,9 @@ public class Gdx3DResourceContext implements Disposable {
             yellowSphereModel3 = register(createSphereModel(0.25f, Color.YELLOW));
 
             // Consumer Models
-            goldConsumerModel = register(createConsumerModel(CargoTypes.GOLD.getColor()));
-            coalConsumerModel = register(createConsumerModel(CargoTypes.COAL.getColor()));
-            rubyConsumerModel = register(createConsumerModel(CargoTypes.RUBY.getColor()));
+            goldConsumerModel = register(createConsumerModel(com.badlogic.gdx.graphics.Color.valueOf(CargoTypes.GOLD.getColor())));
+            coalConsumerModel = register(createConsumerModel(com.badlogic.gdx.graphics.Color.valueOf(CargoTypes.COAL.getColor())));
+            rubyConsumerModel = register(createConsumerModel(com.badlogic.gdx.graphics.Color.valueOf(CargoTypes.RUBY.getColor())));
         }
     }
 

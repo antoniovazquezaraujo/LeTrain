@@ -48,7 +48,7 @@ public class GroundRenderer extends BaseSubRenderer {
 
         if (type >= 10 && type <= 19) {
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            tempColor.set((cargo != null) ? cargo.getColor() : Color.WHITE);
+            tempColor.set((cargo != null) ? Color.valueOf(cargo.getColor()) : Color.WHITE);
             float x = ground.getPosition().getX() + 0.5f;
             float z = ground.getPosition().getY() + 0.5f;
 

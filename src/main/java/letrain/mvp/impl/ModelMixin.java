@@ -107,9 +107,6 @@ public abstract class ModelMixin {
     CargoTypes selectedWagonType;
 
     @JsonIgnore
-    com.badlogic.gdx.graphics.Camera camera;
-
-    @JsonIgnore
     List<TrainEventListener> trainEventListeners;
 
     @JsonProperty("nextSensorId")

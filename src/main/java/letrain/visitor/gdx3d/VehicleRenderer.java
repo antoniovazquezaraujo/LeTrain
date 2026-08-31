@@ -291,7 +291,7 @@ public class VehicleRenderer extends BaseSubRenderer {
         Color chassisColor = Color.BLUE;
 
         if (wagon.getExclusiveCargoType() != CargoTypes.NONE) {
-            chassisColor = wagon.getExclusiveCargoType().getColor();
+            chassisColor = com.badlogic.gdx.graphics.Color.valueOf(wagon.getExclusiveCargoType().getColor());
         }
 
         ModelInstance instance = resourceContext.getModelInstance(chassisModel);
@@ -425,7 +425,7 @@ public class VehicleRenderer extends BaseSubRenderer {
         // Jewel rendering
         if (wagon.getCargoAmount() > 0) {
             Color cargoColor =
-                    (wagon.getCargoType() != null) ? wagon.getCargoType().getColor() : Color.YELLOW;
+                    (wagon.getCargoType() != null) ? com.badlogic.gdx.graphics.Color.valueOf(wagon.getCargoType().getColor()) : Color.YELLOW;
             float fullness = (float) wagon.getCargoAmount() / (float) wagon.getMaxCapacity();
             float maxHeight = 0.5f;
             float currentHeight = fullness * maxHeight;
