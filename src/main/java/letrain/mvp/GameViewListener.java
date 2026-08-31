@@ -1,6 +1,6 @@
 package letrain.mvp;
 
-import com.googlecode.lanterna.input.KeyStroke;
+import letrain.mvp.input.InputEvent;
 import java.io.File;
 import letrain.map.Point;
 
@@ -23,9 +23,9 @@ public interface GameViewListener {
 
     void onPlay();
 
-    void onChar(KeyStroke c);
+    void onChar(InputEvent c);
 
-    void onKeyUp(KeyStroke c);
+    void onKeyUp(InputEvent c);
 
     String getProgram();
 

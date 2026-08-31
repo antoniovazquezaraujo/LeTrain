@@ -11,8 +11,8 @@ import static letrain.mvp.Model.GameMode.STATIONS;
 import static letrain.mvp.Model.GameMode.TRAINS;
 import static letrain.mvp.Model.GameMode.UNLINK;
 
-import com.googlecode.lanterna.input.KeyStroke;
-import com.googlecode.lanterna.input.KeyType;
+import letrain.mvp.input.InputEvent;
+import letrain.mvp.input.KeyType;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -39,6 +39,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventListener {
+    private InputEvent translate(com.googlecode.lanterna.input.KeyStroke ls) {
+        if (ls == null) return null;
+        KeyType kt = KeyType.Unknown;
+        try {
+            kt = KeyType.valueOf(ls.getKeyType().name());
+        } catch (Exception e) {}
+        return new InputEvent(kt, ls.getCharacter(), ls.isCtrlDown(), ls.isAltDown(), ls.isShiftDown());
+    }
+
     Logger log = LoggerFactory.getLogger(TerminalPresenter.class);
 
     Model model;
@@ -63,7 +72,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             new EnumMap<>(letrain.mvp.Model.GameMode.class);
 
     private interface ModeKeyHandler {
-        void handle(KeyStroke keyEvent);
+        void handle(InputEvent keyEvent);
     }
 
     RailTrackMaker railTrackMaker;
@@ -154,21 +163,22 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         running = true;
         try {
 
-            KeyStroke stroke = null;
+            InputEvent stroke = null;
             model.setMode(RAILS);
             letrain.map.Point startPos = model.getCursor().getPosition();
             view.centerOn(startPos.getX(), startPos.getY());
             model.updateGroundMap(view.getScrollOffset(), view.getCols(), view.getRows());
             while (running) {
                 stroke = null;
-                stroke = view.readKey();
-                if (view.isEndOfGame(stroke)) {
+                com.googlecode.lanterna.input.KeyStroke rawStroke = view.readKey();
+                if (view.isEndOfGame(rawStroke)) {
                     break;
                 }
+                stroke = translate(rawStroke);
                 if (null != stroke) {
                     onChar(stroke);
-                    while (stroke != null) {
-                        stroke = view.readKey();
+                    while (rawStroke != null) {
+                        rawStroke = view.readKey();
                     }
                 }
                 simulationController.tick();
@@ -237,7 +247,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     // [r:Rails d:Drive f:Forks t:Trains l:Link u:Unlink
 
     @Override
-    public void onChar(KeyStroke keyEvent) {
+    public void onChar(InputEvent keyEvent) {
         if (keyEvent.getKeyType() == KeyType.F1) {
             log.info("\n" + model.getRailwayGraphReport());
             return;
@@ -292,7 +302,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         view.flashCameraDeadzone();
     }
 
-    private boolean handleModeHotkey(KeyStroke keyEvent) {
+    private boolean handleModeHotkey(InputEvent keyEvent) {
         if (keyEvent.getKeyType() != KeyType.Character || keyEvent.getCharacter() == ' ') {
             return false;
         }
@@ -391,13 +401,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     @Override
-    public void onKeyUp(KeyStroke keyEvent) {
+    public void onKeyUp(InputEvent keyEvent) {
         if (model.getMode() == RAILS) {
             railTrackMaker.onKeyUp(keyEvent);
         }
     }
 
-    void handleProgramModeKey(KeyStroke keyEvent) {
+    void handleProgramModeKey(InputEvent keyEvent) {
         if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() == ' ') {
             view.showIDE();
         } else if (keyEvent.getKeyType() == KeyType.F12) {
@@ -405,7 +415,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    void handleStationsModeKey(KeyStroke keyEvent) {
+    void handleStationsModeKey(InputEvent keyEvent) {
         switch (keyEvent.getKeyType()) {
             case Backspace:
                 StationId = StationId / 10;
@@ -451,7 +461,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    private void handleSpeedSignalsModeKey(com.googlecode.lanterna.input.KeyStroke keyEvent) {
+    private void handleSpeedSignalsModeKey(InputEvent keyEvent) {
         switch (keyEvent.getKeyType()) {
             case Backspace:
                 speedSignalId = speedSignalId / 10;
@@ -513,7 +523,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    private void handleSemaphoresModeKey(KeyStroke keyEvent) {
+    private void handleSemaphoresModeKey(InputEvent keyEvent) {
         switch (keyEvent.getKeyType()) {
             case Backspace:
                 semaphoreId = semaphoreId / 10;
@@ -558,7 +568,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    private void handleUnlinkModeKey(KeyStroke keyEvent) {
+    private void handleUnlinkModeKey(InputEvent keyEvent) {
         switch (keyEvent.getKeyType()) {
             case ArrowUp:
                 selectFrontDivisionSense();
@@ -591,7 +601,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    private void handleLinkModeKey(KeyStroke keyEvent) {
+    private void handleLinkModeKey(InputEvent keyEvent) {
         switch (keyEvent.getKeyType()) {
             case ArrowUp:
                 selectVehiclesInFront();
@@ -632,7 +642,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    private void handleTrainsModeKey(KeyStroke keyEvent) {
+    private void handleTrainsModeKey(InputEvent keyEvent) {
         if (model.getRailMap().getTrackAt(model.getCursor().getPosition()) == null) {
             return;
         }
@@ -776,7 +786,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    private void handleForksModeKey(KeyStroke keyEvent) {
+    private void handleForksModeKey(InputEvent keyEvent) {
         switch (keyEvent.getKeyType()) {
             case Backspace:
                 forkId = forkId / 10;
@@ -816,7 +826,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    private void trainDriverOnChar(KeyStroke keyEvent) {
+    private void trainDriverOnChar(InputEvent keyEvent) {
         model.setShowId(false);
         switch (keyEvent.getKeyType()) {
             case Backspace:

@@ -15,7 +15,7 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.googlecode.lanterna.input.KeyStroke;
+import letrain.mvp.input.InputEvent;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
@@ -390,12 +390,12 @@ public class GraphicPresenter extends ApplicationAdapter
     public void onScreenResized(int cols, int rows) {}
 
     @Override
-    public void onChar(com.googlecode.lanterna.input.KeyStroke stroke) {
+    public void onChar(InputEvent stroke) {
         inputHandler.onChar(stroke);
     }
 
     @Override
-    public void onKeyUp(KeyStroke stroke) {
+    public void onKeyUp(InputEvent stroke) {
         inputHandler.onKeyUp(stroke);
     }
 
@@ -545,11 +545,11 @@ public class GraphicPresenter extends ApplicationAdapter
         // Not used in 3D view.
     }
 
-    public boolean isEndOfGame(com.googlecode.lanterna.input.KeyStroke stroke) {
+    public boolean isEndOfGame(InputEvent stroke) {
         return false;
     }
 
-    public com.googlecode.lanterna.input.KeyStroke readKey() {
+    public InputEvent readKey() {
         // Not used in 3D view (input handled by LibGDX).
         return null;
     }

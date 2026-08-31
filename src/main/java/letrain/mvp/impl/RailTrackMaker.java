@@ -1,6 +1,7 @@
 package letrain.mvp.impl;
 
-import com.googlecode.lanterna.input.KeyStroke;
+import letrain.mvp.input.InputEvent;
+import letrain.mvp.input.KeyType;
 import java.util.Map;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -67,14 +68,14 @@ public class RailTrackMaker {
         }
     }
 
-    public void onKeyUp(KeyStroke keyEvent) {
+    public void onKeyUp(InputEvent keyEvent) {
         if (!keyEvent.isShiftDown() && !keyEvent.isCtrlDown()) {
             caterpillarCounter = 0;
             makingTracks = false;
         }
     }
 
-    public void onChar(KeyStroke keyEvent) {
+    public void onChar(InputEvent keyEvent) {
         switch (keyEvent.getKeyType()) {
             case ArrowUp:
                 if (keyEvent.isShiftDown()) {
