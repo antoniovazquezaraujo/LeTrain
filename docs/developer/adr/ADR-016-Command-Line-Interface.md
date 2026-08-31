@@ -1,4 +1,4 @@
-# ADR-016: Interfaz de Línea de Comandos (CLI) y Modo de Automatización
+# ADR-016: Interfaz de Línea de Comandos (CLI), Hotkeys Modales y Modo de Automatización
 
 ## 1. Contexto
 
@@ -68,6 +68,128 @@ El resultado dependerá del modo activo:
 ### 3.7. Regeneración Procedural (Comando `new`)
 *   Comandos como `new map mountains=high gold=low` inyectarán parámetros temporales en el sistema procedural, vaciando colecciones e invalidando cachés gráficas al vuelo.
 
+### 3.8. Esquema Modal de Teclas (Hotkeys estilo vim)
+
+Junto a la consola `:`, la interacción directa se organiza en **modos** con filosofía vim: cada modo se entra con una tecla y tiene sus propias acciones. Para que todos los conceptos tengan cabida, algunas teclas actuales se remapean según este esquema.
+
+#### Modos y teclas de acceso
+
+| Modo | Tecla |
+|---|---|
+| Rails | `r` |
+| Add | `a` |
+| Forks | `f` |
+| Semaphores | `m` |
+| Signals | `i` |
+| Stations | `t` |
+| Vehicles | `v` |
+| Drive | `d` |
+| Link | `l` |
+| Unlink | `u` |
+| Program | `p` |
+
+#### Rails (`r`)
+
+- `[0-9]`: Steps
+- `backspace`: Reset steps
+- `hjkl`: Move
+- `w`: Toggle writing
+- `x`: Toggle erasing
+- `space`: Invert cursor
+- `" #`: Create mark by number
+- `" <string>`: Create mark by name
+- `g " #`: Go mark by number
+- `g " <string>`: Go mark by name
+- `g 232,34`: Jump to absolute point
+- `g f #`: Go fork #
+- `g r #`: Go rail # (Forward # rails)
+- `g s #`: Go sensor #
+- `g m #`: Go semaphore #
+- `g i #`: Go signal #
+- `g t #`: Go station #
+- `g l #`: Go locomotive #
+- `g[np] r`: Go next/prev rail (Advance until it reaches another rail)
+- `g[np] f`: Go next/prev fork
+- `g[np] s`: Go next/prev sensor
+- `g[np] m`: Go next/prev semaphore
+- `g[np] i`: Go next/prev signal
+- `g[np] t`: Go next/prev station
+- `g[np] l`: Go next/prev locomotive
+- `g e`: Go to end of railway
+- `r [nswe]`: Rotate towards that direction
+- `r [-][1-7]`: Rotate that grades
+- `f [fsmitl] #`: Face to fork, sensor, semaphore, signal, station or locomotive
+- `.`: Repite la última acción
+
+#### Add (`a`)
+
+- `s`: sensor
+- `m`: semaphore
+- `i`: signal
+- `t`: station
+
+#### Forks (`f`)
+
+- `⏴,⏵`: Select · `o`: Locate · `Space`: Toggle · `#`: Select by ID
+
+#### Semaphores (`m`)
+
+- `⏴,⏵`: Select · `o`: Locate · `Space`: Toggle · `#`: Select by ID
+
+#### Signals (`i`)
+
+- `⏴,⏵`: Select · `o`: Locate · `Space`: Invert · `m`: Max/Min · `⏶,⏷`: Limit
+
+#### Stations (`t`)
+
+- `⏴,⏵`: Select · `o`: Locate · `#`: Select by ID
+
+#### Vehicles (`v`)
+
+- `[A-Z][0-9]`: Locomotive and color · `[1-3][a-z]`: Wagon type and letter · `Enter`: Finish
+
+#### Drive (`d`)
+
+- `⏴,⏵`: Select · `o`: Locate · `Space`: Reverse · `m`: Motor On/Off · `⏶`: Accel · `⏷`: Decel · `Enter`: Load/Unload · `#`: Select by ID
+
+#### Link (`l`)
+
+- `⏶,⏷`: Front/Back · `⏴,⏵`: Select/Unselect wagons · `o`: Locate · `Space`: Link
+
+#### Unlink (`u`)
+
+- `⏶,⏷`: Front/Back · `⏴,⏵`: Select/Unselect wagons · `o`: Locate · `Space`: Unlink
+
+#### Program (`p`)
+
+- Muestra el IDE de scripts.
+
+#### Equivalencias con la consola `:`
+
+Las teclas modales son abreviaturas directas de comandos de la consola. Mientras la CLI usa alias de dos letras (`fo`, `sn`, `st`...), el esquema modal usa una sola letra por tipo (fork, rail, sensor, semaphore, signal, station, locomotive):
+
+| Modal | Consola `:` |
+|---|---|
+| `g f #` | `go fo #` |
+| `g s #` | `go sn #` |
+| `g m #` | `go sm #` |
+| `g i #` | `go si #` |
+| `g t #` | `go st #` |
+| `g l #` | `go tr #` |
+| `g[np] r` | `gn ra` / `gp ra` |
+| `g[np] f` | `gn fo` / `gp fo` |
+| `g e` | `ge` |
+| `g " #` | `go m-#` |
+| `r [nswe]` | `face n/s/w/e` |
+| `f [fsmitl] #` | `face <tipo> #` |
+
+### 3.9. Retroalimentación de Comandos (Eco)
+
+- Si un comando no puede ejecutarse, se muestra un **error en la consola**.
+- Si un comando puede ejecutarse pero no termina nunca (p. ej. `g e` en una vía que es un circuito cerrado), el usuario debe poder **cancelarlo con `Esc`**.
+- El board muestra: el **modo actual** ("Writing", "Erasing", etc.), el **comando que se está tecleando** (p. ej. `g n ...` mientras espera a que se complete) y una **descripción** de lo que hará.
+- `.` repite la última acción (comando punto).
+
 ---
 
 ## 4. Anexo: Diccionario de Comandos y Ejemplos
@@ -82,6 +204,8 @@ Todos los objetos físicos tienen un alias estricto de dos letras para agilizar 
 * `st` (station)
 * `tr` (train)
 * `wg` (wagon)
+
+El esquema modal (sección 3.8) usa una sola letra por tipo: `f` (fork), `r` (rail), `s` (sensor), `m` (semaphore), `i` (signal), `t` (station), `l` (locomotive).
 
 ### Control de Trenes
 * `train 1 start motor`: Arranca el motor.
@@ -165,3 +289,4 @@ Todos los objetos físicos tienen un alias estricto de dos letras para agilizar 
 3.  **Fase 3 (Lápiz y Goma - Turtle Graphics):** Implementar la máquina de modos (`write`, `move`, `del`, `clear`). Modificar mapa mediante cadenas `20, l, 3`.
 4.  **Fase 4 (Memoria y Variables):** Tabla de símbolos. Guardado JSON. *String Lookup* y resolución UPSERT. (`$s1 = new...`).
 5.  **Fase 5 (Motor de Macros - Opcional):** Ejecución de scripts largos en ficheros externos (`:load script.letrain`).
+6.  **Fase 6 (Hotkeys Modales):** Esquema modal de la sección 3.8: parser de prefijos `g` / `g[np]`, marcas `"`, modos Add/Vehicles/Drive, eco de comandos (3.9) y comando `.`.
