@@ -119,7 +119,7 @@ Junto a la consola `:`, la interacción directa se organiza en **modos** con fil
 - `r [nswe]`: Rotate towards that direction
 - `r [-][1-7]`: Rotate that grades
 - `f [fsmitl] #`: Face to fork, sensor, semaphore, signal, station or locomotive
-- `.`: Repite la última acción
+- `.`: Repeat last action
 
 #### Add (`a`)
 
@@ -175,13 +175,13 @@ Las teclas modales son abreviaturas directas de comandos de la consola. Mientras
 | `g m #` | `go sm #` |
 | `g i #` | `go si #` |
 | `g t #` | `go st #` |
-| `g l #` | `go tr #` |
-| `g[np] r` | `gn ra` / `gp ra` |
-| `g[np] f` | `gn fo` / `gp fo` |
-| `g e` | `ge` |
-| `g " #` | `go m-#` |
-| `r [nswe]` | `face n/s/w/e` |
-| `f [fsmitl] #` | `face <tipo> #` |
+| `g l #` | `go lo #` |
+| `g[np] r` | `gn ra \| gp ra` |
+| `g[np] f` | `gn fo \| gp fo` |
+| `g " #` | `go "#` |
+| `g e` | `go en` |
+| `r [nswe]` | `face n\|s\|w\|e` |
+| `f [fsmitl] #` | `face [fsmitl] #` |
 
 ### 3.9. Retroalimentación de Comandos (Eco)
 
