@@ -4,8 +4,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.googlecode.lanterna.input.KeyStroke;
-import com.googlecode.lanterna.input.KeyType;
+import letrain.mvp.input.InputEvent;
+import letrain.mvp.input.KeyType;
 import letrain.audio.AudioController;
 import letrain.map.Dir;
 import letrain.map.Point;
@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Encapsula toda la lógica de entrada de la vista 3D. Traduce eventos de LibGDX a KeyStrokes y
+ * Encapsula toda la lógica de entrada de la vista 3D. Traduce eventos de LibGDX a InputEvents y
  * gestiona la lógica de negocio asociada a cada modo de juego.
  */
 public class Gdx3DInputHandler implements InputProcessor {
@@ -96,7 +96,7 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private boolean triggerKeyDown(int keycode) {
-        KeyStroke keyStroke = translateKeyCode(keycode);
+        InputEvent keyStroke = translateKeyCode(keycode);
         if (keyStroke != null) {
             boolean ctrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)
                     || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
@@ -106,7 +106,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
 
             view.onChar(
-                    new KeyStroke(keyStroke.getKeyType(), ctrlPressed, altPressed, shiftPressed));
+                    new InputEvent(keyStroke.getKeyType(), ctrlPressed, altPressed, shiftPressed));
             return true;
         }
         return false;
@@ -121,14 +121,14 @@ public class Gdx3DInputHandler implements InputProcessor {
     @Override
     public boolean keyUp(int keycode) {
         pressedKeys.remove(keycode);
-        KeyStroke keyStroke = translateKeyCodeForUp(keycode);
+        InputEvent keyStroke = translateKeyCodeForUp(keycode);
         if (keyStroke != null) {
             boolean ctrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)
                     || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
             boolean shiftPressed = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
                     || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
 
-            view.onKeyUp(new KeyStroke(keyStroke.getKeyType(), ctrlPressed, false, shiftPressed));
+            view.onKeyUp(new InputEvent(keyStroke.getKeyType(), ctrlPressed, false, shiftPressed));
             return true;
         }
         return false;
@@ -149,7 +149,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
 
         if (!Character.isISOControl(character)) {
-            view.onChar(new KeyStroke(character, ctrlPressed, altPressed));
+            view.onChar(new InputEvent(character, ctrlPressed, altPressed));
             return true;
         }
         return false;
@@ -195,67 +195,67 @@ public class Gdx3DInputHandler implements InputProcessor {
         return true;
     }
 
-    private KeyStroke translateKeyCode(int keycode) {
+    private InputEvent translateKeyCode(int keycode) {
         switch (keycode) {
             case Input.Keys.UP:
-                return new KeyStroke(KeyType.ArrowUp);
+                return new InputEvent(KeyType.ArrowUp);
             case Input.Keys.DOWN:
-                return new KeyStroke(KeyType.ArrowDown);
+                return new InputEvent(KeyType.ArrowDown);
             case Input.Keys.LEFT:
-                return new KeyStroke(KeyType.ArrowLeft);
+                return new InputEvent(KeyType.ArrowLeft);
             case Input.Keys.RIGHT:
-                return new KeyStroke(KeyType.ArrowRight);
+                return new InputEvent(KeyType.ArrowRight);
             case Input.Keys.ENTER:
-                return new KeyStroke(KeyType.Enter);
+                return new InputEvent(KeyType.Enter);
             case Input.Keys.ESCAPE:
-                return new KeyStroke(KeyType.Escape);
+                return new InputEvent(KeyType.Escape);
             case Input.Keys.BACKSPACE:
-                return new KeyStroke(KeyType.Backspace);
+                return new InputEvent(KeyType.Backspace);
             case Input.Keys.FORWARD_DEL:
-                return new KeyStroke(KeyType.Delete);
+                return new InputEvent(KeyType.Delete);
             case Input.Keys.HOME:
-                return new KeyStroke(KeyType.Home);
+                return new InputEvent(KeyType.Home);
             case Input.Keys.END:
-                return new KeyStroke(KeyType.End);
+                return new InputEvent(KeyType.End);
             case Input.Keys.PAGE_UP:
-                return new KeyStroke(KeyType.PageUp);
+                return new InputEvent(KeyType.PageUp);
             case Input.Keys.PAGE_DOWN:
-                return new KeyStroke(KeyType.PageDown);
+                return new InputEvent(KeyType.PageDown);
             case Input.Keys.INSERT:
-                return new KeyStroke(KeyType.Insert);
+                return new InputEvent(KeyType.Insert);
             case Input.Keys.TAB:
-                return new KeyStroke(KeyType.Tab);
+                return new InputEvent(KeyType.Tab);
             case Input.Keys.F1:
-                return new KeyStroke(KeyType.F1);
+                return new InputEvent(KeyType.F1);
             case Input.Keys.F12:
-                return new KeyStroke(KeyType.F12);
+                return new InputEvent(KeyType.F12);
             default:
                 return null;
         }
     }
 
-    private KeyStroke translateKeyCodeForUp(int keycode) {
+    private InputEvent translateKeyCodeForUp(int keycode) {
         switch (keycode) {
             case Input.Keys.UP:
-                return new KeyStroke(KeyType.ArrowUp);
+                return new InputEvent(KeyType.ArrowUp);
             case Input.Keys.DOWN:
-                return new KeyStroke(KeyType.ArrowDown);
+                return new InputEvent(KeyType.ArrowDown);
             case Input.Keys.LEFT:
-                return new KeyStroke(KeyType.ArrowLeft);
+                return new InputEvent(KeyType.ArrowLeft);
             case Input.Keys.RIGHT:
-                return new KeyStroke(KeyType.ArrowRight);
+                return new InputEvent(KeyType.ArrowRight);
             case Input.Keys.CONTROL_LEFT:
             case Input.Keys.CONTROL_RIGHT:
-                return new KeyStroke(KeyType.Unknown, true, false, false);
+                return new InputEvent(KeyType.Unknown, true, false, false);
             case Input.Keys.SHIFT_LEFT:
             case Input.Keys.SHIFT_RIGHT:
-                return new KeyStroke(KeyType.Unknown, false, false, true);
+                return new InputEvent(KeyType.Unknown, false, false, true);
             default:
                 return null;
         }
     }
 
-    public void onChar(KeyStroke stroke) {
+    public void onChar(InputEvent stroke) {
         if (stroke.getKeyType() == KeyType.F1) {
             log.info("\n" + model.getRailwayGraphReport());
             return;
@@ -394,7 +394,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
-    public void onKeyUp(KeyStroke stroke) {
+    public void onKeyUp(InputEvent stroke) {
         if (model.getMode() == Model.GameMode.RAILS) {
             trackMaker.onKeyUp(stroke);
         }
@@ -439,7 +439,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
-    private void handleDriveInput(KeyStroke stroke) {
+    private void handleDriveInput(InputEvent stroke) {
         if (stroke.getKeyType() == KeyType.ArrowUp) {
             Locomotive loco = model.getSelectedLocomotive();
             if (loco != null && loco.isEngineOn()
@@ -535,9 +535,9 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
-    private void handleProgramInput(KeyStroke stroke) {}
+    private void handleProgramInput(InputEvent stroke) {}
 
-    private void handleLinkInput(KeyStroke stroke) {
+    private void handleLinkInput(InputEvent stroke) {
         if (stroke.getKeyType() == KeyType.ArrowUp) {
             if (model.getSelectedLocomotive() != null
                     && model.getSelectedLocomotive().getTrain() != null) {
@@ -580,7 +580,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
-    private void handleUnlinkInput(KeyStroke stroke) {
+    private void handleUnlinkInput(InputEvent stroke) {
         if (model.getSelectedLocomotive() != null
                 && model.getSelectedLocomotive().getTrain() != null) {
             Train train = model.getSelectedLocomotive().getTrain();
@@ -603,7 +603,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
-    private void handleForkInput(KeyStroke stroke) {
+    private void handleForkInput(InputEvent stroke) {
         if (stroke.getKeyType() == KeyType.ArrowLeft) {
             model.selectPrevFork();
         } else if (stroke.getKeyType() == KeyType.ArrowRight) {
@@ -633,7 +633,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
-    private void handleSpeedSignalsInput(KeyStroke stroke) {
+    private void handleSpeedSignalsInput(InputEvent stroke) {
         switch (stroke.getKeyType()) {
             case Backspace:
                 speedSignalId = speedSignalId / 10;
@@ -694,7 +694,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
-    private void handleSemaphoreInput(KeyStroke stroke) {
+    private void handleSemaphoreInput(InputEvent stroke) {
         if (stroke.getKeyType() == KeyType.ArrowLeft) {
             model.selectPrevSemaphore();
         } else if (stroke.getKeyType() == KeyType.ArrowRight) {
@@ -734,7 +734,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
-    private void handleStationInput(KeyStroke stroke) {
+    private void handleStationInput(InputEvent stroke) {
         if (stroke.getKeyType() == KeyType.ArrowLeft) {
             model.selectPrevStation();
         } else if (stroke.getKeyType() == KeyType.ArrowRight) {
@@ -779,7 +779,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
-    private void handleTrainsInput(KeyStroke stroke) {
+    private void handleTrainsInput(InputEvent stroke) {
         if (stroke.getKeyType() == KeyType.Character) {
             char c = stroke.getCharacter();
             if (Character.isDigit(c)) {
