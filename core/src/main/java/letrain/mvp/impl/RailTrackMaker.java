@@ -81,16 +81,20 @@ public class RailTrackMaker {
             if (c != null) {
                 switch (c) {
                     case 'k':
-                        keyEvent = new InputEvent(KeyType.ArrowUp, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), keyEvent.isShiftDown());
+                    case 'K':
+                        keyEvent = new InputEvent(KeyType.ArrowUp, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), c == 'K' || keyEvent.isShiftDown());
                         break;
                     case 'j':
-                        keyEvent = new InputEvent(KeyType.ArrowDown, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), keyEvent.isShiftDown());
+                    case 'J':
+                        keyEvent = new InputEvent(KeyType.ArrowDown, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), c == 'J' || keyEvent.isShiftDown());
                         break;
                     case 'h':
-                        keyEvent = new InputEvent(KeyType.ArrowLeft, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), keyEvent.isShiftDown());
+                    case 'H':
+                        keyEvent = new InputEvent(KeyType.ArrowLeft, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), c == 'H' || keyEvent.isShiftDown());
                         break;
                     case 'l':
-                        keyEvent = new InputEvent(KeyType.ArrowRight, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), keyEvent.isShiftDown());
+                    case 'L':
+                        keyEvent = new InputEvent(KeyType.ArrowRight, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), c == 'L' || keyEvent.isShiftDown());
                         break;
                 }
             }

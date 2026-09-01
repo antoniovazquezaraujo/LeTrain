@@ -137,7 +137,7 @@ public class Gdx3DInputHandler implements InputProcessor {
     @Override
     public boolean keyTyped(char character) {
         // 1. Toggle de cámara
-        if (character == 'c' || character == 'C') {
+        if (character == 'z' || character == 'Z') {
             cameraController.cycleMode(!model.getLocomotives().isEmpty());
             return true;
         }
@@ -367,7 +367,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     trackMaker.onChar(stroke);
                 } else if (stroke.getKeyType() == KeyType.Character) {
                     Character c = stroke.getCharacter();
-                    if (c != null && (c == 'h' || c == 'j' || c == 'k' || c == 'l')) {
+                    if (c != null && (c == 'h' || c == 'j' || c == 'k' || c == 'l' || c == 'H' || c == 'J' || c == 'K' || c == 'L')) {
                         trackMaker.onChar(stroke);
                     }
                 }

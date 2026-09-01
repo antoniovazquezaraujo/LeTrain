@@ -126,7 +126,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 railTrackMaker.onChar(keyEvent);
             } else if (keyEvent.getKeyType() == KeyType.Character) {
                 Character c = keyEvent.getCharacter();
-                if (c != null && (c == 'h' || c == 'j' || c == 'k' || c == 'l')) {
+                if (c != null && (c == 'h' || c == 'j' || c == 'k' || c == 'l' || c == 'H' || c == 'J' || c == 'K' || c == 'L')) {
                     railTrackMaker.onChar(keyEvent);
                 }
             }
