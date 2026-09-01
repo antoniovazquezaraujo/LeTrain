@@ -284,7 +284,15 @@ public class Gdx3DInputHandler implements InputProcessor {
                 return;
             } else if (stroke.getKeyType() == KeyType.Enter) {
                 log.info("Execute command: " + model.getCommandText());
-                String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(), model, file -> view.onSaveGame(file), file -> view.onLoadGame(file));
+                String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(), model, file -> view.onSaveGame(file), file -> view.onLoadGame(file), new letrain.command.TurtleDelegate() {
+                    @Override public void moveForward() { trackMaker.cursorForward(); }
+                    @Override public void buildForward() { trackMaker.createTrack(null); }
+                    @Override public void eraseForward() { trackMaker.removeTrack(true); }
+                    @Override public void turnLeft() { trackMaker.cursorTurnLeft(); }
+                    @Override public void turnRight() { trackMaker.cursorTurnRight(); }
+                    @Override public void endSequence() { trackMaker.makingTracks = false; }
+                });
+
                 if (error != null) {
                     model.setCommandError(error);
                     return;

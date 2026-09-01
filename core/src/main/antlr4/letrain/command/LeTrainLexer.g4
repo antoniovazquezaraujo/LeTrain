@@ -50,6 +50,8 @@ MODE: 'mode';
 WRITE: 'write';
 MOVE: 'move';
 CLEAR: 'clear';
+L: 'l';
+R: 'r';
 FACE: 'face';
 STEP: 'step';
 SAVE: 'save';

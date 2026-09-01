@@ -8,7 +8,7 @@ playerStatement : statement
                 | goCommand SEMI
                 | newCommand SEMI
                 | delCommand SEMI
-                | modeCommand SEMI
+                | turtleCommand SEMI
                 | saveCommand SEMI
                 | loadCommand SEMI
                 ;
@@ -19,7 +19,11 @@ newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL) ;
 
 delCommand : DEL (STATION | SENSOR | FORK | SEMAPHORE | TRAIN | SIGNAL) ;
 
-modeCommand : MODE (WRITE | MOVE | DEL) ;
+turtleCommand : (WRITE | MOVE | DEL | CLEAR) turtleSequence? ;
+
+turtleSequence : turtleStep (COMMA turtleStep)* ;
+
+turtleStep : NUMBER | L | R | STRING ;
 
 saveCommand : SAVE STRING? ;
 loadCommand : LOAD STRING? ;

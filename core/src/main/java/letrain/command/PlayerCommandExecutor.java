@@ -14,22 +14,24 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
     private java.util.function.Consumer<java.io.File> onSave;
     private java.util.function.Consumer<java.io.File> onLoad;
+    private letrain.command.TurtleDelegate turtleDelegate;
 
-    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad) {
+    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate) {
         this.model = model;
         this.onSave = onSave;
         this.onLoad = onLoad;
+        this.turtleDelegate = turtleDelegate;
     }
 
     public PlayerCommandExecutor(Model model) {
-        this(model, null, null);
+        this(model, null, null, null);
     }
 
     public static String execute(String commandText, Model model) {
-        return execute(commandText, model, null, null);
+        return execute(commandText, model, null, null, null);
     }
 
-    public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad) {
+    public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate) {
         if (!commandText.trim().endsWith(";")) {
             commandText = commandText + ";";
         }
@@ -50,7 +52,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         }
 
         try {
-            PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad);
+            PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad, turtleDelegate);
             executor.visit(tree);
             return null; // No errors
         } catch (Exception e) {
@@ -175,15 +177,56 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
     @Override
-    public Object visitModeCommand(PlayerCommandsParser.ModeCommandContext ctx) {
-        if (ctx.WRITE() != null) {
-            model.setMode(letrain.mvp.Model.GameMode.RAILS);
-        } else if (ctx.MOVE() != null) {
-            model.setMode(letrain.mvp.Model.GameMode.DRIVE);
-        } else if (ctx.DEL() != null) {
-            // mode del isn't really a game mode but maybe the eraser tool? 
-            // In the UI erasing is done via Ctrl down. We can just fallback to RAILS.
-            model.setMode(letrain.mvp.Model.GameMode.RAILS);
+    public Object visitTurtleCommand(PlayerCommandsParser.TurtleCommandContext ctx) {
+        if (turtleDelegate == null) {
+            throw new RuntimeException("Turtle graphics not supported in this context (no UI handler available).");
+        }
+        
+        letrain.vehicle.Cursor.CursorMode cursorMode = letrain.vehicle.Cursor.CursorMode.MOVING;
+        if (ctx.WRITE() != null) cursorMode = letrain.vehicle.Cursor.CursorMode.DRAWING;
+        else if (ctx.DEL() != null) cursorMode = letrain.vehicle.Cursor.CursorMode.ERASING;
+        else if (ctx.CLEAR() != null) cursorMode = letrain.vehicle.Cursor.CursorMode.ERASING;
+        
+        letrain.vehicle.Cursor.CursorMode oldMode = model.getCursor().getMode();
+        model.getCursor().setMode(cursorMode);
+        
+        try {
+            if (ctx.turtleSequence() != null) {
+                java.util.List<PlayerCommandsParser.TurtleStepContext> steps = ctx.turtleSequence().turtleStep();
+                for (int i = 0; i < steps.size(); i++) {
+                    PlayerCommandsParser.TurtleStepContext stepCtx = steps.get(i);
+                    if (stepCtx.NUMBER() != null) {
+                        int count = Integer.parseInt(stepCtx.NUMBER().getText());
+                        for (int j = 0; j < count; j++) {
+                            if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING) turtleDelegate.buildForward();
+                            else if (cursorMode == letrain.vehicle.Cursor.CursorMode.ERASING) turtleDelegate.eraseForward();
+                            else turtleDelegate.moveForward();
+                        }
+                    } else if (stepCtx.L() != null || stepCtx.R() != null) {
+                        if (stepCtx.L() != null) turtleDelegate.turnLeft();
+                        else turtleDelegate.turnRight();
+                        
+                        // Look ahead to see if the next token is a number. If not, auto-advance 1.
+                        boolean impliesOne = false;
+                        if (i == steps.size() - 1) {
+                            impliesOne = true;
+                        } else {
+                            if (steps.get(i + 1).NUMBER() == null) {
+                                impliesOne = true;
+                            }
+                        }
+                        
+                        if (impliesOne) {
+                            if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING) turtleDelegate.buildForward();
+                            else if (cursorMode == letrain.vehicle.Cursor.CursorMode.ERASING) turtleDelegate.eraseForward();
+                            else turtleDelegate.moveForward();
+                        }
+                    }
+                }
+            }
+        } finally {
+            turtleDelegate.endSequence();
+            model.getCursor().setMode(oldMode);
         }
         return null;
     }
