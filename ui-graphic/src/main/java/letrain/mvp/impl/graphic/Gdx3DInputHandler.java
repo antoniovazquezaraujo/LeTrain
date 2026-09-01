@@ -276,6 +276,46 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     public void onChar(InputEvent stroke) {
+        if (model.getMode() == Model.GameMode.COMMAND) {
+            if (getEffectiveKeyType(stroke) == KeyType.Escape) {
+                model.setMode(Model.GameMode.RAILS);
+                model.setCommandText("");
+                model.setCommandError("");
+                return;
+            } else if (getEffectiveKeyType(stroke) == KeyType.Enter) {
+                log.info("Execute command: " + model.getCommandText());
+                // TODO: Execute command
+                model.setMode(Model.GameMode.RAILS);
+                model.setCommandText("");
+                model.setCommandError("");
+                return;
+            } else if (getEffectiveKeyType(stroke) == KeyType.Backspace) {
+                String t = model.getCommandText();
+                if (t.length() > 0) {
+                    model.setCommandText(t.substring(0, t.length() - 1));
+                    model.setCommandError("");
+                }
+                return;
+            } else if (getEffectiveKeyType(stroke) == KeyType.Character) {
+                Character c = stroke.getCharacter();
+                if (c != null) {
+                    model.setCommandText(model.getCommandText() + c);
+                    model.setCommandError("");
+                }
+                return;
+            }
+            return; // Ignore other keys in COMMAND mode
+        }
+
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null && stroke.getCharacter() == ':') {
+            if (model.getMode() != Model.GameMode.PROGRAM) {
+                model.setMode(Model.GameMode.COMMAND);
+                model.setCommandText("");
+                model.setCommandError("");
+                return;
+            }
+        }
+
         if (stroke.getKeyType() == KeyType.F1) {
             log.info("\n" + model.getRailwayGraphReport());
             return;
