@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: letrain.SerializationTest
--------------------------------------------------------------------------------
-Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.375 s - in letrain.SerializationTest
