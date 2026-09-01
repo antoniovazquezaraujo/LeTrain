@@ -13,3 +13,4 @@ commands.txt
 video-list.txt
 load-unload
 inject_2d_videos.py
+**/target/
