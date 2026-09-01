@@ -200,6 +200,7 @@ public class FontManager {
             FreeTypeFontGenerator generator = new FreeTypeFontGenerator(fileHandle);
             FreeTypeFontParameter parameter = new FreeTypeFontParameter();
             parameter.size = size;
+            parameter.characters = FreeTypeFontGenerator.DEFAULT_CHARS + "↑↓←→⏴⏵⏶⏷";
             parameter.magFilter = Texture.TextureFilter.Linear;
             parameter.minFilter = Texture.TextureFilter.Linear;
 
