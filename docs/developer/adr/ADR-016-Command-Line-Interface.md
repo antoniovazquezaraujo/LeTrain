@@ -154,20 +154,20 @@ Junto a la consola `:`, la interacción directa se organiza en **modos** con fil
 
 Las teclas modales son abreviaturas directas de comandos de la consola. Mientras la CLI usa alias de dos letras (`fo`, `sn`, `st`...), el esquema modal usa una sola letra por tipo (fork, rail, sensor, semaphore, signal, station, locomotive):
 
-| Modal | Consola `:` |
-|---|---|
-| `g f #` | `go fo #` |
-| `g s #` | `go sn #` |
-| `g m #` | `go sm #` |
-| `g i #` | `go si #` |
-| `g t #` | `go st #` |
-| `g l #` | `go lo #` |
-| `g[np] r` | `gn ra \| gp ra` |
-| `g[np] f` | `gn fo \| gp fo` |
-| `g " #` | `go "#` |
-| `g e` | `go en` |
-| `r [nswe]` | `face n\|s\|w\|e` |
-| `f [fsmitl] #` | `face [fsmitl] #` |
+| Modal | Consola `:` | Texto |
+|---|---|---|
+| `g f #` | `go fo #` | `go fork #`|
+| `g s #` | `go sn #` | `go sensor #`|
+| `g m #` | `go sm #` | `go semaphore #`|
+| `g i #` | `go si #` | `go signal #`|
+| `g t #` | `go st #` | `go station #`|
+| `g l #` | `go lo #` | `go locomotive\|train #`|
+| `g[np] r` | `gn ra \| gp ra` | `go next\|prev rail`|
+| `g[np] f` | `gn fo \| gp fo` | `go next\|prev fork`|
+| `g " #` | `go "#` | `go mark #`|
+| `g e` | `go en` | `go end`|
+| `r [nswe]` | `face n\|s\|w\|e` |`face north\|south\|west\|east`|
+| `f [fsmitl] #` | `face [fsmitl] #` | `face fork\|sensor\|semaphore\|signal\|station\|locomotive`|
 
 ### 4.2. Retroalimentación de Comandos (Eco)
 
@@ -203,7 +203,7 @@ El esquema modal (sección 4.1) usa una sola letra por tipo: `f` (fork), `r` (ra
 
 ### Navegación de Cursor
 * `go 232,34`: Salto a coordenadas absolutas.
-* `go m-1`: Ir a la marca 1.
+* `go "1`: Ir a la marca 1.
 * `gn fo`: Alias de "go next fork".
 * `gn ra`: Alias de "go next rail" (Avanza hasta otra vía. Si estás en una avanza 1).
 * `gn sn`: Alias de "go next sensor".
@@ -223,7 +223,7 @@ El esquema modal (sección 4.1) usa una sola letra por tipo: `f` (fork), `r` (ra
 
 ### Construcción y Navegación (Secuencias Turtle)
 * `mode write`: Entra en modo construcción.
-* `20, l, 3, r, 32, m-1, l, l, 32`: Construye toda la secuencia de golpe.
+* `20, l, 3, r, 32, "1, l, l, 32`: Construye toda la secuencia de golpe.
 * `gn fo, r, ge`: Avanza al próximo desvío, gira a la derecha y avanza hasta el final de la vía.
 * `step 10`: Avanza 10 unidades.
 * `mode move`: Entra en modo espectador.
@@ -263,7 +263,7 @@ El esquema modal (sección 4.1) usa una sola letra por tipo: `f` (fork), `r` (ra
 ### Manipulación Lógica y Marcas
 * `sm 1 open`: Abre el semáforo 1.
 * `fo set left`: Cambia la aguja del desvío actual a la izquierda.
-* `mark 1`: Guarda la coordenada actual en `m-1`.
+* `mark 1`: Guarda la coordenada actual en `"1`.
 * `mark central_hub`: Guarda una marca de texto (usable luego con `go central_hub`).
 
 ---
