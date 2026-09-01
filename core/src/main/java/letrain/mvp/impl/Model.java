@@ -309,6 +309,12 @@ public class Model implements letrain.mvp.Model {
         if (this.program != null && !this.program.isEmpty()) {
             this.setProgram(this.program);
         }
+
+        if (this.mode == letrain.mvp.Model.GameMode.COMMAND) {
+            this.mode = letrain.mvp.Model.GameMode.RAILS;
+            this.commandText = "";
+            this.commandError = "";
+        }
     }
 
     private void setupModelTrainEventListeners() {
