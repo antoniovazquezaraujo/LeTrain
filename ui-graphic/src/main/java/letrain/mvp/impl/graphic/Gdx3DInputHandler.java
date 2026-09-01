@@ -106,7 +106,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
 
             view.onChar(
-                    new InputEvent(keyStroke.getKeyType(), ctrlPressed, altPressed, shiftPressed));
+                    new InputEvent(keyStroke.getKeyType(), keyStroke.getCharacter(), ctrlPressed, altPressed, shiftPressed));
             return true;
         }
         return false;
@@ -128,7 +128,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             boolean shiftPressed = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
                     || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
 
-            view.onKeyUp(new InputEvent(keyStroke.getKeyType(), ctrlPressed, false, shiftPressed));
+            view.onKeyUp(new InputEvent(keyStroke.getKeyType(), keyStroke.getCharacter(), ctrlPressed, false, shiftPressed));
             return true;
         }
         return false;
@@ -149,6 +149,10 @@ public class Gdx3DInputHandler implements InputProcessor {
                 || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
 
         if (!Character.isISOControl(character)) {
+            char lower = Character.toLowerCase(character);
+            if (lower == 'h' || lower == 'j' || lower == 'k' || lower == 'l') {
+                return false; // Already handled in keyDown
+            }
             view.onChar(new InputEvent(character, ctrlPressed, altPressed));
             return true;
         }
@@ -197,6 +201,14 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     private InputEvent translateKeyCode(int keycode) {
         switch (keycode) {
+                        case Input.Keys.H:
+                return new InputEvent(KeyType.Character, 'h', false, false, false);
+            case Input.Keys.J:
+                return new InputEvent(KeyType.Character, 'j', false, false, false);
+            case Input.Keys.K:
+                return new InputEvent(KeyType.Character, 'k', false, false, false);
+            case Input.Keys.L:
+                return new InputEvent(KeyType.Character, 'l', false, false, false);
             case Input.Keys.UP:
                 return new InputEvent(KeyType.ArrowUp);
             case Input.Keys.DOWN:
@@ -236,6 +248,14 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     private InputEvent translateKeyCodeForUp(int keycode) {
         switch (keycode) {
+                        case Input.Keys.H:
+                return new InputEvent(KeyType.Character, 'h', false, false, false);
+            case Input.Keys.J:
+                return new InputEvent(KeyType.Character, 'j', false, false, false);
+            case Input.Keys.K:
+                return new InputEvent(KeyType.Character, 'k', false, false, false);
+            case Input.Keys.L:
+                return new InputEvent(KeyType.Character, 'l', false, false, false);
             case Input.Keys.UP:
                 return new InputEvent(KeyType.ArrowUp);
             case Input.Keys.DOWN:
