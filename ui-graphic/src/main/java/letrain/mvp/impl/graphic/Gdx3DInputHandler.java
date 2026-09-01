@@ -283,23 +283,23 @@ public class Gdx3DInputHandler implements InputProcessor {
 
         // Global Camera Zoom/Rotation (Alt + Arrows)
         if (stroke.isAltDown()) {
-            if (stroke.getKeyType() == KeyType.ArrowLeft) {
+            if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
                 cameraController.rotateOrbit(-15f);
                 return;
-            } else if (stroke.getKeyType() == KeyType.ArrowRight) {
+            } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
                 cameraController.rotateOrbit(15f);
                 return;
-            } else if (stroke.getKeyType() == KeyType.ArrowUp) {
+            } else if (getEffectiveKeyType(stroke) == KeyType.ArrowUp) {
                 cameraController.zoomStep(-1f);
                 return;
-            } else if (stroke.getKeyType() == KeyType.ArrowDown) {
+            } else if (getEffectiveKeyType(stroke) == KeyType.ArrowDown) {
                 cameraController.zoomStep(1f);
                 return;
             }
         }
 
         // Global Enter to Menu (matches TerminalPresenter)
-        if (stroke.getKeyType() == KeyType.Enter) {
+        if (getEffectiveKeyType(stroke) == KeyType.Enter) {
             if (model.getMode() == Model.GameMode.LINK
                     || model.getMode() == Model.GameMode.UNLINK) {
                 model.setMode(model.getPreviousMode());
@@ -312,7 +312,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
 
         // Mode Switching Shortcuts
-        if (stroke.getKeyType() == KeyType.Character && stroke.getCharacter() != ' ') {
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != ' ') {
             if (model.getMode() != Model.GameMode.TRAINS) {
                 switch (stroke.getCharacter()) {
                     case 'r':
