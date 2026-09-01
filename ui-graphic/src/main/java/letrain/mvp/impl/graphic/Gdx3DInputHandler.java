@@ -106,7 +106,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
 
             view.onChar(
-                    new InputEvent(keyStroke.getKeyType(), ctrlPressed, altPressed, shiftPressed));
+                    new InputEvent(keyStroke.getKeyType(), keyStroke.getCharacter(), ctrlPressed, altPressed, shiftPressed));
             return true;
         }
         return false;
@@ -128,7 +128,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             boolean shiftPressed = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
                     || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
 
-            view.onKeyUp(new InputEvent(keyStroke.getKeyType(), ctrlPressed, false, shiftPressed));
+            view.onKeyUp(new InputEvent(keyStroke.getKeyType(), keyStroke.getCharacter(), ctrlPressed, false, shiftPressed));
             return true;
         }
         return false;
@@ -137,7 +137,7 @@ public class Gdx3DInputHandler implements InputProcessor {
     @Override
     public boolean keyTyped(char character) {
         // 1. Toggle de cámara
-        if (character == 'c' || character == 'C') {
+        if (character == 'z' || character == 'Z') {
             cameraController.cycleMode(!model.getLocomotives().isEmpty());
             return true;
         }
@@ -149,6 +149,10 @@ public class Gdx3DInputHandler implements InputProcessor {
                 || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
 
         if (!Character.isISOControl(character)) {
+            char lower = Character.toLowerCase(character);
+            if (lower == 'h' || lower == 'j' || lower == 'k' || lower == 'l') {
+                return false; // Already handled in keyDown
+            }
             view.onChar(new InputEvent(character, ctrlPressed, altPressed));
             return true;
         }
@@ -197,6 +201,14 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     private InputEvent translateKeyCode(int keycode) {
         switch (keycode) {
+                        case Input.Keys.H:
+                return new InputEvent(KeyType.Character, 'h', false, false, false);
+            case Input.Keys.J:
+                return new InputEvent(KeyType.Character, 'j', false, false, false);
+            case Input.Keys.K:
+                return new InputEvent(KeyType.Character, 'k', false, false, false);
+            case Input.Keys.L:
+                return new InputEvent(KeyType.Character, 'l', false, false, false);
             case Input.Keys.UP:
                 return new InputEvent(KeyType.ArrowUp);
             case Input.Keys.DOWN:
@@ -236,6 +248,14 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     private InputEvent translateKeyCodeForUp(int keycode) {
         switch (keycode) {
+                        case Input.Keys.H:
+                return new InputEvent(KeyType.Character, 'h', false, false, false);
+            case Input.Keys.J:
+                return new InputEvent(KeyType.Character, 'j', false, false, false);
+            case Input.Keys.K:
+                return new InputEvent(KeyType.Character, 'k', false, false, false);
+            case Input.Keys.L:
+                return new InputEvent(KeyType.Character, 'l', false, false, false);
             case Input.Keys.UP:
                 return new InputEvent(KeyType.ArrowUp);
             case Input.Keys.DOWN:
@@ -263,23 +283,23 @@ public class Gdx3DInputHandler implements InputProcessor {
 
         // Global Camera Zoom/Rotation (Alt + Arrows)
         if (stroke.isAltDown()) {
-            if (stroke.getKeyType() == KeyType.ArrowLeft) {
+            if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
                 cameraController.rotateOrbit(-15f);
                 return;
-            } else if (stroke.getKeyType() == KeyType.ArrowRight) {
+            } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
                 cameraController.rotateOrbit(15f);
                 return;
-            } else if (stroke.getKeyType() == KeyType.ArrowUp) {
+            } else if (getEffectiveKeyType(stroke) == KeyType.ArrowUp) {
                 cameraController.zoomStep(-1f);
                 return;
-            } else if (stroke.getKeyType() == KeyType.ArrowDown) {
+            } else if (getEffectiveKeyType(stroke) == KeyType.ArrowDown) {
                 cameraController.zoomStep(1f);
                 return;
             }
         }
 
         // Global Enter to Menu (matches TerminalPresenter)
-        if (stroke.getKeyType() == KeyType.Enter) {
+        if (getEffectiveKeyType(stroke) == KeyType.Enter) {
             if (model.getMode() == Model.GameMode.LINK
                     || model.getMode() == Model.GameMode.UNLINK) {
                 model.setMode(model.getPreviousMode());
@@ -292,7 +312,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
 
         // Mode Switching Shortcuts
-        if (stroke.getKeyType() == KeyType.Character && stroke.getCharacter() != ' ') {
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != ' ') {
             if (model.getMode() != Model.GameMode.TRAINS) {
                 switch (stroke.getCharacter()) {
                     case 'r':
@@ -322,7 +342,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                             model.setMode(Model.GameMode.TRAINS);
                         }
                         return;
-                    case 'l':
+                    case 'c':
                         if (model.canEnterLinkMode()) {
                             model.setMode(Model.GameMode.LINK);
                             if (model.getSelectedLocomotive() != null
@@ -359,6 +379,19 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
 
         switch (model.getMode()) {
+                        case MENU:
+                if (stroke.getKeyType() == KeyType.ArrowUp ||
+                    stroke.getKeyType() == KeyType.ArrowDown ||
+                    stroke.getKeyType() == KeyType.ArrowLeft ||
+                    stroke.getKeyType() == KeyType.ArrowRight) {
+                    trackMaker.onChar(stroke);
+                } else if (stroke.getKeyType() == KeyType.Character) {
+                    Character c = stroke.getCharacter();
+                    if (c != null && (c == 'h' || c == 'j' || c == 'k' || c == 'l' || c == 'H' || c == 'J' || c == 'K' || c == 'L')) {
+                        trackMaker.onChar(stroke);
+                    }
+                }
+                break;
             case RAILS:
                 trackMaker.onChar(stroke);
                 break;
@@ -439,8 +472,21 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
+
+    private KeyType getEffectiveKeyType(InputEvent event) {
+        if (event.getKeyType() == KeyType.Character && event.getCharacter() != null) {
+            switch (Character.toLowerCase(event.getCharacter())) {
+                case 'k': return KeyType.ArrowUp;
+                case 'j': return KeyType.ArrowDown;
+                case 'h': return KeyType.ArrowLeft;
+                case 'l': return KeyType.ArrowRight;
+            }
+        }
+        return event.getKeyType();
+    }
+
     private void handleDriveInput(InputEvent stroke) {
-        if (stroke.getKeyType() == KeyType.ArrowUp) {
+        if (getEffectiveKeyType(stroke) == KeyType.ArrowUp) {
             Locomotive loco = model.getSelectedLocomotive();
             if (loco != null && loco.isEngineOn()
                     && !loco.getTrain().getLogisticsManager().isLoading()) {
@@ -450,7 +496,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     loco.getTrain().toggleAutoMode();
                 }
             }
-        } else if (stroke.getKeyType() == KeyType.ArrowDown) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.ArrowDown) {
             Locomotive loco = model.getSelectedLocomotive();
             if (loco != null && loco.isEngineOn()
                     && !loco.getTrain().getLogisticsManager().isLoading()) {
@@ -459,11 +505,11 @@ public class Gdx3DInputHandler implements InputProcessor {
                     loco.getTrain().toggleAutoMode();
                 }
             }
-        } else if (stroke.getKeyType() == KeyType.ArrowLeft) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
             model.selectPrevLocomotive();
-        } else if (stroke.getKeyType() == KeyType.ArrowRight) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
             model.selectNextLocomotive();
-        } else if (stroke.getKeyType() == KeyType.Character && stroke.getCharacter() == ' ') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
             if (locomotiveIdAccumulator > 0) {
                 model.selectLocomotive(locomotiveIdAccumulator);
                 locomotiveIdAccumulator = 0;
@@ -475,13 +521,13 @@ public class Gdx3DInputHandler implements InputProcessor {
                     model.getSelectedLocomotive().toggleReversed();
                 }
             }
-        } else if (stroke.getKeyType() == KeyType.Character
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
                 && Character.isDigit(stroke.getCharacter())) {
             locomotiveIdAccumulator =
                     locomotiveIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
             model.selectLocomotive(locomotiveIdAccumulator);
             locomotiveInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == KeyType.Character
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
                 && (stroke.getCharacter() == 'a' || stroke.getCharacter() == 'A')) {
             // Toggle autopilot
             if (model.getSelectedLocomotive() != null) {
@@ -490,11 +536,11 @@ public class Gdx3DInputHandler implements InputProcessor {
                     t.toggleAutoMode();
                 }
             }
-        } else if (stroke.getKeyType() == KeyType.Backspace) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Backspace) {
             locomotiveIdAccumulator = locomotiveIdAccumulator / 10;
             model.selectLocomotive(locomotiveIdAccumulator);
             locomotiveInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == KeyType.Enter) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Enter) {
             if (model.getSelectedLocomotive() != null
                     && model.getSelectedLocomotive().getSpeed() == 0) {
                 Train selectedTrain = model.getSelectedLocomotive().getTrain();
@@ -523,7 +569,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 }
             }
             model.setMode(Model.GameMode.MENU);
-        } else if (stroke.getKeyType() == KeyType.Character && stroke.getCharacter() == 'm') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == 'm') {
             Locomotive loco = model.getSelectedLocomotive();
             if (loco != null) {
                 if (!loco.isEngineOn()) {
@@ -538,21 +584,21 @@ public class Gdx3DInputHandler implements InputProcessor {
     private void handleProgramInput(InputEvent stroke) {}
 
     private void handleLinkInput(InputEvent stroke) {
-        if (stroke.getKeyType() == KeyType.ArrowUp) {
+        if (getEffectiveKeyType(stroke) == KeyType.ArrowUp) {
             if (model.getSelectedLocomotive() != null
                     && model.getSelectedLocomotive().getTrain() != null) {
                 Train train = model.getSelectedLocomotive().getTrain();
 
                 train.getTrainCouplingManager().updateLinkersToJoin(train, true);
             }
-        } else if (stroke.getKeyType() == KeyType.ArrowDown) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.ArrowDown) {
             if (model.getSelectedLocomotive() != null
                     && model.getSelectedLocomotive().getTrain() != null) {
                 Train train = model.getSelectedLocomotive().getTrain();
 
                 train.getTrainCouplingManager().updateLinkersToJoin(train, false);
             }
-        } else if (stroke.getKeyType() == KeyType.ArrowLeft) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
             if (model.getSelectedLocomotive() != null
                     && model.getSelectedLocomotive().getTrain() != null) {
                 Train train = model.getSelectedLocomotive().getTrain();
@@ -560,7 +606,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     train.setNumLinkersToJoin(train.getNumLinkersToJoin() - 1);
                 }
             }
-        } else if (stroke.getKeyType() == KeyType.ArrowRight) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
             if (model.getSelectedLocomotive() != null
                     && model.getSelectedLocomotive().getTrain() != null) {
                 Train train = model.getSelectedLocomotive().getTrain();
@@ -568,7 +614,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     train.setNumLinkersToJoin(train.getNumLinkersToJoin() + 1);
                 }
             }
-        } else if (stroke.getKeyType() == KeyType.Character && stroke.getCharacter() == ' ') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
             Locomotive loco = model.getSelectedLocomotive();
             if (loco != null && loco.getTrain() != null) {
                 Train train = loco.getTrain();
@@ -584,15 +630,15 @@ public class Gdx3DInputHandler implements InputProcessor {
         if (model.getSelectedLocomotive() != null
                 && model.getSelectedLocomotive().getTrain() != null) {
             Train train = model.getSelectedLocomotive().getTrain();
-            if (stroke.getKeyType() == KeyType.ArrowUp) {
+            if (getEffectiveKeyType(stroke) == KeyType.ArrowUp) {
                 train.getTrainCouplingManager().setFrontDivisionSense(train);
-            } else if (stroke.getKeyType() == KeyType.ArrowDown) {
+            } else if (getEffectiveKeyType(stroke) == KeyType.ArrowDown) {
                 train.getTrainCouplingManager().setBackDivisionSense(train);
-            } else if (stroke.getKeyType() == KeyType.ArrowLeft) {
+            } else if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
                 train.getTrainCouplingManager().selectPrevDivisionLink(train);
-            } else if (stroke.getKeyType() == KeyType.ArrowRight) {
+            } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
                 train.getTrainCouplingManager().selectNextDivisionLink(train);
-            } else if (stroke.getKeyType() == KeyType.Character && stroke.getCharacter() == ' ') {
+            } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
 
                 train.getTrainCouplingManager().divideTrain(train, () -> model.nextTrainId());
                 audioController.playOneShot("link",
@@ -604,11 +650,11 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private void handleForkInput(InputEvent stroke) {
-        if (stroke.getKeyType() == KeyType.ArrowLeft) {
+        if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
             model.selectPrevFork();
-        } else if (stroke.getKeyType() == KeyType.ArrowRight) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
             model.selectNextFork();
-        } else if (stroke.getKeyType() == KeyType.Character && stroke.getCharacter() == ' ') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
             if (forkIdAccumulator > 0) {
                 model.selectFork(forkIdAccumulator);
                 forkIdAccumulator = 0;
@@ -620,13 +666,13 @@ public class Gdx3DInputHandler implements InputProcessor {
                         (float) model.getSelectedFork().getPosition().getX(),
                         (float) model.getSelectedFork().getPosition().getY());
             }
-        } else if (stroke.getKeyType() == KeyType.Character
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
                 && Character.isDigit(stroke.getCharacter())) {
             forkIdAccumulator =
                     forkIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
             model.selectFork(forkIdAccumulator);
             forkInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == KeyType.Backspace) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Backspace) {
             forkIdAccumulator = forkIdAccumulator / 10;
             model.selectFork(forkIdAccumulator);
             forkInputTimeout = System.currentTimeMillis() + 1000;
@@ -634,7 +680,7 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private void handleSpeedSignalsInput(InputEvent stroke) {
-        switch (stroke.getKeyType()) {
+        switch (getEffectiveKeyType(stroke)) {
             case Backspace:
                 speedSignalId = speedSignalId / 10;
                 model.selectSpeedSignal(speedSignalId);
@@ -695,11 +741,11 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private void handleSemaphoreInput(InputEvent stroke) {
-        if (stroke.getKeyType() == KeyType.ArrowLeft) {
+        if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
             model.selectPrevSemaphore();
-        } else if (stroke.getKeyType() == KeyType.ArrowRight) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
             model.selectNextSemaphore();
-        } else if (stroke.getKeyType() == KeyType.Character
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
                 && (stroke.getCharacter() == 'm' || stroke.getCharacter() == 'M')) {
             RailSemaphore s = model.getSelectedSemaphore();
             if (s != null) {
@@ -707,7 +753,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 audioController.playOneShot("construction", (float) s.getPosition().getX(),
                         (float) s.getPosition().getY());
             }
-        } else if (stroke.getKeyType() == KeyType.Character && stroke.getCharacter() == ' ') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
             if (semaphoreIdAccumulator > 0) {
                 model.selectSemaphore(semaphoreIdAccumulator);
                 semaphoreIdAccumulator = 0;
@@ -721,13 +767,13 @@ public class Gdx3DInputHandler implements InputProcessor {
                 }
             }
 
-        } else if (stroke.getKeyType() == KeyType.Character
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
                 && Character.isDigit(stroke.getCharacter())) {
             semaphoreIdAccumulator =
                     semaphoreIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
             model.selectSemaphore(semaphoreIdAccumulator);
             semaphoreInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == KeyType.Backspace) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Backspace) {
             semaphoreIdAccumulator = semaphoreIdAccumulator / 10;
             model.selectSemaphore(semaphoreIdAccumulator);
             semaphoreInputTimeout = System.currentTimeMillis() + 1000;
@@ -735,11 +781,11 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private void handleStationInput(InputEvent stroke) {
-        if (stroke.getKeyType() == KeyType.ArrowLeft) {
+        if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
             model.selectPrevStation();
-        } else if (stroke.getKeyType() == KeyType.ArrowRight) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
             model.selectNextStation();
-        } else if (stroke.getKeyType() == KeyType.Character && stroke.getCharacter() == ' ') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
             if (stationIdAccumulator > 0) {
                 model.selectStation(stationIdAccumulator);
                 stationIdAccumulator = 0;
@@ -754,17 +800,17 @@ public class Gdx3DInputHandler implements InputProcessor {
                     train.getLogisticsManager().performIndustrialAction(station);
                 }
             }
-        } else if (stroke.getKeyType() == KeyType.Character
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
                 && Character.isDigit(stroke.getCharacter())) {
             stationIdAccumulator =
                     stationIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
             model.selectStation(stationIdAccumulator);
             stationInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == KeyType.Backspace) {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Backspace) {
             stationIdAccumulator = stationIdAccumulator / 10;
             model.selectStation(stationIdAccumulator);
             stationInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (stroke.getKeyType() == KeyType.Character && stroke.getCharacter() == '-') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == '-') {
             Station station = model.getSelectedStation();
             if (station != null) {
                 for (Locomotive loco : model.getLocomotives()) {

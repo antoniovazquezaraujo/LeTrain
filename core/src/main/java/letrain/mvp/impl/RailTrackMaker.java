@@ -76,6 +76,29 @@ public class RailTrackMaker {
     }
 
     public void onChar(InputEvent keyEvent) {
+        if (keyEvent.getKeyType() == KeyType.Character) {
+            Character c = keyEvent.getCharacter();
+            if (c != null) {
+                switch (c) {
+                    case 'k':
+                    case 'K':
+                        keyEvent = new InputEvent(KeyType.ArrowUp, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), c == 'K' || keyEvent.isShiftDown());
+                        break;
+                    case 'j':
+                    case 'J':
+                        keyEvent = new InputEvent(KeyType.ArrowDown, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), c == 'J' || keyEvent.isShiftDown());
+                        break;
+                    case 'h':
+                    case 'H':
+                        keyEvent = new InputEvent(KeyType.ArrowLeft, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), c == 'H' || keyEvent.isShiftDown());
+                        break;
+                    case 'l':
+                    case 'L':
+                        keyEvent = new InputEvent(KeyType.ArrowRight, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), c == 'L' || keyEvent.isShiftDown());
+                        break;
+                }
+            }
+        }
         switch (keyEvent.getKeyType()) {
             case ArrowUp:
                 if (keyEvent.isShiftDown()) {

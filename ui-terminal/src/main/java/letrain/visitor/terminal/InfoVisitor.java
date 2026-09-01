@@ -70,7 +70,7 @@ public class InfoVisitor implements Visitor {
                 break;
             case LINK:
                 infoBarText +=
-                        "Mode: LINK [Up/Down]: Direction [Left/Right]: Quantity [Space]: Link";
+                        "Mode: COUPLE [⏶⏷/kj]: Dir [⏴⏵/hl]: Qty [Space]: Couple";
                 Locomotive selected = model.getSelectedLocomotive();
                 if (selected != null && selected.getTrain() != null) {
                     Train train = selected.getTrain();
@@ -80,7 +80,7 @@ public class InfoVisitor implements Visitor {
                 }
                 break;
             case UNLINK:
-                infoBarText += "Mode: UNLINK [Arrows]: Select [Space]: Unlink";
+                infoBarText += "Mode: UNCOUPLE [⏶⏷/kj]: Dir [⏴⏵/hl]: Qty [Space]: Uncouple";
                 break;
             case MENU:
                 infoBarText += "Main Menu";
@@ -161,7 +161,7 @@ public class InfoVisitor implements Visitor {
 
         // Row 6: Global Help
         richInfo.append(
-                "[PgUp/Dn]: Scroll | [c/C]: Camera | [r/d/f/s/t/l/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit");
+                "[PgUp/Dn]: Scroll | [z/Z]: Camera | [r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit");
 
         view.setInfoBarText(richInfo.toString());
     }
