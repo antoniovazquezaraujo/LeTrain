@@ -322,7 +322,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                             model.setMode(Model.GameMode.TRAINS);
                         }
                         return;
-                    case 'l':
+                    case 'c':
                         if (model.canEnterLinkMode()) {
                             model.setMode(Model.GameMode.LINK);
                             if (model.getSelectedLocomotive() != null
@@ -359,6 +359,19 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
 
         switch (model.getMode()) {
+                        case MENU:
+                if (stroke.getKeyType() == KeyType.ArrowUp ||
+                    stroke.getKeyType() == KeyType.ArrowDown ||
+                    stroke.getKeyType() == KeyType.ArrowLeft ||
+                    stroke.getKeyType() == KeyType.ArrowRight) {
+                    trackMaker.onChar(stroke);
+                } else if (stroke.getKeyType() == KeyType.Character) {
+                    Character c = stroke.getCharacter();
+                    if (c != null && (c == 'h' || c == 'j' || c == 'k' || c == 'l')) {
+                        trackMaker.onChar(stroke);
+                    }
+                }
+                break;
             case RAILS:
                 trackMaker.onChar(stroke);
                 break;

@@ -117,8 +117,19 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         modeKeyHandlers.put(UNLINK, keyEvent -> handleUnlinkModeKey(keyEvent));
         modeKeyHandlers.put(STATIONS, keyEvent -> handleStationsModeKey(keyEvent));
         modeKeyHandlers.put(PROGRAM, keyEvent -> handleProgramModeKey(keyEvent));
-        modeKeyHandlers.put(MENU, keyEvent -> {
-            // no-op in menu mode
+                modeKeyHandlers.put(MENU, keyEvent -> {
+            // Allow cursor movement in NORMAL/MENU mode
+            if (keyEvent.getKeyType() == KeyType.ArrowUp ||
+                keyEvent.getKeyType() == KeyType.ArrowDown ||
+                keyEvent.getKeyType() == KeyType.ArrowLeft ||
+                keyEvent.getKeyType() == KeyType.ArrowRight) {
+                railTrackMaker.onChar(keyEvent);
+            } else if (keyEvent.getKeyType() == KeyType.Character) {
+                Character c = keyEvent.getCharacter();
+                if (c != null && (c == 'h' || c == 'j' || c == 'k' || c == 'l')) {
+                    railTrackMaker.onChar(keyEvent);
+                }
+            }
         });
         modeKeyHandlers.put(letrain.mvp.Model.GameMode.LOAD_TRAINS, keyEvent -> {
             // no-op
@@ -313,13 +324,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
 
         switch (keyEvent.getCharacter()) {
-            case 'c':
+            case 'z':
                 if (model.getMode() != TRAINS) {
                     cycleCameraDeadzone();
                     return true;
                 }
                 return false;
-            case 'C':
+            case 'Z':
                 if (model.getMode() != TRAINS) {
                     view.setCameraPagination(!view.isCameraPagination());
                     view.flashCameraDeadzone();
@@ -354,7 +365,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     return true;
                 }
                 return false;
-            case 'l':
+            case 'c':
                 if (model.canEnterLinkMode()) {
                     model.setMode(LINK);
                     if (model.getSelectedLocomotive() != null
