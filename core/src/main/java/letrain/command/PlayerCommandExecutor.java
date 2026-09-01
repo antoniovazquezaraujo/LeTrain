@@ -12,11 +12,24 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     private static final Logger log = LoggerFactory.getLogger(PlayerCommandExecutor.class);
     private Model model;
 
-    public PlayerCommandExecutor(Model model) {
+    private java.util.function.Consumer<java.io.File> onSave;
+    private java.util.function.Consumer<java.io.File> onLoad;
+
+    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad) {
         this.model = model;
+        this.onSave = onSave;
+        this.onLoad = onLoad;
+    }
+
+    public PlayerCommandExecutor(Model model) {
+        this(model, null, null);
     }
 
     public static String execute(String commandText, Model model) {
+        return execute(commandText, model, null, null);
+    }
+
+    public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad) {
         if (!commandText.trim().endsWith(";")) {
             commandText = commandText + ";";
         }
@@ -37,7 +50,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         }
 
         try {
-            PlayerCommandExecutor executor = new PlayerCommandExecutor(model);
+            PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad);
             executor.visit(tree);
             return null; // No errors
         } catch (Exception e) {
@@ -177,11 +190,33 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
     @Override
     public Object visitSaveCommand(PlayerCommandsParser.SaveCommandContext ctx) {
-        throw new RuntimeException("Command 'save' not yet implemented in UI");
+        String filename = "quicksave.json";
+        if (ctx.STRING() != null) {
+            String text = ctx.STRING().getText();
+            filename = text.substring(1, text.length() - 1);
+            if (!filename.endsWith(".json")) filename += ".json";
+        }
+        if (onSave != null) {
+            onSave.accept(new java.io.File(filename));
+        } else {
+             throw new RuntimeException("Save not supported in this context.");
+        }
+        return null;
     }
 
     @Override
     public Object visitLoadCommand(PlayerCommandsParser.LoadCommandContext ctx) {
-        throw new RuntimeException("Command 'load' not yet implemented in UI");
+        String filename = "quicksave.json";
+        if (ctx.STRING() != null) {
+            String text = ctx.STRING().getText();
+            filename = text.substring(1, text.length() - 1);
+            if (!filename.endsWith(".json")) filename += ".json";
+        }
+        if (onLoad != null) {
+            onLoad.accept(new java.io.File(filename));
+        } else {
+             throw new RuntimeException("Load not supported in this context.");
+        }
+        return null;
     }
 }

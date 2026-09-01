@@ -284,7 +284,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 return;
             } else if (stroke.getKeyType() == KeyType.Enter) {
                 log.info("Execute command: " + model.getCommandText());
-                String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(), model);
+                String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(), model, file -> view.onSaveGame(file), file -> view.onLoadGame(file));
                 if (error != null) {
                     model.setCommandError(error);
                     return;
