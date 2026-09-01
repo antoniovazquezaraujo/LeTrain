@@ -77,7 +77,7 @@ COMMA: ',';
 EQUALS: '=';
 
 // Data types
-NUMBER : [0-9]+;
+NUMBER : '-'? [0-9]+;
 STRING : '"' ~["]* '"' ;
 
 // Whitespace
