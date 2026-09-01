@@ -472,6 +472,19 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
+
+    private KeyType getEffectiveKeyType(InputEvent event) {
+        if (event.getKeyType() == KeyType.Character && event.getCharacter() != null) {
+            switch (Character.toLowerCase(event.getCharacter())) {
+                case 'k': return KeyType.ArrowUp;
+                case 'j': return KeyType.ArrowDown;
+                case 'h': return KeyType.ArrowLeft;
+                case 'l': return KeyType.ArrowRight;
+            }
+        }
+        return event.getKeyType();
+    }
+
     private void handleDriveInput(InputEvent stroke) {
         if (stroke.getKeyType() == KeyType.ArrowUp) {
             Locomotive loco = model.getSelectedLocomotive();

@@ -426,8 +426,21 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
+
+    private KeyType getEffectiveKeyType(InputEvent event) {
+        if (event.getKeyType() == KeyType.Character && event.getCharacter() != null) {
+            switch (Character.toLowerCase(event.getCharacter())) {
+                case 'k': return KeyType.ArrowUp;
+                case 'j': return KeyType.ArrowDown;
+                case 'h': return KeyType.ArrowLeft;
+                case 'l': return KeyType.ArrowRight;
+            }
+        }
+        return event.getKeyType();
+    }
+
     void handleStationsModeKey(InputEvent keyEvent) {
-        switch (keyEvent.getKeyType()) {
+        switch (getEffectiveKeyType(keyEvent)) {
             case Backspace:
                 StationId = StationId / 10;
                 selectStation(StationId);
@@ -473,7 +486,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void handleSpeedSignalsModeKey(InputEvent keyEvent) {
-        switch (keyEvent.getKeyType()) {
+        switch (getEffectiveKeyType(keyEvent)) {
             case Backspace:
                 speedSignalId = speedSignalId / 10;
                 model.selectSpeedSignal(speedSignalId);
@@ -535,7 +548,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void handleSemaphoresModeKey(InputEvent keyEvent) {
-        switch (keyEvent.getKeyType()) {
+        switch (getEffectiveKeyType(keyEvent)) {
             case Backspace:
                 semaphoreId = semaphoreId / 10;
                 selectSemaphore(semaphoreId);
@@ -580,7 +593,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void handleUnlinkModeKey(InputEvent keyEvent) {
-        switch (keyEvent.getKeyType()) {
+        switch (getEffectiveKeyType(keyEvent)) {
             case ArrowUp:
                 selectFrontDivisionSense();
                 break;
@@ -613,7 +626,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void handleLinkModeKey(InputEvent keyEvent) {
-        switch (keyEvent.getKeyType()) {
+        switch (getEffectiveKeyType(keyEvent)) {
             case ArrowUp:
                 selectVehiclesInFront();
                 break;
@@ -798,7 +811,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void handleForksModeKey(InputEvent keyEvent) {
-        switch (keyEvent.getKeyType()) {
+        switch (getEffectiveKeyType(keyEvent)) {
             case Backspace:
                 forkId = forkId / 10;
                 selectFork(forkId);
@@ -839,7 +852,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void trainDriverOnChar(InputEvent keyEvent) {
         model.setShowId(false);
-        switch (keyEvent.getKeyType()) {
+        switch (getEffectiveKeyType(keyEvent)) {
             case Backspace:
                 locomotiveId = locomotiveId / 10;
                 selectLocomotive(locomotiveId);
