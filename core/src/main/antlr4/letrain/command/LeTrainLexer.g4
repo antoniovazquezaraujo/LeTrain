@@ -29,6 +29,7 @@ LINK: 'link';
 UNLINK: 'unlink';
 FORK: 'fork';
 SEMAPHORE: 'semaphore';
+SIGNAL: 'signal';
 TRAIN_AT: 'train at';
 OPEN: 'open';
 CLOSED: 'closed';

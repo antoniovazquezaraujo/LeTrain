@@ -15,9 +15,9 @@ playerStatement : statement
 
 goCommand : GO NUMBER COMMA NUMBER ;
 
-newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE) ;
+newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL) ;
 
-delCommand : DEL (STATION | SENSOR | FORK | SEMAPHORE | TRAIN) ;
+delCommand : DEL (STATION | SENSOR | FORK | SEMAPHORE | TRAIN | SIGNAL) ;
 
 modeCommand : MODE (WRITE | MOVE | DEL) ;
 

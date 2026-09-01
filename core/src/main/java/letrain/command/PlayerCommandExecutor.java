@@ -115,6 +115,14 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             sem = new letrain.track.RailSemaphore(model.nextSemaphoreId(), pos);
             sem.setCreationDir(dir);
             model.addSemaphore(sem);
+        } else if (ctx.SIGNAL() != null) {
+            if (track == null) throw new RuntimeException("Cannot place signal: No track here.");
+            if (track.getSensor() != null) throw new RuntimeException("Cannot place signal: Track already has a sensor/station.");
+            
+            letrain.track.SpeedSignal speedSignal = new letrain.track.SpeedSignal(model.nextSensorId(), dir, 3, true);
+            speedSignal.setTrack(track);
+            model.addSensor(speedSignal);
+            track.setSensor(speedSignal);
         } else if (ctx.FORK() != null) {
             throw new RuntimeException("Cannot place fork via script yet (use UI).");
         }
@@ -132,8 +140,13 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             }
             model.removeStation((letrain.track.Station) track.getSensor());
         } else if (ctx.SENSOR() != null) {
-            if (track == null || track.getSensor() == null || (track.getSensor() instanceof letrain.track.Station)) {
-                throw new RuntimeException("No sensor to delete here.");
+            if (track == null || track.getSensor() == null || (track.getSensor() instanceof letrain.track.Station) || (track.getSensor() instanceof letrain.track.SpeedSignal)) {
+                throw new RuntimeException("No standard sensor to delete here.");
+            }
+            model.removeSensor(track.getSensor());
+        } else if (ctx.SIGNAL() != null) {
+            if (track == null || track.getSensor() == null || !(track.getSensor() instanceof letrain.track.SpeedSignal)) {
+                throw new RuntimeException("No signal to delete here.");
             }
             model.removeSensor(track.getSensor());
         } else if (ctx.SEMAPHORE() != null) {
