@@ -259,6 +259,46 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     @Override
     public void onChar(InputEvent keyEvent) {
+        if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
+            if (keyEvent.getKeyType() == KeyType.Escape) {
+                model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                model.setCommandText("");
+                model.setCommandError("");
+                return;
+            } else if (keyEvent.getKeyType() == KeyType.Enter) {
+                log.info("Execute command: " + model.getCommandText());
+                // TODO: Execute command
+                model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                model.setCommandText("");
+                model.setCommandError("");
+                return;
+            } else if (keyEvent.getKeyType() == KeyType.Backspace) {
+                String t = model.getCommandText();
+                if (t.length() > 0) {
+                    model.setCommandText(t.substring(0, t.length() - 1));
+                    model.setCommandError("");
+                }
+                return;
+            } else if (keyEvent.getKeyType() == KeyType.Character) {
+                Character c = keyEvent.getCharacter();
+                if (c != null) {
+                    model.setCommandText(model.getCommandText() + c);
+                    model.setCommandError("");
+                }
+                return;
+            }
+            return; // Ignore other keys in COMMAND mode
+        }
+
+        if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null && keyEvent.getCharacter() == ':') {
+            if (model.getMode() != letrain.mvp.Model.GameMode.PROGRAM) {
+                model.setMode(letrain.mvp.Model.GameMode.COMMAND);
+                model.setCommandText("");
+                model.setCommandError("");
+                return;
+            }
+        }
+
         if (keyEvent.getKeyType() == KeyType.F1) {
             log.info("\n" + model.getRailwayGraphReport());
             return;
