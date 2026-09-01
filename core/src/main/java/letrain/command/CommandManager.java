@@ -25,7 +25,7 @@ import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
+public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     static Logger log = LoggerFactory.getLogger(CommandManager.class);
     Model model;
 
@@ -46,14 +46,14 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     // ── Statement dispatch ─────────────────────────────────────────
 
     @Override
-    public Object visitStart(LeTrainProgramParser.StartContext ctx) {
+    public Object visitScriptStart(ScriptLogicParser.ScriptStartContext ctx) {
         itineraries.clear();
         currentItinerary = null;
-        return super.visitStart(ctx);
+        return super.visitScriptStart(ctx);
     }
 
     @Override
-    public Object visitStatement(LeTrainProgramParser.StatementContext ctx) {
+    public Object visitStatement(ScriptLogicParser.StatementContext ctx) {
         if (ctx.trigger() != null) {
             // Existing: event-driven
             List<ExecutableCommand> commands = (List<ExecutableCommand>) visit(ctx.commandBlock());
@@ -70,20 +70,20 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
 
     // Direct commands dispatch (assign, autopilot, name)
     @Override
-    public Object visitDirectCommand(LeTrainProgramParser.DirectCommandContext ctx) {
+    public Object visitDirectCommand(ScriptLogicParser.DirectCommandContext ctx) {
         return visitChildren(ctx);
     }
 
     @Override
-    public Object visitCommandBlock(LeTrainProgramParser.CommandBlockContext ctx) {
+    public Object visitCommandBlock(ScriptLogicParser.CommandBlockContext ctx) {
         List<ExecutableCommand> commands = new ArrayList<>();
-        for (LeTrainProgramParser.CommandItemContext itemCtx : ctx.commandItem()) {
+        for (ScriptLogicParser.CommandItemContext itemCtx : ctx.commandItem()) {
             commands.add((ExecutableCommand) visit(itemCtx));
         }
         return commands;
     }
 
-    private void setupTrigger(LeTrainProgramParser.TriggerContext ctx,
+    private void setupTrigger(ScriptLogicParser.TriggerContext ctx,
             List<ExecutableCommand> commands) {
         if (ctx.sensorSelector() != null) {
             int id = Integer.parseInt(ctx.sensorSelector().NUMBER().getText());
@@ -306,7 +306,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitCommandItem(LeTrainProgramParser.CommandItemContext ctx) {
+    public Object visitCommandItem(ScriptLogicParser.CommandItemContext ctx) {
         if (ctx.semaphoreAction() != null) {
             int id = Integer.parseInt(ctx.semaphoreSelector().NUMBER().getText());
             String status = ctx.semaphoreAction().semaphoreStatus().getText();
@@ -374,7 +374,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                     };
                 }
             } else if (ctx.trainExtractor() != null) {
-                LeTrainProgramParser.PlaceSelectorContext pCtx =
+                ScriptLogicParser.PlaceSelectorContext pCtx =
                         ctx.trainExtractor().placeSelector();
                 return (ExecutableCommand) (contextTrain) -> {
                     Train target = findTrainAtPlace(pCtx);
@@ -388,7 +388,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         };
     }
 
-    private ExecutableCommand buildTrainAction(LeTrainProgramParser.TrainActionContext ctx) {
+    private ExecutableCommand buildTrainAction(ScriptLogicParser.TrainActionContext ctx) {
         String actionText = ctx.getText();
         if (ctx.trainSpeed() != null) {
             int speed = Integer.parseInt(ctx.trainSpeed().getText());
@@ -430,7 +430,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                 }
             };
         } else if (ctx.linkAction() != null) {
-            LeTrainProgramParser.LinkActionContext lCtx = ctx.linkAction();
+            ScriptLogicParser.LinkActionContext lCtx = ctx.linkAction();
             boolean forward = "forward".equals(lCtx.sense().getText());
             int count = lCtx.NUMBER() != null ? Integer.parseInt(lCtx.NUMBER().getText()) : 0;
             return (t) -> {
@@ -438,7 +438,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
                 t.getTrainCouplingManager().joinLinkers(t);
             };
         } else if (ctx.unlinkAction() != null) {
-            LeTrainProgramParser.UnlinkActionContext uCtx = ctx.unlinkAction();
+            ScriptLogicParser.UnlinkActionContext uCtx = ctx.unlinkAction();
             boolean forward = "forward".equals(uCtx.sense().getText());
             int count = uCtx.NUMBER() != null ? Integer.parseInt(uCtx.NUMBER().getText()) : 1;
             return (t) -> {
@@ -468,10 +468,10 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     // ── Direct command visitors ──────────────────────────────────────
 
     @Override
-    public Object visitCreateItinerary(LeTrainProgramParser.CreateItineraryContext ctx) {
+    public Object visitCreateItinerary(ScriptLogicParser.CreateItineraryContext ctx) {
         String name = stripQuotes(ctx.STRING().getText());
         currentItinerary = new ItineraryImpl();
-        for (LeTrainProgramParser.WaypointContext wp : ctx.waypoint()) {
+        for (ScriptLogicParser.WaypointContext wp : ctx.waypoint()) {
             visit(wp);
         }
         if (currentItinerary.isValid()) {
@@ -486,7 +486,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitWaypoint(LeTrainProgramParser.WaypointContext ctx) {
+    public Object visitWaypoint(ScriptLogicParser.WaypointContext ctx) {
         if (currentItinerary == null) {
             return null;
         }
@@ -513,14 +513,14 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         return null;
     }
 
-    private Dir resolveDir(LeTrainProgramParser.WaypointContext ctx) {
+    private Dir resolveDir(ScriptLogicParser.WaypointContext ctx) {
         if (ctx.direction() != null && ctx.direction().dir() != null) {
             return Dir.valueOf(ctx.direction().dir().getText().toUpperCase());
         }
         return null; // default
     }
 
-    private List<WaypointCommand> resolveCommands(LeTrainProgramParser.WaypointContext ctx) {
+    private List<WaypointCommand> resolveCommands(ScriptLogicParser.WaypointContext ctx) {
         List<WaypointCommand> all = new ArrayList<>();
         for (var act : ctx.action()) {
             all.addAll(toCommands(act));
@@ -529,7 +529,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitAssignItinerary(LeTrainProgramParser.AssignItineraryContext ctx) {
+    public Object visitAssignItinerary(ScriptLogicParser.AssignItineraryContext ctx) {
         String itName = stripQuotes(ctx.STRING().getText());
         Itinerary it = itineraries.get(itName);
         if (it == null) {
@@ -556,7 +556,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitSetAutopilot(LeTrainProgramParser.SetAutopilotContext ctx) {
+    public Object visitSetAutopilot(ScriptLogicParser.SetAutopilotContext ctx) {
         Train train = resolveTrain(ctx.trainRef());
         if (train != null) {
             boolean on = "true".equals(ctx.bool().getText());
@@ -569,7 +569,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitDirectTrainCommand(LeTrainProgramParser.DirectTrainCommandContext ctx) {
+    public Object visitDirectTrainCommand(ScriptLogicParser.DirectTrainCommandContext ctx) {
         Train train = resolveTrain(ctx.trainRef());
         if (train != null) {
             ExecutableCommand action = buildTrainAction(ctx.trainAction());
@@ -583,7 +583,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitSetNameCommand(LeTrainProgramParser.SetNameCommandContext ctx) {
+    public Object visitSetNameCommand(ScriptLogicParser.SetNameCommandContext ctx) {
         String name = stripQuotes(ctx.STRING().getText());
         int id = Integer.parseInt(ctx.NUMBER().getText());
         if (ctx.getChild(0).getText().equals("station")) {
@@ -610,19 +610,19 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
 
     // ── Helpers ──────────────────────────────────────────────────────
 
-    private Station resolveStation(LeTrainProgramParser.StationRefContext ctx) {
+    private Station resolveStation(ScriptLogicParser.StationRefContext ctx) {
         if (ctx.STRING() != null)
             return model.findStationByName(stripQuotes(ctx.STRING().getText()));
         return model.getStation(Integer.parseInt(ctx.NUMBER().getText()));
     }
 
-    private Sensor resolveSensor(LeTrainProgramParser.SensorRefContext ctx) {
+    private Sensor resolveSensor(ScriptLogicParser.SensorRefContext ctx) {
         if (ctx.STRING() != null)
             return model.findSensorByName(stripQuotes(ctx.STRING().getText()));
         return model.getSensor(Integer.parseInt(ctx.NUMBER().getText()));
     }
 
-    private Train resolveTrain(LeTrainProgramParser.TrainRefContext ctx) {
+    private Train resolveTrain(ScriptLogicParser.TrainRefContext ctx) {
         if (ctx.STRING() != null) {
             return model.findTrainByName(stripQuotes(ctx.STRING().getText()));
         }
@@ -630,7 +630,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         return model.getTrainFromLocomotiveId(id);
     }
 
-    private List<WaypointCommand> toCommands(LeTrainProgramParser.ActionContext ctx) {
+    private List<WaypointCommand> toCommands(ScriptLogicParser.ActionContext ctx) {
         String text = ctx.getText().toLowerCase();
         return switch (text) {
             case "load" -> List.of(WaypointCommand.LOAD);
@@ -659,7 +659,7 @@ public class CommandManager extends LeTrainProgramBaseVisitor<Object> {
         return s;
     }
 
-    private Train findTrainAtPlace(LeTrainProgramParser.PlaceSelectorContext ctx) {
+    private Train findTrainAtPlace(ScriptLogicParser.PlaceSelectorContext ctx) {
         if (ctx.stationSelector() != null) {
             int id = Integer.parseInt(ctx.stationSelector().NUMBER().getText());
             letrain.track.Station s = model.getStation(id);

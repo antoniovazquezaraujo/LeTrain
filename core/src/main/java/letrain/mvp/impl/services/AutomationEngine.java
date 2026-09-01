@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import java.util.ArrayList;
 import java.util.List;
 import letrain.command.CommandManager;
-import letrain.command.LeTrainProgramLexer;
-import letrain.command.LeTrainProgramParser;
+import letrain.command.LeTrainLexer;
+import letrain.command.ScriptLogicParser;
 import letrain.mvp.impl.Model;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
@@ -37,9 +37,9 @@ public class AutomationEngine {
         try {
             program = program.toLowerCase();
             CharStream input = CharStreams.fromString(program);
-            LeTrainProgramLexer lexer = new LeTrainProgramLexer(input);
+            LeTrainLexer lexer = new LeTrainLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            LeTrainProgramParser parser = new LeTrainProgramParser(tokens);
+            ScriptLogicParser parser = new ScriptLogicParser(tokens);
 
             parser.removeErrorListeners();
             parser.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
@@ -54,7 +54,7 @@ public class AutomationEngine {
                 }
             });
 
-            LeTrainProgramParser.StartContext sintaxTree = parser.start();
+            ScriptLogicParser.ScriptStartContext sintaxTree = parser.scriptStart();
             CommandManager manager = new CommandManager(model);
             manager.visit(sintaxTree);
         } catch (Exception e) {
