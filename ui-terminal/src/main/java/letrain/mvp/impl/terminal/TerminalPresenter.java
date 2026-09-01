@@ -267,7 +267,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 return;
             } else if (keyEvent.getKeyType() == KeyType.Enter) {
                 log.info("Execute command: " + model.getCommandText());
-                // TODO: Execute command
+                String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(), model);
+                if (error != null) {
+                    model.setCommandError(error);
+                    return;
+                }
                 model.setMode(letrain.mvp.Model.GameMode.RAILS);
                 model.setCommandText("");
                 model.setCommandError("");

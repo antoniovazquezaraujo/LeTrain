@@ -284,7 +284,11 @@ public class Gdx3DInputHandler implements InputProcessor {
                 return;
             } else if (getEffectiveKeyType(stroke) == KeyType.Enter) {
                 log.info("Execute command: " + model.getCommandText());
-                // TODO: Execute command
+                String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(), model);
+                if (error != null) {
+                    model.setCommandError(error);
+                    return;
+                }
                 model.setMode(Model.GameMode.RAILS);
                 model.setCommandText("");
                 model.setCommandError("");
