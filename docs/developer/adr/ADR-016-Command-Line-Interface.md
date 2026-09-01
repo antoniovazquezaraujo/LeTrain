@@ -52,15 +52,227 @@ Se soportarán secuencias concatenadas (ej. `20, l, 10` -> avanza 20, gira izqui
 *   **Curva de Aprendizaje**: Los jugadores que no conozcan Vim o no lean la documentación podrían frustrarse si accidentalmente entran en un modo y no saben salir (requiere UX clara que indique "Pulsa ESC para modo normal").
 *   **Latencia Perceptible**: Si los atajos de teclado generan texto, lo parsean (ANTLR4) y luego lo ejecutan, hay un pequeñísimo *overhead* vs llamadas directas. ANTLR4 es rápido, pero habrá que vigilar el rendimiento si un jugador deja pulsada una tecla.
 
-## 4. Anexo: Diccionario del State Machine
+## 4. Anexo: Referencia de Modos, Teclas y Comandos
 
-| Estado Actual | Tecla Pulsada | Transición / Comando Generado |
-|---|---|---|
-| `NORMAL` | `r` | Entra a `RAILS_MODE` |
-| `NORMAL` | `f` | Entra a `FORKS_MODE` |
-| `NORMAL` | `:` | Entra a `COMMAND_MODE` (Abre UI de consola) |
-| `Cualquiera` | `Esc` | Entra a `NORMAL_MODE` |
-| `RAILS_MODE` | `h,j,k,l` | Genera comando `go w`, `go s`, `go n`, `go e` |
-| `RAILS_MODE` | `w` | Genera comando `mode write` |
-| `RAILS_MODE` | `x` | Genera comando `mode del` |
-| `RAILS_MODE` | `g` + `e` | Genera comando `go en` |
+### 4.1. Esquema Modal de Teclas (Hotkeys estilo vim)
+
+Junto a la consola `:`, la interacción directa se organiza en **modos** con filosofía vim: cada modo se entra con una tecla y tiene sus propias acciones. Para que todos los conceptos tengan cabida, algunas teclas actuales se remapean según este esquema.
+
+#### Modos y teclas de acceso
+
+| Modo | Tecla |
+|---|---|
+| Rails | `r` |
+| Add | `a` |
+| Forks | `f` |
+| Semaphores | `m` |
+| Signals | `i` |
+| Stations | `t` |
+| Vehicles | `v` |
+| Drive | `d` |
+| Link | `l` |
+| Unlink | `u` |
+| Program | `p` |
+
+#### Rails (`r`)
+
+- `[0-9]`: Steps
+- `backspace`: Reset steps
+- `hjkl`: Move
+- `w`: Toggle writing
+- `x`: Toggle erasing
+- `space`: Invert cursor
+- `" #`: Create mark by number
+- `" <string>`: Create mark by name
+- `g " #`: Go mark by number
+- `g " <string>`: Go mark by name
+- `g 232,34`: Jump to absolute point
+- `g f #`: Go fork #
+- `g r #`: Go rail # (Forward # rails)
+- `g s #`: Go sensor #
+- `g m #`: Go semaphore #
+- `g i #`: Go signal #
+- `g t #`: Go station #
+- `g l #`: Go locomotive #
+- `g[np] r`: Go next/prev rail (Advance until it reaches another rail)
+- `g[np] f`: Go next/prev fork
+- `g[np] s`: Go next/prev sensor
+- `g[np] m`: Go next/prev semaphore
+- `g[np] i`: Go next/prev signal
+- `g[np] t`: Go next/prev station
+- `g[np] l`: Go next/prev locomotive
+- `g e`: Go to end of railway
+- `r [nswe]`: Rotate towards that direction
+- `r [-][1-7]`: Rotate that grades
+- `f [fsmitl] #`: Face to fork, sensor, semaphore, signal, station or locomotive
+- `.`: Repeat last action
+
+#### Add (`a`)
+
+- `s`: sensor
+- `m`: semaphore
+- `i`: signal
+- `t`: station
+
+#### Forks (`f`)
+
+- `⏴,⏵`: Select · `o`: Locate · `Space`: Toggle · `#`: Select by ID
+
+#### Semaphores (`m`)
+
+- `⏴,⏵`: Select · `o`: Locate · `Space`: Toggle · `#`: Select by ID
+
+#### Signals (`i`)
+
+- `⏴,⏵`: Select · `o`: Locate · `Space`: Invert · `m`: Max/Min · `⏶,⏷`: Limit
+
+#### Stations (`t`)
+
+- `⏴,⏵`: Select · `o`: Locate · `#`: Select by ID
+
+#### Vehicles (`v`)
+
+- `[A-Z][0-9]`: Locomotive and color · `[1-3][a-z]`: Wagon type and letter · `Enter`: Finish
+
+#### Drive (`d`)
+
+- `⏴,⏵`: Select · `o`: Locate · `Space`: Reverse · `m`: Motor On/Off · `⏶`: Accel · `⏷`: Decel · `Enter`: Load/Unload · `#`: Select by ID
+
+#### Link (`l`)
+
+- `⏶,⏷`: Front/Back · `⏴,⏵`: Select/Unselect wagons · `o`: Locate · `Space`: Link
+
+#### Unlink (`u`)
+
+- `⏶,⏷`: Front/Back · `⏴,⏵`: Select/Unselect wagons · `o`: Locate · `Space`: Unlink
+
+#### Program (`p`)
+
+- Muestra el IDE de scripts.
+
+#### Equivalencias con la consola `:`
+
+Las teclas modales son abreviaturas directas de comandos de la consola. Mientras la CLI usa alias de dos letras (`fo`, `sn`, `st`...), el esquema modal usa una sola letra por tipo (fork, rail, sensor, semaphore, signal, station, locomotive):
+
+| Modal | Consola `:` |
+|---|---|
+| `g f #` | `go fo #` |
+| `g s #` | `go sn #` |
+| `g m #` | `go sm #` |
+| `g i #` | `go si #` |
+| `g t #` | `go st #` |
+| `g l #` | `go lo #` |
+| `g[np] r` | `gn ra \| gp ra` |
+| `g[np] f` | `gn fo \| gp fo` |
+| `g " #` | `go "#` |
+| `g e` | `go en` |
+| `r [nswe]` | `face n\|s\|w\|e` |
+| `f [fsmitl] #` | `face [fsmitl] #` |
+
+### 4.2. Retroalimentación de Comandos (Eco)
+
+- Si un comando no puede ejecutarse, se muestra un **error en la consola**.
+- Si un comando puede ejecutarse pero no termina nunca (p. ej. `g e` en una vía que es un circuito cerrado), el usuario debe poder **cancelarlo con `Esc`**.
+- El board muestra: el **modo actual** ("Writing", "Erasing", etc.), el **comando que se está tecleando** (p. ej. `g n ...` mientras espera a que se complete) y una **descripción** de lo que hará.
+- `.` repite la última acción (comando punto).
+
+---
+
+## 5. Anexo: Diccionario de Comandos y Ejemplos
+
+### Abreviaturas de Objetos (Nota de Diseño)
+Todos los objetos físicos tienen un alias estricto de dos letras para agilizar la escritura en comandos complejos:
+* `fo` (fork)
+* `ra` (rail)
+* `sn` (sensor)
+* `sm` (semaphore)
+* `si` (signal)
+* `st` (station)
+* `tr` (train)
+* `wg` (wagon)
+
+El esquema modal (sección 4.1) usa una sola letra por tipo: `f` (fork), `r` (rail), `s` (sensor), `m` (semaphore), `i` (signal), `t` (station), `l` (locomotive).
+
+### Control de Trenes
+* `train 1 start motor`: Arranca el motor.
+* `train 1 set speed 3`: Establece la velocidad a 3.
+* `train 1 stop`: Detiene el tren.
+* `train 1 forward to contact`: Avanza a velocidad de maniobra hasta chocar y se detiene.
+* `train 1 link forward all`: Ordena acoplar vagones.
+* `train 1 invert`: Invierte la marcha del tren.
+
+### Navegación de Cursor
+* `go 232,34`: Salto a coordenadas absolutas.
+* `go m-1`: Ir a la marca 1.
+* `gn fo`: Alias de "go next fork".
+* `gn ra`: Alias de "go next rail" (Avanza hasta otra vía. Si estás en una avanza 1).
+* `gn sn`: Alias de "go next sensor".
+* `gn sm`: Alias de "go next semaphore".
+* `gn si`: Alias de "go next signal".
+* `gn st`: Alias de "go next station".
+* `gp fo`: Alias de "go prev fork".
+* `g st 1`: Alias de "go station 1".
+* `g tr 1 h`: Alias de "go train 1 head".
+* `ge`: Alias de "go to end" (Avanza hasta el final de la vía).
+
+### Rotación de Cursor (Mirar hacia)
+* `face n`: El cursor pivota para mirar al Norte.
+* `face s`: El cursor pivota para mirar al Sur.
+* `f n`: Alias de "face n".
+* `face st 1`: El cursor pivota hacia la posición de la estación 1.
+
+### Construcción y Navegación (Secuencias Turtle)
+* `mode write`: Entra en modo construcción.
+* `20, l, 3, r, 32, m-1, l, l, 32`: Construye toda la secuencia de golpe.
+* `gn fo, r, ge`: Avanza al próximo desvío, gira a la derecha y avanza hasta el final de la vía.
+* `step 10`: Avanza 10 unidades.
+* `mode move`: Entra en modo espectador.
+* `14, l, 2`: Se desplaza por la red sin construir.
+* `mode del`: Entra en modo goma de borrar.
+* `backward 5`: Borra 5 unidades hacia atrás.
+* `mode clear`: Pasa el "triturador" (borra vehículos, deja la vía).
+* `forward 20`: Triturará todos los vagones sueltos en los próximos 20 pasos.
+
+### Creación / Asignación
+* `new st 1`: Crea la estación 1.
+* `$s1 = new st "Alpha"`: Crea la estación "Alpha" y la asigna a `$s1`.
+* `new sm 1`: Crea el semáforo 1.
+* `new sn 2`: Crea el sensor 2.
+
+### Eliminación (Contextual y Directa)
+* `del st 1`: Borra la estación 1.
+* `del $s1`: Borra la entidad asociada a `$s1`.
+* `del`: Borra la entidad bajo el cursor.
+* `del tr here`: Elimina el tren entero en el cursor.
+* `del wg here`: Elimina el vagón específico bajo el cursor.
+* `del tr "Expreso"`: Elimina el tren buscándolo por nombre.
+
+### Gestión del Mundo
+* `new`: Reinicio total.
+* `new keep-map`: Borra entidades, conserva el terreno.
+* `new map mountains=high rivers=low gold=high`: Genera un nuevo mapa procedural.
+* `w` (o `save`): Guarda la partida actual.
+* `q`: Cierra la consola.
+* `wq`: Guarda la partida y cierra la consola.
+
+
+* `save "partida1"`: Exporta la partida a JSON.
+* `load "partida1"`: Carga el JSON.
+* `game stop`: Botón del pánico global (pausa/parada de emergencia).
+
+### Manipulación Lógica y Marcas
+* `sm 1 open`: Abre el semáforo 1.
+* `fo set left`: Cambia la aguja del desvío actual a la izquierda.
+* `mark 1`: Guarda la coordenada actual en `m-1`.
+* `mark central_hub`: Guarda una marca de texto (usable luego con `go central_hub`).
+
+---
+
+## 6. Roadmap de Implementación (Fases MVP)
+
+1.  **Fase 1 (Administración Directa):** Integrar ANTLR4 con Java. Solo comandos directos (`train 1 stop`, `save`, `new`).
+2.  **Fase 2 (Navegación Topológica):** Crear el Cursor. Parsear secuencias de movimiento simples y comandos de navegación (`go 10,20`, `gn fo`, `g st 1`).
+3.  **Fase 3 (Lápiz y Goma - Turtle Graphics):** Implementar la máquina de modos (`write`, `move`, `del`, `clear`). Modificar mapa mediante cadenas `20, l, 3`.
+4.  **Fase 4 (Memoria y Variables):** Tabla de símbolos. Guardado JSON. *String Lookup* y resolución UPSERT. (`$s1 = new...`).
+5.  **Fase 5 (Motor de Macros - Opcional):** Ejecución de scripts largos en ficheros externos (`:load script.letrain`).
+6.  **Fase 6 (Hotkeys Modales):** Esquema modal de la sección 3.8: parser de prefijos `g` / `g[np]`, marcas `"`, modos Add/Vehicles/Drive, eco de comandos (3.9) y comando `.`.
