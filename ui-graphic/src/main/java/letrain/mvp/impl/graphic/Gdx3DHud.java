@@ -291,7 +291,7 @@ public class Gdx3DHud {
         descLabel.setWrap(true);
         descLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
         globalHelpLabel = new Label(
-                "[LIGHT_GRAY][ALT+UP/DOWN / MOUSE WHEEL]: ZOOM | [ALT+LEFT/RIGHT]: ROTATE CAMERA | [Z]: CHANGE CAMERA VIEW[]",
+                "[LIGHT_GRAY][ALT+⏶⏷/kj / MOUSE WHEEL]: ZOOM | [ALT+⏴⏵/hl]: ROTATE CAMERA | [Z]: CHANGE CAMERA VIEW[]",
                 skin, "tiny");
         globalHelpLabel.setWrap(true);
         globalHelpLabel.setAlignment(com.badlogic.gdx.utils.Align.center);

@@ -80,7 +80,7 @@ public class InfoVisitor implements Visitor {
                 }
                 break;
             case UNLINK:
-                infoBarText += "Mode: UNCOUPLE [Arrows]: Select [Space]: Uncouple";
+                infoBarText += "Mode: UNCOUPLE [⏶⏷/kj]: Dir [⏴⏵/hl]: Qty [Space]: Uncouple";
                 break;
             case MENU:
                 infoBarText += "Main Menu";

@@ -1215,7 +1215,7 @@ public class Model implements letrain.mvp.Model {
     @Override
     public List<GameModeMenuOption> getMenuModel() {
         return Arrays.asList(new GameModeMenuOption("&Rails",
-                "[Arrows/hjkl]:Move [Shift]:Add rail [Ctrl]:Remove rail [Ins]:Add sensor [Home]:Add sem [Del]:Add speed [End]:Add station [#]:Steps [Space]:Reset steps",
+                "[⏴⏵⏶⏷/hjkl]:Move [Shift]:Add rail [Ctrl]:Remove rail [Ins]:Add sensor [Home]:Add sem [Del]:Add speed [End]:Add station [#]:Steps [Space]:Reset steps",
                 () -> true, () -> (this.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
                 new GameModeMenuOption("&Drive",
                         "[⏴⏵/hl]:Select [o]:Locate [m]:Motor [⏶/k]:Accel [⏷/j]:Decel [Space]:Rev [Enter]:Load [#]:ID",
