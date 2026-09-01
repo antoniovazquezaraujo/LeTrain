@@ -11,26 +11,30 @@ confinement: strict
 
 apps:
   letrain:
-    command: usr/lib/jvm/java-17-openjdk-amd64/bin/java -jar $SNAP/letrain.jar
+    command: usr/lib/jvm/java-17-openjdk-amd64/bin/java -jar $SNAP/jar/letrain-graphic.jar
     extensions: [gnome]
     plugs:
       - opengl
       - pulseaudio
       - alsa
       - x11
+  letrain-terminal:
+    command: usr/lib/jvm/java-17-openjdk-amd64/bin/java -jar $SNAP/jar/letrain-terminal.jar
+    plugs:
+      - pulseaudio
+      - alsa
 
 parts:
   letrain:
-    plugin: maven
+    plugin: nil
     source: .
-    maven-parameters:
-      - clean
-      - package
-      - -DskipTests
     override-build: |
-      craftctl default
-      cp target/*-jar-with-dependencies.jar $CRAFT_PART_INSTALL/letrain.jar || cp target/*.jar $CRAFT_PART_INSTALL/letrain.jar
+      mvn clean package -DskipTests -Dexec.skip=true
+      mkdir -p $CRAFT_PART_INSTALL/jar
+      cp launcher-graphic/target/*-jar-with-dependencies.jar $CRAFT_PART_INSTALL/jar/letrain-graphic.jar
+      cp launcher-terminal/target/*-jar-with-dependencies.jar $CRAFT_PART_INSTALL/jar/letrain-terminal.jar
     build-packages:
       - openjdk-17-jdk
+      - maven
     stage-packages:
       - openjdk-17-jre

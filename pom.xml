@@ -6,6 +6,7 @@
     <groupId>com.progmatic</groupId>
     <artifactId>JLeTrain</artifactId>
     <version>1.0.0-beta.3-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
     <prerequisites>
         <maven>3.3.1</maven>
@@ -18,8 +19,105 @@
         <junit.version>6.1.3</junit.version>
     </properties>
 
-    <build>
+    <modules>
+        <module>core</module>
+        <module>ui-terminal</module>
+        <module>ui-graphic</module>
+        <module>launcher-terminal</module>
+        <module>launcher-graphic</module>
+    </modules>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4</artifactId>
+                <version>4.13.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.kotcrab.vis</groupId>
+                <artifactId>vis-ui</artifactId>
+                <version>1.5.3</version>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.lanterna</groupId>
+                <artifactId>lanterna</artifactId>
+                <version>3.1.5</version>
+            </dependency>        
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-inline</artifactId>
+                <version>5.2.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <!-- LibGDX -->
+            <dependency>
+                <groupId>com.badlogicgames.gdx</groupId>
+                <artifactId>gdx</artifactId>
+                <version>1.14.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.badlogicgames.gdx</groupId>
+                <artifactId>gdx-backend-lwjgl3</artifactId>
+                <version>1.14.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.badlogicgames.gdx</groupId>
+                <artifactId>gdx-platform</artifactId>
+                <version>1.14.2</version>
+                <classifier>natives-desktop</classifier>
+            </dependency>
+            <dependency>
+                <groupId>com.badlogicgames.gdx</groupId>
+                <artifactId>gdx-freetype</artifactId>
+                <version>1.14.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.badlogicgames.gdx</groupId>
+                <artifactId>gdx-freetype-platform</artifactId>
+                <version>1.14.2</version>
+                <classifier>natives-desktop</classifier>
+            </dependency>
+
+            <!-- Jackson for JSON Serialization -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.22.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-jsr310</artifactId>
+                <version>2.15.2</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
         <plugins>
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
@@ -28,7 +126,7 @@
                 <configuration>
                     <java>
                         <eclipse>
-                            <file>eclipse-java-google-style.xml</file>
+                            <file>${maven.multiModuleProjectDirectory}/eclipse-java-google-style.xml</file>
                         </eclipse>
                         <removeUnusedImports/>
                     </java>
@@ -37,44 +135,14 @@
             <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
                 <version>3.2.0</version>
-                <configuration>
-                    <filesets>
-                        <fileset>
-                            <directory>output</directory>
-                            <followSymlinks>false</followSymlinks>
-                        </fileset>
-                    </filesets>
-                </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.antlr</groupId>
-                <artifactId>antlr4-maven-plugin</artifactId>
-                <version>4.13.2</version>
-                <executions>
-                    <execution>
-                        <id>antlr</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>antlr4</goal>
-                        </goals>
-                        <configuration>
-                            <!-- <sourceDirectory>${basedir}/src/main/antlr4</sourceDirectory> -->
-                            <outputDirectory>${project.build.directory}/generated-sources/antlr4</outputDirectory>
-                            <listener>true</listener>
-                            <visitor>true</visitor>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>        
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.15.0</version>
                 <configuration>
-                    <source>17</source>
                     <release>17</release>
-                    <verbose>true</verbose>
-                    <fork>true</fork>
+                    <showDeprecation>true</showDeprecation>
                 </configuration>
             </plugin>
             <plugin>
@@ -82,225 +150,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0</version>
             </plugin>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.8.0</version>
-                <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <archive>
-                        <manifest>
-                            <mainClass>letrain.LeTrain</mainClass> 
-                        </manifest>
-                    </archive>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>make-assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.6.3</version>
-                <executions>
-                    <execution>
-                        <id>jpackage</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>jpackage</executable>
-                            <arguments>
-                                <argument>--input</argument>
-                                <argument>${project.build.directory}</argument>
-                                <argument>--name</argument>
-                                <argument>LeTrain</argument>
-                                <argument>--main-jar</argument>
-                                <argument>${project.build.finalName}-jar-with-dependencies.jar</argument>
-                                <argument>--main-class</argument>
-                                <argument>letrain.LeTrain</argument>
-                                <argument>--type</argument>
-                                <argument>app-image</argument>
-                                <argument>--dest</argument>
-                                <argument>${project.basedir}/output</argument>
-                                <argument>--arguments</argument>
-                                <argument>--3d</argument>
-                                <argument>--add-launcher</argument>
-                                <argument>LeTrain2D=${project.build.directory}/2d_launcher.properties</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <id>clean-output</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <delete dir="${project.basedir}/output/LeTrain"/>
-                                <delete file="${project.basedir}/output/LeTrain-Windows-x64.zip"/>
-                                <echo file="${project.build.directory}/2d_launcher.properties">arguments=</echo>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>zip-distribution</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <zip destfile="${project.basedir}/output/LeTrain-Windows-x64.zip" 
-                                     basedir="${project.basedir}/output/LeTrain"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>letrain.LeTrain</mainClass> 
-                        </manifest>
-                    </archive>
-                </configuration>
-            </plugin>       
-            <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <version>3.6.1</version>
-            <executions>
-                <execution>
-                <id>add-source</id>
-                <phase>generate-sources</phase>
-                <goals>
-                    <goal>add-source</goal>
-                </goals>
-                <configuration>
-                    <sources>
-                    <source>${project.build.directory}/generated-sources/antlr4</source>
-                    </sources>
-                </configuration>
-                </execution>
-            </executions>
-            </plugin>
         </plugins>
     </build>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr4</artifactId>
-            <version>4.13.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.kotcrab.vis</groupId>
-            <artifactId>vis-ui</artifactId>
-            <version>1.5.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.googlecode.lanterna</groupId>
-            <artifactId>lanterna</artifactId>
-            <version>3.1.5</version>
-        </dependency>        
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-inline</artifactId>
-            <version>5.2.0</version>
-            <scope>test</scope>
-      </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>${logback.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-params</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- LibGDX -->
-        <dependency>
-            <groupId>com.badlogicgames.gdx</groupId>
-            <artifactId>gdx</artifactId>
-            <version>1.14.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.badlogicgames.gdx</groupId>
-            <artifactId>gdx-backend-lwjgl3</artifactId>
-            <version>1.14.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.badlogicgames.gdx</groupId>
-            <artifactId>gdx-platform</artifactId>
-            <version>1.14.2</version>
-            <classifier>natives-desktop</classifier>
-        </dependency>
-        <dependency>
-            <groupId>com.badlogicgames.gdx</groupId>
-            <artifactId>gdx-freetype</artifactId>
-            <version>1.14.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.badlogicgames.gdx</groupId>
-            <artifactId>gdx-freetype-platform</artifactId>
-            <version>1.14.2</version>
-            <classifier>natives-desktop</classifier>
-        </dependency>
-
-        <!-- Jackson for JSON Serialization -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.22.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.15.2</version>
-        </dependency>
-
-    </dependencies>
-
 </project>

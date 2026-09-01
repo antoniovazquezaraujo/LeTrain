@@ -1,6 +1,6 @@
 .idea/
 Ideas.adoc
-/target/
+target/
 *.ltr
 /output/
 unused_sound/
