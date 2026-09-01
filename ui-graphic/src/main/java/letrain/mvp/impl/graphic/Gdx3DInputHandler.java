@@ -277,12 +277,12 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     public void onChar(InputEvent stroke) {
         if (model.getMode() == Model.GameMode.COMMAND) {
-            if (getEffectiveKeyType(stroke) == KeyType.Escape) {
+            if (stroke.getKeyType() == KeyType.Escape) {
                 model.setMode(Model.GameMode.RAILS);
                 model.setCommandText("");
                 model.setCommandError("");
                 return;
-            } else if (getEffectiveKeyType(stroke) == KeyType.Enter) {
+            } else if (stroke.getKeyType() == KeyType.Enter) {
                 log.info("Execute command: " + model.getCommandText());
                 String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(), model);
                 if (error != null) {
@@ -293,14 +293,14 @@ public class Gdx3DInputHandler implements InputProcessor {
                 model.setCommandText("");
                 model.setCommandError("");
                 return;
-            } else if (getEffectiveKeyType(stroke) == KeyType.Backspace) {
+            } else if (stroke.getKeyType() == KeyType.Backspace) {
                 String t = model.getCommandText();
                 if (t.length() > 0) {
                     model.setCommandText(t.substring(0, t.length() - 1));
                     model.setCommandError("");
                 }
                 return;
-            } else if (getEffectiveKeyType(stroke) == KeyType.Character) {
+            } else if (stroke.getKeyType() == KeyType.Character) {
                 Character c = stroke.getCharacter();
                 if (c != null) {
                     model.setCommandText(model.getCommandText() + c);
