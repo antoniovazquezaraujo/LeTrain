@@ -70,7 +70,7 @@ public class InfoVisitor implements Visitor {
                 break;
             case LINK:
                 infoBarText +=
-                        "Mode: COUPLE [Up/Down]: Direction [Left/Right]: Quantity [Space]: Couple";
+                        "Mode: COUPLE [U/D/k/j]: Dir [L/R/h/l]: Qty [Space]: Couple";
                 Locomotive selected = model.getSelectedLocomotive();
                 if (selected != null && selected.getTrain() != null) {
                     Train train = selected.getTrain();
