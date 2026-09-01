@@ -58,7 +58,8 @@ Se soportarán secuencias concatenadas (ej. `20, l, 10` -> avanza 20, gira izqui
 
 Junto a la consola `:`, la interacción directa se organiza en **modos** con filosofía vim: cada modo se entra con una tecla y tiene sus propias acciones. Para que todos los conceptos tengan cabida, algunas teclas actuales se remapean según este esquema.
 
-#### Modos y teclas de acceso
+#### Modos y teclas de acceso (Normal Mode)
+En modo `NORMAL`, las teclas de movimiento `h, j, k, l` mueven el cursor. El resto de teclas cambian a los siguientes modos:
 
 | Modo | Tecla |
 |---|---|
@@ -70,8 +71,8 @@ Junto a la consola `:`, la interacción directa se organiza en **modos** con fil
 | Stations | `t` |
 | Vehicles | `v` |
 | Drive | `d` |
-| Link | `l` |
-| Unlink | `u` |
+| Couple | `c` |
+| Uncouple | `u` |
 | Program | `p` |
 
 #### Rails (`r`)
@@ -138,13 +139,13 @@ Junto a la consola `:`, la interacción directa se organiza en **modos** con fil
 
 - `⏴,⏵`: Select · `o`: Locate · `Space`: Reverse · `m`: Motor On/Off · `⏶`: Accel · `⏷`: Decel · `Enter`: Load/Unload · `#`: Select by ID
 
-#### Link (`l`)
+#### Couple (`c`)
 
-- `⏶,⏷`: Front/Back · `⏴,⏵`: Select/Unselect wagons · `o`: Locate · `Space`: Link
+- `⏶,⏷`: Front/Back · `⏴,⏵`: Select/Unselect wagons · `o`: Locate · `Space`: Couple
 
-#### Unlink (`u`)
+#### Uncouple (`u`)
 
-- `⏶,⏷`: Front/Back · `⏴,⏵`: Select/Unselect wagons · `o`: Locate · `Space`: Unlink
+- `⏶,⏷`: Front/Back · `⏴,⏵`: Select/Unselect wagons · `o`: Locate · `Space`: Uncouple
 
 #### Program (`p`)
 
