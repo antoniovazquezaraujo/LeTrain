@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: letrain.core.segments.BlockManagerTest
+-------------------------------------------------------------------------------
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.122 s - in letrain.core.segments.BlockManagerTest

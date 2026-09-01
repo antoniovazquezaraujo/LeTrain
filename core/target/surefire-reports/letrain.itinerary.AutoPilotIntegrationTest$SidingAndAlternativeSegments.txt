@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: letrain.itinerary.AutoPilotIntegrationTest$SidingAndAlternativeSegments
+-------------------------------------------------------------------------------
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.204 s - in letrain.itinerary.AutoPilotIntegrationTest$SidingAndAlternativeSegments

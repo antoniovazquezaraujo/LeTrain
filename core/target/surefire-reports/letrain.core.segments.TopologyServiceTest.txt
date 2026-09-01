@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: letrain.core.segments.TopologyServiceTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.03 s - in letrain.core.segments.TopologyServiceTest

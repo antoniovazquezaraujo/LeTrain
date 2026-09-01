@@ -1,0 +1,1397 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="letrain.itinerary.AutoPilotIntegrationTest$CircuitFromSave" time="1.312" tests="2" errors="0" skipped="0" failures="0">
+  <properties>
+    <property name="java.specification.version" value="17"/>
+    <property name="sun.jnu.encoding" value="UTF-8"/>
+    <property name="java.class.path" value="/home/antonio/dev/LeTrain/core/target/test-classes:/home/antonio/dev/LeTrain/core/target/classes:/home/antonio/.m2/repository/org/antlr/antlr4/4.13.2/antlr4-4.13.2.jar:/home/antonio/.m2/repository/org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar:/home/antonio/.m2/repository/org/antlr/antlr-runtime/3.5.3/antlr-runtime-3.5.3.jar:/home/antonio/.m2/repository/org/antlr/ST4/4.3.4/ST4-4.3.4.jar:/home/antonio/.m2/repository/org/abego/treelayout/org.abego.treelayout.core/1.0.3/org.abego.treelayout.core-1.0.3.jar:/home/antonio/.m2/repository/com/ibm/icu/icu4j/72.1/icu4j-72.1.jar:/home/antonio/.m2/repository/org/mockito/mockito-inline/5.2.0/mockito-inline-5.2.0.jar:/home/antonio/.m2/repository/org/mockito/mockito-core/5.2.0/mockito-core-5.2.0.jar:/home/antonio/.m2/repository/net/bytebuddy/byte-buddy/1.14.1/byte-buddy-1.14.1.jar:/home/antonio/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.1/byte-buddy-agent-1.14.1.jar:/home/antonio/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/home/antonio/.m2/repository/org/slf4j/slf4j-api/2.0.4/slf4j-api-2.0.4.jar:/home/antonio/.m2/repository/ch/qos/logback/logback-core/1.6.3/logback-core-1.6.3.jar:/home/antonio/.m2/repository/ch/qos/logback/logback-classic/1.6.3/logback-classic-1.6.3.jar:/home/antonio/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.1.3/junit-jupiter-api-6.1.3.jar:/home/antonio/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/antonio/.m2/repository/org/junit/platform/junit-platform-commons/6.1.3/junit-platform-commons-6.1.3.jar:/home/antonio/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/antonio/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/antonio/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.1.3/junit-jupiter-params-6.1.3.jar:/home/antonio/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.22.1/jackson-databind-2.22.1.jar:/home/antonio/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar:/home/antonio/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.22.1/jackson-core-2.22.1.jar:/home/antonio/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.15.2/jackson-datatype-jsr310-2.15.2.jar:"/>
+    <property name="java.vm.vendor" value="Ubuntu"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="java.vendor.url" value="https://ubuntu.com/"/>
+    <property name="user.timezone" value="Europe/Madrid"/>
+    <property name="os.name" value="Linux"/>
+    <property name="java.vm.specification.version" value="17"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="sun.boot.library.path" value="/usr/lib/jvm/java-17-openjdk-amd64/lib"/>
+    <property name="sun.java.command" value="/home/antonio/dev/LeTrain/core/target/surefire/surefirebooter-20260901094540687_3.jar /home/antonio/dev/LeTrain/core/target/surefire 2026-09-01T09-45-40_141-jvmRun1 surefire-20260901094540687_1tmp surefire_0-20260901094540687_2tmp"/>
+    <property name="jdk.debug" value="release"/>
+    <property name="surefire.test.class.path" value="/home/antonio/dev/LeTrain/core/target/test-classes:/home/antonio/dev/LeTrain/core/target/classes:/home/antonio/.m2/repository/org/antlr/antlr4/4.13.2/antlr4-4.13.2.jar:/home/antonio/.m2/repository/org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar:/home/antonio/.m2/repository/org/antlr/antlr-runtime/3.5.3/antlr-runtime-3.5.3.jar:/home/antonio/.m2/repository/org/antlr/ST4/4.3.4/ST4-4.3.4.jar:/home/antonio/.m2/repository/org/abego/treelayout/org.abego.treelayout.core/1.0.3/org.abego.treelayout.core-1.0.3.jar:/home/antonio/.m2/repository/com/ibm/icu/icu4j/72.1/icu4j-72.1.jar:/home/antonio/.m2/repository/org/mockito/mockito-inline/5.2.0/mockito-inline-5.2.0.jar:/home/antonio/.m2/repository/org/mockito/mockito-core/5.2.0/mockito-core-5.2.0.jar:/home/antonio/.m2/repository/net/bytebuddy/byte-buddy/1.14.1/byte-buddy-1.14.1.jar:/home/antonio/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.1/byte-buddy-agent-1.14.1.jar:/home/antonio/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/home/antonio/.m2/repository/org/slf4j/slf4j-api/2.0.4/slf4j-api-2.0.4.jar:/home/antonio/.m2/repository/ch/qos/logback/logback-core/1.6.3/logback-core-1.6.3.jar:/home/antonio/.m2/repository/ch/qos/logback/logback-classic/1.6.3/logback-classic-1.6.3.jar:/home/antonio/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.1.3/junit-jupiter-api-6.1.3.jar:/home/antonio/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/antonio/.m2/repository/org/junit/platform/junit-platform-commons/6.1.3/junit-platform-commons-6.1.3.jar:/home/antonio/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/antonio/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/antonio/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.1.3/junit-jupiter-params-6.1.3.jar:/home/antonio/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.22.1/jackson-databind-2.22.1.jar:/home/antonio/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar:/home/antonio/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.22.1/jackson-core-2.22.1.jar:/home/antonio/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.15.2/jackson-datatype-jsr310-2.15.2.jar:"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="user.home" value="/home/antonio"/>
+    <property name="user.language" value="en"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.version.date" value="2026-07-21"/>
+    <property name="java.home" value="/usr/lib/jvm/java-17-openjdk-amd64"/>
+    <property name="file.separator" value="/"/>
+    <property name="basedir" value="/home/antonio/dev/LeTrain/core"/>
+    <property name="java.vm.compressedOopsMode" value="32-bit"/>
+    <property name="line.separator" value="&#10;"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="surefire.real.class.path" value="/home/antonio/dev/LeTrain/core/target/surefire/surefirebooter-20260901094540687_3.jar"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="java.runtime.version" value="17.0.20+8-1-24.04-Ubuntu"/>
+    <property name="user.name" value="antonio"/>
+    <property name="path.separator" value=":"/>
+    <property name="os.version" value="6.6.87.2-microsoft-standard-WSL2"/>
+    <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
+    <property name="localRepository" value="/home/antonio/.m2/repository"/>
+    <property name="java.vendor.url.bug" value="https://bugs.launchpad.net/ubuntu/+source/openjdk-17"/>
+    <property name="java.io.tmpdir" value="/tmp"/>
+    <property name="java.version" value="17.0.20"/>
+    <property name="user.dir" value="/home/antonio/dev/LeTrain/core"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="native.encoding" value="UTF-8"/>
+    <property name="java.library.path" value="/usr/java/packages/lib:/usr/lib/x86_64-linux-gnu/jni:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/jni:/lib:/usr/lib"/>
+    <property name="java.vm.info" value="mixed mode, sharing"/>
+    <property name="java.vendor" value="Ubuntu"/>
+    <property name="java.vm.version" value="17.0.20+8-1-24.04-Ubuntu"/>
+    <property name="java.specification.maintenance.version" value="1"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="java.class.version" value="61.0"/>
+  </properties>
+  <testcase name="madridToBarcelonaSpeed0OnEnter" classname="letrain.itinerary.AutoPilotIntegrationTest$CircuitFromSave" time="1.018">
+    <system-out><![CDATA[TICK 0: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 1: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 2: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 3: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 4: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 5: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 6: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 7: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 8: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 9: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 10: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 11: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 12: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 13: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 14: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 15: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 16: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 17: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 18: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 19: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 20: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 21: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 22: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 23: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 24: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 25: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 26: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 27: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 28: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 29: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 30: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 31: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 32: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 33: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 34: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 35: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 36: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 37: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 38: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 39: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 40: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 41: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 42: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 43: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 44: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 45: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 46: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 47: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 48: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 49: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 50: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 51: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 52: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 53: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 54: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 55: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 56: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 57: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 58: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 59: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 60: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 61: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 62: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 63: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 64: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 65: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 66: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 67: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 68: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 69: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 70: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 71: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 72: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 73: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 74: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 75: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 76: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 77: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 78: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 79: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 80: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 81: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 82: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 83: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 84: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 85: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 86: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 87: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 88: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 89: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 90: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 91: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 92: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 93: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 94: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 95: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 96: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 97: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 98: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 99: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 100: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 101: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 102: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 103: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 104: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 105: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 106: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 107: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 108: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 109: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 110: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 111: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 112: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 113: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 114: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 115: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 116: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 117: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 118: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 119: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 120: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 121: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 122: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 123: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 124: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 125: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 126: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 127: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 128: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 129: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 130: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 131: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 132: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 133: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 134: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 135: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 136: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 137: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 138: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 139: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 140: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 141: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 142: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 143: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 144: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 145: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 146: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 147: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 148: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 149: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 150: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 151: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 152: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 153: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 154: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 155: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 156: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 157: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 158: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 159: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 160: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 161: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 162: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 163: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 164: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 165: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 166: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 167: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 168: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 169: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 170: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 171: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 172: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 173: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 174: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 175: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 176: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 177: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 178: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 179: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 180: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 181: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 182: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 183: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 184: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 185: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 186: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 187: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 188: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 189: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 190: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 191: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 192: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 193: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 194: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 195: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 196: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 197: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 198: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 199: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 200: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 201: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 202: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 203: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 204: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 205: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 206: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 207: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 208: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 209: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 210: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 211: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 212: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 213: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 214: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 215: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 216: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 217: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 218: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 219: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 220: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 221: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 222: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 223: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 224: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 225: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 226: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 227: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 228: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 229: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 230: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 231: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 232: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 233: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 234: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 235: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 236: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 237: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 238: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 239: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 240: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 241: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 242: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 243: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 244: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 245: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 246: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 247: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 248: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 249: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 250: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 251: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 252: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 253: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 254: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 255: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 256: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 257: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 258: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 259: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 260: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 261: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 262: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 263: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 264: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 265: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 266: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 267: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 268: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 269: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 270: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 271: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 272: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 273: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 274: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 275: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 276: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 277: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 278: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 279: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 280: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 281: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 282: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 283: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 284: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 285: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 286: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 287: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 288: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 289: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 290: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 291: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 292: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 293: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 294: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 295: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 296: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 297: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 298: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 299: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 300: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 301: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 302: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 303: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 304: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 305: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 306: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 307: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 308: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 309: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 310: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 311: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 312: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 313: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 314: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 315: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 316: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 317: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 318: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 319: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 320: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 321: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 322: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 323: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 324: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 325: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 326: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 327: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 328: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 329: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 330: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 331: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 332: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 333: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 334: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 335: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 336: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 337: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 338: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 339: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 340: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 341: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 342: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 343: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 344: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 345: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 346: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 347: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 348: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 349: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 350: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 351: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 352: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 353: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 354: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 355: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 356: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 357: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 358: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 359: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 360: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 361: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 362: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 363: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 364: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 365: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 366: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 367: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 368: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 369: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 370: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 371: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 372: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 373: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 374: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 375: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 376: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 377: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 378: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 379: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 380: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 381: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 382: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 383: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 384: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 385: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 386: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 387: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 388: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 389: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 390: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 391: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 392: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 393: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 394: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 395: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 396: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 397: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 398: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 399: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 400: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 401: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 402: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 403: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 404: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 405: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 406: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 407: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 408: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 409: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 410: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 411: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 412: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 413: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 414: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 415: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 416: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 417: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 418: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 419: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 420: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 421: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 422: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 423: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 424: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 425: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 426: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 427: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 428: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 429: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 430: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 431: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 432: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 433: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 434: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 435: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 436: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 437: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 438: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 439: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 440: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 441: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 442: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 443: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 444: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 445: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 446: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 447: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 448: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 449: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 450: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 451: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 452: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 453: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 454: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 455: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 456: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 457: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 458: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 459: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 460: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 461: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 462: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 463: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 464: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 465: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 466: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 467: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 468: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 469: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 470: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 471: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 472: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 473: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 474: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 475: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 476: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 477: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 478: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 479: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 480: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 481: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 482: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 483: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 484: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 485: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 486: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 487: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 488: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 489: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 490: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 491: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 492: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 493: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 494: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 495: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 496: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 497: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 498: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 499: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 500: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 501: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 502: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 503: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 504: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 505: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 506: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 507: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 508: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 509: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 510: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 511: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 512: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 513: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 514: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 515: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 516: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 517: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 518: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 519: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 520: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 521: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 522: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 523: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 524: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 525: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 526: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 527: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 528: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 529: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 530: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 531: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 532: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 533: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 534: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 535: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 536: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 537: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 538: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 539: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 540: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 541: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 542: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 543: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 544: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 545: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 546: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 547: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 548: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 549: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 550: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 551: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 552: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 553: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 554: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 555: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 556: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 557: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 558: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 559: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 560: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 561: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 562: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 563: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 564: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 565: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 566: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 567: speed=3 targetSpeed=0 auto=true stationId=2 segment=S1 pos=-39173,15613
+POST-TICK 0: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 1: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 2: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 3: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 4: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 5: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 6: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 7: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 8: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 9: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 10: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 11: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 12: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 13: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 14: speed=3 targetSpeed=0 auto=true stationId=2
+POST-TICK 15: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 16: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 17: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 18: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 19: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 20: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 21: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 22: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 23: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 24: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 25: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 26: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 27: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 28: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 29: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 30: speed=3 targetSpeed=0 auto=true stationId=0
+POST-TICK 31: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 32: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 33: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 34: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 35: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 36: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 37: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 38: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 39: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 40: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 41: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 42: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 43: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 44: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 45: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 46: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 47: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 48: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 49: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 50: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 51: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 52: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 53: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 54: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 55: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 56: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 57: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 58: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 59: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 60: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 61: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 62: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 63: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 64: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 65: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 66: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 67: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 68: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 69: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 70: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 71: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 72: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 73: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 74: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 75: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 76: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 77: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 78: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 79: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 80: speed=2 targetSpeed=0 auto=true stationId=0
+POST-TICK 81: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 82: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 83: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 84: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 85: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 86: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 87: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 88: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 89: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 90: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 91: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 92: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 93: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 94: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 95: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 96: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 97: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 98: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 99: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 100: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 101: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 102: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 103: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 104: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 105: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 106: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 107: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 108: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 109: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 110: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 111: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 112: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 113: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 114: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 115: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 116: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 117: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 118: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 119: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 120: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 121: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 122: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 123: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 124: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 125: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 126: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 127: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 128: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 129: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 130: speed=1 targetSpeed=0 auto=true stationId=0
+POST-TICK 131: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 132: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 133: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 134: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 135: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 136: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 137: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 138: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 139: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 140: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 141: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 142: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 143: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 144: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 145: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 146: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 147: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 148: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 149: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 150: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 151: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 152: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 153: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 154: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 155: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 156: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 157: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 158: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 159: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 160: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 161: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 162: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 163: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 164: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 165: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 166: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 167: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 168: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 169: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 170: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 171: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 172: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 173: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 174: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 175: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 176: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 177: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 178: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 179: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 180: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 181: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 182: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 183: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 184: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 185: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 186: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 187: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 188: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 189: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 190: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 191: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 192: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 193: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 194: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 195: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 196: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 197: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 198: speed=0 targetSpeed=0 auto=true stationId=0
+POST-TICK 199: speed=0 targetSpeed=0 auto=true stationId=0
+]]></system-out>
+  </testcase>
+  <testcase name="madridToBarcelona" classname="letrain.itinerary.AutoPilotIntegrationTest$CircuitFromSave" time="0.279">
+    <system-out><![CDATA[TICK 0: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 1: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 2: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 3: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 4: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 5: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 6: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 7: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 8: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 9: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 10: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 11: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 12: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 13: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 14: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 15: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 16: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 17: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 18: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 19: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 20: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 21: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 22: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 23: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 24: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 25: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 26: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 27: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 28: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 29: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 30: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 31: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 32: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 33: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 34: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 35: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 36: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 37: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 38: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 39: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 40: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 41: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 42: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 43: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 44: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 45: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 46: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 47: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 48: speed=1 targetSpeed=3 auto=true stationId=1 segment=S4 pos=-39173,15618
+TICK 49: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 50: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 51: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 52: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 53: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 54: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 55: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 56: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 57: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 58: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 59: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 60: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 61: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 62: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 63: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 64: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 65: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 66: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 67: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 68: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 69: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 70: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 71: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 72: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 73: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 74: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 75: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 76: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 77: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 78: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 79: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 80: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 81: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 82: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 83: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 84: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 85: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 86: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 87: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 88: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 89: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 90: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 91: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 92: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 93: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 94: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 95: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 96: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 97: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 98: speed=1 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39172,15618
+TICK 99: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 100: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 101: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 102: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 103: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 104: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 105: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 106: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 107: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 108: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 109: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 110: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 111: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 112: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 113: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 114: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 115: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 116: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 117: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 118: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 119: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 120: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 121: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 122: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 123: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39171,15618
+TICK 124: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 125: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 126: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 127: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 128: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 129: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 130: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 131: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 132: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 133: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 134: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 135: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 136: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 137: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 138: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 139: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 140: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 141: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 142: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 143: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 144: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 145: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 146: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 147: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 148: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39170,15618
+TICK 149: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 150: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 151: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 152: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 153: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 154: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 155: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 156: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 157: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 158: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 159: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 160: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 161: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 162: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 163: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 164: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 165: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 166: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 167: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 168: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 169: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 170: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 171: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 172: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 173: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39169,15618
+TICK 174: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 175: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 176: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 177: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 178: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 179: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 180: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 181: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 182: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 183: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 184: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 185: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 186: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 187: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 188: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 189: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 190: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 191: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 192: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 193: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 194: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 195: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 196: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 197: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 198: speed=2 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39168,15618
+TICK 199: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 200: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 201: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 202: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 203: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 204: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 205: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 206: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 207: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 208: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 209: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 210: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 211: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 212: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 213: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 214: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39167,15618
+TICK 215: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 216: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 217: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 218: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 219: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 220: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 221: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 222: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 223: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 224: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 225: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 226: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 227: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 228: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 229: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 230: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39166,15618
+TICK 231: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 232: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 233: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 234: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 235: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 236: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 237: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 238: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 239: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 240: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 241: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 242: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 243: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 244: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 245: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 246: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39165,15618
+TICK 247: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 248: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 249: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 250: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 251: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 252: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 253: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 254: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 255: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 256: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 257: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 258: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 259: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 260: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 261: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 262: speed=3 targetSpeed=3 auto=true stationId=0 segment=S4 pos=-39164,15618
+TICK 263: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 264: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 265: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 266: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 267: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 268: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 269: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 270: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 271: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 272: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 273: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 274: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 275: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 276: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 277: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 278: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39163,15618
+TICK 279: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 280: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 281: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 282: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 283: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 284: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 285: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 286: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 287: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 288: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 289: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 290: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 291: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 292: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 293: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 294: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39162,15618
+TICK 295: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 296: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 297: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 298: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 299: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 300: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 301: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 302: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 303: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 304: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 305: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 306: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 307: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 308: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 309: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 310: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15618
+TICK 311: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 312: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 313: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 314: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 315: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 316: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 317: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 318: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 319: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 320: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 321: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 322: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 323: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 324: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 325: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 326: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15618
+TICK 327: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 328: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 329: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 330: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 331: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 332: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 333: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 334: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 335: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 336: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 337: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 338: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 339: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 340: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 341: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 342: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15617
+TICK 343: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 344: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 345: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 346: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 347: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 348: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 349: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 350: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 351: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 352: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 353: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 354: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 355: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 356: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 357: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 358: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39159,15616
+TICK 359: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 360: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 361: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 362: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 363: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 364: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 365: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 366: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 367: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 368: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 369: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 370: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 371: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 372: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 373: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 374: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39160,15615
+TICK 375: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 376: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 377: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 378: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 379: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 380: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 381: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 382: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 383: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 384: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 385: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 386: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 387: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 388: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 389: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 390: speed=3 targetSpeed=3 auto=true stationId=0 segment=S3 pos=-39161,15615
+TICK 391: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 392: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 393: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 394: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 395: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 396: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 397: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 398: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 399: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 400: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 401: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 402: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 403: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 404: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 405: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 406: speed=3 targetSpeed=3 auto=true stationId=0 segment=S0 pos=-39162,15615
+TICK 407: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 408: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 409: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 410: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 411: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 412: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 413: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 414: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 415: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 416: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 417: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 418: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 419: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 420: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 421: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 422: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39163,15614
+TICK 423: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 424: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 425: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 426: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 427: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 428: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 429: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 430: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 431: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 432: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 433: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 434: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 435: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 436: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 437: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 438: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39164,15613
+TICK 439: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 440: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 441: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 442: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 443: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 444: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 445: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 446: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 447: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 448: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 449: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 450: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 451: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 452: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 453: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 454: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39165,15613
+TICK 455: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 456: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 457: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 458: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 459: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 460: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 461: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 462: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 463: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 464: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 465: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 466: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 467: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 468: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 469: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 470: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39166,15613
+TICK 471: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 472: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 473: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 474: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 475: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 476: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 477: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 478: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 479: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 480: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 481: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 482: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 483: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 484: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 485: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 486: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39167,15613
+TICK 487: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 488: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 489: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 490: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 491: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 492: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 493: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 494: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 495: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 496: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 497: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 498: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 499: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 500: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 501: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 502: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39168,15613
+TICK 503: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 504: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 505: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 506: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 507: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 508: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 509: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 510: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 511: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 512: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 513: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 514: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 515: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 516: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 517: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 518: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39169,15613
+TICK 519: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 520: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 521: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 522: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 523: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 524: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 525: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 526: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 527: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 528: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 529: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 530: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 531: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 532: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 533: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 534: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39170,15613
+TICK 535: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 536: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 537: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 538: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 539: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 540: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 541: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 542: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 543: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 544: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 545: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 546: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 547: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 548: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 549: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 550: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39171,15613
+TICK 551: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 552: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 553: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 554: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 555: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 556: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 557: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 558: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 559: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 560: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 561: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 562: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 563: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 564: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 565: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 566: speed=3 targetSpeed=3 auto=true stationId=0 segment=S1 pos=-39172,15613
+TICK 567: speed=3 targetSpeed=3 auto=true stationId=2 segment=S1 pos=-39173,15613
+]]></system-out>
+  </testcase>
+</testsuite>

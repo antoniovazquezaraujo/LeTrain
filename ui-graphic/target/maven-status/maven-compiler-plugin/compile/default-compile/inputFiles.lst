@@ -1,0 +1,14 @@
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/mvp/impl/graphic/CameraController.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/mvp/impl/graphic/Gdx3DHud.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/mvp/impl/graphic/Gdx3DInputHandler.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/mvp/impl/graphic/GraphicPresenter.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/utils/FontManager.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/utils/PathGeometry.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/utils/SplinePath.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/visitor/gdx3d/BaseSubRenderer.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/visitor/gdx3d/Gdx3DRenderer.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/visitor/gdx3d/Gdx3DResourceContext.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/visitor/gdx3d/GroundRenderer.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/visitor/gdx3d/InfrastructureRenderer.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/visitor/gdx3d/TrackRenderer.java
+/home/antonio/dev/LeTrain/ui-graphic/src/main/java/letrain/visitor/gdx3d/VehicleRenderer.java
