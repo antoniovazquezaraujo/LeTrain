@@ -469,17 +469,20 @@ public class Gdx3DHud {
                                 String colorMarkup = "[#"
                                         + model.getSelectedWagonType().getColor() + "]";
                                 desc = "Selected: " + colorMarkup + colorName + "[] | " + desc;
-                            } else if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
-                                desc = ":" + model.getCommandText() + "_";
-                                if (model.getCommandError() != null && !model.getCommandError().isEmpty()) {
-                                    desc += " [ERROR: " + model.getCommandError() + "]";
-                                }
                             }
                             descLabel.setText(desc);
                         }
                     }
                 }
             }
+        }
+
+        if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
+            String desc = ":" + model.getCommandText() + "_";
+            if (model.getCommandError() != null && !model.getCommandError().isEmpty()) {
+                desc += " [ERROR: " + model.getCommandError() + "]";
+            }
+            descLabel.setText(desc);
         }
     }
 
