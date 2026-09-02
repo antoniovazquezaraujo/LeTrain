@@ -70,6 +70,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private long stationInputTimeout = 0;
     private long locomotiveInputTimeout = 0;
 
+    private final java.util.List<String> commandHistory = new java.util.ArrayList<>();
+    private int historyIndex = -1;
+
     private final Map<letrain.mvp.Model.GameMode, ModeKeyHandler> modeKeyHandlers =
             new EnumMap<>(letrain.mvp.Model.GameMode.class);
 
@@ -269,12 +272,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 model.setCommandError("");
                 return;
             } else if (keyEvent.getKeyType() == KeyType.Enter) {
-                if (model.getCommandText().trim().isEmpty()) {
+                String cmd = model.getCommandText().trim();
+                if (cmd.isEmpty()) {
                     model.setMode(letrain.mvp.Model.GameMode.RAILS);
                     model.setCommandText("");
                     model.setCommandError("");
                     return;
                 }
+                if (commandHistory.isEmpty() || !commandHistory.get(commandHistory.size() - 1).equals(cmd)) {
+                    commandHistory.add(cmd);
+                }
+                historyIndex = commandHistory.size();
+                
                 log.info("Execute command: " + model.getCommandText());
                 String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(), model, file -> onSaveGame(file), file -> onLoadGame(file), new letrain.command.TurtleDelegate() {
                     @Override public void moveForward() { railTrackMaker.cursorForward(); }
@@ -304,6 +313,24 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 Character c = keyEvent.getCharacter();
                 if (c != null) {
                     model.setCommandText(model.getCommandText() + c);
+                    model.setCommandError("");
+                }
+                return;
+            } else if (keyEvent.getKeyType() == KeyType.ArrowUp) {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    model.setCommandText(commandHistory.get(historyIndex));
+                    model.setCommandError("");
+                }
+                return;
+            } else if (keyEvent.getKeyType() == KeyType.ArrowDown) {
+                if (historyIndex < commandHistory.size() - 1) {
+                    historyIndex++;
+                    model.setCommandText(commandHistory.get(historyIndex));
+                    model.setCommandError("");
+                } else if (historyIndex == commandHistory.size() - 1) {
+                    historyIndex++;
+                    model.setCommandText("");
                     model.setCommandError("");
                 }
                 return;
