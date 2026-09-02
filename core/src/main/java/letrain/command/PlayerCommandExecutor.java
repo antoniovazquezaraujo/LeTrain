@@ -439,7 +439,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             } else if (linker instanceof letrain.vehicle.rail.impl.Wagon) {
                 train = ((letrain.vehicle.rail.impl.Wagon) linker).getTrain();
             }
-            if (train != null) {
+            if (train != null && !train.getLinkers().isEmpty()) {
                 for (letrain.vehicle.rail.Linker l : train.getLinkers()) {
                     if (l instanceof letrain.vehicle.rail.impl.Locomotive) {
                         model.removeLocomotive((letrain.vehicle.rail.impl.Locomotive) l);
@@ -448,6 +448,14 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     }
                     if (l.getTrack() != null) l.getTrack().removeLinker();
                 }
+            } else {
+                // Delete loose wagon or loco without a train (or empty train)
+                if (linker instanceof letrain.vehicle.rail.impl.Locomotive) {
+                    model.removeLocomotive((letrain.vehicle.rail.impl.Locomotive) linker);
+                } else if (linker instanceof letrain.vehicle.rail.impl.Wagon) {
+                    model.removeWagon((letrain.vehicle.rail.impl.Wagon) linker);
+                }
+                if (linker.getTrack() != null) linker.getTrack().removeLinker();
             }
         }
     }
