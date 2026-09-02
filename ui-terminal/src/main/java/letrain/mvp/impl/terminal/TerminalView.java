@@ -857,11 +857,8 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void showMessage(String title, String message) {
-        MessageDialogBuilder.newBuilder()
-                .setTitle(title)
-                .setText(message)
-                .build()
-                .showDialog(gui);
+        com.googlecode.lanterna.gui2.MultiWindowTextGUI gui = new com.googlecode.lanterna.gui2.MultiWindowTextGUI(screen);
+        com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui, title, message);
     }
     
     @Override

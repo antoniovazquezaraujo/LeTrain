@@ -480,7 +480,7 @@ public class Gdx3DHud {
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
             String desc = ":" + model.getCommandText() + "_";
             if (model.getCommandError() != null && !model.getCommandError().isEmpty()) {
-                desc += " [ERROR: " + model.getCommandError() + "]";
+                desc += " [RED][ERROR: " + model.getCommandError() + "][]";
             }
             descLabel.setText(desc);
         }
