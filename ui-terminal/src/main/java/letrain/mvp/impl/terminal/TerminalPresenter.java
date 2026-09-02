@@ -273,7 +273,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             @Override public void turnLeft() { railTrackMaker.cursorTurnLeft(); }
             @Override public void turnRight() { railTrackMaker.cursorTurnRight(); }
             @Override public void endSequence() { railTrackMaker.makingTracks = false; }
-        });
+        }, (title, msg) -> view.showMessage(title, msg), () -> onExitGame());
 
         if (error != null) {
             model.setCommandError(error);

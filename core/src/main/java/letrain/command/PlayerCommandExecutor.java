@@ -15,12 +15,20 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     private java.util.function.Consumer<java.io.File> onSave;
     private java.util.function.Consumer<java.io.File> onLoad;
     private letrain.command.TurtleDelegate turtleDelegate;
+    private java.util.function.BiConsumer<String, String> onMessage;
+    private Runnable onQuit;
 
     public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate) {
+        this(model, onSave, onLoad, turtleDelegate, null, null);
+    }
+    
+    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit) {
         this.model = model;
         this.onSave = onSave;
         this.onLoad = onLoad;
         this.turtleDelegate = turtleDelegate;
+        this.onMessage = onMessage;
+        this.onQuit = onQuit;
     }
 
     public PlayerCommandExecutor(Model model) {
@@ -28,10 +36,14 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
     public static String execute(String commandText, Model model) {
-        return execute(commandText, model, null, null, null);
+        return execute(commandText, model, null, null, null, null, null);
     }
 
     public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate) {
+        return execute(commandText, model, onSave, onLoad, turtleDelegate, null, null);
+    }
+    
+    public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit) {
         if (!commandText.trim().endsWith(";")) {
             commandText = commandText.trim() + ";";
         }
@@ -62,13 +74,153 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         }
 
         try {
-            PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad, turtleDelegate);
+            PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad, turtleDelegate, onMessage, onQuit);
             executor.visit(tree);
             return null; // No errors
         } catch (Exception e) {
             log.error("Command execution error", e);
             return e.getMessage();
         }
+    }
+
+
+    public Object visitLsCommand(PlayerCommandsParser.LsCommandContext ctx) {
+        if (onMessage == null) return "Command 'ls' not supported in this context";
+        StringBuilder sb = new StringBuilder();
+        if (ctx.entityType().TRAIN() != null) {
+            sb.append("Trains:\n");
+            for (letrain.vehicle.rail.impl.Locomotive l : model.getLocomotives()) {
+                sb.append(" - ").append(l.getId()).append(": ").append(l.getTrain().getName()).append("\n");
+            }
+        } else if (ctx.entityType().STATION() != null) {
+            sb.append("Stations:\n");
+            for (letrain.track.Station s : model.getStations()) {
+                sb.append(" - ").append(s.getId()).append(": ").append(s.getName()).append("\n");
+            }
+        } else if (ctx.entityType().SENSOR() != null) {
+            sb.append("Sensors:\n");
+            for (letrain.track.Sensor s : model.getSensors()) {
+                sb.append(" - ").append(s.getId()).append(": ").append(s.getName()).append("\n");
+            }
+        } else if (ctx.entityType().SEMAPHORE() != null) {
+            sb.append("Semaphores:\n");
+            for (letrain.track.RailSemaphore s : model.getSemaphores()) {
+                sb.append(" - ").append(s.getId()).append("\n");
+            }
+        } else if (ctx.entityType().FORK() != null) {
+            sb.append("Forks:\n");
+            for (letrain.track.rail.ForkRailTrack f : model.getForks()) {
+                sb.append(" - ").append(f.getId()).append("\n");
+            }
+        } else if (ctx.entityType().SIGNAL() != null) {
+            sb.append("Speed Signals:\n");
+            for (letrain.track.SpeedSignal s : model.getSpeedSignals()) {
+                sb.append(" - ").append(s.getId()).append("\n");
+            }
+        } else {
+            return "Entity type not supported for 'ls'";
+        }
+        onMessage.accept("List", sb.toString());
+        return null;
+    }
+
+    public Object visitInfoCommand(PlayerCommandsParser.InfoCommandContext ctx) {
+        if (onMessage == null) return "Command 'info' not supported in this context";
+        int id = -1;
+        String name = null;
+        if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
+        if (ctx.STRING() != null) name = ctx.STRING().getText().replace("\"", "");
+
+        StringBuilder sb = new StringBuilder();
+        if (ctx.entityType().TRAIN() != null) {
+            letrain.vehicle.rail.impl.Locomotive found = null;
+            for (letrain.vehicle.rail.impl.Locomotive l : model.getLocomotives()) {
+                if ((name != null && name.equals(l.getTrain().getName())) || (id != -1 && l.getId() == id)) {
+                    found = l; break;
+                }
+            }
+            if (found != null) {
+                sb.append("Train ID: ").append(found.getId()).append("\n");
+                sb.append("Name: ").append(found.getTrain().getName()).append("\n");
+                sb.append("Speed: ").append(found.getSpeed()).append("\n");
+            } else return "Train not found";
+        } else if (ctx.entityType().STATION() != null) {
+            letrain.track.Station found = null;
+            for (letrain.track.Station s : model.getStations()) {
+                if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
+                    found = s; break;
+                }
+            }
+            if (found != null) {
+                sb.append("Station ID: ").append(found.getId()).append("\n");
+                sb.append("Name: ").append(found.getName()).append("\n");
+                sb.append("Position: ").append(found.getPosition()).append("\n");
+            } else return "Station not found";
+        } else if (ctx.entityType().SENSOR() != null) {
+            letrain.track.Sensor found = null;
+            for (letrain.track.Sensor s : model.getSensors()) {
+                if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
+                    found = s; break;
+                }
+            }
+            if (found != null) {
+                sb.append("Sensor ID: ").append(found.getId()).append("\n");
+                sb.append("Name: ").append(found.getName()).append("\n");
+                sb.append("Position: ").append(found.getPosition()).append("\n");
+            } else return "Sensor not found";
+        } else {
+            return "Entity type not supported for 'info'";
+        }
+        
+        onMessage.accept("Info", sb.toString());
+        return null;
+    }
+
+    public Object visitSetNameCommand(PlayerCommandsParser.SetNameCommandContext ctx) {
+        int id = -1;
+        String name = null;
+        if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
+        if (ctx.STRING(0) != null) name = ctx.STRING(0).getText().replace("\"", "");
+        
+        String newName = ctx.STRING(ctx.STRING().size() - 1).getText().replace("\"", "");
+
+        if (ctx.entityType().TRAIN() != null) {
+            for (letrain.vehicle.rail.impl.Locomotive l : model.getLocomotives()) {
+                if ((name != null && name.equals(l.getTrain().getName())) || (id != -1 && l.getId() == id)) {
+                    l.getTrain().setName(newName);
+                    return null;
+                }
+            }
+            return "Train not found";
+        } else if (ctx.entityType().STATION() != null) {
+            for (letrain.track.Station s : model.getStations()) {
+                if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
+                    s.setName(newName);
+                    return null;
+                }
+            }
+            return "Station not found";
+        } else if (ctx.entityType().SENSOR() != null) {
+            for (letrain.track.Sensor s : model.getSensors()) {
+                if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
+                    s.setName(newName);
+                    return null;
+                }
+            }
+            return "Sensor not found";
+        } else if (ctx.entityType().SEMAPHORE() != null) {
+            return "Semaphores cannot be renamed";
+        }
+        return "Entity type not supported for renaming";
+    }
+
+    public Object visitQuitCommand(PlayerCommandsParser.QuitCommandContext ctx) {
+        if (onQuit != null) {
+            onQuit.run();
+        } else {
+            System.exit(0);
+        }
+        return null;
     }
 
     @Override
