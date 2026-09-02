@@ -223,16 +223,12 @@ El esquema modal (sección 4.1) usa una sola letra por tipo: `f` (fork), `r` (ra
 * `face st 1`: El cursor pivota hacia la posición de la estación 1.
 
 ### Construcción y Navegación (Secuencias Turtle)
-* `mode write`: Entra en modo construcción.
-* `20, l, 3, r, 32, "1, l, l, 32`: Construye toda la secuencia de golpe.
-* `gn fo, r, ge`: Avanza al próximo desvío, gira a la derecha y avanza hasta el final de la vía.
-* `step 10`: Avanza 10 unidades.
-* `mode move`: Entra en modo espectador.
-* `14, l, 2`: Se desplaza por la red sin construir.
-* `mode del`: Entra en modo goma de borrar.
-* `backward 5`: Borra 5 unidades hacia atrás.
-* `mode clear`: Pasa el "triturador" (borra vehículos, deja la vía).
-* `forward 20`: Triturará todos los vagones sueltos en los próximos 20 pasos.
+Las secuencias de Turtle Graphics se ejecutan mediante verbos *sin estado* que procesan la cadena de movimientos entera y devuelven al usuario al modo de juego normal. Se pueden encadenar números (pasos) y letras `l` o `r` (giros). Los giros seguidos (ej. `l, l`) asumen un avance implícito de 1 paso entre ellos.
+* `write 20, l, 3, r, 32, "1, l, l, 32`: Entra en modo construcción y construye toda la secuencia de golpe a partir del cursor.
+* `move 14, l, 2`: Se desplaza por la red siguiendo la secuencia sin construir vías.
+* `del 5, l, 3`: Funciona como goma de borrar, avanzando por el mapa y eliminando vías y objetos a su paso.
+* `clear 20, r, 5`: Pasa el "triturador" siguiendo la secuencia (borra vehículos y accesorios, deja intacta la vía).
+* `gn fo, r, ge`: Avanza al próximo desvío, gira a la derecha y avanza hasta el final de la vía (combinación con navegación topológica).
 
 ### Creación / Asignación
 * `new st 1`: Crea la estación 1.
@@ -273,7 +269,7 @@ El esquema modal (sección 4.1) usa una sola letra por tipo: `f` (fork), `r` (ra
 
 1.  **Fase 1 (Administración Directa):** Integrar ANTLR4 con Java. Solo comandos directos (`train 1 stop`, `save`, `new`).
 2.  **Fase 2 (Navegación Topológica):** Crear el Cursor. Parsear secuencias de movimiento simples y comandos de navegación (`go 10,20`, `gn fo`, `g st 1`).
-3.  **Fase 3 (Lápiz y Goma - Turtle Graphics):** Implementar la máquina de modos (`write`, `move`, `del`, `clear`). Modificar mapa mediante cadenas `20, l, 3`.
+3.  **Fase 3 (Lápiz y Goma - Turtle Graphics):** Comandos secuenciales (`write`, `move`, `del`, `clear`) para modificar el mapa mediante cadenas `write 20, l, 3`.
 4.  **Fase 4 (Memoria y Variables):** Tabla de símbolos. Guardado JSON. *String Lookup* y resolución UPSERT. (`$s1 = new...`).
 5.  **Fase 5 (Motor de Macros - Opcional):** Ejecución de scripts largos en ficheros externos (`:load script.letrain`).
 6.  **Fase 6 (Hotkeys Modales):** Esquema modal de la sección 3.8: parser de prefijos `g` / `g[np]`, marcas `"`, modos Add/Vehicles/Drive, eco de comandos (3.9) y comando `.`.

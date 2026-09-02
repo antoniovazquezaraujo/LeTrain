@@ -88,6 +88,12 @@ public class InfoVisitor implements Visitor {
             case PROGRAM:
                 visitProgram(model);
                 break;
+            case COMMAND:
+                infoBarText += ":" + model.getCommandText() + "_";
+                if (model.getCommandError() != null && !model.getCommandError().isEmpty()) {
+                    infoBarText += "  [ERROR: " + model.getCommandError() + "]";
+                }
+                break;
             case RAILS:
             case TRAINS:
             case LOAD_TRAINS:
@@ -102,7 +108,9 @@ public class InfoVisitor implements Visitor {
         // Row 3: Vehicle text (left) + System info (right)
         String vehicleText = "";
         Locomotive selectedLoco = model.getSelectedLocomotive();
-        if (selectedLoco != null) {
+        if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
+            vehicleText = infoBarText;
+        } else if (selectedLoco != null) {
             int trainId = (selectedLoco.getTrain() != null) ? selectedLoco.getTrain().getId()
                     : selectedLoco.getId();
             String notchBar =

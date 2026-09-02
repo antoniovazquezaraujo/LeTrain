@@ -212,7 +212,7 @@ public interface Model {
                         "Manage semaphores"), SPEED_SIGNALS("Manage speed signals"), TRAINS(
                                 "Create trains"), LINK("Link trains"), UNLINK(
                                         "Divide trains"), STATIONS("Stations"), LOAD_TRAINS(
-                                                "Use load Stations"), PROGRAM("Program");
+                                                "Use load Stations"), PROGRAM("Program"), COMMAND("Command Line Interface");
 
         private String name;
 
@@ -267,6 +267,10 @@ public interface Model {
     String getGameObjectsReport();
 
     String getRailwayGraphReport();
+    String getCommandText();
+    void setCommandText(String text);
+    String getCommandError();
+    void setCommandError(String error);
 
     CargoTypes getSelectedWagonType();
 

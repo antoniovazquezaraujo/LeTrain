@@ -67,6 +67,7 @@
                         <configuration>
                             <visitor>true</visitor>
                             <listener>true</listener>
+                            <libDirectory>src/main/antlr4/letrain/command</libDirectory>
                             <outputDirectory>${project.build.directory}/generated-sources/antlr4</outputDirectory>
                         </configuration>
                     </execution>

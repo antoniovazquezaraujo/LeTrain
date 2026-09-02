@@ -36,7 +36,7 @@ public class RailTrackMaker {
     Track oldTrack;
     Dir oldDir;
     boolean reversed = false;
-    boolean makingTracks = false;
+    public boolean makingTracks = false;
     private boolean wasRemoving = false;
     private int caterpillarCounter = 0;
     private boolean quantifierReset = true;
@@ -361,7 +361,7 @@ public class RailTrackMaker {
         reversed = false;
     }
 
-    void removeTrack(boolean moveCursor) {
+    public void removeTrack(boolean moveCursor) {
         Point position = presenter.getModel().getCursor().getPosition();
         RailTrack track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
@@ -464,7 +464,7 @@ public class RailTrackMaker {
         presenter.getModel().getCursor().setConstructionPosition(pos);
     }
 
-    boolean createTrack(TrackType type) {
+    public boolean createTrack(TrackType type) {
         degreesOfRotation = 0;
         if (makeTrack(type)) {
             Point position = presenter.getModel().getCursor().getPosition();
@@ -542,7 +542,7 @@ public class RailTrackMaker {
         return type;
     }
 
-    boolean makeTrack(TrackType type) {
+    public boolean makeTrack(TrackType type) {
         makingTracks = true;
 
         Point actualCursorPosition = presenter.getModel().getCursor().getPosition();
@@ -737,7 +737,7 @@ public class RailTrackMaker {
         return r.getNumRoutes() == 3;
     }
 
-    private void cursorTurnRight() {
+    public void cursorTurnRight() {
         if (makingTracks) {
             if (degreesOfRotation >= 0) {
                 this.dir = this.dir.turnRight();
@@ -750,7 +750,7 @@ public class RailTrackMaker {
         }
     }
 
-    private void cursorTurnLeft() {
+    public void cursorTurnLeft() {
         if (makingTracks) {
             if (degreesOfRotation <= 0) {
                 this.dir = this.dir.turnLeft();
@@ -763,7 +763,7 @@ public class RailTrackMaker {
         }
     }
 
-    void cursorForward() {
+    public void cursorForward() {
         Point newPos = new Point(presenter.getModel().getCursor().getPosition());
         Dir d = presenter.getModel().getCursor().getDir();
         if (!reversed) {
@@ -812,7 +812,7 @@ public class RailTrackMaker {
         lastCursorPosition = newPos;
     }
 
-    void cursorBackward() {
+    public void cursorBackward() {
         reversed = true;
         cursorForward();
         reversed = false;

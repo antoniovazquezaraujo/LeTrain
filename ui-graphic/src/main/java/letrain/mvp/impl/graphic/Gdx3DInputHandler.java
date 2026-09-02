@@ -276,6 +276,58 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     public void onChar(InputEvent stroke) {
+        if (model.getMode() == Model.GameMode.COMMAND) {
+            if (stroke.getKeyType() == KeyType.Escape) {
+                model.setMode(Model.GameMode.RAILS);
+                model.setCommandText("");
+                model.setCommandError("");
+                return;
+            } else if (stroke.getKeyType() == KeyType.Enter) {
+                log.info("Execute command: " + model.getCommandText());
+                String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(), model, file -> view.onSaveGame(file), file -> view.onLoadGame(file), new letrain.command.TurtleDelegate() {
+                    @Override public void moveForward() { trackMaker.cursorForward(); }
+                    @Override public void buildForward() { trackMaker.createTrack(null); }
+                    @Override public void eraseForward() { trackMaker.removeTrack(true); }
+                    @Override public void turnLeft() { trackMaker.cursorTurnLeft(); }
+                    @Override public void turnRight() { trackMaker.cursorTurnRight(); }
+                    @Override public void endSequence() { trackMaker.makingTracks = false; }
+                });
+
+                if (error != null) {
+                    model.setCommandError(error);
+                    return;
+                }
+                model.setMode(Model.GameMode.RAILS);
+                model.setCommandText("");
+                model.setCommandError("");
+                return;
+            } else if (stroke.getKeyType() == KeyType.Backspace) {
+                String t = model.getCommandText();
+                if (t.length() > 0) {
+                    model.setCommandText(t.substring(0, t.length() - 1));
+                    model.setCommandError("");
+                }
+                return;
+            } else if (stroke.getKeyType() == KeyType.Character) {
+                Character c = stroke.getCharacter();
+                if (c != null) {
+                    model.setCommandText(model.getCommandText() + c);
+                    model.setCommandError("");
+                }
+                return;
+            }
+            return; // Ignore other keys in COMMAND mode
+        }
+
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null && stroke.getCharacter() == ':') {
+            if (model.getMode() != Model.GameMode.PROGRAM) {
+                model.setMode(Model.GameMode.COMMAND);
+                model.setCommandText("");
+                model.setCommandError("");
+                return;
+            }
+        }
+
         if (stroke.getKeyType() == KeyType.F1) {
             log.info("\n" + model.getRailwayGraphReport());
             return;

@@ -309,6 +309,12 @@ public class Model implements letrain.mvp.Model {
         if (this.program != null && !this.program.isEmpty()) {
             this.setProgram(this.program);
         }
+
+        if (this.mode == letrain.mvp.Model.GameMode.COMMAND) {
+            this.mode = letrain.mvp.Model.GameMode.RAILS;
+            this.commandText = "";
+            this.commandError = "";
+        }
     }
 
     private void setupModelTrainEventListeners() {
@@ -1414,6 +1420,29 @@ public class Model implements letrain.mvp.Model {
                     .append(" (").append(s.isOpen() ? "OPEN" : "CLOSED").append(")\n");
         }
         return sb.toString();
+    }
+
+    private String commandText = "";
+    private String commandError = "";
+
+    @Override
+    public String getCommandText() {
+        return commandText;
+    }
+
+    @Override
+    public void setCommandText(String text) {
+        this.commandText = text;
+    }
+
+    @Override
+    public String getCommandError() {
+        return commandError;
+    }
+
+    @Override
+    public void setCommandError(String error) {
+        this.commandError = error;
     }
 
     @Override
