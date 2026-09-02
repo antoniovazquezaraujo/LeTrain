@@ -301,6 +301,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 model.setMode(Model.GameMode.RAILS);
                 model.setCommandText("");
                 model.setCommandError("");
+                if (cameraController != null) cameraController.forceSnap();
                 return;
             } else if (stroke.getKeyType() == KeyType.Backspace) {
                 String t = model.getCommandText();

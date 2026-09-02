@@ -282,6 +282,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         model.setMode(letrain.mvp.Model.GameMode.RAILS);
         model.setCommandText("");
         model.setCommandError("");
+        view.centerOn(model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY());
     }
 
     @Override
