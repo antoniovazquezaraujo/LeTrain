@@ -354,9 +354,13 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         }
         
         letrain.vehicle.Cursor.CursorMode cursorMode = letrain.vehicle.Cursor.CursorMode.MOVING;
+        boolean isClearing = false;
         if (ctx.WRITE() != null) cursorMode = letrain.vehicle.Cursor.CursorMode.DRAWING;
         else if (ctx.DEL() != null) cursorMode = letrain.vehicle.Cursor.CursorMode.ERASING;
-        else if (ctx.CLEAR() != null) cursorMode = letrain.vehicle.Cursor.CursorMode.ERASING;
+        else if (ctx.CLEAR() != null) {
+            cursorMode = letrain.vehicle.Cursor.CursorMode.MOVING;
+            isClearing = true;
+        }
         
         letrain.vehicle.Cursor.CursorMode oldMode = model.getCursor().getMode();
         model.getCursor().setMode(cursorMode);
@@ -369,8 +373,14 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     if (stepCtx.NUMBER() != null) {
                         int count = Integer.parseInt(stepCtx.NUMBER().getText());
                         for (int j = 0; j < count; j++) {
-                            if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING) turtleDelegate.buildForward();
-                            else if (cursorMode == letrain.vehicle.Cursor.CursorMode.ERASING) turtleDelegate.eraseForward();
+                            if (isClearing) {
+                                clearTrainAtCursor();
+                                turtleDelegate.moveForward();
+                            } else if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING) turtleDelegate.buildForward();
+                            else if (cursorMode == letrain.vehicle.Cursor.CursorMode.ERASING) {
+                                clearTrainAtCursor(); // Force clear train so track can be deleted
+                                turtleDelegate.eraseForward();
+                            }
                             else turtleDelegate.moveForward();
                         }
                     } else if (stepCtx.L() != null || stepCtx.R() != null) {
@@ -388,18 +398,58 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                         }
                         
                         if (impliesOne) {
-                            if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING) turtleDelegate.buildForward();
-                            else if (cursorMode == letrain.vehicle.Cursor.CursorMode.ERASING) turtleDelegate.eraseForward();
+                            if (isClearing) {
+                                clearTrainAtCursor();
+                                turtleDelegate.moveForward();
+                            } else if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING) turtleDelegate.buildForward();
+                            else if (cursorMode == letrain.vehicle.Cursor.CursorMode.ERASING) {
+                                clearTrainAtCursor();
+                                turtleDelegate.eraseForward();
+                            }
                             else turtleDelegate.moveForward();
                         }
                     }
                 }
+            } else {
+                if (isClearing) {
+                    clearTrainAtCursor();
+                    turtleDelegate.moveForward();
+                } else if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING) turtleDelegate.buildForward();
+                else if (cursorMode == letrain.vehicle.Cursor.CursorMode.ERASING) {
+                    clearTrainAtCursor();
+                    turtleDelegate.eraseForward();
+                }
+                else turtleDelegate.moveForward();
             }
         } finally {
             turtleDelegate.endSequence();
             model.getCursor().setMode(oldMode);
         }
         return null;
+    }
+
+    private void clearTrainAtCursor() {
+        letrain.map.Point pos = model.getCursor().getPosition();
+        letrain.track.Track track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
+        if (track != null && track.getLinker() != null) {
+            letrain.vehicle.rail.Linker linker = track.getLinker();
+            letrain.vehicle.rail.impl.Train train = null;
+            if (linker instanceof letrain.vehicle.rail.impl.Locomotive) {
+                train = ((letrain.vehicle.rail.impl.Locomotive) linker).getTrain();
+            } else if (linker instanceof letrain.vehicle.rail.impl.Wagon) {
+                train = ((letrain.vehicle.rail.impl.Wagon) linker).getTrain();
+            }
+            if (train != null) {
+                for (letrain.vehicle.rail.Linker l : train.getLinkers()) {
+                    if (l instanceof letrain.vehicle.rail.impl.Locomotive) {
+                        model.removeLocomotive((letrain.vehicle.rail.impl.Locomotive) l);
+                    } else if (l instanceof letrain.vehicle.rail.impl.Wagon) {
+                        model.removeWagon((letrain.vehicle.rail.impl.Wagon) l);
+                    }
+                    if (l.getTrack() != null) l.getTrack().removeLinker();
+                }
+            }
+        }
     }
 
     @Override
