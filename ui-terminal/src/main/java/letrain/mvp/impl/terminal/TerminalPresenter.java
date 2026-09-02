@@ -273,7 +273,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             @Override public void turnLeft() { railTrackMaker.cursorTurnLeft(); }
             @Override public void turnRight() { railTrackMaker.cursorTurnRight(); }
             @Override public void endSequence() { railTrackMaker.makingTracks = false; }
-        });
+        }, (title, msg) -> view.showMessage(title, msg), () -> onExitGame());
 
         if (error != null) {
             model.setCommandError(error);
@@ -282,10 +282,22 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         model.setMode(letrain.mvp.Model.GameMode.RAILS);
         model.setCommandText("");
         model.setCommandError("");
+        view.centerOn(model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY());
     }
 
     @Override
     public void onChar(InputEvent keyEvent) {
+        if (((TerminalView) view).isShowingOverlay()) {
+            if (keyEvent.getKeyType() == KeyType.ArrowUp) {
+                ((TerminalView) view).scrollOverlay(-1);
+            } else if (keyEvent.getKeyType() == KeyType.ArrowDown) {
+                ((TerminalView) view).scrollOverlay(1);
+            } else if (keyEvent.getKeyType() == KeyType.Escape) {
+                ((TerminalView) view).clearOverlay();
+            }
+            return;
+        }
+        
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
             if (keyEvent.getKeyType() == KeyType.Escape) {
                 model.setMode(letrain.mvp.Model.GameMode.RAILS);

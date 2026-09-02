@@ -292,7 +292,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     @Override public void turnLeft() { trackMaker.cursorTurnLeft(); }
                     @Override public void turnRight() { trackMaker.cursorTurnRight(); }
                     @Override public void endSequence() { trackMaker.makingTracks = false; }
-                });
+                }, (title, msg) -> view.showMessage(title, msg), () -> view.onExitGame());
 
                 if (error != null) {
                     model.setCommandError(error);
@@ -301,6 +301,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 model.setMode(Model.GameMode.RAILS);
                 model.setCommandText("");
                 model.setCommandError("");
+                if (cameraController != null) cameraController.forceSnap();
                 return;
             } else if (stroke.getKeyType() == KeyType.Backspace) {
                 String t = model.getCommandText();

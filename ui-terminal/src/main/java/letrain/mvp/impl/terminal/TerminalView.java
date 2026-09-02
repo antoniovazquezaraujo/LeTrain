@@ -45,6 +45,9 @@ import org.slf4j.LoggerFactory;
  * terminal-specific logic and UI handling.
  */
 public class TerminalView implements letrain.mvp.View {
+    private String overlayTitle;
+    private String overlayMessage;
+    private int overlayScroll = 0;
     private static final Logger log = LoggerFactory.getLogger(TerminalView.class);
     private final GameViewListener gameViewListener;
     private Point scrollOffset = new Point(0, 0);
@@ -306,6 +309,54 @@ public class TerminalView implements letrain.mvp.View {
                     }
                 }
             }
+            
+            if (overlayMessage != null) {
+                int width = Math.min(60, screen.getTerminalSize().getColumns() - 2);
+                int height = Math.min(25, screen.getTerminalSize().getRows() - 2);
+                int startX = screen.getTerminalSize().getColumns() - width - 1;
+                int startY = 1;
+                
+                com.googlecode.lanterna.graphics.TextGraphics tg = screen.newTextGraphics();
+                tg.setBackgroundColor(com.googlecode.lanterna.TextColor.ANSI.BLUE);
+                tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE);
+                tg.fillRectangle(new com.googlecode.lanterna.TerminalPosition(startX, startY), new com.googlecode.lanterna.TerminalSize(width, height), ' ');
+                
+                // Draw title
+                if (overlayTitle != null) {
+                    tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.GREEN_BRIGHT);
+                    tg.putString(startX + 2, startY + 1, "== " + overlayTitle + " ==");
+                    tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE);
+                }
+                
+                // Draw message
+                String[] lines = overlayMessage.split("\n");
+                
+                // Enforce max scroll
+                int maxScroll = Math.max(0, lines.length - (height - 4));
+                if (overlayScroll > maxScroll) overlayScroll = maxScroll;
+                
+                for (int i = 0; i < lines.length - overlayScroll && i < height - 4; i++) {
+                    String line = lines[i + overlayScroll];
+                    if (line.length() > width - 4) {
+                        line = line.substring(0, width - 4) + "...";
+                    }
+                    tg.putString(startX + 2, startY + 3 + i, line);
+                }
+                
+                if (overlayScroll > 0) {
+                    tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.MAGENTA);
+                    tg.putString(startX + width - 3, startY + 3, "^");
+                }
+                if (lines.length - overlayScroll > height - 4) {
+                    tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.MAGENTA);
+                    tg.putString(startX + width - 3, startY + height - 2, "v");
+                }
+                
+                
+                tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.YELLOW);
+                tg.putString(startX + 2, startY + height - 1, "[ESC to close | Up/Down to scroll]");
+            }
+
             this.screen.refresh();
             Thread.yield();
         } catch (IOException e) {
@@ -797,6 +848,28 @@ public class TerminalView implements letrain.mvp.View {
         editor.takeFocus();
     }
 
+    public boolean isShowingOverlay() {
+        return overlayMessage != null;
+    }
+
+    public void scrollOverlay(int amount) {
+        overlayScroll += amount;
+        if (overlayScroll < 0) overlayScroll = 0;
+        paint();
+    }
+
+    public boolean clearOverlay() {
+        if (overlayMessage != null) {
+            overlayMessage = null;
+            overlayTitle = null;
+            overlayScroll = 0;
+            // Clear the screen right away to erase the overlay
+            try { screen.clear(); } catch (Exception e) {}
+            return true;
+        }
+        return false;
+    }
+    
     @Override
     public void showExitDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
@@ -857,8 +930,9 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void showMessage(String title, String message) {
-        com.googlecode.lanterna.gui2.MultiWindowTextGUI gui = new com.googlecode.lanterna.gui2.MultiWindowTextGUI(screen);
-        com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui, title, message);
+        this.overlayTitle = title;
+        this.overlayMessage = message;
+        paint();
     }
     
     @Override

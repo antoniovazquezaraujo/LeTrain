@@ -14,6 +14,10 @@ playerStatement : statement
                 | loadCommand SEMI
                 | markCommand SEMI
                 | faceCommand SEMI
+                | lsCommand SEMI
+                | infoCommand SEMI
+                | setNameCommand SEMI
+                | quitCommand SEMI
                 ;
 
 goCmdToken : GO | G ;
@@ -51,3 +55,8 @@ saveCommand : SAVE STRING? ;
 loadCommand : LOAD STRING? ;
 
 markCommand : MARK STRING | MARK NUMBER ;
+
+lsCommand : LS entityType ;
+infoCommand : INFO entityType (NUMBER | STRING)? ;
+setNameCommand : entityType (NUMBER | STRING) SET NAME STRING ;
+quitCommand : QUIT | Q | Q_BANG | WQ ;
