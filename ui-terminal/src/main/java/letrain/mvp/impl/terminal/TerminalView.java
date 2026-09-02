@@ -878,7 +878,7 @@ public class TerminalView implements letrain.mvp.View {
         g.putString(0, drawY, prompt);
         
         if (error != null && !error.isEmpty()) {
-            String errStr = " " + error + " "; // Just the error, not [ERROR:]
+            String errStr = " " + error.replace('\n', ' ').replace('\r', ' ') + " "; // Just the error, not [ERROR:]
             int startX = prompt.length() + 2; // small gap
             if (startX < screenCols) {
                 // Truncate if it overflows

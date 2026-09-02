@@ -316,8 +316,28 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             } else if (keyEvent.getKeyType() == KeyType.Character) {
                 Character c = keyEvent.getCharacter();
                 if (c != null) {
-                    model.setCommandText(model.getCommandText() + c);
-                    model.setCommandError("");
+                    if (keyEvent.isCtrlDown() && (c == 'p' || c == 'P' || c == 16)) {
+                        if (historyIndex > 0) {
+                            historyIndex--;
+                            model.setCommandText(commandHistory.get(historyIndex));
+                            model.setCommandError("");
+                        }
+                        return;
+                    } else if (keyEvent.isCtrlDown() && (c == 'n' || c == 'N' || c == 14)) {
+                        if (historyIndex < commandHistory.size() - 1) {
+                            historyIndex++;
+                            model.setCommandText(commandHistory.get(historyIndex));
+                            model.setCommandError("");
+                        } else if (historyIndex == commandHistory.size() - 1) {
+                            historyIndex++;
+                            model.setCommandText("");
+                            model.setCommandError("");
+                        }
+                        return;
+                    } else if (!keyEvent.isCtrlDown() && !keyEvent.isAltDown()) {
+                        model.setCommandText(model.getCommandText() + c);
+                        model.setCommandError("");
+                    }
                 }
                 return;
             } else if (keyEvent.getKeyType() == KeyType.ArrowUp) {
