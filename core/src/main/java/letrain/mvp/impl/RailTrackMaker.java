@@ -234,7 +234,7 @@ public class RailTrackMaker {
                 presenter.getModel().removeSensor(sensor);
             } else if (sensor == null) {
                 letrain.track.SpeedSignal speedSignal =
-                        new letrain.track.SpeedSignal(presenter.getModel().nextSensorId(),
+                        new letrain.track.SpeedSignal(presenter.getModel().nextSpeedSignalId(),
                                 presenter.getModel().getCursor().getDir(), 3, true);
                 speedSignal.setTrack(track);
                 presenter.getModel().addSensor(speedSignal);

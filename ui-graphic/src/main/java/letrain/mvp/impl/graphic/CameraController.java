@@ -166,6 +166,16 @@ public class CameraController {
                             * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
                 }
             }
+        } else if (model.getMode() == letrain.mvp.Model.GameMode.SENSORS
+                && model.getSelectedSensor() != null) {
+            letrain.track.Sensor selected = model.getSelectedSensor();
+            if (selected.getPosition() != null) {
+                targetX = selected.getPosition().getX() + 0.5f;
+                targetZ = selected.getPosition().getY() + 0.5f;
+            } else {
+                targetX = cam.position.x;
+                targetZ = cam.position.z;
+            }
         } else if (model.getMode() == letrain.mvp.Model.GameMode.SPEED_SIGNALS
                 && model.getSelectedSpeedSignal() != null) {
             letrain.track.SpeedSignal selected = model.getSelectedSpeedSignal();
