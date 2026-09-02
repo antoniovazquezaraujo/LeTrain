@@ -33,7 +33,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
     public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate) {
         if (!commandText.trim().endsWith(";")) {
-            commandText = commandText + ";";
+            commandText = commandText.trim() + ";";
         }
         
         List<String> errors = new ArrayList<>();
