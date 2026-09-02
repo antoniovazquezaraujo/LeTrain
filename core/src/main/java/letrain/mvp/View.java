@@ -81,4 +81,6 @@ public interface View {
     public int getRows();
 
     void showMessage(String title, String message);
+    
+    default void drawCommandLine(String text, String error) {}
 }

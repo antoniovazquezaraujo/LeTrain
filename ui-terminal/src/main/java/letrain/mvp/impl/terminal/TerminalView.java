@@ -857,7 +857,35 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void showMessage(String title, String message) {
-        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui, title, message);
+        MessageDialogBuilder.newBuilder()
+                .setTitle(title)
+                .setText(message)
+                .build()
+                .showDialog(gui);
     }
+    
+    @Override
+    public void drawCommandLine(String text, String error) {
+        int rows = getRows();
+        if (rows < 2) return; // safety
+        
+        TextGraphics g = screen.newTextGraphics();
+        g.setBackgroundColor(TextColor.ANSI.BLACK);
+        g.setForegroundColor(TextColor.ANSI.WHITE);
+        g.putString(0, rows - 1, " ".repeat(getCols())); // clear line
+        
+        String prompt = ":" + text + "_";
+        g.putString(0, rows - 1, prompt);
+        
+        if (error != null && !error.isEmpty()) {
+            String errStr = " [ERROR: " + error + "] ";
+            int startX = prompt.length();
+            if (startX + errStr.length() < getCols()) {
+                g.setBackgroundColor(TextColor.ANSI.RED);
+                g.setForegroundColor(TextColor.ANSI.WHITE);
+                g.putString(startX, rows - 1, errStr);
+            }
+        }
+    }
+
 }
