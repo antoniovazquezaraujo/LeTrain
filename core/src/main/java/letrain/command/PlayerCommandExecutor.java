@@ -116,14 +116,18 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 throw new RuntimeException("Target entity not found.");
             }
 
-        } else if (ctx.MARK() != null) {
+        } else if (ctx.MARK() != null || (ctx.STRING() != null && ctx.entityType() == null)) {
             String name = ctx.STRING() != null ? ctx.STRING().getText().replace("\"", "") : ctx.NUMBER(0).getText();
             letrain.map.Point p = model.getMark(name);
+            if (p == null) {
+                letrain.track.Station st = model.findStationByName(name);
+                if (st != null && st.getTrack() != null) p = st.getTrack().getPosition();
+            }
             if (p != null) {
                 model.getCursor().getPosition().setX(p.getX());
                 model.getCursor().getPosition().setY(p.getY());
             } else {
-                throw new RuntimeException("Mark '" + name + "' not found.");
+                throw new RuntimeException("Mark or Station '" + name + "' not found.");
             }
         } else if (ctx.NEXT() != null || ctx.PREV() != null || ctx.END() != null) {
             // Topological navigation
