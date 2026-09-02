@@ -286,6 +286,17 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     @Override
     public void onChar(InputEvent keyEvent) {
+        if (((TerminalView) view).isShowingOverlay()) {
+            if (keyEvent.getKeyType() == KeyType.ArrowUp) {
+                ((TerminalView) view).scrollOverlay(-1);
+            } else if (keyEvent.getKeyType() == KeyType.ArrowDown) {
+                ((TerminalView) view).scrollOverlay(1);
+            } else if (keyEvent.getKeyType() == KeyType.Escape) {
+                ((TerminalView) view).clearOverlay();
+            }
+            return;
+        }
+        
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
             if (keyEvent.getKeyType() == KeyType.Escape) {
                 model.setMode(letrain.mvp.Model.GameMode.RAILS);
