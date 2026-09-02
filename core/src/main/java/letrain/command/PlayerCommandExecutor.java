@@ -304,27 +304,33 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
         if (ctx.STRING() != null) name = ctx.STRING().getText().replace("\"", "");
 
-        letrain.map.Point targetPos = null;
+        letrain.map.Point pos = model.getCursor().getPosition();
+        letrain.track.Track track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
+
         if (ctx.entityType().STATION() != null) {
-            letrain.track.Station st = name != null ? model.findStationByName(name) : model.getStation(id);
-            if (st != null && st.getTrack() != null) targetPos = st.getTrack().getPosition();
+            letrain.track.Station st = name != null ? model.findStationByName(name) : (id != -1 ? model.getStation(id) : (track != null && track.getSensor() instanceof letrain.track.Station ? (letrain.track.Station) track.getSensor() : null));
+            if (st != null) model.removeStation(st);
+            else throw new RuntimeException("Station not found.");
         } else if (ctx.entityType().SENSOR() != null) {
-            letrain.track.Sensor s = name != null ? model.findSensorByName(name) : model.getSensor(id);
-            if (s != null && s.getTrack() != null) targetPos = s.getTrack().getPosition();
+            letrain.track.Sensor s = name != null ? model.findSensorByName(name) : (id != -1 ? model.getSensor(id) : (track != null && track.getSensor() != null && !(track.getSensor() instanceof letrain.track.Station) ? track.getSensor() : null));
+            if (s != null) model.removeSensor(s);
+            else throw new RuntimeException("Sensor not found.");
         } else if (ctx.entityType().SEMAPHORE() != null) {
-            letrain.track.RailSemaphore s = model.getSemaphore(id);
-            if (s != null) targetPos = s.getPosition();
-        } else if (ctx.entityType().FORK() != null) {
-            letrain.track.rail.ForkRailTrack f = model.getFork(id);
-            if (f != null) targetPos = f.getPosition();
+            letrain.track.RailSemaphore s = id != -1 ? model.getSemaphore(id) : (track != null ? track.getSemaphore() : null);
+            if (s != null) model.removeSemaphore(s);
+            else throw new RuntimeException("Semaphore not found.");
+        } else if (ctx.entityType().FORK() != null || ctx.entityType().RAIL() != null) {
+            letrain.map.Point targetPos = null;
+            if (ctx.entityType().FORK() != null) {
+                letrain.track.rail.ForkRailTrack f = id != -1 ? model.getFork(id) : (track instanceof letrain.track.rail.ForkRailTrack ? (letrain.track.rail.ForkRailTrack) track : null);
+                if (f != null) targetPos = f.getPosition();
+            } else if (ctx.entityType().RAIL() != null) {
+                throw new RuntimeException("Must provide specific entity type to delete, not just RAIL.");
+            }
+            if (targetPos != null) model.removeTrack(targetPos);
+            else throw new RuntimeException("Target entity not found.");
         } else if (ctx.entityType().TRAIN() != null) {
             throw new RuntimeException("Trains cannot be deleted via the DEL command yet.");
-        }
-
-        if (targetPos != null) {
-            model.removeTrack(targetPos);
-        } else {
-            throw new RuntimeException("Target entity not found.");
         }
         return null;
     }

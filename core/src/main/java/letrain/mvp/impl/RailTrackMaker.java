@@ -366,12 +366,26 @@ public class RailTrackMaker {
         RailTrack track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            // ADR-005: Prohibido modificar o eliminar raíles con vehículos encima
-            if (track.getLinker() != null) {
-                log.warn("Cannot remove occupied track at {}", position);
-                return;
+            boolean removedEntity = false;
+            if (track.getSensor() instanceof letrain.track.Station) {
+                presenter.getModel().removeStation((letrain.track.Station) track.getSensor());
+                removedEntity = true;
+            } else if (track.getSensor() != null) {
+                presenter.getModel().removeSensor(track.getSensor());
+                removedEntity = true;
+            } else if (track.getSemaphore() != null) {
+                presenter.getModel().removeSemaphore(track.getSemaphore());
+                removedEntity = true;
             }
-            presenter.getModel().removeTrack(position);
+            
+            if (!removedEntity) {
+                // ADR-005: Prohibido modificar o eliminar raíles con vehículos encima
+                if (track.getLinker() != null) {
+                    log.warn("Cannot remove occupied track at {}", position);
+                    return;
+                }
+                presenter.getModel().removeTrack(position);
+            }
         }
 
         if (moveCursor) {
