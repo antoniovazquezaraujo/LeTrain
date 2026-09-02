@@ -348,7 +348,19 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             if (targetPos != null) model.removeTrack(targetPos);
             else throw new RuntimeException("Target entity not found.");
         } else if (ctx.entityType().TRAIN() != null) {
-            throw new RuntimeException("Trains cannot be deleted via the DEL command yet.");
+            letrain.vehicle.rail.impl.Train t = name != null ? model.findTrainByName(name) : model.getTrainFromLocomotiveId(id);
+            if (t != null) {
+                for (letrain.vehicle.rail.Linker l : t.getLinkers()) {
+                    if (l instanceof letrain.vehicle.rail.impl.Locomotive) {
+                        model.removeLocomotive((letrain.vehicle.rail.impl.Locomotive) l);
+                    } else if (l instanceof letrain.vehicle.rail.impl.Wagon) {
+                        model.removeWagon((letrain.vehicle.rail.impl.Wagon) l);
+                    }
+                    if (l.getTrack() != null) l.getTrack().removeLinker();
+                }
+            } else {
+                throw new RuntimeException("Train not found.");
+            }
         }
         return null;
     }
