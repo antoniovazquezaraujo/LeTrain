@@ -45,6 +45,8 @@ import org.slf4j.LoggerFactory;
  * terminal-specific logic and UI handling.
  */
 public class TerminalView implements letrain.mvp.View {
+    private String overlayTitle;
+    private String overlayMessage;
     private static final Logger log = LoggerFactory.getLogger(TerminalView.class);
     private final GameViewListener gameViewListener;
     private Point scrollOffset = new Point(0, 0);
@@ -306,6 +308,39 @@ public class TerminalView implements letrain.mvp.View {
                     }
                 }
             }
+            
+            if (overlayMessage != null) {
+                int width = Math.min(60, screen.getTerminalSize().getColumns() - 2);
+                int height = Math.min(25, screen.getTerminalSize().getRows() - 2);
+                int startX = screen.getTerminalSize().getColumns() - width - 1;
+                int startY = 1;
+                
+                com.googlecode.lanterna.graphics.TextGraphics tg = screen.newTextGraphics();
+                tg.setBackgroundColor(com.googlecode.lanterna.TextColor.ANSI.BLUE);
+                tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE);
+                tg.fillRectangle(new com.googlecode.lanterna.TerminalPosition(startX, startY), new com.googlecode.lanterna.TerminalSize(width, height), ' ');
+                
+                // Draw title
+                if (overlayTitle != null) {
+                    tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.GREEN_BRIGHT);
+                    tg.putString(startX + 2, startY + 1, "== " + overlayTitle + " ==");
+                    tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE);
+                }
+                
+                // Draw message
+                String[] lines = overlayMessage.split("\n");
+                for (int i = 0; i < lines.length && i < height - 4; i++) {
+                    String line = lines[i];
+                    if (line.length() > width - 4) {
+                        line = line.substring(0, width - 4) + "...";
+                    }
+                    tg.putString(startX + 2, startY + 3 + i, line);
+                }
+                
+                tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.YELLOW);
+                tg.putString(startX + 2, startY + height - 1, "[Press any key to close]");
+            }
+
             this.screen.refresh();
             Thread.yield();
         } catch (IOException e) {
@@ -797,6 +832,17 @@ public class TerminalView implements letrain.mvp.View {
         editor.takeFocus();
     }
 
+    public boolean clearOverlay() {
+        if (overlayMessage != null) {
+            overlayMessage = null;
+            overlayTitle = null;
+            // Clear the screen right away to erase the overlay
+            try { screen.clear(); } catch (Exception e) {}
+            return true;
+        }
+        return false;
+    }
+    
     @Override
     public void showExitDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
@@ -857,8 +903,9 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void showMessage(String title, String message) {
-        com.googlecode.lanterna.gui2.MultiWindowTextGUI gui = new com.googlecode.lanterna.gui2.MultiWindowTextGUI(screen);
-        com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui, title, message);
+        this.overlayTitle = title;
+        this.overlayMessage = message;
+        paint();
     }
     
     @Override
