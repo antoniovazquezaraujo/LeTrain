@@ -269,6 +269,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 model.setCommandError("");
                 return;
             } else if (keyEvent.getKeyType() == KeyType.Enter) {
+                if (model.getCommandText().trim().isEmpty()) {
+                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                    model.setCommandText("");
+                    model.setCommandError("");
+                    return;
+                }
                 log.info("Execute command: " + model.getCommandText());
                 String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(), model, file -> onSaveGame(file), file -> onLoadGame(file), new letrain.command.TurtleDelegate() {
                     @Override public void moveForward() { railTrackMaker.cursorForward(); }
