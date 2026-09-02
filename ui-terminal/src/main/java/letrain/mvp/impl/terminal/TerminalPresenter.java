@@ -72,6 +72,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private final java.util.List<String> commandHistory = new java.util.ArrayList<>();
     private int historyIndex = -1;
+    private final String[] AUTOCOMPLETE_WORDS = {"go ", "new ", "del ", "clear ", "turtle ", "save ", "load ", "mark ", "face ", "station ", "sensor ", "fork ", "semaphore ", "signal ", "train ", "rail "};
+    private int autocompleteIndex = -1;
+    private String autocompletePrefix = "";
 
     private final Map<letrain.mvp.Model.GameMode, ModeKeyHandler> modeKeyHandlers =
             new EnumMap<>(letrain.mvp.Model.GameMode.class);
@@ -131,6 +134,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 keyEvent.getKeyType() == KeyType.ArrowRight) {
                 railTrackMaker.onChar(keyEvent);
             } else if (keyEvent.getKeyType() == KeyType.Character) {
+                autocompleteIndex = -1;
                 Character c = keyEvent.getCharacter();
                 if (c != null && (c == 'h' || c == 'j' || c == 'k' || c == 'l' || c == 'H' || c == 'J' || c == 'K' || c == 'L')) {
                     railTrackMaker.onChar(keyEvent);
@@ -307,7 +311,33 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 
                 executeCommand(model.getCommandText());
                 return;
+            } else if (keyEvent.getKeyType() == KeyType.Tab) {
+                if (autocompleteIndex == -1) {
+                    // Start autocompletion: find last word
+                    String cmd = model.getCommandText();
+                    int lastSpace = cmd.lastIndexOf(' ');
+                    autocompletePrefix = lastSpace == -1 ? cmd : cmd.substring(lastSpace + 1);
+                }
+                
+                // Find next matching word
+                int startIdx = autocompleteIndex == -1 ? 0 : autocompleteIndex + 1;
+                boolean found = false;
+                for (int i = 0; i < AUTOCOMPLETE_WORDS.length; i++) {
+                    int idx = (startIdx + i) % AUTOCOMPLETE_WORDS.length;
+                    if (AUTOCOMPLETE_WORDS[idx].startsWith(autocompletePrefix)) {
+                        autocompleteIndex = idx;
+                        String cmd = model.getCommandText();
+                        int lastSpace = cmd.lastIndexOf(' ');
+                        String newCmd = (lastSpace == -1 ? "" : cmd.substring(0, lastSpace + 1)) + AUTOCOMPLETE_WORDS[idx];
+                        model.setCommandText(newCmd);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) autocompleteIndex = -1;
+                return;
             } else if (keyEvent.getKeyType() == KeyType.Backspace) {
+                autocompleteIndex = -1;
                 String t = model.getCommandText();
                 if (t.length() > 0) {
                     model.setCommandText(t.substring(0, t.length() - 1));
@@ -315,6 +345,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 return;
             } else if (keyEvent.getKeyType() == KeyType.Character) {
+                autocompleteIndex = -1;
                 Character c = keyEvent.getCharacter();
                 if (c != null) {
                     model.setCommandText(model.getCommandText() + c);
@@ -322,6 +353,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 return;
             } else if (keyEvent.getKeyType() == KeyType.ArrowUp) {
+                autocompleteIndex = -1;
                 if (historyIndex > 0) {
                     historyIndex--;
                     model.setCommandText(commandHistory.get(historyIndex));
@@ -329,6 +361,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 return;
             } else if (keyEvent.getKeyType() == KeyType.ArrowDown) {
+                autocompleteIndex = -1;
                 if (historyIndex < commandHistory.size() - 1) {
                     historyIndex++;
                     model.setCommandText(commandHistory.get(historyIndex));
