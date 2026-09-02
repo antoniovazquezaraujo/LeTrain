@@ -1,6 +1,7 @@
 package letrain.command;
 
 public interface TurtleDelegate {
+    void startSequence();
     void moveForward();
     void buildForward();
     void eraseForward();

@@ -321,7 +321,7 @@ public class RailTrackMaker {
         }
     }
 
-    private void reset() {
+    public void reset() {
         dir = presenter.getModel().getCursor().getDir();
         Point actualCursorPosition = presenter.getModel().getCursor().getPosition();
 

@@ -420,6 +420,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         model.getCursor().setMode(cursorMode);
         
         try {
+            turtleDelegate.startSequence();
             if (ctx.turtleSequence() != null) {
                 java.util.List<PlayerCommandsParser.TurtleStepContext> steps = ctx.turtleSequence().turtleStep();
                 for (int i = 0; i < steps.size(); i++) {
