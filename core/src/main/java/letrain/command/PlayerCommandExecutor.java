@@ -179,8 +179,11 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitSetNameCommand(PlayerCommandsParser.SetNameCommandContext ctx) {
         int id = -1;
         String name = null;
-        if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
-        if (ctx.STRING(0) != null) name = ctx.STRING(0).getText().replace("\"", "");
+        if (ctx.NUMBER() != null) {
+            id = Integer.parseInt(ctx.NUMBER().getText());
+        } else if (ctx.STRING().size() > 1) {
+            name = ctx.STRING(0).getText().replace("\"", "");
+        }
         
         String newName = ctx.STRING(ctx.STRING().size() - 1).getText().replace("\"", "");
 

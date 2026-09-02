@@ -58,5 +58,5 @@ markCommand : MARK STRING | MARK NUMBER ;
 
 lsCommand : LS entityType ;
 infoCommand : INFO entityType (NUMBER | STRING)? ;
-setNameCommand : SET NAME entityType (NUMBER | STRING) STRING ;
+setNameCommand : entityType (NUMBER | STRING) SET NAME STRING ;
 quitCommand : QUIT | Q | Q_BANG | WQ ;
