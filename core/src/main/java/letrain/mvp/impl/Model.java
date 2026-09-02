@@ -85,6 +85,7 @@ public class Model implements letrain.mvp.Model {
     GameMode mode = letrain.mvp.Model.GameMode.RAILS;
     GameMode previousMode = letrain.mvp.Model.GameMode.RAILS;
     RailMap map;
+    private java.util.Map<String, letrain.map.Point> marks = new java.util.HashMap<>();
     List<Locomotive> locomotives;
     List<Wagon> wagons;
     Cursor cursor;
@@ -1212,6 +1213,22 @@ public class Model implements letrain.mvp.Model {
     }
 
     @JsonIgnore
+
+    @Override
+    public void setMark(String name, letrain.map.Point pos) {
+        marks.put(name, new letrain.map.Point(pos.getX(), pos.getY()));
+    }
+
+    @Override
+    public letrain.map.Point getMark(String name) {
+        return marks.get(name);
+    }
+
+    @Override
+    public java.util.Map<String, letrain.map.Point> getMarks() {
+        return marks;
+    }
+
     @Override
     public RailTrack getCursorRailTrack() {
         return getRailMap().getTrackAt(getCursor().getPosition());

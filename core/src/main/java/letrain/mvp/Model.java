@@ -235,6 +235,11 @@ public interface Model {
 
     public EconomyManager getEconomyManager();
 
+
+    void setMark(String name, letrain.map.Point pos);
+    letrain.map.Point getMark(String name);
+    java.util.Map<String, letrain.map.Point> getMarks();
+    
     public RailTrack getCursorRailTrack();
 
     public record GameModeMenuOption(

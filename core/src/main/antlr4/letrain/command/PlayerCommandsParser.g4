@@ -11,10 +11,12 @@ playerStatement : statement
                 | turtleCommand SEMI
                 | saveCommand SEMI
                 | loadCommand SEMI
+                | markCommand SEMI
                 | faceCommand SEMI
                 ;
 
-goCommand : GO NUMBER COMMA NUMBER
+goCommand : GO MARK (STRING | NUMBER)
+          | GO NUMBER COMMA NUMBER
           | GO STRING
           | GO NEXT entityType
           | GO PREV entityType
@@ -30,7 +32,7 @@ faceCommand : FACE (DIR_N | DIR_S | DIR_E | DIR_W | DIR_NE | DIR_NW | DIR_SE | D
 
 newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL) ;
 
-delCommand : DEL (STATION | SENSOR | FORK | SEMAPHORE | TRAIN | SIGNAL) ;
+delCommand : DEL entityType (NUMBER | STRING)? ;
 
 turtleCommand : (WRITE | MOVE | DEL | CLEAR) turtleSequence? ;
 
@@ -40,3 +42,5 @@ turtleStep : NUMBER | L | R | STRING ;
 
 saveCommand : SAVE STRING? ;
 loadCommand : LOAD STRING? ;
+
+markCommand : MARK STRING | MARK NUMBER ;

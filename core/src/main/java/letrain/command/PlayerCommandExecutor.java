@@ -115,6 +115,16 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             } else {
                 throw new RuntimeException("Target entity not found.");
             }
+
+        } else if (ctx.MARK() != null) {
+            String name = ctx.STRING() != null ? ctx.STRING().getText().replace("\"", "") : ctx.NUMBER(0).getText();
+            letrain.map.Point p = model.getMark(name);
+            if (p != null) {
+                model.getCursor().getPosition().setX(p.getX());
+                model.getCursor().getPosition().setY(p.getY());
+            } else {
+                throw new RuntimeException("Mark '" + name + "' not found.");
+            }
         } else if (ctx.NEXT() != null || ctx.PREV() != null || ctx.END() != null) {
             // Topological navigation
             letrain.map.Point p = model.getCursor().getPosition();
@@ -289,33 +299,45 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
     @Override
     public Object visitDelCommand(PlayerCommandsParser.DelCommandContext ctx) {
-        letrain.map.Point pos = model.getCursor().getPosition();
-        letrain.track.Track track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
+        int id = -1;
+        String name = null;
+        if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
+        if (ctx.STRING() != null) name = ctx.STRING().getText().replace("\"", "");
 
-        if (ctx.STATION() != null) {
-            if (track == null || track.getSensor() == null || !(track.getSensor() instanceof letrain.track.Station)) {
-                throw new RuntimeException("No station to delete here.");
-            }
-            model.removeStation((letrain.track.Station) track.getSensor());
-        } else if (ctx.SENSOR() != null) {
-            if (track == null || track.getSensor() == null || (track.getSensor() instanceof letrain.track.Station) || (track.getSensor() instanceof letrain.track.SpeedSignal)) {
-                throw new RuntimeException("No standard sensor to delete here.");
-            }
-            model.removeSensor(track.getSensor());
-        } else if (ctx.SIGNAL() != null) {
-            if (track == null || track.getSensor() == null || !(track.getSensor() instanceof letrain.track.SpeedSignal)) {
-                throw new RuntimeException("No signal to delete here.");
-            }
-            model.removeSensor(track.getSensor());
-        } else if (ctx.SEMAPHORE() != null) {
-            letrain.track.RailSemaphore sem = model.getSemaphoreAt(pos);
-            if (sem == null) throw new RuntimeException("No semaphore to delete here.");
-            model.removeSemaphore(sem);
-        } else if (ctx.FORK() != null) {
-            throw new RuntimeException("Cannot delete fork via script yet (use UI).");
-        } else if (ctx.TRAIN() != null) {
-            throw new RuntimeException("Cannot delete train via script yet (use UI).");
+        letrain.map.Point targetPos = null;
+        if (ctx.entityType().STATION() != null) {
+            letrain.track.Station st = name != null ? model.findStationByName(name) : model.getStation(id);
+            if (st != null && st.getTrack() != null) targetPos = st.getTrack().getPosition();
+        } else if (ctx.entityType().SENSOR() != null) {
+            letrain.track.Sensor s = name != null ? model.findSensorByName(name) : model.getSensor(id);
+            if (s != null && s.getTrack() != null) targetPos = s.getTrack().getPosition();
+        } else if (ctx.entityType().SEMAPHORE() != null) {
+            letrain.track.RailSemaphore s = model.getSemaphore(id);
+            if (s != null) targetPos = s.getPosition();
+        } else if (ctx.entityType().FORK() != null) {
+            letrain.track.rail.ForkRailTrack f = model.getFork(id);
+            if (f != null) targetPos = f.getPosition();
+        } else if (ctx.entityType().TRAIN() != null) {
+            throw new RuntimeException("Trains cannot be deleted via the DEL command yet.");
         }
+
+        if (targetPos != null) {
+            model.removeTrack(targetPos);
+        } else {
+            throw new RuntimeException("Target entity not found.");
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitMarkCommand(PlayerCommandsParser.MarkCommandContext ctx) {
+        String name;
+        if (ctx.STRING() != null) {
+            name = ctx.STRING().getText().replace("\"", "");
+        } else {
+            name = ctx.NUMBER().getText();
+        }
+        model.setMark(name, model.getCursor().getPosition());
         return null;
     }
 
