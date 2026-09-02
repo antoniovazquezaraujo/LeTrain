@@ -97,7 +97,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 if (st != null && st.getTrack() != null) targetPos = st.getTrack().getPosition();
             } else if (ctx.entityType().SENSOR() != null) {
                 letrain.track.Sensor s = name != null ? model.findSensorByName(name) : model.getSensor(id);
-                if (s != null && s.getTrack() != null) targetPos = s.getTrack().getPosition();
+                if (s != null && !(s instanceof letrain.track.SpeedSignal) && !(s instanceof letrain.track.Station) && s.getTrack() != null) targetPos = s.getTrack().getPosition();
             } else if (ctx.entityType().SIGNAL() != null) {
                 letrain.track.Sensor s = name != null ? model.findSensorByName(name) : model.getSensor(id);
                 if (s instanceof letrain.track.SpeedSignal && s.getTrack() != null) targetPos = s.getTrack().getPosition();
@@ -165,7 +165,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     } else if (ctx.entityType().STATION() != null && t.getSensor() instanceof letrain.track.Station) {
                         found = true;
                         break;
-                    } else if (ctx.entityType().SENSOR() != null && t.getSensor() != null) {
+                    } else if (ctx.entityType().SENSOR() != null && t.getSensor() != null && !(t.getSensor() instanceof letrain.track.Station) && !(t.getSensor() instanceof letrain.track.SpeedSignal)) {
                         found = true;
                         break;
                     } else if (ctx.entityType().SIGNAL() != null && t.getSensor() instanceof letrain.track.SpeedSignal) {
@@ -225,7 +225,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 if (st != null && st.getTrack() != null) targetPos = st.getTrack().getPosition();
             } else if (ctx.entityType().SENSOR() != null) {
                 letrain.track.Sensor s = name != null ? model.findSensorByName(name) : model.getSensor(id);
-                if (s != null && s.getTrack() != null) targetPos = s.getTrack().getPosition();
+                if (s != null && !(s instanceof letrain.track.SpeedSignal) && !(s instanceof letrain.track.Station) && s.getTrack() != null) targetPos = s.getTrack().getPosition();
             } else if (ctx.entityType().SIGNAL() != null) {
                 letrain.track.Sensor s = name != null ? model.findSensorByName(name) : model.getSensor(id);
                 if (s instanceof letrain.track.SpeedSignal && s.getTrack() != null) targetPos = s.getTrack().getPosition();
