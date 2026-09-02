@@ -348,6 +348,19 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             if (targetPos != null) model.removeTrack(targetPos);
             else throw new RuntimeException("Target entity not found.");
         } else if (ctx.entityType().TRAIN() != null) {
+            throw new RuntimeException("Trains cannot be deleted via the DEL command. Use the CLEAR command instead (e.g., clear train 1).");
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitClearCommand(PlayerCommandsParser.ClearCommandContext ctx) {
+        int id = -1;
+        String name = null;
+        if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
+        if (ctx.STRING() != null) name = ctx.STRING().getText().replace("\"", "");
+
+        if (ctx.entityType().TRAIN() != null) {
             letrain.vehicle.rail.impl.Train t = name != null ? model.findTrainByName(name) : model.getTrainFromLocomotiveId(id);
             if (t != null) {
                 for (letrain.vehicle.rail.Linker l : t.getLinkers()) {
@@ -361,6 +374,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             } else {
                 throw new RuntimeException("Train not found.");
             }
+        } else {
+            throw new RuntimeException("CLEAR command is only for vehicles (e.g. clear train 1). Use DEL for infrastructure.");
         }
         return null;
     }

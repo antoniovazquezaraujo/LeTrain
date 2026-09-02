@@ -8,6 +8,7 @@ playerStatement : statement
                 | goCommand SEMI
                 | newCommand SEMI
                 | delCommand SEMI
+                | clearCommand SEMI
                 | turtleCommand SEMI
                 | saveCommand SEMI
                 | loadCommand SEMI
@@ -37,6 +38,8 @@ faceCommand : FACE (DIR_N | DIR_S | DIR_E | DIR_W | DIR_NE | DIR_NW | DIR_SE | D
 newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL) ;
 
 delCommand : DEL entityType (NUMBER | STRING)? ;
+
+clearCommand : CLEAR entityType (NUMBER | STRING)? ;
 
 turtleCommand : (WRITE | MOVE | DEL | CLEAR) turtleSequence? ;
 
