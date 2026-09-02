@@ -1,15 +1,15 @@
 lexer grammar LeTrainLexer;
 
 // Keywords
-TRAIN: 'train';
+TRAIN: 'train' | 'tr';
 CREATE: 'create';
 ITINERARY: 'itinerary';
 ASSIGN: 'assign';
 TO: 'to';
 SET: 'set';
 AUTOPILOT: 'autopilot';
-STATION: 'station';
-SENSOR: 'sensor';
+STATION: 'station' | 'st';
+SENSOR: 'sensor' | 'sn';
 NAME: 'name';
 TRUE: 'true';
 FALSE: 'false';
@@ -27,9 +27,9 @@ ENTER: 'enter';
 EXIT: 'exit';
 LINK: 'link';
 UNLINK: 'unlink';
-FORK: 'fork';
-SEMAPHORE: 'semaphore';
-SIGNAL: 'signal';
+FORK: 'fork' | 'fk';
+SEMAPHORE: 'semaphore' | 'sm';
+SIGNAL: 'signal' | 'sg';
 TRAIN_AT: 'train at';
 OPEN: 'open';
 CLOSED: 'closed';
@@ -46,6 +46,7 @@ INVERT: 'invert';
 NEW: 'new';
 DEL: 'del';
 GO: 'go';
+G: 'g';
 MODE: 'mode';
 WRITE: 'write';
 MOVE: 'move';
@@ -62,7 +63,9 @@ KEEP_MAP: 'keep-map';
 MAP: 'map';
 NEXT: 'next';
 PREV: 'prev';
-RAIL: 'rail';
+GN: 'gn';
+GP: 'gp';
+RAIL: 'rail' | 'rl';
 END: 'end';
 
 // Directions

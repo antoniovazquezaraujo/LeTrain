@@ -61,8 +61,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     int speedSignalId;
     int locomotiveId;
     int StationId;
+    int sensorId;
 
     private long forkInputTimeout = 0;
+    private long sensorInputTimeout = 0;
     private long speedSignalInputTimeout = 0;
     private long semaphoreInputTimeout = 0;
     private long stationInputTimeout = 0;
@@ -104,6 +106,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         modeKeyHandlers.put(DRIVE, keyEvent -> trainDriverOnChar(keyEvent));
         modeKeyHandlers.put(FORKS, keyEvent -> handleForksModeKey(keyEvent));
         modeKeyHandlers.put(SEMAPHORES, keyEvent -> handleSemaphoresModeKey(keyEvent));
+        modeKeyHandlers.put(letrain.mvp.Model.GameMode.SENSORS, keyEvent -> handleSensorsModeKey(keyEvent));
         modeKeyHandlers.put(letrain.mvp.Model.GameMode.SPEED_SIGNALS,
                 keyEvent -> handleSpeedSignalsModeKey(keyEvent));
         modeKeyHandlers.put(TRAINS, keyEvent -> {
@@ -445,6 +448,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     return true;
                 }
                 return false;
+            case 'e':
+                if (!model.getSensors().isEmpty()) {
+                    model.setMode(letrain.mvp.Model.GameMode.SENSORS);
+                    return true;
+                }
+                return false;
             case 'g':
                 if (!model.getSpeedSignals().isEmpty()) {
                     model.setMode(letrain.mvp.Model.GameMode.SPEED_SIGNALS);
@@ -593,6 +602,37 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                         model.getSelectedSpeedSignal().setLimit(l - 1);
                     }
                 }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void handleSensorsModeKey(InputEvent keyEvent) {
+        switch (getEffectiveKeyType(keyEvent)) {
+            case Backspace:
+                sensorId = sensorId / 10;
+                model.selectSensor(sensorId);
+                break;
+            case Character:
+                if (keyEvent.getCharacter() == ' ') {
+                    if (sensorId > 0) {
+                        model.selectSensor(sensorId);
+                        sensorId = 0;
+                        sensorInputTimeout = 0;
+                    }
+                } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
+                    sensorId = sensorId * 10 + (keyEvent.getCharacter() - '0');
+                    sensorInputTimeout = System.currentTimeMillis() + 1000;
+                }
+                break;
+            case ArrowLeft:
+                model.selectPrevSensor();
+                sensorId = 0;
+                break;
+            case ArrowRight:
+                model.selectNextSensor();
+                sensorId = 0;
                 break;
             default:
                 break;
@@ -1424,6 +1464,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void updateTimeouts() {
         long now = System.currentTimeMillis();
+        if (sensorInputTimeout > 0 && now > sensorInputTimeout) {
+            model.selectSensor(sensorId);
+            sensorId = 0;
+            sensorInputTimeout = 0;
+        }
         if (forkInputTimeout > 0 && now > forkInputTimeout) {
             model.selectFork(forkId);
             forkId = 0;

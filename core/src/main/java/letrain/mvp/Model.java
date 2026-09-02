@@ -43,6 +43,10 @@ public interface Model {
     public int peekNextLocomotiveId();
 
     public int nextSensorId();
+    public int nextSpeedSignalId();
+    public letrain.track.SpeedSignal getSpeedSignal(int id);
+    public letrain.track.SpeedSignal findSpeedSignalByName(String name);
+
 
     public int nextTrainId();
 
@@ -130,6 +134,13 @@ public interface Model {
 
     boolean selectPrevSemaphore();
 
+    boolean selectNextSensor();
+    boolean selectPrevSensor();
+    boolean selectSensor(int id);
+    letrain.track.Sensor getSelectedSensor();
+    void setSelectedSensor(letrain.track.Sensor selectedSensor);
+
+
     boolean selectSpeedSignal(int id);
 
     boolean selectNextSpeedSignal();
@@ -211,7 +222,7 @@ public interface Model {
                 "Manage locomotives"), FORKS("Manage forks"), SEMAPHORES(
                         "Manage semaphores"), SPEED_SIGNALS("Manage speed signals"), TRAINS(
                                 "Create trains"), LINK("Link trains"), UNLINK(
-                                        "Divide trains"), STATIONS("Stations"), LOAD_TRAINS(
+                                        "Divide trains"), SENSORS("Manage sensors"), STATIONS("Stations"), LOAD_TRAINS(
                                                 "Use load Stations"), PROGRAM("Program"), COMMAND("Command Line Interface");
 
         private String name;
@@ -235,6 +246,11 @@ public interface Model {
 
     public EconomyManager getEconomyManager();
 
+
+    void setMark(String name, letrain.map.Point pos);
+    letrain.map.Point getMark(String name);
+    java.util.Map<String, letrain.map.Point> getMarks();
+    
     public RailTrack getCursorRailTrack();
 
     public record GameModeMenuOption(

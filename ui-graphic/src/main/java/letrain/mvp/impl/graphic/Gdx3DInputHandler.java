@@ -414,6 +414,11 @@ public class Gdx3DInputHandler implements InputProcessor {
                             }
                         }
                         return;
+                    case 'e':
+                        if (!model.getSensors().isEmpty()) {
+                            model.setMode(Model.GameMode.SENSORS);
+                        }
+                        return;
                     case 'n':
                         if (!model.getStations().isEmpty()) {
                             model.setMode(Model.GameMode.STATIONS);
@@ -465,6 +470,9 @@ public class Gdx3DInputHandler implements InputProcessor {
             case SEMAPHORES:
                 handleSemaphoreInput(stroke);
                 break;
+            case SENSORS:
+                handleSensorsInput(stroke);
+                break;
             case SPEED_SIGNALS:
                 handleSpeedSignalsInput(stroke);
                 break;
@@ -503,6 +511,11 @@ public class Gdx3DInputHandler implements InputProcessor {
             case SEMAPHORES:
                 if (model.getSelectedSemaphore() != null) {
                     targetPos = model.getSelectedSemaphore().getPosition();
+                }
+                break;
+            case SENSORS:
+                if (model.getSelectedSensor() != null) {
+                    targetPos = model.getSelectedSensor().getPosition();
                 }
                 break;
             case SPEED_SIGNALS:
@@ -789,6 +802,30 @@ public class Gdx3DInputHandler implements InputProcessor {
                 break;
             default:
                 break;
+        }
+    }
+
+
+    private long sensorInputTimeout = 0;
+    private int sensorIdAccumulator = 0;
+
+    private void handleSensorsInput(InputEvent stroke) {
+        if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
+            model.selectPrevSensor();
+        } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
+            model.selectNextSensor();
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
+                && Character.isDigit(stroke.getCharacter())) {
+            sensorIdAccumulator =
+                    sensorIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
+            model.selectSensor(sensorIdAccumulator);
+            sensorInputTimeout = System.currentTimeMillis() + 1000;
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
+            if (sensorIdAccumulator > 0) {
+                model.selectSensor(sensorIdAccumulator);
+                sensorIdAccumulator = 0;
+                sensorInputTimeout = 0;
+            }
         }
     }
 

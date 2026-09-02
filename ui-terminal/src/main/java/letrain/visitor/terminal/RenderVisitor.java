@@ -247,14 +247,20 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitSensor(Sensor sensor) {
         Track track = sensor.getTrack();
-        if (track.getSensor() != null && this.mode == GameMode.RAILS) {
+        if (track.getSensor() != null) {
             if (track.getSensor() instanceof Station) {
-                view.setFgColor(STATION_COLOR);
+                // Stations are handled by visitStation, but if visited here we could skip or just not interfere.
+                // It's probably better to just return if it's a Station so visitStation handles it completely.
+                if (!(track.getSensor() instanceof Station)) {
+                    view.setFgColor(SENSOR_COLOR);
+                    view.set(track.getPosition().getX(), track.getPosition().getY(),
+                            SENSOR_ASPECT + (this.mode == GameMode.SENSORS ? track.getSensor().getId() : ""));
+                }
             } else {
                 view.setFgColor(SENSOR_COLOR);
+                view.set(track.getPosition().getX(), track.getPosition().getY(),
+                        SENSOR_ASPECT + (this.mode == GameMode.SENSORS ? track.getSensor().getId() : ""));
             }
-            view.set(track.getPosition().getX(), track.getPosition().getY(),
-                    SENSOR_ASPECT + track.getSensor().getId());
         }
         resetColors();
     }
@@ -302,6 +308,7 @@ public class RenderVisitor implements Visitor {
 
         view.set(pos.getX(), pos.getY(), String.valueOf(icon));
         view.set(pos.getX() + 1, pos.getY(), arrow);
+        view.set(pos.getX() + 2, pos.getY(), mode == GameMode.SPEED_SIGNALS ? String.valueOf(speedSignal.getId()) : "");
 
         view.setUnderline(false);
         view.setFgColor(TextColor.ANSI.WHITE);

@@ -85,6 +85,7 @@ public class Model implements letrain.mvp.Model {
     GameMode mode = letrain.mvp.Model.GameMode.RAILS;
     GameMode previousMode = letrain.mvp.Model.GameMode.RAILS;
     RailMap map;
+    private java.util.Map<String, letrain.map.Point> marks = new java.util.HashMap<>();
     List<Locomotive> locomotives;
     List<Wagon> wagons;
     Cursor cursor;
@@ -137,6 +138,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     int nextSensorId;
+    int nextSpeedSignalId;
     int nextSemaphoreId;
     int nextTrainId;
     int nextStationId;
@@ -242,6 +244,13 @@ public class Model implements letrain.mvp.Model {
     }
 
     public void postLoadInit() {
+        if (nextSpeedSignalId == 0) {
+            for (Sensor s : getSensors()) {
+                if (s instanceof letrain.track.SpeedSignal && s.getId() > nextSpeedSignalId) {
+                    nextSpeedSignalId = s.getId();
+                }
+            }
+        }
         this.blockManager = createBlockManager();
         if (this.scriptTrainEventListeners == null) {
             this.scriptTrainEventListeners = new ArrayList<>();
@@ -1212,6 +1221,22 @@ public class Model implements letrain.mvp.Model {
     }
 
     @JsonIgnore
+
+    @Override
+    public void setMark(String name, letrain.map.Point pos) {
+        marks.put(name, new letrain.map.Point(pos.getX(), pos.getY()));
+    }
+
+    @Override
+    public letrain.map.Point getMark(String name) {
+        return marks.get(name);
+    }
+
+    @Override
+    public java.util.Map<String, letrain.map.Point> getMarks() {
+        return marks;
+    }
+
     @Override
     public RailTrack getCursorRailTrack() {
         return getRailMap().getTrackAt(getCursor().getPosition());
@@ -1235,6 +1260,10 @@ public class Model implements letrain.mvp.Model {
                         "[⏴⏵/hl]:Select [o]:Locate [Space]:Toggle [#]:ID",
                         () -> !this.getSemaphores().isEmpty(),
                         () -> this.getMode() == GameMode.SEMAPHORES, () -> GameMode.SEMAPHORES),
+                new GameModeMenuOption("S&ensors",
+                        "[⏴⏵/hl]:Select [o]:Locate [#]:ID",
+                        () -> getSensors().stream().anyMatch(s -> s.getClass() == letrain.track.Sensor.class),
+                        () -> this.getMode() == GameMode.SENSORS, () -> GameMode.SENSORS),
                 new GameModeMenuOption("Si&gnals",
                         "[⏴⏵/hl]:Select [m]:Max/Min [⏶⏷/kj]:Limit [Space]:Invert",
                         () -> !getSpeedSignals().isEmpty(),
@@ -1522,6 +1551,40 @@ public class Model implements letrain.mvp.Model {
         this.nextSensorId = nextSensorId;
     }
 
+    @Override
+    public int nextSpeedSignalId() {
+        return ++nextSpeedSignalId;
+    }
+
+    public int getNextSpeedSignalId() {
+        return nextSpeedSignalId;
+    }
+
+    public void setNextSpeedSignalId(int nextSpeedSignalId) {
+        this.nextSpeedSignalId = nextSpeedSignalId;
+    }
+
+    @Override
+    public letrain.track.SpeedSignal getSpeedSignal(int id) {
+        for (Sensor sensor : getSensors()) {
+            if (sensor instanceof letrain.track.SpeedSignal && sensor.getId() == id) {
+                return (letrain.track.SpeedSignal) sensor;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public letrain.track.SpeedSignal findSpeedSignalByName(String name) {
+        for (Sensor sensor : getSensors()) {
+            if (sensor instanceof letrain.track.SpeedSignal && name.equals(sensor.getName())) {
+                return (letrain.track.SpeedSignal) sensor;
+            }
+        }
+        return null;
+    }
+
+
     public void setNextSemaphoreId(int nextSemaphoreId) {
         this.nextSemaphoreId = nextSemaphoreId;
     }
@@ -1553,4 +1616,61 @@ public class Model implements letrain.mvp.Model {
     public letrain.utils.SimulationScheduler getScheduler() {
         return scheduler;
     }
+
+    private letrain.track.Sensor selectedSensor;
+
+    @Override
+    public letrain.track.Sensor getSelectedSensor() {
+        return selectedSensor;
+    }
+
+    @Override
+    public void setSelectedSensor(letrain.track.Sensor selectedSensor) {
+        this.selectedSensor = selectedSensor;
+    }
+
+    @Override
+    public boolean selectSensor(int id) {
+        letrain.track.Sensor s = getSensor(id);
+        if (s != null && s.getClass() == letrain.track.Sensor.class) {
+            setSelectedSensor(s);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean selectNextSensor() {
+        java.util.List<letrain.track.Sensor> pureSensors = getSensors().stream().filter(s -> s.getClass() == letrain.track.Sensor.class).collect(java.util.stream.Collectors.toList());
+        if (pureSensors.isEmpty()) return false;
+        if (selectedSensor == null) {
+            selectedSensor = pureSensors.get(0);
+            return true;
+        }
+        int i = pureSensors.indexOf(selectedSensor);
+        if (i < pureSensors.size() - 1) {
+            selectedSensor = pureSensors.get(i + 1);
+        } else {
+            selectedSensor = pureSensors.get(0);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean selectPrevSensor() {
+        java.util.List<letrain.track.Sensor> pureSensors = getSensors().stream().filter(s -> s.getClass() == letrain.track.Sensor.class).collect(java.util.stream.Collectors.toList());
+        if (pureSensors.isEmpty()) return false;
+        if (selectedSensor == null) {
+            selectedSensor = pureSensors.get(pureSensors.size() - 1);
+            return true;
+        }
+        int i = pureSensors.indexOf(selectedSensor);
+        if (i > 0) {
+            selectedSensor = pureSensors.get(i - 1);
+        } else {
+            selectedSensor = pureSensors.get(pureSensors.size() - 1);
+        }
+        return true;
+    }
+
 }
