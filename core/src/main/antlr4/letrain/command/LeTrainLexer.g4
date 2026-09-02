@@ -63,6 +63,8 @@ KEEP_MAP: 'keep-map';
 MAP: 'map';
 NEXT: 'next';
 PREV: 'prev';
+GN: 'gn';
+GP: 'gp';
 RAIL: 'rail';
 END: 'end';
 

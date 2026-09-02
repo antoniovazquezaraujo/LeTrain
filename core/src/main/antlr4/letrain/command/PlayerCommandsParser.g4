@@ -24,6 +24,8 @@ goCommand : goCmdToken MARK (STRING | NUMBER)
           | goCmdToken PREV entityType
           | goCmdToken END
           | goCmdToken entityType (NUMBER | STRING)
+          | GN entityType
+          | GP entityType
           ;
 
 entityType : STATION | SENSOR | FORK | SEMAPHORE | SIGNAL | TRAIN | RAIL ;

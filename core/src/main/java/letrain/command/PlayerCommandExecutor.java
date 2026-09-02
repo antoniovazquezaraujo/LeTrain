@@ -84,7 +84,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             int y = Integer.parseInt(ctx.NUMBER(1).getText());
             model.getCursor().getPosition().setX(x);
             model.getCursor().getPosition().setY(y);
-        } else if (ctx.entityType() != null && ctx.NEXT() == null && ctx.PREV() == null) {
+        } else if (ctx.entityType() != null && ctx.NEXT() == null && ctx.PREV() == null && ctx.GN() == null && ctx.GP() == null) {
             // Absolute entity Go
             int id = -1;
             String name = null;
@@ -125,14 +125,14 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             } else {
                 throw new RuntimeException("Mark '" + name + "' not found.");
             }
-        } else if (ctx.NEXT() != null || ctx.PREV() != null || ctx.END() != null) {
+        } else if (ctx.NEXT() != null || ctx.PREV() != null || ctx.END() != null || ctx.GN() != null || ctx.GP() != null) {
             // Topological navigation
             letrain.map.Point p = model.getCursor().getPosition();
             letrain.track.Track t = model.getRailMap().getTrackAt(p.getX(), p.getY());
             if (t == null) throw new RuntimeException("Cursor is not on a track.");
             
             letrain.map.Dir searchDir = model.getCursor().getDir();
-            if (ctx.PREV() != null) searchDir = searchDir.inverse();
+            if (ctx.PREV() != null || ctx.GP() != null) searchDir = searchDir.inverse();
             
             boolean found = false;
             while (t != null) {
