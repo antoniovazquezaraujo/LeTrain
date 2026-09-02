@@ -89,10 +89,7 @@ public class InfoVisitor implements Visitor {
                 visitProgram(model);
                 break;
             case COMMAND:
-                infoBarText += ":" + model.getCommandText() + "_";
-                if (model.getCommandError() != null && !model.getCommandError().isEmpty()) {
-                    infoBarText += "  [ERROR: " + model.getCommandError() + "]";
-                }
+                infoBarText += "Command Mode";
                 break;
             case RAILS:
             case TRAINS:
@@ -172,6 +169,10 @@ public class InfoVisitor implements Visitor {
                 "[PgUp/Dn]: Scroll | [z/Z]: Camera | [r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit");
 
         view.setInfoBarText(richInfo.toString());
+        
+        if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
+            view.drawCommandLine(model.getCommandText(), model.getCommandError());
+        }
     }
 
     private String getNotchBar(int current, int target, int max) {

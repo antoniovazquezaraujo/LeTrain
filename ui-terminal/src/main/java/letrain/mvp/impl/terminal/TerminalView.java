@@ -857,7 +857,39 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void showMessage(String title, String message) {
-        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        com.googlecode.lanterna.gui2.MultiWindowTextGUI gui = new com.googlecode.lanterna.gui2.MultiWindowTextGUI(screen);
         com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui, title, message);
     }
+    
+    @Override
+    public void drawCommandLine(String text, String error) {
+        int screenRows = screen.getTerminalSize().getRows();
+        int screenCols = screen.getTerminalSize().getColumns();
+        if (screenRows < 2) return; // safety
+        
+        int drawY = screenRows - 1; // Last line of the absolute screen
+        
+        TextGraphics g = screen.newTextGraphics();
+        g.setBackgroundColor(TextColor.ANSI.BLACK);
+        g.setForegroundColor(TextColor.ANSI.WHITE);
+        g.putString(0, drawY, " ".repeat(screenCols)); // clear line
+        
+        String prompt = ":" + text + "_";
+        g.putString(0, drawY, prompt);
+        
+        if (error != null && !error.isEmpty()) {
+            String errStr = " " + error.replace('\n', ' ').replace('\r', ' ') + " "; // Just the error, not [ERROR:]
+            int startX = prompt.length() + 2; // small gap
+            if (startX < screenCols) {
+                // Truncate if it overflows
+                if (startX + errStr.length() > screenCols) {
+                    errStr = errStr.substring(0, screenCols - startX);
+                }
+                g.setBackgroundColor(TextColor.ANSI.RED);
+                g.setForegroundColor(TextColor.ANSI.WHITE);
+                g.putString(startX, drawY, errStr);
+            }
+        }
+    }
+
 }

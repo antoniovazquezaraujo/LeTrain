@@ -70,6 +70,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private long stationInputTimeout = 0;
     private long locomotiveInputTimeout = 0;
 
+    private final java.util.List<String> commandHistory = new java.util.ArrayList<>();
+    private int historyIndex = -1;
+
     private final Map<letrain.mvp.Model.GameMode, ModeKeyHandler> modeKeyHandlers =
             new EnumMap<>(letrain.mvp.Model.GameMode.class);
 
@@ -260,6 +263,27 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     // [r:Rails d:Drive f:Forks t:Trains l:Link u:Unlink
 
+    private void executeCommand(String cmd) {
+        log.info("Execute command: " + cmd);
+        String error = letrain.command.PlayerCommandExecutor.execute(cmd, model, file -> onSaveGame(file), file -> onLoadGame(file), new letrain.command.TurtleDelegate() {
+            @Override public void startSequence() { railTrackMaker.reset(); railTrackMaker.makingTracks = false; }
+            @Override public void moveForward() { railTrackMaker.cursorForward(); }
+            @Override public void buildForward() { railTrackMaker.createTrack(null); }
+            @Override public void eraseForward() { railTrackMaker.removeTrack(true); }
+            @Override public void turnLeft() { railTrackMaker.cursorTurnLeft(); }
+            @Override public void turnRight() { railTrackMaker.cursorTurnRight(); }
+            @Override public void endSequence() { railTrackMaker.makingTracks = false; }
+        });
+
+        if (error != null) {
+            model.setCommandError(error);
+            return;
+        }
+        model.setMode(letrain.mvp.Model.GameMode.RAILS);
+        model.setCommandText("");
+        model.setCommandError("");
+    }
+
     @Override
     public void onChar(InputEvent keyEvent) {
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
@@ -269,23 +293,19 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 model.setCommandError("");
                 return;
             } else if (keyEvent.getKeyType() == KeyType.Enter) {
-                log.info("Execute command: " + model.getCommandText());
-                String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(), model, file -> onSaveGame(file), file -> onLoadGame(file), new letrain.command.TurtleDelegate() {
-                    @Override public void moveForward() { railTrackMaker.cursorForward(); }
-                    @Override public void buildForward() { railTrackMaker.createTrack(null); }
-                    @Override public void eraseForward() { railTrackMaker.removeTrack(true); }
-                    @Override public void turnLeft() { railTrackMaker.cursorTurnLeft(); }
-                    @Override public void turnRight() { railTrackMaker.cursorTurnRight(); }
-                    @Override public void endSequence() { railTrackMaker.makingTracks = false; }
-                });
-
-                if (error != null) {
-                    model.setCommandError(error);
+                String cmd = model.getCommandText().trim();
+                if (cmd.isEmpty()) {
+                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                    model.setCommandText("");
+                    model.setCommandError("");
                     return;
                 }
-                model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                model.setCommandText("");
-                model.setCommandError("");
+                if (commandHistory.isEmpty() || !commandHistory.get(commandHistory.size() - 1).equals(cmd)) {
+                    commandHistory.add(cmd);
+                }
+                historyIndex = commandHistory.size();
+                
+                executeCommand(model.getCommandText());
                 return;
             } else if (keyEvent.getKeyType() == KeyType.Backspace) {
                 String t = model.getCommandText();
@@ -297,12 +317,58 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             } else if (keyEvent.getKeyType() == KeyType.Character) {
                 Character c = keyEvent.getCharacter();
                 if (c != null) {
-                    model.setCommandText(model.getCommandText() + c);
+                    if (keyEvent.isCtrlDown() && (c == 'p' || c == 'P' || c == 16)) {
+                        if (historyIndex > 0) {
+                            historyIndex--;
+                            model.setCommandText(commandHistory.get(historyIndex));
+                            model.setCommandError("");
+                        }
+                        return;
+                    } else if (keyEvent.isCtrlDown() && (c == 'n' || c == 'N' || c == 14)) {
+                        if (historyIndex < commandHistory.size() - 1) {
+                            historyIndex++;
+                            model.setCommandText(commandHistory.get(historyIndex));
+                            model.setCommandError("");
+                        } else if (historyIndex == commandHistory.size() - 1) {
+                            historyIndex++;
+                            model.setCommandText("");
+                            model.setCommandError("");
+                        }
+                        return;
+                    } else if (!keyEvent.isCtrlDown() && !keyEvent.isAltDown()) {
+                        model.setCommandText(model.getCommandText() + c);
+                        model.setCommandError("");
+                    }
+                }
+                return;
+            } else if (keyEvent.getKeyType() == KeyType.ArrowUp) {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    model.setCommandText(commandHistory.get(historyIndex));
+                    model.setCommandError("");
+                }
+                return;
+            } else if (keyEvent.getKeyType() == KeyType.ArrowDown) {
+                if (historyIndex < commandHistory.size() - 1) {
+                    historyIndex++;
+                    model.setCommandText(commandHistory.get(historyIndex));
+                    model.setCommandError("");
+                } else if (historyIndex == commandHistory.size() - 1) {
+                    historyIndex++;
+                    model.setCommandText("");
                     model.setCommandError("");
                 }
                 return;
             }
             return; // Ignore other keys in COMMAND mode
+        }
+
+        if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null && keyEvent.getCharacter() == '.') {
+            if (model.getMode() != letrain.mvp.Model.GameMode.COMMAND && !commandHistory.isEmpty()) {
+                String cmd = commandHistory.get(commandHistory.size() - 1);
+                executeCommand(cmd);
+                return;
+            }
         }
 
         if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null && keyEvent.getCharacter() == ':') {

@@ -37,7 +37,17 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         }
         
         List<String> errors = new ArrayList<>();
-        PlayerCommandsParser parser = new PlayerCommandsParser(new CommonTokenStream(new LeTrainLexer(CharStreams.fromString(commandText))));
+        
+        LeTrainLexer lexer = new LeTrainLexer(CharStreams.fromString(commandText));
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
+            @Override
+            public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, org.antlr.v4.runtime.RecognitionException e) {
+                errors.add("Token Error at " + charPositionInLine + ": " + msg);
+            }
+        });
+
+        PlayerCommandsParser parser = new PlayerCommandsParser(new CommonTokenStream(lexer));
         parser.removeErrorListeners();
         parser.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
             @Override
@@ -48,7 +58,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
         PlayerCommandsParser.PlayerStartContext tree = parser.playerStart();
         if (!errors.isEmpty()) {
-            return String.join("\n", errors);
+            return String.join(" | ", errors);
         }
 
         try {
@@ -410,6 +420,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         model.getCursor().setMode(cursorMode);
         
         try {
+            turtleDelegate.startSequence();
             if (ctx.turtleSequence() != null) {
                 java.util.List<PlayerCommandsParser.TurtleStepContext> steps = ctx.turtleSequence().turtleStep();
                 for (int i = 0; i < steps.size(); i++) {
