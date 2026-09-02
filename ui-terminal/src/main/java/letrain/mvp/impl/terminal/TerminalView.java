@@ -863,24 +863,31 @@ public class TerminalView implements letrain.mvp.View {
     
     @Override
     public void drawCommandLine(String text, String error) {
-        int rows = getRows();
-        if (rows < 2) return; // safety
+        int screenRows = screen.getTerminalSize().getRows();
+        int screenCols = screen.getTerminalSize().getColumns();
+        if (screenRows < 2) return; // safety
+        
+        int drawY = screenRows - 1; // Last line of the absolute screen
         
         TextGraphics g = screen.newTextGraphics();
         g.setBackgroundColor(TextColor.ANSI.BLACK);
         g.setForegroundColor(TextColor.ANSI.WHITE);
-        g.putString(0, rows - 1, " ".repeat(getCols())); // clear line
+        g.putString(0, drawY, " ".repeat(screenCols)); // clear line
         
         String prompt = ":" + text + "_";
-        g.putString(0, rows - 1, prompt);
+        g.putString(0, drawY, prompt);
         
         if (error != null && !error.isEmpty()) {
-            String errStr = " [ERROR: " + error + "] ";
-            int startX = prompt.length();
-            if (startX + errStr.length() < getCols()) {
+            String errStr = " " + error + " "; // Just the error, not [ERROR:]
+            int startX = prompt.length() + 2; // small gap
+            if (startX < screenCols) {
+                // Truncate if it overflows
+                if (startX + errStr.length() > screenCols) {
+                    errStr = errStr.substring(0, screenCols - startX);
+                }
                 g.setBackgroundColor(TextColor.ANSI.RED);
                 g.setForegroundColor(TextColor.ANSI.WHITE);
-                g.putString(startX, rows - 1, errStr);
+                g.putString(startX, drawY, errStr);
             }
         }
     }
