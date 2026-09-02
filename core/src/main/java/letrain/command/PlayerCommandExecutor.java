@@ -79,12 +79,155 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
     @Override
     public Object visitGoCommand(PlayerCommandsParser.GoCommandContext ctx) {
-        int x = Integer.parseInt(ctx.NUMBER(0).getText());
-        int y = Integer.parseInt(ctx.NUMBER(1).getText());
-        model.getCursor().getPosition().setX(x);
-        model.getCursor().getPosition().setY(y);
+        if (ctx.COMMA() != null) {
+            int x = Integer.parseInt(ctx.NUMBER(0).getText());
+            int y = Integer.parseInt(ctx.NUMBER(1).getText());
+            model.getCursor().getPosition().setX(x);
+            model.getCursor().getPosition().setY(y);
+        } else if (ctx.entityType() != null && ctx.NEXT() == null && ctx.PREV() == null) {
+            // Absolute entity Go
+            int id = -1;
+            String name = null;
+            if (ctx.NUMBER(0) != null) id = Integer.parseInt(ctx.NUMBER(0).getText());
+            if (ctx.STRING() != null) name = ctx.STRING().getText().replace("\"", "");
+
+            letrain.map.Point targetPos = null;
+            if (ctx.entityType().STATION() != null) {
+                letrain.track.Station st = name != null ? model.findStationByName(name) : model.getStation(id);
+                if (st != null && st.getTrack() != null) targetPos = st.getTrack().getPosition();
+            } else if (ctx.entityType().SENSOR() != null) {
+                letrain.track.Sensor s = name != null ? model.findSensorByName(name) : model.getSensor(id);
+                if (s != null && s.getTrack() != null) targetPos = s.getTrack().getPosition();
+            } else if (ctx.entityType().SEMAPHORE() != null) {
+                letrain.track.RailSemaphore s = model.getSemaphore(id);
+                if (s != null) targetPos = s.getPosition();
+            } else if (ctx.entityType().FORK() != null) {
+                letrain.track.rail.ForkRailTrack f = model.getFork(id);
+                if (f != null) targetPos = f.getPosition();
+            } else if (ctx.entityType().TRAIN() != null) {
+                letrain.vehicle.rail.impl.Train t = name != null ? model.findTrainByName(name) : model.getTrainFromLocomotiveId(id);
+                if (t != null && t.getDirectorLinker() != null) targetPos = ((letrain.vehicle.Vehicle<?>) t.getDirectorLinker()).getPosition();
+            }
+
+            if (targetPos != null) {
+                model.getCursor().getPosition().setX(targetPos.getX());
+                model.getCursor().getPosition().setY(targetPos.getY());
+            } else {
+                throw new RuntimeException("Target entity not found.");
+            }
+        } else if (ctx.NEXT() != null || ctx.PREV() != null || ctx.END() != null) {
+            // Topological navigation
+            letrain.map.Point p = model.getCursor().getPosition();
+            letrain.track.Track t = model.getRailMap().getTrackAt(p.getX(), p.getY());
+            if (t == null) throw new RuntimeException("Cursor is not on a track.");
+            
+            letrain.map.Dir searchDir = model.getCursor().getDir();
+            if (ctx.PREV() != null) searchDir = searchDir.inverse();
+            
+            boolean found = false;
+            while (t != null) {
+                letrain.track.Track nextTrack = t.getConnected(searchDir);
+                if (nextTrack == null) break;
+                
+                letrain.map.Dir incoming = searchDir.inverse();
+                letrain.map.Dir outgoing = nextTrack.getDir(incoming);
+                if (outgoing == null) break;
+                
+                t = nextTrack;
+                searchDir = outgoing;
+                
+                if (ctx.END() != null) {
+                    // Just keep going until the end
+                    continue;
+                } else if (ctx.entityType() != null) {
+                    if (ctx.entityType().RAIL() != null) {
+                        found = true;
+                        break;
+                    } else if (ctx.entityType().FORK() != null && t instanceof letrain.track.rail.ForkRailTrack) {
+                        found = true;
+                        break;
+                    } else if (ctx.entityType().STATION() != null && t.getSensor() instanceof letrain.track.Station) {
+                        found = true;
+                        break;
+                    } else if (ctx.entityType().SENSOR() != null && t.getSensor() != null) {
+                        found = true;
+                        break;
+                    } else if (ctx.entityType().SEMAPHORE() != null && model.getSemaphoreAt(t.getPosition()) != null) {
+                        found = true;
+                        break;
+                    } else if (ctx.entityType().TRAIN() != null && t.getLinker() != null) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (ctx.END() != null) {
+                model.getCursor().getPosition().setX(t.getPosition().getX());
+                model.getCursor().getPosition().setY(t.getPosition().getY());
+                model.getCursor().setDir(ctx.PREV() != null ? searchDir.inverse() : searchDir);
+            } else if (found) {
+                model.getCursor().getPosition().setX(t.getPosition().getX());
+                model.getCursor().getPosition().setY(t.getPosition().getY());
+                model.getCursor().setDir(ctx.PREV() != null ? searchDir.inverse() : searchDir);
+            } else {
+                throw new RuntimeException("Target not found along the track.");
+            }
+        }
         return null;
     }
+
+
+    @Override
+    public Object visitFaceCommand(PlayerCommandsParser.FaceCommandContext ctx) {
+        if (ctx.entityType() == null) {
+            letrain.map.Dir dir = null;
+            if (ctx.DIR_N() != null) dir = letrain.map.Dir.N;
+            else if (ctx.DIR_S() != null) dir = letrain.map.Dir.S;
+            else if (ctx.DIR_E() != null) dir = letrain.map.Dir.E;
+            else if (ctx.DIR_W() != null) dir = letrain.map.Dir.W;
+            else if (ctx.DIR_NE() != null) dir = letrain.map.Dir.NE;
+            else if (ctx.DIR_NW() != null) dir = letrain.map.Dir.NW;
+            else if (ctx.DIR_SE() != null) dir = letrain.map.Dir.SE;
+            else if (ctx.DIR_SW() != null) dir = letrain.map.Dir.SW;
+            
+            if (dir != null) {
+                model.getCursor().setDir(dir);
+            }
+        } else {
+            int id = -1;
+            String name = null;
+            if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
+            if (ctx.STRING() != null) name = ctx.STRING().getText().replace("\"", "");
+
+            letrain.map.Point targetPos = null;
+            if (ctx.entityType().STATION() != null) {
+                letrain.track.Station st = name != null ? model.findStationByName(name) : model.getStation(id);
+                if (st != null && st.getTrack() != null) targetPos = st.getTrack().getPosition();
+            } else if (ctx.entityType().SENSOR() != null) {
+                letrain.track.Sensor s = name != null ? model.findSensorByName(name) : model.getSensor(id);
+                if (s != null && s.getTrack() != null) targetPos = s.getTrack().getPosition();
+            } else if (ctx.entityType().SEMAPHORE() != null) {
+                letrain.track.RailSemaphore s = model.getSemaphore(id);
+                if (s != null) targetPos = s.getPosition();
+            } else if (ctx.entityType().FORK() != null) {
+                letrain.track.rail.ForkRailTrack f = model.getFork(id);
+                if (f != null) targetPos = f.getPosition();
+            } else if (ctx.entityType().TRAIN() != null) {
+                letrain.vehicle.rail.impl.Train t = name != null ? model.findTrainByName(name) : model.getTrainFromLocomotiveId(id);
+                if (t != null && t.getDirectorLinker() != null) targetPos = ((letrain.vehicle.Vehicle<?>) t.getDirectorLinker()).getPosition();
+            }
+
+            if (targetPos != null) {
+                letrain.map.Dir dir = model.getCursor().getPosition().locate(targetPos);
+                if (dir != null) model.getCursor().setDir(dir);
+            } else {
+                throw new RuntimeException("Target entity not found.");
+            }
+        }
+        return null;
+    }
+
 
     @Override
     public Object visitNewCommand(PlayerCommandsParser.NewCommandContext ctx) {

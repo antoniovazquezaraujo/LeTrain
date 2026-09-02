@@ -60,6 +60,10 @@ WQ: 'wq';
 MARK: 'mark';
 KEEP_MAP: 'keep-map';
 MAP: 'map';
+NEXT: 'next';
+PREV: 'prev';
+RAIL: 'rail';
+END: 'end';
 
 // Directions
 DIR_E: 'e';
