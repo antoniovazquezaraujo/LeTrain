@@ -46,6 +46,7 @@ INVERT: 'invert';
 NEW: 'new';
 DEL: 'del';
 GO: 'go';
+G: 'g';
 MODE: 'mode';
 WRITE: 'write';
 MOVE: 'move';

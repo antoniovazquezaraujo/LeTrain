@@ -15,13 +15,15 @@ playerStatement : statement
                 | faceCommand SEMI
                 ;
 
-goCommand : GO MARK (STRING | NUMBER)
-          | GO NUMBER COMMA NUMBER
-          | GO STRING
-          | GO NEXT entityType
-          | GO PREV entityType
-          | GO END
-          | GO entityType (NUMBER | STRING)
+goCmdToken : GO | G ;
+
+goCommand : goCmdToken MARK (STRING | NUMBER)
+          | goCmdToken NUMBER COMMA NUMBER
+          | goCmdToken STRING
+          | goCmdToken NEXT entityType
+          | goCmdToken PREV entityType
+          | goCmdToken END
+          | goCmdToken entityType (NUMBER | STRING)
           ;
 
 entityType : STATION | SENSOR | FORK | SEMAPHORE | SIGNAL | TRAIN | RAIL ;
