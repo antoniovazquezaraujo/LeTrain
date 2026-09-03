@@ -16,6 +16,9 @@ changelog:
     - title: "📖 Documentation"
       labels:
         - "documentation"
+    - title: "📦 Dependency Updates"
+      labels:
+        - "dependencies"
     - title: "🛠️ Maintenance & Refactoring"
       labels:
         - "refactor"
