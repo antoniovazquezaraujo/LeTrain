@@ -47,6 +47,7 @@
 | :--- | :--- | :--- |
 | `face <dirección>;` | Gira a un punto cardinal (`n, s, e, w, ne, nw, se, sw`). | `face ne;` |
 | `face <entidad> <id>;` | Rota el cursor para apuntar en dirección a una entidad. | `face tr 1;` |
+| `face m <string>;` | Rota el cursor para apuntar en dirección a una marca. | `face m "madrid";` |
 
 ---
 

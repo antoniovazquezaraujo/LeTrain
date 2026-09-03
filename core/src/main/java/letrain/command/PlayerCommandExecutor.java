@@ -361,7 +361,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
     @Override
     public Object visitFaceCommand(PlayerCommandsParser.FaceCommandContext ctx) {
-        if (ctx.entityType() == null) {
+        if (ctx.entityType() == null && ctx.MARK() == null && ctx.M() == null) {
             letrain.map.Dir dir = null;
             if (ctx.DIR_N() != null) dir = letrain.map.Dir.N;
             else if (ctx.DIR_S() != null) dir = letrain.map.Dir.S;
@@ -374,6 +374,15 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             
             if (dir != null) {
                 model.getCursor().setDir(dir);
+            }
+        } else if (ctx.MARK() != null || ctx.M() != null) {
+            String name = ctx.identifier() != null ? ctx.identifier().getText().replace("\"", "") : ctx.NUMBER().getText();
+            letrain.map.Point targetPos = model.getMark(name);
+            if (targetPos != null) {
+                letrain.map.Dir dir = model.getCursor().getPosition().locate(targetPos);
+                if (dir != null) model.getCursor().setDir(dir);
+            } else {
+                throw new RuntimeException("Mark not found.");
             }
         } else {
             int id = -1;

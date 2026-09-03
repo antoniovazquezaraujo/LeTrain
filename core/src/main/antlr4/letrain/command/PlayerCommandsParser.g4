@@ -37,6 +37,7 @@ entityType : STATION | SENSOR | FORK | SEMAPHORE | SIGNAL | TRAIN | RAIL ;
 
 faceCommand : FACE (DIR_N | DIR_S | DIR_E | DIR_W | DIR_NE | DIR_NW | DIR_SE | DIR_SW)
             | FACE entityType (NUMBER | identifier)
+            | FACE (MARK | M) (NUMBER | identifier)
             ;
 
 newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL)
