@@ -22,7 +22,7 @@ playerStatement : statement
 
 goCmdToken : GO | G ;
 
-goCommand : goCmdToken MARK (STRING | NUMBER)
+goCommand : goCmdToken (MARK | M) (STRING | NUMBER)
           | goCmdToken NUMBER COMMA NUMBER
           | goCmdToken STRING
           | goCmdToken NEXT entityType
@@ -52,12 +52,12 @@ turtleCommand : (WRITE | MOVE | DEL | CLEAR) turtleSequence? ;
 
 turtleSequence : turtleStep (COMMA turtleStep)* ;
 
-turtleStep : NUMBER | L | R | STRING ;
+turtleStep : NUMBER | L | R | STRING | M STRING | MARK STRING ;
 
 saveCommand : SAVE STRING? ;
 loadCommand : LOAD STRING? ;
 
-markCommand : MARK STRING | MARK NUMBER ;
+markCommand : (MARK | M) (STRING | NUMBER) ;
 
 lsCommand : LS entityType ;
 infoCommand : INFO entityType (NUMBER | STRING)? ;

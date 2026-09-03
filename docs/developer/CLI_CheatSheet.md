@@ -20,7 +20,7 @@ Puedes mover el cursor por el mapa de diferentes formas. La palabra clave `go` s
 
 > **Abreviaturas de Entidades**: 
 > - **`st`** = `station`
-> - **`sn`** = `sensor` (Usamos `sn` en lugar de `se` para no chocar con sureste).
+> - **`sn`** = `sensor` 
 > - **`fk`** = `fork`
 > - **`sm`** = `semaphore`
 > - **`sg`** = `signal`
@@ -37,8 +37,7 @@ Muy útil para guardar posiciones del cursor a las que vas a volver frecuentemen
 | :--- | :--- | :--- |
 | `mark <nombre>;` | Guarda la coordenada actual bajo un nombre o número. | `mark "base";` |
 | `go mark <nombre>;` | Teletransporta el cursor a la marca. | `go mark "base";` |
-| **`g <nombre>;`** | Abreviatura rápida para ir a una marca. | `g "base";` |
-
+| **`g m <nombre>;`** | Abreviatura rápida para ir a una marca. | `g m "base";` |
 ---
 
 ## 3. Orientación del Cursor
@@ -58,32 +57,30 @@ Estos comandos permiten pintar, borrar o moverse varias casillas seguidas, indic
 
 | Comando Base | Acción | Ejemplo |
 | :--- | :--- | :--- |
-| `write <secuencia>;` | Avanza creando vía nueva. | `write 5, l, 3, r, 1;` |
+| `write <secuencia>;` | Avanza creando vía nueva. | `write 5, l, m "base", r, 1;` |
 | `move <secuencia>;` | Avanza el cursor sin crear nada. | `move 5, l;` |
 | `del <secuencia>;` | Avanza **arrancando la vía** (destruye trenes y entidades). | `del 3;` |
 | `clear <secuencia>;` | Avanza borrando **solo trenes y vagones** (respeta vías). | `clear 10;` |
 
-**Abreviaturas válidas en secuencias:**
 - `<número>`: Casillas a avanzar recto.
 - **`l`**: Girar a la izquierda (left).
 - **`r`**: Girar a la derecha (right).
 - `<nombre_marca>`: Navegar automáticamente hasta la marca.
 
 ---
-
 ## 5. Creación y Borrado de Entidades Fijas y Vehículos
 
 Coloca el cursor en el lugar deseado y ejecuta:
 
 | Comando | Descripción | Ejemplo |
 | :--- | :--- | :--- |
-| `new st;` / `new fk;` / `new sm;` / `new sg;` | Crea una infraestructura en la posición del cursor. | `new st;` |
-| `new loco <Letra> [color];` | Crea una Locomotora. Letra automática a mayúscula. Colores: `red, green, blue, yellow, black, white, orange, purple, gray, brown`. | `new loco Z blue;` |
-| `new wagon <Letra> [tipo];` | Crea un Vagón. Letra automática a minúscula. Tipos de carga: `coal, gold, ruby`. | `new wagon B ruby;` |
-| `del <entidad> <id>;` | **EXCLUSIVO INFRAESTRUCTURA.** Borra una entidad (estaciones, semáforos, etc) dejando la vía intacta. | `del sm 1;` |
-| `clear <entidad> <id>;` | **EXCLUSIVO VEHÍCULOS.** Borra un tren o vagón por su ID. | `clear tr 1;` |
+| `new st;` / `new sm;` / `new sg;` | Crea una infraestructura en la posición del cursor. | `new st;` |
+| `new loco <Letra> [color];` | Crea una Locomotora. Letra y color: `red, green, blue, yellow, black, white, orange, purple, gray, brown`. | `new loco Z blue;` |
+| `new wagon <Letra> [tipo];` | Crea un Vagón. Letra y tipo: `coal, gold, ruby`. | `new wagon B ruby;` |
+| `del <entidad> <id>;` | Borra una entidad (estaciones, semáforos, etc) dejando la vía intacta. | `del sm 1;` |
+| `clear <entidad> <id>;` | Borra un tren o vagón por su ID. | `clear tr 1;` |
 
----
+--
 
 ## 6. Control Directo de Infraestructura
 
@@ -103,11 +100,11 @@ Puedes enviar órdenes directas a un tren específico en lugar de hacerlo solo p
 
 | Comando Base | Acción | Ejemplo |
 | :--- | :--- | :--- |
-| `train <id> couple [n];` | Engancha vagones/locomotoras en la dirección de la cabina. Si no se indica `n`, engancha todos los que encuentre. | `train 1 couple 2;` o `train 1 couple;` |
-| `train <id> uncouple [n];` | Desengancha vagones/locomotoras por la cola. | `train 1 uncouple 1;` |
+| `train <id> couple <dir> [n];` | Engancha vagones en la dirección indicada (`forward`/`fw` o `backward`/`bw`). Si no se indica `n`, engancha todos. | `train 1 couple forward 2;` o `train 1 couple backward;` |
+| `train <id> uncouple <dir> [n];` | Desengancha vagones en la dirección indicada (`forward`/`fw` o `backward`/`bw`). | `train 1 uncouple fw 1;` |
 | `train <id> set speed <n>;` | Asigna velocidad. | `train 1 set speed 5;` |
 | `train <id> reverse;` | Invierte la dirección de la marcha. | `train 1 reverse;` |
-| `train <id> stop;` | Frena completamente. | `train 1 stop;` |
+| `train <id> stop;` | Frena completamente (equivalente a `set speed 0`). | `train 1 stop;` |
 | `train <id> set autopilot true;` | Activa el autopiloto. | `train 1 set autopilot true;` |
 | `train <id> load;` / `unload;` | Carga o descarga mercancías (requiere estar en estación). | `train 1 load;` |
 

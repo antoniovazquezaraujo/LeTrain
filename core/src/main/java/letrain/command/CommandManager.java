@@ -100,8 +100,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     @Override
                     public void onEnterTrain(Train train, boolean isForward) {
                         boolean senseMatch =
-                                (sense == null) || (sense.equals("forward") && isForward)
-                                        || (sense.equals("backward") && !isForward);
+                                (sense == null) || (sense.startsWith("f") && isForward)
+                                        || (sense.startsWith("b") && !isForward);
                         if ("enter".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
@@ -111,8 +111,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     @Override
                     public void onExitTrain(Train train, boolean isForward) {
                         boolean senseMatch =
-                                (sense == null) || (sense.equals("forward") && isForward)
-                                        || (sense.equals("backward") && !isForward);
+                                (sense == null) || (sense.startsWith("f") && isForward)
+                                        || (sense.startsWith("b") && !isForward);
                         if ("exit".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
@@ -137,8 +137,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         @Override
                         public void onEnterTrain(Train train, boolean isForward) {
                             boolean senseMatch =
-                                    (sense == null) || (sense.equals("forward") && isForward)
-                                            || (sense.equals("backward") && !isForward);
+                                    (sense == null) || (sense.startsWith("f") && isForward)
+                                            || (sense.startsWith("b") && !isForward);
                             if ("enter".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
@@ -148,8 +148,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         @Override
                         public void onExitTrain(Train train, boolean isForward) {
                             boolean senseMatch =
-                                    (sense == null) || (sense.equals("forward") && isForward)
-                                            || (sense.equals("backward") && !isForward);
+                                    (sense == null) || (sense.startsWith("f") && isForward)
+                                            || (sense.startsWith("b") && !isForward);
                             if ("exit".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
@@ -175,8 +175,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         @Override
                         public void onEnterTrain(Train train, boolean isForward) {
                             boolean senseMatch =
-                                    (sense == null) || (sense.equals("forward") && isForward)
-                                            || (sense.equals("backward") && !isForward);
+                                    (sense == null) || (sense.startsWith("f") && isForward)
+                                            || (sense.startsWith("b") && !isForward);
                             if ("enter".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
@@ -186,8 +186,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         @Override
                         public void onExitTrain(Train train, boolean isForward) {
                             boolean senseMatch =
-                                    (sense == null) || (sense.equals("forward") && isForward)
-                                            || (sense.equals("backward") && !isForward);
+                                    (sense == null) || (sense.startsWith("f") && isForward)
+                                            || (sense.startsWith("b") && !isForward);
                             if ("exit".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
@@ -213,8 +213,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         @Override
                         public void onEnterTrain(Train train, boolean isForward) {
                             boolean senseMatch =
-                                    (sense == null) || (sense.equals("forward") && isForward)
-                                            || (sense.equals("backward") && !isForward);
+                                    (sense == null) || (sense.startsWith("f") && isForward)
+                                            || (sense.startsWith("b") && !isForward);
                             if ("enter".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
@@ -224,8 +224,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         @Override
                         public void onExitTrain(Train train, boolean isForward) {
                             boolean senseMatch =
-                                    (sense == null) || (sense.equals("forward") && isForward)
-                                            || (sense.equals("backward") && !isForward);
+                                    (sense == null) || (sense.startsWith("f") && isForward)
+                                            || (sense.startsWith("b") && !isForward);
                             if ("exit".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
                                 commands.forEach(c -> c.execute(train));
@@ -247,8 +247,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     @Override
                     public void onSensorEnter(Train train, boolean isForward) {
                         boolean senseMatch =
-                                (sense == null) || (sense.equals("forward") && isForward)
-                                        || (sense.equals("backward") && !isForward);
+                                (sense == null) || (sense.startsWith("f") && isForward)
+                                        || (sense.startsWith("b") && !isForward);
                         if ("enter".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
@@ -258,8 +258,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     @Override
                     public void onSensorExit(Train train, boolean isForward) {
                         boolean senseMatch =
-                                (sense == null) || (sense.equals("forward") && isForward)
-                                        || (sense.equals("backward") && !isForward);
+                                (sense == null) || (sense.startsWith("f") && isForward)
+                                        || (sense.startsWith("b") && !isForward);
                         if ("exit".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
@@ -411,7 +411,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 }
             };
         } else if (ctx.trainSense() != null) {
-            boolean forward = "forward".equals(ctx.trainSense().getText());
+            boolean forward = ctx.trainSense().getText().startsWith("f");
             return (t) -> {
                 Tractor tractor = t.getDirectorLinker();
                 if (tractor != null && tractor.isReversed() == forward) {
@@ -431,7 +431,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             };
         } else if (ctx.coupleAction() != null) {
             ScriptLogicParser.CoupleActionContext lCtx = ctx.coupleAction();
-            boolean forward = "forward".equals(lCtx.sense().getText());
+            boolean forward = lCtx.sense().getText().startsWith("f");
             int count = lCtx.NUMBER() != null ? Integer.parseInt(lCtx.NUMBER().getText()) : 0;
             return (t) -> {
                 t.getTrainCouplingManager().prepareLink(t, forward, count);
@@ -439,7 +439,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             };
         } else if (ctx.uncoupleAction() != null) {
             ScriptLogicParser.UncoupleActionContext uCtx = ctx.uncoupleAction();
-            boolean forward = "forward".equals(uCtx.sense().getText());
+            boolean forward = uCtx.sense().getText().startsWith("f");
             int count = uCtx.NUMBER() != null ? Integer.parseInt(uCtx.NUMBER().getText()) : 1;
             return (t) -> {
                 t.getTrainCouplingManager().prepareUnlink(t, forward, count);
