@@ -127,3 +127,6 @@ RUBY: 'ruby';
 
 // Signal Mode
 MIN: 'min';
+
+// Identifiers
+ID : [a-zA-Z0-9_]+ ;

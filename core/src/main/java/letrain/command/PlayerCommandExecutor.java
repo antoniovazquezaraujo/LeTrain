@@ -475,7 +475,10 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             
             String colorStr = ctx.color() != null ? ctx.color().getText().toUpperCase() : "RED";
             int trainId = model.nextTrainId();
-            letrain.vehicle.rail.impl.Locomotive loco = new letrain.vehicle.rail.impl.Locomotive(model.nextLocomotiveId(), colorStr);
+            
+            String aspect = ctx.aspectId().getText().replace("\"", "");
+            letrain.vehicle.rail.impl.Locomotive loco = new letrain.vehicle.rail.impl.Locomotive(model.nextLocomotiveId(), aspect, colorStr);
+
             letrain.vehicle.rail.impl.Train train = new letrain.vehicle.rail.impl.Train(trainId);
             
             train.pushBack(loco);

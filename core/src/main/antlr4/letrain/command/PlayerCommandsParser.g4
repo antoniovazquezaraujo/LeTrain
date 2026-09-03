@@ -40,8 +40,8 @@ faceCommand : FACE (DIR_N | DIR_S | DIR_E | DIR_W | DIR_NE | DIR_NW | DIR_SE | D
             ;
 
 newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL)
-           | NEW (LOCOMOTIVE | LOCO) color?
-           | NEW WAGON cargoType?
+           | NEW (LOCOMOTIVE | LOCO) aspectId color?
+           | NEW WAGON aspectId cargoType?
            ;
 
 delCommand : DEL entityType (NUMBER | STRING)? ;
@@ -67,3 +67,6 @@ quitCommand : QUIT | Q | Q_BANG | WQ ;
 
 color : RED | GREEN | BLUE | YELLOW | BLACK | WHITE | ORANGE | PURPLE | GRAY | BROWN ;
 cargoType : COAL | GOLD | RUBY ;
+
+
+aspectId : ID | STRING | L | R | GO | G | Q | INFO | LS | DIR_N | DIR_S | DIR_E | DIR_W | DIR_NE | DIR_NW | DIR_SE | DIR_SW ;
