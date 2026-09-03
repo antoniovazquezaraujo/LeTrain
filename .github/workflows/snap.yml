@@ -1,17 +1,20 @@
-name: Build Snap Package
+name: Build and Publish Snap
 
 on:
   push:
     branches:
       - main
       - develop
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
       - develop
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -28,3 +31,12 @@ jobs:
         with:
           name: letrain-snap
           path: "*.snap"
+
+      - name: Publish Snap
+        if: github.event_name != 'pull_request'
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: "*.snap"
+          release: ${{ startsWith(github.ref, 'refs/tags/') && 'stable' || 'edge' }}

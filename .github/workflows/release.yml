@@ -51,3 +51,23 @@ jobs:
         with:
           files: ${{ matrix.artifact_name }}
           generate_release_notes: true
+
+      - name: Publish to itch.io (Linux)
+        if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          curl -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
+          unzip butler.zip
+          chmod +x butler
+          ./butler push ${{ matrix.artifact_name }} antoniovazquezaraujo/letrain:linux --userversion ${{ github.ref_name }}
+        
+      - name: Publish to itch.io (Windows)
+        if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'windows-latest'
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          Invoke-WebRequest -Uri "https://broth.itch.ovh/butler/windows-amd64/LATEST/archive/default" -OutFile "butler.zip"
+          Expand-Archive -Path "butler.zip" -DestinationPath "."
+          .\butler.exe push ${{ matrix.artifact_name }} antoniovazquezaraujo/letrain:windows --userversion ${{ github.ref_name }}
+
