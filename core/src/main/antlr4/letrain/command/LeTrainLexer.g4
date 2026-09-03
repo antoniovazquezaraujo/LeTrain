@@ -25,8 +25,8 @@ CRASH: 'crash';
 CONTACT: 'contact';
 ENTER: 'enter';
 EXIT: 'exit';
-LINK: 'link';
-UNLINK: 'unlink';
+COUPLE: 'couple';
+UNCOUPLE: 'uncouple';
 FORK: 'fork' | 'fk';
 SEMAPHORE: 'semaphore' | 'sm';
 SIGNAL: 'signal' | 'sg';
@@ -95,3 +95,38 @@ STRING : '"' ~["]* '"' ;
 
 // Whitespace
 WS : [ \t\r\n]+ -> skip;
+
+// Added vehicles
+LOCOMOTIVE: 'locomotive';
+LOCO: 'loco';
+WAGON: 'wagon';
+
+// Added keywords for signals and forks
+LEFT: 'left';
+RIGHT: 'right';
+CLOSE: 'close';
+MAX: 'max';
+LIMIT: 'limit';
+
+// Colors
+RED: 'red';
+GREEN: 'green';
+BLUE: 'blue';
+YELLOW: 'yellow';
+BLACK: 'black';
+WHITE: 'white';
+ORANGE: 'orange';
+PURPLE: 'purple';
+GRAY: 'gray';
+BROWN: 'brown';
+
+// Cargos
+COAL: 'coal';
+GOLD: 'gold';
+RUBY: 'ruby';
+
+// Signal Mode
+MIN: 'min';
+
+// Identifiers
+ID : [a-zA-Z0-9_]+ ;

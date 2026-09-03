@@ -413,6 +413,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
 
+    
+    
     @Override
     public Object visitNewCommand(PlayerCommandsParser.NewCommandContext ctx) {
         letrain.map.Point pos = model.getCursor().getPosition();
@@ -467,9 +469,62 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             track.setSensor(speedSignal);
         } else if (ctx.FORK() != null) {
             throw new RuntimeException("Cannot place fork via script yet (use UI).");
+        } else if (ctx.LOCOMOTIVE() != null || ctx.LOCO() != null) {
+            if (track == null) throw new RuntimeException("Cannot place locomotive: No track here.");
+            if (track.getLinker() != null) throw new RuntimeException("Cannot place locomotive: Track already occupied.");
+            
+            String colorStr = ctx.color() != null ? ctx.color().getText().toUpperCase() : "RED";
+            int trainId = model.nextTrainId();
+            
+            String aspect = ctx.aspectId().getText().replace("\"", "").toUpperCase();
+            letrain.vehicle.rail.impl.Locomotive loco = new letrain.vehicle.rail.impl.Locomotive(model.nextLocomotiveId(), aspect, colorStr);
+
+            letrain.vehicle.rail.impl.Train train = new letrain.vehicle.rail.impl.Train(trainId);
+            
+            train.pushBack(loco);
+            train.setDirectorLinker(loco);
+            loco.setTrain(train);
+            
+            track.enterLinkerFromDir(dir.inverse(), loco);
+            if (loco.getDir() == null) {
+                track.removeLinker();
+                throw new RuntimeException("Could not place locomotive");
+            }
+            
+            model.addLocomotive(loco);
+            model.getEconomyManager().onLocomotiveConstructed(loco);
+            train.getSafetyManager().claimOccupiedSegments();
+
+        } else if (ctx.WAGON() != null) {
+            if (track == null) throw new RuntimeException("Cannot place wagon: No track here.");
+            if (track.getLinker() != null) throw new RuntimeException("Cannot place wagon: Track already occupied.");
+            
+            
+            
+            String typeStr = ctx.cargoType() != null ? ctx.cargoType().getText().toUpperCase() : "COAL";
+            if (!typeStr.equals("GOLD") && !typeStr.equals("COAL") && !typeStr.equals("RUBY")) {
+                throw new RuntimeException("Invalid wagon type. Only GOLD, COAL, and RUBY are allowed.");
+            }
+            letrain.track.CargoTypes type = letrain.track.CargoTypes.valueOf(typeStr);
+            
+            String aspect = ctx.aspectId().getText().replace("\"", "").toLowerCase();
+            letrain.vehicle.rail.impl.Wagon wagon = new letrain.vehicle.rail.impl.Wagon(aspect);
+
+
+            
+            wagon.setExclusiveCargoType(type);
+            track.enterLinkerFromDir(dir.inverse(), wagon);
+            if (wagon.getDir() == null) {
+                track.removeLinker();
+                throw new RuntimeException("Could not place wagon");
+            }
+            model.addWagon(wagon);
+
         }
         return null;
     }
+
+
 
     @Override
     public Object visitDelCommand(PlayerCommandsParser.DelCommandContext ctx) {
