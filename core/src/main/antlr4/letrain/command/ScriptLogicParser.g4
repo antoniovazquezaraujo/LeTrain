@@ -79,7 +79,7 @@ placeSelector  : forkSelector | semaphoreSelector | stationSelector | sensorSele
 
 semaphoreAction : OPEN | CLOSED | CLOSE | SET semaphoreStatus | INVERT ;
 forkAction      : SET forkDirection | FLIP ;
-engineAction    : ENGINE (ON | OFF);
+engineAction    : SET? ENGINE (ON | OFF);
 trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED? trainSpeed | INVERT | coupleAction | uncoupleAction | LOAD | UNLOAD | engineAction;
 coupleAction    : COUPLE sense (NUMBER)?;
 uncoupleAction  : UNCOUPLE sense (NUMBER)?;
