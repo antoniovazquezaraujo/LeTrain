@@ -62,7 +62,7 @@ You can run either the modern 3D version or the classic 2D version:
 ## 🎥 Media & Tutorials
 
 ### Navigation & Camera
-- **Basic Navigation:** The cursor moves using the arrow keys across the map. If it enters a track, it automatically follows it, both forwards and backwards.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Basic Navigation:** The cursor moves using the arrow keys (or Vim keys h, j, k, l) across the map. If it enters a track, it automatically follows it, both forwards and backwards.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/7fKXj1krkFk" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/eidXDfMM5Ec" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -78,7 +78,7 @@ You can run either the modern 3D version or the classic 2D version:
 - **Cursor Relocation:** When you need to instantly bring the cursor to a train, a station, or a fork, you can press the `o` key.<br><div><strong>3D Engine</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/PUJ00irsU5s" frameborder="0" allowfullscreen></iframe></div>
 
 ### Building the Network
-- **Rail Creation:** To lay down tracks, use `Shift` and the arrow keys. At the end of the rails, yellow blocks are displayed which disappear when the rails are joined together.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Rail Creation:** To lay down tracks, use `Shift` and the arrow keys (or `Shift + H, J, K, L`). At the end of the rails, yellow blocks are displayed which disappear when the rails are joined together.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/PnIWZxik3Ds" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/00y-E6YBxIc" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -86,7 +86,7 @@ You can run either the modern 3D version or the classic 2D version:
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/iVHsKuj0Xm8" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/mYqpJxpBA3k" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Remove Rails:** To remove rails, use the `Ctrl` key with the arrow keys, both forward and backward. The cursor will automatically follow the track as you delete it.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Remove Rails:** To remove rails, use the `Ctrl` key with the arrow keys (or `Ctrl + h, j, k, l`), both forward and backward. The cursor will automatically follow the track as you delete it.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/TDF-26e1wqI" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/L_FrO48OlZY" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -150,7 +150,7 @@ You can run either the modern 3D version or the classic 2D version:
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/p7L3IR3CbWI" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/26AmqDbMsUk" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Program IDE:** In `program` mode, you have access to a simple IDE that allows you to program actions and events. Itineraries can be created and assigned to trains. An itinerary can contain several stations or sensors, so when the train passes them, it performs specific tasks automatically, such as loading, unloading, reversing direction, or stopping.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Program IDE:** In `program` mode, you have access to a simple IDE (now fully supported via CLI by pressing `:` and entering external editors via $EDITOR) that allows you to program actions and events. Itineraries can be created and assigned to trains. An itinerary can contain several stations or sensors, so when the train passes them, it performs specific tasks automatically, such as loading, unloading, reversing direction, or stopping.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/ke0XuMDk3iM" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/z6CGDnxDqa0" frameborder="0" allowfullscreen></iframe></div>
 </div>
