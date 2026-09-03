@@ -104,7 +104,7 @@ Puedes enviar órdenes directas a un tren específico en lugar de hacerlo solo p
 | `train <id> uncouple <dir> [n];` | Desengancha vagones en la dirección indicada (`forward`/`fw` o `backward`/`bw`). | `train 1 uncouple fw 1;` |
 | `train <id> set speed <n>;` | Asigna velocidad. | `train 1 set speed 5;` |
 | `train <id> reverse;` | Invierte la dirección de la marcha. | `train 1 reverse;` |
-| `train <id> engine on;` / `off;` | Enciende o apaga el motor de la locomotora (o `power on`/`off`). | `train 1 engine on;` |
+| `train <id> engine on;` / `off;` | Enciende o apaga el motor de la locomotora . | `train 1 engine on;` |
 | `train <id> set autopilot true;` | Activa el autopiloto. | `train 1 set autopilot true;` |
 | `train <id> load;` / `unload;` | Carga o descarga mercancías (requiere estar en estación). | `train 1 load;` |
 

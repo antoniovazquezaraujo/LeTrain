@@ -22,7 +22,7 @@ SPEED: 'speed';
 ON: 'on';
 OFF: 'off';
 ENGINE: 'engine';
-POWER: 'power';
+
 CRASH: 'crash';
 CONTACT: 'contact';
 ENTER: 'enter';
