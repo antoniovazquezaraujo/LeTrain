@@ -70,7 +70,7 @@ public class TerminalView implements letrain.mvp.View {
     private boolean cameraPagination = false;
     private int flashDeadzoneTicks = 0;
     boolean endOfGame = false;
-    private int helpLevel = 2;
+    private int helpLevel = 0;
 
     @Override
     public void setHelpLevel(int helpLevel) {

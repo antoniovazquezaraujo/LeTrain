@@ -237,6 +237,25 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         }
 
         instances.add(instance);
+
+        // Draw the base (PIE) double width
+        ModelInstance base = resourceContext.getModelInstance(resourceContext.sensorModel);
+        base.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.LIGHT_GRAY));
+        float sensorBottomHeight = 0.09f;
+        // Center the pie at 1.5x offset so the pole is in the inner half
+        base.transform.setToTranslation(x + 0.5f + offsetX * 1.5f, sensorBottomHeight, y + 0.5f + offsetZ * 1.5f);
+        base.transform.rotate(0, 1, 0, angle - 90f);
+        // Scale Z by 2.0 to make it double width
+        base.transform.scale(1.0f, 1.04f, 2.0f);
+        instances.add(base);
+
+        // Add label for the ID on the outer half of the base (1.75x offset)
+        String idText = String.valueOf(semaphore.getId());
+        float labelHeight = 0.19f;
+        float rad = (float) Math.toRadians(angle);
+        com.badlogic.gdx.math.Vector3 pieLabelPos = new com.badlogic.gdx.math.Vector3(x + 0.5f + offsetX * 1.75f, labelHeight, y + 0.5f + offsetZ * 1.75f);
+        com.badlogic.gdx.math.Vector3 pieLabelUp = new com.badlogic.gdx.math.Vector3(-(float)Math.sin(rad), 0, -(float)Math.cos(rad));
+        labels.add(new Gdx3DRenderer.VehicleLabel(pieLabelPos, idText, new com.badlogic.gdx.math.Vector3(0, 1, 0), pieLabelUp, com.badlogic.gdx.graphics.Color.BLACK, 0.4f));
     }
 
     @Override
