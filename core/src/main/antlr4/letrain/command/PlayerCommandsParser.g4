@@ -22,13 +22,13 @@ playerStatement : statement
 
 goCmdToken : GO | G ;
 
-goCommand : goCmdToken MARK (STRING | NUMBER)
+goCommand : goCmdToken (MARK | M) (identifier | NUMBER)
           | goCmdToken NUMBER COMMA NUMBER
-          | goCmdToken STRING
+          | goCmdToken identifier
           | goCmdToken NEXT entityType
           | goCmdToken PREV entityType
           | goCmdToken END
-          | goCmdToken entityType (NUMBER | STRING)
+          | goCmdToken entityType (NUMBER | identifier)
           | GN entityType
           | GP entityType
           ;
@@ -36,7 +36,8 @@ goCommand : goCmdToken MARK (STRING | NUMBER)
 entityType : STATION | SENSOR | FORK | SEMAPHORE | SIGNAL | TRAIN | RAIL ;
 
 faceCommand : FACE (DIR_N | DIR_S | DIR_E | DIR_W | DIR_NE | DIR_NW | DIR_SE | DIR_SW)
-            | FACE entityType (NUMBER | STRING)
+            | FACE entityType (NUMBER | identifier)
+            | FACE (MARK | M) (NUMBER | identifier)
             ;
 
 newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL)
@@ -44,23 +45,23 @@ newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL)
            | NEW WAGON aspectId cargoType?
            ;
 
-delCommand : DEL entityType (NUMBER | STRING)? ;
+delCommand : DEL entityType (NUMBER | identifier)? ;
 
-clearCommand : CLEAR entityType (NUMBER | STRING)? ;
+clearCommand : CLEAR entityType (NUMBER | identifier)? ;
 
 turtleCommand : (WRITE | MOVE | DEL | CLEAR) turtleSequence? ;
 
 turtleSequence : turtleStep (COMMA turtleStep)* ;
 
-turtleStep : NUMBER | L | R | STRING ;
+turtleStep : NUMBER | L | R | identifier | M identifier | MARK identifier ;
 
-saveCommand : SAVE STRING? ;
-loadCommand : LOAD STRING? ;
+saveCommand : SAVE identifier? ;
+loadCommand : LOAD identifier? ;
 
-markCommand : MARK STRING | MARK NUMBER ;
+markCommand : (MARK | M) (identifier | NUMBER) ;
 
 lsCommand : LS entityType ;
-infoCommand : INFO entityType (NUMBER | STRING)? ;
+infoCommand : INFO entityType (NUMBER | identifier)? ;
 setNameCommand : entityType (NUMBER | STRING) SET NAME STRING ;
 quitCommand : QUIT | Q | Q_BANG | WQ ;
 
@@ -70,3 +71,5 @@ cargoType : COAL | GOLD | RUBY ;
 
 
 aspectId : ID | STRING | L | R | GO | G | Q | INFO | LS | DIR_N | DIR_S | DIR_E | DIR_W | DIR_NE | DIR_NW | DIR_SE | DIR_SW ;
+
+identifier : STRING | ID ;

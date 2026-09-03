@@ -17,10 +17,12 @@ ADD: 'add';
 LOAD: 'load';
 UNLOAD: 'unload';
 REVERSE: 'reverse';
-STOP: 'stop';
 WAIT: 'wait';
 SPEED: 'speed';
 ON: 'on';
+OFF: 'off';
+ENGINE: 'engine';
+
 CRASH: 'crash';
 CONTACT: 'contact';
 ENTER: 'enter';
@@ -36,8 +38,8 @@ CLOSED: 'closed';
 STRAIGHT: 'straight';
 CURVED: 'curved';
 FLIP: 'flip';
-FORWARD: 'forward';
-BACKWARD: 'backward';
+FORWARD: 'forward' | 'fw';
+BACKWARD: 'backward' | 'bw';
 ACCELERATE: 'accelerate';
 DECELERATE: 'decelerate';
 INVERT: 'invert';
@@ -56,6 +58,7 @@ WRITE: 'write';
 MOVE: 'move';
 CLEAR: 'clear';
 L: 'l';
+M: 'm';
 R: 'r';
 FACE: 'face';
 STEP: 'step';
@@ -127,6 +130,8 @@ RUBY: 'ruby';
 
 // Signal Mode
 MIN: 'min';
+
+STOP: 'stop';
 
 // Identifiers
 ID : [a-zA-Z0-9_]+ ;
