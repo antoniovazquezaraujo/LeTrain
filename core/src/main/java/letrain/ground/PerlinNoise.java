@@ -151,7 +151,7 @@ public class PerlinNoise {
      * @return
      */
     private final float floor(float v) {
-        return (int) v;
+        return (float) Math.floor(v);
     }
 
     /**

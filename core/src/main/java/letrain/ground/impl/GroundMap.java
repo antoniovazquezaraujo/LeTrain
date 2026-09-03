@@ -147,7 +147,7 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
             return letrain.ground.GroundMap.GROUND;
         }
         float baseNoise =
-                noise.smoothNoise(Math.abs(col * 0.01F), Math.abs(row * 0.02F), 0, OCTAVES);
+                noise.smoothNoise((col * 0.01F), (row * 0.02F), 0, OCTAVES);
         float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
         float waterThreshold = (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
         float rockThreshold = (economyManager != null) ? economyManager.getRockThreshold() : 180f;
@@ -167,8 +167,8 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                 int rowIndex = ((startY) + row);
 
                 // LAYER 0: Base Terrain
-                float baseNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F),
-                        Math.abs(rowIndex * 0.02F), 0, OCTAVES);
+                float baseNoise = noise.smoothNoise((colIndex * 0.01F),
+                        (rowIndex * 0.02F), 0, OCTAVES);
                 float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
 
                 float waterThreshold =
@@ -192,8 +192,8 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                             (economyManager != null) ? economyManager.getRubyThreshold() : 0.28f;
 
                     // LAYER 1: Gold Industry (z=1)
-                    float woodNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F),
-                            Math.abs(rowIndex * 0.02F), 1, OCTAVES);
+                    float woodNoise = noise.smoothNoise((colIndex * 0.01F),
+                            (rowIndex * 0.02F), 1, OCTAVES);
                     if (woodNoise > goldThreshold) {
                         terrain = GOLD_MINE;
                     } else if (woodNoise < -goldThreshold) {
@@ -202,8 +202,8 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
 
                     // LAYER 2: Coal Industry (z=2) - Only if no gold
                     if (terrain == 0) {
-                        float coalNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F),
-                                Math.abs(rowIndex * 0.02F), 2, OCTAVES);
+                        float coalNoise = noise.smoothNoise((colIndex * 0.01F),
+                                (rowIndex * 0.02F), 2, OCTAVES);
                         if (coalNoise > coalThreshold) {
                             terrain = MINE;
                         } else if (coalNoise < -coalThreshold) {
@@ -213,8 +213,8 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
 
                     // LAYER 3: Ruby Industry (z=3) - Only if no gold or coal
                     if (terrain == 0) {
-                        float fishNoise = noise.smoothNoise(Math.abs(colIndex * 0.01F),
-                                Math.abs(rowIndex * 0.02F), 3, OCTAVES);
+                        float fishNoise = noise.smoothNoise((colIndex * 0.01F),
+                                (rowIndex * 0.02F), 3, OCTAVES);
                         if (fishNoise > rubyThreshold) {
                             terrain = RUBY_MINE;
                         } else if (fishNoise < -rubyThreshold) {
