@@ -12,6 +12,8 @@ directCommand : assignItinerary
               | setAutopilot
               | setNameCommand
               | directTrainCommand
+              | directForkCommand
+              | directSemaphoreCommand
               ;
 
 directTrainCommand : TRAIN trainRef trainAction ;
@@ -59,7 +61,7 @@ semaphoreSelector : SEMAPHORE NUMBER;
 stationSelector   : STATION NUMBER;
 trainSelector     : TRAIN (NUMBER)?;
 
-trainEvent   : (ENTER | EXIT | LINK | UNLINK) (sense)?;
+trainEvent   : (ENTER | EXIT | COUPLE | UNCOUPLE) (sense)?;
 
 commandBlock : LBRACE commandItem* RBRACE;
 
@@ -76,9 +78,10 @@ placeSelector  : forkSelector | semaphoreSelector | stationSelector | sensorSele
 
 semaphoreAction : SET semaphoreStatus;
 forkAction      : SET forkDirection;
-trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED? trainSpeed | STOP | INVERT | linkAction | unlinkAction | LOAD | UNLOAD;
-linkAction      : LINK sense (NUMBER)?;
-unlinkAction    : UNLINK sense (NUMBER)?;
+trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED? trainSpeed | STOP | INVERT | coupleAction | uncoupleAction | LOAD | UNLOAD;
+coupleAction    : COUPLE sense (NUMBER)?;
+uncoupleAction  : UNCOUPLE sense (NUMBER)?;
+
 
 semaphoreStatus : OPEN | CLOSED;
 forkDirection   : dir | STRAIGHT | CURVED | FLIP;
@@ -88,3 +91,6 @@ trainSpeed      : NUMBER;
 sense : FORWARD | BACKWARD;
 dir   : DIR_E| DIR_NE | DIR_N | DIR_NW | DIR_W | DIR_SW | DIR_S | DIR_SE;
 
+
+directForkCommand : forkSelector forkAction ;
+directSemaphoreCommand : semaphoreSelector semaphoreAction ;

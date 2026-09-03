@@ -39,7 +39,10 @@ faceCommand : FACE (DIR_N | DIR_S | DIR_E | DIR_W | DIR_NE | DIR_NW | DIR_SE | D
             | FACE entityType (NUMBER | STRING)
             ;
 
-newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL) ;
+newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL)
+           | NEW (LOCOMOTIVE | LOCO) STRING?
+           | NEW WAGON STRING?
+           ;
 
 delCommand : DEL entityType (NUMBER | STRING)? ;
 

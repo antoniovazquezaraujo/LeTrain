@@ -25,8 +25,8 @@ CRASH: 'crash';
 CONTACT: 'contact';
 ENTER: 'enter';
 EXIT: 'exit';
-LINK: 'link';
-UNLINK: 'unlink';
+COUPLE: 'couple';
+UNCOUPLE: 'uncouple';
 FORK: 'fork' | 'fk';
 SEMAPHORE: 'semaphore' | 'sm';
 SIGNAL: 'signal' | 'sg';
@@ -95,3 +95,8 @@ STRING : '"' ~["]* '"' ;
 
 // Whitespace
 WS : [ \t\r\n]+ -> skip;
+
+// Added vehicles
+LOCOMOTIVE: 'locomotive';
+LOCO: 'loco';
+WAGON: 'wagon';

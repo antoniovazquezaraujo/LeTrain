@@ -429,16 +429,16 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     tractor.toggleReversed();
                 }
             };
-        } else if (ctx.linkAction() != null) {
-            ScriptLogicParser.LinkActionContext lCtx = ctx.linkAction();
+        } else if (ctx.coupleAction() != null) {
+            ScriptLogicParser.CoupleActionContext lCtx = ctx.coupleAction();
             boolean forward = "forward".equals(lCtx.sense().getText());
             int count = lCtx.NUMBER() != null ? Integer.parseInt(lCtx.NUMBER().getText()) : 0;
             return (t) -> {
                 t.getTrainCouplingManager().prepareLink(t, forward, count);
                 t.getTrainCouplingManager().joinLinkers(t);
             };
-        } else if (ctx.unlinkAction() != null) {
-            ScriptLogicParser.UnlinkActionContext uCtx = ctx.unlinkAction();
+        } else if (ctx.uncoupleAction() != null) {
+            ScriptLogicParser.UncoupleActionContext uCtx = ctx.uncoupleAction();
             boolean forward = "forward".equals(uCtx.sense().getText());
             int count = uCtx.NUMBER() != null ? Integer.parseInt(uCtx.NUMBER().getText()) : 1;
             return (t) -> {
@@ -604,6 +604,50 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 t.setName(name);
                 log.info("[DSL] Train {} named '{}'", id, name);
             }
+        }
+        return null;
+    }
+
+
+    
+    @Override
+    public Object visitDirectForkCommand(ScriptLogicParser.DirectForkCommandContext ctx) {
+        int id = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
+        letrain.track.rail.ForkRailTrack fork = model.getFork(id);
+        if (fork != null) {
+            String dir = ctx.forkAction().forkDirection().getText().toLowerCase();
+            if ("flip".equals(dir)) {
+                fork.flipRoute();
+                log.info("[DSL] Direct fork toggle {}", id);
+            } else if ("straight".equals(dir)) {
+                fork.setNormalRoute();
+            } else if ("curved".equals(dir)) {
+                fork.setAlternativeRoute();
+            } else {
+                letrain.map.Dir direction = letrain.map.Dir.valueOf(dir.toUpperCase());
+                // Try to set route matching direction
+                if (fork.getOriginalRoute().getValue() == direction) {
+                    fork.setNormalRoute();
+                } else if (fork.getAlternativeRoute().getValue() == direction) {
+                    fork.setAlternativeRoute();
+                }
+                log.info("[DSL] Direct fork {} set towards {}", id, dir);
+            }
+        }
+        return null;
+    }
+@Override
+    public Object visitDirectSemaphoreCommand(ScriptLogicParser.DirectSemaphoreCommandContext ctx) {
+        int id = Integer.parseInt(ctx.semaphoreSelector().NUMBER().getText());
+        letrain.track.RailSemaphore sem = model.getSemaphore(id);
+        if (sem != null) {
+            boolean open = "open".equals(ctx.semaphoreAction().semaphoreStatus().getText().toLowerCase());
+            if (open) {
+                sem.setOpen(true);
+            } else {
+                sem.setOpen(false);
+            }
+            log.info("[DSL] Direct semaphore {} set to {}", id, open ? "open" : "closed");
         }
         return null;
     }

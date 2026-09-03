@@ -413,6 +413,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
 
+    
+    
     @Override
     public Object visitNewCommand(PlayerCommandsParser.NewCommandContext ctx) {
         letrain.map.Point pos = model.getCursor().getPosition();
@@ -467,9 +469,40 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             track.setSensor(speedSignal);
         } else if (ctx.FORK() != null) {
             throw new RuntimeException("Cannot place fork via script yet (use UI).");
+        } else if (ctx.LOCOMOTIVE() != null || ctx.LOCO() != null) {
+            if (track == null) throw new RuntimeException("Cannot place locomotive: No track here.");
+            if (track.getLinker() != null) throw new RuntimeException("Cannot place locomotive: Track already occupied.");
+            
+            String colorStr = ctx.STRING() != null ? ctx.STRING().getText().replace("\"", "") : "FF0000";
+            int trainId = model.nextTrainId();
+            letrain.vehicle.rail.impl.Locomotive loco = new letrain.vehicle.rail.impl.Locomotive(model.nextLocomotiveId(), colorStr);
+            letrain.vehicle.rail.impl.Train train = new letrain.vehicle.rail.impl.Train(trainId);
+            train.pushBack(loco);
+            train.setDirectorLinker(loco);
+            loco.setTrain(train);
+            loco.setTrack(track);
+            track.setLinker(loco);
+            model.addLocomotive(loco);
+        } else if (ctx.WAGON() != null) {
+            if (track == null) throw new RuntimeException("Cannot place wagon: No track here.");
+            if (track.getLinker() != null) throw new RuntimeException("Cannot place wagon: Track already occupied.");
+            
+            String typeStr = ctx.STRING() != null ? ctx.STRING().getText().replace("\"", "").toUpperCase() : "PASSENGER";
+            letrain.track.CargoTypes type = letrain.track.CargoTypes.NONE;
+            try {
+                type = letrain.track.CargoTypes.valueOf(typeStr);
+            } catch(Exception e) {}
+            
+            letrain.vehicle.rail.impl.Wagon wagon = new letrain.vehicle.rail.impl.Wagon(typeStr.substring(0, 1));
+            wagon.setExclusiveCargoType(type);
+            wagon.setTrack(track);
+            track.setLinker(wagon);
+            model.addWagon(wagon);
         }
         return null;
     }
+
+
 
     @Override
     public Object visitDelCommand(PlayerCommandsParser.DelCommandContext ctx) {
