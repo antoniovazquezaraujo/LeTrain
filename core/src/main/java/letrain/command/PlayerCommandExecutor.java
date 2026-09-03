@@ -129,7 +129,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         int id = -1;
         String name = null;
         if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
-        if (ctx.STRING() != null) name = ctx.STRING().getText().replace("\"", "");
+        if (ctx.identifier() != null) name = ctx.identifier().getText().replace("\"", "");
 
         StringBuilder sb = new StringBuilder();
         if (ctx.entityType().TRAIN() != null) {
@@ -254,7 +254,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             int id = -1;
             String name = null;
             if (ctx.NUMBER(0) != null) id = Integer.parseInt(ctx.NUMBER(0).getText());
-            if (ctx.STRING() != null) name = ctx.STRING().getText().replace("\"", "");
+            if (ctx.identifier() != null) name = ctx.identifier().getText().replace("\"", "");
 
             letrain.map.Point targetPos = null;
             if (ctx.entityType().STATION() != null) {
@@ -284,8 +284,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 throw new RuntimeException("Target entity not found.");
             }
 
-        } else if (ctx.MARK() != null || (ctx.STRING() != null && ctx.entityType() == null)) {
-            String name = ctx.STRING() != null ? ctx.STRING().getText().replace("\"", "") : ctx.NUMBER(0).getText();
+        } else if (ctx.MARK() != null || ctx.M() != null || (ctx.identifier() != null && ctx.entityType() == null)) {
+            String name = ctx.identifier() != null ? ctx.identifier().getText().replace("\"", "") : ctx.NUMBER(0).getText();
             letrain.map.Point p = model.getMark(name);
             if (p != null) {
                 model.getCursor().getPosition().setX(p.getX());
@@ -379,7 +379,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             int id = -1;
             String name = null;
             if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
-            if (ctx.STRING() != null) name = ctx.STRING().getText().replace("\"", "");
+            if (ctx.identifier() != null) name = ctx.identifier().getText().replace("\"", "");
 
             letrain.map.Point targetPos = null;
             if (ctx.entityType().STATION() != null) {
@@ -531,7 +531,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         int id = -1;
         String name = null;
         if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
-        if (ctx.STRING() != null) name = ctx.STRING().getText().replace("\"", "");
+        if (ctx.identifier() != null) name = ctx.identifier().getText().replace("\"", "");
 
         letrain.map.Point pos = model.getCursor().getPosition();
         letrain.track.Track track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
@@ -577,7 +577,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         int id = -1;
         String name = null;
         if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
-        if (ctx.STRING() != null) name = ctx.STRING().getText().replace("\"", "");
+        if (ctx.identifier() != null) name = ctx.identifier().getText().replace("\"", "");
 
         if (ctx.entityType().TRAIN() != null) {
             letrain.vehicle.rail.impl.Train t = name != null ? model.findTrainByName(name) : model.getTrainFromLocomotiveId(id);
@@ -602,8 +602,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     @Override
     public Object visitMarkCommand(PlayerCommandsParser.MarkCommandContext ctx) {
         String name;
-        if (ctx.STRING() != null) {
-            name = ctx.STRING().getText().replace("\"", "");
+        if (ctx.identifier() != null) {
+            name = ctx.identifier().getText().replace("\"", "");
         } else {
             name = ctx.NUMBER().getText();
         }
@@ -728,8 +728,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     @Override
     public Object visitSaveCommand(PlayerCommandsParser.SaveCommandContext ctx) {
         String filename = "quicksave.json";
-        if (ctx.STRING() != null) {
-            String text = ctx.STRING().getText();
+        if (ctx.identifier() != null) {
+            String text = ctx.identifier().getText();
             filename = text.substring(1, text.length() - 1);
             if (!filename.endsWith(".json")) filename += ".json";
         }
@@ -744,8 +744,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     @Override
     public Object visitLoadCommand(PlayerCommandsParser.LoadCommandContext ctx) {
         String filename = "quicksave.json";
-        if (ctx.STRING() != null) {
-            String text = ctx.STRING().getText();
+        if (ctx.identifier() != null) {
+            String text = ctx.identifier().getText();
             filename = text.substring(1, text.length() - 1);
             if (!filename.endsWith(".json")) filename += ".json";
         }
