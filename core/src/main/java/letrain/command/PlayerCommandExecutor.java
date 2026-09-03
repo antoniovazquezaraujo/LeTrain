@@ -500,13 +500,16 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             if (track.getLinker() != null) throw new RuntimeException("Cannot place wagon: Track already occupied.");
             
             
+            
             String typeStr = ctx.cargoType() != null ? ctx.cargoType().getText().toUpperCase() : "COAL";
             if (!typeStr.equals("GOLD") && !typeStr.equals("COAL") && !typeStr.equals("RUBY")) {
                 throw new RuntimeException("Invalid wagon type. Only GOLD, COAL, and RUBY are allowed.");
             }
             letrain.track.CargoTypes type = letrain.track.CargoTypes.valueOf(typeStr);
             
-            letrain.vehicle.rail.impl.Wagon wagon = new letrain.vehicle.rail.impl.Wagon(typeStr.substring(0, 1));
+            String aspect = ctx.aspectId().getText().replace("\"", "");
+            letrain.vehicle.rail.impl.Wagon wagon = new letrain.vehicle.rail.impl.Wagon(aspect);
+
 
             
             wagon.setExclusiveCargoType(type);
