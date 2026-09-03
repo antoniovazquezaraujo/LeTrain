@@ -477,12 +477,21 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             int trainId = model.nextTrainId();
             letrain.vehicle.rail.impl.Locomotive loco = new letrain.vehicle.rail.impl.Locomotive(model.nextLocomotiveId(), colorStr);
             letrain.vehicle.rail.impl.Train train = new letrain.vehicle.rail.impl.Train(trainId);
+            
             train.pushBack(loco);
             train.setDirectorLinker(loco);
             loco.setTrain(train);
-            loco.setTrack(track);
-            track.setLinker(loco);
+            
+            track.enterLinkerFromDir(dir.inverse(), loco);
+            if (loco.getDir() == null) {
+                track.removeLinker();
+                throw new RuntimeException("Could not place locomotive");
+            }
+            
             model.addLocomotive(loco);
+            model.getEconomyManager().onLocomotiveConstructed(loco);
+            train.getSafetyManager().claimOccupiedSegments();
+
         } else if (ctx.WAGON() != null) {
             if (track == null) throw new RuntimeException("Cannot place wagon: No track here.");
             if (track.getLinker() != null) throw new RuntimeException("Cannot place wagon: Track already occupied.");
@@ -496,10 +505,15 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             
             letrain.vehicle.rail.impl.Wagon wagon = new letrain.vehicle.rail.impl.Wagon(typeStr.substring(0, 1));
 
+            
             wagon.setExclusiveCargoType(type);
-            wagon.setTrack(track);
-            track.setLinker(wagon);
+            track.enterLinkerFromDir(dir.inverse(), wagon);
+            if (wagon.getDir() == null) {
+                track.removeLinker();
+                throw new RuntimeException("Could not place wagon");
+            }
             model.addWagon(wagon);
+
         }
         return null;
     }
