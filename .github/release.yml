@@ -5,18 +5,18 @@ changelog:
       - "internal"
       - "chore"
   categories:
-    - title: "🚀 Nuevas Funcionalidades"
+    - title: "🚀 New Features"
       labels:
         - "enhancement"
         - "feature"
-    - title: "🐛 Corrección de Errores"
+    - title: "🐛 Bug Fixes"
       labels:
         - "bug"
         - "fix"
-    - title: "📖 Documentación"
+    - title: "📖 Documentation"
       labels:
         - "documentation"
-    - title: "🛠️ Mantenimiento y Refactorización"
+    - title: "🛠️ Maintenance & Refactoring"
       labels:
         - "refactor"
         - "maintenance"
