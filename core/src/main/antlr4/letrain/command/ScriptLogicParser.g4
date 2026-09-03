@@ -98,7 +98,7 @@ directSemaphoreCommand : semaphoreSelector semaphoreAction ;
 
 directSignalCommand : signalSelector signalAction ;
 signalAction        : SET LIMIT NUMBER
-                    | SET MODE (MAX | TARGET)
+                    | SET MODE (MAX | MIN)
                     | INVERT
                     ;
 signalSelector      : SIGNAL NUMBER ;

@@ -106,5 +106,24 @@ LEFT: 'left';
 RIGHT: 'right';
 CLOSE: 'close';
 MAX: 'max';
-TARGET: 'target';
 LIMIT: 'limit';
+
+// Colors
+RED: 'red';
+GREEN: 'green';
+BLUE: 'blue';
+YELLOW: 'yellow';
+BLACK: 'black';
+WHITE: 'white';
+ORANGE: 'orange';
+PURPLE: 'purple';
+GRAY: 'gray';
+BROWN: 'brown';
+
+// Cargos
+COAL: 'coal';
+GOLD: 'gold';
+RUBY: 'ruby';
+
+// Signal Mode
+MIN: 'min';

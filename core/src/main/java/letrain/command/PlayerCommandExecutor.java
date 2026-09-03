@@ -473,7 +473,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             if (track == null) throw new RuntimeException("Cannot place locomotive: No track here.");
             if (track.getLinker() != null) throw new RuntimeException("Cannot place locomotive: Track already occupied.");
             
-            String colorStr = ctx.STRING() != null ? ctx.STRING().getText().replace("\"", "") : "RED";
+            String colorStr = ctx.color() != null ? ctx.color().getText().toUpperCase() : "RED";
             int trainId = model.nextTrainId();
             letrain.vehicle.rail.impl.Locomotive loco = new letrain.vehicle.rail.impl.Locomotive(model.nextLocomotiveId(), colorStr);
             letrain.vehicle.rail.impl.Train train = new letrain.vehicle.rail.impl.Train(trainId);
@@ -488,7 +488,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             if (track.getLinker() != null) throw new RuntimeException("Cannot place wagon: Track already occupied.");
             
             
-            String typeStr = ctx.STRING() != null ? ctx.STRING().getText().replace("\"", "").toUpperCase() : "COAL";
+            String typeStr = ctx.cargoType() != null ? ctx.cargoType().getText().toUpperCase() : "COAL";
             if (!typeStr.equals("GOLD") && !typeStr.equals("COAL") && !typeStr.equals("RUBY")) {
                 throw new RuntimeException("Invalid wagon type. Only GOLD, COAL, and RUBY are allowed.");
             }

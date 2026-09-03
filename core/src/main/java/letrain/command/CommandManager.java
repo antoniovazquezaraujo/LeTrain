@@ -686,7 +686,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             } else if (act.MODE() != null) {
                 boolean isMax = act.MAX() != null;
                 signal.setMax(isMax);
-                log.info("[DSL] Direct signal {} mode set to {}", id, isMax ? "MAX" : "TARGET");
+                log.info("[DSL] Direct signal {} mode set to {}", id, isMax ? "MAX" : "MIN");
             }
         }
         return null;

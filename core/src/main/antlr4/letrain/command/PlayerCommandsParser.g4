@@ -40,8 +40,8 @@ faceCommand : FACE (DIR_N | DIR_S | DIR_E | DIR_W | DIR_NE | DIR_NW | DIR_SE | D
             ;
 
 newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL)
-           | NEW (LOCOMOTIVE | LOCO) STRING?
-           | NEW WAGON STRING?
+           | NEW (LOCOMOTIVE | LOCO) color?
+           | NEW WAGON cargoType?
            ;
 
 delCommand : DEL entityType (NUMBER | STRING)? ;
@@ -63,3 +63,7 @@ lsCommand : LS entityType ;
 infoCommand : INFO entityType (NUMBER | STRING)? ;
 setNameCommand : entityType (NUMBER | STRING) SET NAME STRING ;
 quitCommand : QUIT | Q | Q_BANG | WQ ;
+
+
+color : RED | GREEN | BLUE | YELLOW | BLACK | WHITE | ORANGE | PURPLE | GRAY | BROWN ;
+cargoType : COAL | GOLD | RUBY ;
