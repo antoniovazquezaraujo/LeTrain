@@ -104,7 +104,7 @@ Puedes enviar órdenes directas a un tren específico en lugar de hacerlo solo p
 | `train <id> uncouple <dir> [n];` | Desengancha vagones en la dirección indicada (`forward`/`fw` o `backward`/`bw`). | `train 1 uncouple fw 1;` |
 | `train <id> set speed <n>;` | Asigna velocidad. | `train 1 set speed 5;` |
 | `train <id> reverse;` | Invierte la dirección de la marcha. | `train 1 reverse;` |
-| `train <id> stop;` | Frena completamente (equivalente a `set speed 0`). | `train 1 stop;` |
+| `train <id> engine on;` / `off;` | Enciende o apaga el motor de la locomotora (o `power on`/`off`). | `train 1 engine on;` |
 | `train <id> set autopilot true;` | Activa el autopiloto. | `train 1 set autopilot true;` |
 | `train <id> load;` / `unload;` | Carga o descarga mercancías (requiere estar en estación). | `train 1 load;` |
 
@@ -124,4 +124,3 @@ Puedes enviar órdenes directas a un tren específico en lugar de hacerlo solo p
 - **Asignación de nombres:** `st 1 set name "Madrid";`
 - **Creación de rutas:** `create itinerary "Ruta1" { add st 1 add sn 2 }`
 - **Asignación de rutas:** `assign itinerary "Ruta1" to train 1;`
-- **Eventos Avanzados:** `sn 1 on train 1 enter { train 1 stop; fork 1 set right; semaphore 1 open; }`

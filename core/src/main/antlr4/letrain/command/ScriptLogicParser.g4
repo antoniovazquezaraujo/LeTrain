@@ -43,7 +43,7 @@ sensorRef  : STRING | NUMBER ;
 
 direction : dir ;
 
-action : LOAD | UNLOAD | REVERSE | STOP
+action : LOAD | UNLOAD | REVERSE 
        | WAIT NUMBER
        | SPEED NUMBER
        ;
@@ -79,7 +79,8 @@ placeSelector  : forkSelector | semaphoreSelector | stationSelector | sensorSele
 
 semaphoreAction : OPEN | CLOSED | CLOSE | SET semaphoreStatus | INVERT ;
 forkAction      : SET forkDirection | FLIP ;
-trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED? trainSpeed | STOP | INVERT | coupleAction | uncoupleAction | LOAD | UNLOAD;
+engineAction    : (ENGINE | POWER) (ON | OFF);
+trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED? trainSpeed | INVERT | coupleAction | uncoupleAction | LOAD | UNLOAD | engineAction;
 coupleAction    : COUPLE sense (NUMBER)?;
 uncoupleAction  : UNCOUPLE sense (NUMBER)?;
 

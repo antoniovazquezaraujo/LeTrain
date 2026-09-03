@@ -418,10 +418,6 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     tractor.toggleReversed();
                 }
             };
-        } else if (actionText.contains("stop")) {
-            return (t) -> {
-                t.setSpeed(0);
-            };
         } else if (actionText.contains("invert")) {
             return (t) -> {
                 Tractor tractor = t.getDirectorLinker();
@@ -445,7 +441,18 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 t.getTrainCouplingManager().prepareUnlink(t, forward, count);
                 t.getTrainCouplingManager().divideTrain(t, () -> model.nextTrainId());
             };
+        
+        } else if (ctx.engineAction() != null) {
+            boolean turnOn = ctx.engineAction().ON() != null;
+            return (t) -> {
+                t.getLinkers().forEach(l -> {
+                    if (l instanceof letrain.vehicle.rail.impl.Locomotive) {
+                        ((letrain.vehicle.rail.impl.Locomotive) l).setEngineOn(turnOn);
+                    }
+                });
+            };
         } else if (actionText.contains("unload")) {
+
             return (t) -> {
                 letrain.track.Station s = t.getLogisticsManager().getStationAtTrain();
                 if (s != null) {
