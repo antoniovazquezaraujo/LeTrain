@@ -123,3 +123,18 @@ Tipos:
 
 ---
 
+
+## 9. Nombres y Referencias
+
+Cualquier tren o infraestructura (estaciones, semáforos, marcas, etc.) puede recibir un nombre para que no tengas que recordar su ID numérico.
+
+| Comando | Descripción | Ejemplo |
+| :--- | :--- | :--- |
+| `<entidad> <id> set name "<nombre>";` | Asigna un nombre a una entidad usando su ID numérico. | `train 1 set name "Expreso";`<br>`st 2 set name "Central";` |
+| `<entidad> "<nombre_viejo>" set name "<nombre_nuevo>";` | Cambia el nombre a una entidad que ya tiene uno. | `train "Expreso" set name "Ave";` |
+
+Una vez nombrada, **puedes usar el nombre entre comillas** (o sin ellas si no tiene espacios) en cualquier comando que pida un `<id>`:
+
+- `train "Ave" set engine on;`
+- `go st "Central";`
+- `clear tr "Ave";`
