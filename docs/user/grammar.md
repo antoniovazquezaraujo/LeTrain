@@ -13,8 +13,8 @@ These are executed immediately. **They require a semicolon (`;`) at the end**.
 - `train [ID] accelerate;`
 - `train [ID] decelerate;`
 - `train [ID] set speed [NUM];` or `train [ID] set [NUM];`
-- `train [ID] stop;`
 - `train [ID] invert;`
+- `train [ID] set engine on;` / `train [ID] set engine off;`
 - `train [ID] set forward;` / `train [ID] set backward;`
 - `train [ID] load;`
 - `train [ID] unload;`

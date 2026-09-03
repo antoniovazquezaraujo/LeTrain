@@ -33,6 +33,19 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 - **Drive Mode**: Left/Right arrows select a train. Up/Down arrows accelerate/brake. **Spacebar** reverses direction (only when stopped).
 - **Link / Unlink Mode**: Up/Down selects the end of the train. Left/Right selects the amount of wagons. **Spacebar** executes coupling/uncoupling.
 
+
+### Command Line Interface (CLI) Mode
+Press the `:` key to open the integrated console (similar to Vim). From here you can type direct commands to build tracks, spawn trains, or manipulate entities instantly.
+Some useful commands:
+- `go 10, 5;` - Move the cursor to an absolute coordinate.
+- `new st;` - Build a station under the cursor.
+- `new loco A red;` - Spawn a red locomotive 'A'.
+- `train 1 set engine on;` - Start train 1's engine.
+- `ls st;` - List all stations.
+- `quit;` or `q` - Exit the game.
+
+For a complete reference of the CLI commands, check out the developer documentation or type `info` in the console.
+
 ### Interaction
 - **Spacebar**: In Semaphores or Speed Signals mode, invert the direction of the device.
 - **Key 'm'**: In Semaphores mode, change the state (green/red). In Speed Signals mode, toggle the type of signal (Max/Min). In Trains mode, start/stop the engine.

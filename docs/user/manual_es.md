@@ -35,6 +35,19 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 - **Modo Drive**: Flechas Izquierda/Derecha seleccionan tren. Arriba/Abajo aceleran/frenan. **Espacio** invierte la marcha (solo en parado).
 - **Modo Link / Unlink**: Arriba/Abajo selecciona el extremo del tren. Izquierda/Derecha selecciona la cantidad de vagones. **Espacio** ejecuta el enganche.
 
+
+### Modo Consola (CLI)
+Pulsa la tecla `:` para abrir la consola integrada (al estilo Vim). Desde aquí puedes escribir comandos directos para construir vías, generar trenes o manipular entidades al instante.
+Algunos comandos útiles:
+- `go 10, 5;` - Mueve el cursor a una coordenada absoluta.
+- `new st;` - Construye una estación bajo el cursor.
+- `new loco A red;` - Crea una locomotora roja 'A'.
+- `train 1 set engine on;` - Enciende el motor del tren 1.
+- `ls st;` - Lista todas las estaciones.
+- `quit;` o `q` - Sale del juego.
+
+Para una referencia completa de los comandos, consulta la documentación o escribe `info` en la consola.
+
 ### Interacción
 - **Espacio**: En el modo Semáforos o Señales de Velocidad, invertir el sentido del dispositivo.
 - **Tecla 'm'**: En Semáforos, cambia el estado (verde/rojo). En Señales de Velocidad, alterna el tipo de señal (Máx/Mín). En Trenes, enciende/apaga el motor.

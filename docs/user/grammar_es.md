@@ -13,8 +13,8 @@ Se ejecutan inmediatamente. **Requieren punto y coma (`;`) al final**.
 - `train [ID] accelerate;`
 - `train [ID] decelerate;`
 - `train [ID] set speed [NUM];` o `train [ID] set [NUM];`
-- `train [ID] stop;`
 - `train [ID] invert;`
+- `train [ID] set engine on;` / `train [ID] set engine off;`
 - `train [ID] set forward;` / `train [ID] set backward;`
 - `train [ID] load;`
 - `train [ID] unload;`
