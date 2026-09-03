@@ -15,16 +15,16 @@ Bienvenido al manual oficial de **LeTrain**. Aquí encontrarás todo lo que nece
 El juego se puede controlar tanto en su versión 2D como en la 3D mediante el teclado. A continuación, las teclas y modos principales:
 
 ### Navegación y Vistas
-- **Flechas de dirección**: Mover el cursor libremente o seguir una vía.
+- **Flechas de dirección (o h, j, k, l)**: Mover el cursor libremente o seguir una vía (estilo Vim).
 - **Números (0-9)**: Introduce un salto numérico (multiplicador) para aumentar la velocidad y distancia del cursor. Al introducir un nuevo número se sobrescribe el anterior. Pulsa **Espacio** para volver a ir de 1 en 1.
 - **Tecla 'o'**: Reubicar el cursor instantáneamente sobre un tren, estación o desvío.
-- **Tecla 'c'**: En 3D: Alternar entre las tres cámaras (Perspectiva, Cenital y Cabina). En 2D: Cambiar el tamaño de la zona muerta de la cámara.
+- **Tecla 'c'**: En 3D: Alternar entre las tres cámaras. (También **Esc** para salir del menú en 3D) (Perspectiva, Cenital y Cabina). En 2D: Cambiar el tamaño de la zona muerta de la cámara.
 - **Tecla 'C' (Mayús+c)**: En 2D: Activar o desactivar la paginación de cámara.
 - **Tecla 'Tab'**: Alternar entre los diferentes niveles de visibilidad de la barra de información (Compacta, Completa, Oculta).
 
 ### Construcción (Modo Rails)
-- **Mayús + Flechas**: Construir vías nuevas.
-- **Ctrl + Flechas**: Borrar vías existentes.
+- **Mayús + Flechas (o H, J, K, L)**: Construir vías nuevas.
+- **Ctrl + Flechas (o Ctrl + h, j, k, l)**: Borrar vías existentes.
 - **Inicio (Home)**: Crear un semáforo sobre la vía.
 - **Insert**: Crear un sensor sobre la vía.
 - **Fin (End)**: Crear una estación.
