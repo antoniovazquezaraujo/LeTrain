@@ -61,7 +61,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
 ## 🎥 Multimedia y Tutoriales
 
 ### Navegación y Cámara
-- **Navegación Básica:** El cursor se mueve con las teclas de dirección por todo el mapa. Si entra en una vía, la sigue automáticamente, tanto hacia adelante como hacia atrás.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Navegación Básica:** El cursor se mueve con las teclas de dirección (o teclas de Vim h, j, k, l) por todo el mapa. Si entra en una vía, la sigue automáticamente, tanto hacia adelante como hacia atrás.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/7fKXj1krkFk" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/eidXDfMM5Ec" frameborder="0" allowfullscreen></iframe></div>
 </div>
