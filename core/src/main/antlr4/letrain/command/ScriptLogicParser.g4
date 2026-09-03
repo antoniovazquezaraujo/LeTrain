@@ -14,6 +14,7 @@ directCommand : assignItinerary
               | directTrainCommand
               | directForkCommand
               | directSemaphoreCommand
+              | directSignalCommand
               ;
 
 directTrainCommand : TRAIN trainRef trainAction ;
@@ -76,8 +77,8 @@ commandItem : (
 trainExtractor : TRAIN_AT placeSelector;
 placeSelector  : forkSelector | semaphoreSelector | stationSelector | sensorSelector;
 
-semaphoreAction : SET semaphoreStatus;
-forkAction      : SET forkDirection;
+semaphoreAction : OPEN | CLOSED | CLOSE | SET semaphoreStatus | INVERT ;
+forkAction      : SET forkDirection | FLIP ;
 trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED? trainSpeed | STOP | INVERT | coupleAction | uncoupleAction | LOAD | UNLOAD;
 coupleAction    : COUPLE sense (NUMBER)?;
 uncoupleAction  : UNCOUPLE sense (NUMBER)?;
@@ -94,3 +95,10 @@ dir   : DIR_E| DIR_NE | DIR_N | DIR_NW | DIR_W | DIR_SW | DIR_S | DIR_SE;
 
 directForkCommand : forkSelector forkAction ;
 directSemaphoreCommand : semaphoreSelector semaphoreAction ;
+
+directSignalCommand : signalSelector signalAction ;
+signalAction        : SET LIMIT NUMBER
+                    | SET MODE (MAX | TARGET)
+                    | INVERT
+                    ;
+signalSelector      : SIGNAL NUMBER ;

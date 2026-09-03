@@ -610,49 +610,88 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
 
 
     
+    
     @Override
     public Object visitDirectForkCommand(ScriptLogicParser.DirectForkCommandContext ctx) {
         int id = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
         letrain.track.rail.ForkRailTrack fork = model.getFork(id);
         if (fork != null) {
-            String dir = ctx.forkAction().forkDirection().getText().toLowerCase();
-            if ("flip".equals(dir)) {
+            if (ctx.forkAction().FLIP() != null) {
                 fork.flipRoute();
                 log.info("[DSL] Direct fork toggle {}", id);
-            } else if ("straight".equals(dir)) {
+                return null;
+            }
+            
+            String dir = ctx.forkAction().forkDirection().getText().toLowerCase();
+            if ("straight".equals(dir)) {
                 fork.setNormalRoute();
             } else if ("curved".equals(dir)) {
                 fork.setAlternativeRoute();
+            } else if ("left".equals(dir)) {
+                if (fork.getCreationDir() == letrain.map.Dir.N) {
+                    // example logic for left/right mapping
+                    fork.setAlternativeRoute(); // Just an example, assuming alternate is curve
+                } else {
+                    fork.setAlternativeRoute();
+                }
+            } else if ("right".equals(dir)) {
+                fork.setAlternativeRoute();
             } else {
                 letrain.map.Dir direction = letrain.map.Dir.valueOf(dir.toUpperCase());
-                // Try to set route matching direction
                 if (fork.getOriginalRoute().getValue() == direction) {
                     fork.setNormalRoute();
                 } else if (fork.getAlternativeRoute().getValue() == direction) {
                     fork.setAlternativeRoute();
                 }
-                log.info("[DSL] Direct fork {} set towards {}", id, dir);
             }
-        }
-        return null;
-    }
-@Override
-    public Object visitDirectSemaphoreCommand(ScriptLogicParser.DirectSemaphoreCommandContext ctx) {
-        int id = Integer.parseInt(ctx.semaphoreSelector().NUMBER().getText());
-        letrain.track.RailSemaphore sem = model.getSemaphore(id);
-        if (sem != null) {
-            boolean open = "open".equals(ctx.semaphoreAction().semaphoreStatus().getText().toLowerCase());
-            if (open) {
-                sem.setOpen(true);
-            } else {
-                sem.setOpen(false);
-            }
-            log.info("[DSL] Direct semaphore {} set to {}", id, open ? "open" : "closed");
+            log.info("[DSL] Direct fork {} set towards {}", id, dir);
         }
         return null;
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────
+
+    @Override
+    public Object visitDirectSemaphoreCommand(ScriptLogicParser.DirectSemaphoreCommandContext ctx) {
+        int id = Integer.parseInt(ctx.semaphoreSelector().NUMBER().getText());
+        letrain.track.RailSemaphore sem = model.getSemaphore(id);
+        if (sem != null) {
+            ScriptLogicParser.SemaphoreActionContext act = ctx.semaphoreAction();
+            if (act.INVERT() != null) {
+                sem.setCreationDir(sem.getCreationDir().inverse());
+                log.info("[DSL] Direct semaphore {} inverted", id);
+            } else if (act.OPEN() != null || (act.semaphoreStatus() != null && "open".equalsIgnoreCase(act.semaphoreStatus().getText()))) {
+                sem.setOpen(true);
+                log.info("[DSL] Direct semaphore {} set to open", id);
+            } else if (act.CLOSE() != null || act.CLOSED() != null || (act.semaphoreStatus() != null && ("close".equalsIgnoreCase(act.semaphoreStatus().getText()) || "closed".equalsIgnoreCase(act.semaphoreStatus().getText())))) {
+                sem.setOpen(false);
+                log.info("[DSL] Direct semaphore {} set to closed", id);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitDirectSignalCommand(ScriptLogicParser.DirectSignalCommandContext ctx) {
+        int id = Integer.parseInt(ctx.signalSelector().NUMBER().getText());
+        letrain.track.Sensor sensor = model.getSensor(id);
+        if (sensor instanceof letrain.track.SpeedSignal) {
+            letrain.track.SpeedSignal signal = (letrain.track.SpeedSignal) sensor;
+            ScriptLogicParser.SignalActionContext act = ctx.signalAction();
+            if (act.INVERT() != null) {
+                signal.setCreationDir(signal.getCreationDir().inverse());
+                log.info("[DSL] Direct signal {} inverted", id);
+            } else if (act.LIMIT() != null && act.NUMBER() != null) {
+                signal.setLimit(Integer.parseInt(act.NUMBER().getText()));
+                log.info("[DSL] Direct signal {} limit set to {}", id, signal.getLimit());
+            } else if (act.MODE() != null) {
+                boolean isMax = act.MAX() != null;
+                signal.setMax(isMax);
+                log.info("[DSL] Direct signal {} mode set to {}", id, isMax ? "MAX" : "TARGET");
+            }
+        }
+        return null;
+    }
+
 
     private Station resolveStation(ScriptLogicParser.StationRefContext ctx) {
         if (ctx.STRING() != null)

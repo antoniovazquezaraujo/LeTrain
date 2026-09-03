@@ -100,3 +100,11 @@ WS : [ \t\r\n]+ -> skip;
 LOCOMOTIVE: 'locomotive';
 LOCO: 'loco';
 WAGON: 'wagon';
+
+// Added keywords for signals and forks
+LEFT: 'left';
+RIGHT: 'right';
+CLOSE: 'close';
+MAX: 'max';
+TARGET: 'target';
+LIMIT: 'limit';

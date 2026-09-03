@@ -473,7 +473,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             if (track == null) throw new RuntimeException("Cannot place locomotive: No track here.");
             if (track.getLinker() != null) throw new RuntimeException("Cannot place locomotive: Track already occupied.");
             
-            String colorStr = ctx.STRING() != null ? ctx.STRING().getText().replace("\"", "") : "FF0000";
+            String colorStr = ctx.STRING() != null ? ctx.STRING().getText().replace("\"", "") : "RED";
             int trainId = model.nextTrainId();
             letrain.vehicle.rail.impl.Locomotive loco = new letrain.vehicle.rail.impl.Locomotive(model.nextLocomotiveId(), colorStr);
             letrain.vehicle.rail.impl.Train train = new letrain.vehicle.rail.impl.Train(trainId);
@@ -487,13 +487,15 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             if (track == null) throw new RuntimeException("Cannot place wagon: No track here.");
             if (track.getLinker() != null) throw new RuntimeException("Cannot place wagon: Track already occupied.");
             
-            String typeStr = ctx.STRING() != null ? ctx.STRING().getText().replace("\"", "").toUpperCase() : "PASSENGER";
-            letrain.track.CargoTypes type = letrain.track.CargoTypes.NONE;
-            try {
-                type = letrain.track.CargoTypes.valueOf(typeStr);
-            } catch(Exception e) {}
+            
+            String typeStr = ctx.STRING() != null ? ctx.STRING().getText().replace("\"", "").toUpperCase() : "COAL";
+            if (!typeStr.equals("GOLD") && !typeStr.equals("COAL") && !typeStr.equals("RUBY")) {
+                throw new RuntimeException("Invalid wagon type. Only GOLD, COAL, and RUBY are allowed.");
+            }
+            letrain.track.CargoTypes type = letrain.track.CargoTypes.valueOf(typeStr);
             
             letrain.vehicle.rail.impl.Wagon wagon = new letrain.vehicle.rail.impl.Wagon(typeStr.substring(0, 1));
+
             wagon.setExclusiveCargoType(type);
             wagon.setTrack(track);
             track.setLinker(wagon);
