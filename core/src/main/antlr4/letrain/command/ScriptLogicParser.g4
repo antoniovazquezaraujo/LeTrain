@@ -43,7 +43,7 @@ sensorRef  : STRING | NUMBER ;
 
 direction : dir ;
 
-action : LOAD | UNLOAD | REVERSE 
+action : LOAD | UNLOAD | REVERSE | STOP 
        | WAIT NUMBER
        | SPEED NUMBER
        ;
