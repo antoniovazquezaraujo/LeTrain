@@ -76,7 +76,6 @@ public class RenderVisitor implements Visitor {
     public static String DIAGONAL_RAIL_CROSS_ASPECT = "╳";
     public static String MIXED_RAIL_CROSS_ASPECT = "*";
     public static String SEMAPHORE_ASPECT = ":";
-    public static String STATION_RAIL_TRACK_ASPECT = "#";
     public static String CURVE_RAIL_TRACK_ASPECT = "·";
 
     public static String CURSOR_ASPECT_E = ">";
@@ -527,9 +526,7 @@ public class RenderVisitor implements Visitor {
 
     ////////////////////////////////////////////////////////////////////////////////
     private String getTrackAspect(Track track) {
-        if (track.getComponent() instanceof Station) {
-            return STATION_RAIL_TRACK_ASPECT;
-        }
+
 
         java.util.concurrent.atomic.AtomicBoolean isDisconnected =
                 new java.util.concurrent.atomic.AtomicBoolean(false);
