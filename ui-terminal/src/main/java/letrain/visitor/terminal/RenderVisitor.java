@@ -526,7 +526,18 @@ public class RenderVisitor implements Visitor {
 
     ////////////////////////////////////////////////////////////////////////////////
     private String getTrackAspect(Track track) {
-
+        if (track instanceof letrain.track.rail.RailTrack) {
+            letrain.track.rail.RailTrack.VisualType vt = ((letrain.track.rail.RailTrack) track).getVisualType();
+            if (vt == letrain.track.rail.RailTrack.VisualType.TUNNEL) {
+                return TUNNEL_RAILTRACK_ASPECT;
+            } else if (vt == letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE) {
+                return TUNNEL_GATE_RAILTRACK_ASPECT;
+            } else if (vt == letrain.track.rail.RailTrack.VisualType.BRIDGE) {
+                return BRIDGE_RAILTRACK_ASPECT;
+            } else if (vt == letrain.track.rail.RailTrack.VisualType.BRIDGE_GATE) {
+                return BRIDGE_GATE_RAILTRACK_ASPECT;
+            }
+        }
 
         java.util.concurrent.atomic.AtomicBoolean isDisconnected =
                 new java.util.concurrent.atomic.AtomicBoolean(false);
