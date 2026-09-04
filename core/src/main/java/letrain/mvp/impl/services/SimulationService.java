@@ -102,7 +102,7 @@ public class SimulationService {
                 } else if (currentAmount < prevState.amount) {
                     int unitsUnloaded = prevState.amount - currentAmount;
                     int distance = calculateDistanceSinceLastStop(train);
-                    economyManager.onUnloadCargo(wagon, wagon.getCargoType(), unitsUnloaded,
+                    economyManager.onUnloadCargo(wagon, prevState.type, unitsUnloaded,
                             distance);
                 }
             }
@@ -178,8 +178,10 @@ public class SimulationService {
 
     private static class CargoState {
         int amount;
+        letrain.track.CargoTypes type;
 
-        CargoState(CargoTypes t, int a) {
+        CargoState(letrain.track.CargoTypes t, int a) {
+            type = t;
             amount = a;
         }
     }
