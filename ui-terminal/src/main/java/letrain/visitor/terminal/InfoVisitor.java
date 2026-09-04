@@ -12,12 +12,8 @@ import letrain.mvp.impl.terminal.TerminalView;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
-import letrain.track.rail.BridgeGateRailTrack;
-import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.TunnelGateRailTrack;
-import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.Cursor;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
@@ -228,13 +224,6 @@ public class InfoVisitor implements Visitor {
     }
 
     @Override
-    public void visitTunnelRailTrack(TunnelRailTrack track) {
-        infoBarText += "Track:[" + track.getPosition().getX() + "," + track.getPosition().getY()
-                + "]" + getRouterAspect(track.getRouter()) + "\n";
-        infoBarText += "Connect:...";
-    }
-
-    @Override
     public void visitLocomotive(Locomotive locomotive) {
         String speedStr = String.valueOf(locomotive.getSpeed());
         if (locomotive.getSpeed() != locomotive.getTargetSpeed()) {
@@ -279,21 +268,6 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitGround(Ground ground) {}
-
-    @Override
-    public void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack) {
-        // No extra info in terminal mode
-    }
-
-    @Override
-    public void visitBridgeRailTrack(BridgeRailTrack bridgeRailTrack) {
-        // No extra info in terminal mode
-    }
-
-    @Override
-    public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
-        // No extra info in terminal mode
-    }
 
     @Override
     public void visitEconomyManager(EconomyManager economyManager) {

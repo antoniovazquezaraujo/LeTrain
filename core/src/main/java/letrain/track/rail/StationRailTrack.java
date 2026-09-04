@@ -1,13 +1,8 @@
 package letrain.track.rail;
 
+@Deprecated
 public class StationRailTrack extends RailTrack {
-    private letrain.map.Dir creationDir = letrain.map.Dir.N;
-
-    public letrain.map.Dir getCreationDir() {
-        return creationDir;
-    }
-
-    public void setCreationDir(letrain.map.Dir creationDir) {
-        this.creationDir = creationDir;
+    public StationRailTrack() {
+        setVisualType(VisualType.STATION);
     }
 }

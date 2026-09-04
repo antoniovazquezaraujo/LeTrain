@@ -83,9 +83,6 @@ public abstract class BaseSubRenderer implements Visitor {
     public void visitForkRailTrack(letrain.track.rail.ForkRailTrack track) {}
 
     @Override
-    public void visitTunnelRailTrack(letrain.track.rail.TunnelRailTrack track) {}
-
-    @Override
     public void visitLocomotive(Locomotive locomotive) {}
 
     @Override
@@ -108,17 +105,6 @@ public abstract class BaseSubRenderer implements Visitor {
 
     @Override
     public void visitGround(letrain.ground.Ground ground) {}
-
-    @Override
-    public void visitBridgeGateRailTrack(
-            letrain.track.rail.BridgeGateRailTrack bridgeGateRailTrack) {}
-
-    @Override
-    public void visitBridgeRailTrack(letrain.track.rail.BridgeRailTrack bridgeRailTrack) {}
-
-    @Override
-    public void visitTunnelGateRailTrack(
-            letrain.track.rail.TunnelGateRailTrack tunnelGateRailTrack) {}
 
     protected boolean isVisible(letrain.map.Point pos) {
         if (camera == null) {

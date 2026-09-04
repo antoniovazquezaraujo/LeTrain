@@ -6,10 +6,7 @@ import java.util.List;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
-import letrain.track.rail.BridgeGateRailTrack;
-import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.TunnelRailTrack;
 import letrain.utils.PathGeometry;
 import letrain.vehicle.rail.impl.Locomotive;
 
@@ -73,21 +70,6 @@ public class TrackRenderer extends BaseSubRenderer {
                 drawHalfTrack(track.getPosition(), dir, true, 1.0f, 1.0f, blockedColor);
             }
         }
-    }
-
-    @Override
-    public void visitTunnelRailTrack(TunnelRailTrack track) {
-        visitRailTrack(track);
-    }
-
-    @Override
-    public void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack) {
-        visitRailTrack(bridgeGateRailTrack);
-    }
-
-    @Override
-    public void visitBridgeRailTrack(BridgeRailTrack bridgeRailTrack) {
-        visitRailTrack(bridgeRailTrack);
     }
 
     public void drawHalfTrack(Point pos, Dir dir, boolean connected, float shortenL,

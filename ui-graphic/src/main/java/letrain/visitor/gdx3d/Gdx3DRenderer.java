@@ -11,12 +11,8 @@ import letrain.mvp.Model;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
-import letrain.track.rail.BridgeGateRailTrack;
-import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.TunnelGateRailTrack;
-import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.Cursor;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Wagon;
@@ -178,7 +174,7 @@ public class Gdx3DRenderer implements Visitor {
                 isXRayActive = true;
             } else {
                 RailTrack rt = model.getCursorRailTrack();
-                if (rt instanceof TunnelGateRailTrack) {
+                if (rt != null && rt.getVisualType() == letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE) {
                     isXRayActive = true;
                 }
             }
@@ -276,17 +272,15 @@ public class Gdx3DRenderer implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
+        if (track.getVisualType() == letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE) {
+            infrastructureRenderer.renderTunnelGateTrack(track);
+        }
         trackRenderer.visitRailTrack(track);
     }
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
         infrastructureRenderer.visitForkRailTrack(track);
-    }
-
-    @Override
-    public void visitTunnelRailTrack(TunnelRailTrack track) {
-        trackRenderer.visitTunnelRailTrack(track);
     }
 
     @Override
@@ -312,21 +306,6 @@ public class Gdx3DRenderer implements Visitor {
     @Override
     public void visitGround(Ground ground) {
         groundRenderer.visitGround(ground);
-    }
-
-    @Override
-    public void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack) {
-        trackRenderer.visitRailTrack(bridgeGateRailTrack);
-    }
-
-    @Override
-    public void visitBridgeRailTrack(BridgeRailTrack bridgeRailTrack) {
-        trackRenderer.visitRailTrack(bridgeRailTrack);
-    }
-
-    @Override
-    public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
-        infrastructureRenderer.visitTunnelGateRailTrack(tunnelGateRailTrack);
     }
 
     @Override
