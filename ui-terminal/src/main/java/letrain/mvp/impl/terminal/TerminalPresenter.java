@@ -961,6 +961,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     targetPos = model.getSelectedStation().getPosition();
                 }
                 break;
+            case SENSORS:
+                if (model.getSelectedSensor() != null) {
+                    targetPos = model.getSelectedSensor().getPosition();
+                }
+                break;
+            case SPEED_SIGNALS:
+                if (model.getSelectedSpeedSignal() != null) {
+                    targetPos = model.getSelectedSpeedSignal().getPosition();
+                }
+                break;
             default:
                 break;
         }
