@@ -367,7 +367,7 @@ public class Gdx3DInputHandler implements InputProcessor {
 
         // Mode Switching Shortcuts
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != ' ') {
-            if (model.getMode() != Model.GameMode.TRAINS) {
+            if (model.getMode() != Model.GameMode.TRAINS && model.getMode() != Model.GameMode.ADD) {
                 switch (stroke.getCharacter()) {
                     case 'a':
                         model.setMode(Model.GameMode.ADD);
