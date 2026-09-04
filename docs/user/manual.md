@@ -15,6 +15,11 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 ### Navigation and Views
 - **Arrow Keys (or h, j, k, l)**: Move the cursor freely or follow a track (Vim-style navigation).
 - **Numbers (0-9)**: Enter a numeric multiplier (quantifier) to increase the speed and jump distance of the cursor. Pressing numbers overrides the current multiplier. Press **Spacebar** to return to moving 1 by 1.
+- **Key 'a'**: Enter **Add** mode. This allows you to quickly add infrastructure:
+  - **s**: Build Station
+  - **e**: Build Sensor
+  - **m**: Build Semaphore
+  - **g**: Build Speed Signal
 - **Key 'o'**: Instantly relocate the cursor to a train, station, or fork.
 - **Key 'z'**: In 3D: Toggle between the three cameras (Perspective, Top-down, and Cab view). In 2D: Cycle the camera deadzone box.
 - **Esc**: In 3D: Exit the game menu.
