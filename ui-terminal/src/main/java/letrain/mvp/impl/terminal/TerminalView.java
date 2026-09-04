@@ -209,6 +209,37 @@ public class TerminalView implements letrain.mvp.View {
         // Implementation for status bar updates in terminal
     }
 
+    private void putStringWithColors(com.googlecode.lanterna.graphics.TextGraphics tg, com.googlecode.lanterna.TerminalPosition pos, String text) {
+        int x = pos.getColumn();
+        int y = pos.getRow();
+        com.googlecode.lanterna.TextColor defaultColor = tg.getForegroundColor();
+        
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("<<([A-Z_]+)>>");
+        java.util.regex.Matcher m = p.matcher(text);
+        
+        int lastEnd = 0;
+        while (m.find()) {
+            String plain = text.substring(lastEnd, m.start());
+            if (!plain.isEmpty()) {
+                tg.putString(x, y, plain);
+                x += plain.length();
+            }
+            String color = m.group(1);
+            if (color.equals("GREEN")) tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.GREEN_BRIGHT);
+            else if (color.equals("RED")) tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+            else if (color.equals("YELLOW")) tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.YELLOW);
+            else if (color.equals("WHITE")) tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE_BRIGHT);
+            else if (color.equals("RESET")) tg.setForegroundColor(defaultColor);
+            
+            lastEnd = m.end();
+        }
+        String plain = text.substring(lastEnd);
+        if (!plain.isEmpty()) {
+            tg.putString(x, y, plain);
+        }
+        tg.setForegroundColor(defaultColor);
+    }
+
     @Override
     public void setInfoBarText(String text) {
         if (helpLevel == 0) {
@@ -219,7 +250,7 @@ public class TerminalView implements letrain.mvp.View {
         for (int i = 0; i < lines.length; i++) {
             if (i + offset < menuBoxSize.getRows()) {
                 menuBox.setForegroundColor(DISABLED_FG_COLOR);
-                menuBox.putString(menuBoxPosition.withRelative(1, offset + i), lines[i]);
+                putStringWithColors(menuBox, menuBoxPosition.withRelative(1, offset + i), lines[i]);
             }
         }
         menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
@@ -296,8 +327,8 @@ public class TerminalView implements letrain.mvp.View {
                                 cameraPagination ? com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT
                                         : com.googlecode.lanterna.TextColor.ANSI.BLUE_BRIGHT;
                         com.googlecode.lanterna.TextCharacter dot =
-                                new com.googlecode.lanterna.TextCharacter('·', dotColor,
-                                        com.googlecode.lanterna.TextColor.ANSI.BLACK);
+                                com.googlecode.lanterna.TextCharacter.fromCharacter('·', dotColor,
+                                        com.googlecode.lanterna.TextColor.ANSI.BLACK)[0];
                         for (int x = screenMinX; x <= screenMaxX; x++) {
                             gameBox.setCharacter(x, screenMinY, dot);
                             gameBox.setCharacter(x, screenMaxY, dot);
