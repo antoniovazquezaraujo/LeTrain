@@ -16,13 +16,8 @@ import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.Track;
-import letrain.track.rail.BridgeGateRailTrack;
-import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.StationRailTrack;
-import letrain.track.rail.TunnelGateRailTrack;
-import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.Cursor;
 import letrain.vehicle.Cursor.CursorMode;
 import org.slf4j.Logger;
@@ -569,9 +564,9 @@ public class RailTrackMaker {
             // si no había nada creamos un track normal
             track = createTrackOfSelectedType();
             if (oldTrack != null && type == Presenter.TrackType.NORMAL_TRACK) {
-                if (oldTrack.getClass().equals(letrain.track.rail.TunnelRailTrack.class)) {
+                if (oldTrack instanceof letrain.track.rail.RailTrack && ((letrain.track.rail.RailTrack)oldTrack).getVisualType() == letrain.track.rail.RailTrack.VisualType.TUNNEL) {
                     convertOldTrackToGate(Presenter.TrackType.TUNNEL_GATE_TRACK);
-                } else if (oldTrack.getClass().equals(letrain.track.rail.BridgeRailTrack.class)) {
+                } else if (oldTrack instanceof letrain.track.rail.RailTrack && ((letrain.track.rail.RailTrack)oldTrack).getVisualType() == letrain.track.rail.RailTrack.VisualType.BRIDGE) {
                     convertOldTrackToGate(Presenter.TrackType.BRIDGE_GATE_TRACK);
                 }
             }
@@ -660,11 +655,11 @@ public class RailTrackMaker {
         if (oldTrack == null) {
             return;
         }
-        RailTrack newGate;
+        RailTrack newGate = new RailTrack();
         if (gateType == Presenter.TrackType.TUNNEL_GATE_TRACK) {
-            newGate = new letrain.track.rail.TunnelGateRailTrack();
+            newGate.setVisualType(letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE);
         } else {
-            newGate = new letrain.track.rail.BridgeGateRailTrack();
+            newGate.setVisualType(letrain.track.rail.RailTrack.VisualType.BRIDGE_GATE);
         }
         newGate.setPosition(oldTrack.getPosition());
 
@@ -714,20 +709,27 @@ public class RailTrackMaker {
     }
 
     public RailTrack createTrackOfSelectedType() {
+        RailTrack track = new RailTrack();
         switch (newTrackType) {
             case STATION_TRACK:
-                return new StationRailTrack();
+                track.setVisualType(letrain.track.rail.RailTrack.VisualType.STATION);
+                break;
             case TUNNEL_GATE_TRACK:
-                return new TunnelGateRailTrack();
+                track.setVisualType(letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE);
+                break;
             case TUNNEL_TRACK:
-                return new TunnelRailTrack();
+                track.setVisualType(letrain.track.rail.RailTrack.VisualType.TUNNEL);
+                break;
             case BRIDGE_GATE_TRACK:
-                return new BridgeGateRailTrack();
+                track.setVisualType(letrain.track.rail.RailTrack.VisualType.BRIDGE_GATE);
+                break;
             case BRIDGE_TRACK:
-                return new BridgeRailTrack();
+                track.setVisualType(letrain.track.rail.RailTrack.VisualType.BRIDGE);
+                break;
             default:
-                return new RailTrack();
+                break;
         }
+        return track;
     }
 
     public boolean canBeAFork(Track track, Dir from, Dir to) {

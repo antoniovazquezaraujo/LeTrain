@@ -1,13 +1,8 @@
 package letrain.track.rail;
 
-import letrain.visitor.Visitor;
-
+@Deprecated
 public class TunnelGateRailTrack extends RailTrack {
-    /***********************************************************
-     * Renderable implementation
-     **********************************************************/
-    @Override
-    public void accept(Visitor visitor) {
-        visitor.visitTunnelGateRailTrack(this);
+    public TunnelGateRailTrack() {
+        setVisualType(VisualType.TUNNEL_GATE);
     }
 }

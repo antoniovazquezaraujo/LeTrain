@@ -19,13 +19,9 @@ import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.Track;
-import letrain.track.rail.BridgeGateRailTrack;
-import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.track.rail.StationRailTrack;
-import letrain.track.rail.TunnelGateRailTrack;
-import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.Cursor;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.impl.Locomotive;
@@ -390,8 +386,8 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        if ((locomotive.getTrack().getClass().equals(TunnelRailTrack.class)
-                || locomotive.getTrack().getClass().equals(TunnelGateRailTrack.class))
+        if (locomotive.getTrack() instanceof RailTrack && (((RailTrack)locomotive.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL
+                || ((RailTrack)locomotive.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL_GATE)
                 && this.mode != GameMode.RAILS) {
             return;
         }
@@ -423,8 +419,8 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitWagon(Wagon wagon) {
-        if ((wagon.getTrack().getClass().equals(TunnelRailTrack.class)
-                || wagon.getTrack().getClass().equals(TunnelGateRailTrack.class))
+        if (wagon.getTrack() instanceof RailTrack && (((RailTrack)wagon.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL
+                || ((RailTrack)wagon.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL_GATE)
                 && this.mode != GameMode.RAILS) {
             return;
         }
@@ -660,45 +656,8 @@ public class RenderVisitor implements Visitor {
                 return TextColor.ANSI.WHITE;
         }
     }
-
-    @Override
-    public void visitBridgeGateRailTrack(BridgeGateRailTrack track) {
-        TextColor blockedColor = getTrackBlockedColor(track);
-        view.setFgColor(blockedColor != null ? blockedColor : RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(),
-                BRIDGE_GATE_RAILTRACK_ASPECT);
-        resetColors();
-    }
-
-    @Override
-    public void visitBridgeRailTrack(BridgeRailTrack track) {
-        TextColor blockedColor = getTrackBlockedColor(track);
-        view.setFgColor(blockedColor != null ? blockedColor : RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(), BRIDGE_RAILTRACK_ASPECT);
-        resetColors();
-    }
-
-    @Override
-    public void visitTunnelGateRailTrack(TunnelGateRailTrack track) {
-        TextColor blockedColor = getTrackBlockedColor(track);
-        view.setFgColor(blockedColor != null ? blockedColor : RAIL_TRACK_COLOR);
-        view.set(track.getPosition().getX(), track.getPosition().getY(),
-                TUNNEL_GATE_RAILTRACK_ASPECT);
-        resetColors();
-    }
-
-    @Override
-    public void visitTunnelRailTrack(TunnelRailTrack track) {
-        if (this.mode == GameMode.RAILS) {
-            TextColor blockedColor = getTrackBlockedColor(track);
-            view.setFgColor(blockedColor != null ? blockedColor : RAIL_TRACK_COLOR);
-            view.set(track.getPosition().getX(), track.getPosition().getY(),
-                    TUNNEL_RAILTRACK_ASPECT);
-            resetColors();
-        }
-    }
-
     private TextColor getTrackBlockedColor(RailTrack track) {
+
         if (model == null || track == null) {
             return null;
         }
