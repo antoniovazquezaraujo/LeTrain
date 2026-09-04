@@ -21,7 +21,7 @@ import letrain.track.Station;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.StationRailTrack;
+
 import letrain.vehicle.Cursor;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.impl.Locomotive;
@@ -527,7 +527,7 @@ public class RenderVisitor implements Visitor {
 
     ////////////////////////////////////////////////////////////////////////////////
     private String getTrackAspect(Track track) {
-        if (track instanceof StationRailTrack) {
+        if (track.getComponent() instanceof Station) {
             return STATION_RAIL_TRACK_ASPECT;
         }
 
