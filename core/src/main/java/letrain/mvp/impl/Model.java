@@ -410,15 +410,15 @@ public class Model implements letrain.mvp.Model {
         if (track instanceof ForkRailTrack) {
             addFork((ForkRailTrack) track);
         }
-        if (track.getSensor() != null) {
-            if (track.getSensor() instanceof Station) {
-                addStation((Station) track.getSensor());
+        if (track.getComponent() instanceof letrain.track.Sensor) {
+            if (track.getComponent() instanceof Station) {
+                addStation((Station) track.getComponent());
             } else {
-                addSensor(track.getSensor());
+                addSensor((letrain.track.Sensor) track.getComponent());
             }
         }
-        if (track.getSemaphore() != null) {
-            addSemaphore(track.getSemaphore());
+        if (track.getComponent() instanceof letrain.track.RailSemaphore) {
+            addSemaphore((letrain.track.RailSemaphore) track.getComponent());
         }
         mapChanged = true;
     }
@@ -427,15 +427,15 @@ public class Model implements letrain.mvp.Model {
     public RailTrack removeTrack(Point point) {
         RailTrack track = map.getTrackAt(point);
         if (track != null) {
-            if (track.getSensor() != null) {
-                if (track.getSensor() instanceof Station) {
-                    removeStation((Station) track.getSensor());
+            if (track.getComponent() instanceof letrain.track.Sensor) {
+                if (track.getComponent() instanceof Station) {
+                    removeStation((Station) track.getComponent());
                 } else {
-                    removeSensor(track.getSensor());
+                    removeSensor((letrain.track.Sensor) track.getComponent());
                 }
             }
-            if (track.getSemaphore() != null) {
-                removeSemaphore(track.getSemaphore());
+            if (track.getComponent() instanceof letrain.track.RailSemaphore) {
+                removeSemaphore((letrain.track.RailSemaphore) track.getComponent());
             }
             if (track instanceof ForkRailTrack) {
                 removeFork((ForkRailTrack) track);
@@ -482,7 +482,7 @@ public class Model implements letrain.mvp.Model {
         if (!sensors.contains(sensor)) {
             sensors.add(sensor);
             if (sensor.getTrack() != null) {
-                sensor.getTrack().setSensor(sensor);
+                sensor.getTrack().setComponent(sensor);
             }
             getEconomyManager().onSensorConstructed(sensor);
             setupSensorSystemListeners(sensor);
@@ -510,7 +510,7 @@ public class Model implements letrain.mvp.Model {
     public void removeSensor(Sensor sensor) {
         if (sensors.remove(sensor)) {
             if (sensor.getTrack() != null) {
-                sensor.getTrack().setSensor(null);
+                sensor.getTrack().setComponent(null);
             }
             getEconomyManager().onSensorDestroyed(sensor);
             mapChanged = true;
@@ -813,7 +813,7 @@ public class Model implements letrain.mvp.Model {
             getEconomyManager().onSemaphoreConstructed(semaphore);
             RailTrack track = map.getTrackAt(semaphore.getPosition());
             if (track != null) {
-                track.setSemaphore(semaphore);
+                track.setComponent(semaphore);
             }
             setupSemaphoreSystemListeners(semaphore);
             mapChanged = true;
@@ -852,7 +852,7 @@ public class Model implements letrain.mvp.Model {
             getEconomyManager().onSemaphoreDestroyed(semaphore);
             RailTrack track = map.getTrackAt(semaphore.getPosition());
             if (track != null) {
-                track.setSemaphore(null);
+                track.setComponent(null);
             }
             mapChanged = true;
         }
@@ -1034,7 +1034,7 @@ public class Model implements letrain.mvp.Model {
         if (!stations.contains(station)) {
             stations.add(station);
             if (station.getTrack() != null) {
-                station.getTrack().setSensor(station);
+                station.getTrack().setComponent(station);
             }
             getEconomyManager().onStationConstructed();
             setupStationSystemListeners(station);
@@ -1090,7 +1090,7 @@ public class Model implements letrain.mvp.Model {
     public void removeStation(Station station) {
         if (stations.remove(station)) {
             if (station.getTrack() != null) {
-                station.getTrack().setSensor(null);
+                station.getTrack().setComponent(null);
             }
             getEconomyManager().onStationDestroyed();
             mapChanged = true;

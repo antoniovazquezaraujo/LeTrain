@@ -755,7 +755,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             letrain.track.Station s = model.getStation(id);
             if (s != null) {
                 for (Locomotive l : model.getLocomotives()) {
-                    if (l.getTrack() != null && l.getTrack().getSensor() == s) {
+                    if (l.getTrack() != null && l.getTrack().getComponent() == s) {
                         return l.getTrain();
                     }
                 }
@@ -765,7 +765,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             Sensor s = model.getSensor(id);
             if (s != null) {
                 for (Locomotive l : model.getLocomotives()) {
-                    if (l.getTrack() != null && l.getTrack().getSensor() == s) {
+                    if (l.getTrack() != null && l.getTrack().getComponent() == s) {
                         return l.getTrain();
                     }
                 }

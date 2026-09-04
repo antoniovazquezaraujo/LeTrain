@@ -11,7 +11,7 @@ import letrain.vehicle.rail.impl.Train;
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.PROPERTY,
-    property = "type")
+    property = "@type")
 @JsonSubTypes({
     @JsonSubTypes.Type(value = letrain.track.Sensor.class, name = "Sensor"),
     @JsonSubTypes.Type(value = letrain.track.Station.class, name = "Station"),

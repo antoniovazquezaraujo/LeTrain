@@ -229,7 +229,7 @@ public class RailTrackMaker {
         Track track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            Sensor sensor = track.getSensor();
+            letrain.track.Sensor sensor = track.getComponent() instanceof letrain.track.Sensor ? (letrain.track.Sensor) track.getComponent() : null;
             if (sensor != null && sensor instanceof letrain.track.SpeedSignal) {
                 presenter.getModel().removeSensor(sensor);
             } else if (sensor == null) {
@@ -247,7 +247,7 @@ public class RailTrackMaker {
         Track track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            Sensor sensor = track.getSensor();
+            letrain.track.Sensor sensor = track.getComponent() instanceof letrain.track.Sensor ? (letrain.track.Sensor) track.getComponent() : null;
             if (sensor != null) {
                 presenter.getModel().removeSensor(sensor);
             } else {
@@ -255,7 +255,7 @@ public class RailTrackMaker {
                 sensor.setTrack(track);
                 sensor.setCreationDir(presenter.getModel().getCursor().getDir());
                 presenter.getModel().addSensor(sensor);
-                track.setSensor(sensor);
+                track.setComponent(sensor);
             }
         }
     }
@@ -277,7 +277,7 @@ public class RailTrackMaker {
         Track track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            Sensor sensor = track.getSensor();
+            letrain.track.Sensor sensor = track.getComponent() instanceof letrain.track.Sensor ? (letrain.track.Sensor) track.getComponent() : null;
             if (sensor != null && sensor instanceof Station) {
                 presenter.getModel().removeStation((Station) sensor);
             } else if (sensor == null) {
@@ -316,7 +316,7 @@ public class RailTrackMaker {
                 }
 
                 presenter.getModel().addStation(station);
-                track.setSensor(station);
+                track.setComponent(station);
             }
         }
     }

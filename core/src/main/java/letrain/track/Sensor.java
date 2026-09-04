@@ -17,7 +17,7 @@ import letrain.visitor.Visitor;
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 @com.fasterxml.jackson.annotation.JsonTypeInfo(
         use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME,
-        include = com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY, property = "@type")
+        include = com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY, property = "type")
 @com.fasterxml.jackson.annotation.JsonSubTypes({
         @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Sensor.class,
                 name = "Sensor"),

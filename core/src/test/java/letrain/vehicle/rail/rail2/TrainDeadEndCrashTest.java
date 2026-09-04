@@ -71,10 +71,10 @@ class TrainDeadEndCrashTest {
         when(trackA.getConnected(Dir.E)).thenReturn(trackB);
         when(trackB.getConnected(Dir.E)).thenReturn(null);
 
-        when(trackA.getSensor()).thenReturn(null);
-        when(trackA.getSemaphore()).thenReturn(null);
-        when(trackB.getSensor()).thenReturn(null);
-        when(trackB.getSemaphore()).thenReturn(null);
+        when(trackA.getComponent()).thenReturn(null);
+        when(trackA.getComponent()).thenReturn(null);
+        when(trackB.getComponent()).thenReturn(null);
+        when(trackB.getComponent()).thenReturn(null);
 
         doNothing().when(trackA).setReservation(any(Linker.class));
         doNothing().when(trackB).setReservation(any(Linker.class));
@@ -158,10 +158,10 @@ class TrainDeadEndCrashTest {
         when(trackA.getConnected(Dir.E)).thenReturn(trackB);
         when(trackB.getConnected(Dir.E)).thenReturn(null);
 
-        when(trackA.getSensor()).thenReturn(null);
-        when(trackA.getSemaphore()).thenReturn(null);
-        when(trackB.getSensor()).thenReturn(null);
-        when(trackB.getSemaphore()).thenReturn(null);
+        when(trackA.getComponent()).thenReturn(null);
+        when(trackA.getComponent()).thenReturn(null);
+        when(trackB.getComponent()).thenReturn(null);
+        when(trackB.getComponent()).thenReturn(null);
 
         doNothing().when(trackA).setReservation(any(Linker.class));
         doNothing().when(trackB).setReservation(any(Linker.class));
@@ -250,10 +250,10 @@ class TrainDeadEndCrashTest {
         when(trackA.getConnected(Dir.E)).thenReturn(trackB);
         when(trackB.getConnected(Dir.E)).thenReturn(trackC);
 
-        when(trackA.getSensor()).thenReturn(null);
-        when(trackA.getSemaphore()).thenReturn(null);
-        when(trackB.getSensor()).thenReturn(null);
-        when(trackB.getSemaphore()).thenReturn(null);
+        when(trackA.getComponent()).thenReturn(null);
+        when(trackA.getComponent()).thenReturn(null);
+        when(trackB.getComponent()).thenReturn(null);
+        when(trackB.getComponent()).thenReturn(null);
 
         doNothing().when(trackA).setReservation(any(Linker.class));
         doNothing().when(trackB).setReservation(any(Linker.class));
@@ -341,10 +341,10 @@ class TrainDeadEndCrashTest {
         when(trackB.getConnected(Dir.W)).thenReturn(trackA);
         when(trackA.getConnected(Dir.W)).thenReturn(null);
 
-        when(trackB.getSensor()).thenReturn(null);
-        when(trackB.getSemaphore()).thenReturn(null);
-        when(trackA.getSensor()).thenReturn(null);
-        when(trackA.getSemaphore()).thenReturn(null);
+        when(trackB.getComponent()).thenReturn(null);
+        when(trackB.getComponent()).thenReturn(null);
+        when(trackA.getComponent()).thenReturn(null);
+        when(trackA.getComponent()).thenReturn(null);
 
         doNothing().when(trackB).setReservation(any(Linker.class));
         doNothing().when(trackA).setReservation(any(Linker.class));

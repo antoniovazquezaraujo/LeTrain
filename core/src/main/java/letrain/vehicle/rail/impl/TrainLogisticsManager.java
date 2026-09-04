@@ -181,7 +181,7 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
                 wagon.unload(toUnload);
                 station.receiveImportCargo(toUnload);
 
-                if (wagon.getLoadingPoint() != null) {
+                if (wagon.getCargoAmount() == 0) {
                     wagon.setCargoType(CargoTypes.NONE);
                     wagon.setLoadingPoint(null);
                 }
@@ -197,8 +197,8 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
     public Station getStationAtTrain() {
         for (Linker linker : this.train.getLinkers()) {
             letrain.track.Track track = linker.getTrack();
-            if (track != null && track.getSensor() instanceof Station) {
-                return (Station) track.getSensor();
+            if (track != null && track.getComponent() instanceof letrain.track.Station) {
+                return (letrain.track.Station) track.getComponent();
             }
         }
         return null;

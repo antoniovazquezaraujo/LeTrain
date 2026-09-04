@@ -178,8 +178,8 @@ public class RenderVisitor implements Visitor {
 
         if (blockedColor != null) {
             view.setFgColor(blockedColor);
-        } else if (track.getSensor() != null) {
-            if (track.getSensor() instanceof Station) {
+        } else if (track.getComponent() instanceof letrain.track.Sensor) {
+            if (track.getComponent() instanceof Station) {
                 view.setFgColor(STATION_COLOR);
             } else {
                 view.setFgColor(SENSOR_COLOR);
@@ -247,19 +247,19 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitSensor(Sensor sensor) {
         Track track = sensor.getTrack();
-        if (track.getSensor() != null) {
-            if (track.getSensor() instanceof Station) {
+        if (track.getComponent() instanceof letrain.track.Sensor) {
+            if (track.getComponent() instanceof Station) {
                 // Stations are handled by visitStation, but if visited here we could skip or just not interfere.
                 // It's probably better to just return if it's a Station so visitStation handles it completely.
-                if (!(track.getSensor() instanceof Station)) {
+                if (!(track.getComponent() instanceof Station)) {
                     view.setFgColor(SENSOR_COLOR);
                     view.set(track.getPosition().getX(), track.getPosition().getY(),
-                            SENSOR_ASPECT + (this.mode == GameMode.SENSORS ? track.getSensor().getId() : ""));
+                            SENSOR_ASPECT + (this.mode == GameMode.SENSORS ? sensor.getId() : ""));
                 }
             } else {
                 view.setFgColor(SENSOR_COLOR);
                 view.set(track.getPosition().getX(), track.getPosition().getY(),
-                        SENSOR_ASPECT + (this.mode == GameMode.SENSORS ? track.getSensor().getId() : ""));
+                        SENSOR_ASPECT + (this.mode == GameMode.SENSORS ? sensor.getId() : ""));
             }
         }
         resetColors();
