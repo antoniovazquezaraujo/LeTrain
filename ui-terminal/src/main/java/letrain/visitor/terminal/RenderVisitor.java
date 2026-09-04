@@ -21,7 +21,7 @@ import letrain.track.Station;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.StationRailTrack;
+
 import letrain.vehicle.Cursor;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.impl.Locomotive;
@@ -189,6 +189,17 @@ public class RenderVisitor implements Visitor {
         resetColors();
     }
 
+    private Point getRightSide(Point pos, letrain.map.Dir dir) {
+        if (dir == null) {
+            return new Point(pos.getX() + 1, pos.getY());
+        }
+        int val = dir.getValue();
+        letrain.map.Dir rightDir = letrain.map.Dir.fromInt(val - 2);
+        Point newPos = new Point(pos);
+        newPos.move(rightDir);
+        return newPos;
+    }
+
     private boolean isStationActive(Station station) {
         if (model == null) {
             return false;
@@ -205,9 +216,9 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitStation(Station station) {
         Track track = station.getTrack();
-        if (station == selectedStation && this.mode == GameMode.STATIONS) {
-            view.setFgColor(SELECTED_STATION_COLOR);
-        } else if (station.getCargoType() != letrain.track.CargoTypes.NONE) {
+        Point renderPos = getRightSide(track.getPosition(), station.getCreationDir());
+
+        if (station.getCargoType() != letrain.track.CargoTypes.NONE) {
             boolean isProducer = station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER;
             view.setFgColor(getCargoColor(station.getCargoType(), isProducer));
         } else {
@@ -226,66 +237,82 @@ public class RenderVisitor implements Visitor {
         if (isStationActive(station)) {
             boolean blinkState = (System.currentTimeMillis() / 300) % 2 == 0;
             if (!blinkState) {
-                // To blink, we simply don't draw the station, leaving the track visible underneath.
                 resetColors();
                 return;
             }
         }
 
-        // Remove underline logic for station since we are doing appear/disappear blink
-        view.setUnderline(false);
-
-        view.set(track.getPosition().getX(), track.getPosition().getY(),
-                aspect + (this.mode == GameMode.STATIONS ? station.getId() : ""));
+        view.set(renderPos.getX(), renderPos.getY(), aspect);
+        
+        if (this.mode == GameMode.STATIONS) {
+            if (station == selectedStation) {
+                view.setUnderline(true);
+                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+            } else {
+                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
+            }
+            view.set(renderPos.getX() + 1, renderPos.getY(), String.valueOf(station.getId()));
+            view.setUnderline(false);
+        }
         resetColors();
     }
 
     @Override
     public void visitSensor(Sensor sensor) {
         Track track = sensor.getTrack();
-        if (track.getComponent() instanceof letrain.track.Sensor) {
-            if (track.getComponent() instanceof Station) {
-                // Stations are handled by visitStation, but if visited here we could skip or just not interfere.
-                // It's probably better to just return if it's a Station so visitStation handles it completely.
-                if (!(track.getComponent() instanceof Station)) {
-                    view.setFgColor(SENSOR_COLOR);
-                    view.set(track.getPosition().getX(), track.getPosition().getY(),
-                            SENSOR_ASPECT + (this.mode == GameMode.SENSORS ? sensor.getId() : ""));
-                }
+        if (track.getComponent() instanceof Station) {
+            return;
+        }
+        Point renderPos = getRightSide(track.getPosition(), sensor.getCreationDir());
+
+        view.setFgColor(SENSOR_COLOR);
+        view.set(renderPos.getX(), renderPos.getY(), SENSOR_ASPECT);
+
+        if (this.mode == GameMode.SENSORS) {
+            if (sensor.getId() == (model.getSelectedSensor() != null ? model.getSelectedSensor().getId() : -1)) {
+                view.setUnderline(true);
+                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
             } else {
-                view.setFgColor(SENSOR_COLOR);
-                view.set(track.getPosition().getX(), track.getPosition().getY(),
-                        SENSOR_ASPECT + (this.mode == GameMode.SENSORS ? sensor.getId() : ""));
+                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
             }
+            String arrow = speedSignalArrow(sensor.getCreationDir());
+            view.set(renderPos.getX() + 1, renderPos.getY(), arrow);
+            view.set(renderPos.getX() + 2, renderPos.getY(), String.valueOf(sensor.getId()));
+            view.setUnderline(false);
         }
         resetColors();
     }
 
     @Override
     public void visitSemaphore(RailSemaphore semaphore) {
-        Point pos = semaphore.getPosition();
+        Point renderPos = getRightSide(semaphore.getPosition(), semaphore.getCreationDir());
+        
         if (semaphore.isOpen()) {
             view.setFgColor(SEMAPHORE_OPEN_COLOR);
         } else {
             view.setFgColor(SEMAPHORE_CLOSED_COLOR);
         }
-        view.set(pos.getX(), pos.getY(), SEMAPHORE_ASPECT);
-        if (semaphore == selectedSemaphore) {
-            view.setFgColor(SELECTED_SEMAPHORE_COLOR);
-        } else {
-            view.setFgColor(SEMAPHORE_COLOR);
+        view.set(renderPos.getX(), renderPos.getY(), SEMAPHORE_ASPECT);
+        
+        if (mode == GameMode.SEMAPHORES) {
+            if (semaphore == selectedSemaphore) {
+                view.setUnderline(true);
+                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+            } else {
+                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
+            }
+            String arrow = speedSignalArrow(semaphore.getCreationDir());
+            view.set(renderPos.getX() + 1, renderPos.getY(), arrow);
+            view.set(renderPos.getX() + 2, renderPos.getY(), String.valueOf(semaphore.getId()));
+            view.setUnderline(false);
         }
-        view.set(pos.getX() + 1, pos.getY(),
-                "" + (mode.equals(GameMode.SEMAPHORES) ? semaphore.getId() : ""));
         resetColors();
     }
 
     @Override
     public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {
-        letrain.map.Point pos = speedSignal.getPosition();
-        if (speedSignal == selectedSpeedSignal && mode == GameMode.SPEED_SIGNALS) {
-            view.setUnderline(true);
-        }
+        letrain.map.Point renderPos = getRightSide(speedSignal.getPosition(), speedSignal.getCreationDir());
+        
         if (speedSignal.isMax()) {
             view.setFgColor(TextColor.ANSI.RED);
         } else {
@@ -300,14 +327,20 @@ public class RenderVisitor implements Visitor {
             icon = '?';
         }
 
-        String arrow = speedSignalArrow(speedSignal.getCreationDir());
-
-        view.set(pos.getX(), pos.getY(), String.valueOf(icon));
-        view.set(pos.getX() + 1, pos.getY(), arrow);
-        view.set(pos.getX() + 2, pos.getY(), mode == GameMode.SPEED_SIGNALS ? String.valueOf(speedSignal.getId()) : "");
-
-        view.setUnderline(false);
-        view.setFgColor(TextColor.ANSI.WHITE);
+        view.set(renderPos.getX(), renderPos.getY(), String.valueOf(icon));
+        
+        if (mode == GameMode.SPEED_SIGNALS) {
+            if (speedSignal == selectedSpeedSignal) {
+                view.setUnderline(true);
+                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+            } else {
+                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
+            }
+            String arrow = speedSignalArrow(speedSignal.getCreationDir());
+            view.set(renderPos.getX() + 1, renderPos.getY(), arrow);
+            view.set(renderPos.getX() + 2, renderPos.getY(), String.valueOf(speedSignal.getId()));
+            view.setUnderline(false);
+        }
         resetColors();
     }
 
@@ -338,21 +371,26 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        if (track == selectedFork) {
-            view.setFgColor(SELECTED_FORK_COLOR);
+        TextColor blockedColor = getTrackBlockedColor(track);
+        if (blockedColor != null) {
+            view.setFgColor(blockedColor);
         } else {
-            TextColor blockedColor = getTrackBlockedColor(track);
-            if (blockedColor != null) {
-                view.setFgColor(blockedColor);
-            } else {
-                view.setFgColor(FORK_COLOR);
-            }
+            view.setFgColor(FORK_COLOR);
         }
+        
         view.set(track.getPosition().getX(), track.getPosition().getY(),
                 dirGraphicAspect(track.getFirstOpenDir()));
+                
         if (this.mode == GameMode.FORKS) {
+            if (track == selectedFork) {
+                view.setUnderline(true);
+                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+            } else {
+                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
+            }
             view.set(track.getPosition().getX() + 1, track.getPosition().getY(),
-                    "" + track.getId());
+                    String.valueOf(track.getId()));
+            view.setUnderline(false);
         }
         resetColors();
     }
@@ -489,7 +527,7 @@ public class RenderVisitor implements Visitor {
 
     ////////////////////////////////////////////////////////////////////////////////
     private String getTrackAspect(Track track) {
-        if (track instanceof StationRailTrack) {
+        if (track.getComponent() instanceof Station) {
             return STATION_RAIL_TRACK_ASPECT;
         }
 

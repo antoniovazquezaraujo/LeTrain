@@ -669,10 +669,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 break;
             case ArrowLeft:
-                model.selectPrevSpeedSignal();
+                if (model.selectPrevSpeedSignal()) {
+                    setPageOfPoint(model.getSelectedSpeedSignal().getPosition());
+                }
                 break;
             case ArrowRight:
-                model.selectNextSpeedSignal();
+                if (model.selectNextSpeedSignal()) {
+                    setPageOfPoint(model.getSelectedSpeedSignal().getPosition());
+                }
                 break;
             case ArrowUp:
                 if (model.getSelectedSpeedSignal() != null) {
@@ -714,11 +718,15 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 break;
             case ArrowLeft:
-                model.selectPrevSensor();
+                if (model.selectPrevSensor()) {
+                    setPageOfPoint(model.getSelectedSensor().getPosition());
+                }
                 sensorId = 0;
                 break;
             case ArrowRight:
-                model.selectNextSensor();
+                if (model.selectNextSensor()) {
+                    setPageOfPoint(model.getSelectedSensor().getPosition());
+                }
                 sensorId = 0;
                 break;
             default:
@@ -1393,7 +1401,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     void setPageOfPoint(Point point) {
         if (point != null) {
-            view.centerOn(point.getX(), point.getY());
+            view.ensureVisible(point.getX(), point.getY(), view.getCameraDeadzone(), view.isCameraPagination());
         }
     }
 
