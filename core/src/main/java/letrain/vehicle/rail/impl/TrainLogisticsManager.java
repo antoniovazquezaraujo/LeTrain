@@ -181,7 +181,7 @@ public class TrainLogisticsManager implements letrain.vehicle.rail.TrainLogistic
                 wagon.unload(toUnload);
                 station.receiveImportCargo(toUnload);
 
-                if (wagon.getLoadingPoint() != null) {
+                if (wagon.getCargoAmount() == 0) {
                     wagon.setCargoType(CargoTypes.NONE);
                     wagon.setLoadingPoint(null);
                 }
