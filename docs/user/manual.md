@@ -16,7 +16,8 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 - **Arrow Keys (or h, j, k, l)**: Move the cursor freely or follow a track (Vim-style navigation).
 - **Numbers (0-9)**: Enter a numeric multiplier (quantifier) to increase the speed and jump distance of the cursor. Pressing numbers overrides the current multiplier. Press **Spacebar** to return to moving 1 by 1.
 - **Key 'o'**: Instantly relocate the cursor to a train, station, or fork.
-- **Key 'c'**: In 3D: Toggle between the three cameras. (Also **Esc** to exit the game menu in 3D) (Perspective, Top-down, and Cab view). In 2D: Cycle the camera deadzone box.
+- **Key 'c'**: In 3D: Toggle between the three cameras (Perspective, Top-down, and Cab view). In 2D: Cycle the camera deadzone box.
+- **Esc**: In 3D: Exit the game menu.
 - **Key 'C' (Shift+c)**: In 2D: Toggle camera pagination mode.
 - **Key 'Tab'**: Cycle through the information bar visibility levels (Compact, Full, Hidden).
 
