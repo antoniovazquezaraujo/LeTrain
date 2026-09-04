@@ -13,6 +13,9 @@ import letrain.vehicle.rail.impl.Train;
     include = JsonTypeInfo.As.PROPERTY,
     property = "type")
 @JsonSubTypes({
+    @JsonSubTypes.Type(value = letrain.track.Sensor.class, name = "Sensor"),
+    @JsonSubTypes.Type(value = letrain.track.Station.class, name = "Station"),
+    @JsonSubTypes.Type(value = letrain.track.SpeedSignal.class, name = "SpeedSignal"),
     @JsonSubTypes.Type(value = letrain.track.RailSemaphore.class, name = "RailSemaphore")
     // Classes will be added here as we migrate them (e.g. Sensor, RailSemaphore)
 })
