@@ -28,3 +28,4 @@ Para unificar la interfaz de usuario en la terminal 2D (Lanterna) y mejorar la c
 - La capa de presentación (`RenderVisitor` o equivalente en la terminal) deberá encargarse de calcular este desplazamiento lateral (+1/-1 en X o Y) en función del vector de dirección del `RailTrack` (ej. Norte-Sur, Este-Oeste, etc.).
 - Será necesario utilizar el soporte de texto subrayado que provee Lanterna para resaltar la selección en la consola.
 - La interfaz 2D ganará legibilidad y profesionalidad, acercándose a los planos reales de infraestructura ferroviaria.
+
