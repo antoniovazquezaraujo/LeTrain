@@ -363,21 +363,24 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
-        if (track == selectedFork) {
-            view.setFgColor(SELECTED_FORK_COLOR);
+        TextColor blockedColor = getTrackBlockedColor(track);
+        if (blockedColor != null) {
+            view.setFgColor(blockedColor);
         } else {
-            TextColor blockedColor = getTrackBlockedColor(track);
-            if (blockedColor != null) {
-                view.setFgColor(blockedColor);
-            } else {
-                view.setFgColor(FORK_COLOR);
-            }
+            view.setFgColor(FORK_COLOR);
         }
+        
         view.set(track.getPosition().getX(), track.getPosition().getY(),
                 dirGraphicAspect(track.getFirstOpenDir()));
+                
         if (this.mode == GameMode.FORKS) {
+            if (track == selectedFork) {
+                view.setUnderline(true);
+            }
+            view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
             view.set(track.getPosition().getX() + 1, track.getPosition().getY(),
-                    "" + track.getId());
+                    String.valueOf(track.getId()));
+            view.setUnderline(false);
         }
         resetColors();
     }

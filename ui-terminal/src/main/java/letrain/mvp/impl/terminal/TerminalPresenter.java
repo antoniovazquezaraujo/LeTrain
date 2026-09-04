@@ -1393,7 +1393,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     void setPageOfPoint(Point point) {
         if (point != null) {
-            view.centerOn(point.getX(), point.getY());
+            Point offset = view.getScrollOffset();
+            if (point.getX() < offset.getX() || point.getX() >= offset.getX() + view.getCols() ||
+                point.getY() < offset.getY() || point.getY() >= offset.getY() + view.getRows()) {
+                view.centerOn(point.getX(), point.getY());
+            }
         }
     }
 
