@@ -432,7 +432,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
         if (ctx.STATION() != null) {
             if (track == null) throw new RuntimeException("Cannot place station: No track here.");
-            if (track.getComponent() instanceof letrain.track.Sensor) throw new RuntimeException("Cannot place station: Track already has a sensor/station.");
+            if (track.getComponent() != null) throw new RuntimeException("Cannot place station: Track already has a component.");
             
             letrain.track.Station station = new letrain.track.Station(model.nextStationId());
             station.setTrack(track);
@@ -455,7 +455,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             track.setComponent(station);
         } else if (ctx.SENSOR() != null) {
             if (track == null) throw new RuntimeException("Cannot place sensor: No track here.");
-            if (track.getComponent() instanceof letrain.track.Sensor) throw new RuntimeException("Cannot place sensor: Track already has a sensor/station.");
+            if (track.getComponent() != null) throw new RuntimeException("Cannot place sensor: Track already has a component.");
             
             letrain.track.Sensor sensor = new letrain.track.Sensor(model.nextSensorId());
             sensor.setTrack(track);
@@ -463,6 +463,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             model.addSensor(sensor);
             track.setComponent(sensor);
         } else if (ctx.SEMAPHORE() != null) {
+            if (track == null) throw new RuntimeException("Cannot place semaphore: No track here.");
+            if (track.getComponent() != null) throw new RuntimeException("Cannot place semaphore: Track already has a component.");
             letrain.track.RailSemaphore sem = model.getSemaphoreAt(pos);
             if (sem != null) throw new RuntimeException("Cannot place semaphore: Already exists here.");
             sem = new letrain.track.RailSemaphore(model.nextSemaphoreId(), pos);
@@ -470,7 +472,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             model.addSemaphore(sem);
         } else if (ctx.SIGNAL() != null) {
             if (track == null) throw new RuntimeException("Cannot place signal: No track here.");
-            if (track.getComponent() instanceof letrain.track.Sensor) throw new RuntimeException("Cannot place signal: Track already has a sensor/station.");
+            if (track.getComponent() != null) throw new RuntimeException("Cannot place signal: Track already has a component.");
             
             letrain.track.SpeedSignal speedSignal = new letrain.track.SpeedSignal(model.nextSpeedSignalId(), dir, 3, true);
             speedSignal.setTrack(track);
