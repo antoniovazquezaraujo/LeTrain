@@ -108,9 +108,15 @@ public class InfoVisitor implements Visitor {
                     : selectedLoco.getId();
             String notchBar =
                     getNotchBar(selectedLoco.getSpeed(), selectedLoco.getTargetSpeed(), 10);
-            String speedStr = String.valueOf(selectedLoco.getSpeed());
-            if (selectedLoco.getSpeed() != selectedLoco.getTargetSpeed()) {
-                speedStr += "->" + selectedLoco.getTargetSpeed();
+            int speed = selectedLoco.getSpeed();
+            int target = selectedLoco.getTargetSpeed();
+            String speedStr;
+            if (speed < target) {
+                speedStr = speed + "->" + target;
+            } else if (speed > target) {
+                speedStr = target + "<-" + speed;
+            } else {
+                speedStr = String.valueOf(speed);
             }
             int wagonsCount = (selectedLoco.getTrain() != null
                     && selectedLoco.getTrain().getLinkers() != null)
