@@ -41,7 +41,6 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
     private Linker reservation = null; // NEW: Track reservation to prevent race conditions during
                                        // multi-train ticks
     private Sensor sensor = null;
-    private RailSemaphore semaphore = null;
     private TrackComponent component = null;
     private Point pos = new Point(0, 0);
 
@@ -288,7 +287,7 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
     }
 
     public RailSemaphore getSemaphore() {
-        return semaphore;
+        return component instanceof RailSemaphore ? (RailSemaphore) component : null;
     }
 
     public TrackComponent getComponent() {
@@ -300,6 +299,6 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
     }
 
     public void setSemaphore(RailSemaphore semaphore) {
-        this.semaphore = semaphore;
+        this.component = semaphore;
     }
 }

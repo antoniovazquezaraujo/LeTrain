@@ -13,6 +13,7 @@ import letrain.vehicle.rail.impl.Train;
     include = JsonTypeInfo.As.PROPERTY,
     property = "type")
 @JsonSubTypes({
+    @JsonSubTypes.Type(value = letrain.track.RailSemaphore.class, name = "RailSemaphore")
     // Classes will be added here as we migrate them (e.g. Sensor, RailSemaphore)
 })
 public interface TrackComponent {

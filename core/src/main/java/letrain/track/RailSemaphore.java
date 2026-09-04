@@ -14,7 +14,7 @@ import letrain.visitor.Visitor;
 
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
-public class RailSemaphore implements Renderable, Serializable {
+public class RailSemaphore implements Renderable, Serializable, TrackComponent {
     private static final long serialVersionUID = 1L;
     private int id;
     private Point position;
