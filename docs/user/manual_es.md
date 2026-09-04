@@ -17,6 +17,11 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 ### Navegación y Vistas
 - **Flechas de dirección (o h, j, k, l)**: Mover el cursor libremente o seguir una vía (estilo Vim).
 - **Números (0-9)**: Introduce un salto numérico (multiplicador) para aumentar la velocidad y distancia del cursor. Al introducir un nuevo número se sobrescribe el anterior. Pulsa **Espacio** para volver a ir de 1 en 1.
+- **Tecla 'a'**: Entrar en modo **Add** (Añadir). Esto te permite construir infraestructura rápidamente:
+  - **s**: Construir Estación
+  - **e**: Construir Sensor
+  - **m**: Construir Semáforo
+  - **g**: Construir Señal de Velocidad
 - **Tecla 'o'**: Reubicar el cursor instantáneamente sobre un tren, estación o desvío.
 - **Tecla 'z'**: En 3D: Alternar entre las tres cámaras (Perspectiva, Cenital y Cabina). En 2D: Cambiar el tamaño de la zona muerta de la cámara.
 - **Esc**: En 3D: Salir del menú del juego.
