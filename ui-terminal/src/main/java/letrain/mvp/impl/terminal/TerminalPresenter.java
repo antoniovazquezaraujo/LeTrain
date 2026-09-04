@@ -453,6 +453,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return false;
         }
 
+        if (model.getMode() == letrain.mvp.Model.GameMode.ADD) {
+            return false; // Let onChar handle Add mode keys (s, e, m, g)
+        }
+
         if (model.getMode() == TRAINS) {
             handleTrainsModeKey(keyEvent);
             return true;
