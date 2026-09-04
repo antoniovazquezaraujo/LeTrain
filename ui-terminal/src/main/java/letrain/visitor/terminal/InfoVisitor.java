@@ -116,7 +116,7 @@ public class InfoVisitor implements Visitor {
                     && selectedLoco.getTrain().getLinkers() != null)
                             ? Math.max(0, selectedLoco.getTrain().getLinkers().size() - 1)
                             : 0;
-            vehicleText = String.format("Train: %d | Notch: %s | Speed: %s | Wagons: %d%s", trainId,
+            vehicleText = String.format("Train: %d | Speed: %s %s | Wagons: %d%s", trainId,
                     notchBar, speedStr, wagonsCount, selectedLoco.isReversed() ? " (Rev)" : "");
         } else if (infoBarText != null) {
             vehicleText = infoBarText;
@@ -174,8 +174,8 @@ public class InfoVisitor implements Visitor {
 
     private String getNotchBar(int current, int target, int max) {
         StringBuilder bar = new StringBuilder();
-        for (int i = 0; i <= max; i++) {
-            if (i == target) {
+        for (int i = 1; i <= max; i++) {
+            if (i == target && current != target) {
                 bar.append("<<RED>>■<<RESET>>");
             } else if (i <= current) {
                 bar.append("<<GREEN>>■<<RESET>>");
