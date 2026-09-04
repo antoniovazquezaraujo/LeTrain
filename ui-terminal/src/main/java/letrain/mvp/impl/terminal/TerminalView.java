@@ -327,8 +327,8 @@ public class TerminalView implements letrain.mvp.View {
                                 cameraPagination ? com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT
                                         : com.googlecode.lanterna.TextColor.ANSI.BLUE_BRIGHT;
                         com.googlecode.lanterna.TextCharacter dot =
-                                new com.googlecode.lanterna.TextCharacter('·', dotColor,
-                                        com.googlecode.lanterna.TextColor.ANSI.BLACK);
+                                com.googlecode.lanterna.TextCharacter.fromCharacter('·', dotColor,
+                                        com.googlecode.lanterna.TextColor.ANSI.BLACK)[0];
                         for (int x = screenMinX; x <= screenMaxX; x++) {
                             gameBox.setCharacter(x, screenMinY, dot);
                             gameBox.setCharacter(x, screenMaxY, dot);
