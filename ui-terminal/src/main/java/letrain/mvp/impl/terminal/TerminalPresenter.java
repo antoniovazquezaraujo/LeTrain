@@ -106,6 +106,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void initModeKeyHandlers() {
         modeKeyHandlers.put(RAILS, keyEvent -> railTrackMaker.onChar(keyEvent));
+        modeKeyHandlers.put(letrain.mvp.Model.GameMode.ADD, keyEvent -> handleAddModeKey(keyEvent));
+
         modeKeyHandlers.put(DRIVE, keyEvent -> trainDriverOnChar(keyEvent));
         modeKeyHandlers.put(FORKS, keyEvent -> handleForksModeKey(keyEvent));
         modeKeyHandlers.put(SEMAPHORES, keyEvent -> handleSemaphoresModeKey(keyEvent));
@@ -470,6 +472,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     return true;
                 }
                 return false;
+            case 'a':
+                model.setMode(letrain.mvp.Model.GameMode.ADD);
+                return true;
             case 'r':
                 model.setMode(RAILS);
                 return true;
@@ -1017,6 +1022,39 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 break;
             default:
                 break;
+        }
+    }
+
+
+    private void handleAddModeKey(InputEvent keyEvent) {
+        if (keyEvent.getKeyType() == KeyType.Escape) {
+            model.setMode(model.getPreviousMode());
+            return;
+        }
+        if (keyEvent.getKeyType() == KeyType.Character) {
+            Character c = keyEvent.getCharacter();
+            if (c != null) {
+                switch (Character.toLowerCase(c)) {
+                    case 's':
+                        railTrackMaker.onChar(new InputEvent(KeyType.End, null, false, false, false));
+                        model.setMode(model.getPreviousMode());
+                        break;
+                    case 'e':
+                        railTrackMaker.onChar(new InputEvent(KeyType.Insert, null, false, false, false));
+                        model.setMode(model.getPreviousMode());
+                        break;
+                    case 'm':
+                        railTrackMaker.onChar(new InputEvent(KeyType.Home, null, false, false, false));
+                        model.setMode(model.getPreviousMode());
+                        break;
+                    case 'g':
+                        railTrackMaker.onChar(new InputEvent(KeyType.Delete, null, false, false, false));
+                        model.setMode(model.getPreviousMode());
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
     }
 

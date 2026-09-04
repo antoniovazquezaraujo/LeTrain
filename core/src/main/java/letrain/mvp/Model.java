@@ -218,7 +218,7 @@ public interface Model {
     boolean selectPrevLocomotive();
 
     enum GameMode {
-        MENU("Menu mode"), RAILS("Navigate map, create and delete tracks"), DRIVE(
+        MENU("Menu mode"), RAILS("Navigate map, create and delete tracks"), ADD("Add entities"), DRIVE(
                 "Manage locomotives"), FORKS("Manage forks"), SEMAPHORES(
                         "Manage semaphores"), SPEED_SIGNALS("Manage speed signals"), TRAINS(
                                 "Create trains"), LINK("Link trains"), UNLINK(

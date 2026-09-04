@@ -73,7 +73,7 @@ class InfoVisitorTest {
 
         // Verify translations on other lines
         assertTrue(lines[3].contains(
-                "[PgUp/Dn]: Scroll | [z/Z]: Camera | [r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit"),
+                "[PgUp/Dn]: Scroll | [z/Z]: Camera | [a/r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit"),
                 "Global help should be in English");
     }
 }
