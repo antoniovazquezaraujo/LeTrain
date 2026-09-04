@@ -194,12 +194,12 @@ class TrainMoveLinkersTest {
         when(trackC.getPosition()).thenReturn(new Point(2, 0));
 
         // Sensors & semaphores: null (no triggers)
-        when(trackA.getSensor()).thenReturn(null);
-        when(trackA.getSemaphore()).thenReturn(null);
-        when(trackB.getSensor()).thenReturn(null);
-        when(trackB.getSemaphore()).thenReturn(null);
-        when(trackC.getSensor()).thenReturn(null);
-        when(trackC.getSemaphore()).thenReturn(null);
+        when(trackA.getComponent()).thenReturn(null);
+        when(trackA.getComponent()).thenReturn(null);
+        when(trackB.getComponent()).thenReturn(null);
+        when(trackB.getComponent()).thenReturn(null);
+        when(trackC.getComponent()).thenReturn(null);
+        when(trackC.getComponent()).thenReturn(null);
 
         // Track connections: trackA → trackB, trackB → trackC
         when(trackA.getConnected(Dir.E)).thenReturn(trackB);

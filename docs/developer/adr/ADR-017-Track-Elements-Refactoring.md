@@ -7,7 +7,7 @@ Actualmente, la arquitectura de la clase `RailTrack` y los elementos que pueden 
 - Difícil de extender si queremos añadir nuevos elementos (ej. pasos a nivel, desvíos triples).
 - Posible abuso de la herencia en lugar de la composición.
 
-## Diagnóstico Actual (Fase 1 completada)
+## Diagnóstico Actual (Fase 4 completada)
 El análisis exhaustivo del código actual ha revelado los siguientes problemas arquitectónicos:
 
 ### 1. Problemas de Herencia y Composición
@@ -37,3 +37,8 @@ Para evitar romper los tests y la estabilidad de la rama `develop`, la migració
 3. **PR 3 - Migración Sensores**: Convertir `Sensor` (y sus derivados `SpeedSignal` y `Station`) en componentes y eliminar el campo `sensor`.
 4. **PR 4 - Limpieza de Herencia**: Eliminar `BridgeRailTrack` y `TunnelRailTrack` usando componentes visuales o metadatos de terreno, y unificar el concepto de Station.
 5. **PR 5 - Routing Polimórfico**: Refactorizar el motor para no depender de `instanceof ForkRailTrack` usando interfaces como `Routable`.
+
+### Fase 4: Limpieza de API (COMPLETADO)
+- Eliminar métodos de conveniencia (`getSensor`, `setSensor`, `getSemaphore`, `setSemaphore`) de `Track.java`.
+- Actualizar todo el sistema (`Model`, `PlayerCommandExecutor`, `TrainMovementManager`, etc.) para usar `getComponent()` y hacer casting (e.g. `instanceof Sensor`) solo en los sitios donde la lógica de negocio realmente necesite interactuar con la interfaz del componente específico.
+- **Deserialización**: Se resolvió la compatibilidad JSON usando `@JsonAlias({"sensor", "semaphore"})` y `@JsonSetter(nulls = Nulls.SKIP)` en `component`, junto con `@JsonTypeInfo(property = "@type")` en la interfaz base.

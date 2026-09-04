@@ -422,7 +422,7 @@ class AutoPilotIntegrationTest {
             // Create a standalone sensor on t1 (not a station)
             letrain.track.Sensor sensor = new letrain.track.Sensor(model.nextSensorId());
             sensor.setName("S1");
-            t1.setSensor(sensor);
+            t1.setComponent(sensor);
             model.addSensor(sensor);
 
             model.setProgram("""
@@ -805,7 +805,7 @@ class AutoPilotIntegrationTest {
         Station st = new Station(model.nextStationId());
         st.setName(name);
         st.setTrack(track);
-        track.setSensor(st);
+        track.setComponent(st);
         model.addStation(st);
         return st;
     }
@@ -813,7 +813,7 @@ class AutoPilotIntegrationTest {
     /** Train placed ON a station track (stationId set). */
     private Train makeTrain(RailTrack startTrack, Dir entryFrom) {
         Train t = placeTrain(model, startTrack, entryFrom);
-        if (startTrack.getSensor() instanceof Station st) {
+        if (startTrack.getComponent() instanceof Station st) {
             t.setStationId(st.getId());
         }
         return t;

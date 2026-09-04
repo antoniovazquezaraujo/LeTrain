@@ -324,13 +324,13 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     } else if (ctx.entityType().FORK() != null && t instanceof letrain.track.rail.ForkRailTrack) {
                         found = true;
                         break;
-                    } else if (ctx.entityType().STATION() != null && t.getSensor() instanceof letrain.track.Station) {
+                    } else if (ctx.entityType().STATION() != null && t.getComponent() instanceof letrain.track.Station) {
                         found = true;
                         break;
-                    } else if (ctx.entityType().SENSOR() != null && t.getSensor() != null && !(t.getSensor() instanceof letrain.track.Station) && !(t.getSensor() instanceof letrain.track.SpeedSignal)) {
+                    } else if (ctx.entityType().SENSOR() != null && t.getComponent() instanceof letrain.track.Sensor && !(t.getComponent() instanceof letrain.track.Station) && !(t.getComponent() instanceof letrain.track.SpeedSignal)) {
                         found = true;
                         break;
-                    } else if (ctx.entityType().SIGNAL() != null && t.getSensor() instanceof letrain.track.SpeedSignal) {
+                    } else if (ctx.entityType().SIGNAL() != null && t.getComponent() instanceof letrain.track.SpeedSignal) {
                         found = true;
                         break;
                     } else if (ctx.entityType().SEMAPHORE() != null && model.getSemaphoreAt(t.getPosition()) != null) {
@@ -432,7 +432,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
         if (ctx.STATION() != null) {
             if (track == null) throw new RuntimeException("Cannot place station: No track here.");
-            if (track.getSensor() != null) throw new RuntimeException("Cannot place station: Track already has a sensor/station.");
+            if (track.getComponent() instanceof letrain.track.Sensor) throw new RuntimeException("Cannot place station: Track already has a sensor/station.");
             
             letrain.track.Station station = new letrain.track.Station(model.nextStationId());
             station.setTrack(track);
@@ -452,16 +452,16 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 station.setRole(letrain.track.CargoTypes.StationRole.GENERIC);
             }
             model.addStation(station);
-            track.setSensor(station);
+            track.setComponent(station);
         } else if (ctx.SENSOR() != null) {
             if (track == null) throw new RuntimeException("Cannot place sensor: No track here.");
-            if (track.getSensor() != null) throw new RuntimeException("Cannot place sensor: Track already has a sensor/station.");
+            if (track.getComponent() instanceof letrain.track.Sensor) throw new RuntimeException("Cannot place sensor: Track already has a sensor/station.");
             
             letrain.track.Sensor sensor = new letrain.track.Sensor(model.nextSensorId());
             sensor.setTrack(track);
             sensor.setCreationDir(dir);
             model.addSensor(sensor);
-            track.setSensor(sensor);
+            track.setComponent(sensor);
         } else if (ctx.SEMAPHORE() != null) {
             letrain.track.RailSemaphore sem = model.getSemaphoreAt(pos);
             if (sem != null) throw new RuntimeException("Cannot place semaphore: Already exists here.");
@@ -470,12 +470,12 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             model.addSemaphore(sem);
         } else if (ctx.SIGNAL() != null) {
             if (track == null) throw new RuntimeException("Cannot place signal: No track here.");
-            if (track.getSensor() != null) throw new RuntimeException("Cannot place signal: Track already has a sensor/station.");
+            if (track.getComponent() instanceof letrain.track.Sensor) throw new RuntimeException("Cannot place signal: Track already has a sensor/station.");
             
             letrain.track.SpeedSignal speedSignal = new letrain.track.SpeedSignal(model.nextSpeedSignalId(), dir, 3, true);
             speedSignal.setTrack(track);
             model.addSensor(speedSignal);
-            track.setSensor(speedSignal);
+            track.setComponent(speedSignal);
         } else if (ctx.FORK() != null) {
             throw new RuntimeException("Cannot place fork via script yet (use UI).");
         } else if (ctx.LOCOMOTIVE() != null || ctx.LOCO() != null) {
@@ -546,15 +546,15 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         letrain.track.Track track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
 
         if (ctx.entityType().STATION() != null) {
-            letrain.track.Station st = name != null ? model.findStationByName(name) : (id != -1 ? model.getStation(id) : (track != null && track.getSensor() instanceof letrain.track.Station ? (letrain.track.Station) track.getSensor() : null));
+            letrain.track.Station st = name != null ? model.findStationByName(name) : (id != -1 ? model.getStation(id) : (track != null && track.getComponent() instanceof letrain.track.Station ? (letrain.track.Station) track.getComponent() : null));
             if (st != null) model.removeStation(st);
             else throw new RuntimeException("Station not found.");
         } else if (ctx.entityType().SENSOR() != null || ctx.entityType().SIGNAL() != null) {
             letrain.track.Sensor s = null;
             if (ctx.entityType().SIGNAL() != null) {
-                s = name != null ? model.findSpeedSignalByName(name) : (id != -1 ? model.getSpeedSignal(id) : (track != null && track.getSensor() instanceof letrain.track.SpeedSignal ? track.getSensor() : null));
+                s = name != null ? model.findSpeedSignalByName(name) : (id != -1 ? model.getSpeedSignal(id) : (track != null && track.getComponent() instanceof letrain.track.SpeedSignal ? (letrain.track.Sensor) track.getComponent() : null));
             } else {
-                s = name != null ? model.findSensorByName(name) : (id != -1 ? model.getSensor(id) : (track != null && track.getSensor() != null && !(track.getSensor() instanceof letrain.track.Station) ? track.getSensor() : null));
+                s = name != null ? model.findSensorByName(name) : (id != -1 ? model.getSensor(id) : (track != null && track.getComponent() instanceof letrain.track.Sensor && !(track.getComponent() instanceof letrain.track.Station) ? (letrain.track.Sensor) track.getComponent() : null));
             }
             if (s != null) {
                 if (ctx.entityType().SIGNAL() != null && !(s instanceof letrain.track.SpeedSignal)) throw new RuntimeException("Target is not a signal.");
@@ -562,7 +562,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             }
             else throw new RuntimeException(ctx.entityType().SIGNAL() != null ? "Signal not found." : "Sensor not found.");
         } else if (ctx.entityType().SEMAPHORE() != null) {
-            letrain.track.RailSemaphore s = id != -1 ? model.getSemaphore(id) : (track != null ? track.getSemaphore() : null);
+            letrain.track.RailSemaphore s = id != -1 ? model.getSemaphore(id) : (track != null ? (track.getComponent() instanceof letrain.track.RailSemaphore ? (letrain.track.RailSemaphore) track.getComponent() : null) : null);
             if (s != null) model.removeSemaphore(s);
             else throw new RuntimeException("Semaphore not found.");
         } else if (ctx.entityType().FORK() != null || ctx.entityType().RAIL() != null) {

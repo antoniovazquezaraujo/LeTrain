@@ -97,8 +97,8 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 if (segment != null) {
                     segmentsToClaim.add(segment);
                 }
-                if (track.getSensor() != null) {
-                    train.notifyEnterSensor(track.getSensor(), true);
+                if (track.getComponent() instanceof letrain.track.Sensor) {
+                    train.notifyEnterSensor((letrain.track.Sensor) track.getComponent(), true);
                 }
             }
         }
