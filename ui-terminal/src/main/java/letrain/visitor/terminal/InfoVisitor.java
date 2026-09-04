@@ -136,8 +136,9 @@ public class InfoVisitor implements Visitor {
         }
 
         String line1;
-        if (vehicleText.length() + systemInfo.length() < totalWidth) {
-            int padding = totalWidth - vehicleText.length() - systemInfo.length();
+        String strippedVehicleText = vehicleText.replaceAll("<<[A-Z_]+>>", "");
+        if (strippedVehicleText.length() + systemInfo.length() < totalWidth) {
+            int padding = totalWidth - strippedVehicleText.length() - systemInfo.length();
             line1 = vehicleText + " ".repeat(padding) + systemInfo;
         } else {
             line1 = vehicleText + " | " + systemInfo;
@@ -173,19 +174,14 @@ public class InfoVisitor implements Visitor {
 
     private String getNotchBar(int current, int target, int max) {
         StringBuilder bar = new StringBuilder();
-        for (int i = 1; i <= max; i++) {
-            char c = '□';
-            if (i <= current) {
-                c = '■';
-            }
+        for (int i = 0; i <= max; i++) {
             if (i == target) {
-                if (i <= current) {
-                    c = '◈';
-                } else {
-                    c = '▣';
-                }
+                bar.append("<<RED>>■<<RESET>>");
+            } else if (i <= current) {
+                bar.append("<<GREEN>>■<<RESET>>");
+            } else {
+                bar.append("□");
             }
-            bar.append(c);
         }
         return bar.toString();
     }
