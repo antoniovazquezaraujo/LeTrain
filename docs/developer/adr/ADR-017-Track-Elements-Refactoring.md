@@ -23,15 +23,16 @@ El análisis exhaustivo del código actual ha revelado los siguientes problemas 
   - `instanceof ForkRailTrack` aparece 19 veces en la lógica del motor (ej. `AutoPilot`, `TrainMovementManager`) en lugar de interactuar polimórficamente con el `Router`.
   - `instanceof Station` aparece 12 veces (lógica de logística y renderizado) en lugar de resolverlo mediante polimorfismo (ej. un `onVehicleEntered()`).
 
-## Decisión de Arquitectura: Componentes de Vía (Opción A)
-Se ha decidido adoptar un modelo inspirado en **Entity-Component-System (ECS)** adaptado a nuestro dominio:
-1. **`Track` como Contenedor**: La vía deja de tener campos específicos (`sensor`, `semaphore`). En su lugar, contendrá una colección genérica instanciada de forma perezosa (lazy load) para optimizar memoria: `private List<TrackComponent> components`.
-2. **Interfaz Polimórfica `TrackComponent`**: Los elementos de la vía (Semáforos, Sensores, Estaciones, etc.) implementarán esta interfaz, que definirá métodos del ciclo de vida como `onTrainEnter()`, `onTrainLeave()`, `onTick()`.
-3. **Delegación de Eventos**: Cuando un tren pisa una vía, la vía simplemente iterará sobre sus componentes llamando a `component.onTrainEnter()`, eliminando los `instanceof Station` y similares.
+## Decisión de Arquitectura: Single Component (Opción A Simplificada)
+Se ha decidido adoptar un modelo de composición polimórfica estricto (0..1 componentes por vía), ideal para la representación gráfica en ASCII:
+1. **`Track` como Contenedor Único**: La vía deja de tener campos específicos (`sensor`, `semaphore`). En su lugar, contendrá un único campo polimórfico: `private TrackComponent component;`.
+2. **Cardinalidad 0..1 garantizada**: Al tener un solo campo, garantizamos estructuralmente que una vía no puede tener un Semáforo y una Estación a la vez, evitando solapamientos visuales (Z-fighting) en el modo ASCII y simplificando la lógica.
+3. **Interfaz Polimórfica `TrackComponent`**: Los elementos de la vía (Semáforos, Sensores, Estaciones, etc.) implementarán esta interfaz, que definirá métodos del ciclo de vida como `onTrainEnter()`, `onTrainLeave()`, `onTick()`.
+4. **Delegación de Eventos**: Cuando un tren pisa una vía, la vía simplemente verificará `if (component != null) component.onTrainEnter()`, eliminando los `instanceof`.
 
 ## Plan de Refactorización (Baby Steps)
 Para evitar romper los tests y la estabilidad de la rama `develop`, la migración se hará componente a componente:
-1. **PR 1 - Core Framework**: Crear la interfaz `TrackComponent` y la colección en `Track`.
+1. **PR 1 - Core Framework**: Crear la interfaz `TrackComponent` y añadir el campo `component` en `Track`.
 2. **PR 2 - Migración Semáforos**: Convertir `RailSemaphore` en un `TrackComponent` y eliminar el campo `semaphore` de `Track`.
 3. **PR 3 - Migración Sensores**: Convertir `Sensor` (y sus derivados `SpeedSignal` y `Station`) en componentes y eliminar el campo `sensor`.
 4. **PR 4 - Limpieza de Herencia**: Eliminar `BridgeRailTrack` y `TunnelRailTrack` usando componentes visuales o metadatos de terreno, y unificar el concepto de Station.
