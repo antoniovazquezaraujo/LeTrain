@@ -42,6 +42,7 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
                                        // multi-train ticks
     private Sensor sensor = null;
     private RailSemaphore semaphore = null;
+    private TrackComponent component = null;
     private Point pos = new Point(0, 0);
 
     @com.fasterxml.jackson.annotation.JsonProperty("connectedTracks")
@@ -288,6 +289,14 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
 
     public RailSemaphore getSemaphore() {
         return semaphore;
+    }
+
+    public TrackComponent getComponent() {
+        return component;
+    }
+
+    public void setComponent(TrackComponent component) {
+        this.component = component;
     }
 
     public void setSemaphore(RailSemaphore semaphore) {
