@@ -247,8 +247,10 @@ public class RenderVisitor implements Visitor {
         if (this.mode == GameMode.STATIONS) {
             if (station == selectedStation) {
                 view.setUnderline(true);
+                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+            } else {
+                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
             }
-            view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
             view.set(renderPos.getX() + 1, renderPos.getY(), String.valueOf(station.getId()));
             view.setUnderline(false);
         }
@@ -269,8 +271,10 @@ public class RenderVisitor implements Visitor {
         if (this.mode == GameMode.SENSORS) {
             if (sensor.getId() == (model.getSelectedSensor() != null ? model.getSelectedSensor().getId() : -1)) {
                 view.setUnderline(true);
+                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+            } else {
+                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
             }
-            view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
             String arrow = speedSignalArrow(sensor.getCreationDir());
             view.set(renderPos.getX() + 1, renderPos.getY(), arrow);
             view.set(renderPos.getX() + 2, renderPos.getY(), String.valueOf(sensor.getId()));
@@ -293,8 +297,10 @@ public class RenderVisitor implements Visitor {
         if (mode == GameMode.SEMAPHORES) {
             if (semaphore == selectedSemaphore) {
                 view.setUnderline(true);
+                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+            } else {
+                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
             }
-            view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
             String arrow = speedSignalArrow(semaphore.getCreationDir());
             view.set(renderPos.getX() + 1, renderPos.getY(), arrow);
             view.set(renderPos.getX() + 2, renderPos.getY(), String.valueOf(semaphore.getId()));
@@ -326,8 +332,10 @@ public class RenderVisitor implements Visitor {
         if (mode == GameMode.SPEED_SIGNALS) {
             if (speedSignal == selectedSpeedSignal) {
                 view.setUnderline(true);
+                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+            } else {
+                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
             }
-            view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
             String arrow = speedSignalArrow(speedSignal.getCreationDir());
             view.set(renderPos.getX() + 1, renderPos.getY(), arrow);
             view.set(renderPos.getX() + 2, renderPos.getY(), String.valueOf(speedSignal.getId()));
@@ -376,8 +384,10 @@ public class RenderVisitor implements Visitor {
         if (this.mode == GameMode.FORKS) {
             if (track == selectedFork) {
                 view.setUnderline(true);
+                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+            } else {
+                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
             }
-            view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
             view.set(track.getPosition().getX() + 1, track.getPosition().getY(),
                     String.valueOf(track.getId()));
             view.setUnderline(false);

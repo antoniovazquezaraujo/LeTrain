@@ -10,7 +10,7 @@ Para unificar la interfaz de usuario en la terminal 2D (Lanterna) y mejorar la c
 
 1. **Indicador de Selección**: 
    - Cuando un componente se encuentre seleccionado (modo activo), **no** cambiará su color.
-   - En su lugar, la id del componente se mostrará **subrayada**. 
+   - En su lugar, el carácter identificativo o número del componente se mostrará **subrayado y en color blanco brillante**, mientras que los IDs no seleccionados se renderizarán en **gris (black bright)**. 
    - Esto preserva el color original de la entidad, que puede estar utilizándose para transmitir información de estado (como la ocupación de un cantón o el estado de un semáforo).
 
 2. **Posicionamiento Relativo (Offset)**:
@@ -21,7 +21,7 @@ Para unificar la interfaz de usuario en la terminal 2D (Lanterna) y mejorar la c
    - Esta separación permite que la vía subyacente siga siendo visible, funcionando visualmente como un elemento de infraestructura montado al margen de los rieles.
    - En el modo de cada entidad, cuando la entidad se selecciona, la id ha de aparecer subrayada, y las demás sin subrayar. En modo normal no debe mostrarse la id. 
    - Los forks deberían también ajustarse a este estilo, mostrando solamente la id subrayada y sin cambiar de color.
-   - Tanto las flechas como las id deberían ser de color gris.
+   - Las flechas y los IDs no seleccionados serán de color gris, pero el ID seleccionado brillará en blanco para destacar.
    - Cuando se selecciona una entidad, no hay por qué centrar la pantalla en ella. Solo ha de hacerse si esa entidad se sale del rectángulo de cámara.
 
 ## Consecuencias
