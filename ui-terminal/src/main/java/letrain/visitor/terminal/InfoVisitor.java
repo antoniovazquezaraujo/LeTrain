@@ -172,18 +172,21 @@ public class InfoVisitor implements Visitor {
     }
 
     private String getNotchBar(int current, int target, int max) {
-        StringBuilder bar = new StringBuilder("[");
+        StringBuilder bar = new StringBuilder();
         for (int i = 1; i <= max; i++) {
-            char c = ' ';
+            char c = '□';
             if (i <= current) {
-                c = '=';
+                c = '■';
             }
             if (i == target) {
-                c = '!';
+                if (i <= current) {
+                    c = '◈';
+                } else {
+                    c = '▣';
+                }
             }
             bar.append(c);
         }
-        bar.append("]");
         return bar.toString();
     }
 
