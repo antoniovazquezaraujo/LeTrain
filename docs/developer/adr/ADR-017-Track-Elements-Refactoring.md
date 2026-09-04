@@ -7,14 +7,21 @@ Actualmente, la arquitectura de la clase `RailTrack` y los elementos que pueden 
 - Difícil de extender si queremos añadir nuevos elementos (ej. pasos a nivel, desvíos triples).
 - Posible abuso de la herencia en lugar de la composición.
 
-## Objetivo del Análisis
-El objetivo es realizar una radiografía detallada del estado actual y proponer una arquitectura más limpia (ej. Decorator, ECS, o Composición estricta) antes de escribir código.
+## Diagnóstico Actual (Fase 1 completada)
+El análisis exhaustivo del código actual ha revelado los siguientes problemas arquitectónicos:
 
-## Metodología Propuesta
-1. **Fase 1: Mapeo y Diagnóstico**. Analizar las dependencias actuales, relaciones de herencia y puntos de acoplamiento. (A cargo del subagente `research`).
-2. **Fase 2: Propuesta de Diseño**. Definir el patrón de diseño objetivo y discutir las ventajas/desventajas.
-3. **Fase 3: Refactorización Iterativa**. Ejecutar el cambio en múltiples PRs atómicas sin romper los tests existentes.
+### 1. Problemas de Herencia y Composición
+- **Track como "God Object"**: La clase abstracta `Track` alberga directamente campos para elementos opcionales (`private Sensor sensor`, `private RailSemaphore semaphore`). En lugar de usar componentes genéricos, tiene "slots" fijos en memoria que estarán a `null` en el 90% de las vías.
+- **Herencia forzada de Sensores**: `Station` y `SpeedSignal` heredan de `Sensor` para poder ocupar el "slot" de sensor de una vía, mezclando conceptos semánticos distintos.
+- **Identidad duplicada (Code Smell)**: Coexisten `Station` (hereda de `Sensor`) y `StationRailTrack` (hereda de `RailTrack`). No queda claro si una estación es un "sensor sobre la vía" o un "tipo especial de vía".
+- **Herencia por motivos puramente visuales**: `BridgeRailTrack` y `TunnelRailTrack` heredan de `RailTrack` única y exclusivamente para sobrescribir `accept(Visitor)` de cara al renderizado, sin añadir ninguna lógica mecánica real.
 
-## Estado Actual (En progreso)
-*(Aquí se añadirán los hallazgos de la Fase 1 tras el análisis)*
+### 2. Acoplamiento y Abuso de Tipos
+- **Dependencias Circulares y SRP**: `Track` gestiona Routing, Mapeo, Física (TrackDirector) e Infraestructura, conociendo clases detalladas como `RailSemaphore`.
+- **Jackson y OCP**: `Track` tiene codificados estáticamente a todos sus hijos (`@JsonSubTypes({BridgeRailTrack, TunnelRailTrack...})`), rompiendo el Principio Abierto-Cerrado.
+- **Abuso de `instanceof`**: 
+  - `instanceof ForkRailTrack` aparece 19 veces en la lógica del motor (ej. `AutoPilot`, `TrainMovementManager`) en lugar de interactuar polimórficamente con el `Router`.
+  - `instanceof Station` aparece 12 veces (lógica de logística y renderizado) en lugar de resolverlo mediante polimorfismo (ej. un `onVehicleEntered()`).
 
+## Propuestas de Arquitectura (Fase 2)
+*(Pendiente de debate con el equipo. Alternativas a evaluar: Decorator Pattern vs Entity-Component-System para los elementos de vía, y separación estricta Modelo/Vista para evitar subclases como BridgeRailTrack)*.
