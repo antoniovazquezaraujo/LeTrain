@@ -194,16 +194,16 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         ModelInstance instance = resourceContext.getModelInstance(resourceContext.sensorModel);
         instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                 .createDiffuse(Color.YELLOW));
-        float sensorBottomHeight = 0.09f;
+        float sensorBottomHeight = 0.175f;
         instance.transform.setToTranslation(x + 0.5f, sensorBottomHeight, y + 0.5f);
         instance.transform.rotate(0, 1, 0, angle - 90f);
         instance.transform.scale(1.0f, 1.04f, 1.0f);
         instances.add(instance);
 
         String idText = String.valueOf(sensor.getId());
-        float labelHeight = 0.19f;
+        float labelHeight = 0.22f;
         labels.add(new Gdx3DRenderer.VehicleLabel(new Vector3(x + 0.5f, labelHeight, y + 0.5f),
-                idText, new Vector3(0, 1, 0), new Vector3(0, 0, -1), Color.BLACK, 0.4f));
+                idText, new Vector3(0, 1, 0), new Vector3(dx, 0, dz), Color.BLACK, 0.4f));
     }
 
     @Override
@@ -239,7 +239,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         instances.add(instance);
 
         // Draw the base (PIE) double width
-        ModelInstance base = resourceContext.getModelInstance(resourceContext.sensorModel);
+        ModelInstance base = resourceContext.getModelInstance(resourceContext.baseModel);
         base.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.LIGHT_GRAY));
         float sensorBottomHeight = 0.09f;
         // Center the pie at 1.5x offset so the pole is in the inner half
@@ -610,7 +610,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 new Vector3(0, 1, 0), textColor, 0.30f * scale));
 
         // Draw the base (PIE) double width
-        ModelInstance base = resourceContext.getModelInstance(resourceContext.sensorModel);
+        ModelInstance base = resourceContext.getModelInstance(resourceContext.baseModel);
         base.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(Color.LIGHT_GRAY));
         float sensorBottomHeight = 0.09f;
         // Center the pie at 1.5x offset so the pole is in the inner half

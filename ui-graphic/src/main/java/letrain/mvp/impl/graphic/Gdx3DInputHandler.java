@@ -834,6 +834,10 @@ public class Gdx3DInputHandler implements InputProcessor {
                 sensorIdAccumulator = 0;
                 sensorInputTimeout = 0;
             }
+            if (model.getSelectedSensor() != null) {
+                letrain.track.Sensor sensor = model.getSelectedSensor();
+                sensor.setCreationDir(sensor.getCreationDir().inverse());
+            }
         }
     }
 

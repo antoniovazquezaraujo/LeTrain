@@ -712,6 +712,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                         sensorId = 0;
                         sensorInputTimeout = 0;
                     }
+                    if (model.getSelectedSensor() != null) {
+                        letrain.track.Sensor sensor = model.getSelectedSensor();
+                        sensor.setCreationDir(sensor.getCreationDir().inverse());
+                    }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     sensorId = sensorId * 10 + (keyEvent.getCharacter() - '0');
                     sensorInputTimeout = System.currentTimeMillis() + 1000;

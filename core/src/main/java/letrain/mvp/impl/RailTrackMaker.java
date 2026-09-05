@@ -257,13 +257,17 @@ public class RailTrackMaker {
 
     void manageSemaphore() {
         Point position = presenter.getModel().getCursor().getPosition();
-        RailSemaphore semaphore = presenter.getModel().getSemaphoreAt(position);
-        if (semaphore != null) {
-            presenter.getModel().removeSemaphore(semaphore);
-        } else {
-            semaphore = new RailSemaphore(presenter.getModel().nextSemaphoreId(), position);
-            semaphore.setCreationDir(presenter.getModel().getCursor().getDir());
-            presenter.getModel().addSemaphore(semaphore);
+        Track track =
+                presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
+        if (track != null) {
+            RailSemaphore semaphore = presenter.getModel().getSemaphoreAt(position);
+            if (semaphore != null) {
+                presenter.getModel().removeSemaphore(semaphore);
+            } else {
+                semaphore = new RailSemaphore(presenter.getModel().nextSemaphoreId(), position);
+                semaphore.setCreationDir(presenter.getModel().getCursor().getDir());
+                presenter.getModel().addSemaphore(semaphore);
+            }
         }
     }
 
