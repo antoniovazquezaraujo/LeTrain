@@ -40,8 +40,9 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
     private Linker linker = null;
     private Linker reservation = null; // NEW: Track reservation to prevent race conditions during
                                        // multi-train ticks
-    private Sensor sensor = null;
-    private RailSemaphore semaphore = null;
+    @com.fasterxml.jackson.annotation.JsonAlias({"sensor", "semaphore"})
+    @com.fasterxml.jackson.annotation.JsonSetter(nulls = com.fasterxml.jackson.annotation.Nulls.SKIP)
+    private TrackComponent component = null;
     private Point pos = new Point(0, 0);
 
     @com.fasterxml.jackson.annotation.JsonProperty("connectedTracks")
@@ -278,19 +279,11 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
         return getTrackDirector().canExit(this, dir);
     }
 
-    public Sensor getSensor() {
-        return sensor;
+    public TrackComponent getComponent() {
+        return component;
     }
 
-    public void setSensor(Sensor sensor) {
-        this.sensor = sensor;
-    }
-
-    public RailSemaphore getSemaphore() {
-        return semaphore;
-    }
-
-    public void setSemaphore(RailSemaphore semaphore) {
-        this.semaphore = semaphore;
+    public void setComponent(TrackComponent component) {
+        this.component = component;
     }
 }

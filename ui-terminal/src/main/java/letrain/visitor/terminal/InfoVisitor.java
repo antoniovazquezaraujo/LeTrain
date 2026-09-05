@@ -12,12 +12,8 @@ import letrain.mvp.impl.terminal.TerminalView;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
-import letrain.track.rail.BridgeGateRailTrack;
-import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.TunnelGateRailTrack;
-import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.Cursor;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
@@ -112,15 +108,21 @@ public class InfoVisitor implements Visitor {
                     : selectedLoco.getId();
             String notchBar =
                     getNotchBar(selectedLoco.getSpeed(), selectedLoco.getTargetSpeed(), 10);
-            String speedStr = String.valueOf(selectedLoco.getSpeed());
-            if (selectedLoco.getSpeed() != selectedLoco.getTargetSpeed()) {
-                speedStr += "->" + selectedLoco.getTargetSpeed();
+            int speed = selectedLoco.getSpeed();
+            int target = selectedLoco.getTargetSpeed();
+            String speedStr;
+            if (speed < target) {
+                speedStr = speed + "->" + target;
+            } else if (speed > target) {
+                speedStr = target + "<-" + speed;
+            } else {
+                speedStr = String.valueOf(speed);
             }
             int wagonsCount = (selectedLoco.getTrain() != null
                     && selectedLoco.getTrain().getLinkers() != null)
                             ? Math.max(0, selectedLoco.getTrain().getLinkers().size() - 1)
                             : 0;
-            vehicleText = String.format("Train: %d | Notch: %s | Speed: %s | Wagons: %d%s", trainId,
+            vehicleText = String.format("Train: %d | Speed: %s %s | Wagons: %d%s", trainId,
                     notchBar, speedStr, wagonsCount, selectedLoco.isReversed() ? " (Rev)" : "");
         } else if (infoBarText != null) {
             vehicleText = infoBarText;
@@ -140,8 +142,9 @@ public class InfoVisitor implements Visitor {
         }
 
         String line1;
-        if (vehicleText.length() + systemInfo.length() < totalWidth) {
-            int padding = totalWidth - vehicleText.length() - systemInfo.length();
+        String strippedVehicleText = vehicleText.replaceAll("<<[A-Z_]+>>", "");
+        if (strippedVehicleText.length() + systemInfo.length() < totalWidth) {
+            int padding = totalWidth - strippedVehicleText.length() - systemInfo.length();
             line1 = vehicleText + " ".repeat(padding) + systemInfo;
         } else {
             line1 = vehicleText + " | " + systemInfo;
@@ -166,7 +169,7 @@ public class InfoVisitor implements Visitor {
 
         // Row 6: Global Help
         richInfo.append(
-                "[PgUp/Dn]: Scroll | [z/Z]: Camera | [r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit");
+                "[PgUp/Dn]: Scroll | [z/Z]: Camera | [a/r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit");
 
         view.setInfoBarText(richInfo.toString());
         
@@ -176,18 +179,16 @@ public class InfoVisitor implements Visitor {
     }
 
     private String getNotchBar(int current, int target, int max) {
-        StringBuilder bar = new StringBuilder("[");
+        StringBuilder bar = new StringBuilder();
         for (int i = 1; i <= max; i++) {
-            char c = ' ';
-            if (i <= current) {
-                c = '=';
+            if (i == target && current != target) {
+                bar.append("<<RED>>■<<RESET>>");
+            } else if (i <= current) {
+                bar.append("<<GREEN>>■<<RESET>>");
+            } else {
+                bar.append("□");
             }
-            if (i == target) {
-                c = '!';
-            }
-            bar.append(c);
         }
-        bar.append("]");
         return bar.toString();
     }
 
@@ -225,13 +226,6 @@ public class InfoVisitor implements Visitor {
         infoBarText += "Fork " + track.getId() + " Dirs "
                 + (track.isUsingAlternativeRoute() ? track.getAlternativeRoute()
                         : track.getOriginalRoute());
-    }
-
-    @Override
-    public void visitTunnelRailTrack(TunnelRailTrack track) {
-        infoBarText += "Track:[" + track.getPosition().getX() + "," + track.getPosition().getY()
-                + "]" + getRouterAspect(track.getRouter()) + "\n";
-        infoBarText += "Connect:...";
     }
 
     @Override
@@ -279,21 +273,6 @@ public class InfoVisitor implements Visitor {
 
     @Override
     public void visitGround(Ground ground) {}
-
-    @Override
-    public void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack) {
-        // No extra info in terminal mode
-    }
-
-    @Override
-    public void visitBridgeRailTrack(BridgeRailTrack bridgeRailTrack) {
-        // No extra info in terminal mode
-    }
-
-    @Override
-    public void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack) {
-        // No extra info in terminal mode
-    }
 
     @Override
     public void visitEconomyManager(EconomyManager economyManager) {

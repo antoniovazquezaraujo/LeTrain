@@ -421,9 +421,8 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 idText, new Vector3(-paraX, 0, -paraZ), null, labelColor, stationLabelScale));
     }
 
-    @Override
-    public void visitTunnelGateRailTrack(
-            letrain.track.rail.TunnelGateRailTrack tunnelGateRailTrack) {
+    public void renderTunnelGateTrack(
+            letrain.track.rail.RailTrack tunnelGateRailTrack) {
         ModelInstance portal = resourceContext.getModelInstance(resourceContext.tunnelPortalModel);
         if (isXRayActive) {
             portal.materials.get(0).set(
@@ -483,7 +482,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         } else {
             instances.add(portal);
         }
-        trackRenderer.visitRailTrack(tunnelGateRailTrack);
+        
     }
 
     @Override

@@ -367,8 +367,11 @@ public class Gdx3DInputHandler implements InputProcessor {
 
         // Mode Switching Shortcuts
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != ' ') {
-            if (model.getMode() != Model.GameMode.TRAINS) {
+            if (model.getMode() != Model.GameMode.TRAINS && model.getMode() != Model.GameMode.ADD) {
                 switch (stroke.getCharacter()) {
+                    case 'a':
+                        model.setMode(Model.GameMode.ADD);
+                        return;
                     case 'r':
                         model.setMode(Model.GameMode.RAILS);
                         return;
@@ -450,6 +453,9 @@ public class Gdx3DInputHandler implements InputProcessor {
                         trackMaker.onChar(stroke);
                     }
                 }
+                break;
+            case ADD:
+                handleAddInput(stroke);
                 break;
             case RAILS:
                 trackMaker.onChar(stroke);
@@ -911,6 +917,39 @@ public class Gdx3DInputHandler implements InputProcessor {
                         boolean isLoading = !loco.getTrain().getLogisticsManager().isLoading();
                         train.getLogisticsManager().setLoading(isLoading);
                     }
+                }
+            }
+        }
+    }
+
+
+    private void handleAddInput(InputEvent stroke) {
+        if (stroke.getKeyType() == KeyType.Escape) {
+            model.setMode(model.getPreviousMode());
+            return;
+        }
+        if (stroke.getKeyType() == KeyType.Character) {
+            Character c = stroke.getCharacter();
+            if (c != null) {
+                switch (Character.toLowerCase(c)) {
+                    case 's':
+                        trackMaker.onChar(new InputEvent(KeyType.End, null, false, false, false));
+                        model.setMode(model.getPreviousMode());
+                        break;
+                    case 'e':
+                        trackMaker.onChar(new InputEvent(KeyType.Insert, null, false, false, false));
+                        model.setMode(model.getPreviousMode());
+                        break;
+                    case 'm':
+                        trackMaker.onChar(new InputEvent(KeyType.Home, null, false, false, false));
+                        model.setMode(model.getPreviousMode());
+                        break;
+                    case 'g':
+                        trackMaker.onChar(new InputEvent(KeyType.Delete, null, false, false, false));
+                        model.setMode(model.getPreviousMode());
+                        break;
+                    default:
+                        break;
                 }
             }
         }

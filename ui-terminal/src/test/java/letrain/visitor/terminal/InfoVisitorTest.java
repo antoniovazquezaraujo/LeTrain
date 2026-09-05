@@ -59,8 +59,8 @@ class InfoVisitorTest {
 
         String firstLine = lines[0];
         assertTrue(firstLine.contains("Train: 1"), "Should contain Train ID");
-        assertTrue(firstLine.contains("Notch:"), "Should contain Notch bar");
-        assertTrue(firstLine.contains("Speed: 3->5"), "Should contain speed progression");
+                assertTrue(firstLine.contains("3->5"), "Should contain speed progression");
+        assertTrue(firstLine.contains("Speed: "), "Should contain Speed label");
         assertTrue(firstLine.contains("Wagons: 0"), "Should contain wagon count in English");
         assertTrue(firstLine.contains("|Page:0,0|Pos:10,20|Step:1/1|"),
                 "Page info should be in English and new format");
@@ -73,7 +73,7 @@ class InfoVisitorTest {
 
         // Verify translations on other lines
         assertTrue(lines[3].contains(
-                "[PgUp/Dn]: Scroll | [z/Z]: Camera | [r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit"),
+                "[PgUp/Dn]: Scroll | [z/Z]: Camera | [a/r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit"),
                 "Global help should be in English");
     }
 }

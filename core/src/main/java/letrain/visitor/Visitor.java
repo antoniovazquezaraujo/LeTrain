@@ -8,12 +8,8 @@ import letrain.mvp.Model;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
-import letrain.track.rail.BridgeGateRailTrack;
-import letrain.track.rail.BridgeRailTrack;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
-import letrain.track.rail.TunnelGateRailTrack;
-import letrain.track.rail.TunnelRailTrack;
 import letrain.vehicle.Cursor;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Wagon;
@@ -28,8 +24,6 @@ public interface Visitor {
     void visitRailTrack(RailTrack track);
 
     void visitForkRailTrack(ForkRailTrack track);
-
-    void visitTunnelRailTrack(TunnelRailTrack track);
 
     void visitLocomotive(Locomotive locomotive);
 
@@ -48,10 +42,4 @@ public interface Visitor {
     void visitGroundMap(GroundMap groundMap);
 
     void visitGround(Ground ground);
-
-    void visitBridgeGateRailTrack(BridgeGateRailTrack bridgeGateRailTrack);
-
-    void visitBridgeRailTrack(BridgeRailTrack bridgeRailTrack);
-
-    void visitTunnelGateRailTrack(TunnelGateRailTrack tunnelGateRailTrack);
 }

@@ -153,11 +153,11 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                 // If this is the only linker, it is also the tail, so we trigger exit events on
                 // headCurrentTrack
                 if (movingOrder.size() == 1) {
-                    if (headCurrentTrack.getSensor() != null) {
-                        headCurrentTrack.getSensor().onExitTrain(train);
+                    if ((headCurrentTrack.getComponent() instanceof letrain.track.Sensor)) {
+                        ((letrain.track.Sensor)headCurrentTrack.getComponent()).onExitTrain(train);
                     }
-                    if (headCurrentTrack.getSemaphore() != null) {
-                        headCurrentTrack.getSemaphore().onExitTrain(train);
+                    if ((headCurrentTrack.getComponent() instanceof letrain.track.RailSemaphore)) {
+                        ((letrain.track.RailSemaphore)headCurrentTrack.getComponent()).onExitTrain(train);
                     }
                     if (headCurrentTrack instanceof ForkRailTrack) {
                         ((ForkRailTrack) headCurrentTrack).onExitTrain(train);
@@ -178,12 +178,12 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                 }
             }
 
-            Sensor enterSensor = headNextTrack.getSensor();
+            letrain.track.Sensor enterSensor = headNextTrack.getComponent() instanceof letrain.track.Sensor ? (letrain.track.Sensor) headNextTrack.getComponent() : null;
             if (enterSensor != null) {
                 enterSensor.onEnterTrain(train);
             }
-            if (headNextTrack.getSemaphore() != null) {
-                headNextTrack.getSemaphore().onEnterTrain(train);
+            if ((headNextTrack.getComponent() instanceof letrain.track.RailSemaphore)) {
+                ((letrain.track.RailSemaphore)headNextTrack.getComponent()).onEnterTrain(train);
             }
             if (headNextTrack instanceof ForkRailTrack) {
                 ((ForkRailTrack) headNextTrack).onEnterTrain(train);
@@ -220,11 +220,11 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             lastLinker.setRailsSinceStop(lastLinker.getRailsSinceStop() + 1);
             lastLinkerNextTrack.setReservation(null);
 
-            if (lastLinkerTrack.getSensor() != null) {
-                lastLinkerTrack.getSensor().onExitTrain(train);
+            if ((lastLinkerTrack.getComponent() instanceof letrain.track.Sensor)) {
+                ((letrain.track.Sensor)lastLinkerTrack.getComponent()).onExitTrain(train);
             }
-            if (lastLinkerTrack.getSemaphore() != null) {
-                lastLinkerTrack.getSemaphore().onExitTrain(train);
+            if ((lastLinkerTrack.getComponent() instanceof letrain.track.RailSemaphore)) {
+                ((letrain.track.RailSemaphore)lastLinkerTrack.getComponent()).onExitTrain(train);
             }
             if (train.getSafetyManager() != null) {
                 if (lastLinkerTrack instanceof ForkRailTrack) {

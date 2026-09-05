@@ -106,6 +106,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void initModeKeyHandlers() {
         modeKeyHandlers.put(RAILS, keyEvent -> railTrackMaker.onChar(keyEvent));
+        modeKeyHandlers.put(letrain.mvp.Model.GameMode.ADD, keyEvent -> handleAddModeKey(keyEvent));
+
         modeKeyHandlers.put(DRIVE, keyEvent -> trainDriverOnChar(keyEvent));
         modeKeyHandlers.put(FORKS, keyEvent -> handleForksModeKey(keyEvent));
         modeKeyHandlers.put(SEMAPHORES, keyEvent -> handleSemaphoresModeKey(keyEvent));
@@ -451,6 +453,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return false;
         }
 
+        if (model.getMode() == letrain.mvp.Model.GameMode.ADD) {
+            return false; // Let onChar handle Add mode keys (s, e, m, g)
+        }
+
         if (model.getMode() == TRAINS) {
             handleTrainsModeKey(keyEvent);
             return true;
@@ -470,6 +476,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     return true;
                 }
                 return false;
+            case 'a':
+                model.setMode(letrain.mvp.Model.GameMode.ADD);
+                return true;
             case 'r':
                 model.setMode(RAILS);
                 return true;
@@ -660,10 +669,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 break;
             case ArrowLeft:
-                model.selectPrevSpeedSignal();
+                if (model.selectPrevSpeedSignal()) {
+                    setPageOfPoint(model.getSelectedSpeedSignal().getPosition());
+                }
                 break;
             case ArrowRight:
-                model.selectNextSpeedSignal();
+                if (model.selectNextSpeedSignal()) {
+                    setPageOfPoint(model.getSelectedSpeedSignal().getPosition());
+                }
                 break;
             case ArrowUp:
                 if (model.getSelectedSpeedSignal() != null) {
@@ -705,11 +718,15 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 break;
             case ArrowLeft:
-                model.selectPrevSensor();
+                if (model.selectPrevSensor()) {
+                    setPageOfPoint(model.getSelectedSensor().getPosition());
+                }
                 sensorId = 0;
                 break;
             case ArrowRight:
-                model.selectNextSensor();
+                if (model.selectNextSensor()) {
+                    setPageOfPoint(model.getSelectedSensor().getPosition());
+                }
                 sensorId = 0;
                 break;
             default:
@@ -944,6 +961,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     targetPos = model.getSelectedStation().getPosition();
                 }
                 break;
+            case SENSORS:
+                if (model.getSelectedSensor() != null) {
+                    targetPos = model.getSelectedSensor().getPosition();
+                }
+                break;
+            case SPEED_SIGNALS:
+                if (model.getSelectedSpeedSignal() != null) {
+                    targetPos = model.getSelectedSpeedSignal().getPosition();
+                }
+                break;
             default:
                 break;
         }
@@ -1017,6 +1044,39 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 break;
             default:
                 break;
+        }
+    }
+
+
+    private void handleAddModeKey(InputEvent keyEvent) {
+        if (keyEvent.getKeyType() == KeyType.Escape) {
+            model.setMode(model.getPreviousMode());
+            return;
+        }
+        if (keyEvent.getKeyType() == KeyType.Character) {
+            Character c = keyEvent.getCharacter();
+            if (c != null) {
+                switch (Character.toLowerCase(c)) {
+                    case 's':
+                        railTrackMaker.onChar(new InputEvent(KeyType.End, null, false, false, false));
+                        model.setMode(model.getPreviousMode());
+                        break;
+                    case 'e':
+                        railTrackMaker.onChar(new InputEvent(KeyType.Insert, null, false, false, false));
+                        model.setMode(model.getPreviousMode());
+                        break;
+                    case 'm':
+                        railTrackMaker.onChar(new InputEvent(KeyType.Home, null, false, false, false));
+                        model.setMode(model.getPreviousMode());
+                        break;
+                    case 'g':
+                        railTrackMaker.onChar(new InputEvent(KeyType.Delete, null, false, false, false));
+                        model.setMode(model.getPreviousMode());
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
     }
 
@@ -1351,7 +1411,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     void setPageOfPoint(Point point) {
         if (point != null) {
-            view.centerOn(point.getX(), point.getY());
+            view.ensureVisible(point.getX(), point.getY(), view.getCameraDeadzone(), view.isCameraPagination());
         }
     }
 
