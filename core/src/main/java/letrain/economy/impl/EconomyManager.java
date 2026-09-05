@@ -29,7 +29,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     float totalExpenses = 0;
 
     @com.fasterxml.jackson.annotation.JsonProperty("balance")
-    float balance = 1000000f; // Initial balance as requested
+    float balance = 0f;
 
     @com.fasterxml.jackson.annotation.JsonProperty("prices")
     Map<ExpenseType, Float> prices = new HashMap<>();
@@ -64,10 +64,10 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     private float rubyThreshold = 0.35f;
 
     @com.fasterxml.jackson.annotation.JsonProperty("waterThreshold")
-    private float waterThreshold = 110f;
+    private float waterThreshold = 130f;
 
     @com.fasterxml.jackson.annotation.JsonProperty("rockThreshold")
-    private float rockThreshold = 130f;
+    private float rockThreshold = 180f;
 
     @com.fasterxml.jackson.annotation.JsonProperty("viewRadius")
     private int viewRadius = 15;
@@ -135,6 +135,14 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     public EconomyManager(letrain.mvp.impl.EventLogManager eventLogManager) {
         this.eventLogManager = eventLogManager;
+        
+        // Construction Delays
+        constructionDelays.put(Presenter.TrackType.NORMAL_TRACK, 0);
+        constructionDelays.put(Presenter.TrackType.BRIDGE_TRACK, 20);
+        constructionDelays.put(Presenter.TrackType.BRIDGE_GATE_TRACK, 20);
+        constructionDelays.put(Presenter.TrackType.TUNNEL_TRACK, 30);
+        constructionDelays.put(Presenter.TrackType.TUNNEL_GATE_TRACK, 30);
+
         prices.put(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK, 100f);
         prices.put(ExpenseType.CONSTRUCTED_BRIDGE_RAIL_TRACK, 20000f);
         prices.put(ExpenseType.CONSTRUCTED_TUNNEL_RAIL_TRACK, 70000f);
@@ -473,17 +481,18 @@ public class EconomyManager implements letrain.economy.EconomyManager {
             startingBalance = newStartingBalance;
 
             // Load thresholds
-            goldThreshold = Float.parseFloat(props.getProperty("threshold.GOLD", "0.28"));
-            coalThreshold = Float.parseFloat(props.getProperty("threshold.COAL", "0.28"));
-            rubyThreshold = Float.parseFloat(props.getProperty("threshold.RUBY", "0.28"));
-            waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER", "130"));
-            rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK", "180"));
-            viewRadius = Integer.parseInt(props.getProperty("map.VIEW_RADIUS", "5"));
+            goldThreshold = Float.parseFloat(props.getProperty("threshold.GOLD", String.valueOf(goldThreshold)));
+            coalThreshold = Float.parseFloat(props.getProperty("threshold.COAL", String.valueOf(coalThreshold)));
+            rubyThreshold = Float.parseFloat(props.getProperty("threshold.RUBY", String.valueOf(rubyThreshold)));
+            waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER", String.valueOf(waterThreshold)));
+            rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK", String.valueOf(rockThreshold)));
+            viewRadius = Integer.parseInt(props.getProperty("map.VIEW_RADIUS", String.valueOf(viewRadius)));
 
             // Load Construction Delays
             for (Presenter.TrackType type : Presenter.TrackType.values()) {
                 String key = "delay." + type.name();
-                int delay = Integer.parseInt(props.getProperty(key, "0"));
+                int currentDelay = constructionDelays.getOrDefault(type, 0);
+                int delay = Integer.parseInt(props.getProperty(key, String.valueOf(currentDelay)));
                 constructionDelays.put(type, delay);
             }
 
