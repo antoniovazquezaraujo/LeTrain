@@ -13,6 +13,18 @@
 </pre>
 </div>
 
+<p align="center">
+  <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases/latest">
+    <img src="https://img.shields.io/badge/🎮_Download_Latest_Release-0078D4?style=for-the-badge&logo=github&logoColor=white" alt="Download Latest Release">
+  </a>
+  <a href="https://avaraujo.itch.io/letrain-procedural-tycoon">
+    <img src="https://img.shields.io/badge/👾_Available_on_Itch.io-FA5C5C?style=for-the-badge&logo=itch.io&logoColor=white" alt="Available on Itch.io">
+  </a>
+  <a href="https://snapcraft.io/letrain">
+    <img src="https://img.shields.io/badge/🐧_Get_it_on_Snap_Store-E95420?style=for-the-badge&logo=snapcraft&logoColor=white" alt="Get it on Snap Store">
+  </a>
+</p>
+
 **LeTrain** is a procedural train simulator that bridges the gap between classic ASCII aesthetics and modern 3D rendering. Originally a small C++ experiment, it has evolved into a fully-fledged Java simulation where players manage rail networks, logistics, and economies in an infinite, procedurally generated world.
 
 ## ✨ Features
@@ -66,7 +78,7 @@ You can run either the modern 3D version or the classic 2D version:
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/7fKXj1krkFk" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/eidXDfMM5Ec" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Camera Zoom and Pan:** You can zoom in and out using Alt and the arrow keys, as well as rotate the camera. The mouse wheel also controls zoom.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Camera Zoom and Pan:** You can zoom in and out using Alt and the arrow keys (or `Alt + h, j, k, l`), as well as rotate the camera. The mouse wheel also controls zoom.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/hWSTbSypcNo" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/3djcZgXX7h8" frameborder="0" allowfullscreen></iframe></div>
 </div>

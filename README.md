@@ -19,8 +19,15 @@
 
 <p align="center">
   <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases/latest">
-    <img src="https://img.shields.io/badge/🎮_Download_Latest_Release-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Latest Release">
+    <img src="https://img.shields.io/badge/🎮_Download_Latest_Release-0078D4?style=for-the-badge&logo=github&logoColor=white" alt="Download Latest Release">
   </a>
+  <a href="https://avaraujo.itch.io/letrain-procedural-tycoon">
+    <img src="https://img.shields.io/badge/👾_Available_on_Itch.io-FA5C5C?style=for-the-badge&logo=itch.io&logoColor=white" alt="Available on Itch.io">
+  </a>
+  <a href="https://snapcraft.io/letrain">
+    <img src="https://img.shields.io/badge/🐧_Get_it_on_Snap_Store-E95420?style=for-the-badge&logo=snapcraft&logoColor=white" alt="Get it on Snap Store">
+  </a>
+  <br><br>
   <a href="https://antoniovazquezaraujo.github.io/LeTrain/">
     <img src="https://img.shields.io/badge/📖_Read_the_Documentation-2EA043?style=for-the-badge&logo=markdown&logoColor=white" alt="Read the Documentation">
   </a>

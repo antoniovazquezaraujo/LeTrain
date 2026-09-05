@@ -16,17 +16,34 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 
 ### Navegación y Vistas
 - **Flechas de dirección (o h, j, k, l)**: Mover el cursor libremente o seguir una vía (estilo Vim).
+- **Alt + Flechas (o Alt + h, j, k, l)**: Hacer zoom y rotar/panear la cámara.
 - **Números (0-9)**: Introduce un salto numérico (multiplicador) para aumentar la velocidad y distancia del cursor. Al introducir un nuevo número se sobrescribe el anterior. Pulsa **Espacio** para volver a ir de 1 en 1.
 - **Tecla 'a'**: Entrar en modo **Add** (Añadir). Esto te permite construir infraestructura rápidamente:
-  - **s**: Construir Estación
+  - **n**: Construir Estación
   - **e**: Construir Sensor
-  - **m**: Construir Semáforo
+  - **s**: Construir Semáforo
   - **g**: Construir Señal de Velocidad
 - **Tecla 'o'**: Reubicar el cursor instantáneamente sobre el tren, estación, desvío, sensor o señal de velocidad seleccionado actualmente.
 - **Tecla 'z'**: En 3D: Alternar entre las tres cámaras (Perspectiva, Cenital y Cabina). En 2D: Cambiar el tamaño de la zona muerta de la cámara.
 - **Esc**: En 3D: Salir del menú del juego.
 - **Tecla 'Z' (Mayús+z)**: En 2D: Activar o desactivar la paginación de cámara.
 - **Tecla 'Tab'**: Alternar entre los diferentes niveles de visibilidad de la barra de información (Compacta, Completa, Oculta).
+
+### Modos de Juego y Atajos
+LeTrain está fuertemente basado en modos. Al pulsar las siguientes teclas cambiarás el modo de interacción actual:
+- **`r`**: **Modo Rails (Vías)** (Por defecto) - Construir y borrar vías.
+- **`a`**: **Modo Add (Añadir)** - Añadir infraestructura (Estaciones, Sensores, Semáforos).
+- **`t`**: **Modo Trains (Trenes)** - Construir nuevos trenes.
+- **`d`**: **Modo Drive (Conducir)** - Conducir y controlar trenes.
+- **`c`**: **Modo Link (Enganchar)** - Enganchar vagones y locomotoras.
+- **`u`**: **Modo Unlink (Desenganchar)** - Desenganchar vagones y locomotoras.
+- **`f`**: **Modo Forks (Desvíos)** - Gestionar y cambiar desvíos de vías.
+- **`s`**: **Modo Semaphores (Semáforos)** - Gestionar semáforos.
+- **`g`**: **Modo Speed Signals (Señales)** - Gestionar señales de límite de velocidad.
+- **`n`**: **Modo Stations (Estaciones)** - Seleccionar e inspeccionar estaciones.
+- **`e`**: **Modo Sensors (Sensores)** - Seleccionar e inspeccionar sensores.
+- **`p`**: **Modo Program (Programa)** - Abrir el IDE para programar automatizaciones.
+- **`:`**: **Modo CLI (Consola)** - Abrir la consola de comandos integrados.
 
 ### Construcción (Modo Rails)
 - **Mayús + Flechas (o H, J, K, L)**: Construir vías nuevas.
