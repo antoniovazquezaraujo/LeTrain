@@ -201,9 +201,9 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         instances.add(instance);
 
         String idText = String.valueOf(sensor.getId());
-        float labelHeight = 0.30f;
+        float labelHeight = 0.22f;
         labels.add(new Gdx3DRenderer.VehicleLabel(new Vector3(x + 0.5f, labelHeight, y + 0.5f),
-                idText, new Vector3(dz, 0, -dx), new Vector3(0, 1, 0), Color.BLACK, 0.4f));
+                idText, new Vector3(0, 1, 0), new Vector3(dx, 0, dz), Color.BLACK, 0.4f));
     }
 
     @Override
