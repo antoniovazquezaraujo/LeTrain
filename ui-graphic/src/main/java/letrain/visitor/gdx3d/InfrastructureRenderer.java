@@ -239,7 +239,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         instances.add(instance);
 
         // Draw the base (PIE) double width
-        ModelInstance base = resourceContext.getModelInstance(resourceContext.sensorModel);
+        ModelInstance base = resourceContext.getModelInstance(resourceContext.baseModel);
         base.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.LIGHT_GRAY));
         float sensorBottomHeight = 0.09f;
         // Center the pie at 1.5x offset so the pole is in the inner half
@@ -610,7 +610,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 new Vector3(0, 1, 0), textColor, 0.30f * scale));
 
         // Draw the base (PIE) double width
-        ModelInstance base = resourceContext.getModelInstance(resourceContext.sensorModel);
+        ModelInstance base = resourceContext.getModelInstance(resourceContext.baseModel);
         base.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(Color.LIGHT_GRAY));
         float sensorBottomHeight = 0.09f;
         // Center the pie at 1.5x offset so the pole is in the inner half

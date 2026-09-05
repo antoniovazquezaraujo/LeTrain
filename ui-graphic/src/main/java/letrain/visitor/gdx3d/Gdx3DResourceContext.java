@@ -125,6 +125,7 @@ public class Gdx3DResourceContext implements Disposable {
     public Model semaphoreClosedModel;
     public Model speedSignalMaxModel;
     public Model speedSignalMinModel;
+    public Model baseModel;
     public Model sensorModel;
     public Model goldConsumerModel;
     public Model coalConsumerModel;
@@ -260,6 +261,11 @@ public class Gdx3DResourceContext implements Disposable {
             semaphoreClosedModel = register(createSemaphoreModel(false));
             speedSignalMaxModel = register(createSpeedSignalModel(true));
             speedSignalMinModel = register(createSpeedSignalModel(false));
+
+            // Infrastructure base (used by semaphores and signals)
+            baseModel = register(modelBuilder.createBox(0.4f, 0.05f, 0.4f,
+                    new Material(ColorAttribute.createDiffuse(Color.YELLOW)),
+                    VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Sensor
             sensorModel = register(modelBuilder.createCylinder(0.6f, 0.05f, 0.15f, 3,
