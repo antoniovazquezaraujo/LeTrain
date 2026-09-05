@@ -262,7 +262,7 @@ public class Gdx3DResourceContext implements Disposable {
             speedSignalMinModel = register(createSpeedSignalModel(false));
 
             // Sensor
-            sensorModel = register(modelBuilder.createCylinder(0.4f, 0.05f, 0.4f, 3,
+            sensorModel = register(modelBuilder.createCylinder(0.15f, 0.05f, 0.6f, 3,
                     new Material(ColorAttribute.createDiffuse(Color.YELLOW)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 

@@ -194,7 +194,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         ModelInstance instance = resourceContext.getModelInstance(resourceContext.sensorModel);
         instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                 .createDiffuse(Color.YELLOW));
-        float sensorBottomHeight = 0.21f;
+        float sensorBottomHeight = 0.175f;
         instance.transform.setToTranslation(x + 0.5f, sensorBottomHeight, y + 0.5f);
         instance.transform.rotate(0, 1, 0, angle - 90f);
         instance.transform.scale(1.0f, 1.04f, 1.0f);
@@ -203,7 +203,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         String idText = String.valueOf(sensor.getId());
         float labelHeight = 0.30f;
         labels.add(new Gdx3DRenderer.VehicleLabel(new Vector3(x + 0.5f, labelHeight, y + 0.5f),
-                idText, new Vector3(0, 1, 0), new Vector3(0, 0, -1), Color.BLACK, 0.4f));
+                idText, new Vector3(dz, 0, -dx), new Vector3(0, 1, 0), Color.BLACK, 0.4f));
     }
 
     @Override
