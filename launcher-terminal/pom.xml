@@ -69,6 +69,8 @@
                                 <argument>letrain.LeTrainTerminal</argument>
                                 <argument>--type</argument>
                                 <argument>app-image</argument>
+                                <argument>--add-modules</argument>
+                                <argument>java.desktop</argument>
                                 <argument>--dest</argument>
                                 <argument>${maven.multiModuleProjectDirectory}/output</argument>
                             </arguments>
