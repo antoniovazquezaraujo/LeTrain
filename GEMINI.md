@@ -21,18 +21,22 @@
     *   **UI:** Lanterna for terminal interfaces.
     *   **Automation:** ANTLR4 is used for a custom rail automation language (Grammar: `src/main/antlr4/letrain/command/LeTrainProgram.g4`).
     *   **Serialization:** Uses Jackson (`jackson-databind`) for JSON serialization/deserialization.
-*   **Project Structure:**
-    *   `src/main/java/letrain`: Main source code.
-    *   `src/test/java/letrain`: Unit and integration tests.
-    *   `src/main/resources`: Configuration (e.g., `logback.xml`) and assets (fonts, audio).
+*   **Project Structure (Multi-module):**
+    *   `core/`: Core engine, game model, economy, audio, and all business logic.
+    *   `ui-terminal/`: Text-based UI implementation using Lanterna.
+    *   `ui-graphic/`: 3D UI implementation using LibGDX.
+    *   `launcher-terminal/`: Entrypoint and fat JAR generator for the terminal version.
+    *   `launcher-graphic/`: Entrypoint and fat JAR generator for the 3D version.
     *   `economy.properties`: Central configuration file for game economy tuning.
 *   **Git Workflow & Merging:**
-    *   **CRITICAL RULE:** NEVER merge feature branches into `develop` or push changes to `develop` without the user explicitly stating that they have tested the changes locally and given approval to merge.
-    *   Always leave changes in a separate branch (e.g., `feature/...` or `fix/...`) and wait for user confirmation.
-    *   **CRITICAL RULE:** After a branch has been successfully merged into `develop` or `main`, ALWAYS delete the branch both locally and remotely (`git branch -d` and `git push origin --delete`) to keep the repository clean.
-
+    *   **CRITICAL RULE (ABSOLUTE PROHIBITION):** You are STRICTLY FORBIDDEN from merging any branch into `develop` or `main` on your own initiative.
+    *   `main` is the sacred release branch. `develop` is the integration branch. YOU CANNOT TOUCH THEM without explicit, unambiguous permission from the user AFTER they have tested the changes.
+    *   When writing code, you MUST commit it to a separate branch (`feature/...` or `fix/...`) and STOP.
+    *   Do NOT chain `git merge` commands in your terminal tools (e.g., NEVER run `git commit && git checkout develop && git merge`).
+    *   **CRITICAL RULE:** After the user approves and the branch has been successfully merged, ALWAYS delete the branch both locally and remotely (`git branch -d` and `git push origin --delete`) to keep the repository clean.
+    *   **Issue Linking:** When creating a PR that resolves an issue, you MUST include keywords like `Fixes #ID` or `Resolves #ID` in the PR description (e.g. `gh pr create --body "Fixes #..."`). If a PR was merged without doing this, you MUST add a comment to the Issue linking to the PR before closing it.
 ## Documentation & Navigation
-*   **Class Index:** A complete list of project classes is maintained at `docs/architecture/ClassIndex.md`. Consult this file to locate specific components.
+*   **Class Index:** A complete list of project classes is maintained at `docs/developer/architecture/ClassIndex.md`. Consult this file to locate specific components.
 *   **Architecture & ADRs:** Detailed technical documentation and architectural decision records are located in the `docs/` directory.
 
 ---

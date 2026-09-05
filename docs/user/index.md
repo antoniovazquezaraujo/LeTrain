@@ -13,6 +13,18 @@
 </pre>
 </div>
 
+<p align="center">
+  <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases/latest">
+    <img src="https://img.shields.io/badge/🎮_Download_Latest_Release-0078D4?style=for-the-badge&logo=github&logoColor=white" alt="Download Latest Release">
+  </a>
+  <a href="https://avaraujo.itch.io/letrain-procedural-tycoon">
+    <img src="https://img.shields.io/badge/👾_Available_on_Itch.io-FA5C5C?style=for-the-badge&logo=itch.io&logoColor=white" alt="Available on Itch.io">
+  </a>
+  <a href="https://snapcraft.io/letrain">
+    <img src="https://img.shields.io/badge/🐧_Get_it_on_Snap_Store-E95420?style=for-the-badge&logo=snapcraft&logoColor=white" alt="Get it on Snap Store">
+  </a>
+</p>
+
 **LeTrain** is a procedural train simulator that bridges the gap between classic ASCII aesthetics and modern 3D rendering. Originally a small C++ experiment, it has evolved into a fully-fledged Java simulation where players manage rail networks, logistics, and economies in an infinite, procedurally generated world.
 
 ## ✨ Features
@@ -62,11 +74,11 @@ You can run either the modern 3D version or the classic 2D version:
 ## 🎥 Media & Tutorials
 
 ### Navigation & Camera
-- **Basic Navigation:** The cursor moves using the arrow keys across the map. If it enters a track, it automatically follows it, both forwards and backwards.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Basic Navigation:** The cursor moves using the arrow keys (or Vim keys h, j, k, l) across the map. If it enters a track, it automatically follows it, both forwards and backwards.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/7fKXj1krkFk" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/eidXDfMM5Ec" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Camera Zoom and Pan:** You can zoom in and out using Alt and the arrow keys, as well as rotate the camera. The mouse wheel also controls zoom.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Camera Zoom and Pan:** You can zoom in and out using Alt and the arrow keys (or `Alt + h, j, k, l`), as well as rotate the camera. The mouse wheel also controls zoom.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/hWSTbSypcNo" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/3djcZgXX7h8" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -78,7 +90,7 @@ You can run either the modern 3D version or the classic 2D version:
 - **Cursor Relocation:** When you need to instantly bring the cursor to a train, a station, or a fork, you can press the `o` key.<br><div><strong>3D Engine</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/PUJ00irsU5s" frameborder="0" allowfullscreen></iframe></div>
 
 ### Building the Network
-- **Rail Creation:** To lay down tracks, use `Shift` and the arrow keys. At the end of the rails, yellow blocks are displayed which disappear when the rails are joined together.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Rail Creation:** To lay down tracks, use `Shift` and the arrow keys (or `Shift + H, J, K, L`). At the end of the rails, yellow blocks are displayed which disappear when the rails are joined together.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/PnIWZxik3Ds" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/00y-E6YBxIc" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -86,7 +98,7 @@ You can run either the modern 3D version or the classic 2D version:
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/iVHsKuj0Xm8" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/mYqpJxpBA3k" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Remove Rails:** To remove rails, use the `Ctrl` key with the arrow keys, both forward and backward. The cursor will automatically follow the track as you delete it.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Remove Rails:** To remove rails, use the `Ctrl` key with the arrow keys (or `Ctrl + h, j, k, l`), both forward and backward. The cursor will automatically follow the track as you delete it.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/TDF-26e1wqI" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/L_FrO48OlZY" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -138,7 +150,7 @@ You can run either the modern 3D version or the classic 2D version:
 </div>
 
 ### Safety & Automation
-- **Create Semaphores:** Semaphores are created when the cursor is over the track using the `Home` key. In `semaphores` mode, they are selected with the horizontal arrows and their state is toggled using the spacebar.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Create Semaphores:** Semaphores are created when the cursor is over the track using the `Home` key. In `semaphores` mode, they are selected with the horizontal arrows, their state is toggled using the 'm' key, and their direction is inverted using the spacebar.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/VMJCvCAxExM" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/UiT4tzuuw9A" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -158,7 +170,7 @@ You can run either the modern 3D version or the classic 2D version:
 ### Historical Archive (Early Alpha)
 Take a look at how LeTrain started in this early 2D terminal emulator recording:
 
-<div><strong>3D Engine</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/2WVScFIG4_E" frameborder="0" allowfullscreen></iframe></div>
+<div><strong>2D Terminal</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/2WVScFIG4_E" frameborder="0" allowfullscreen></iframe></div>
 
 ---
 <div align="center" style="margin-top: 40px; margin-bottom: 40px;">

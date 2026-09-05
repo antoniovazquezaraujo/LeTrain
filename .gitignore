@@ -1,6 +1,6 @@
 .idea/
 Ideas.adoc
-/target/
+target/
 *.ltr
 /output/
 unused_sound/
@@ -13,3 +13,4 @@ commands.txt
 video-list.txt
 load-unload
 inject_2d_videos.py
+**/target/

@@ -1,0 +1,137 @@
+lexer grammar LeTrainLexer;
+
+// Keywords
+TRAIN: 'train' | 'tr';
+CREATE: 'create';
+ITINERARY: 'itinerary';
+ASSIGN: 'assign';
+TO: 'to';
+SET: 'set';
+AUTOPILOT: 'autopilot';
+STATION: 'station' | 'st';
+SENSOR: 'sensor' | 'sn';
+NAME: 'name';
+TRUE: 'true';
+FALSE: 'false';
+ADD: 'add';
+LOAD: 'load';
+UNLOAD: 'unload';
+REVERSE: 'reverse';
+WAIT: 'wait';
+SPEED: 'speed';
+ON: 'on';
+OFF: 'off';
+ENGINE: 'engine';
+
+CRASH: 'crash';
+CONTACT: 'contact';
+ENTER: 'enter';
+EXIT: 'exit';
+COUPLE: 'couple';
+UNCOUPLE: 'uncouple';
+FORK: 'fork' | 'fk';
+SEMAPHORE: 'semaphore' | 'sm';
+SIGNAL: 'signal' | 'sg';
+TRAIN_AT: 'train at';
+OPEN: 'open';
+CLOSED: 'closed';
+STRAIGHT: 'straight';
+CURVED: 'curved';
+FLIP: 'flip';
+FORWARD: 'forward' | 'fw';
+BACKWARD: 'backward' | 'bw';
+ACCELERATE: 'accelerate';
+DECELERATE: 'decelerate';
+INVERT: 'invert';
+
+// New Keywords for PlayerCommands
+NEW: 'new';
+LS: 'ls';
+INFO: 'info';
+Q: 'q';
+Q_BANG: 'q!';
+DEL: 'del';
+GO: 'go';
+G: 'g';
+MODE: 'mode';
+WRITE: 'write';
+MOVE: 'move';
+CLEAR: 'clear';
+L: 'l';
+M: 'm';
+R: 'r';
+FACE: 'face';
+STEP: 'step';
+SAVE: 'save';
+QUIT: 'quit';
+WQ: 'wq';
+MARK: 'mark';
+KEEP_MAP: 'keep-map';
+MAP: 'map';
+NEXT: 'next';
+PREV: 'prev';
+GN: 'gn';
+GP: 'gp';
+RAIL: 'rail' | 'rl';
+END: 'end';
+
+// Directions
+DIR_E: 'e';
+DIR_NE: 'ne';
+DIR_N: 'n';
+DIR_NW: 'nw';
+DIR_W: 'w';
+DIR_SW: 'sw';
+DIR_S: 's';
+DIR_SE: 'se';
+
+// Symbols
+LBRACE: '{';
+RBRACE: '}';
+SEMI: ';';
+COMMA: ',';
+EQUALS: '=';
+
+// Data types
+NUMBER : '-'? [0-9]+;
+STRING : '"' ~["]* '"' ;
+
+// Whitespace
+WS : [ \t\r\n]+ -> skip;
+
+// Added vehicles
+LOCOMOTIVE: 'locomotive';
+LOCO: 'loco';
+WAGON: 'wagon';
+
+// Added keywords for signals and forks
+LEFT: 'left';
+RIGHT: 'right';
+CLOSE: 'close';
+MAX: 'max';
+LIMIT: 'limit';
+
+// Colors
+RED: 'red';
+GREEN: 'green';
+BLUE: 'blue';
+YELLOW: 'yellow';
+BLACK: 'black';
+WHITE: 'white';
+ORANGE: 'orange';
+PURPLE: 'purple';
+GRAY: 'gray';
+BROWN: 'brown';
+
+// Cargos
+COAL: 'coal';
+GOLD: 'gold';
+RUBY: 'ruby';
+
+// Signal Mode
+MIN: 'min';
+
+STOP: 'stop';
+
+// Identifiers
+ID : [a-zA-Z0-9_]+ ;

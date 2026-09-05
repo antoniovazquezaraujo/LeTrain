@@ -88,19 +88,21 @@ mvn test -X             # Verbose
 ### Run Application
 ```bash
 # 2D Terminal Mode
-java -jar target/JLeTrain-1.0-SNAPSHOT-jar-with-dependencies.jar
+./output/LeTrain2D/bin/LeTrain2D
 
 # 3D Mode
-java -jar target/JLeTrain-1.0-SNAPSHOT-jar-with-dependencies.jar --3d
+./output/LeTrain/bin/LeTrain
 ```
 
 ## Project Structure
 
 ### Main Directories
-- `src/main/java/letrain/`: Main source code.
-- `src/test/java/letrain/`: Test source code.
-- `src/main/resources/`: Resources (e.g., configuration files).
-- `output/`: Build output.
+- `core/`: Core engine, logic, economy, and shared resources.
+- `ui-terminal/`: Terminal view layer (Lanterna).
+- `ui-graphic/`: 3D view layer (LibGDX).
+- `launcher-terminal/`: Terminal executable entrypoint.
+- `launcher-graphic/`: Graphic executable entrypoint.
+- `output/`: Built application images.
 
 ### Key Packages
 - `track/`: Railway track system.

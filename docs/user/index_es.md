@@ -12,6 +12,18 @@
 </pre>
 </div>
 
+<p align="center">
+  <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases/latest">
+    <img src="https://img.shields.io/badge/🎮_Descargar_Última_Versión-0078D4?style=for-the-badge&logo=github&logoColor=white" alt="Descargar Última Versión">
+  </a>
+  <a href="https://avaraujo.itch.io/letrain-procedural-tycoon">
+    <img src="https://img.shields.io/badge/👾_Disponible_en_Itch.io-FA5C5C?style=for-the-badge&logo=itch.io&logoColor=white" alt="Disponible en Itch.io">
+  </a>
+  <a href="https://snapcraft.io/letrain">
+    <img src="https://img.shields.io/badge/🐧_Bajar_en_Snap_Store-E95420?style=for-the-badge&logo=snapcraft&logoColor=white" alt="Bajar en Snap Store">
+  </a>
+</p>
+
 **LeTrain** es un simulador de trenes procedimental que combina la estética clásica ASCII con el renderizado moderno en 3D. Originalmente un pequeño experimento en C++, ha evolucionado hasta convertirse en un simulador completo en Java donde los jugadores gestionan redes ferroviarias, logística y economía en un mundo infinito generado de forma procedimental.
 
 ## ✨ Características
@@ -61,11 +73,11 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
 ## 🎥 Multimedia y Tutoriales
 
 ### Navegación y Cámara
-- **Navegación Básica:** El cursor se mueve con las teclas de dirección por todo el mapa. Si entra en una vía, la sigue automáticamente, tanto hacia adelante como hacia atrás.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Navegación Básica:** El cursor se mueve con las teclas de dirección (o teclas de Vim h, j, k, l) por todo el mapa. Si entra en una vía, la sigue automáticamente, tanto hacia adelante como hacia atrás.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/7fKXj1krkFk" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/eidXDfMM5Ec" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Zoom y Paneo de Cámara:** Se puede hacer zoom con Alt y las flechas, así como girar la cámara. También hace zoom la rueda del ratón.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Zoom y Paneo de Cámara:** Se puede hacer zoom con Alt y las flechas (o `Alt + h, j, k, l`), así como girar la cámara. También hace zoom la rueda del ratón.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/hWSTbSypcNo" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/3djcZgXX7h8" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -77,7 +89,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
 - **Reubicar Cursor:** Cuando se necesita traer el cursor a donde está un tren, una estación o un desvío se puede usar la tecla `o`.<br><div><strong>3D Engine</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/PUJ00irsU5s" frameborder="0" allowfullscreen></iframe></div>
 
 ### Construyendo la Red
-- **Creación de Vías:** Para crear vías se usa la tecla `Mayus` y las flechas. En los finales de vía se muestran unos bloques amarillos que desaparecen cuando las vías se unen.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Creación de Vías:** Para crear vías se usa la tecla `Mayus` y las flechas (o `Shift + H, J, K, L`). En los finales de vía se muestran unos bloques amarillos que desaparecen cuando las vías se unen.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/PnIWZxik3Ds" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/00y-E6YBxIc" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -85,7 +97,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/iVHsKuj0Xm8" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/mYqpJxpBA3k" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Borrar Vías:** Para retirar vías se usa la tecla `Ctrl` con las flechas de dirección, tanto hacia adelante como hacia atrás. El cursor va siguiendo la vía automáticamente.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Borrar Vías:** Para retirar vías se usa la tecla `Ctrl` con las flechas de dirección (o `Ctrl + h, j, k, l`), tanto hacia adelante como hacia atrás. El cursor va siguiendo la vía automáticamente.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/TDF-26e1wqI" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/L_FrO48OlZY" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -137,7 +149,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
 </div>
 
 ### Seguridad y Automatización
-- **Crear Semáforos:** Los semáforos se crean cuando el cursor está sobre la vía y se usa la tecla `Inicio`. En el modo `semaphores` se seleccionan con las flechas horizontales y se cambia su estado con la barra espaciadora.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Crear Semáforos:** Los semáforos se crean cuando el cursor está sobre la vía y se usa la tecla `Inicio`. En el modo `semaphores` se seleccionan con las flechas horizontales, se cambia su estado con la tecla 'm', y se invierte su dirección con la barra espaciadora.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/VMJCvCAxExM" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/UiT4tzuuw9A" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -157,7 +169,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
 ### Archivo Histórico (Early Alpha)
 Mira cómo empezó LeTrain en esta antigua grabación del emulador 2D:
 
-<div><strong>3D Engine</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/2WVScFIG4_E" frameborder="0" allowfullscreen></iframe></div>
+<div><strong>2D Terminal</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/2WVScFIG4_E" frameborder="0" allowfullscreen></iframe></div>
 
 ---
 <div align="center" style="margin-top: 40px; margin-bottom: 40px;">
