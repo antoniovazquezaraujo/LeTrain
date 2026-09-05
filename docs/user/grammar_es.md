@@ -64,7 +64,38 @@ Responde a eventos del juego en tiempo real.
 **Acciones especiales dentro de bloques (terminan en `;`):**
 - *Semáforos:* `semaphore [ID] set open;` / `semaphore [ID] set closed;`
 - *Cambios de Aguja (Forks):* `fork [ID] set flip;` / `fork [ID] set straight;` / `fork [ID] set curved;`
-- *Tren Condicional:* Puedes usar `train at station [ID]` en lugar de usar un número fijo de tren para aplicar acciones al tren que disparó el evento.
+- *Tren Condicional:* Puedes usar `train at station [ID]`, `train at sensor [ID]`, `train at fork [ID]`, o `train at semaphore [ID]` en lugar de usar un número fijo de tren para aplicar acciones al tren que disparó el evento o que se encuentre allí.
+
+### 4. Comandos del Juego y Editor (Consola)
+Puedes teclear estos comandos directamente en el CLI para gestionar el estado del juego, el cursor y los archivos.
+
+**Estado del Juego y Archivos:**
+- `save [archivo];` / `load [archivo];` - Guardar o cargar un mapa.
+- `quit;` o `q` - Salir del juego.
+
+**Información y Borrado:**
+- `ls [tipoEntidad];` - Listar entidades de un tipo (ej., `ls train;`, `ls station;`).
+- `info [tipoEntidad] [ID];` - Obtener detalles de una entidad específica.
+- `del [tipoEntidad] [ID];` - Borrar una infraestructura específica (ej., `del station 1;`). *Nota: No sirve para trenes.*
+- `clear train [ID];` - Borrar un tren específico del mapa (ej., `clear train 1;`). *Nota: CLEAR es exclusivo para vehículos.*
+
+**Movimiento del Cursor y Marcas:**
+- `go [NUM], [NUM];` - Mover el cursor a una coordenada X, Y absoluta.
+- `go [tipoEntidad] [ID];` - Saltar con el cursor a una entidad (ej., `go station 1;`).
+- `go next [tipoEntidad];` / `go prev [tipoEntidad];` - Ciclar el cursor por las entidades.
+- `mark [ID];` o `m [ID];` - Guardar la posición actual del cursor en una marca.
+- `go mark [ID];` o `go m [ID];` - Saltar con el cursor a una marca guardada.
+- `face [DIR];` - Girar el cursor para mirar a una dirección (`dir_n`, `dir_s`, `dir_e`, `dir_w`, etc.).
+
+**Acciones de Infraestructura (Directas):**
+Puedes dar comandos directos a la infraestructura fuera de los bloques de eventos:
+- `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] invert;`
+- `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] flip;`
+- `signal [ID] set limit [NUM];` / `signal [ID] set mode (max|min);` / `signal [ID] invert;`
+
+**Modo Tortuga (Construcción por Script):**
+Puedes usar `write`, `move`, `del`, o `clear` para hacer secuencias de movimientos con el cursor y automatizar la construcción de vías.
+- `write 5, r, 5, l, 10;` - Dibujar vías: avanza 5, gira derecha, avanza 5, gira izquierda, avanza 10.
 
 ---
 

@@ -19,8 +19,15 @@
 
 <p align="center">
   <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases/latest">
-    <img src="https://img.shields.io/badge/🎮_Download_Latest_Release-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Latest Release">
+    <img src="https://img.shields.io/badge/🎮_Download_Latest_Release-0078D4?style=for-the-badge&logo=github&logoColor=white" alt="Download Latest Release">
   </a>
+  <a href="https://avaraujo.itch.io/letrain-procedural-tycoon">
+    <img src="https://img.shields.io/badge/👾_Available_on_Itch.io-FA5C5C?style=for-the-badge&logo=itch.io&logoColor=white" alt="Available on Itch.io">
+  </a>
+  <a href="https://snapcraft.io/letrain">
+    <img src="https://img.shields.io/badge/🐧_Get_it_on_Snap_Store-E95420?style=for-the-badge&logo=snapcraft&logoColor=white" alt="Get it on Snap Store">
+  </a>
+  <br><br>
   <a href="https://antoniovazquezaraujo.github.io/LeTrain/">
     <img src="https://img.shields.io/badge/📖_Read_the_Documentation-2EA043?style=for-the-badge&logo=markdown&logoColor=white" alt="Read the Documentation">
   </a>
@@ -63,14 +70,14 @@ The game now features a fully integrated financial system:
 
 ### Quick Launch
 The build system is now fully automated. Simply run:
-```powershell
+```bash
 mvn package -DskipTests
 ```
-This generates a standalone distribution in the `output/LeTrain` folder.
+This generates a standalone native distribution for your OS in the `output/LeTrain` folder.
 
 ### Dual Launchers
-- **`LeTrain.exe`**: The modern experience. Launches directly into **3D mode**.
-- **`LeTrain2D.exe`**: For those who prefer the classic, high-speed ASCII terminal view.
+- **`LeTrain`** (or `.exe` on Windows): The modern experience. Launches directly into **3D mode**.
+- **`LeTrain2D`** (or `.exe` on Windows): For those who prefer the classic, high-speed ASCII terminal view.
 
 ---
 

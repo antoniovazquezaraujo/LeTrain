@@ -14,17 +14,34 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 
 ### Navigation and Views
 - **Arrow Keys (or h, j, k, l)**: Move the cursor freely or follow a track (Vim-style navigation).
+- **Alt + Arrows (or Alt + h, j, k, l)**: Zoom and pan/orbit the camera.
 - **Numbers (0-9)**: Enter a numeric multiplier (quantifier) to increase the speed and jump distance of the cursor. Pressing numbers overrides the current multiplier. Press **Spacebar** to return to moving 1 by 1.
 - **Key 'a'**: Enter **Add** mode. This allows you to quickly add infrastructure:
-  - **s**: Build Station
+  - **n**: Build Station
   - **e**: Build Sensor
-  - **m**: Build Semaphore
+  - **s**: Build Semaphore
   - **g**: Build Speed Signal
 - **Key 'o'**: Instantly relocate the cursor to the currently selected train, station, fork, sensor, or speed signal.
 - **Key 'z'**: In 3D: Toggle between the three cameras (Perspective, Top-down, and Cab view). In 2D: Cycle the camera deadzone box.
 - **Esc**: In 3D: Exit the game menu.
 - **Key 'Z' (Shift+z)**: In 2D: Toggle camera pagination mode.
 - **Key 'Tab'**: Cycle through the information bar visibility levels (Compact, Full, Hidden).
+
+### Game Modes & Shortcuts
+LeTrain is deeply modal. Pressing the following keys will switch your current interaction mode:
+- **`r`**: **Rails Mode** (Default) - Build and delete tracks.
+- **`a`**: **Add Mode** - Add infrastructure (Stations, Sensors, Semaphores).
+- **`t`**: **Trains Mode** - Build new trains.
+- **`d`**: **Drive Mode** - Drive and control trains.
+- **`c`**: **Link Mode** - Couple wagons and locomotives.
+- **`u`**: **Unlink Mode** - Uncouple wagons and locomotives.
+- **`f`**: **Forks Mode** - Manage and flip track forks.
+- **`s`**: **Semaphores Mode** - Manage semaphores.
+- **`g`**: **Speed Signals Mode** - Manage speed limit signals.
+- **`n`**: **Stations Mode** - Select and inspect stations.
+- **`e`**: **Sensors Mode** - Select and inspect sensors.
+- **`p`**: **Program Mode** - Open the IDE to write automation scripts.
+- **`:`**: **CLI Mode** - Open the command line interface.
 
 ### Construction (Rails Mode)
 - **Shift + Arrows (or H, J, K, L)**: Build new tracks.

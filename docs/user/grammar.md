@@ -64,7 +64,38 @@ Responds to game events in real-time.
 **Special actions inside blocks (must end with `;`):**
 - *Semaphores:* `semaphore [ID] set open;` / `semaphore [ID] set closed;`
 - *Forks:* `fork [ID] set flip;` / `fork [ID] set straight;` / `fork [ID] set curved;`
-- *Conditional Train:* You can use `train at station [ID]` instead of a fixed train number to apply actions to the specific train that triggered the event.
+- *Conditional Train:* You can use `train at station [ID]`, `train at sensor [ID]`, `train at fork [ID]`, or `train at semaphore [ID]` instead of a fixed train number to apply actions to the specific train that triggered the event or is located there.
+
+### 4. Game & Editor Commands (Console)
+You can type these commands directly into the CLI to manage the game state, cursor, and files.
+
+**Game State & Files:**
+- `save [filename];` / `load [filename];` - Save or load a map.
+- `quit;` or `q` - Exit the game.
+
+**Information & Deletion:**
+- `ls [entityType];` - List entities of a type (e.g., `ls train;`, `ls station;`).
+- `info [entityType] [ID];` - Get details of a specific entity.
+- `del [entityType] [ID];` - Delete specific infrastructure (e.g., `del station 1;`). *Note: Cannot be used for trains.*
+- `clear train [ID];` - Delete a specific train from the map (e.g., `clear train 1;`). *Note: CLEAR is exclusively for vehicles.*
+
+**Cursor Movement & Marks:**
+- `go [NUM], [NUM];` - Move cursor to absolute X, Y coordinates.
+- `go [entityType] [ID];` - Jump cursor to an entity (e.g., `go station 1;`).
+- `go next [entityType];` / `go prev [entityType];` - Cycle cursor through entities.
+- `mark [ID];` or `m [ID];` - Save the current cursor position to a mark.
+- `go mark [ID];` or `go m [ID];` - Jump cursor to a previously saved mark.
+- `face [DIR];` - Turn cursor to face a direction (`dir_n`, `dir_s`, `dir_e`, `dir_w`, etc.).
+
+**Infrastructure Actions (Direct):**
+You can directly command infrastructure outside of triggers:
+- `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] invert;`
+- `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] flip;`
+- `signal [ID] set limit [NUM];` / `signal [ID] set mode (max|min);` / `signal [ID] invert;`
+
+**Turtle Mode (Scripted Building):**
+You can use `write`, `move`, `del`, or `clear` to script sequential cursor movements and track construction.
+- `write 5, r, 5, l, 10;` - Draw tracks: advance 5, turn right, advance 5, turn left, advance 10.
 
 ---
 
