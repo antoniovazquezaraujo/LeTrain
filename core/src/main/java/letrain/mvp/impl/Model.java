@@ -1264,7 +1264,7 @@ public class Model implements letrain.mvp.Model {
                         () -> !this.getSemaphores().isEmpty(),
                         () -> this.getMode() == GameMode.SEMAPHORES, () -> GameMode.SEMAPHORES),
                 new GameModeMenuOption("S&ensors",
-                        "[⏴⏵/hl]:Select [o]:Locate [#]:ID",
+                        "[⏴⏵/hl]:Select [o]:Locate [Space]:Invert [#]:ID",
                         () -> getSensors().stream().anyMatch(s -> s.getClass() == letrain.track.Sensor.class),
                         () -> this.getMode() == GameMode.SENSORS, () -> GameMode.SENSORS),
                 new GameModeMenuOption("Si&gnals",
