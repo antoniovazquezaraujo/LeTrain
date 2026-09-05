@@ -51,26 +51,21 @@
                 <version>3.5.0</version>
                 <executions>
                     <execution>
-                        <id>jpackage</id>
+                        <id>jlink-jre</id>
                         <phase>package</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>jpackage</executable>
+                            <executable>jlink</executable>
                             <arguments>
-                                <argument>--input</argument>
-                                <argument>${project.build.directory}</argument>
-                                <argument>--name</argument>
-                                <argument>LeTrain</argument>
-                                <argument>--main-jar</argument>
-                                <argument>${project.build.finalName}-jar-with-dependencies.jar</argument>
-                                <argument>--main-class</argument>
-                                <argument>letrain.LeTrainGraphic</argument>
-                                <argument>--type</argument>
-                                <argument>app-image</argument>
-                                <argument>--dest</argument>
-                                <argument>${maven.multiModuleProjectDirectory}/output</argument>
+                                <argument>--add-modules</argument>
+                                <argument>java.base,java.desktop,java.naming,java.prefs,java.sql,jdk.unsupported</argument>
+                                <argument>--output</argument>
+                                <argument>${maven.multiModuleProjectDirectory}/output/LeTrain/lib/runtime</argument>
+                                <argument>--strip-debug</argument>
+                                <argument>--no-man-pages</argument>
+                                <argument>--no-header-files</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -91,6 +86,30 @@
                         <configuration>
                             <target>
                                 <delete dir="${maven.multiModuleProjectDirectory}/output/LeTrain"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>create-sh-launcher</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- Copy the jar into lib/app -->
+                                <mkdir dir="${maven.multiModuleProjectDirectory}/output/LeTrain/lib/app"/>
+                                <copy file="${project.build.directory}/${project.build.finalName}-jar-with-dependencies.jar"
+                                      tofile="${maven.multiModuleProjectDirectory}/output/LeTrain/lib/app/${project.build.finalName}-jar-with-dependencies.jar"/>
+
+                                <!-- Create the shell script -->
+                                <mkdir dir="${maven.multiModuleProjectDirectory}/output/LeTrain/bin"/>
+                                <echo file="${maven.multiModuleProjectDirectory}/output/LeTrain/bin/LeTrain.sh">#!/bin/sh
+DIR="$(cd "$(dirname "$0")" &amp;&amp; pwd)"
+"$DIR/../lib/runtime/bin/java" -jar "$DIR/../lib/app/${project.build.finalName}-jar-with-dependencies.jar"
+</echo>
+                                <!-- Make it executable -->
+                                <chmod file="${maven.multiModuleProjectDirectory}/output/LeTrain/bin/LeTrain.sh" perm="755"/>
                             </target>
                         </configuration>
                     </execution>
