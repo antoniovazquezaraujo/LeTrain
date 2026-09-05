@@ -61,7 +61,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
 ## 🎥 Multimedia y Tutoriales
 
 ### Navegación y Cámara
-- **Navegación Básica:** El cursor se mueve con las teclas de dirección por todo el mapa. Si entra en una vía, la sigue automáticamente, tanto hacia adelante como hacia atrás.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Navegación Básica:** El cursor se mueve con las teclas de dirección (o teclas de Vim h, j, k, l) por todo el mapa. Si entra en una vía, la sigue automáticamente, tanto hacia adelante como hacia atrás.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/7fKXj1krkFk" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/eidXDfMM5Ec" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -77,7 +77,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
 - **Reubicar Cursor:** Cuando se necesita traer el cursor a donde está un tren, una estación o un desvío se puede usar la tecla `o`.<br><div><strong>3D Engine</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/PUJ00irsU5s" frameborder="0" allowfullscreen></iframe></div>
 
 ### Construyendo la Red
-- **Creación de Vías:** Para crear vías se usa la tecla `Mayus` y las flechas. En los finales de vía se muestran unos bloques amarillos que desaparecen cuando las vías se unen.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Creación de Vías:** Para crear vías se usa la tecla `Mayus` y las flechas (o `Shift + H, J, K, L`). En los finales de vía se muestran unos bloques amarillos que desaparecen cuando las vías se unen.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/PnIWZxik3Ds" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/00y-E6YBxIc" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -85,7 +85,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/iVHsKuj0Xm8" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/mYqpJxpBA3k" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Borrar Vías:** Para retirar vías se usa la tecla `Ctrl` con las flechas de dirección, tanto hacia adelante como hacia atrás. El cursor va siguiendo la vía automáticamente.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Borrar Vías:** Para retirar vías se usa la tecla `Ctrl` con las flechas de dirección (o `Ctrl + h, j, k, l`), tanto hacia adelante como hacia atrás. El cursor va siguiendo la vía automáticamente.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/TDF-26e1wqI" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/L_FrO48OlZY" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -137,7 +137,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
 </div>
 
 ### Seguridad y Automatización
-- **Crear Semáforos:** Los semáforos se crean cuando el cursor está sobre la vía y se usa la tecla `Inicio`. En el modo `semaphores` se seleccionan con las flechas horizontales y se cambia su estado con la barra espaciadora.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Crear Semáforos:** Los semáforos se crean cuando el cursor está sobre la vía y se usa la tecla `Inicio`. En el modo `semaphores` se seleccionan con las flechas horizontales, se cambia su estado con la tecla 'm', y se invierte su dirección con la barra espaciadora.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/VMJCvCAxExM" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/UiT4tzuuw9A" frameborder="0" allowfullscreen></iframe></div>
 </div>

@@ -15,16 +15,22 @@ Bienvenido al manual oficial de **LeTrain**. Aquí encontrarás todo lo que nece
 El juego se puede controlar tanto en su versión 2D como en la 3D mediante el teclado. A continuación, las teclas y modos principales:
 
 ### Navegación y Vistas
-- **Flechas de dirección**: Mover el cursor libremente o seguir una vía.
+- **Flechas de dirección (o h, j, k, l)**: Mover el cursor libremente o seguir una vía (estilo Vim).
 - **Números (0-9)**: Introduce un salto numérico (multiplicador) para aumentar la velocidad y distancia del cursor. Al introducir un nuevo número se sobrescribe el anterior. Pulsa **Espacio** para volver a ir de 1 en 1.
-- **Tecla 'o'**: Reubicar el cursor instantáneamente sobre un tren, estación o desvío.
-- **Tecla 'c'**: En 3D: Alternar entre las tres cámaras (Perspectiva, Cenital y Cabina). En 2D: Cambiar el tamaño de la zona muerta de la cámara.
-- **Tecla 'C' (Mayús+c)**: En 2D: Activar o desactivar la paginación de cámara.
+- **Tecla 'a'**: Entrar en modo **Add** (Añadir). Esto te permite construir infraestructura rápidamente:
+  - **s**: Construir Estación
+  - **e**: Construir Sensor
+  - **m**: Construir Semáforo
+  - **g**: Construir Señal de Velocidad
+- **Tecla 'o'**: Reubicar el cursor instantáneamente sobre el tren, estación, desvío, sensor o señal de velocidad seleccionado actualmente.
+- **Tecla 'z'**: En 3D: Alternar entre las tres cámaras (Perspectiva, Cenital y Cabina). En 2D: Cambiar el tamaño de la zona muerta de la cámara.
+- **Esc**: En 3D: Salir del menú del juego.
+- **Tecla 'Z' (Mayús+z)**: En 2D: Activar o desactivar la paginación de cámara.
 - **Tecla 'Tab'**: Alternar entre los diferentes niveles de visibilidad de la barra de información (Compacta, Completa, Oculta).
 
 ### Construcción (Modo Rails)
-- **Mayús + Flechas**: Construir vías nuevas.
-- **Ctrl + Flechas**: Borrar vías existentes.
+- **Mayús + Flechas (o H, J, K, L)**: Construir vías nuevas.
+- **Ctrl + Flechas (o Ctrl + h, j, k, l)**: Borrar vías existentes.
 - **Inicio (Home)**: Crear un semáforo sobre la vía.
 - **Insert**: Crear un sensor sobre la vía.
 - **Fin (End)**: Crear una estación.
@@ -35,8 +41,21 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 - **Modo Drive**: Flechas Izquierda/Derecha seleccionan tren. Arriba/Abajo aceleran/frenan. **Espacio** invierte la marcha (solo en parado).
 - **Modo Link / Unlink**: Arriba/Abajo selecciona el extremo del tren. Izquierda/Derecha selecciona la cantidad de vagones. **Espacio** ejecuta el enganche.
 
+
+### Modo Consola (CLI)
+Pulsa la tecla `:` para abrir la consola integrada (al estilo Vim). Desde aquí puedes escribir comandos directos para construir vías, generar trenes o manipular entidades al instante.
+Algunos comandos útiles:
+- `go 10, 5;` - Mueve el cursor a una coordenada absoluta.
+- `new st;` - Construye una estación bajo el cursor.
+- `new loco A red;` - Crea una locomotora roja 'A'.
+- `train 1 set engine on;` - Enciende el motor del tren 1.
+- `ls st;` - Lista todas las estaciones.
+- `quit;` o `q` - Sale del juego.
+
+Para una referencia completa de los comandos, consulta la documentación o escribe `info` en la consola.
+
 ### Interacción
-- **Espacio**: En el modo Semáforos o Señales de Velocidad, invertir el sentido del dispositivo.
+- **Espacio**: En el modo Semáforos, Señales de Velocidad o Sensores, invertir el sentido del dispositivo.
 - **Tecla 'm'**: En Semáforos, cambia el estado (verde/rojo). En Señales de Velocidad, alterna el tipo de señal (Máx/Mín). En Trenes, enciende/apaga el motor.
 - **Intro (Enter)**: Iniciar la carga/descarga de mercancías al detener el tren en una estación.
 

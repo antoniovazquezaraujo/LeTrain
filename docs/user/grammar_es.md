@@ -13,12 +13,12 @@ Se ejecutan inmediatamente. **Requieren punto y coma (`;`) al final**.
 - `train [ID] accelerate;`
 - `train [ID] decelerate;`
 - `train [ID] set speed [NUM];` o `train [ID] set [NUM];`
-- `train [ID] stop;`
 - `train [ID] invert;`
+- `train [ID] set engine on;` / `train [ID] set engine off;`
 - `train [ID] set forward;` / `train [ID] set backward;`
 - `train [ID] load;`
 - `train [ID] unload;`
-- `train [ID] link forward [NUM];` / `train [ID] unlink backward;`
+- `train [ID] couple forward [NUM];` / `train [ID] uncouple backward;`
 
 **Nombrar Elementos:**
 - `station [ID] set name "Mi Estacion";`
@@ -58,7 +58,7 @@ Responde a eventos del juego en tiempo real.
 - `sensor [ID]`, `fork [ID]`, `semaphore [ID]`, `station [ID]`, `train [ID]` (o `train` genérico).
 
 **Eventos:**
-- Trenes: `on train enter`, `on train exit`, `on train link`, `on train unlink` (opcionalmente con dirección `forward`/`backward`).
+- Trenes: `on train enter`, `on train exit`, `on train couple`, `on train uncouple` (opcionalmente con dirección `forward`/`backward`).
 - Accidentes: `train 1 on crash`, `train on contact forward`.
 
 **Acciones especiales dentro de bloques (terminan en `;`):**
