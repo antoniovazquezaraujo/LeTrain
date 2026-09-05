@@ -63,14 +63,14 @@ The game now features a fully integrated financial system:
 
 ### Quick Launch
 The build system is now fully automated. Simply run:
-```powershell
+```bash
 mvn package -DskipTests
 ```
-This generates a standalone distribution in the `output/LeTrain` folder.
+This generates a standalone native distribution for your OS in the `output/LeTrain` folder.
 
 ### Dual Launchers
-- **`LeTrain.exe`**: The modern experience. Launches directly into **3D mode**.
-- **`LeTrain2D.exe`**: For those who prefer the classic, high-speed ASCII terminal view.
+- **`LeTrain`** (or `.exe` on Windows): The modern experience. Launches directly into **3D mode**.
+- **`LeTrain2D`** (or `.exe` on Windows): For those who prefer the classic, high-speed ASCII terminal view.
 
 ---
 

@@ -157,7 +157,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
 ### Archivo Histórico (Early Alpha)
 Mira cómo empezó LeTrain en esta antigua grabación del emulador 2D:
 
-<div><strong>3D Engine</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/2WVScFIG4_E" frameborder="0" allowfullscreen></iframe></div>
+<div><strong>2D Terminal</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/2WVScFIG4_E" frameborder="0" allowfullscreen></iframe></div>
 
 ---
 <div align="center" style="margin-top: 40px; margin-bottom: 40px;">

@@ -88,10 +88,10 @@ mvn test -X             # Verbose
 ### Run Application
 ```bash
 # 2D Terminal Mode
-java -jar target/JLeTrain-1.0-SNAPSHOT-jar-with-dependencies.jar
+./output/LeTrain2D/bin/LeTrain2D
 
 # 3D Mode
-java -jar target/JLeTrain-1.0-SNAPSHOT-jar-with-dependencies.jar --3d
+./output/LeTrain/bin/LeTrain
 ```
 
 ## Project Structure

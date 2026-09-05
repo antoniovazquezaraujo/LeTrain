@@ -158,7 +158,7 @@ You can run either the modern 3D version or the classic 2D version:
 ### Historical Archive (Early Alpha)
 Take a look at how LeTrain started in this early 2D terminal emulator recording:
 
-<div><strong>3D Engine</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/2WVScFIG4_E" frameborder="0" allowfullscreen></iframe></div>
+<div><strong>2D Terminal</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/2WVScFIG4_E" frameborder="0" allowfullscreen></iframe></div>
 
 ---
 <div align="center" style="margin-top: 40px; margin-bottom: 40px;">
