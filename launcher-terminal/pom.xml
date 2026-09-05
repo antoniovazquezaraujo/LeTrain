@@ -62,7 +62,7 @@
                                 <argument>--input</argument>
                                 <argument>${project.build.directory}</argument>
                                 <argument>--name</argument>
-                                <argument>LeTrainTerminal</argument>
+                                <argument>LeTrain2D</argument>
                                 <argument>--main-jar</argument>
                                 <argument>${project.build.finalName}-jar-with-dependencies.jar</argument>
                                 <argument>--main-class</argument>
@@ -90,7 +90,7 @@
                         </goals>
                         <configuration>
                             <target>
-                                <delete dir="${maven.multiModuleProjectDirectory}/output/LeTrainTerminal"/>
+                                <delete dir="${maven.multiModuleProjectDirectory}/output/LeTrain2D"/>
                             </target>
                         </configuration>
                     </execution>
