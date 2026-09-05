@@ -1,0 +1,25 @@
+changelog:
+  exclude:
+    labels:
+      - "ignore-for-release"
+      - "internal"
+      - "chore"
+  categories:
+    - title: "🚀 New Features"
+      labels:
+        - "enhancement"
+        - "feature"
+    - title: "🐛 Bug Fixes"
+      labels:
+        - "bug"
+        - "fix"
+    - title: "📖 Documentation"
+      labels:
+        - "documentation"
+    - title: "📦 Dependency Updates"
+      labels:
+        - "dependencies"
+    - title: "🛠️ Maintenance & Refactoring"
+      labels:
+        - "refactor"
+        - "maintenance"
