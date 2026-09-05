@@ -20,7 +20,7 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
   - **e**: Build Sensor
   - **m**: Build Semaphore
   - **g**: Build Speed Signal
-- **Key 'o'**: Instantly relocate the cursor to a train, station, or fork.
+- **Key 'o'**: Instantly relocate the cursor to the currently selected train, station, fork, sensor, or speed signal.
 - **Key 'z'**: In 3D: Toggle between the three cameras (Perspective, Top-down, and Cab view). In 2D: Cycle the camera deadzone box.
 - **Esc**: In 3D: Exit the game menu.
 - **Key 'Z' (Shift+z)**: In 2D: Toggle camera pagination mode.
@@ -53,7 +53,7 @@ Some useful commands:
 For a complete reference of the CLI commands, check out the developer documentation or type `info` in the console.
 
 ### Interaction
-- **Spacebar**: In Semaphores or Speed Signals mode, invert the direction of the device.
+- **Spacebar**: In Semaphores, Speed Signals, or Sensors mode, invert the direction of the device.
 - **Key 'm'**: In Semaphores mode, change the state (green/red). In Speed Signals mode, toggle the type of signal (Max/Min). In Trains mode, start/stop the engine.
 - **Enter**: Start loading/unloading cargo when stopping a train at a station.
 

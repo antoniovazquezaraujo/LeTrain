@@ -137,7 +137,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
 </div>
 
 ### Seguridad y Automatización
-- **Crear Semáforos:** Los semáforos se crean cuando el cursor está sobre la vía y se usa la tecla `Inicio`. En el modo `semaphores` se seleccionan con las flechas horizontales y se cambia su estado con la barra espaciadora.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Crear Semáforos:** Los semáforos se crean cuando el cursor está sobre la vía y se usa la tecla `Inicio`. En el modo `semaphores` se seleccionan con las flechas horizontales, se cambia su estado con la tecla 'm', y se invierte su dirección con la barra espaciadora.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/VMJCvCAxExM" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/UiT4tzuuw9A" frameborder="0" allowfullscreen></iframe></div>
 </div>

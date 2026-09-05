@@ -138,7 +138,7 @@ You can run either the modern 3D version or the classic 2D version:
 </div>
 
 ### Safety & Automation
-- **Create Semaphores:** Semaphores are created when the cursor is over the track using the `Home` key. In `semaphores` mode, they are selected with the horizontal arrows and their state is toggled using the spacebar.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Create Semaphores:** Semaphores are created when the cursor is over the track using the `Home` key. In `semaphores` mode, they are selected with the horizontal arrows, their state is toggled using the 'm' key, and their direction is inverted using the spacebar.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/VMJCvCAxExM" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/UiT4tzuuw9A" frameborder="0" allowfullscreen></iframe></div>
 </div>
