@@ -60,8 +60,8 @@ jobs:
         run: |
           curl -L -o butler.zip https://github.com/itchio/butler/releases/latest/download/butler-linux-amd64.zip
           unzip butler.zip
-          chmod +x butler
-          ./butler push ${{ matrix.artifact_name }} antoniovazquezaraujo/letrain:linux --userversion ${{ github.ref_name }}
+          chmod +x linux-amd64/butler
+          ./linux-amd64/butler push ${{ matrix.artifact_name }} antoniovazquezaraujo/letrain:linux --userversion ${{ github.ref_name }}
         
       - name: Publish to itch.io (Windows)
         if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'windows-latest'
@@ -70,5 +70,5 @@ jobs:
         run: |
           Invoke-WebRequest -Uri "https://github.com/itchio/butler/releases/latest/download/butler-windows-amd64.zip" -OutFile "butler.zip"
           Expand-Archive -Path "butler.zip" -DestinationPath "."
-          .\butler.exe push ${{ matrix.artifact_name }} antoniovazquezaraujo/letrain:windows --userversion ${{ github.ref_name }}
+          .\windows-amd64\butler.exe push ${{ matrix.artifact_name }} antoniovazquezaraujo/letrain:windows --userversion ${{ github.ref_name }}
 
