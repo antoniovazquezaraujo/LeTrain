@@ -1249,7 +1249,7 @@ public class Model implements letrain.mvp.Model {
                 "[⏴⏵⏶⏷/hjkl]:Move [Shift]:Add rail [Ctrl]:Remove rail [Ins]:Add sensor [Home]:Add sem [Del]:Add speed [End]:Add station [#]:Steps [Space]:Reset steps",
                 () -> true, () -> (this.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
                 new GameModeMenuOption("&Add",
-                        "[s]:Station [e]:Sensor [m]:Semaphore [g]:Speed Signal",
+                        "[n]:Station [e]:Sensor [s]:Semaphore [g]:Speed Signal",
                         () -> true, () -> this.getMode() == GameMode.ADD, () -> GameMode.ADD),
                 new GameModeMenuOption("&Drive",
                         "[⏴⏵/hl]:Select [o]:Locate [m]:Motor [⏶/k]:Accel [⏷/j]:Decel [Space]:Rev [Enter]:Load [#]:ID",
