@@ -150,6 +150,7 @@ public class TerminalView implements letrain.mvp.View {
             }
         } catch (IOException e) {
             log.error("Error creating terminal for TerminalView", e);
+            throw new RuntimeException("Failed to initialize Lanterna terminal. If you are running this via double-click, try running it from a command line.", e);
         }
         terminalSize = screen.getTerminalSize();
         gameBox = screen.newTextGraphics();
