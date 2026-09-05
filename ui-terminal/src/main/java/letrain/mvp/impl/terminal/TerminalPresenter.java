@@ -1057,7 +1057,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             Character c = keyEvent.getCharacter();
             if (c != null) {
                 switch (Character.toLowerCase(c)) {
-                    case 's':
+                    case 'n':
                         railTrackMaker.onChar(new InputEvent(KeyType.End, null, false, false, false));
                         model.setMode(model.getPreviousMode());
                         break;
@@ -1065,7 +1065,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                         railTrackMaker.onChar(new InputEvent(KeyType.Insert, null, false, false, false));
                         model.setMode(model.getPreviousMode());
                         break;
-                    case 'm':
+                    case 's':
                         railTrackMaker.onChar(new InputEvent(KeyType.Home, null, false, false, false));
                         model.setMode(model.getPreviousMode());
                         break;

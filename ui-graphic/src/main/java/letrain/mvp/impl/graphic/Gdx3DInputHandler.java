@@ -932,7 +932,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             Character c = stroke.getCharacter();
             if (c != null) {
                 switch (Character.toLowerCase(c)) {
-                    case 's':
+                    case 'n':
                         trackMaker.onChar(new InputEvent(KeyType.End, null, false, false, false));
                         model.setMode(model.getPreviousMode());
                         break;
@@ -940,7 +940,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                         trackMaker.onChar(new InputEvent(KeyType.Insert, null, false, false, false));
                         model.setMode(model.getPreviousMode());
                         break;
-                    case 'm':
+                    case 's':
                         trackMaker.onChar(new InputEvent(KeyType.Home, null, false, false, false));
                         model.setMode(model.getPreviousMode());
                         break;
