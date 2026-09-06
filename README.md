@@ -97,8 +97,12 @@ Contributions are welcome! Whether it's bug fixes, performance improvements, or 
 
 ## ⚠️ Known Issues
 
-### Snap Package on Windows Subsystem for Linux (WSL2)
-Running the **Snap package** of LeTrain inside Windows Subsystem for Linux (WSL2 / WSLg) currently **will not produce any audio**. 
-This is a known architectural incompatibility between Snap's strict AppArmor sandbox (which strictly requires `/run/user/...` for PulseAudio) and Microsoft's WSLg (which places the PulseAudio socket at `/mnt/wslg/PulseServer`).
+### Snap Package Limitations (WSL2 & Remote Desktop)
+Because the **Snap package** uses strict sandboxing and bundles its own graphics/audio libraries, it may not function correctly in virtualized or remote environments:
 
-* **Solution:** If you are playing on Windows, do not use WSL to run the Linux Snap. Instead, download the native **`LeTrain-Windows.zip`** from the [Releases](https://github.com/antoniovazquezaraujo/LeTrain/releases) page, which includes bundled Java, full 3D acceleration, and native sound support.
+* **Windows Subsystem for Linux (WSL2 / WSLg):** The Snap version will run without audio. This is due to a known AppArmor sandbox restriction that prevents the Snap from accessing Microsoft's non-standard PulseAudio socket (`/mnt/wslg/PulseServer`).
+* **Remote Desktop (XRDP / VNC):** 
+  * The **3D version** will crash on startup with OpenGL errors (`Failed to create context: BadValue`, `swrast` fallback failures). Snap's bundled Mesa graphics drivers conflict with the virtual X11 display created by XRDP.
+  * The **2D version** will not stream audio over the network. ALSA directly accesses the host's physical sound card instead of routing through XRDP's virtual PulseAudio sinks.
+
+**Solution:** If you are playing over a Remote Desktop connection on Linux, compile the game from source or use the `.sh` launcher from the Linux `.zip` release, which perfectly adapts to the host's XRDP drivers. If you are playing on Windows, download the native **`LeTrain-Windows.zip`** from the [Releases](https://github.com/antoniovazquezaraujo/LeTrain/releases) page for perfect 3D acceleration and sound.
