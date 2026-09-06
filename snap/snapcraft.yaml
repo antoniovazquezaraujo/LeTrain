@@ -5,6 +5,8 @@ summary: Procedural train simulator and logistics tycoon
 description: |
   LeTrain is a procedural train simulator combining classic ASCII aesthetics with a modern 3D engine.
   Build vast rail networks across an infinite world, manage a complex economy, and master the art of logistical efficiency.
+  
+  Note for Windows users: Audio is not supported when running this Snap via WSL2. Please use the native Windows release instead.
 
 grade: stable
 confinement: strict

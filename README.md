@@ -94,3 +94,11 @@ Contributions are welcome! Whether it's bug fixes, performance improvements, or 
 ---
 *Created by Antonio Vazquez Araujo.*  
 [Twitter/X - @avaraujo](https://twitter.com/avaraujo) | [GitHub](https://github.com/antoniovazquezaraujo)
+
+## ⚠️ Known Issues
+
+### Snap Package on Windows Subsystem for Linux (WSL2)
+Running the **Snap package** of LeTrain inside Windows Subsystem for Linux (WSL2 / WSLg) currently **will not produce any audio**. 
+This is a known architectural incompatibility between Snap's strict AppArmor sandbox (which strictly requires `/run/user/...` for PulseAudio) and Microsoft's WSLg (which places the PulseAudio socket at `/mnt/wslg/PulseServer`).
+
+* **Solution:** If you are playing on Windows, do not use WSL to run the Linux Snap. Instead, download the native **`LeTrain-Windows.zip`** from the [Releases](https://github.com/antoniovazquezaraujo/LeTrain/releases) page, which includes bundled Java, full 3D acceleration, and native sound support.
