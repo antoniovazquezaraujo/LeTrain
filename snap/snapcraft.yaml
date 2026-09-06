@@ -29,6 +29,7 @@ parts:
     plugin: nil
     source: .
     override-build: |
+      export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
       mvn clean package -DskipTests -Dexec.skip=true
       mkdir -p $CRAFT_PART_INSTALL/jar
       cp launcher-graphic/target/*-jar-with-dependencies.jar $CRAFT_PART_INSTALL/jar/letrain-graphic.jar
