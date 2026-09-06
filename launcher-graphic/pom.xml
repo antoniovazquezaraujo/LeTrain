@@ -110,6 +110,12 @@ DIR="$(cd "$(dirname "$0")" &amp;&amp; pwd)"
 </echo>
                                 <!-- Make it executable -->
                                 <chmod file="${maven.multiModuleProjectDirectory}/output/LeTrain/bin/LeTrain.sh" perm="755"/>
+
+                                <!-- Create the batch script for Windows -->
+                                <echo file="${maven.multiModuleProjectDirectory}/output/LeTrain/bin/LeTrain.bat">@echo off
+set DIR=%~dp0
+"%DIR%\..\lib\runtime\bin\java.exe" -jar "%DIR%\..\lib\app\${project.build.finalName}-jar-with-dependencies.jar"
+</echo>
                             </target>
                         </configuration>
                     </execution>
