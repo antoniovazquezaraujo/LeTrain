@@ -30,6 +30,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: 'maven'
+          cache-dependency-path: 'pom.xml'
 
       - name: Build with Maven
         run: mvn package -DskipTests
@@ -57,17 +58,17 @@ jobs:
         env:
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
         run: |
-          curl -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
+          curl -L -o butler.zip https://github.com/itchio/butler/releases/latest/download/butler-linux-amd64.zip
           unzip butler.zip
-          chmod +x butler
-          ./butler push ${{ matrix.artifact_name }} antoniovazquezaraujo/letrain:linux --userversion ${{ github.ref_name }}
+          chmod +x linux-amd64/butler
+          ./linux-amd64/butler push ${{ matrix.artifact_name }} avaraujo/letrain-procedural-tycoon:linux --userversion ${{ github.ref_name }}
         
       - name: Publish to itch.io (Windows)
         if: startsWith(github.ref, 'refs/tags/') && matrix.os == 'windows-latest'
         env:
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
         run: |
-          Invoke-WebRequest -Uri "https://broth.itch.ovh/butler/windows-amd64/LATEST/archive/default" -OutFile "butler.zip"
+          Invoke-WebRequest -Uri "https://github.com/itchio/butler/releases/latest/download/butler-windows-amd64.zip" -OutFile "butler.zip"
           Expand-Archive -Path "butler.zip" -DestinationPath "."
-          .\butler.exe push ${{ matrix.artifact_name }} antoniovazquezaraujo/letrain:windows --userversion ${{ github.ref_name }}
+          .\windows-amd64\butler.exe push ${{ matrix.artifact_name }} avaraujo/letrain-procedural-tycoon:windows --userversion ${{ github.ref_name }}
 
