@@ -37,7 +37,7 @@
             <dependency>
                 <groupId>com.kotcrab.vis</groupId>
                 <artifactId>vis-ui</artifactId>
-                <version>1.5.3</version>
+                <version>1.5.9</version>
             </dependency>
             <dependency>
                 <groupId>com.googlecode.lanterna</groupId>
@@ -78,28 +78,28 @@
             <dependency>
                 <groupId>com.badlogicgames.gdx</groupId>
                 <artifactId>gdx</artifactId>
-                <version>1.14.2</version>
+                <version>1.14.1</version>
             </dependency>
             <dependency>
                 <groupId>com.badlogicgames.gdx</groupId>
                 <artifactId>gdx-backend-lwjgl3</artifactId>
-                <version>1.14.2</version>
+                <version>1.14.1</version>
             </dependency>
             <dependency>
                 <groupId>com.badlogicgames.gdx</groupId>
                 <artifactId>gdx-platform</artifactId>
-                <version>1.14.2</version>
+                <version>1.14.1</version>
                 <classifier>natives-desktop</classifier>
             </dependency>
             <dependency>
                 <groupId>com.badlogicgames.gdx</groupId>
                 <artifactId>gdx-freetype</artifactId>
-                <version>1.14.2</version>
+                <version>1.14.1</version>
             </dependency>
             <dependency>
                 <groupId>com.badlogicgames.gdx</groupId>
                 <artifactId>gdx-freetype-platform</artifactId>
-                <version>1.14.2</version>
+                <version>1.14.1</version>
                 <classifier>natives-desktop</classifier>
             </dependency>
 
