@@ -867,15 +867,13 @@ public class Model implements letrain.mvp.Model {
         if (origin == null) {
             return false;
         }
-        Track destination = findMoveDestination(origin, dir);
-        if (destination == null) {
+        MoveResult result = findMoveDestination(origin, dir);
+        if (result == null) {
             return false;
         }
-        origin.setComponent(null);
-        sensor.setTrack(destination);
-        destination.setComponent(sensor);
+        relocateSensor(sensor, origin, result.destination);
         if (sensor instanceof Station) {
-            applyStationRoleByIndustry((Station) sensor, destination.getPosition());
+            applyStationRoleByIndustry((Station) sensor, result.destination.getPosition());
         }
         mapChanged = true;
         return true;
@@ -887,13 +885,11 @@ public class Model implements letrain.mvp.Model {
         if (origin == null) {
             return false;
         }
-        Track destination = findMoveDestination(origin, dir);
-        if (destination == null) {
+        MoveResult result = findMoveDestination(origin, dir);
+        if (result == null) {
             return false;
         }
-        origin.setComponent(null);
-        semaphore.setPosition(destination.getPosition());
-        destination.setComponent(semaphore);
+        relocateSemaphore(semaphore, origin, result.destination);
         mapChanged = true;
         return true;
     }
@@ -908,14 +904,14 @@ public class Model implements letrain.mvp.Model {
         if (front == null) {
             return false;
         }
-        Track destination = findMoveDestination(origin, front);
-        if (destination == null) {
+        MoveResult result = findMoveDestination(origin, front);
+        if (result == null) {
             return false;
         }
-        relocateSensor(sensor, origin, destination);
-        sensor.setCreationDir(continuationDir(destination, front));
+        relocateSensor(sensor, origin, result.destination);
+        sensor.setCreationDir(continuationDir(result.destination, result.heading));
         if (sensor instanceof Station) {
-            applyStationRoleByIndustry((Station) sensor, destination.getPosition());
+            applyStationRoleByIndustry((Station) sensor, result.destination.getPosition());
         }
         mapChanged = true;
         return true;
@@ -935,14 +931,14 @@ public class Model implements letrain.mvp.Model {
         if (back == null) {
             return false;
         }
-        Track destination = findMoveDestination(origin, back);
-        if (destination == null) {
+        MoveResult result = findMoveDestination(origin, back);
+        if (result == null) {
             return false;
         }
-        relocateSensor(sensor, origin, destination);
-        sensor.setCreationDir(back.inverse());
+        relocateSensor(sensor, origin, result.destination);
+        sensor.setCreationDir(result.heading.inverse());
         if (sensor instanceof Station) {
-            applyStationRoleByIndustry((Station) sensor, destination.getPosition());
+            applyStationRoleByIndustry((Station) sensor, result.destination.getPosition());
         }
         mapChanged = true;
         return true;
@@ -958,12 +954,12 @@ public class Model implements letrain.mvp.Model {
         if (front == null) {
             return false;
         }
-        Track destination = findMoveDestination(origin, front);
-        if (destination == null) {
+        MoveResult result = findMoveDestination(origin, front);
+        if (result == null) {
             return false;
         }
-        relocateSemaphore(semaphore, origin, destination);
-        semaphore.setCreationDir(continuationDir(destination, front));
+        relocateSemaphore(semaphore, origin, result.destination);
+        semaphore.setCreationDir(continuationDir(result.destination, result.heading));
         mapChanged = true;
         return true;
     }
@@ -982,12 +978,12 @@ public class Model implements letrain.mvp.Model {
         if (back == null) {
             return false;
         }
-        Track destination = findMoveDestination(origin, back);
-        if (destination == null) {
+        MoveResult result = findMoveDestination(origin, back);
+        if (result == null) {
             return false;
         }
-        relocateSemaphore(semaphore, origin, destination);
-        semaphore.setCreationDir(back.inverse());
+        relocateSemaphore(semaphore, origin, result.destination);
+        semaphore.setCreationDir(result.heading.inverse());
         mapChanged = true;
         return true;
     }
@@ -1005,12 +1001,13 @@ public class Model implements letrain.mvp.Model {
     }
 
     /**
-     * Direction the element should keep facing after landing on {@code destination} coming from
-     * {@code dir}, so it can keep moving forward along the rail (rotates through curves).
+     * Direction the element should keep facing after landing on {@code destination} having stepped
+     * into it along {@code arrivalDir}, so it can keep moving forward along the rail (rotates
+     * through curves and forks that turn).
      */
-    private Dir continuationDir(Track destination, Dir dir) {
-        Dir exit = destination.getDir(dir.inverse());
-        return exit != null ? exit : dir;
+    private Dir continuationDir(Track destination, Dir arrivalDir) {
+        Dir exit = destination.getDir(arrivalDir.inverse());
+        return exit != null ? exit : arrivalDir;
     }
 
     /**
@@ -1038,9 +1035,11 @@ public class Model implements letrain.mvp.Model {
      * A {@link ForkRailTrack} is a routing node: it is crossed (never a resting place) following
      * its currently active branch. A cell occupied by another {@link TrackComponent} is jumped
      * over, but a cell occupied by a train linker aborts the whole move. Returns {@code null} when
-     * there is no reachable resting cell.
+     * there is no reachable resting cell. The returned {@link MoveResult} also carries the heading
+     * that was used to step into the destination, so callers can keep the element orientation
+     * aligned with the rail (important when the path turned at a curve or fork).
      */
-    private Track findMoveDestination(Track origin, Dir dir) {
+    private MoveResult findMoveDestination(Track origin, Dir dir) {
         Track cursor = origin;
         Dir heading = dir;
         Set<Track> visited = new HashSet<>();
@@ -1062,7 +1061,7 @@ public class Model implements letrain.mvp.Model {
                 heading = exit;
             } else {
                 if (next.getComponent() == null) {
-                    return next;
+                    return new MoveResult(next, heading);
                 }
                 Dir exit = next.getDir(heading.inverse());
                 if (exit == null) {
@@ -1072,6 +1071,9 @@ public class Model implements letrain.mvp.Model {
                 heading = exit;
             }
         }
+    }
+
+    private record MoveResult(Track destination, Dir heading) {
     }
 
     @Override

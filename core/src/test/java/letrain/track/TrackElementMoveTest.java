@@ -476,4 +476,85 @@ class TrackElementMoveTest {
         assertSame(station, model.getStation(1));
         assertTrue(model.getStations().contains(station));
     }
+
+    @Test
+    @DisplayName("6.4 Sensor keeps moving forward after crossing a turning fork (no stuck)")
+    void sensor_crossesTurningFork_keepsMovingForward() {
+        // Arrange: west straight -> fork (alternative: West->South) -> two south straights.
+        RailTrack tWest = straightAt(0, 0, Dir.E, Dir.W);
+        ForkRailTrack fork = forkAt(1, 0);
+        addForkWestEastSouth(fork);
+        fork.setAlternativeRoute();
+        RailTrack tBranch = straightAt(1, 1, Dir.S, Dir.N);
+        RailTrack tBranch2 = straightAt(1, 2, Dir.S, Dir.N);
+        connect(tWest, Dir.E, fork, Dir.W);
+        connect(fork, Dir.S, tBranch, Dir.N);
+        connect(tBranch, Dir.S, tBranch2, Dir.N);
+        Sensor sensor = placeSensor(tWest, 1);
+        sensor.setCreationDir(Dir.E);
+
+        // Act & Assert: crossing the fork lands on the diverging branch facing South.
+        assertTrue(model.moveSensorForward(sensor));
+        assertSame(tBranch, sensor.getTrack());
+        assertEquals(Dir.S, sensor.getCreationDir());
+
+        // Next forward hop continues along the branch instead of getting stuck.
+        assertTrue(model.moveSensorForward(sensor));
+        assertSame(tBranch2, sensor.getTrack());
+        assertEquals(Dir.S, sensor.getCreationDir());
+    }
+
+    @Test
+    @DisplayName("6.5 Station crosses a turning fork and keeps moving forward (issue #468)")
+    void station_crossesTurningFork_keepsMovingForward() {
+        // Arrange: same turning fork (alternative West->South) with two south straights.
+        RailTrack tWest = straightAt(0, 0, Dir.E, Dir.W);
+        ForkRailTrack fork = forkAt(1, 0);
+        addForkWestEastSouth(fork);
+        fork.setAlternativeRoute();
+        RailTrack tBranch = straightAt(1, 1, Dir.S, Dir.N);
+        RailTrack tBranch2 = straightAt(1, 2, Dir.S, Dir.N);
+        connect(tWest, Dir.E, fork, Dir.W);
+        connect(fork, Dir.S, tBranch, Dir.N);
+        connect(tBranch, Dir.S, tBranch2, Dir.N);
+        Station station = new Station(1);
+        station.setTrack(tWest);
+        station.setCreationDir(Dir.E);
+        tWest.setComponent(station);
+        model.addStation(station);
+
+        // Act & Assert
+        assertTrue(model.moveSensorForward(station));
+        assertSame(tBranch, station.getTrack());
+        assertEquals(Dir.S, station.getCreationDir());
+        assertTrue(model.moveSensorForward(station));
+        assertSame(tBranch2, station.getTrack());
+        assertEquals(Dir.S, station.getCreationDir());
+    }
+
+    @Test
+    @DisplayName("6.6 Sensor crosses a fork backward and lands back on the approach facing correctly")
+    void sensor_crossesTurningForkBackward_returnsToApproach() {
+        // Arrange: turning fork (alternative) with one south straight, sensor resting on it.
+        RailTrack tWest = straightAt(0, 0, Dir.E, Dir.W);
+        ForkRailTrack fork = forkAt(1, 0);
+        addForkWestEastSouth(fork);
+        fork.setAlternativeRoute();
+        RailTrack tBranch = straightAt(1, 1, Dir.S, Dir.N);
+        connect(tWest, Dir.E, fork, Dir.W);
+        connect(fork, Dir.S, tBranch, Dir.N);
+        Sensor sensor = placeSensor(tBranch, 1);
+        sensor.setCreationDir(Dir.S);
+
+        // Act: one backward hop returns across the fork to the west approach.
+        assertTrue(model.moveSensorBackward(sensor));
+        assertSame(tWest, sensor.getTrack());
+        assertNull(tBranch.getComponent());
+        assertSame(sensor, tWest.getComponent());
+        assertEquals(Dir.E, sensor.getCreationDir());
+
+        // And it can move forward again across the fork.
+        assertTrue(model.moveSensorForward(sensor));
+        assertSame(tBranch, sensor.getTrack());
+    }
 }
