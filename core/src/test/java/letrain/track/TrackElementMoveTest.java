@@ -18,11 +18,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Contract tests for the new track-element movement API of issue #468:
- * {@code Model.moveSensor(Sensor, Dir)} and {@code Model.moveSemaphore(RailSemaphore, Dir)}.
- *
- * <p>
- * These tests are RED by design: the API does not exist yet.
+ * Contract tests for the track-element movement API of issue #468:
+ * {@code Model.moveSensor(Sensor, Dir)}, {@code Model.moveSensorForward(Sensor)} and
+ * {@code Model.moveSensorBackward(Sensor)}. {@code RailSemaphore} is a {@code Sensor} (issue
+ * #470), so semaphores use the exact same API as the rest of the elements.
  *
  * <p>
  * Movement semantics assumed by these tests: a move request advances the element along the rail
@@ -32,7 +31,7 @@ import org.junit.jupiter.api.Test;
  * crossed (not a resting place); the exit branch is the fork's active branch (normal vs
  * alternative).
  */
-@DisplayName("Model.moveSensor/moveSemaphore (issue #468)")
+@DisplayName("Track element movement (issue #468/#470)")
 class TrackElementMoveTest {
 
     private Model model;
@@ -70,8 +69,10 @@ class TrackElementMoveTest {
     }
 
     private RailSemaphore placeSemaphore(RailTrack track, int id, Dir creationDir) {
-        RailSemaphore semaphore = new RailSemaphore(id, track.getPosition());
+        RailSemaphore semaphore = new RailSemaphore(id);
         semaphore.setCreationDir(creationDir);
+        semaphore.setTrack(track);
+        track.setComponent(semaphore);
         model.addSemaphore(semaphore);
         return semaphore;
     }
@@ -170,7 +171,7 @@ class TrackElementMoveTest {
         Dir originalCreationDir = semaphore.getCreationDir();
 
         // Act
-        boolean moved = model.moveSemaphore(semaphore, Dir.E);
+        boolean moved = model.moveSensor(semaphore, Dir.E);
 
         // Assert
         assertTrue(moved);
@@ -325,7 +326,7 @@ class TrackElementMoveTest {
         Point originalPosition = new Point(t1.getPosition());
 
         // Act
-        boolean moved = model.moveSemaphore(semaphore, Dir.E);
+        boolean moved = model.moveSensor(semaphore, Dir.E);
 
         // Assert
         assertFalse(moved);
@@ -556,5 +557,54 @@ class TrackElementMoveTest {
         // And it can move forward again across the fork.
         assertTrue(model.moveSensorForward(sensor));
         assertSame(tBranch, sensor.getTrack());
+    }
+
+    // ------------------------------------------------------------------
+    // 7. RailSemaphore is a Sensor (issue #470)
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("7.1 Semaphore is a Sensor and moves forward with moveSensorForward")
+    void semaphore_isASensor_andUsesOrientationAwareMove() {
+        // Arrange
+        assertTrue(new RailSemaphore(1) instanceof Sensor,
+                "RailSemaphore should be a Sensor");
+        RailTrack t0 = straightAt(0, 0, Dir.E, Dir.W);
+        RailTrack t1 = straightAt(1, 0, Dir.W, Dir.E);
+        connect(t0, Dir.E, t1, Dir.W);
+        RailSemaphore semaphore = placeSemaphore(t0, 7, Dir.E);
+
+        // Act
+        boolean moved = model.moveSensorForward(semaphore);
+
+        // Assert
+        assertTrue(moved);
+        assertSame(t1, semaphore.getTrack());
+        assertNull(t0.getComponent());
+        assertSame(semaphore, t1.getComponent());
+        assertEquals(Dir.E, semaphore.getCreationDir());
+    }
+
+    @Test
+    @DisplayName("7.2 Semaphore keeps its open state and moves backward with moveSensorBackward")
+    void semaphore_keepsOpenState_andMovesBackward() {
+        // Arrange
+        RailTrack t0 = straightAt(0, 0, Dir.E, Dir.W);
+        RailTrack t1 = straightAt(1, 0, Dir.W, Dir.E);
+        connect(t0, Dir.E, t1, Dir.W);
+        RailSemaphore semaphore = placeSemaphore(t1, 7, Dir.E);
+        semaphore.setOpen(true);
+        assertTrue(semaphore.isOpen());
+
+        // Act
+        boolean moved = model.moveSensorBackward(semaphore);
+
+        // Assert
+        assertTrue(moved);
+        assertSame(t0, semaphore.getTrack());
+        assertSame(semaphore, t0.getComponent());
+        assertNull(t1.getComponent());
+        assertTrue(semaphore.isOpen());
+        assertEquals(Dir.E, semaphore.getCreationDir());
     }
 }

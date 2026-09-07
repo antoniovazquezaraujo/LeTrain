@@ -453,10 +453,10 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         } else if (ctx.SEMAPHORE() != null) {
             if (track == null) throw new RuntimeException("Cannot place semaphore: No track here.");
             if (track.getComponent() != null) throw new RuntimeException("Cannot place semaphore: Track already has a component.");
-            letrain.track.RailSemaphore sem = model.getSemaphoreAt(pos);
-            if (sem != null) throw new RuntimeException("Cannot place semaphore: Already exists here.");
-            sem = new letrain.track.RailSemaphore(model.nextSemaphoreId(), pos);
+            letrain.track.RailSemaphore sem =
+                    new letrain.track.RailSemaphore(model.nextSemaphoreId());
             sem.setCreationDir(dir);
+            sem.setTrack(track);
             model.addSemaphore(sem);
         } else if (ctx.SIGNAL() != null) {
             if (track == null) throw new RuntimeException("Cannot place signal: No track here.");

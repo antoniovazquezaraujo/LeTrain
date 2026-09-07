@@ -413,15 +413,12 @@ public class Model implements letrain.mvp.Model {
         if (track instanceof ForkRailTrack) {
             addFork((ForkRailTrack) track);
         }
-        if (track.getComponent() instanceof letrain.track.Sensor) {
-            if (track.getComponent() instanceof Station) {
-                addStation((Station) track.getComponent());
-            } else {
-                addSensor((letrain.track.Sensor) track.getComponent());
-            }
-        }
         if (track.getComponent() instanceof letrain.track.RailSemaphore) {
             addSemaphore((letrain.track.RailSemaphore) track.getComponent());
+        } else if (track.getComponent() instanceof Station) {
+            addStation((Station) track.getComponent());
+        } else if (track.getComponent() instanceof letrain.track.Sensor) {
+            addSensor((letrain.track.Sensor) track.getComponent());
         }
         mapChanged = true;
     }
@@ -430,17 +427,14 @@ public class Model implements letrain.mvp.Model {
     public RailTrack removeTrack(Point point) {
         RailTrack track = map.getTrackAt(point);
         if (track != null) {
-            if (track.getComponent() instanceof letrain.track.Sensor) {
-                if (track.getComponent() instanceof Station) {
-                    removeStation((Station) track.getComponent());
-                } else {
-                    removeSensor((letrain.track.Sensor) track.getComponent());
-                }
-            }
-            if (track.getComponent() instanceof letrain.track.RailSemaphore) {
-                removeSemaphore((letrain.track.RailSemaphore) track.getComponent());
-            }
-            if (track instanceof ForkRailTrack) {
+        if (track.getComponent() instanceof letrain.track.RailSemaphore) {
+            removeSemaphore((letrain.track.RailSemaphore) track.getComponent());
+        } else if (track.getComponent() instanceof Station) {
+            removeStation((Station) track.getComponent());
+        } else if (track.getComponent() instanceof letrain.track.Sensor) {
+            removeSensor((letrain.track.Sensor) track.getComponent());
+        }
+        if (track instanceof ForkRailTrack) {
                 removeFork((ForkRailTrack) track);
             }
             // Disconnect from neighbors
@@ -813,11 +807,10 @@ public class Model implements letrain.mvp.Model {
     public void addSemaphore(RailSemaphore semaphore) {
         if (!this.semaphores.contains(semaphore)) {
             this.semaphores.add(semaphore);
-            getEconomyManager().onSemaphoreConstructed(semaphore);
-            RailTrack track = map.getTrackAt(semaphore.getPosition());
-            if (track != null) {
-                track.setComponent(semaphore);
+            if (semaphore.getTrack() != null) {
+                semaphore.getTrack().setComponent(semaphore);
             }
+            getEconomyManager().onSemaphoreConstructed(semaphore);
             setupSemaphoreSystemListeners(semaphore);
             mapChanged = true;
         }
@@ -852,11 +845,10 @@ public class Model implements letrain.mvp.Model {
     @Override
     public void removeSemaphore(RailSemaphore semaphore) {
         if (this.semaphores.remove(semaphore)) {
-            getEconomyManager().onSemaphoreDestroyed(semaphore);
-            RailTrack track = map.getTrackAt(semaphore.getPosition());
-            if (track != null) {
-                track.setComponent(null);
+            if (semaphore.getTrack() != null) {
+                semaphore.getTrack().setComponent(null);
             }
+            getEconomyManager().onSemaphoreDestroyed(semaphore);
             mapChanged = true;
         }
     }
@@ -875,21 +867,6 @@ public class Model implements letrain.mvp.Model {
         if (sensor instanceof Station) {
             applyStationRoleByIndustry((Station) sensor, result.destination.getPosition());
         }
-        mapChanged = true;
-        return true;
-    }
-
-    @Override
-    public boolean moveSemaphore(RailSemaphore semaphore, Dir dir) {
-        RailTrack origin = map.getTrackAt(semaphore.getPosition());
-        if (origin == null) {
-            return false;
-        }
-        MoveResult result = findMoveDestination(origin, dir);
-        if (result == null) {
-            return false;
-        }
-        relocateSemaphore(semaphore, origin, result.destination);
         mapChanged = true;
         return true;
     }
@@ -944,60 +921,10 @@ public class Model implements letrain.mvp.Model {
         return true;
     }
 
-    @Override
-    public boolean moveSemaphoreForward(RailSemaphore semaphore) {
-        RailTrack origin = map.getTrackAt(semaphore.getPosition());
-        if (origin == null) {
-            return false;
-        }
-        Dir front = semaphore.getCreationDir();
-        if (front == null) {
-            return false;
-        }
-        MoveResult result = findMoveDestination(origin, front);
-        if (result == null) {
-            return false;
-        }
-        relocateSemaphore(semaphore, origin, result.destination);
-        semaphore.setCreationDir(continuationDir(result.destination, result.heading));
-        mapChanged = true;
-        return true;
-    }
-
-    @Override
-    public boolean moveSemaphoreBackward(RailSemaphore semaphore) {
-        RailTrack origin = map.getTrackAt(semaphore.getPosition());
-        if (origin == null) {
-            return false;
-        }
-        Dir front = semaphore.getCreationDir();
-        if (front == null) {
-            return false;
-        }
-        Dir back = backEndDir(origin, front);
-        if (back == null) {
-            return false;
-        }
-        MoveResult result = findMoveDestination(origin, back);
-        if (result == null) {
-            return false;
-        }
-        relocateSemaphore(semaphore, origin, result.destination);
-        semaphore.setCreationDir(result.heading.inverse());
-        mapChanged = true;
-        return true;
-    }
-
     private void relocateSensor(Sensor sensor, Track origin, Track destination) {
         origin.setComponent(null);
         sensor.setTrack(destination);
         destination.setComponent(sensor);
-    }
-
-    private void relocateSemaphore(RailSemaphore semaphore, Track origin, Track destination) {
-        origin.setComponent(null);
-        semaphore.setPosition(destination.getPosition());
-        destination.setComponent(semaphore);
     }
 
     /**

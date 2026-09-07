@@ -130,23 +130,17 @@ public interface Model {
     void removeSemaphore(RailSemaphore semaphore);
 
     /**
-     * Moves a sensor (plain {@code Sensor}, {@code Station} or {@code SpeedSignal}) one resting
-     * cell forward along the rail in {@code dir}, jumping over cells occupied by other components
-     * but never over trains. Returns false (and does not move the element) when blocked or at the
-     * end of the line. A moved {@code Station} re-evaluates its industry role at the new position.
+     * Moves a sensor (a plain {@code Sensor}, or any of its subclasses {@code Station},
+     * {@code SpeedSignal} and {@code RailSemaphore}) one resting cell forward along the rail in
+     * {@code dir}, jumping over cells occupied by other components but never over trains. Returns
+     * false (and does not move the element) when blocked or at the end of the line. A moved
+     * {@code Station} re-evaluates its industry role at the new position.
      */
     boolean moveSensor(Sensor sensor, Dir dir);
 
     /**
-     * Moves a rail semaphore one resting cell forward along the rail in {@code dir}, keeping its
-     * {@code position} in sync with the track component. Returns false (and does not move the
-     * element) when blocked or at the end of the line.
-     */
-    boolean moveSemaphore(RailSemaphore semaphore, Dir dir);
-
-    /**
-     * Moves a sensor (plain {@code Sensor}, {@code Station} or {@code SpeedSignal}) one resting
-     * cell forward along the rail, in the direction the element itself is facing. The element keeps
+     * Moves a sensor (or any of its subclasses, including {@code RailSemaphore}) one resting cell
+     * forward along the rail, in the direction the element itself is facing. The element keeps
      * following the track across curves and forks (its facing is rotated to the rail direction), it
      * jumps cells occupied by other components but never over trains, and stops at the end of the
      * line. A moved {@code Station} re-evaluates its industry role at the new position.
@@ -158,20 +152,6 @@ public interface Model {
      * facing), with the same rail-following rules as {@link #moveSensorForward(Sensor)}.
      */
     boolean moveSensorBackward(Sensor sensor);
-
-    /**
-     * Moves a rail semaphore one resting cell forward along the rail, in the direction the
-     * semaphore is facing, keeping its {@code position} in sync with the track component and
-     * rotating its facing to keep following the rail.
-     */
-    boolean moveSemaphoreForward(RailSemaphore semaphore);
-
-    /**
-     * Moves a rail semaphore one resting cell backward along the rail (away from the direction it
-     * is facing), with the same rail-following rules as
-     * {@link #moveSemaphoreForward(RailSemaphore)}.
-     */
-    boolean moveSemaphoreBackward(RailSemaphore semaphore);
 
     RailSemaphore getSemaphoreAt(Point point);
 

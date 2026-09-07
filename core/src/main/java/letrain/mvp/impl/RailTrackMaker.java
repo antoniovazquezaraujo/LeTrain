@@ -223,10 +223,10 @@ public class RailTrackMaker {
         Track track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            letrain.track.Sensor sensor = track.getComponent() instanceof letrain.track.Sensor ? (letrain.track.Sensor) track.getComponent() : null;
-            if (sensor != null && sensor instanceof letrain.track.SpeedSignal) {
-                presenter.getModel().removeSensor(sensor);
-            } else if (sensor == null) {
+            letrain.track.TrackComponent component = track.getComponent();
+            if (component instanceof letrain.track.SpeedSignal) {
+                presenter.getModel().removeSensor((letrain.track.SpeedSignal) component);
+            } else if (component == null) {
                 letrain.track.SpeedSignal speedSignal =
                         new letrain.track.SpeedSignal(presenter.getModel().nextSpeedSignalId(),
                                 presenter.getModel().getCursor().getDir(), 3, true);
@@ -241,11 +241,14 @@ public class RailTrackMaker {
         Track track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            letrain.track.Sensor sensor = track.getComponent() instanceof letrain.track.Sensor ? (letrain.track.Sensor) track.getComponent() : null;
-            if (sensor != null) {
-                presenter.getModel().removeSensor(sensor);
-            } else {
-                sensor = new Sensor(presenter.getModel().nextSensorId());
+            letrain.track.TrackComponent component = track.getComponent();
+            if (component instanceof letrain.track.Sensor
+                    && !(component instanceof Station)
+                    && !(component instanceof letrain.track.SpeedSignal)
+                    && !(component instanceof RailSemaphore)) {
+                presenter.getModel().removeSensor((letrain.track.Sensor) component);
+            } else if (component == null) {
+                Sensor sensor = new Sensor(presenter.getModel().nextSensorId());
                 sensor.setTrack(track);
                 sensor.setCreationDir(presenter.getModel().getCursor().getDir());
                 presenter.getModel().addSensor(sensor);
@@ -259,12 +262,14 @@ public class RailTrackMaker {
         Track track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            RailSemaphore semaphore = presenter.getModel().getSemaphoreAt(position);
-            if (semaphore != null) {
-                presenter.getModel().removeSemaphore(semaphore);
-            } else {
-                semaphore = new RailSemaphore(presenter.getModel().nextSemaphoreId(), position);
+            letrain.track.TrackComponent component = track.getComponent();
+            if (component instanceof RailSemaphore) {
+                presenter.getModel().removeSemaphore((RailSemaphore) component);
+            } else if (component == null) {
+                RailSemaphore semaphore =
+                        new RailSemaphore(presenter.getModel().nextSemaphoreId());
                 semaphore.setCreationDir(presenter.getModel().getCursor().getDir());
+                semaphore.setTrack(track);
                 presenter.getModel().addSemaphore(semaphore);
             }
         }
@@ -275,10 +280,10 @@ public class RailTrackMaker {
         Track track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            letrain.track.Sensor sensor = track.getComponent() instanceof letrain.track.Sensor ? (letrain.track.Sensor) track.getComponent() : null;
-            if (sensor != null && sensor instanceof Station) {
-                presenter.getModel().removeStation((Station) sensor);
-            } else if (sensor == null) {
+            letrain.track.TrackComponent component = track.getComponent();
+            if (component instanceof Station) {
+                presenter.getModel().removeStation((Station) component);
+            } else if (component == null) {
                 // Allow building on industry (removed the block)
                 Integer terrainAtPos = presenter.getModel().getGroundMap().getValueAt(position);
 
