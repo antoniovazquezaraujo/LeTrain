@@ -38,9 +38,8 @@ Nota de contexto del equipo: la mecánica debe **mantenerse simple** y acotada; 
 
 ## Puntos abiertos (a trabajar en este ADR)
 - Fórmula y umbrales exactos (tabla de balance): valores de `N` y `curvas >= umbral`.
-- Dónde vive el historial/anillo (`Train` o `SafetyManager`) y su reseteo (parada, inversión, teletransporte).
-- Feedback visual/HUD cuando el tren se acerca al límite (opcional).
-- Verificar interacción con el respeto actual de `SpeedSignal` (no duplicar castigos).
+- Ubicación del historial/anillo: **`SafetyManager`** del tren. Se resetea cuando el tren se detiene o invierte la marcha. (No existe teletransporte en el juego, no hay que contemplarlo.)
+- Verificar interacción con el respeto actual de `SpeedSignal` (no duplicar castigos): como los trenes ya frenan solos al respetar una señal, el descarrilamiento es consecuencia de **tramos sinuosos sin señal** (o con señal por encima del límite seguro). El requisito es que **respetar una señal siempre sea seguro**: la velocidad efectiva al llegar a una curva (tras el frenado impuesto por la señal) nunca debe superar el umbral seguro de esa zona. No debe existir ningún caso en el que el tren respete las señales y aun así descarrile.
 
 ## Fuera de alcance (ideas futuras, no forman parte de esta mecánica)
 - **Ayuda visual al construir**: que el cursor cambie de color al trazar curvas muy seguidas (con un último estado rojo intermitente de máximo peligro) para avisar al jugador de que está creando un tramo sinuoso. Es una feature de UX/construcción independiente del descarrilamiento; se trataría por separado.
