@@ -32,6 +32,7 @@ import letrain.visitor.Renderable;
                 name = "StationRailTrack")})
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @JsonIgnoreProperties(ignoreUnknown = true)
+@SuppressWarnings("deprecation")
 public abstract class Track implements Router, Connectable, LinkerCompartment, Mappable,
         LinkerCompartmentListener, Renderable {
     @JsonIgnore
@@ -42,7 +43,7 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
                                        // multi-train ticks
     @com.fasterxml.jackson.annotation.JsonAlias({"sensor", "semaphore"})
     @com.fasterxml.jackson.annotation.JsonSetter(nulls = com.fasterxml.jackson.annotation.Nulls.SKIP)
-    private TrackComponent component = null;
+    private Sensor component = null;
     private Point pos = new Point(0, 0);
 
     @com.fasterxml.jackson.annotation.JsonProperty("connectedTracks")
@@ -279,11 +280,11 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
         return getTrackDirector().canExit(this, dir);
     }
 
-    public TrackComponent getComponent() {
+    public Sensor getComponent() {
         return component;
     }
 
-    public void setComponent(TrackComponent component) {
+    public void setComponent(Sensor component) {
         this.component = component;
     }
 }
