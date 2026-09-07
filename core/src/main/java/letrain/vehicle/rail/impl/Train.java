@@ -62,6 +62,13 @@ public class Train implements Renderable {
     private transient boolean pendingReverse = false;
     private transient boolean pendingManualMode = false;
 
+    /**
+     * Contador de ticks de simulación transcurridos para este tren (20 TPS). Avanza una vez por
+     * tick cuando la locomotora directora es actualizada por {@code SimulationService}. Es la
+     * unidad de tiempo usada por la regla de descarrilamiento por curvas (issue #350).
+     */
+    private transient long simulationTick = 0;
+
     public TrainCouplingManager getTrainCouplingManager() {
         return trainCouplingManager;
     }
@@ -151,6 +158,15 @@ public class Train implements Renderable {
 
     public boolean isAutoMode() {
         return autopilot.mode() != letrain.itinerary.AutoPilot.Mode.IDLE;
+    }
+
+    public long getSimulationTick() {
+        return simulationTick;
+    }
+
+    /** Avanza el reloj de simulación del tren un tick (se invoca una vez por tick del motor). */
+    public void advanceSimulationTick() {
+        this.simulationTick++;
     }
 
     public void setAutoMode(boolean autoMode) {
@@ -319,6 +335,11 @@ public class Train implements Renderable {
 
     public void notifySpeedChanged(int speed) {
         guardNotify(() -> {
+            if (speed == 0 && safetyManager != null) {
+                // El tren se ha detenido por completo: la próxima curva ya no puede
+                // descarrilar por intervalo con la anterior (issue #350).
+                safetyManager.resetDerailmentHistory();
+            }
             if (speed == 0 && pendingReverse) {
                 pendingReverse = false;
                 Tractor dirLinker = getDirectorLinker();

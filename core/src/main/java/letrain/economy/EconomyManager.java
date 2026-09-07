@@ -124,4 +124,22 @@ public interface EconomyManager {
     int getConstructionDelay(Presenter.TrackType type);
 
     public int getViewRadius();
+
+    /**
+     * Minimum number of simulation ticks that must pass between two curves for a train to be safe.
+     * If the head enters a curve sooner than this after the previous curve (at speed ≥
+     * {@link #getDerailMinSpeed()}), the train derails.
+     */
+    int getDerailMinCurveInterval();
+
+    /**
+     * Minimum current speed below which a train never derails from consecutive curves.
+     */
+    int getDerailMinSpeed();
+
+    /**
+     * Hard speed limit for traversing a {@link ForkRailTrack}. Crossing a fork faster than this
+     * always derails, regardless of curves or of the interval between them.
+     */
+    int getDerailForkMaxSpeed();
 }

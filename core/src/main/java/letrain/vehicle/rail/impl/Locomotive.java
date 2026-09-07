@@ -157,6 +157,11 @@ public class Locomotive extends Linker implements Tractor {
         }
 
         if (isDirectorLinker()) {
+            // Un tick de simulación por actualización de la locomotora directora.
+            if (getTrain() != null) {
+                getTrain().advanceSimulationTick();
+            }
+
             // Motor apagado: no puede moverse
             if (!engineOn) {
                 return moved;

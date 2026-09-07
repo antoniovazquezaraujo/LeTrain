@@ -30,6 +30,13 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     private boolean isWaitingForBlock = false; // Única variable de estado de parada de bloque
     private transient boolean insideFindNextSegment = false;
 
+    /**
+     * Instante (tick de simulación) en que la cabeza del tren atravesó la última curva. -1 indica
+     * que no hay historial (tren parado/invertido/recién creado) y por tanto nunca descarrila por
+     * intervalo de curvas. Único estado de la regla de descarrilamiento (issue #350).
+     */
+    private long lastCurveTick = -1;
+
     public TrainSafetyManager(Train train) {
         this.train = train;
     }
@@ -481,6 +488,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     /** Inversión de marcha. */
     @Override
     public void onReverse() {
+        resetDerailmentHistory();
         BlockManager bm = this.train.getModel().getBlockManager();
         RailwayGraph graph = this.train.getModel().getRailwayGraph();
         Linker head = train.getPhysicalFront();
@@ -510,6 +518,26 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 }
             }
         }
+    }
+
+    @Override
+    public void onCurveCrossed(long simTick) {
+        this.lastCurveTick = simTick;
+    }
+
+    @Override
+    public long getLastCurveTick() {
+        return lastCurveTick;
+    }
+
+    @Override
+    public boolean shouldDerailOnCurve(long nowSimTick, int minCurveIntervalTicks) {
+        return lastCurveTick >= 0 && (nowSimTick - lastCurveTick) < minCurveIntervalTicks;
+    }
+
+    @Override
+    public void resetDerailmentHistory() {
+        this.lastCurveTick = -1;
     }
 
     private boolean isForkOccupied(Segment from, Segment to, RailwayGraph graph) {
