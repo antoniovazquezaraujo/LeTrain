@@ -298,15 +298,14 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
     }
 
     /**
-     * Evalúa si la cabeza descarrila al entrar en {@code nextTrack}. Reglas (issue #350, ADR-019):
+     * Evalúa si la cabeza descarrila al entrar en {@code nextTrack}. Regla (issue #350, ADR-019):
      *
      * <ul>
-     * <li>Desvío: entrar en un {@link ForkRailTrack} a velocidad &gt; {@code derail.forkMaxSpeed}
-     * descarrila siempre (límite duro, aunque el recorrido sea recto).</li>
-     * <li>Curva: una pieza es curva si el rumbo de salida difiere del rumbo con el que se entró. Al
-     * entrar en una curva, si la velocidad actual &ge; {@code derail.minSpeed} y ha pasado menos de
-     * {@code derail.minCurveInterval} ticks desde la última curva, descarrila. En cualquier caso se
-     * anota el instante de la curva como última curva.</li>
+     * <li>Curva: una pieza (recta curva o desvío, da igual) es curva si el rumbo de salida difiere
+     * del rumbo con el que se entró. Un desvío en recto es una recta más; un desvío desviado es una
+     * curva normal. Al entrar en una curva, si la velocidad actual &ge; {@code derail.minSpeed} y ha
+     * pasado menos de {@code derail.minCurveInterval} ticks desde la última curva, descarrila. En
+     * cualquier caso se anota el instante de la curva como última curva.</li>
      * </ul>
      *
      * @param nextTrack la pieza en la que está a punto de entrar la cabeza.
@@ -320,14 +319,6 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         }
         EconomyManager economy = train.getModel().getEconomyManager();
         int speed = Math.abs(train.getSpeed());
-
-        if (nextTrack instanceof ForkRailTrack) {
-            if (speed > economy.getDerailForkMaxSpeed()) {
-                crashByDerailment(nextTrack.getPosition(), speed);
-                return true;
-            }
-            return false;
-        }
 
         if (!(nextTrack instanceof RailTrack)) {
             return false;

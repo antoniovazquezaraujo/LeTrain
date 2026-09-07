@@ -20,16 +20,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /**
- * Tests deterministas de la regla de descarrilamiento por curvas/desvíos (issue #350, ADR-019).
+ * Tests deterministas de la regla de descarrilamiento por curvas (issue #350, ADR-019).
  *
  * <p>
  * Geometrías montadas con {@code RailTrack.addRoute} y {@code connect}, estilo
  * {@code AutoPilotIntegrationTest}. El tiempo se mide en ticks de simulación (el tren recorre una
  * casilla cada {@code 50 / speed} ticks), por lo que el instante de la última curva codifica la
  * velocidad efectiva. Config por defecto del motor: {@code derail.minCurveInterval = 12},
- * {@code derail.minSpeed = 3}, {@code derail.forkMaxSpeed = 3}.
+ * {@code derail.minSpeed = 3}. Un desvío en recto es una recta; un desvío desviado es una curva.
  */
-@DisplayName("Derailment: curves too close + fork over-speed (issue #350)")
+@DisplayName("Derailment: curves too close in time (issue #350)")
 class DerailmentCurvesSpeedTest {
 
     private Model model;
@@ -127,39 +127,58 @@ class DerailmentCurvesSpeedTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // 4. Desvíos: por encima de forkMaxSpeed → descarrila siempre
+    // 4. Desvíos: no son un caso especial (recto = recta; desviado = curva)
     // ═══════════════════════════════════════════════════════════════════
 
     @Test
-    @DisplayName("4.1 Crossing a fork straight at speed 4 (> forkMaxSpeed 3) → derails")
-    void forkAtSpeedAboveLimit_derails() {
+    @DisplayName("4.1 A straight fork at high speed does NOT derail (acts like a straight)")
+    void straightFork_atHighSpeed_noDerail() {
         LayoutFork l = buildStraightFork();
         Train t = placeTrain(l.lead, Dir.W);
         Locomotive loco = director(t);
         AtomicInteger crashes = crashCounter(t);
-        setConstantSpeed(loco, 4);
+        setConstantSpeed(loco, 6);
 
-        runTicks(20);
+        // A speed 6 el tren cruza una casilla cada ~8,3 ticks: a los 24 ticks ya ha pasado el
+        // desvío (tick ~17) pero sin llegar al final de la línea (para no estrellarse en ella).
+        runTicks(24);
 
-        assertTrue(crashes.get() >= 1, "fork over-speed must always derail (hard limit)");
-        assertTrue(loco.isDestroying(), "locomotive must be destroying after derailment");
+        assertEquals(0, crashes.get(),
+                "going straight through a fork must not derail: no heading change");
+        assertFalse(loco.isDestroying(), "locomotive must remain intact");
+        assertNotSame(l.fork, t.getPhysicalFront().getTrack(),
+                "head must have passed through the straight fork");
     }
 
     @Test
-    @DisplayName("4.2 Crossing a fork straight at speed 3 (<= forkMaxSpeed 3) → no derail")
-    void forkAtSpeedAtOrBelowLimit_noDerail() {
-        LayoutFork l = buildStraightFork();
-        Train t = placeTrain(l.lead, Dir.W);
+    @DisplayName("4.2 A diverging fork counts as a curve (derails if followed too close)")
+    void divergingFork_countsAsCurve_derailsWhenFollowedTooClose() {
+        // Geometría: recto → desvío que gira al sur → curva inmediata (gira al este).
+        RailTrack lead = track(0, 0, Dir.E, Dir.W);
+        ForkRailTrack fork = fork(1, 0);
+        fork.addRoute(Dir.W, Dir.E);
+        fork.addRoute(Dir.E, Dir.W);
+        fork.addRoute(Dir.W, Dir.S);
+        fork.addRoute(Dir.S, Dir.W);
+        fork.setAlternativeRoute();
+        RailTrack curve2 = track(1, 1, Dir.N, Dir.E);
+        RailTrack tail1 = track(2, 1, Dir.W, Dir.E);
+        connect(lead, Dir.E, fork, Dir.W);
+        connect(fork, Dir.S, curve2, Dir.N);
+        connect(curve2, Dir.E, tail1, Dir.W);
+
+        Train t = placeTrain(lead, Dir.W);
         Locomotive loco = director(t);
         AtomicInteger crashes = crashCounter(t);
-        setConstantSpeed(loco, 3);
+        setConstantSpeed(loco, 10);
 
-        runTicks(50);
+        // El desvío desviado registra el instante como "curva"; la curva inmediata llega
+        // antes de minCurveInterval ticks → descarrila en ella.
+        runTicks(16);
 
-        assertEquals(0, crashes.get(), "fork at or below its speed limit must not derail");
-        assertFalse(loco.isDestroying(), "locomotive must remain intact");
-        assertNotSame(l.fork, t.getPhysicalFront().getTrack(),
-                "head must have passed through the fork");
+        assertTrue(crashes.get() >= 1,
+                "a diverging fork must count as a curve for the interval rule");
+        assertTrue(loco.isDestroying(), "locomotive must be destroying after derailment");
     }
 
     // ═══════════════════════════════════════════════════════════════════

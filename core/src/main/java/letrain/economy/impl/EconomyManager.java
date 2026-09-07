@@ -78,9 +78,6 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("derailMinSpeed")
     private int derailMinSpeed = 3;
 
-    @com.fasterxml.jackson.annotation.JsonProperty("derailForkMaxSpeed")
-    private int derailForkMaxSpeed = 3;
-
     private static final Logger log = LoggerFactory.getLogger(EconomyManager.class);
 
     @com.fasterxml.jackson.annotation.JsonProperty("eventLogManager")
@@ -502,8 +499,6 @@ public class EconomyManager implements letrain.economy.EconomyManager {
                     props.getProperty("derail.minCurveInterval", String.valueOf(derailMinCurveInterval)));
             derailMinSpeed = Integer.parseInt(
                     props.getProperty("derail.minSpeed", String.valueOf(derailMinSpeed)));
-            derailForkMaxSpeed = Integer.parseInt(
-                    props.getProperty("derail.forkMaxSpeed", String.valueOf(derailForkMaxSpeed)));
 
             // Load Construction Delays
             for (Presenter.TrackType type : Presenter.TrackType.values()) {
@@ -571,10 +566,5 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @Override
     public int getDerailMinSpeed() {
         return derailMinSpeed;
-    }
-
-    @Override
-    public int getDerailForkMaxSpeed() {
-        return derailForkMaxSpeed;
     }
 }

@@ -38,9 +38,9 @@ El motor de movimiento de LeTrain gestiona el avance de los trenes mediante una 
 - **Regla**: al entrar la cabeza en una pieza curva (rumbo de salida ≠ rumbo de entrada) con
   velocidad actual ≥ `derail.minSpeed`, si han pasado menos de `derail.minCurveInterval` ticks desde
   la última curva el tren **descarrila** (`Train#crashDestroy`, mismo pipeline que una colisión).
-- **Desvíos**: cruzar un `ForkRailTrack` a velocidad > `derail.forkMaxSpeed` descarrila siempre
-  (límite duro, incluso en recto).
+- **Desvíos**: no son un caso especial. Un `ForkRailTrack` recorrido en recto es una recta más; un
+  desvío desviado es una curva normal (cuenta para el intervalo). El peligro es el cambio de rumbo,
+  no el objeto "desvío".
 - **Reset**: el historial se limpia cuando el tren se detiene por completo o invierte la marcha.
-- Parámetros en `economy.properties`: `derail.minCurveInterval`, `derail.minSpeed`,
-  `derail.forkMaxSpeed`. La evaluación ocurre en `TrainMovementManager` (Fase 1A), antes de mover o
-  reservar ningún linker.
+- Parámetros en `economy.properties`: `derail.minCurveInterval`, `derail.minSpeed`. La evaluación
+  ocurre en `TrainMovementManager` (Fase 1A), antes de mover o reservar ningún linker.

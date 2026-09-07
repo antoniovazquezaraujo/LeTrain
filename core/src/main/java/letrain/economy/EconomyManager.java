@@ -137,9 +137,4 @@ public interface EconomyManager {
      */
     int getDerailMinSpeed();
 
-    /**
-     * Hard speed limit for traversing a {@link ForkRailTrack}. Crossing a fork faster than this
-     * always derails, regardless of curves or of the interval between them.
-     */
-    int getDerailForkMaxSpeed();
 }
