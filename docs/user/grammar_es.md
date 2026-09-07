@@ -34,10 +34,10 @@ Los bloques de itinerario usan llaves `{ }` y no requieren `;` al final.
 create itinerary "RutaCarbon" {
     add station 1 load
     add station 2 reverse unload
-    add sensor 5 forward speed 20
+    add sensor 5 speed 20
 }
 ```
-*Acciones de Waypoint permitidas:* `load`, `unload`, `reverse`, `stop`, `wait [NUM]`, `speed [NUM]`. Se puede opcionalmente fijar la dirección de entrada (`forward` / `backward`) y añadir múltiples acciones.
+*Acciones de Waypoint permitidas:* `load`, `unload`, `reverse`, `stop`, `wait [NUM]`, `speed [NUM]`. Se puede opcionalmente fijar la dirección de entrada (una dirección de brújula como `n`, `e`, `s`, `w`) y añadir múltiples acciones.
 
 **Asignar y Activar:**
 - `assign itinerary "RutaCarbon" to train 1;`
@@ -107,8 +107,8 @@ station 1 set name "Mina Central";
 
 // Creamos la ruta del tren
 create itinerary "RutaPrincipal" {
-    add station 1 forward load
-    add station 2 backward unload
+    add station 1 load
+    add station 2 unload
 }
 
 // Activamos la ruta
