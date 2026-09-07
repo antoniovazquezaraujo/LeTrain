@@ -107,6 +107,36 @@ public interface TrainSafetyManager {
     void onReverse();
 
     /**
+     * Anota el instante de simulación (tick) en que la cabeza del tren atravesó una curva. Es el
+     * único estado que mantiene la regla de descarrilamiento por curvas (issue #350).
+     *
+     * @param simTick instante de simulación en ticks.
+     */
+    void onCurveCrossed(long simTick);
+
+    /**
+     * Devuelve el instante (tick de simulación) de la última curva atravesada, o -1 si no hay
+     * historial (tren parado, invertido o recién creado).
+     */
+    long getLastCurveTick();
+
+    /**
+     * Comprueba si el tren debe descarrilar al entrar en una curva: hay una curva anterior y ha
+     * pasado menos de {@code minCurveIntervalTicks} desde ella.
+     *
+     * @param nowSimTick instante de simulación actual en ticks.
+     * @param minCurveIntervalTicks intervalo mínimo permitido entre curvas (en ticks).
+     * @return true si debe descarrilar.
+     */
+    boolean shouldDerailOnCurve(long nowSimTick, int minCurveIntervalTicks);
+
+    /**
+     * Limpia el historial de curvas. Se invoca cuando el tren se detiene por completo o invierte la
+     * marcha: a partir de ese momento la siguiente curva nunca descarrila por intervalo.
+     */
+    void resetDerailmentHistory();
+
+    /**
      * Determina cuál es el siguiente segmento al que se dirige el tren. Considera la ruta
      * planificada del piloto automático si está activa, o calcula el siguiente segmento topológico.
      *

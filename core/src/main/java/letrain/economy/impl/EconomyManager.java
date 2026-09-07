@@ -72,6 +72,12 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("viewRadius")
     private int viewRadius = 15;
 
+    @com.fasterxml.jackson.annotation.JsonProperty("derailMinCurveInterval")
+    private int derailMinCurveInterval = 12;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("derailMinSpeed")
+    private int derailMinSpeed = 3;
+
     private static final Logger log = LoggerFactory.getLogger(EconomyManager.class);
 
     @com.fasterxml.jackson.annotation.JsonProperty("eventLogManager")
@@ -488,6 +494,12 @@ public class EconomyManager implements letrain.economy.EconomyManager {
             rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK", String.valueOf(rockThreshold)));
             viewRadius = Integer.parseInt(props.getProperty("map.VIEW_RADIUS", String.valueOf(viewRadius)));
 
+            // Load derailment rules (issue #350)
+            derailMinCurveInterval = Integer.parseInt(
+                    props.getProperty("derail.minCurveInterval", String.valueOf(derailMinCurveInterval)));
+            derailMinSpeed = Integer.parseInt(
+                    props.getProperty("derail.minSpeed", String.valueOf(derailMinSpeed)));
+
             // Load Construction Delays
             for (Presenter.TrackType type : Presenter.TrackType.values()) {
                 String key = "delay." + type.name();
@@ -544,5 +556,15 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @Override
     public int getViewRadius() {
         return viewRadius;
+    }
+
+    @Override
+    public int getDerailMinCurveInterval() {
+        return derailMinCurveInterval;
+    }
+
+    @Override
+    public int getDerailMinSpeed() {
+        return derailMinSpeed;
     }
 }

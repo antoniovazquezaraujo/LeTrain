@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import letrain.economy.EconomyManager;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.segments.RailwayGraph;
@@ -17,6 +18,7 @@ import letrain.track.rail.RailTrack;
 import letrain.vehicle.Destructible;
 import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.Linker;
+import letrain.vehicle.rail.TrainSafetyManager;
 
 /**
  * Extracted from Train.java (~247 lines) to keep the train class focused. Handles the two-pass
@@ -95,6 +97,13 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                 } else {
                     contactDetected(headOccupant, speed);
                 }
+                return false;
+            }
+
+            // Descarrilamiento por curvas/desvíos (issue #350). Solo se evalúa cuando la cabeza va
+            // a entrar en la siguiente pieza; si descarrila destruimos el tren y abortamos antes de
+            // reservar o mover ningún linker (sin fugas de reserva).
+            if (evaluateDerailmentOnHeadEntry(headNextConnectedTrack, headExitDir)) {
                 return false;
             }
 
@@ -285,6 +294,72 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         Train otherTrain = headOccupant.getTrain();
         if (otherTrain != null) {
             otherTrain.emergencyStop();
+        }
+    }
+
+    /**
+     * Evalúa si la cabeza descarrila al entrar en {@code nextTrack}. Regla (issue #350, ADR-019):
+     *
+     * <ul>
+     * <li>Curva: una pieza (recta curva o desvío, da igual) es curva si el rumbo de salida difiere
+     * del rumbo con el que se entró. Un desvío en recto es una recta más; un desvío desviado es una
+     * curva normal. Al entrar en una curva, si la velocidad actual &ge; {@code derail.minSpeed} y ha
+     * pasado menos de {@code derail.minCurveInterval} ticks desde la última curva, descarrila. En
+     * cualquier caso se anota el instante de la curva como última curva.</li>
+     * </ul>
+     *
+     * @param nextTrack la pieza en la que está a punto de entrar la cabeza.
+     * @param entryHeading rumbo (dirección de avance) con el que la cabeza entra en {@code
+     *     nextTrack}.
+     * @return true si el tren ha descarrilado (y el movimiento debe abortarse).
+     */
+    private boolean evaluateDerailmentOnHeadEntry(Track nextTrack, Dir entryHeading) {
+        if (train.getModel() == null || train.getModel().getEconomyManager() == null) {
+            return false;
+        }
+        EconomyManager economy = train.getModel().getEconomyManager();
+        int speed = Math.abs(train.getSpeed());
+
+        if (!(nextTrack instanceof RailTrack)) {
+            return false;
+        }
+        Dir entryDir = entryHeading.inverse();
+        if (!isCurveEntry((RailTrack) nextTrack, entryDir, entryHeading)) {
+            return false;
+        }
+
+        long now = train.getSimulationTick();
+        TrainSafetyManager safetyManager = train.getSafetyManager();
+        boolean derail = speed >= economy.getDerailMinSpeed() && safetyManager != null
+                && safetyManager.shouldDerailOnCurve(now, economy.getDerailMinCurveInterval());
+        if (derail) {
+            crashByDerailment(nextTrack.getPosition(), speed);
+            return true;
+        }
+        // Toda curva atravesada anota su instante, también a baja velocidad: es el estado que
+        // usará la siguiente curva para medir el intervalo.
+        if (safetyManager != null) {
+            safetyManager.onCurveCrossed(now);
+        }
+        return false;
+    }
+
+    /**
+     * Una pieza se considera curva si, atravesada desde el puerto {@code entryDir}, el rumbo de
+     * salida que devuelve su router difiere del rumbo {@code entryHeading} con el que se entró (no
+     * se miden ángulos; se usan los dirs que ya se calculan para mover al tren).
+     */
+    private boolean isCurveEntry(RailTrack nextTrack, Dir entryDir, Dir entryHeading) {
+        Dir exitDir = nextTrack.getDir(entryDir);
+        return exitDir != null && nextTrack.getConnected(exitDir) != null
+                && !exitDir.equals(entryHeading);
+    }
+
+    /** Destruye el tren reutilizando el pipeline de accidente existente (listeners/economía). */
+    private void crashByDerailment(Point pos, int speed) {
+        log.warn("Train {} derailed at {} (speed={})", train.getId(), pos, speed);
+        if (!isAlreadyDestroying(train)) {
+            train.crashDestroy(pos, speed);
         }
     }
 

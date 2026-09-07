@@ -25,3 +25,22 @@ El motor de movimiento de LeTrain gestiona el avance de los trenes mediante una 
 ## Dependencias
 - `letrain.track.rail.RailTrack`: Proporciona la conectividad y el estado de ocupación.
 - `letrain.vehicle.Tractor`: Interfaz que define la potencia de tracción de la locomotora.
+
+## Descarrilamiento por curvas/desvíos (issue #350, ADR-019)
+
+- **Unidad de tiempo**: el reloj de la simulación es el **tick de motor** (20 TPS; ver
+  `WaypointCommand.TICKS_PER_SECOND` y `docs/developer/architecture/GameLoop.md`). El tren cruza una
+  casilla cada `50 / currentSpeed` ticks, así que el instante de la última curva codifica la
+  velocidad efectiva (frenadas/aceleraciones incluidas).
+- **Reloj por tren**: `Train#advanceSimulationTick()` avanza una vez por tick (invocado desde
+  `Locomotive.update()` solo para la locomotora directora). El historial de la última curva vive en
+  `TrainSafetyManager` (un único `long lastCurveTick`, -1 = sin historial).
+- **Regla**: al entrar la cabeza en una pieza curva (rumbo de salida ≠ rumbo de entrada) con
+  velocidad actual ≥ `derail.minSpeed`, si han pasado menos de `derail.minCurveInterval` ticks desde
+  la última curva el tren **descarrila** (`Train#crashDestroy`, mismo pipeline que una colisión).
+- **Desvíos**: no son un caso especial. Un `ForkRailTrack` recorrido en recto es una recta más; un
+  desvío desviado es una curva normal (cuenta para el intervalo). El peligro es el cambio de rumbo,
+  no el objeto "desvío".
+- **Reset**: el historial se limpia cuando el tren se detiene por completo o invierte la marcha.
+- Parámetros en `economy.properties`: `derail.minCurveInterval`, `derail.minSpeed`. La evaluación
+  ocurre en `TrainMovementManager` (Fase 1A), antes de mover o reservar ningún linker.
