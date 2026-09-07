@@ -562,7 +562,7 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private boolean tryMoveSelectedWithShift(InputEvent event) {
-        if (!event.isShiftDown()) {
+        if (!event.isShiftDown() && !isShiftedVimMoveKey(event)) {
             return false;
         }
         KeyType keyType = getEffectiveKeyType(event);
@@ -577,8 +577,32 @@ public class Gdx3DInputHandler implements InputProcessor {
         return false;
     }
 
+    private boolean isShiftedVimMoveKey(InputEvent event) {
+        Character c = event.getCharacter();
+        return c != null && (c == 'K' || c == 'J');
+    }
+
+    private Dir selectedElementDir() {
+        switch (model.getMode()) {
+            case STATIONS:
+                Station station = model.getSelectedStation();
+                return station != null ? station.getCreationDir() : null;
+            case SENSORS:
+                Sensor sensor = model.getSelectedSensor();
+                return sensor != null ? sensor.getCreationDir() : null;
+            case SPEED_SIGNALS:
+                SpeedSignal signal = model.getSelectedSpeedSignal();
+                return signal != null ? signal.getCreationDir() : null;
+            case SEMAPHORES:
+                RailSemaphore semaphore = model.getSelectedSemaphore();
+                return semaphore != null ? semaphore.getCreationDir() : null;
+            default:
+                return null;
+        }
+    }
+
     private void moveSelectedElement(boolean forward) {
-        Dir moveDir = model.getCursor().getDir();
+        Dir moveDir = selectedElementDir();
         if (moveDir == null) {
             return;
         }
@@ -977,10 +1001,15 @@ public class Gdx3DInputHandler implements InputProcessor {
             if (model.getSelectedStation() != null
                     && model.getSelectedStation().getTrack() != null) {
                 Linker linker = model.getSelectedStation().getTrack().getLinker();
+                Station station = model.getSelectedStation();
                 if (linker != null && linker.getTrain() != null) {
                     Train train = linker.getTrain();
-                    Station station = model.getSelectedStation();
                     train.getLogisticsManager().performIndustrialAction(station);
+                } else if (station.getCreationDir() != null) {
+                    station.setCreationDir(station.getCreationDir().inverse());
+                    if (cameraController != null) {
+                        cameraController.forceSnap();
+                    }
                 }
             }
         } else if (getEffectiveKeyType(stroke) == KeyType.Character

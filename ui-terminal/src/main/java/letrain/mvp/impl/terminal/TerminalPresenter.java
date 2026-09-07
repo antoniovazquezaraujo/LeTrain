@@ -588,7 +588,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private boolean tryMoveSelectedWithShift(InputEvent keyEvent) {
-        if (!keyEvent.isShiftDown()) {
+        if (!keyEvent.isShiftDown() && !isShiftedVimMoveKey(keyEvent)) {
             return false;
         }
         KeyType keyType = getEffectiveKeyType(keyEvent);
@@ -603,8 +603,32 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         return false;
     }
 
+    private boolean isShiftedVimMoveKey(InputEvent keyEvent) {
+        Character c = keyEvent.getCharacter();
+        return c != null && (c == 'K' || c == 'J');
+    }
+
+    private Dir selectedElementDir() {
+        switch (model.getMode()) {
+            case STATIONS:
+                Station station = model.getSelectedStation();
+                return station != null ? station.getCreationDir() : null;
+            case SENSORS:
+                letrain.track.Sensor sensor = model.getSelectedSensor();
+                return sensor != null ? sensor.getCreationDir() : null;
+            case SPEED_SIGNALS:
+                letrain.track.SpeedSignal signal = model.getSelectedSpeedSignal();
+                return signal != null ? signal.getCreationDir() : null;
+            case SEMAPHORES:
+                letrain.track.RailSemaphore semaphore = model.getSelectedSemaphore();
+                return semaphore != null ? semaphore.getCreationDir() : null;
+            default:
+                return null;
+        }
+    }
+
     private void moveSelectedElement(boolean forward) {
-        Dir moveDir = model.getCursor().getDir();
+        Dir moveDir = selectedElementDir();
         if (moveDir == null) {
             return;
         }
@@ -688,6 +712,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                         if (linker != null && linker.getTrain() != null) {
                             Train train = linker.getTrain();
                             train.getLogisticsManager().performIndustrialAction(selectedStation);
+                        } else {
+                            selectedStation.setCreationDir(
+                                    selectedStation.getCreationDir().inverse());
                         }
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
