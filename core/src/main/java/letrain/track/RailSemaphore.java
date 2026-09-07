@@ -1,101 +1,120 @@
 package letrain.track;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
-import letrain.map.Point;
+import java.util.ArrayList;
+import java.util.List;
 import letrain.utils.SerializationHelper;
 import letrain.vehicle.rail.impl.Train;
-import letrain.visitor.Renderable;
 import letrain.visitor.Visitor;
 
-@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
-public class RailSemaphore implements Renderable, Serializable, TrackComponent {
-    private static final long serialVersionUID = 1L;
-    private int id;
-    private Point position;
+/**
+ * A railway signal. A {@code RailSemaphore} is a {@link Sensor} (a track device that reacts to a
+ * train passing over it) that additionally exposes a signal state ({@code open} / closed).
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonTypeName("Semaphore")
+public class RailSemaphore extends Sensor {
+
+    @JsonIgnore
+    private transient List<SemaphoreEventListener> semaphoreListeners = new ArrayList<>();
+
+    @JsonIgnore
+    private transient List<SemaphoreEventListener> systemSemaphoreListeners = new ArrayList<>();
+
     private boolean open;
-    private letrain.map.Dir creationDir = letrain.map.Dir.E;
+
+    public RailSemaphore() {}
+
+    public RailSemaphore(int id) {
+        super(id);
+    }
 
     public boolean isOpen() {
         return open;
     }
 
-    @JsonIgnore
-    private transient java.util.List<SemaphoreEventListener> listeners =
-            new java.util.ArrayList<>();
-
-    @JsonIgnore
-    private transient java.util.List<SemaphoreEventListener> systemListeners =
-            new java.util.ArrayList<>();
+    public void setOpen(boolean open) {
+        if (this.open != open) {
+            this.open = open;
+            notifyOpenState(open);
+        }
+    }
 
     public void addSemaphoreEventListener(SemaphoreEventListener listener) {
-        if (listeners == null) {
-            listeners = new java.util.ArrayList<>();
+        if (semaphoreListeners == null) {
+            semaphoreListeners = new ArrayList<>();
         }
-        listeners.add(listener);
+        semaphoreListeners.add(listener);
     }
 
     public void addSystemSemaphoreEventListener(SemaphoreEventListener listener) {
-        if (systemListeners == null) {
-            systemListeners = new java.util.ArrayList<>();
+        if (systemSemaphoreListeners == null) {
+            systemSemaphoreListeners = new ArrayList<>();
         }
-        systemListeners.add(listener);
+        systemSemaphoreListeners.add(listener);
     }
 
     public void removeSemaphoreEventListener(SemaphoreEventListener listener) {
-        if (listeners != null) {
-            listeners.remove(listener);
+        if (semaphoreListeners != null) {
+            semaphoreListeners.remove(listener);
         }
     }
 
     public void removeAllSemaphoreEventListeners() {
-        if (listeners != null) {
-            listeners.clear();
+        if (semaphoreListeners != null) {
+            semaphoreListeners.clear();
         }
     }
 
-    public void setOpen(boolean open) {
-        if (this.open != open) {
-            this.open = open;
-            if (listeners != null) {
-                for (SemaphoreEventListener listener : listeners) {
-                    if (open) {
-                        listener.onOpen();
-                    } else {
-                        listener.onClosed();
-                    }
-                }
-            }
-            if (systemListeners != null) {
-                for (SemaphoreEventListener listener : systemListeners) {
-                    if (open) {
-                        listener.onOpen();
-                    } else {
-                        listener.onClosed();
-                    }
-                }
+    @Override
+    public void onEnterTrain(Train train) {
+        notifySemaphoreEvent(train, true, calculateIsForward(train));
+    }
+
+    @Override
+    public void onExitTrain(Train train) {
+        notifySemaphoreEvent(train, false, calculateIsForward(train));
+    }
+
+    private void notifyOpenState(boolean open) {
+        notifyOpenState(semaphoreListeners, open);
+        notifyOpenState(systemSemaphoreListeners, open);
+    }
+
+    private void notifyOpenState(List<SemaphoreEventListener> listeners, boolean open) {
+        if (listeners == null) {
+            return;
+        }
+        for (SemaphoreEventListener listener : listeners) {
+            if (open) {
+                listener.onOpen();
+            } else {
+                listener.onClosed();
             }
         }
     }
 
-    public Point getPosition() {
-        return this.position;
+    private void notifySemaphoreEvent(Train train, boolean isEnter, boolean isForward) {
+        notifySemaphoreEvent(semaphoreListeners, train, isEnter, isForward);
+        notifySemaphoreEvent(systemSemaphoreListeners, train, isEnter, isForward);
     }
 
-    public void setPosition(Point position) {
-        this.position = position;
-    }
-
-    public RailSemaphore() {}
-
-    public RailSemaphore(int id, Point position) {
-        setId(id);
-        setPosition(new Point(position));
+    private void notifySemaphoreEvent(List<SemaphoreEventListener> listeners, Train train,
+            boolean isEnter, boolean isForward) {
+        if (listeners == null) {
+            return;
+        }
+        for (SemaphoreEventListener listener : listeners) {
+            if (isEnter) {
+                listener.onEnterTrain(train, isForward);
+            } else {
+                listener.onExitTrain(train, isForward);
+            }
+        }
     }
 
     /**
@@ -104,66 +123,9 @@ public class RailSemaphore implements Renderable, Serializable, TrackComponent {
      */
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
         ois.defaultReadObject();
-        this.listeners = SerializationHelper.ensureListInitialized(listeners);
-        this.systemListeners = SerializationHelper.ensureListInitialized(systemListeners);
-    }
-
-    public void setId(int i) {
-        this.id = i;
-    }
-
-    public int getId() {
-        return this.id;
-    }
-
-    public void onEnterTrain(Train train) {
-        onEnterTrain(train, calculateIsForward(train));
-    }
-
-    public void onEnterTrain(Train train, boolean isForward) {
-        if (listeners != null) {
-            for (SemaphoreEventListener listener : listeners) {
-                listener.onEnterTrain(train, isForward);
-            }
-        }
-        if (systemListeners != null) {
-            for (SemaphoreEventListener listener : systemListeners) {
-                listener.onEnterTrain(train, isForward);
-            }
-        }
-    }
-
-    public void onExitTrain(Train train) {
-        onExitTrain(train, calculateIsForward(train));
-    }
-
-    public void onExitTrain(Train train, boolean isForward) {
-        if (listeners != null) {
-            for (SemaphoreEventListener listener : listeners) {
-                listener.onExitTrain(train, isForward);
-            }
-        }
-        if (systemListeners != null) {
-            for (SemaphoreEventListener listener : systemListeners) {
-                listener.onExitTrain(train, isForward);
-            }
-        }
-    }
-
-    private boolean calculateIsForward(Train train) {
-        boolean isForward = true;
-        if (creationDir != null && train.getDirectorLinker() != null) {
-            isForward = (train.getDirectorLinker().getRealDir() == creationDir);
-        }
-        return isForward;
-    }
-
-    public letrain.map.Dir getCreationDir() {
-        return creationDir;
-    }
-
-    public void setCreationDir(letrain.map.Dir creationDir) {
-        this.creationDir = creationDir;
+        this.semaphoreListeners = SerializationHelper.ensureListInitialized(semaphoreListeners);
+        this.systemSemaphoreListeners =
+                SerializationHelper.ensureListInitialized(systemSemaphoreListeners);
     }
 
     @Override
@@ -173,6 +135,6 @@ public class RailSemaphore implements Renderable, Serializable, TrackComponent {
 
     @Override
     public String toString() {
-        return "Semaphore [id=" + id + "]";
+        return "Semaphore [id=" + getId() + "]";
     }
 }

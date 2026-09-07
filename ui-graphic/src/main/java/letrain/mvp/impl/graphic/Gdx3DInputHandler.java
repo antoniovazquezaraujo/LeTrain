@@ -637,10 +637,10 @@ public class Gdx3DInputHandler implements InputProcessor {
             case SEMAPHORES:
                 RailSemaphore semaphore = model.getSelectedSemaphore();
                 if (semaphore != null) {
-                    boolean moved = forward ? model.moveSemaphoreForward(semaphore)
-                            : model.moveSemaphoreBackward(semaphore);
+                    boolean moved = forward ? model.moveSensorForward(semaphore)
+                            : model.moveSensorBackward(semaphore);
                     if (moved) {
-                        destTrack = model.getRailMap().getTrackAt(semaphore.getPosition());
+                        destTrack = semaphore.getTrack();
                     }
                 }
                 break;

@@ -663,10 +663,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             case SEMAPHORES:
                 if (model.getSelectedSemaphore() != null) {
                     letrain.track.RailSemaphore semaphore = model.getSelectedSemaphore();
-                    boolean moved = forward ? model.moveSemaphoreForward(semaphore)
-                            : model.moveSemaphoreBackward(semaphore);
+                    boolean moved = forward ? model.moveSensorForward(semaphore)
+                            : model.moveSensorBackward(semaphore);
                     if (moved) {
-                        destTrack = model.getRailMap().getTrackAt(semaphore.getPosition());
+                        destTrack = semaphore.getTrack();
                     }
                 }
                 break;

@@ -24,7 +24,9 @@ import letrain.visitor.Visitor;
         @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.Station.class,
                 name = "Station"),
         @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.SpeedSignal.class,
-                name = "SpeedSignal")})
+                name = "SpeedSignal"),
+        @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.RailSemaphore.class,
+                name = "Semaphore")})
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class Sensor implements Renderable, TrackComponent {
     private int id;
@@ -137,7 +139,7 @@ public class Sensor implements Renderable, TrackComponent {
         }
     }
 
-    private boolean calculateIsForward(Train train) {
+    protected boolean calculateIsForward(Train train) {
         boolean isForward = true;
         if (creationDir != null && train.getDirectorLinker() != null) {
             isForward = (train.getDirectorLinker().getRealDir() == creationDir);
