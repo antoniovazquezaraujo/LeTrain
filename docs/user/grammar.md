@@ -34,10 +34,10 @@ Itinerary blocks use curly braces `{ }` and do not require a `;` at the end.
 create itinerary "CoalRoute" {
     add station 1 load
     add station 2 reverse unload
-    add sensor 5 forward speed 20
+    add sensor 5 speed 20
 }
 ```
-*Allowed Waypoint Actions:* `load`, `unload`, `reverse`, `stop`, `wait [NUM]`, `speed [NUM]`. You can optionally set the entry direction (`forward` / `backward`) and chain multiple actions.
+*Allowed Waypoint Actions:* `load`, `unload`, `reverse`, `stop`, `wait [NUM]`, `speed [NUM]`. You can optionally set the entry direction (a compass direction such as `n`, `e`, `s`, `w`) and chain multiple actions.
 
 **Assign and Activate:**
 - `assign itinerary "CoalRoute" to train 1;`
@@ -107,8 +107,8 @@ station 1 set name "Central Mine";
 
 // Create the train route
 create itinerary "MainRoute" {
-    add station 1 forward load
-    add station 2 backward unload
+    add station 1 load
+    add station 2 unload
 }
 
 // Activate the route
