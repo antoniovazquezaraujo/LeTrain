@@ -18,13 +18,14 @@ Nota de contexto del equipo: la mecánica debe **mantenerse simple** y acotada; 
    - **Historial por tren**: al entrar en cada curva se anota la separación (número de rectas) desde la curva anterior en un pequeño anillo de curvas recientes. El coste en rectas es solo incrementar un contador (`straightsSinceLastCurve`) dentro del bucle de movimiento, que ya hace trabajo por tile — despreciable.
    - **Ventana proporcional a la velocidad (inercia)**: `N` (número de piezas que "recuerda" el tren) es proporcional a la velocidad actual (p. ej. `N = round(speed)`). Al frenar, la ventana se encoge (se descarta historia antigua); al estar parado, se vacía. Así, frenar antes de la zona sinuosa reduce la memoria de curvas acumulada.
    - **Métrica de peligro**: al entrar en una curva se cuenta cuántas curvas recientes caen dentro de los últimos `N` raíles recorridos. Si superan un límite seguro para esa velocidad (p. ej. `curvas >= N/2`, configurable), el tren descarrila. Esta evaluación solo ocurre en curvas (O(curvas recientes), evento poco frecuente).
+   - **Velocidad mínima de descarrilamiento**: por debajo de una velocidad mínima (`derail.minSpeed`, configurable) el tren **nunca descarrila**, sin importar cuántas curvas encadene (a baja velocidad la inercia lateral es despreciable). La tabla de balance solo aplica a velocidades por encima de ese umbral; por debajo, las curvas permitidas son ilimitadas.
    - Sin cambios en loops de tick de bloques/seguridad ni en reservas.
 
 3. **Desvíos (Forks) como zona intrínsecamente peligrosa**:
    - Independientemente de la ventana de curvas, atravesar un `ForkRailTrack` tiene un **límite de velocidad duro**.
    - Si la cabeza cruza un desvío a una velocidad superior a ese límite, descarrila **inmediatamente**, aunque el recorrido por el desvío sea recto.
 
-4. **Configuración**: los parámetros (factor de ventana `N`, umbral de curvas, límite duro de desvío) se exponen en `economy.properties` para ajuste de balance sin recompilar.
+4. **Configuración**: los parámetros (velocidad mínima de descarrilamiento, factor de ventana `N`, tabla de curvas permitidas por velocidad, límite duro de desvío) se exponen en `economy.properties` para ajuste de balance sin recompilar.
 
 5. **Marcha atrás y trenes largos**: la marcha atrás se rige por la misma regla que la marcha normal (el historial se recorre en orden inverso). Si el tren descarrila, lo hace al completo (cabeza, vagones y carga), igual que un accidente.
 
@@ -37,8 +38,8 @@ Nota de contexto del equipo: la mecánica debe **mantenerse simple** y acotada; 
 - Tests: casos de tabla deterministas (velocidad + geometría + historial → descarrila o no), incluidos: curva suelta a alta velocidad, zigzag a alta velocidad, zigzag a baja velocidad (no descarrila), frenado antes de la zona sinuosa, y límite duro de desvío.
 
 ## Puntos abiertos (a trabajar en este ADR)
-- Fórmula y umbrales exactos (tabla de balance): valores de `N` y `curvas >= umbral`.
-- Ubicación del historial/anillo: **`SafetyManager`** del tren. Se resetea cuando el tren se detiene o invierte la marcha. (No existe teletransporte en el juego, no hay que contemplarlo.)
+- Fórmula y umbrales exactos (tabla de balance): valores de `derail.minSpeed`, de `N` por velocidad y de curvas permitidas por velocidad.
+- Ubicación del historial/anillo: **`SafetyManager`** del tren. Se resetea cuando el tren se detiene o invierte la marcha. 
 - Verificar interacción con el respeto actual de `SpeedSignal`: una señal frena al tren automáticamente, pero **el jugador puede volver a acelerar después de pasarla** (conducción manual). Ese es el comportamiento que castiga el descarrilamiento: quien respeta la señal (no vuelve a acelerar) atraviesa la zona sinuosa por debajo del umbral y está seguro; quien re-acelera llega a la curva a alta velocidad y descarrila. Para que esto funcione, la evaluación debe usar la **velocidad efectiva en el instante de entrar en la curva** (ya con las frenadas/aceleraciones aplicadas por señales y por el jugador), nunca una velocidad objetivo o previa. Así no existe "doble castigo": respetar la señal (no re-acelerar) siempre es seguro.
 
 ## Fuera de alcance (ideas futuras, no forman parte de esta mecánica)
