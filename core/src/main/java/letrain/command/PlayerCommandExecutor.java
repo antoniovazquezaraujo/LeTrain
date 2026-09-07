@@ -728,8 +728,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitSaveCommand(PlayerCommandsParser.SaveCommandContext ctx) {
         String filename = "quicksave.json";
         if (ctx.identifier() != null) {
-            String text = ctx.identifier().getText();
-            filename = text.substring(1, text.length() - 1);
+            filename = unquote(ctx.identifier().getText());
             if (!filename.endsWith(".json")) filename += ".json";
         }
         if (onSave != null) {
@@ -744,8 +743,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitLoadCommand(PlayerCommandsParser.LoadCommandContext ctx) {
         String filename = "quicksave.json";
         if (ctx.identifier() != null) {
-            String text = ctx.identifier().getText();
-            filename = text.substring(1, text.length() - 1);
+            filename = unquote(ctx.identifier().getText());
             if (!filename.endsWith(".json")) filename += ".json";
         }
         if (onLoad != null) {
@@ -754,5 +752,13 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
              throw new RuntimeException("Load not supported in this context.");
         }
         return null;
+    }
+
+    private static String unquote(String text) {
+        if (text.length() >= 2 && text.charAt(0) == '"'
+                && text.charAt(text.length() - 1) == '"') {
+            return text.substring(1, text.length() - 1);
+        }
+        return text;
     }
 }
