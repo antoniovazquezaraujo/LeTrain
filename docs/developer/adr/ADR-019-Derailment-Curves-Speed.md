@@ -42,6 +42,44 @@ Nota de contexto del equipo: la mecánica debe **mantenerse simple** y acotada; 
 - Ubicación del historial/anillo: **`SafetyManager`** del tren. Se resetea cuando el tren se detiene o invierte la marcha. 
 - Verificar interacción con el respeto actual de `SpeedSignal`: una señal frena al tren automáticamente, pero **el jugador puede volver a acelerar después de pasarla** (conducción manual). Ese es el comportamiento que castiga el descarrilamiento: quien respeta la señal (no vuelve a acelerar) atraviesa la zona sinuosa por debajo del umbral y está seguro; quien re-acelera llega a la curva a alta velocidad y descarrila. Para que esto funcione, la evaluación debe usar la **velocidad efectiva en el instante de entrar en la curva** (ya con las frenadas/aceleraciones aplicadas por señales y por el jugador), nunca una velocidad objetivo o previa. Así no existe "doble castigo": respetar la señal (no re-acelerar) siempre es seguro.
 
+## Ejemplo de configuración (`economy.properties`)
+Valores orientativos de ejemplo (a afinar en balance; las velocidades del juego van de 1 a 10):
+
+```
+# ── Descarrilamiento por densidad de curvas (ADR-019) ─────────────
+# Velocidad mínima: por debajo de este valor el tren NUNCA descarrila
+# (las curvas permitidas son ilimitadas).
+derail.minSpeed=4
+
+# Máxima velocidad para cruzar un desvío (límite duro, sin ventana).
+derail.forkMaxSpeed=2
+
+# Ventana (N) y curvas permitidas para cada velocidad.
+# curvas = -1 significa "ilimitadas" (solo se usa por debajo de minSpeed).
+derail.windowBySpeed.1=1
+derail.curvesAllowedBySpeed.1=-1
+derail.windowBySpeed.2=2
+derail.curvesAllowedBySpeed.2=-1
+derail.windowBySpeed.3=3
+derail.curvesAllowedBySpeed.3=-1
+derail.windowBySpeed.4=4
+derail.curvesAllowedBySpeed.4=2
+derail.windowBySpeed.5=5
+derail.curvesAllowedBySpeed.5=2
+derail.windowBySpeed.6=6
+derail.curvesAllowedBySpeed.6=2
+derail.windowBySpeed.7=7
+derail.curvesAllowedBySpeed.7=3
+derail.windowBySpeed.8=8
+derail.curvesAllowedBySpeed.8=3
+derail.windowBySpeed.9=9
+derail.curvesAllowedBySpeed.9=3
+derail.windowBySpeed.10=10
+derail.curvesAllowedBySpeed.10=3
+```
+
+La interpretación es: al entrar en una curva a velocidad `v >= derail.minSpeed`, se miran los últimos `windowBySpeed.v` raíles; si las curvas recientes en esa ventana superan `curvesAllowedBySpeed.v`, el tren descarrila. A velocidad `v < derail.minSpeed`, nunca.
+
 ## Fuera de alcance (ideas futuras, no forman parte de esta mecánica)
 - **Ayuda visual al construir**: que el cursor cambie de color al trazar curvas muy seguidas (con un último estado rojo intermitente de máximo peligro) para avisar al jugador de que está creando un tramo sinuoso. Es una feature de UX/construcción independiente del descarrilamiento; se trataría por separado.
 
