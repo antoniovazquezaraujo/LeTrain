@@ -168,6 +168,12 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
+        letrain.track.rail.RailTrack.VisualType vt = track.getVisualType();
+        if ((vt == letrain.track.rail.RailTrack.VisualType.TUNNEL
+                || vt == letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE)
+                && this.mode != GameMode.RAILS) {
+            return;
+        }
         TextColor blockedColor = getTrackBlockedColor(track);
         String aspect = getTrackAspect(track);
 
