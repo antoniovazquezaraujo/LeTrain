@@ -45,6 +45,19 @@ Nota de contexto del equipo: la mecánica debe **mantenerse simple** y acotada; 
 ## Balance (valores)
 Las velocidades del juego son simbólicas (1–10), no buscamos realismo. Los valores se fijan de forma genérica en `economy.properties` (`derail.minSpeed`, factor de ventana `N`, curvas permitidas por velocidad y `derail.forkMaxSpeed`) y se ajustan con una pequeña tabla de casos en balance: **a más velocidad, menos curvas seguidas se toleran**; por debajo de `derail.minSpeed` nunca descarrila.
 
+### Ejemplo ilustrativo (tramo de 100 m)
+Supuestos de ejemplo: 100 m ≈ 10 piezas de vía; memoria `N` = velocidad (en piezas); descarrila al entrar en una curva si en los últimos `N` hay más de `N/2` curvas; `derail.minSpeed = 4`. Valores orientativos para visualizar el comportamiento buscado — los números exactos se afinan en balance:
+
+| Velocidad | 2 curvas en 100 m | 5 curvas en 100 m | 8+ curvas en 100 m (zigzag) |
+|---|---|---|---|
+| 2 | No | No | No |
+| 4 | No | No | Sí |
+| 6 | No | No | Sí |
+| 8 | No | Sí | Sí |
+| 10 | No | Sí | Sí |
+
+Lectura: a baja velocidad (y bajo `minSpeed`) da igual la geometría; unas pocas curvas sueltas nunca son problema; el riesgo aparece cuando **mucha velocidad se encuentra con curvas agrupadas** — y crece cuanto más juntas están y más rápido va el tren.
+
 ## Fuera de alcance (ideas futuras, no forman parte de esta mecánica)
 - **Ayuda visual al construir**: que el cursor cambie de color al trazar curvas muy seguidas (con un último estado rojo intermitente de máximo peligro) para avisar al jugador de que está creando un tramo sinuoso. Es una feature de UX/construcción independiente del descarrilamiento; se trataría por separado.
 
