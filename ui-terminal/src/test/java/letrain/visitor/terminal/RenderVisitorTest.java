@@ -1,5 +1,6 @@
 package letrain.visitor.terminal;
 
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.googlecode.lanterna.TextColor;
@@ -93,5 +94,50 @@ class RenderVisitorTest {
         visitor.visitLocomotive(loco);
 
         verify(view, atLeastOnce()).setFgColor(TextColor.ANSI.CYAN_BRIGHT);
+    }
+
+    @Test
+    @DisplayName("visitRailTrack does not draw tunnel rail outside Rails mode")
+    void visitRailTrack_shouldNotDrawTunnelRail_whenNotInRailsMode() {
+        TerminalView view = mock(TerminalView.class);
+        RenderVisitor visitor = new RenderVisitor(view);
+
+        Model model = mock(Model.class);
+        when(model.getMode()).thenReturn(letrain.mvp.Model.GameMode.DRIVE);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(3, 3));
+        track.setVisualType(RailTrack.VisualType.TUNNEL);
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        verify(view, never()).set(anyInt(), anyInt(), anyString());
+    }
+
+    @Test
+    @DisplayName("visitRailTrack draws tunnel rail in Rails mode")
+    void visitRailTrack_shouldDrawTunnelRail_inRailsMode() {
+        TerminalView view = mock(TerminalView.class);
+        RenderVisitor visitor = new RenderVisitor(view);
+
+        Model model = mock(Model.class);
+        RailwayGraph graph = mock(RailwayGraph.class);
+        BlockManager blockManager = mock(BlockManager.class);
+        Segment segment = mock(Segment.class);
+        when(model.getMode()).thenReturn(letrain.mvp.Model.GameMode.RAILS);
+        when(model.getRailwayGraph()).thenReturn(graph);
+        when(model.getBlockManager()).thenReturn(blockManager);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(3, 3));
+        track.setVisualType(RailTrack.VisualType.TUNNEL);
+        when(graph.getSegment(track)).thenReturn(segment);
+        when(blockManager.getOwners(segment)).thenReturn(List.of());
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        verify(view, atLeastOnce()).set(eq(3), eq(3), anyString());
     }
 }

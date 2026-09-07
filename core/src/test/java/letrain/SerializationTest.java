@@ -489,4 +489,25 @@ class SerializationTest {
         assertNotNull(restored.getSensor(1));
         assertNotNull(restored.getSelectedSpeedSignal());
     }
+
+    @Test
+    @DisplayName("Construction delays survive a save/load round trip")
+    void constructionDelays_surviveRoundTrip() throws IOException {
+        Model model = new Model();
+        assertEquals(30,
+                model.getEconomyManager()
+                        .getConstructionDelay(letrain.mvp.Presenter.TrackType.TUNNEL_TRACK));
+        assertEquals(20,
+                model.getEconomyManager()
+                        .getConstructionDelay(letrain.mvp.Presenter.TrackType.BRIDGE_TRACK));
+
+        Model restored = deserialize(serialize(model), Model.class);
+        assertNotNull(restored);
+        assertEquals(30,
+                restored.getEconomyManager()
+                        .getConstructionDelay(letrain.mvp.Presenter.TrackType.TUNNEL_TRACK));
+        assertEquals(20,
+                restored.getEconomyManager()
+                        .getConstructionDelay(letrain.mvp.Presenter.TrackType.BRIDGE_TRACK));
+    }
 }
