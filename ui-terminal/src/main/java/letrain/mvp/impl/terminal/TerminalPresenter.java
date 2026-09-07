@@ -587,7 +587,105 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         return event.getKeyType();
     }
 
+    private boolean tryMoveSelectedWithShift(InputEvent keyEvent) {
+        if (!keyEvent.isShiftDown() && !isShiftedVimMoveKey(keyEvent)) {
+            return false;
+        }
+        KeyType keyType = getEffectiveKeyType(keyEvent);
+        if (keyType == KeyType.ArrowUp) {
+            moveSelectedElement(true);
+            return true;
+        }
+        if (keyType == KeyType.ArrowDown) {
+            moveSelectedElement(false);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isShiftedVimMoveKey(InputEvent keyEvent) {
+        Character c = keyEvent.getCharacter();
+        return c != null && (c == 'K' || c == 'J');
+    }
+
+    private Dir selectedElementDir() {
+        switch (model.getMode()) {
+            case STATIONS:
+                Station station = model.getSelectedStation();
+                return station != null ? station.getCreationDir() : null;
+            case SENSORS:
+                letrain.track.Sensor sensor = model.getSelectedSensor();
+                return sensor != null ? sensor.getCreationDir() : null;
+            case SPEED_SIGNALS:
+                letrain.track.SpeedSignal signal = model.getSelectedSpeedSignal();
+                return signal != null ? signal.getCreationDir() : null;
+            case SEMAPHORES:
+                letrain.track.RailSemaphore semaphore = model.getSelectedSemaphore();
+                return semaphore != null ? semaphore.getCreationDir() : null;
+            default:
+                return null;
+        }
+    }
+
+    private void moveSelectedElement(boolean forward) {
+        letrain.track.Track destTrack = null;
+        switch (model.getMode()) {
+            case STATIONS:
+                if (model.getSelectedStation() != null) {
+                    Station station = model.getSelectedStation();
+                    boolean moved = forward ? model.moveSensorForward(station)
+                            : model.moveSensorBackward(station);
+                    if (moved) {
+                        destTrack = station.getTrack();
+                    }
+                }
+                break;
+            case SENSORS:
+                if (model.getSelectedSensor() != null) {
+                    letrain.track.Sensor sensor = model.getSelectedSensor();
+                    boolean moved = forward ? model.moveSensorForward(sensor)
+                            : model.moveSensorBackward(sensor);
+                    if (moved) {
+                        destTrack = sensor.getTrack();
+                    }
+                }
+                break;
+            case SPEED_SIGNALS:
+                if (model.getSelectedSpeedSignal() != null) {
+                    letrain.track.SpeedSignal signal = model.getSelectedSpeedSignal();
+                    boolean moved = forward ? model.moveSensorForward(signal)
+                            : model.moveSensorBackward(signal);
+                    if (moved) {
+                        destTrack = signal.getTrack();
+                    }
+                }
+                break;
+            case SEMAPHORES:
+                if (model.getSelectedSemaphore() != null) {
+                    letrain.track.RailSemaphore semaphore = model.getSelectedSemaphore();
+                    boolean moved = forward ? model.moveSemaphoreForward(semaphore)
+                            : model.moveSemaphoreBackward(semaphore);
+                    if (moved) {
+                        destTrack = model.getRailMap().getTrackAt(semaphore.getPosition());
+                    }
+                }
+                break;
+            default:
+                return;
+        }
+        if (destTrack == null) {
+            return;
+        }
+        model.getCursor().setPosition(destTrack.getPosition());
+        Dir front = selectedElementDir();
+        model.getCursor().setDir(front != null ? front : Dir.E);
+        setPageOfPoint(destTrack.getPosition());
+    }
+
     void handleStationsModeKey(InputEvent keyEvent) {
+        if (tryMoveSelectedWithShift(keyEvent)) {
+            return;
+        }
         switch (getEffectiveKeyType(keyEvent)) {
             case Backspace:
                 StationId = StationId / 10;
@@ -615,6 +713,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                         if (linker != null && linker.getTrain() != null) {
                             Train train = linker.getTrain();
                             train.getLogisticsManager().performIndustrialAction(selectedStation);
+                        } else {
+                            selectedStation.setCreationDir(
+                                    selectedStation.getCreationDir().inverse());
                         }
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
@@ -634,6 +735,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void handleSpeedSignalsModeKey(InputEvent keyEvent) {
+        if (tryMoveSelectedWithShift(keyEvent)) {
+            return;
+        }
         switch (getEffectiveKeyType(keyEvent)) {
             case Backspace:
                 speedSignalId = speedSignalId / 10;
@@ -700,6 +804,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void handleSensorsModeKey(InputEvent keyEvent) {
+        if (tryMoveSelectedWithShift(keyEvent)) {
+            return;
+        }
         switch (getEffectiveKeyType(keyEvent)) {
             case Backspace:
                 sensorId = sensorId / 10;
@@ -739,6 +846,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void handleSemaphoresModeKey(InputEvent keyEvent) {
+        if (tryMoveSelectedWithShift(keyEvent)) {
+            return;
+        }
         switch (getEffectiveKeyType(keyEvent)) {
             case Backspace:
                 semaphoreId = semaphoreId / 10;

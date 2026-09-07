@@ -438,19 +438,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             station.setTrack(track);
             station.setCreationDir(dir);
             station.setSideDir(dir.turnRight().turnRight());
-            Integer foundTerrain = model.getGroundMap().findClosestIndustry(pos, 5);
-            if (foundTerrain != null) {
-                int densityCount = model.getGroundMap().countIndustryDensity(pos, 5, foundTerrain);
-                station.setCargoType(letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(foundTerrain));
-                station.setRole(letrain.track.CargoTypes.IndustryMapper.getRoleForTerrain(foundTerrain));
-                station.setIndustryCount(densityCount);
-                if (station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER) {
-                    station.setStorage(50);
-                }
-            } else {
-                station.setCargoType(letrain.track.CargoTypes.NONE);
-                station.setRole(letrain.track.CargoTypes.StationRole.GENERIC);
-            }
+            model.applyStationRoleByIndustry(station, pos);
             model.addStation(station);
             track.setComponent(station);
         } else if (ctx.SENSOR() != null) {

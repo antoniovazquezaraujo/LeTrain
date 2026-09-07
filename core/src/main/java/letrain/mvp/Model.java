@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
+import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
 import letrain.track.CargoTypes;
@@ -127,6 +128,50 @@ public interface Model {
     void addSemaphore(RailSemaphore semaphore);
 
     void removeSemaphore(RailSemaphore semaphore);
+
+    /**
+     * Moves a sensor (plain {@code Sensor}, {@code Station} or {@code SpeedSignal}) one resting
+     * cell forward along the rail in {@code dir}, jumping over cells occupied by other components
+     * but never over trains. Returns false (and does not move the element) when blocked or at the
+     * end of the line. A moved {@code Station} re-evaluates its industry role at the new position.
+     */
+    boolean moveSensor(Sensor sensor, Dir dir);
+
+    /**
+     * Moves a rail semaphore one resting cell forward along the rail in {@code dir}, keeping its
+     * {@code position} in sync with the track component. Returns false (and does not move the
+     * element) when blocked or at the end of the line.
+     */
+    boolean moveSemaphore(RailSemaphore semaphore, Dir dir);
+
+    /**
+     * Moves a sensor (plain {@code Sensor}, {@code Station} or {@code SpeedSignal}) one resting
+     * cell forward along the rail, in the direction the element itself is facing. The element keeps
+     * following the track across curves and forks (its facing is rotated to the rail direction), it
+     * jumps cells occupied by other components but never over trains, and stops at the end of the
+     * line. A moved {@code Station} re-evaluates its industry role at the new position.
+     */
+    boolean moveSensorForward(Sensor sensor);
+
+    /**
+     * Moves a sensor one resting cell backward along the rail (away from the direction it is
+     * facing), with the same rail-following rules as {@link #moveSensorForward(Sensor)}.
+     */
+    boolean moveSensorBackward(Sensor sensor);
+
+    /**
+     * Moves a rail semaphore one resting cell forward along the rail, in the direction the
+     * semaphore is facing, keeping its {@code position} in sync with the track component and
+     * rotating its facing to keep following the rail.
+     */
+    boolean moveSemaphoreForward(RailSemaphore semaphore);
+
+    /**
+     * Moves a rail semaphore one resting cell backward along the rail (away from the direction it
+     * is facing), with the same rail-following rules as
+     * {@link #moveSemaphoreForward(RailSemaphore)}.
+     */
+    boolean moveSemaphoreBackward(RailSemaphore semaphore);
 
     RailSemaphore getSemaphoreAt(Point point);
 
@@ -277,6 +322,14 @@ public interface Model {
     CargoTypes getStationGhostCargoType();
 
     CargoTypes.StationRole getStationGhostRole();
+
+    /**
+     * Recomputes the industrial role, cargo type, industry count and storage of {@code station} at
+     * {@code position} with the same industry-influence rules used when the station is created
+     * (radius 5). Shared by station creation and by {@link #moveSensor(Sensor, Dir)} so both stay
+     * consistent ("mirror of creation").
+     */
+    void applyStationRoleByIndustry(Station station, Point position);
 
     letrain.mvp.impl.EventLogManager getEventLogManager();
 

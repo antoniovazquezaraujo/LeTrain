@@ -11,7 +11,6 @@ import letrain.map.Router;
 import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Presenter;
 import letrain.mvp.Presenter.TrackType;
-import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
@@ -294,25 +293,7 @@ public class RailTrackMaker {
                 station.setCreationDir(presenter.getModel().getCursor().getDir());
                 station.setSideDir(
                         presenter.getModel().getCursor().getDir().turnRight().turnRight());
-                Integer foundTerrain =
-                        presenter.getModel().getGroundMap().findClosestIndustry(position, 5);
-
-                // If found, count density for THAT type
-                if (foundTerrain != null) {
-                    int densityCount = presenter.getModel().getGroundMap()
-                            .countIndustryDensity(position, 5, foundTerrain);
-                    station.setCargoType(letrain.track.CargoTypes.IndustryMapper
-                            .getCargoForTerrain(foundTerrain));
-                    station.setRole(letrain.track.CargoTypes.IndustryMapper
-                            .getRoleForTerrain(foundTerrain));
-                    station.setIndustryCount(densityCount);
-                    if (station.getRole() == CargoTypes.StationRole.PRODUCER) {
-                        station.setStorage(50);
-                    }
-                } else {
-                    station.setCargoType(CargoTypes.NONE);
-                    station.setRole(CargoTypes.StationRole.GENERIC);
-                }
+                presenter.getModel().applyStationRoleByIndustry(station, position);
 
                 presenter.getModel().addStation(station);
                 track.setComponent(station);
