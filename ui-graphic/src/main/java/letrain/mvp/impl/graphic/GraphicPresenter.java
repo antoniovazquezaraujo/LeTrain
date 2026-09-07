@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class GraphicPresenter extends ApplicationAdapter
         implements letrain.mvp.View, letrain.mvp.Presenter, CoreTrainEventListener {
     private static final Logger log = LoggerFactory.getLogger(GraphicPresenter.class);
-    private static final String DEFAULT_SAVEGAME_FILENAME = "savegame.dat";
+    private static final String DEFAULT_SAVEGAME_FILENAME = "savegame.json";
     private com.badlogic.gdx.graphics.PerspectiveCamera cam;
     private ModelBatch modelBatch;
     private ModelBuilder modelBuilder;

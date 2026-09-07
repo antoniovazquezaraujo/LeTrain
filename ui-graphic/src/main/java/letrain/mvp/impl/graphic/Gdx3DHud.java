@@ -1289,10 +1289,10 @@ public class Gdx3DHud {
             fileChooser.setSelectionMode(
                     com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode.FILES);
 
-            // Only show .dat files by default
+            // Only show .json files by default
             com.kotcrab.vis.ui.widget.file.FileTypeFilter filter =
                     new com.kotcrab.vis.ui.widget.file.FileTypeFilter(true);
-            filter.addRule("Data files (*.dat)", "dat");
+            filter.addRule("Save game (*.json)", "json");
             fileChooser.setFileTypeFilter(filter);
 
             fileChooser.setDirectory(Gdx.files.local("."));
