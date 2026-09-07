@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -19,6 +21,7 @@ import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
+import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Cursor;
@@ -859,6 +862,86 @@ public class Model implements letrain.mvp.Model {
     }
 
     @Override
+    public boolean moveSensor(Sensor sensor, Dir dir) {
+        Track origin = sensor.getTrack();
+        if (origin == null) {
+            return false;
+        }
+        Track destination = findMoveDestination(origin, dir);
+        if (destination == null) {
+            return false;
+        }
+        origin.setComponent(null);
+        sensor.setTrack(destination);
+        destination.setComponent(sensor);
+        if (sensor instanceof Station) {
+            applyStationRoleByIndustry((Station) sensor, destination.getPosition());
+        }
+        mapChanged = true;
+        return true;
+    }
+
+    @Override
+    public boolean moveSemaphore(RailSemaphore semaphore, Dir dir) {
+        RailTrack origin = map.getTrackAt(semaphore.getPosition());
+        if (origin == null) {
+            return false;
+        }
+        Track destination = findMoveDestination(origin, dir);
+        if (destination == null) {
+            return false;
+        }
+        origin.setComponent(null);
+        semaphore.setPosition(destination.getPosition());
+        destination.setComponent(semaphore);
+        mapChanged = true;
+        return true;
+    }
+
+    /**
+     * Scans ahead from {@code origin} in {@code dir} looking for the first free resting cell.
+     *
+     * <p>
+     * A {@link ForkRailTrack} is a routing node: it is crossed (never a resting place) following
+     * its currently active branch. A cell occupied by another {@link TrackComponent} is jumped
+     * over, but a cell occupied by a train linker aborts the whole move. Returns {@code null} when
+     * there is no reachable resting cell.
+     */
+    private Track findMoveDestination(Track origin, Dir dir) {
+        Track cursor = origin;
+        Dir heading = dir;
+        Set<Track> visited = new HashSet<>();
+        visited.add(origin);
+        while (true) {
+            Track next = cursor.getConnected(heading);
+            if (next == null || !visited.add(next)) {
+                return null;
+            }
+            if (next.getLinker() != null) {
+                return null;
+            }
+            if (next instanceof ForkRailTrack) {
+                Dir exit = next.getDir(heading.inverse());
+                if (exit == null) {
+                    return null;
+                }
+                cursor = next;
+                heading = exit;
+            } else {
+                if (next.getComponent() == null) {
+                    return next;
+                }
+                Dir exit = next.getDir(heading.inverse());
+                if (exit == null) {
+                    return null;
+                }
+                cursor = next;
+                heading = exit;
+            }
+        }
+    }
+
+    @Override
     public RailSemaphore getSemaphoreAt(Point pos) {
         for (RailSemaphore semaphore : getSemaphores()) {
             if (semaphore.getPosition().equals(pos)) {
@@ -1094,6 +1177,25 @@ public class Model implements letrain.mvp.Model {
             }
             getEconomyManager().onStationDestroyed();
             mapChanged = true;
+        }
+    }
+
+    @Override
+    public void applyStationRoleByIndustry(Station station, Point position) {
+        Integer terrain = groundMap.findClosestIndustry(position, 5);
+        if (terrain != null) {
+            int density = groundMap.countIndustryDensity(position, 5, terrain);
+            station.setCargoType(CargoTypes.IndustryMapper.getCargoForTerrain(terrain));
+            station.setRole(CargoTypes.IndustryMapper.getRoleForTerrain(terrain));
+            station.setIndustryCount(density);
+            if (station.getRole() == CargoTypes.StationRole.PRODUCER) {
+                station.setStorage(50);
+            }
+        } else {
+            station.setCargoType(CargoTypes.NONE);
+            station.setRole(CargoTypes.StationRole.GENERIC);
+            station.setIndustryCount(0);
+            station.setStorage(0);
         }
     }
 

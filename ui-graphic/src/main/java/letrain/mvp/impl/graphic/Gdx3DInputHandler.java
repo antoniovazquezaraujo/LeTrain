@@ -13,7 +13,10 @@ import letrain.mvp.Model;
 import letrain.mvp.impl.RailTrackMaker;
 import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
+import letrain.track.Sensor;
+import letrain.track.SpeedSignal;
 import letrain.track.Station;
+import letrain.track.Track;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.impl.Locomotive;
@@ -558,6 +561,73 @@ public class Gdx3DInputHandler implements InputProcessor {
         return event.getKeyType();
     }
 
+    private boolean tryMoveSelectedWithShift(InputEvent event) {
+        if (!event.isShiftDown()) {
+            return false;
+        }
+        KeyType keyType = getEffectiveKeyType(event);
+        if (keyType == KeyType.ArrowUp) {
+            moveSelectedElement(true);
+            return true;
+        }
+        if (keyType == KeyType.ArrowDown) {
+            moveSelectedElement(false);
+            return true;
+        }
+        return false;
+    }
+
+    private void moveSelectedElement(boolean forward) {
+        Dir moveDir = model.getCursor().getDir();
+        if (moveDir == null) {
+            return;
+        }
+        if (!forward) {
+            moveDir = moveDir.inverse();
+        }
+        Track destTrack = null;
+        switch (model.getMode()) {
+            case STATIONS:
+                if (model.getSelectedStation() != null) {
+                    Station station = model.getSelectedStation();
+                    if (model.moveSensor(station, moveDir)) {
+                        destTrack = station.getTrack();
+                    }
+                }
+                break;
+            case SENSORS:
+                if (model.getSelectedSensor() != null) {
+                    Sensor sensor = model.getSelectedSensor();
+                    if (model.moveSensor(sensor, moveDir)) {
+                        destTrack = sensor.getTrack();
+                    }
+                }
+                break;
+            case SPEED_SIGNALS:
+                if (model.getSelectedSpeedSignal() != null) {
+                    SpeedSignal signal = model.getSelectedSpeedSignal();
+                    if (model.moveSensor(signal, moveDir)) {
+                        destTrack = signal.getTrack();
+                    }
+                }
+                break;
+            case SEMAPHORES:
+                RailSemaphore semaphore = model.getSelectedSemaphore();
+                if (semaphore != null && model.moveSemaphore(semaphore, moveDir)) {
+                    destTrack = model.getRailMap().getTrackAt(semaphore.getPosition());
+                }
+                break;
+            default:
+                return;
+        }
+        if (destTrack == null) {
+            return;
+        }
+        model.getCursor().setPosition(destTrack.getPosition());
+        Dir continueDir = destTrack.getDir(moveDir.inverse());
+        model.getCursor().setDir(continueDir != null ? continueDir : moveDir);
+    }
+
     private void handleDriveInput(InputEvent stroke) {
         if (getEffectiveKeyType(stroke) == KeyType.ArrowUp) {
             Locomotive loco = model.getSelectedLocomotive();
@@ -753,6 +823,9 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private void handleSpeedSignalsInput(InputEvent stroke) {
+        if (tryMoveSelectedWithShift(stroke)) {
+            return;
+        }
         switch (getEffectiveKeyType(stroke)) {
             case Backspace:
                 speedSignalId = speedSignalId / 10;
@@ -818,6 +891,9 @@ public class Gdx3DInputHandler implements InputProcessor {
     private int sensorIdAccumulator = 0;
 
     private void handleSensorsInput(InputEvent stroke) {
+        if (tryMoveSelectedWithShift(stroke)) {
+            return;
+        }
         if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
             model.selectPrevSensor();
         } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
@@ -842,6 +918,9 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private void handleSemaphoreInput(InputEvent stroke) {
+        if (tryMoveSelectedWithShift(stroke)) {
+            return;
+        }
         if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
             model.selectPrevSemaphore();
         } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
@@ -882,6 +961,9 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private void handleStationInput(InputEvent stroke) {
+        if (tryMoveSelectedWithShift(stroke)) {
+            return;
+        }
         if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
             model.selectPrevStation();
         } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {

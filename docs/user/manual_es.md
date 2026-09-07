@@ -53,6 +53,13 @@ LeTrain está fuertemente basado en modos. Al pulsar las siguientes teclas cambi
 - **Fin (End)**: Crear una estación.
 - **Supr (Del)**: Crear una señal de límite de velocidad en la vía.
 
+### Mover Elementos de Vía
+En los modos **Stations** (`n`), **Sensors** (`e`), **Semaphores** (`s`) y **Speed Signals** (`g`) puedes deslizar el elemento seleccionado a lo largo de la vía:
+- **Mayús + ↑ / Mayús + k**: mueve el elemento un hueco hacia delante por la vía (en la dirección en la que mira el cursor).
+- **Mayús + ↓ / Mayús + j**: mueve el elemento un hueco hacia atrás.
+
+El elemento sigue la vía y atraviesa los desvíos (usando su rama activa), salta las posiciones ocupadas por otros elementos, nunca salta por encima de un tren y se detiene al final de la línea. Asegúrate de tener el cursor colocado y orientado sobre el elemento antes de moverlo (pulsa `o` para traer el cursor hasta él). Si una estación de carga/descarga se aleja de su zona y pierde su influencia, se convierte en una estación genérica; un itinerario que le pida cargar o descargar será simplemente ignorado (el tren pasa de largo).
+
 ### Trenes y Conducción (Modo Drive / Trains)
 - **Modo Trains**: Letras minúsculas crean vagones (teclas 1, 2, 3 para tipo de mercancía). Letras mayúsculas crean locomotoras (teclas 0-9 para color). Pulsa **Intro** para terminar.
 - **Modo Drive**: Flechas Izquierda/Derecha seleccionan tren. Arriba/Abajo aceleran/frenan. **Espacio** invierte la marcha (solo en parado).

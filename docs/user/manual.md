@@ -51,6 +51,13 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **End**: Create a station.
 - **Del**: Create a speed limit signal on the track.
 
+### Moving Track Elements
+In the **Stations** (`n`), **Sensors** (`e`), **Semaphores** (`s`) and **Speed Signals** (`g`) modes you can slide the selected element along the rail:
+- **Shift + Up / Shift + k**: move the element one slot forward along the track (in the direction the cursor is facing).
+- **Shift + Down / Shift + j**: move the element one slot backward.
+
+The element follows the rail and crosses forks (using their active branch), skips positions occupied by other elements, never jumps over a train, and stops at the end of the line. Make sure the cursor is placed and oriented on the element first (press `o` to bring the cursor to it). If a load/unload station is moved away from its loading zone and loses its influence, it becomes a generic station; an itinerary that asks that station to load or unload will then be passed through.
+
 ### Trains and Driving (Drive / Trains Mode)
 - **Trains Mode**: Lowercase letters create wagons (keys 1, 2, 3 for cargo type). Uppercase letters create locomotives (keys 0-9 for color). Press **Enter** to finish.
 - **Drive Mode**: Left/Right arrows select a train. Up/Down arrows accelerate/brake. **Spacebar** reverses direction (only when stopped).

@@ -31,3 +31,11 @@ LeTrain utiliza una rejilla octogonal para las direcciones (`Dir`), permitiendo 
 ## Invariantes
 - Una vía solo puede conectarse a otra si sus conectores son compatibles espacialmente.
 - Los `ForkRailTrack` deben tener siempre un `ForkEventListener` asociado si forman parte de un itinerario automático.
+
+## Movimiento de Elementos de Vía (issue #468)
+`Model.moveSensor(Sensor, Dir)` y `Model.moveSemaphore(RailSemaphore, Dir)` desplazan un elemento una celda de reposo a lo largo de la vía (operación de edición del usuario; nunca se ejecuta dentro de loops de tick ni reservas de bloque). Semántica del escaneo (`Model.findMoveDestination`, equivalente a `RailIterator.advance`):
+- Desde la celda origen se avanza con `getConnected(heading)`; el puerto de entrada a la celda candidata es `heading.inverse()` y la salida se obtiene con `getDir(port)`.
+- Una celda con otro `TrackComponent` se **salta**; se sigue buscando la primera celda libre en esa dirección.
+- Una celda con un tren (`getLinker() != null`) **aborta** el movimiento: nunca se salta por encima de trenes.
+- Un `ForkRailTrack` es un nodo de ruteo, nunca celda de reposo: se atraviesa siguiendo la rama activa (`isUsingAlternativeRoute()`).
+- Al mover una `Station`, `applyStationRoleByIndustry(Station, Point)` re-evalúa su rol industrial (radio 5) con la misma lógica usada en la creación ("espejo de la creación"). Los sensores/estaciones conservan identidad (`id`) y `creationDir`; las listas del `Model` y el componente del `Track` se mantienen sincronizados sin re-registrar el elemento.
