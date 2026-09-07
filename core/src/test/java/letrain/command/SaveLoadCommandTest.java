@@ -29,15 +29,15 @@ class SaveLoadCommandTest {
     }
 
     @Test
-    @DisplayName("save antonio -> antonio.json (no quotes stripped wrongly)")
+    @DisplayName("save partida -> partida.json (no quotes stripped wrongly)")
     void save_unquotedName_keepsWholeName() {
-        assertEquals("antonio.json", savedName("save antonio;"));
+        assertEquals("partida.json", savedName("save partida;"));
     }
 
     @Test
-    @DisplayName("save \"antonio\" -> antonio.json (quotes are removed)")
+    @DisplayName("save \"partida\" -> partida.json (quotes are removed)")
     void save_quotedName_removesQuotes() {
-        assertEquals("antonio.json", savedName("save \"antonio\";"));
+        assertEquals("partida.json", savedName("save \"partida\";"));
     }
 
     @Test
@@ -47,9 +47,9 @@ class SaveLoadCommandTest {
     }
 
     @Test
-    @DisplayName("load antonio -> antonio.json")
+    @DisplayName("load partida -> partida.json")
     void load_unquotedName_keepsWholeName() {
-        assertEquals("antonio.json", loadedName("load antonio;"));
+        assertEquals("partida.json", loadedName("load partida;"));
     }
 
     @Test
