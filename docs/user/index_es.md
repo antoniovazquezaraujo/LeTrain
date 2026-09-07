@@ -68,6 +68,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
 ## 📖 Documentación
 
 - [Manual de Usuario](manual_es.md)
+- [Mover Elementos de Vía](manual_es.md#mover-elementos-de-vía) — desliza semáforos, sensores, estaciones y señales de velocidad por la vía con `Mayús + ↑/k` (adelante) y `Mayús + ↓/j` (atrás).
 - [Gramática de Scripting y Automatización](grammar_es.md)
 
 ## 🎥 Multimedia y Tutoriales
