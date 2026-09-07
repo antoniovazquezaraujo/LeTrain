@@ -1009,7 +1009,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     Train train = linker.getTrain();
                     train.getLogisticsManager().performIndustrialAction(station);
                 } else if (station.getCreationDir() != null) {
-                    station.setCreationDir(station.getCreationDir().inverse());
+                    station.flipOrientation();
                     if (cameraController != null) {
                         cameraController.forceSnap();
                     }

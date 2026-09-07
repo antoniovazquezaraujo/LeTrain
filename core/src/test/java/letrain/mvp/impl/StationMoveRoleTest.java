@@ -169,4 +169,24 @@ class StationMoveRoleTest {
         assertEquals(0, station.getStorage());
         assertSame(station, model.getStation(3), "station must stay registered in the model");
     }
+
+    @Test
+    @DisplayName("flipOrientation inverts creationDir and recomputes the platform sideDir")
+    void flipOrientation_invertsCreationAndPlatformSide() {
+        Station station = new Station(9);
+        Dir dir = Dir.E;
+        station.setCreationDir(dir);
+        station.setSideDir(dir.turnRight().turnRight());
+
+        station.flipOrientation();
+
+        assertEquals(dir.inverse(), station.getCreationDir());
+        assertEquals(dir.inverse().turnRight().turnRight(), station.getSideDir(),
+                "platform side must mirror the new creation direction (2D/3D parity)");
+
+        station.flipOrientation();
+
+        assertEquals(dir, station.getCreationDir());
+        assertEquals(dir.turnRight().turnRight(), station.getSideDir());
+    }
 }

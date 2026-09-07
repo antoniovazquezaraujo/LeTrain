@@ -714,8 +714,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                             Train train = linker.getTrain();
                             train.getLogisticsManager().performIndustrialAction(selectedStation);
                         } else {
-                            selectedStation.setCreationDir(
-                                    selectedStation.getCreationDir().inverse());
+                            selectedStation.flipOrientation();
                         }
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
