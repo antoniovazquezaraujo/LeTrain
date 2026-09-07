@@ -898,6 +898,139 @@ public class Model implements letrain.mvp.Model {
         return true;
     }
 
+    @Override
+    public boolean moveSensorForward(Sensor sensor) {
+        Track origin = sensor.getTrack();
+        if (origin == null) {
+            return false;
+        }
+        Dir front = sensor.getCreationDir();
+        if (front == null) {
+            return false;
+        }
+        Track destination = findMoveDestination(origin, front);
+        if (destination == null) {
+            return false;
+        }
+        relocateSensor(sensor, origin, destination);
+        sensor.setCreationDir(continuationDir(destination, front));
+        if (sensor instanceof Station) {
+            applyStationRoleByIndustry((Station) sensor, destination.getPosition());
+        }
+        mapChanged = true;
+        return true;
+    }
+
+    @Override
+    public boolean moveSensorBackward(Sensor sensor) {
+        Track origin = sensor.getTrack();
+        if (origin == null) {
+            return false;
+        }
+        Dir front = sensor.getCreationDir();
+        if (front == null) {
+            return false;
+        }
+        Dir back = backEndDir(origin, front);
+        if (back == null) {
+            return false;
+        }
+        Track destination = findMoveDestination(origin, back);
+        if (destination == null) {
+            return false;
+        }
+        relocateSensor(sensor, origin, destination);
+        sensor.setCreationDir(back.inverse());
+        if (sensor instanceof Station) {
+            applyStationRoleByIndustry((Station) sensor, destination.getPosition());
+        }
+        mapChanged = true;
+        return true;
+    }
+
+    @Override
+    public boolean moveSemaphoreForward(RailSemaphore semaphore) {
+        RailTrack origin = map.getTrackAt(semaphore.getPosition());
+        if (origin == null) {
+            return false;
+        }
+        Dir front = semaphore.getCreationDir();
+        if (front == null) {
+            return false;
+        }
+        Track destination = findMoveDestination(origin, front);
+        if (destination == null) {
+            return false;
+        }
+        relocateSemaphore(semaphore, origin, destination);
+        semaphore.setCreationDir(continuationDir(destination, front));
+        mapChanged = true;
+        return true;
+    }
+
+    @Override
+    public boolean moveSemaphoreBackward(RailSemaphore semaphore) {
+        RailTrack origin = map.getTrackAt(semaphore.getPosition());
+        if (origin == null) {
+            return false;
+        }
+        Dir front = semaphore.getCreationDir();
+        if (front == null) {
+            return false;
+        }
+        Dir back = backEndDir(origin, front);
+        if (back == null) {
+            return false;
+        }
+        Track destination = findMoveDestination(origin, back);
+        if (destination == null) {
+            return false;
+        }
+        relocateSemaphore(semaphore, origin, destination);
+        semaphore.setCreationDir(back.inverse());
+        mapChanged = true;
+        return true;
+    }
+
+    private void relocateSensor(Sensor sensor, Track origin, Track destination) {
+        origin.setComponent(null);
+        sensor.setTrack(destination);
+        destination.setComponent(sensor);
+    }
+
+    private void relocateSemaphore(RailSemaphore semaphore, Track origin, Track destination) {
+        origin.setComponent(null);
+        semaphore.setPosition(destination.getPosition());
+        destination.setComponent(semaphore);
+    }
+
+    /**
+     * Direction the element should keep facing after landing on {@code destination} coming from
+     * {@code dir}, so it can keep moving forward along the rail (rotates through curves).
+     */
+    private Dir continuationDir(Track destination, Dir dir) {
+        Dir exit = destination.getDir(dir.inverse());
+        return exit != null ? exit : dir;
+    }
+
+    /**
+     * Rail end opposite to the facing direction {@code front} on {@code track}, used to move the
+     * element backward. Returns null when the element cannot go back (no rail behind it).
+     */
+    private Dir backEndDir(Track track, Dir front) {
+        List<Dir> connected = track.getConnections();
+        if (connected.contains(front)) {
+            for (Dir d : connected) {
+                if (d != front) {
+                    return d;
+                }
+            }
+            return null;
+        }
+        Dir opposite = front.inverse();
+        return track.getConnected(opposite) != null ? opposite : null;
+    }
+
     /**
      * Scans ahead from {@code origin} in {@code dir} looking for the first free resting cell.
      *

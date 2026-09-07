@@ -602,19 +602,14 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private void moveSelectedElement(boolean forward) {
-        Dir moveDir = selectedElementDir();
-        if (moveDir == null) {
-            return;
-        }
-        if (!forward) {
-            moveDir = moveDir.inverse();
-        }
         Track destTrack = null;
         switch (model.getMode()) {
             case STATIONS:
                 if (model.getSelectedStation() != null) {
                     Station station = model.getSelectedStation();
-                    if (model.moveSensor(station, moveDir)) {
+                    boolean moved = forward ? model.moveSensorForward(station)
+                            : model.moveSensorBackward(station);
+                    if (moved) {
                         destTrack = station.getTrack();
                     }
                 }
@@ -622,7 +617,9 @@ public class Gdx3DInputHandler implements InputProcessor {
             case SENSORS:
                 if (model.getSelectedSensor() != null) {
                     Sensor sensor = model.getSelectedSensor();
-                    if (model.moveSensor(sensor, moveDir)) {
+                    boolean moved = forward ? model.moveSensorForward(sensor)
+                            : model.moveSensorBackward(sensor);
+                    if (moved) {
                         destTrack = sensor.getTrack();
                     }
                 }
@@ -630,15 +627,21 @@ public class Gdx3DInputHandler implements InputProcessor {
             case SPEED_SIGNALS:
                 if (model.getSelectedSpeedSignal() != null) {
                     SpeedSignal signal = model.getSelectedSpeedSignal();
-                    if (model.moveSensor(signal, moveDir)) {
+                    boolean moved = forward ? model.moveSensorForward(signal)
+                            : model.moveSensorBackward(signal);
+                    if (moved) {
                         destTrack = signal.getTrack();
                     }
                 }
                 break;
             case SEMAPHORES:
                 RailSemaphore semaphore = model.getSelectedSemaphore();
-                if (semaphore != null && model.moveSemaphore(semaphore, moveDir)) {
-                    destTrack = model.getRailMap().getTrackAt(semaphore.getPosition());
+                if (semaphore != null) {
+                    boolean moved = forward ? model.moveSemaphoreForward(semaphore)
+                            : model.moveSemaphoreBackward(semaphore);
+                    if (moved) {
+                        destTrack = model.getRailMap().getTrackAt(semaphore.getPosition());
+                    }
                 }
                 break;
             default:
@@ -648,8 +651,8 @@ public class Gdx3DInputHandler implements InputProcessor {
             return;
         }
         model.getCursor().setPosition(destTrack.getPosition());
-        Dir continueDir = destTrack.getDir(moveDir.inverse());
-        model.getCursor().setDir(continueDir != null ? continueDir : moveDir);
+        Dir front = selectedElementDir();
+        model.getCursor().setDir(front != null ? front : Dir.E);
     }
 
     private void handleDriveInput(InputEvent stroke) {

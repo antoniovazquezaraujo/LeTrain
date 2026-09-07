@@ -628,19 +628,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void moveSelectedElement(boolean forward) {
-        Dir moveDir = selectedElementDir();
-        if (moveDir == null) {
-            return;
-        }
-        if (!forward) {
-            moveDir = moveDir.inverse();
-        }
         letrain.track.Track destTrack = null;
         switch (model.getMode()) {
             case STATIONS:
                 if (model.getSelectedStation() != null) {
                     Station station = model.getSelectedStation();
-                    if (model.moveSensor(station, moveDir)) {
+                    boolean moved = forward ? model.moveSensorForward(station)
+                            : model.moveSensorBackward(station);
+                    if (moved) {
                         destTrack = station.getTrack();
                     }
                 }
@@ -648,7 +643,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             case SENSORS:
                 if (model.getSelectedSensor() != null) {
                     letrain.track.Sensor sensor = model.getSelectedSensor();
-                    if (model.moveSensor(sensor, moveDir)) {
+                    boolean moved = forward ? model.moveSensorForward(sensor)
+                            : model.moveSensorBackward(sensor);
+                    if (moved) {
                         destTrack = sensor.getTrack();
                     }
                 }
@@ -656,7 +653,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             case SPEED_SIGNALS:
                 if (model.getSelectedSpeedSignal() != null) {
                     letrain.track.SpeedSignal signal = model.getSelectedSpeedSignal();
-                    if (model.moveSensor(signal, moveDir)) {
+                    boolean moved = forward ? model.moveSensorForward(signal)
+                            : model.moveSensorBackward(signal);
+                    if (moved) {
                         destTrack = signal.getTrack();
                     }
                 }
@@ -664,7 +663,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             case SEMAPHORES:
                 if (model.getSelectedSemaphore() != null) {
                     letrain.track.RailSemaphore semaphore = model.getSelectedSemaphore();
-                    if (model.moveSemaphore(semaphore, moveDir)) {
+                    boolean moved = forward ? model.moveSemaphoreForward(semaphore)
+                            : model.moveSemaphoreBackward(semaphore);
+                    if (moved) {
                         destTrack = model.getRailMap().getTrackAt(semaphore.getPosition());
                     }
                 }
@@ -676,8 +677,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         model.getCursor().setPosition(destTrack.getPosition());
-        Dir continueDir = destTrack.getDir(moveDir.inverse());
-        model.getCursor().setDir(continueDir != null ? continueDir : moveDir);
+        Dir front = selectedElementDir();
+        model.getCursor().setDir(front != null ? front : Dir.E);
         setPageOfPoint(destTrack.getPosition());
     }
 

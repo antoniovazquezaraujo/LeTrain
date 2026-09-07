@@ -144,6 +144,35 @@ public interface Model {
      */
     boolean moveSemaphore(RailSemaphore semaphore, Dir dir);
 
+    /**
+     * Moves a sensor (plain {@code Sensor}, {@code Station} or {@code SpeedSignal}) one resting
+     * cell forward along the rail, in the direction the element itself is facing. The element keeps
+     * following the track across curves and forks (its facing is rotated to the rail direction), it
+     * jumps cells occupied by other components but never over trains, and stops at the end of the
+     * line. A moved {@code Station} re-evaluates its industry role at the new position.
+     */
+    boolean moveSensorForward(Sensor sensor);
+
+    /**
+     * Moves a sensor one resting cell backward along the rail (away from the direction it is
+     * facing), with the same rail-following rules as {@link #moveSensorForward(Sensor)}.
+     */
+    boolean moveSensorBackward(Sensor sensor);
+
+    /**
+     * Moves a rail semaphore one resting cell forward along the rail, in the direction the
+     * semaphore is facing, keeping its {@code position} in sync with the track component and
+     * rotating its facing to keep following the rail.
+     */
+    boolean moveSemaphoreForward(RailSemaphore semaphore);
+
+    /**
+     * Moves a rail semaphore one resting cell backward along the rail (away from the direction it
+     * is facing), with the same rail-following rules as
+     * {@link #moveSemaphoreForward(RailSemaphore)}.
+     */
+    boolean moveSemaphoreBackward(RailSemaphore semaphore);
+
     RailSemaphore getSemaphoreAt(Point point);
 
     boolean selectNextSemaphore();

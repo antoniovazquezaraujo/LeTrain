@@ -83,6 +83,15 @@ class TrackElementMoveTest {
         return fork;
     }
 
+    private RailTrack curveAt(int x, int y, Dir inDir, Dir outDir) {
+        RailTrack curve = new RailTrack();
+        curve.addRoute(inDir, outDir);
+        curve.addRoute(outDir, inDir);
+        curve.setPosition(new Point(x, y));
+        model.getRailMap().addTrack(curve.getPosition(), curve);
+        return curve;
+    }
+
     /** Configures a fork split from West into East (normal) and South (alternative). */
     private void addForkWestEastSouth(ForkRailTrack fork) {
         fork.addRoute(Dir.W, Dir.E);
@@ -383,5 +392,88 @@ class TrackElementMoveTest {
         assertNull(fork.getComponent());
         assertSame(sensor, tBranch.getComponent());
         assertNull(tStraight.getComponent());
+    }
+
+    // ------------------------------------------------------------------
+    // 6. Orientation-aware moves (issue #468 follow-up): forward/backward
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("6.1 Sensor keeps moving forward across a curve, rotating its facing")
+    void sensor_followsCurveForward_rotatesFacing() {
+        // Arrange: west straight -> curve turning West->South -> south straight.
+        RailTrack tWest = straightAt(0, 0, Dir.E, Dir.W);
+        RailTrack curve = curveAt(1, 0, Dir.W, Dir.S);
+        RailTrack tSouth = straightAt(1, 1, Dir.S, Dir.N);
+        connect(tWest, Dir.E, curve, Dir.W);
+        connect(curve, Dir.S, tSouth, Dir.N);
+        Sensor sensor = placeSensor(tWest, 1);
+        sensor.setCreationDir(Dir.E);
+
+        // Act & Assert: first hop rests on the curve facing South.
+        assertTrue(model.moveSensorForward(sensor));
+        assertSame(curve, sensor.getTrack());
+        assertSame(sensor, curve.getComponent());
+        assertNull(tWest.getComponent());
+        assertEquals(Dir.S, sensor.getCreationDir());
+
+        // Second hop leaves the curve towards the south straight.
+        assertTrue(model.moveSensorForward(sensor));
+        assertSame(tSouth, sensor.getTrack());
+        assertSame(sensor, tSouth.getComponent());
+        assertNull(curve.getComponent());
+        assertEquals(Dir.S, sensor.getCreationDir());
+    }
+
+    @Test
+    @DisplayName("6.2 Sensor moves backward across a curve back to the origin track")
+    void sensor_movesBackwardAcrossCurve_returnsToOrigin() {
+        // Arrange: same west straight -> curve West->South -> south straight.
+        RailTrack tWest = straightAt(0, 0, Dir.E, Dir.W);
+        RailTrack curve = curveAt(1, 0, Dir.W, Dir.S);
+        RailTrack tSouth = straightAt(1, 1, Dir.S, Dir.N);
+        connect(tWest, Dir.E, curve, Dir.W);
+        connect(curve, Dir.S, tSouth, Dir.N);
+        Sensor sensor = placeSensor(tSouth, 1);
+        sensor.setCreationDir(Dir.S);
+
+        // Act: one backward hop reaches the curve, still facing South.
+        assertTrue(model.moveSensorBackward(sensor));
+        assertSame(curve, sensor.getTrack());
+        assertSame(sensor, curve.getComponent());
+        assertNull(tSouth.getComponent());
+        assertEquals(Dir.S, sensor.getCreationDir());
+
+        // A second backward hop returns to the west track, now facing East.
+        assertTrue(model.moveSensorBackward(sensor));
+        assertSame(tWest, sensor.getTrack());
+        assertSame(sensor, tWest.getComponent());
+        assertNull(curve.getComponent());
+        assertEquals(Dir.E, sensor.getCreationDir());
+    }
+
+    @Test
+    @DisplayName("6.3 Station forward move re-evaluates role and follows the element facing")
+    void station_movesForward_usingItsOwnFacing() {
+        // Arrange: west straight -> east straight, station facing East.
+        RailTrack t0 = straightAt(0, 0, Dir.E, Dir.W);
+        RailTrack t1 = straightAt(1, 0, Dir.W, Dir.E);
+        connect(t0, Dir.E, t1, Dir.W);
+        Station station = new Station(1);
+        station.setTrack(t0);
+        station.setCreationDir(Dir.E);
+        t0.setComponent(station);
+        model.addStation(station);
+
+        // Act
+        boolean moved = model.moveSensorForward(station);
+
+        // Assert
+        assertTrue(moved);
+        assertSame(t1, station.getTrack());
+        assertNull(t0.getComponent());
+        assertSame(station, t1.getComponent());
+        assertSame(station, model.getStation(1));
+        assertTrue(model.getStations().contains(station));
     }
 }
