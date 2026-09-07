@@ -32,6 +32,7 @@ import letrain.visitor.Renderable;
                 name = "StationRailTrack")})
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @JsonIgnoreProperties(ignoreUnknown = true)
+@SuppressWarnings("deprecation")
 public abstract class Track implements Router, Connectable, LinkerCompartment, Mappable,
         LinkerCompartmentListener, Renderable {
     @JsonIgnore
