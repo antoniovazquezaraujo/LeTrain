@@ -45,6 +45,14 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         return constructionDelays.getOrDefault(type, 0);
     }
 
+    private void initDefaultConstructionDelays() {
+        constructionDelays.put(Presenter.TrackType.NORMAL_TRACK, 0);
+        constructionDelays.put(Presenter.TrackType.BRIDGE_TRACK, 20);
+        constructionDelays.put(Presenter.TrackType.BRIDGE_GATE_TRACK, 20);
+        constructionDelays.put(Presenter.TrackType.TUNNEL_TRACK, 30);
+        constructionDelays.put(Presenter.TrackType.TUNNEL_GATE_TRACK, 30);
+    }
+
     @com.fasterxml.jackson.annotation.JsonProperty("fuelCostPerMeter")
     private float fuelCostPerMeter = 0.5f;
 
@@ -137,17 +145,13 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("destroyedWagons")
     int destroyedWagons = 0;
 
-    protected EconomyManager() {}
+    protected EconomyManager() {
+        initDefaultConstructionDelays();
+    }
 
     public EconomyManager(letrain.mvp.impl.EventLogManager eventLogManager) {
         this.eventLogManager = eventLogManager;
-        
-        // Construction Delays
-        constructionDelays.put(Presenter.TrackType.NORMAL_TRACK, 0);
-        constructionDelays.put(Presenter.TrackType.BRIDGE_TRACK, 20);
-        constructionDelays.put(Presenter.TrackType.BRIDGE_GATE_TRACK, 20);
-        constructionDelays.put(Presenter.TrackType.TUNNEL_TRACK, 30);
-        constructionDelays.put(Presenter.TrackType.TUNNEL_GATE_TRACK, 30);
+        initDefaultConstructionDelays();
 
         prices.put(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK, 100f);
         prices.put(ExpenseType.CONSTRUCTED_BRIDGE_RAIL_TRACK, 20000f);
