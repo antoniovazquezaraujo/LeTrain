@@ -247,6 +247,9 @@ public class Model implements letrain.mvp.Model {
     }
 
     public void postLoadInit() {
+        if (this.economyManager != null) {
+            this.economyManager.reloadConfig();
+        }
         if (nextSpeedSignalId == 0) {
             for (Sensor s : getSensors()) {
                 if (s instanceof letrain.track.SpeedSignal && s.getId() > nextSpeedSignalId) {
