@@ -2,6 +2,7 @@ package letrain;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -466,5 +467,26 @@ class SerializationTest {
                     impl.getPendingCommands().get(0).kind());
             assertEquals(5, impl.getPendingCommands().get(0).targetSpeed());
         }
+    }
+
+    @Test
+    @DisplayName("Selected speed signal that is also a track component round-trips")
+    void selectedSpeedSignal_thatIsAlsoComponent_roundTrips() throws IOException {
+        Model model = new Model();
+        RailTrack track = new RailTrack();
+        track.addRoute(letrain.map.Dir.E, letrain.map.Dir.W);
+        track.addRoute(letrain.map.Dir.W, letrain.map.Dir.E);
+        track.setPosition(new letrain.map.Point(0, 0));
+        model.getRailMap().addTrack(track.getPosition(), track);
+        letrain.track.SpeedSignal signal = new letrain.track.SpeedSignal(1, letrain.map.Dir.E, 3, true);
+        signal.setTrack(track);
+        track.setComponent(signal);
+        model.addSensor(signal);
+        model.setSelectedSpeedSignal(signal);
+
+        Model restored = deserialize(serialize(model), Model.class);
+        assertNotNull(restored);
+        assertNotNull(restored.getSensor(1));
+        assertNotNull(restored.getSelectedSpeedSignal());
     }
 }
