@@ -24,6 +24,21 @@ Mecánica común: el **diario de comandos** registra las acciones de edición de
 
    **Calidad del export (fiel vs legible)**: exportar con diario produce una secuencia **exacta y tan legible como lo que el usuario hizo**. Exportar sin diario (canónico) es siempre **posible** (recorrido del grafo con `go` de reposicionamiento, determinista) y **fiel** (reconstruye el mismo mapa sobre la misma semilla), pero para redes complejas puede ser **poco legible** (parecido a "descompilar código": correcto pero con muchos saltos). El canónico se debe optimizar para parecer humano (rectas largas, viajar por vía ya construida, agrupar por componente, comentarios), pero **no se promete legibilidad tipo humana**: el escenario *autoreado* y claro se obtiene grabando a mano o escribiendo el texto, no descompilando el estado. Esta distinción fiel-vs-legible queda como expectativa explícita del diseño.
 
+### Capas de comandos (qué se guarda y qué no)
+No todo lo que el usuario teclea es "construcción". Los comandos se clasifican por su ciclo de vida:
+
+| Capa | Ejemplos | Dónde vive | Al jugar el escenario |
+|---|---|---|---|
+| **Constructiva** | `write`, `go`, `face`, `new`, `del`, mover elementos | Diario → `on build` | Sí, una vez al crear el mundo |
+| **Condiciones iniciales** | `semaphore 1 close`, `train 1 set speed 4` (estado de arranque del escenario) | `on start` (opcional) | Sí, una vez justo antes de ceder el control |
+| **Lógica declarativa** | triggers, `create itinerary`, `assign`, `set autopilot` | El texto de programa (también embebido en el save) | Se **registra** (no se ejecuta puntual) |
+| **Operativa / runtime** | `train 1 set speed 4`, `semaphore 1 close`, `fork 2 flip` durante el juego | Solo la sesión (efímera); el estado queda en el save | **No** |
+
+Reglas:
+- Lo **operativo** actúa sobre el mundo vivo en el instante y no se exporta. Si se quiere comportamiento reproducible, se expresa como **lógica** (trigger/itinerario) o como **condición inicial** en `on start`.
+- El **estado guardado** captura cualquier cosa operativa al momento de guardar (semáforo cerrado, velocidad...): al cargar no se re-ejecuta nada, el estado ya lo dice. El escenario solo sirve para arrancar un mundo **fresco**.
+- La construcción determinista garantiza que los ids referenciados en `on start` existan tras `on build`.
+
 ### Modelo temporal
 - **Edición normal (pausada)**: entrar en modo Rails **pausa la simulación** (trenes, economía, descarrilamientos). La construcción en pausa es instantánea (sin delays). Aquí el diario es exacto y el undo/redo funciona por *reset a un checkpoint + re-ejecutar el diario* (con checkpoints periódicos para no re-ejecutar toda la historia).
 - **Modo experimento (en vivo)**: una opción desactiva la pausa; al entrar se toma un **snapshot completo del Model en memoria** (misma maquinaria que save/load, sin fichero). La simulación sigue y el usuario hace experimentos sin diario ni undo/redo. Al salir se **restaura el snapshot** (o se conserva si así se decide). Solo pruebas y diversión.
