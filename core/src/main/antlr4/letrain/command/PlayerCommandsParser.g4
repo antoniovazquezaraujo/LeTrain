@@ -18,8 +18,11 @@ playerStatement : statement
                 | infoCommand SEMI
                 | setNameCommand SEMI
                 | slideCommand SEMI
+                | recordCommand SEMI
                 | quitCommand SEMI
                 ;
+
+recordCommand : RECORD (ON | OFF)? ;
 
 goCmdToken : GO | G ;
 

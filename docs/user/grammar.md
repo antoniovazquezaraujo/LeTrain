@@ -103,6 +103,12 @@ Move a station/sensor/semaphore/speed signal one or more resting cells along the
 - `slide signal [ID] fw [N];` / `slide signal [ID] bw [N];` - Move a speed signal.
 - `slide sensor [ID];` - Defaults to moving one cell forward. If the element is blocked or at the end of the line, the command reports an error.
 
+**Editing Journal (Record):**
+Start/stop recording the editing commands you type into the console. While recording, every successfully executed command is appended to the session's in-memory command journal (ADR-020) — the basis for replaying a session on a fresh world and for deterministic undo.
+- `record on;` - Start recording commands.
+- `record off;` - Stop recording commands.
+- `record;` - Toggle recording.
+
 **Turtle Mode (Scripted Building):**
 You can use `write`, `move`, `del`, or `clear` to script sequential cursor movements and track construction.
 - `write 5, r, 5, l, 10;` - Draw tracks: advance 5, turn right, advance 5, turn left, advance 10.

@@ -103,6 +103,12 @@ Desplaza una estación/sensor/semáforo/señal de velocidad una o más celdas de
 - `slide signal [ID] fw [N];` / `slide signal [ID] bw [N];` - Mover una señal de velocidad.
 - `slide sensor [ID];` - Por defecto mueve una celda hacia delante. Si el elemento está bloqueado o al final de la vía, el comando devuelve un error.
 
+**Diario de Edición (record):**
+Inicia/detiene la grabación de los comandos de edición que escribes en la consola. Mientras se graba, cada comando ejecutado con éxito se añade al diario de comandos de la sesión (ADR-020) — la base para reproducir una sesión sobre un mundo fresco y para el undo determinista.
+- `record on;` - Empezar a grabar comandos.
+- `record off;` - Dejar de grabar comandos.
+- `record;` - Conmutar la grabación.
+
 **Modo Tortuga (Construcción por Script):**
 Puedes usar `write`, `move`, `del`, o `clear` para hacer secuencias de movimientos con el cursor y automatizar la construcción de vías.
 - `write 5, r, 5, l, 10;` - Dibujar vías: avanza 5, gira derecha, avanza 5, gira izquierda, avanza 10.

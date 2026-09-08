@@ -332,6 +332,12 @@ public interface Model {
 
     letrain.mvp.impl.EventLogManager getEventLogManager();
 
+    /**
+     * The editing command journal (ADR-020): an in-memory, session-scoped recorder of the DSL
+     * commands the player executed while recording was on. Not persisted with the savegame.
+     */
+    letrain.command.CommandJournal getCommandJournal();
+
     String getGameObjectsReport();
 
     String getRailwayGraphReport();

@@ -76,11 +76,33 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         try {
             PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad, turtleDelegate, onMessage, onQuit);
             executor.visit(tree);
+            if (!executor.toggledRecording && model != null) {
+                letrain.command.CommandJournal journal = model.getCommandJournal();
+                if (journal != null && journal.isRecording()) {
+                    journal.record(commandText.trim());
+                }
+            }
             return null; // No errors
         } catch (Exception e) {
             log.error("Command execution error", e);
             return e.getMessage();
         }
+    }
+
+    private boolean toggledRecording = false;
+
+    @Override
+    public Object visitRecordCommand(PlayerCommandsParser.RecordCommandContext ctx) {
+        toggledRecording = true;
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        if (ctx.ON() != null) {
+            journal.startRecording();
+        } else if (ctx.OFF() != null) {
+            journal.stopRecording();
+        } else {
+            journal.toggleRecording();
+        }
+        return null;
     }
 
 

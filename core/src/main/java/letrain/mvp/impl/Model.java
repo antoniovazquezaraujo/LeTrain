@@ -1529,6 +1529,17 @@ public class Model implements letrain.mvp.Model {
     }
 
     @JsonIgnore
+    private transient letrain.command.CommandJournal commandJournal;
+
+    @Override
+    public letrain.command.CommandJournal getCommandJournal() {
+        if (commandJournal == null) {
+            commandJournal = new letrain.command.CommandJournal();
+        }
+        return commandJournal;
+    }
+
+    @JsonIgnore
     @Override
     public String getGameObjectsReport() {
         StringBuilder sb = new StringBuilder();
