@@ -51,6 +51,15 @@ Reglas:
 - La separación es a nivel de **formato y de orden de ejecución**; no requiere dos gestores distintos en el código.
 - El estado guardado contiene red + operador + estado en curso.
 
+### Consistencia save ↔ escenario (huellas)
+Save y escenario son artefactos distintos (runtime vs mundo nuevo) y **no deben confundirse**: cada carga es autoconsistente. La divergencia entre ambos es "dos instantes distintos", no corrupción; el diseño la hace **visible y controlable**:
+
+- **Huella de red (fingerprint)**: tanto el save como el escenario guardan un hash canónico de la red (semilla + export canónico de la infra) y una marca temporal. Si al cargar/jugar no coinciden con el último export, se avisa: el save pertenece a una revisión de red distinta del escenario. Nada se rompe; solo se informa.
+- **Export sobre un estado consistente**: "exportar escenario" toma un checkpoint del save actual (o pide guardar antes), de modo que el escenario siempre corresponde a un estado base conocido. Nuevas ediciones + re-export sobrescriben con la nueva huella.
+- **Re-sincronizar explícito**: cargar un save antiguo y querer el escenario igual → "exportar desde esta partida" regenera el canónico (y la huella).
+- **Runtime fuera del escenario (por diseño)**: posiciones, velocidades, dinero y estados *en curso* nunca se exportan; solo las condiciones iniciales (`on start`). El escenario no promete reproducir runtime.
+- **Diff/inspección**: poder comparar la infra del save actual contra la del fichero de escenario para decidir cuál es la buena.
+
 ### Modelo temporal
 - **Edición normal (pausada)**: entrar en modo Rails **pausa la simulación** (trenes, economía, descarrilamientos). La construcción en pausa es instantánea (sin delays). Aquí el diario es exacto y el undo/redo funciona por *reset a un checkpoint + re-ejecutar el diario* (con checkpoints periódicos para no re-ejecutar toda la historia).
 - **Modo experimento (en vivo)**: una opción desactiva la pausa; al entrar se toma un **snapshot completo del Model en memoria** (misma maquinaria que save/load, sin fichero). La simulación sigue y el usuario hace experimentos sin diario ni undo/redo. Al salir se **restaura el snapshot** (o se conserva si así se decide). Solo pruebas y diversión.
