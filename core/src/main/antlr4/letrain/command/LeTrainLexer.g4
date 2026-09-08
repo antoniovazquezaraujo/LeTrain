@@ -46,6 +46,7 @@ INVERT: 'invert';
 
 // New Keywords for PlayerCommands
 NEW: 'new';
+SLIDE: 'slide';
 LS: 'ls';
 INFO: 'info';
 Q: 'q';

@@ -17,6 +17,7 @@ playerStatement : statement
                 | lsCommand SEMI
                 | infoCommand SEMI
                 | setNameCommand SEMI
+                | slideCommand SEMI
                 | quitCommand SEMI
                 ;
 
@@ -48,6 +49,14 @@ newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL)
 delCommand : DEL entityType (NUMBER | identifier)? ;
 
 clearCommand : CLEAR entityType (NUMBER | identifier)? ;
+
+slideCommand : SLIDE slideTarget (FORWARD | BACKWARD)? (NUMBER)? ;
+
+slideTarget : STATION (NUMBER | identifier)
+            | SENSOR (NUMBER | identifier)
+            | SEMAPHORE (NUMBER | identifier)
+            | SIGNAL (NUMBER | identifier)
+            ;
 
 turtleCommand : (WRITE | MOVE | DEL | CLEAR) turtleSequence? ;
 

@@ -166,6 +166,18 @@ public class GrammarReference {
         root.add(new Node("sensor", "sensor # set name \"\";"));
         root.add(new Node("train", "train # set name \"\";"));
 
+        // SLIDE (element movement along the rail)
+        Node editHeading = new Node("SLIDE ELEMENTS").setHeading(true);
+        root.add(editHeading);
+
+        Node slideNode = new Node("slide <el> <id> [fw|bw] [n]").setExpanded(true);
+        slideNode.add(new Node("station fw", "slide station # fw n;"));
+        slideNode.add(new Node("station bw", "slide station # bw n;"));
+        slideNode.add(new Node("sensor", "slide sensor # fw n;"));
+        slideNode.add(new Node("semaphore", "slide semaphore # fw n;"));
+        slideNode.add(new Node("signal", "slide signal # fw n;"));
+        root.add(slideNode);
+
         cachedTree = root;
         return root;
     }
