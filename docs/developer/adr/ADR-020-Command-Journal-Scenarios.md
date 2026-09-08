@@ -39,6 +39,18 @@ Reglas:
 - El **estado guardado** captura cualquier cosa operativa al momento de guardar (semáforo cerrado, velocidad...): al cargar no se re-ejecuta nada, el estado ya lo dice. El escenario solo sirve para arrancar un mundo **fresco**.
 - La construcción determinista garantiza que los ids referenciados en `on start` existan tras `on build`.
 
+### Separación red / operador
+Como en el ferrocarril real — donde quien construye/mantiene la red y quien hace circular máquinas son entidades distintas — el escenario se estructura en **dos secciones lógicas**:
+
+- **Red (infraestructura)**: `seed` + `on build` (vías, túneles/puentes, desvíos, estaciones, sensores, semáforos, señales) y los autómatas que viven en la red (triggers que accionan desvíos/semáforos al paso de trenes).
+- **Operador (flota y circulación)**: qué máquinas/vagones, en qué posición, y sus misiones (itinerarios, autopilot) y condiciones de arranque (`on start`).
+
+Reglas:
+- **Orden garantizado**: primero se construye y valida la **red**; después se despliega el **operador** sobre ella. Así las referencias cruzadas (p. ej. colocar un tren en una estación de la red) son deterministas y validables.
+- **Modularidad**: una misma red puede servirse con distintos operadores (y viceversa); se permite exportar/compartir solo la red.
+- La separación es a nivel de **formato y de orden de ejecución**; no requiere dos gestores distintos en el código.
+- El estado guardado contiene red + operador + estado en curso.
+
 ### Modelo temporal
 - **Edición normal (pausada)**: entrar en modo Rails **pausa la simulación** (trenes, economía, descarrilamientos). La construcción en pausa es instantánea (sin delays). Aquí el diario es exacto y el undo/redo funciona por *reset a un checkpoint + re-ejecutar el diario* (con checkpoints periódicos para no re-ejecutar toda la historia).
 - **Modo experimento (en vivo)**: una opción desactiva la pausa; al entrar se toma un **snapshot completo del Model en memoria** (misma maquinaria que save/load, sin fichero). La simulación sigue y el usuario hace experimentos sin diario ni undo/redo. Al salir se **restaura el snapshot** (o se conserva si así se decide). Solo pruebas y diversión.
