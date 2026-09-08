@@ -92,6 +92,8 @@ Puedes dar comandos directos a la infraestructura fuera de los bloques de evento
 - `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] invert;`
 - `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] flip;`
 - `signal [ID] set limit [NUM];` / `signal [ID] set mode (max|min);` / `signal [ID] invert;`
+- `station [ID] invert;` - Invertir la orientación de una estación para que mire en sentido contrario a lo largo de la vía (el andén cambia de lado, igual que Espacio en modo STATIONS).
+- `sensor [ID] invert;` - Invertir la dirección de detección de un sensor plano (igual que Espacio en modo SENSORS).
 
 **Mover Elementos de Vía (slide):**
 Desplaza una estación/sensor/semáforo/señal de velocidad una o más celdas de reposo a lo largo de la vía, en la dirección a la que mira el propio elemento. Equivalente a Shift+Flecha en los modos de edición.

@@ -140,4 +140,30 @@ class RenderVisitorTest {
 
         verify(view, atLeastOnce()).set(eq(3), eq(3), anyString());
     }
+
+    @Test
+    @DisplayName("visitRailTrack keeps tunnel gates visible outside Rails mode")
+    void visitRailTrack_shouldDrawTunnelGate_whenNotInRailsMode() {
+        TerminalView view = mock(TerminalView.class);
+        RenderVisitor visitor = new RenderVisitor(view);
+
+        Model model = mock(Model.class);
+        RailwayGraph graph = mock(RailwayGraph.class);
+        BlockManager blockManager = mock(BlockManager.class);
+        Segment segment = mock(Segment.class);
+        when(model.getMode()).thenReturn(letrain.mvp.Model.GameMode.DRIVE);
+        when(model.getRailwayGraph()).thenReturn(graph);
+        when(model.getBlockManager()).thenReturn(blockManager);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(3, 3));
+        track.setVisualType(RailTrack.VisualType.TUNNEL_GATE);
+        when(graph.getSegment(track)).thenReturn(segment);
+        when(blockManager.getOwners(segment)).thenReturn(List.of());
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        verify(view, atLeastOnce()).set(eq(3), eq(3), anyString());
+    }
 }

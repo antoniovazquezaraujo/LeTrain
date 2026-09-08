@@ -97,6 +97,8 @@ Tipos:
 | **Fork** (Desvíos) | `fork <id> set left;` / `set right;` / `flip;` | `fork 1 flip;` |
 | **Semaphore** (Semáforos) | `semaphore <id> open;` / `close;` / `invert;` | `semaphore 2 invert;` |
 | **Speed Signal** (Velocidad) | `signal <id> limit <número>;` <br> `signal <id> set mode max;` / `set mode min;` <br> `signal <id> invert;` | `signal 3 limit 120;` <br> `signal 3 set mode max;` |
+| **Station** (Estaciones) | `station <id> invert;` | `station 1 invert;` |
+| **Sensor** | `sensor <id> invert;` | `sensor 2 invert;` |
 
 ---
 

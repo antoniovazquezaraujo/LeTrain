@@ -92,6 +92,8 @@ You can directly command infrastructure outside of triggers:
 - `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] invert;`
 - `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] flip;`
 - `signal [ID] set limit [NUM];` / `signal [ID] set mode (max|min);` / `signal [ID] invert;`
+- `station [ID] invert;` - Flip a station to face the opposite direction along the rail (platform side switches, same as Space in STATIONS mode).
+- `sensor [ID] invert;` - Flip a plain sensor's detection direction (same as Space in SENSORS mode).
 
 **Moving Track Elements (Slide):**
 Move a station/sensor/semaphore/speed signal one or more resting cells along the rail, in the direction the element itself is facing. Equivalent to Shift+Arrow in the edit modes.

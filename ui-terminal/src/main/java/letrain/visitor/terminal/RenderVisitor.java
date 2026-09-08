@@ -169,9 +169,7 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitRailTrack(RailTrack track) {
         letrain.track.rail.RailTrack.VisualType vt = track.getVisualType();
-        if ((vt == letrain.track.rail.RailTrack.VisualType.TUNNEL
-                || vt == letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE)
-                && this.mode != GameMode.RAILS) {
+        if (vt == letrain.track.rail.RailTrack.VisualType.TUNNEL && this.mode != GameMode.RAILS) {
             return;
         }
         TextColor blockedColor = getTrackBlockedColor(track);
@@ -429,8 +427,7 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        if (locomotive.getTrack() instanceof RailTrack && (((RailTrack)locomotive.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL
-                || ((RailTrack)locomotive.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL_GATE)
+        if (locomotive.getTrack() instanceof RailTrack && (((RailTrack)locomotive.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL)
                 && this.mode != GameMode.RAILS) {
             return;
         }
@@ -462,8 +459,7 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitWagon(Wagon wagon) {
-        if (wagon.getTrack() instanceof RailTrack && (((RailTrack)wagon.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL
-                || ((RailTrack)wagon.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL_GATE)
+        if (wagon.getTrack() instanceof RailTrack && (((RailTrack)wagon.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL)
                 && this.mode != GameMode.RAILS) {
             return;
         }

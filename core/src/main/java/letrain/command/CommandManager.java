@@ -700,6 +700,38 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     }
 
 
+    @Override
+    public Object visitDirectStationCommand(ScriptLogicParser.DirectStationCommandContext ctx) {
+        int id = Integer.parseInt(ctx.NUMBER().getText());
+        letrain.track.Station station = model.getStation(id);
+        if (station != null) {
+            station.flipOrientation();
+            log.info("[DSL] Direct station {} inverted", id);
+        } else {
+            log.warn("[DSL] Direct station invert: station {} not found", id);
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitDirectSensorCommand(ScriptLogicParser.DirectSensorCommandContext ctx) {
+        int id = Integer.parseInt(ctx.NUMBER().getText());
+        letrain.track.Sensor sensor = null;
+        for (letrain.track.Sensor s : model.getSensors()) {
+            if (s.getId() == id && s.getClass() == letrain.track.Sensor.class) {
+                sensor = s;
+                break;
+            }
+        }
+        if (sensor != null) {
+            sensor.setCreationDir(sensor.getCreationDir().inverse());
+            log.info("[DSL] Direct sensor {} inverted", id);
+        } else {
+            log.warn("[DSL] Direct sensor invert: plain sensor {} not found", id);
+        }
+        return null;
+    }
+
     private Station resolveStation(ScriptLogicParser.StationRefContext ctx) {
         if (ctx.STRING() != null)
             return model.findStationByName(stripQuotes(ctx.STRING().getText()));
