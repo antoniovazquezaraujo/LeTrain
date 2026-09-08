@@ -648,6 +648,19 @@ public class Model implements letrain.mvp.Model {
         return mode;
     }
 
+    @JsonIgnore
+    private boolean pauseEditing = false;
+
+    @Override
+    public boolean isPauseEditing() {
+        return pauseEditing;
+    }
+
+    @Override
+    public void setPauseEditing(boolean pauseEditing) {
+        this.pauseEditing = pauseEditing;
+    }
+
     @Override
     public void setMode(GameMode mode) {
         if (this.mode == GameMode.RAILS && mode != GameMode.RAILS && mapChanged) {

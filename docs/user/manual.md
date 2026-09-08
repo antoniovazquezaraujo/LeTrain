@@ -42,6 +42,7 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`e`**: **Sensors Mode** - Select and inspect sensors.
 - **`p`**: **Program Mode** - Open the IDE to write automation scripts.
 - **`:`**: **CLI Mode** - Open the command line interface.
+- **`x`**: **Toggle paused editing** (off by default). When enabled, entering **Rails Mode** freezes the world (trains, economy, derailments) and makes track construction instantaneous — the state ADR-020 needs for an exact edit journal and deterministic undo. Trains resume as soon as you leave Rails Mode or toggle it off.
 
 ### Construction (Rails Mode)
 - **Shift + Arrows (or H, J, K, L)**: Build new tracks.

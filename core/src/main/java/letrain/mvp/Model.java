@@ -190,6 +190,25 @@ public interface Model {
 
     void setMode(GameMode mode);
 
+    /**
+     * Whether the player has toggled "paused editing" on. When {@code true} and the current mode is
+     * {@link GameMode#RAILS}, the world simulation (trains, economy, scheduler) is frozen and track
+     * construction is instantaneous — the exact state ADR-020 needs for an exact edit journal and
+     * deterministic undo (reset to checkpoint + replay).
+     */
+    boolean isPauseEditing();
+
+    void setPauseEditing(boolean pauseEditing);
+
+    /**
+     * True when the world simulation must be frozen right now: pause-editing is toggled on and the
+     * current game mode is an editing mode (RAILS). In that state vehicle movement, the scheduler,
+     * industrial actions and cleanup are skipped while track building keeps working instantly.
+     */
+    default boolean isSimulationPaused() {
+        return isPauseEditing() && getMode() == GameMode.RAILS;
+    }
+
     Locomotive getSelectedLocomotive();
 
     default boolean canEnterLinkMode() {

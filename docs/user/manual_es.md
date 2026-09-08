@@ -44,6 +44,7 @@ LeTrain está fuertemente basado en modos. Al pulsar las siguientes teclas cambi
 - **`e`**: **Modo Sensors (Sensores)** - Seleccionar e inspeccionar sensores.
 - **`p`**: **Modo Program (Programa)** - Abrir el IDE para programar automatizaciones.
 - **`:`**: **Modo CLI (Consola)** - Abrir la consola de comandos integrados.
+- **`x`**: **Conmutar edición pausada** (apagada por defecto). Al activarla, entrar en **Modo Rails** congela el mundo (trenes, economía, descarrilamientos) y hace la construcción de vía instantánea — el estado que el ADR-020 necesita para un diario de edición exacto y un undo determinista. Los trenes se reanudan al salir del Modo Rails o al desactivarla.
 
 ### Construcción (Modo Rails)
 - **Mayús + Flechas (o H, J, K, L)**: Construir vías nuevas.
