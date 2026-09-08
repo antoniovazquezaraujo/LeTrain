@@ -540,13 +540,19 @@ public class RailTrackMaker {
 
         if (type == null) {
             type = detectTrackType();
-        } else {
-            selectNewTrackType(type);
         }
 
         if (type == null) {
             return false;
         }
+
+        // Keep the *new* selected type in sync with the type actually being placed. The UI tick
+        // path already calls selectNewTrackType(type) before createTrack(type), but the turtle
+        // console/headless path calls createTrack(null) so makeTrack detects the terrain-based
+        // type itself (NORMAL / BRIDGE* / TUNNEL*). Selecting here makes both paths produce the
+        // same rail kind (bridges over water, tunnels in rock) instead of silently laying NORMAL
+        // track, and keeps economy counters consistent.
+        selectNewTrackType(type);
 
         // Obtenemos el track bajo el cursor
         RailTrack track = presenter.getModel().getRailMap().getTrackAt(actualCursorPosition);

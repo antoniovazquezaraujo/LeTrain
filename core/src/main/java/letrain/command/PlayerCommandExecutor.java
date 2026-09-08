@@ -599,6 +599,57 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
     @Override
+    public Object visitSlideCommand(PlayerCommandsParser.SlideCommandContext ctx) {
+        int id = -1;
+        String name = null;
+        if (ctx.slideTarget().NUMBER() != null) {
+            id = Integer.parseInt(ctx.slideTarget().NUMBER().getText());
+        } else if (ctx.slideTarget().identifier() != null) {
+            name = ctx.slideTarget().identifier().getText().replace("\"", "");
+        }
+
+        boolean forward = true;
+        if (ctx.FORWARD() == null && ctx.BACKWARD() != null) {
+            forward = false;
+        }
+        int steps = 1;
+        if (ctx.NUMBER() != null) {
+            steps = Integer.parseInt(ctx.NUMBER().getText());
+        }
+        if (steps < 1) {
+            throw new RuntimeException("Slide steps must be a positive number.");
+        }
+
+        letrain.track.Sensor target = null;
+        if (ctx.slideTarget().STATION() != null) {
+            letrain.track.Station st = name != null ? model.findStationByName(name) : model.getStation(id);
+            if (st == null) throw new RuntimeException("Station not found.");
+            target = st;
+        } else if (ctx.slideTarget().SEMAPHORE() != null) {
+            letrain.track.RailSemaphore sm = model.getSemaphore(id);
+            if (sm == null) throw new RuntimeException("Semaphore not found.");
+            target = sm;
+        } else if (ctx.slideTarget().SIGNAL() != null) {
+            letrain.track.SpeedSignal sg = name != null ? model.findSpeedSignalByName(name) : model.getSpeedSignal(id);
+            if (sg == null) throw new RuntimeException("Signal not found.");
+            target = sg;
+        } else if (ctx.slideTarget().SENSOR() != null) {
+            letrain.track.Sensor sn = name != null ? model.findSensorByName(name) : model.getSensor(id);
+            if (sn == null) throw new RuntimeException("Sensor not found.");
+            target = sn;
+        }
+
+        for (int i = 0; i < steps; i++) {
+            boolean moved = forward ? model.moveSensorForward(target) : model.moveSensorBackward(target);
+            if (!moved) {
+                throw new RuntimeException((forward ? "Forward" : "Backward")
+                        + " slide blocked or at the end of the line after " + i + " step(s).");
+            }
+        }
+        return null;
+    }
+
+    @Override
     public Object visitMarkCommand(PlayerCommandsParser.MarkCommandContext ctx) {
         String name;
         if (ctx.identifier() != null) {

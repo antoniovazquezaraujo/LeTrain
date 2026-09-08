@@ -9,6 +9,7 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 - [[adr/ADR-007-Collision-Visual-Interpolation|ADR-007: Interpolación visual en colisiones a baja velocidad]]
 - [[adr/ADR-015-Abstraccion-Puertos-Nodos|ADR-015: Abstracción de Puertos (0, 1, 2) y Tránsitos]]
 - [[systems/CommandPattern|Gestión de Automatización (ANTLR)]]
+- [[systems/ActionCatalogue|Action Catalogue — Acciones de edición vs. comandos (PoC #487)]]
 
 ## 🛤️ Infraestructura Ferroviaria
 - [[infrastructure/TrackTypes|Jerarquía de Vías (Forks, Puentes, Túneles)]]

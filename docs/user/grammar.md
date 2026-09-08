@@ -95,6 +95,14 @@ You can directly command infrastructure outside of triggers:
 - `station [ID] invert;` - Flip a station to face the opposite direction along the rail (platform side switches, same as Space in STATIONS mode).
 - `sensor [ID] invert;` - Flip a plain sensor's detection direction (same as Space in SENSORS mode).
 
+**Moving Track Elements (Slide):**
+Move a station/sensor/semaphore/speed signal one or more resting cells along the rail, in the direction the element itself is facing. Equivalent to Shift+Arrow in the edit modes.
+- `slide station [ID] fw [N];` / `slide station [ID] bw [N];` - Move a station forward/backward.
+- `slide sensor [ID] fw [N];` / `slide sensor [ID] bw [N];` - Move a sensor.
+- `slide semaphore [ID] fw [N];` / `slide semaphore [ID] bw [N];` - Move a semaphore.
+- `slide signal [ID] fw [N];` / `slide signal [ID] bw [N];` - Move a speed signal.
+- `slide sensor [ID];` - Defaults to moving one cell forward. If the element is blocked or at the end of the line, the command reports an error.
+
 **Turtle Mode (Scripted Building):**
 You can use `write`, `move`, `del`, or `clear` to script sequential cursor movements and track construction.
 - `write 5, r, 5, l, 10;` - Draw tracks: advance 5, turn right, advance 5, turn left, advance 10.

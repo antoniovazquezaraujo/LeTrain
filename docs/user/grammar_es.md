@@ -95,6 +95,14 @@ Puedes dar comandos directos a la infraestructura fuera de los bloques de evento
 - `station [ID] invert;` - Invertir la orientación de una estación para que mire en sentido contrario a lo largo de la vía (el andén cambia de lado, igual que Espacio en modo STATIONS).
 - `sensor [ID] invert;` - Invertir la dirección de detección de un sensor plano (igual que Espacio en modo SENSORS).
 
+**Mover Elementos de Vía (slide):**
+Desplaza una estación/sensor/semáforo/señal de velocidad una o más celdas de reposo a lo largo de la vía, en la dirección a la que mira el propio elemento. Equivalente a Shift+Flecha en los modos de edición.
+- `slide station [ID] fw [N];` / `slide station [ID] bw [N];` - Mover una estación hacia delante/atrás.
+- `slide sensor [ID] fw [N];` / `slide sensor [ID] bw [N];` - Mover un sensor.
+- `slide semaphore [ID] fw [N];` / `slide semaphore [ID] bw [N];` - Mover un semáforo.
+- `slide signal [ID] fw [N];` / `slide signal [ID] bw [N];` - Mover una señal de velocidad.
+- `slide sensor [ID];` - Por defecto mueve una celda hacia delante. Si el elemento está bloqueado o al final de la vía, el comando devuelve un error.
+
 **Modo Tortuga (Construcción por Script):**
 Puedes usar `write`, `move`, `del`, o `clear` para hacer secuencias de movimientos con el cursor y automatizar la construcción de vías.
 - `write 5, r, 5, l, 10;` - Dibujar vías: avanza 5, gira derecha, avanza 5, gira izquierda, avanza 10.
