@@ -92,6 +92,8 @@ You can directly command infrastructure outside of triggers:
 - `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] invert;`
 - `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] flip;`
 - `signal [ID] set limit [NUM];` / `signal [ID] set mode (max|min);` / `signal [ID] invert;`
+- `station [ID] invert;` - Flip a station to face the opposite direction along the rail (platform side switches, same as Space in STATIONS mode).
+- `sensor [ID] invert;` - Flip a plain sensor's detection direction (same as Space in SENSORS mode).
 
 **Turtle Mode (Scripted Building):**
 You can use `write`, `move`, `del`, or `clear` to script sequential cursor movements and track construction.

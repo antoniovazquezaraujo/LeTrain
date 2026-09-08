@@ -92,6 +92,8 @@ Puedes dar comandos directos a la infraestructura fuera de los bloques de evento
 - `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] invert;`
 - `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] flip;`
 - `signal [ID] set limit [NUM];` / `signal [ID] set mode (max|min);` / `signal [ID] invert;`
+- `station [ID] invert;` - Invertir la orientación de una estación para que mire en sentido contrario a lo largo de la vía (el andén cambia de lado, igual que Espacio en modo STATIONS).
+- `sensor [ID] invert;` - Invertir la dirección de detección de un sensor plano (igual que Espacio en modo SENSORS).
 
 **Modo Tortuga (Construcción por Script):**
 Puedes usar `write`, `move`, `del`, o `clear` para hacer secuencias de movimientos con el cursor y automatizar la construcción de vías.
