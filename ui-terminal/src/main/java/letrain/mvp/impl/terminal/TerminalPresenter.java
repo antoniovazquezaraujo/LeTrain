@@ -85,6 +85,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     SimulationController simulationController;
     private final GameSaveService gameSaveService;
 
+    private static final float AMBIENT_ZOOM_FACTOR = 0.5f;
+
     public TerminalPresenter() {
         this(null);
     }
@@ -202,15 +204,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 simulationController.tick();
                 if (audioController != null) {
-                    if (model.getMode() == DRIVE && model.getSelectedLocomotive() != null) {
-                        Point pos = model.getSelectedLocomotive().getPosition();
-                        audioController.setListenerPosition((float) pos.getX(), (float) pos.getY(),
-                                0, 0);
-                    } else {
-                        Point pos = model.getCursor().getPosition();
-                        audioController.setListenerPosition((float) pos.getX(), (float) pos.getY(),
-                                0, 0);
-                    }
+                    Point listenerPos = model.getMode() == DRIVE
+                            && model.getSelectedLocomotive() != null
+                                    ? model.getSelectedLocomotive().getPosition()
+                                    : model.getCursor().getPosition();
+                    audioController.setListenerPosition((float) listenerPos.getX(),
+                            (float) listenerPos.getY(), 0, 0);
+                    audioController.updateAmbient(true, AMBIENT_ZOOM_FACTOR,
+                            (float) listenerPos.getX(), (float) listenerPos.getY(), 0f);
                     audioController.update();
                 }
                 renderer.visitModel(model);
