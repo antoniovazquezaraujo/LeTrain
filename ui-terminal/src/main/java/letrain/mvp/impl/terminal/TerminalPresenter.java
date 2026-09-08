@@ -87,6 +87,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private static final int AMBIENT_BASE_CELLS = 80 * 25;
     private static final int AMBIENT_FULL_CELLS = 120 * 40;
+    private static final float LISTENER_MAX_HEIGHT = 50f;
 
     public TerminalPresenter() {
         this(null);
@@ -209,14 +210,15 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                             && model.getSelectedLocomotive() != null
                                     ? model.getSelectedLocomotive().getPosition()
                                     : model.getCursor().getPosition();
-                    audioController.setListenerPosition((float) listenerPos.getX(),
-                            (float) listenerPos.getY(), 0, 0);
                     int ambientCells = view.getCols() * view.getRows();
                     float ambientZoom = Math.max(0f, Math.min(1f,
                             (ambientCells - AMBIENT_BASE_CELLS)
                                     / (float) (AMBIENT_FULL_CELLS - AMBIENT_BASE_CELLS)));
+                    float listenerHeight = ambientZoom * LISTENER_MAX_HEIGHT;
+                    audioController.setListenerPosition((float) listenerPos.getX(),
+                            (float) listenerPos.getY(), listenerHeight, 0);
                     audioController.updateAmbient(true, ambientZoom, (float) listenerPos.getX(),
-                            (float) listenerPos.getY(), 0f);
+                            (float) listenerPos.getY(), listenerHeight);
                     audioController.update();
                 }
                 renderer.visitModel(model);
