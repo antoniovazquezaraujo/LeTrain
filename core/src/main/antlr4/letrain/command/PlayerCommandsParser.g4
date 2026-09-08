@@ -19,10 +19,13 @@ playerStatement : statement
                 | setNameCommand SEMI
                 | slideCommand SEMI
                 | recordCommand SEMI
+                | journalCommand SEMI
                 | quitCommand SEMI
                 ;
 
 recordCommand : RECORD (ON | OFF)? ;
+
+journalCommand : JOURNAL ;
 
 goCmdToken : GO | G ;
 

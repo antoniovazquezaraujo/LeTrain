@@ -186,4 +186,28 @@ class CommandJournalTest {
         assertArrayEquals(serialize(recorded), serialize(replayed),
                 "Replaying the journal must reproduce the recorded state");
     }
+
+    @Test
+    @DisplayName("journal command reports recording state and lists the entries")
+    void journalCommand_listsEntriesViaMessage() {
+        // Arrange: record two commands, then turn recording off.
+        runOk(model, "record on;");
+        runOk(model, "go 0,0; face e;");
+        runOk(model, "write 2;");
+        runOk(model, "record off;");
+
+        // Act: run 'journal;' capturing the onMessage output (as the 2D/3D console would show it).
+        StringBuilder out = new StringBuilder();
+        TurtleBuilder builder = new TurtleBuilder(model, headlessMaker(model));
+        String error = PlayerCommandExecutor.execute("journal;", model, null, null, builder,
+                (title, msg) -> out.append(title).append("\n").append(msg), null);
+        assertEquals(null, error, "journal command failed: " + error);
+
+        // Assert: the report shows recording OFF and both entries in order.
+        String report = out.toString();
+        assertTrue(report.contains("Recording: OFF"), "report must show recording state: " + report);
+        assertTrue(report.contains("Entries (2)"), "report must count 2 entries: " + report);
+        assertTrue(report.indexOf("go 0,0; face e;") < report.indexOf("write 2;"),
+                "entries must appear in recorded order: " + report);
+    }
 }

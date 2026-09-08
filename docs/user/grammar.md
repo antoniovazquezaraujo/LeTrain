@@ -108,6 +108,7 @@ Start/stop recording the editing commands you type into the console. While recor
 - `record on;` - Start recording commands.
 - `record off;` - Stop recording commands.
 - `record;` - Toggle recording.
+- `journal;` - Show the recording state and the list of journaled commands (in the order they were recorded). Useful to inspect what a recorded session will replay.
 
 **Turtle Mode (Scripted Building):**
 You can use `write`, `move`, `del`, or `clear` to script sequential cursor movements and track construction.

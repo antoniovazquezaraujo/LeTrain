@@ -197,6 +197,9 @@ public class GrammarReference {
         recordNode.add(new Node("toggle", "record;"));
         root.add(recordNode);
 
+        Node journalNode = new Node("journal", "journal;");
+        root.add(journalNode);
+
         cachedTree = root;
         return root;
     }

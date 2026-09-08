@@ -108,6 +108,7 @@ Inicia/detiene la grabación de los comandos de edición que escribes en la cons
 - `record on;` - Empezar a grabar comandos.
 - `record off;` - Dejar de grabar comandos.
 - `record;` - Conmutar la grabación.
+- `journal;` - Muestra el estado de grabación y la lista de comandos grabados (en el orden en que se registraron). Útil para inspeccionar qué reproducirá una sesión grabada.
 
 **Modo Tortuga (Construcción por Script):**
 Puedes usar `write`, `move`, `del`, o `clear` para hacer secuencias de movimientos con el cursor y automatizar la construcción de vías.

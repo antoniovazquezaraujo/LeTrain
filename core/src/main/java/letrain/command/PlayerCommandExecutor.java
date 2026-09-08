@@ -105,6 +105,25 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         return null;
     }
 
+    @Override
+    public Object visitJournalCommand(PlayerCommandsParser.JournalCommandContext ctx) {
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        StringBuilder sb = new StringBuilder();
+        sb.append(journal.isRecording() ? "Recording: ON\n" : "Recording: OFF\n");
+        sb.append("Entries (").append(journal.size()).append("):");
+        int i = 1;
+        for (String entry : journal.entries()) {
+            sb.append("\n  ").append(i++).append(". ").append(entry);
+        }
+        String text = sb.toString();
+        log.info("[journal] {}", text.replace("\n", " | "));
+        if (onMessage == null) {
+            return text;
+        }
+        onMessage.accept("Command journal", text);
+        return null;
+    }
+
 
     public Object visitLsCommand(PlayerCommandsParser.LsCommandContext ctx) {
         if (onMessage == null) return "Command 'ls' not supported in this context";
