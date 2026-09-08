@@ -452,7 +452,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void togglePauseEditing() {
         boolean paused = !model.isPauseEditing();
         model.setPauseEditing(paused);
-        view.setStatusBarText(paused ? "Paused editing: ON (world freezes in RAILS; instant build)"
+        view.setStatusBarText(paused ? "Paused editing: ON (world freezes in edit modes; instant build)"
                 : "Paused editing: OFF");
     }
 
