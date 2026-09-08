@@ -18,6 +18,7 @@ import letrain.mvp.Presenter;
 import letrain.mvp.View;
 import letrain.mvp.impl.Model;
 import letrain.mvp.impl.RailTrackMaker;
+import letrain.track.Sensor;
 import letrain.track.rail.RailTrack;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -238,12 +239,15 @@ class PocJournalReplayTest {
         StringBuilder sb = new StringBuilder();
         // Plain straight + elements + move along the rail.
         sb.append("go ").append(plain.x()).append(",").append(plain.y()).append("; face e; write 8; ");
-        sb.append("go ").append(plain.x() + 2).append(",").append(plain.y()).append("; face n; new st; ");
-        sb.append("go ").append(plain.x() + 3).append(",").append(plain.y()).append("; face n; new sn; ");
-        sb.append("go ").append(plain.x() + 4).append(",").append(plain.y()).append("; face n; new sm; ");
+        // Sensor created facing east is then slid 2 resting cells along the rail (slide command).
+        sb.append("go ").append(plain.x()).append(",").append(plain.y()).append("; face e; new sn; ");
+        sb.append("slide sn 1 fw 2; ");
+        // Station and semaphore on clear cells not crossed by the sensor slide.
+        sb.append("go ").append(plain.x() + 4).append(",").append(plain.y()).append("; face e; new st; ");
+        sb.append("go ").append(plain.x() + 5).append(",").append(plain.y()).append("; face e; new sm; ");
         sb.append("go ").append(plain.x()).append(",").append(plain.y()).append("; face e; move 8; ");
         // Operator: spawn two locomotives on the plain line (cursor must face along the rail).
-        sb.append("go ").append(plain.x() + 2).append(",").append(plain.y()).append("; face e; new loco A red; ");
+        sb.append("go ").append(plain.x() + 1).append(",").append(plain.y()).append("; face e; new loco A red; ");
         sb.append("go ").append(plain.x() + 3).append(",").append(plain.y()).append("; face e; new loco B blue; ");
         // Curve: 4 straight pieces then turn right and lay 3 diagonal pieces.
         sb.append("go ").append(curve.x()).append(",").append(curve.y()).append("; face e; write 4, r, 3; ");
@@ -301,12 +305,23 @@ class PocJournalReplayTest {
         // The replay must produce a rich network on both copies...
         assertRichNetwork(copyA);
         assertRichNetwork(copyB);
+        // ...the plain sensor must actually have been slid 2 cells east by the slide command...
+        assertSensorSlid(copyA, plain);
+        assertSensorSlid(copyB, plain);
 
         // 4. ...and both final states must be byte-identical.
         byte[] bytesA = serialize(copyA);
         byte[] bytesB = serialize(copyB);
         assertArrayEquals(bytesA, bytesB,
                 "Replay of the same script on identical base worlds diverged");
+    }
+
+    private static void assertSensorSlid(Model model, GroundRun plain) {
+        assertEquals(1, model.getSensors().size(), "expected one plain sensor");
+        Sensor sensor = model.getSensors().get(0);
+        int restX = sensor.getTrack().getPosition().getX();
+        assertEquals(plain.x() + 2, restX,
+                "slide sn fw 2 should rest the sensor two cells east of the line start");
     }
 
     private static void assertRichNetwork(Model model) {
