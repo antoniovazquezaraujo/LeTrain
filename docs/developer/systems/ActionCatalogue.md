@@ -1,6 +1,7 @@
 # Action Catalogue — Editing actions vs. command set (PoC, issue #487)
 
-> Status: PoC deliverable 1 (action catalogue). Companion of ADR-020 (command journal / scenarios).
+> Status: PoC deliverable 1 (action catalogue) — **complete** (issue #487 closed). Companion of
+> ADR-020 (command journal / scenarios).
 > Scope: **constructive & initial-configuration** editing actions only. Runtime operations are
 > deliberately out of scope (see [Out of scope](#out-of-scope)).
 
@@ -75,8 +76,8 @@ cursor heading at creation time.
 | Remove a speed signal | `Delete` again (toggle) | ✅ `del sg [id];` / `del signal [id];` | `Model.removeSensor` | |
 | **Move an element forward along the rail** (1 resting cell / hop) | `Shift`+`↑` / `K` (STATIONS/SENSORS/SEMAPHORES/SPEED_SIGNALS) | ✅ `slide <st\|sn\|sm\|sg> <id> fw [n];` | `Model.moveSensorForward` | Jumps over other components, **never over trains**, crosses forks following the active branch, stops at end of line. A moved `Station` **re-derives its industry role** at the destination (mirror of creation). Element orientation follows the rail (`continuationDir`). |
 | **Move an element backward along the rail** | `Shift`+`↓` / `J` (same modes) | ✅ `slide <el> <id> bw [n];` | `Model.moveSensorBackward` | Same rules; uses the rail end opposite the facing. |
-| **Invert orientation of a station** (flip facing + platform side) | `Space` (STATIONS) | ❌ gap | `Station.flipOrientation` (UI: `TerminalPresenter`, `Gdx3DInputHandler`) | Inverts `creationDir` and recomputes `sideDir` (platform switches side). No DSL today — must delete/recreate (non-faithful). |
-| **Invert orientation of a sensor** | `Space` (SENSORS) | ❌ gap | `sensor.setCreationDir(creationDir.inverse())` (UI only) | Flips detection direction in place. No DSL today. |
+| **Invert orientation of a station** (flip facing + platform side) | `Space` (STATIONS) | ✅ `st <id> invert;` / `station <id> invert;` | `CommandManager.visitDirectStationCommand` → `Station.flipOrientation` | Inverts `creationDir` and recomputes `sideDir` (platform switches side). |
+| **Invert orientation of a sensor** | `Space` (SENSORS) | ✅ `sn <id> invert;` / `sensor <id> invert;` | `CommandManager.visitDirectSensorCommand` → `setCreationDir(inverse)` | Flips detection direction in place. Only applies to plain sensors (never speed signals / stations sharing a numeric id). |
 | Invert orientation of a semaphore | `Space` (SEMAPHORES) | ✅ `sm <id> invert;` / `semaphore <id> invert;` | `CommandManager.visitDirectSemaphoreCommand` | Flips `creationDir`. Note: `invert` here is **orientation**, not open/closed state. |
 | Invert orientation of a speed signal | `Space` (SPEED_SIGNALS) | ✅ `sg <id> invert;` / `signal <id> invert;` | `CommandManager.visitDirectSignalCommand` | Flips `creationDir`. |
 | Configure speed-signal limit (1-10) | digits / `↑` `↓` (SPEED_SIGNALS) | ✅ `sg <id> set limit <n>;` | `Signal.setLimit` | Persistent property of the element. |
@@ -108,18 +109,21 @@ cursor heading at creation time.
 
 ## 3. Gaps found (deliverable 2 input)
 
-| # | Editing action | Minimal proposed command | Rationale / faithfulness |
+The catalogue originally flagged two gaps, both now implemented:
+
+| # | Editing action | Command implemented | Where |
 | :--- | :--- | :--- | :--- |
-| 1 | Invert station orientation | `station <id> invert;` → `Station.flipOrientation()` | Deleting + recreating changes id and re-runs industry role; not faithful. |
-| 2 | Invert sensor orientation | `sensor <id> invert;` → `creationDir = inverse()` | Same reason; only semaphore/signal have `invert` today. |
+| 1 | Invert station orientation | `station <id> invert;` → `Station.flipOrientation()` | PR #491 (`CommandManager.visitDirectStationCommand`) |
+| 2 | Invert sensor orientation | `sensor <id> invert;` → `creationDir = inverse()` | PR #491 (`CommandManager.visitDirectSensorCommand`) |
 
 > Vehicle deletion is **not** a gap: a loose wagon/loco is removed positionally with turtle `clear;`
 > at its cell, and a whole train with `clear train <id>;`. Only a "delete a single linker out of the
 > middle of a multi-vehicle train" would be unexpressible, and that is better done as
 > `uncouple` + `clear` (fleet composition, out of the editing scope of this PoC).
 
-> All other editing actions map to an existing command (✅) or to the turtle/auto-promotion
-> machinery (⚠️) — see [Golden coverage](#4-golden-test-coverage) for what the replay test exercises.
+> **Conclusion of the PoC:** every world-mutating editing action (constructive and initial-config
+> layers of ADR-020) maps to an existing command, to `slide`, or to the turtle/auto-promotion
+> machinery. No inexpressible or non-deterministic editing action was found.
 
 ## 4. Golden test coverage
 
@@ -136,8 +140,8 @@ and the catalogue rows above:
 | Place / remove station, sensor, semaphore | ✅ `new st/sn/sm` (one each) |
 | Move element along the rail | ✅ `slide sn 1 fw 2` + byte-identical assertion |
 | Spawn locomotives (operator origin) | ✅ `new loco A red`, `new loco B blue` (asserts 2) |
-| Speed signal placement / invert orientation | ⏳ not yet in golden script (unit-level via `SlideCommandTest` only for slide) |
-| Station/sensor orientation invert (gap #1/#2) | ⏳ pending the command |
+| Station/sensor orientation invert | ✅ command + unit tests (`StationSensorInvertTest`); not yet exercised inside the golden script |
+| Speed signal placement / invert | ⏳ not exercised in golden script (unit-level coverage only) |
 
 The golden assertion is: replaying the *same* script on two fresh copies of the *same* serialized
 base world produces **byte-identical** model states (plus structural assertions per row).
@@ -156,6 +160,8 @@ Not part of the editing catalogue (runtime / simulation state, by ADR-020 design
 ## 6. References
 
 - Issue: [#487 — PoC: every user editing action expressible as a command with faithful replay](https://github.com/antoniovazquezaraujo/LeTrain/issues/487)
+- PR #489 (PoC: slide + golden + this catalogue) and PR #491 (station/sensor invert, merged to `develop`)
 - ADR-020: Command journal / scenarios (proposed, `docs/developer/adr/ADR-020-Command-Journal-Scenarios.md` on branch `docs/adr-020-command-journal`)
 - DSL reference: `core/src/main/antlr4/letrain/command/*.g4`, `docs/user/grammar.md`
 - Element movement contract tests: `core/src/test/java/letrain/track/TrackElementMoveTest.java`, `core/src/test/java/letrain/command/SlideCommandTest.java`
+- Orientation invert contract tests: `core/src/test/java/letrain/command/StationSensorInvertTest.java`
