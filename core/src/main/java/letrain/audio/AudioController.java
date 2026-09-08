@@ -296,8 +296,8 @@ public class AudioController {
             return;
         }
 
-        float targetBirdsVol = isTopDown ? 0.35f * (1f - zoomFactor) : 0.3f + zoomFactor * 0.5f;
-        float targetWindVol = isTopDown ? 0.2f + zoomFactor * 0.4f : 0.0f;
+        float targetBirdsVol = isTopDown ? 0.25f * (1f - zoomFactor) : 0.3f + zoomFactor * 0.5f;
+        float targetWindVol = isTopDown ? 0.1f + zoomFactor * 0.3f : 0.0f;
 
         // Birds
         if (targetBirdsVol > 0.01f) {
