@@ -227,6 +227,13 @@ public class AudioController {
                 synthesizers.put(loco.getId(), synth);
             }
 
+            // Paused editing (ADR-020): silence the whole synthesizer (loco, wagons, brakes, load)
+            // via its master gain and keep its internal state frozen so it resumes seamlessly.
+            synth.setMasterVolume(worldPaused ? 0f : 1f);
+            if (worldPaused) {
+                continue;
+            }
+
             synth.update();
 
             // Dynamic Volume based on Director Status
@@ -244,12 +251,6 @@ public class AudioController {
                 int extraLocos = Math.max(1, totalLocos - 1);
                 locoVolume = 0.8f / extraLocos;
                 coachVolume = 0.0f;
-            }
-            // While the world is paused (paused editing), keep the synthesizers muted so they can
-            // resume seamlessly from their current state when the pause ends.
-            if (worldPaused) {
-                locoVolume = 0f;
-                coachVolume = 0f;
             }
             synth.setLocoVolume(locoVolume);
             synth.setCoachVolume(coachVolume);
