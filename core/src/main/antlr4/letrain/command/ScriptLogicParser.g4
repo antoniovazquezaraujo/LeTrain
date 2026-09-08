@@ -15,6 +15,8 @@ directCommand : assignItinerary
               | directForkCommand
               | directSemaphoreCommand
               | directSignalCommand
+              | directStationCommand
+              | directSensorCommand
               ;
 
 directTrainCommand : TRAIN trainRef trainAction ;
@@ -103,3 +105,6 @@ signalAction        : SET LIMIT NUMBER
                     | INVERT
                     ;
 signalSelector      : SIGNAL NUMBER ;
+
+directStationCommand : STATION NUMBER INVERT ;
+directSensorCommand  : SENSOR NUMBER INVERT ;

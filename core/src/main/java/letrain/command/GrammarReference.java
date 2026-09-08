@@ -156,7 +156,16 @@ public class GrammarReference {
         Node semAct = new Node("semaphore").setExpanded(true);
         semAct.add(new Node("open", "semaphore # set open;"));
         semAct.add(new Node("closed", "semaphore # set closed;"));
+        semAct.add(new Node("invert", "semaphore # invert;"));
         root.add(semAct);
+
+        Node stationAct = new Node("station").setExpanded(true);
+        stationAct.add(new Node("invert", "station # invert;"));
+        root.add(stationAct);
+
+        Node sensorAct = new Node("sensor").setExpanded(true);
+        sensorAct.add(new Node("invert", "sensor # invert;"));
+        root.add(sensorAct);
 
         // SET NAMES
         Node namesHeading = new Node("SET NAMES").setHeading(true);
