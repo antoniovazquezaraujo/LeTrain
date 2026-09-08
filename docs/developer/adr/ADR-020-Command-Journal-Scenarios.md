@@ -20,6 +20,8 @@ Mecánica común: el **diario de comandos** registra las acciones de edición de
 - **Exportación de escenario** (receta determinista sobre semilla).
 - **Undo/redo de edición** (reconstrucción determinista + checkpoints).
 
+3. **Editor de escenario desacoplado (modelo A)**: el escenario es un **fichero de texto en disco** con su DSL (semilla + `on build` + lógica). Se edita libremente, tanto en el editor integrado como con un **editor externo** (p. ej. vim) mientras el juego corre en otra pantalla. Regla de oro: **editar el fichero nunca modifica la partida en curso**; los cambios se aplican al *jugar el escenario* (mundo nuevo con su semilla). Si se quiere, **hot-reload** (file-watch con debounce) recarga el texto y reporta los errores de sintaxis en la consola del juego. Un botón **"re-exportar desde mi partida"** regenera el `on build` canónico a partir del estado real (exportador fiable), para reconciliar tras ediciones que rompan la reconstrucción.
+
 ### Modelo temporal
 - **Edición normal (pausada)**: entrar en modo Rails **pausa la simulación** (trenes, economía, descarrilamientos). La construcción en pausa es instantánea (sin delays). Aquí el diario es exacto y el undo/redo funciona por *reset a un checkpoint + re-ejecutar el diario* (con checkpoints periódicos para no re-ejecutar toda la historia).
 - **Modo experimento (en vivo)**: una opción desactiva la pausa; al entrar se toma un **snapshot completo del Model en memoria** (misma maquinaria que save/load, sin fichero). La simulación sigue y el usuario hace experimentos sin diario ni undo/redo. Al salir se **restaura el snapshot** (o se conserva si así se decide). Solo pruebas y diversión.
@@ -29,12 +31,13 @@ Mecánica común: el **diario de comandos** registra las acciones de edición de
 - La simulación en vivo NO es reconstruible por el diario (trenes/dinero/descarrilamientos son estado): para "deshacer en vivo" solo valdría un snapshot (viaje en el tiempo), nunca el diario. Por eso el undo de edición exige el modelo pausado.
 - Reutiliza lo existente: `GameSaveService`/serialización (snapshot en memoria), el `setModel`/carga en presentadores (restaurar tras experimento), el DSL de tortuga (`write/move/del/clear`, `go`, `new`) y el parser único del CLI.
 - La unificación total de gramáticas (consola/programa en una sola ANTLR) es **opcional y posterior**; el parser de consola ya importa el de script.
+- El escenario como **fichero de texto** habilita edición externa (vim), versionado (git) y compartición; la edición nunca afecta a la partida en curso (modelo A).
 
 ## Roadmap (por partes, en orden sugerido)
 1. Bandera de **pausa** de simulación (por modo) en 2D y 3D; construcción instantánea en pausa.
 2. **Diario de comandos** de edición (+ grabador opcional) con checkpoints.
 3. **Undo/redo** de edición (en pausa).
-4. **Exportar/importar escenario** (semilla + diario, modo constructor libre).
+4. **Escenario como fichero de texto**: exportar/importar (semilla + diario, modo constructor libre), edición externa y hot-reload.
 5. **Modo experimento** con snapshot en memoria y restauración.
 
 ## Puntos abiertos (a trabajar en este ADR)
