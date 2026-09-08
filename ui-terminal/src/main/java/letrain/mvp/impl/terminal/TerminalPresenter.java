@@ -216,7 +216,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                             (ambientCells - AMBIENT_BASE_CELLS)
                                     / (float) (AMBIENT_FULL_CELLS - AMBIENT_BASE_CELLS)));
                     audioController.updateAmbient(true, ambientZoom, (float) listenerPos.getX(),
-                            (float) listenerPos.getY(), 0f, true);
+                            (float) listenerPos.getY(), 0f);
                     audioController.update();
                 }
                 renderer.visitModel(model);
