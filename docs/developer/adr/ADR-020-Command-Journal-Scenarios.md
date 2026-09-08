@@ -1,0 +1,49 @@
+# ADR-020: Diario de comandos, escenarios, undo/redo y modo experimento
+
+## Estado: PROPUESTO
+
+## Contexto
+Hoy conviven dos formas de "programar" que el usuario percibe como separadas: la **consola** (comandos inmediatos y efímeros) y el **programa** del IDE (texto persistente que se re-ejecuta con APPLY). Además, **guardar** solo guarda el *estado* de la partida. El equipo quiere:
+
+- Un lenguaje y una superficie únicos donde convivan comandos directos, construcción y lógica.
+- Poder **exportar la "receta"** que reconstruye la partida (infraestructura y trenes), no su estado (posiciones, dinero).
+- **Undo/redo** de edición.
+- Un **modo borrador/experimento** para probar sin consecuencias.
+
+## Decisión
+Distinguir dos artefactos y apoyar todo en un **diario de comandos de edición**:
+
+1. **Estado (savegame)** = el actual JSON. Sirve para continuar donde se dejó.
+2. **Escenario / programa** = texto DSL que, aplicado sobre un **mundo nuevo con su semilla**, reconstruye la infraestructura y los trenes (en su posición de origen), sin dinero ni estado en curso. Modo **constructor libre**: sin costes ni delays de construcción.
+
+Mecánica común: el **diario de comandos** registra las acciones de edición del usuario (mover cursor, `write`, `new`, `del`, mover elementos, crear trenes...). Ese mismo diario alimenta:
+- **Exportación de escenario** (receta determinista sobre semilla).
+- **Undo/redo de edición** (reconstrucción determinista + checkpoints).
+
+### Modelo temporal
+- **Edición normal (pausada)**: entrar en modo Rails **pausa la simulación** (trenes, economía, descarrilamientos). La construcción en pausa es instantánea (sin delays). Aquí el diario es exacto y el undo/redo funciona por *reset a un checkpoint + re-ejecutar el diario* (con checkpoints periódicos para no re-ejecutar toda la historia).
+- **Modo experimento (en vivo)**: una opción desactiva la pausa; al entrar se toma un **snapshot completo del Model en memoria** (misma maquinaria que save/load, sin fichero). La simulación sigue y el usuario hace experimentos sin diario ni undo/redo. Al salir se **restaura el snapshot** (o se conserva si así se decide). Solo pruebas y diversión.
+
+## Consecuencias
+- El **grabador** (`record on/off`) apunta las acciones manuales al diario; el escenario y el undo comparten maquinaria.
+- La simulación en vivo NO es reconstruible por el diario (trenes/dinero/descarrilamientos son estado): para "deshacer en vivo" solo valdría un snapshot (viaje en el tiempo), nunca el diario. Por eso el undo de edición exige el modelo pausado.
+- Reutiliza lo existente: `GameSaveService`/serialización (snapshot en memoria), el `setModel`/carga en presentadores (restaurar tras experimento), el DSL de tortuga (`write/move/del/clear`, `go`, `new`) y el parser único del CLI.
+- La unificación total de gramáticas (consola/programa en una sola ANTLR) es **opcional y posterior**; el parser de consola ya importa el de script.
+
+## Roadmap (por partes, en orden sugerido)
+1. Bandera de **pausa** de simulación (por modo) en 2D y 3D; construcción instantánea en pausa.
+2. **Diario de comandos** de edición (+ grabador opcional) con checkpoints.
+3. **Undo/redo** de edición (en pausa).
+4. **Exportar/importar escenario** (semilla + diario, modo constructor libre).
+5. **Modo experimento** con snapshot en memoria y restauración.
+
+## Puntos abiertos (a trabajar en este ADR)
+- Qué acciones entran en el diario (¿edición y creación de trenes; no conducción/economía?).
+- Formato/extensiones de fichero del escenario y dónde vive (¿dentro del save o exportado aparte?).
+- Frecuencia de checkpoints para undo y coste de memoria del snapshot del modo experimento.
+- Semántica de "conservar" al salir del modo experimento (¿se convierte en acciones de edición?).
+- Si algún día se quiere undo "en vivo", pasar a snapshots completos (viaje en el tiempo) — fuera de este diseño.
+
+## Fuera de alcance
+- Undo/redo de simulación/economía en vivo.
+- Reescritura urgente de gramáticas (se decide después).
