@@ -242,6 +242,9 @@ class PocJournalReplayTest {
         sb.append("go ").append(plain.x() + 3).append(",").append(plain.y()).append("; face n; new sn; ");
         sb.append("go ").append(plain.x() + 4).append(",").append(plain.y()).append("; face n; new sm; ");
         sb.append("go ").append(plain.x()).append(",").append(plain.y()).append("; face e; move 8; ");
+        // Operator: spawn two locomotives on the plain line (cursor must face along the rail).
+        sb.append("go ").append(plain.x() + 2).append(",").append(plain.y()).append("; face e; new loco A red; ");
+        sb.append("go ").append(plain.x() + 3).append(",").append(plain.y()).append("; face e; new loco B blue; ");
         // Curve: 4 straight pieces then turn right and lay 3 diagonal pieces.
         sb.append("go ").append(curve.x()).append(",").append(curve.y()).append("; face e; write 4, r, 3; ");
         // Fork: a line A (fork.x..fork.x+3), a west approach to the tile fork.x, then leave SE.
@@ -326,5 +329,6 @@ class PocJournalReplayTest {
         assertEquals(1, model.getStations().size(), "expected one station");
         assertEquals(1, model.getSensors().size(), "expected one plain sensor");
         assertEquals(1, model.getSemaphores().size(), "expected one semaphore");
+        assertEquals(2, model.getLocomotives().size(), "expected two locomotives spawned");
     }
 }
