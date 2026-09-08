@@ -51,6 +51,8 @@ Reglas:
 - La separación es a nivel de **formato y de orden de ejecución**; no requiere dos gestores distintos en el código.
 - El estado guardado contiene red + operador + estado en curso.
 
+**Composición (opcional)**: por defecto un escenario es **autocontenido** (un fichero con red + operador: simple de crear, compartir y jugar). El formato permite además **componer partes** (p. ej. `@import "mi-red.ltr"` dentro de un operador, o viceversa) para quien quiera reutilizar red u operador por separado. La maquinaria de composición (resolución de imports, contrato/ids entre partes, validación cruzada) solo la paga quien la usa.
+
 ### Consistencia save ↔ escenario (huellas)
 Save y escenario son artefactos distintos (runtime vs mundo nuevo) y **no deben confundirse**: cada carga es autoconsistente. La divergencia entre ambos es "dos instantes distintos", no corrupción; el diseño la hace **visible y controlable**:
 
