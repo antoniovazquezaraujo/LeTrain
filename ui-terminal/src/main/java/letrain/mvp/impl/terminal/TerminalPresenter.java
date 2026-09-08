@@ -85,6 +85,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     SimulationController simulationController;
     private final GameSaveService gameSaveService;
 
+    private static final int AMBIENT_BASE_CELLS = 80 * 25;
+    private static final int AMBIENT_FULL_CELLS = 120 * 40;
+
     public TerminalPresenter() {
         this(null);
     }
@@ -202,15 +205,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 simulationController.tick();
                 if (audioController != null) {
-                    if (model.getMode() == DRIVE && model.getSelectedLocomotive() != null) {
-                        Point pos = model.getSelectedLocomotive().getPosition();
-                        audioController.setListenerPosition((float) pos.getX(), (float) pos.getY(),
-                                0, 0);
-                    } else {
-                        Point pos = model.getCursor().getPosition();
-                        audioController.setListenerPosition((float) pos.getX(), (float) pos.getY(),
-                                0, 0);
-                    }
+                    Point listenerPos = model.getMode() == DRIVE
+                            && model.getSelectedLocomotive() != null
+                                    ? model.getSelectedLocomotive().getPosition()
+                                    : model.getCursor().getPosition();
+                    int ambientCells = view.getCols() * view.getRows();
+                    float ambientZoom = Math.max(0f, Math.min(1f,
+                            (ambientCells - AMBIENT_BASE_CELLS)
+                                    / (float) (AMBIENT_FULL_CELLS - AMBIENT_BASE_CELLS)));
+                    audioController.setListenerPosition((float) listenerPos.getX(),
+                            (float) listenerPos.getY(), 0f, 0);
+                    audioController.updateAmbient(true, ambientZoom, (float) listenerPos.getX(),
+                            (float) listenerPos.getY(), 0f);
                     audioController.update();
                 }
                 renderer.visitModel(model);

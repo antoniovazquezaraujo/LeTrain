@@ -278,8 +278,11 @@ public class AudioController {
     }
 
     /**
-     * Updates ambient sounds based on camera mode and zoom level. Birds play in perspective/orbit
-     * mode, wind in top-down/map mode. Volume increases with camera distance (zoom out = louder).
+     * Updates ambient sounds based on camera mode and zoom level.
+     *
+     * <p>
+     * Perspective/orbit modes play birds. In top-down (map) views the two ambiences crossfade with
+     * the zoom: close-up favours birds, zooming out increases wind and reduces birds.
      *
      * @param isTopDown true for MAP/cenital mode, false for ORBIT/CAB
      * @param zoomFactor 0.0 (close) to 1.0 (far)
@@ -293,8 +296,8 @@ public class AudioController {
             return;
         }
 
-        float targetBirdsVol = isTopDown ? 0.0f : 0.3f + zoomFactor * 0.5f;
-        float targetWindVol = isTopDown ? 0.2f + zoomFactor * 0.4f : 0.0f;
+        float targetBirdsVol = isTopDown ? 0.25f * (1f - zoomFactor) : 0.3f + zoomFactor * 0.5f;
+        float targetWindVol = isTopDown ? 0.1f + zoomFactor * 0.3f : 0.0f;
 
         // Birds
         if (targetBirdsVol > 0.01f) {
