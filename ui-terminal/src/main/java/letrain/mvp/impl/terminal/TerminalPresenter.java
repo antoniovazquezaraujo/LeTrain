@@ -273,15 +273,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void executeCommand(String cmd) {
         log.info("Execute command: " + cmd);
-        String error = letrain.command.PlayerCommandExecutor.execute(cmd, model, file -> onSaveGame(file), file -> onLoadGame(file), new letrain.command.TurtleDelegate() {
-            @Override public void startSequence() { railTrackMaker.reset(); railTrackMaker.makingTracks = false; }
-            @Override public void moveForward() { railTrackMaker.cursorForward(); }
-            @Override public void buildForward() { railTrackMaker.createTrack(null); }
-            @Override public void eraseForward() { railTrackMaker.removeTrack(true); }
-            @Override public void turnLeft() { railTrackMaker.cursorTurnLeft(); }
-            @Override public void turnRight() { railTrackMaker.cursorTurnRight(); }
-            @Override public void endSequence() { railTrackMaker.makingTracks = false; }
-        }, (title, msg) -> view.showMessage(title, msg), () -> onExitGame());
+        String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                file -> onSaveGame(file), file -> onLoadGame(file),
+                new letrain.command.TurtleBuilder(model, railTrackMaker),
+                (title, msg) -> view.showMessage(title, msg), () -> onExitGame());
 
         if (error != null) {
             model.setCommandError(error);
