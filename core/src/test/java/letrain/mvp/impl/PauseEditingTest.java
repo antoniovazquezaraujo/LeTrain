@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Tests for paused editing (ADR-020 roadmap item 1): while pause-editing is on and the game is in
- * the RAILS mode, the world simulation (trains) is frozen and track construction is
- * instantaneous; toggling it off resumes movement.
+ * an editing mode, the world simulation (trains) is frozen and track construction is
+ * instantaneous; play/view modes keep simulating.
  */
 @DisplayName("Paused editing in RAILS (ADR-020)")
 class PauseEditingTest {
@@ -100,16 +100,31 @@ class PauseEditingTest {
     }
 
     @Test
-    @DisplayName("isSimulationPaused is true only when toggled on AND in RAILS")
+    @DisplayName("isSimulationPaused is true in edit modes and false in play/view modes")
     void simulationPaused_dependsOnMode() {
         model.setPauseEditing(true);
-        assertTrue(model.isSimulationPaused(), "RAILS (default mode) must be paused when enabled");
 
-        model.setMode(GameMode.DRIVE);
-        assertFalse(model.isSimulationPaused(), "DRIVE must keep simulating even when enabled");
+        // Edit modes pause the world.
+        for (GameMode editMode : new GameMode[] {
+                GameMode.RAILS, GameMode.ADD, GameMode.STATIONS, GameMode.SENSORS,
+                GameMode.SEMAPHORES, GameMode.SPEED_SIGNALS, GameMode.FORKS, GameMode.TRAINS,
+                GameMode.COMMAND, GameMode.PROGRAM}) {
+            model.setMode(editMode);
+            assertTrue(model.isSimulationPaused(),
+                    "edit mode " + editMode + " must be paused when pause-editing is enabled");
+        }
+
+        // Play / view modes keep simulating.
+        for (GameMode playMode : new GameMode[] {
+                GameMode.DRIVE, GameMode.MENU, GameMode.LINK, GameMode.UNLINK,
+                GameMode.LOAD_TRAINS}) {
+            model.setMode(playMode);
+            assertFalse(model.isSimulationPaused(),
+                    "play mode " + playMode + " must keep simulating even when enabled");
+        }
 
         model.setMode(GameMode.RAILS);
-        assertTrue(model.isSimulationPaused(), "back to RAILS must pause again");
+        assertTrue(model.isSimulationPaused(), "RAILS must pause again");
 
         model.setPauseEditing(false);
         assertFalse(model.isSimulationPaused(), "disabling must resume");
@@ -139,7 +154,7 @@ class PauseEditingTest {
     }
 
     @Test
-    @DisplayName("train is frozen while pause-editing is on in RAILS")
+    @DisplayName("train is frozen while pause-editing is on in an edit mode (RAILS)")
     void train_frozen_whilePauseEditingOnInRails() {
         // Arrange
         buildEastWestLine(12);

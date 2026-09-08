@@ -202,11 +202,30 @@ public interface Model {
 
     /**
      * True when the world simulation must be frozen right now: pause-editing is toggled on and the
-     * current game mode is an editing mode (RAILS). In that state vehicle movement, the scheduler,
-     * industrial actions and cleanup are skipped while track building keeps working instantly.
+     * current game mode is an editing mode (RAILS, ADD, element management, train building, console
+     * or program editor). In that state vehicle movement, the scheduler, industrial actions and
+     * cleanup are skipped while track building keeps working instantly. Simulation only resumes in
+     * play/view modes (DRIVE, MENU, LINK/UNLINK, LOAD_TRAINS).
      */
     default boolean isSimulationPaused() {
-        return isPauseEditing() && getMode() == GameMode.RAILS;
+        if (!isPauseEditing()) {
+            return false;
+        }
+        switch (getMode()) {
+            case RAILS:
+            case ADD:
+            case STATIONS:
+            case SENSORS:
+            case SEMAPHORES:
+            case SPEED_SIGNALS:
+            case FORKS:
+            case TRAINS:
+            case COMMAND:
+            case PROGRAM:
+                return true;
+            default:
+                return false;
+        }
     }
 
     Locomotive getSelectedLocomotive();
