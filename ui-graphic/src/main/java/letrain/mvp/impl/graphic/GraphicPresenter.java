@@ -799,6 +799,14 @@ public class GraphicPresenter extends ApplicationAdapter
                 showMessage("Undo/Redo", "Replay error: " + error);
                 break;
             }
+            // Reproduce the terrain materialization the live session performed between edits (the
+            // render loop generates ground blocks around the cursor each frame). Replay runs with
+            // no frames, so without this, painting beyond the blocks stored in the checkpoint would
+            // hit void (-1) terrain and silently fail to lay rails.
+            letrain.map.Point cp = model.getCursor().getPosition();
+            int radius = model.getEconomyManager().getViewRadius();
+            model.getGroundMap().renderBlock(cp.getX() - radius, cp.getY() - radius,
+                    radius * 2 + 1, radius * 2 + 1);
             replayedTo++;
             count++;
         }
