@@ -18,7 +18,7 @@ public class CameraController {
         ORBIT, CAB, MAP
     }
 
-    private final Model model;
+    private Model model;
     private PerspectiveCamera cam;
 
     private CameraMode cameraMode = CameraMode.ORBIT;
@@ -63,6 +63,17 @@ public class CameraController {
     public void forceSnap() {
         this.lastCameraSnapSignal = null;
         this.lastCameraSnapSemaphore = null;
+    }
+
+    /**
+     * Re-targets this controller to a new model instance while preserving the current camera pose
+     * (used by the paused-editing undo/redo swap, where the world is frozen and visually identical).
+     * The next {@link #update} simply tracks the new model's cursor/selection.
+     */
+    public void rebind(Model model) {
+        this.model = model;
+        this.lastMode = null;
+        forceSnap();
     }
 
     public CameraMode getMode() {

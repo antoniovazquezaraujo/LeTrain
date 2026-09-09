@@ -118,6 +118,36 @@ public class Gdx3DInputHandler implements InputProcessor {
     @Override
     public boolean keyDown(int keycode) {
         pressedKeys.put(keycode, System.currentTimeMillis() + INITIAL_REPEAT_DELAY_MS);
+        // Ctrl+R -> redo paused editing (ADR-020 item 3). Handled on keyDown because LibGDX does
+        // not deliver a typed character for Ctrl+letter combos. Not intercepted while typing in the
+        // COMMAND console or the PROGRAM IDE.
+        boolean ctrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
+        // Ctrl+P / Ctrl+N navigate the ':' command history on keyDown (LibGDX does not deliver a
+        // typed character for Ctrl+letter combos, so the arrows are the main path).
+        if (ctrlPressed && model.getMode() == Model.GameMode.COMMAND) {
+            if (keycode == Input.Keys.P) {
+                String text = view.getCommandHistory().up();
+                if (text != null) {
+                    model.setCommandText(text);
+                    model.setCommandError("");
+                }
+                return true;
+            } else if (keycode == Input.Keys.N) {
+                String text = view.getCommandHistory().down();
+                if (text != null) {
+                    model.setCommandText(text);
+                    model.setCommandError("");
+                }
+                return true;
+            }
+        }
+        if (ctrlPressed && keycode == Input.Keys.R
+                && model.getMode() != Model.GameMode.COMMAND
+                && model.getMode() != Model.GameMode.PROGRAM) {
+            view.redo(1);
+            return true;
+        }
         return triggerKeyDown(keycode);
     }
 
@@ -286,20 +316,15 @@ public class Gdx3DInputHandler implements InputProcessor {
                 model.setCommandError("");
                 return;
             } else if (stroke.getKeyType() == KeyType.Enter) {
-                log.info("Execute command: " + model.getCommandText());
-                String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(),
-                        model, file -> view.onSaveGame(file), file -> view.onLoadGame(file),
-                        new letrain.command.TurtleBuilder(model, trackMaker),
-                        (title, msg) -> view.showMessage(title, msg), () -> view.onExitGame());
-
-                if (error != null) {
-                    model.setCommandError(error);
+                String cmd = model.getCommandText().trim();
+                if (cmd.isEmpty()) {
+                    model.setMode(Model.GameMode.RAILS);
+                    model.setCommandText("");
+                    model.setCommandError("");
                     return;
                 }
-                model.setMode(Model.GameMode.RAILS);
-                model.setCommandText("");
-                model.setCommandError("");
-                if (cameraController != null) cameraController.forceSnap();
+                view.getCommandHistory().remember(cmd);
+                executeConsoleCommand(model.getCommandText());
                 return;
             } else if (stroke.getKeyType() == KeyType.Backspace) {
                 String t = model.getCommandText();
@@ -310,13 +335,39 @@ public class Gdx3DInputHandler implements InputProcessor {
                 return;
             } else if (stroke.getKeyType() == KeyType.Character) {
                 Character c = stroke.getCharacter();
-                if (c != null) {
+                if (c != null && !stroke.isCtrlDown() && !stroke.isAltDown()) {
                     model.setCommandText(model.getCommandText() + c);
+                    model.setCommandError("");
+                }
+                return;
+            } else if (stroke.getKeyType() == KeyType.ArrowUp) {
+                String text = view.getCommandHistory().up();
+                if (text != null) {
+                    model.setCommandText(text);
+                    model.setCommandError("");
+                }
+                return;
+            } else if (stroke.getKeyType() == KeyType.ArrowDown) {
+                String text = view.getCommandHistory().down();
+                if (text != null) {
+                    model.setCommandText(text);
                     model.setCommandError("");
                 }
                 return;
             }
             return; // Ignore other keys in COMMAND mode
+        }
+
+        // '.' -> repeat the last console command (only outside COMMAND/PROGRAM to avoid stealing
+        // a literal '.' typed while editing a program).
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
+                && stroke.getCharacter() == '.'
+                && model.getMode() != Model.GameMode.PROGRAM) {
+            String last = view.getCommandHistory().last();
+            if (last != null) {
+                executeConsoleCommand(last);
+            }
+            return;
         }
 
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null && stroke.getCharacter() == 'x'
@@ -330,6 +381,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 model.setMode(Model.GameMode.COMMAND);
                 model.setCommandText("");
                 model.setCommandError("");
+                view.getCommandHistory().resetToNew();
                 return;
             }
         }
@@ -414,6 +466,12 @@ public class Gdx3DInputHandler implements InputProcessor {
                         }
                         return;
                     case 'u':
+                        // While pause-editing is on (undo history active), 'u' = undo (vim-like).
+                        // Ctrl+Z is avoided because several window managers/toolkits intercept it.
+                        if (model.isSimulationPaused()) {
+                            view.undo(1);
+                            return;
+                        }
                         if (model.canEnterUnlinkMode()) {
                             model.setMode(Model.GameMode.UNLINK);
                             if (model.getSelectedLocomotive() != null
@@ -504,6 +562,64 @@ public class Gdx3DInputHandler implements InputProcessor {
         model.setPauseEditing(paused);
         view.setStatusBarText(paused ? "Paused editing: ON (world freezes in edit modes; instant build)"
                 : "Paused editing: OFF");
+        view.onPauseEditingChanged(paused);
+    }
+
+    /**
+     * Executes a console command typed in COMMAND mode (':'): captures the cursor prefix before
+     * running (so an undo replay is self-positioned and deterministic), wires the undo/redo DSL
+     * callbacks, and auto-captures the successful edit into the paused-editing history exactly like
+     * the terminal presenter's funnel.
+     */
+    private void executeConsoleCommand(String cmd) {
+        log.info("Execute command: " + cmd);
+        String prefix = cursorPrefix();
+        String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                file -> view.onSaveGame(file), file -> view.onLoadGame(file),
+                new letrain.command.TurtleBuilder(model, trackMaker),
+                (title, msg) -> view.showMessage(title, msg), () -> view.onExitGame(),
+                steps -> view.undo(steps), steps -> view.redo(steps));
+
+        if (error != null) {
+            model.setCommandError(error);
+            return;
+        }
+        // Use the presenter's live model: an undo/redo typed in the console swaps the model out
+        // from under this handler (applyModel rebuilds handler + model), so the cleanup and the
+        // auto-capture must target the current model, not the stale one this handler was built on.
+        letrain.mvp.Model current = view.getModel();
+        // Auto-capture in pause (ADR-020): while pause-editing freezes the world, every successful
+        // editing command is journaled for undo/redo.
+        letrain.command.UndoRedoHistory history = view.getUndoRedoHistory();
+        if (history != null && current.isSimulationPaused() && !isNonRecordableCommand(cmd)) {
+            history.record(prefix + cmd);
+        }
+        current.setMode(Model.GameMode.RAILS);
+        current.setCommandText("");
+        current.setCommandError("");
+        if (view.getCameraController() != null) {
+            view.getCameraController().forceSnap();
+        }
+    }
+
+    /** Console commands that must never enter the undo history (control / navigation / info). */
+    private static boolean isNonRecordableCommand(String cmd) {
+        String t = cmd.trim().toLowerCase();
+        return t.startsWith("record ") || t.startsWith("record;") || t.equals("record")
+                || t.startsWith("journal") || t.startsWith("undo") || t.startsWith("redo")
+                || t.startsWith("ls ") || t.equals("ls")
+                || t.startsWith("info ") || t.startsWith("save") || t.startsWith("load")
+                || t.startsWith("quit") || t.equals("q") || t.startsWith("q!")
+                || t.startsWith("wq") || t.startsWith("help")
+                || t.startsWith("go ") || t.startsWith("face ") || t.startsWith("move ")
+                || t.startsWith("mark ") || t.startsWith("m ");
+    }
+
+    /** Absolute cursor prefix: {@code "go x,y; face d; "} from the current cursor state. */
+    private String cursorPrefix() {
+        letrain.map.Point pos = model.getCursor().getPosition();
+        return "go " + pos.getX() + "," + pos.getY() + "; face "
+                + model.getCursor().getDir().name().toLowerCase() + "; ";
     }
 
     public void onKeyUp(InputEvent stroke) {
