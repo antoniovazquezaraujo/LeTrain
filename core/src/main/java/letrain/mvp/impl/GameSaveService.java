@@ -3,8 +3,11 @@ package letrain.mvp.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Optional;
 import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
@@ -88,15 +91,60 @@ public class GameSaveService {
         }
     }
 
-    public Optional<letrain.mvp.impl.Model> load(java.io.InputStream is) {
+    // ------------------------------------------------------------------
+    // In-memory snapshots (ADR-020: undo/redo checkpoints + experiment mode)
+    // ------------------------------------------------------------------
+
+    /** ObjectMapper configured with the model mixins, shared by file and in-memory round-trips. */
+    private ObjectMapper newMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        configureObjectMapper(mapper);
+        return mapper;
+    }
+
+    /**
+     * Serializes {@code model} to bytes without touching the file system. Unlike {@link #save}, it
+     * does <b>not</b> compact the ground map blocks, so the live model is left unmodified (a
+     * checkpoint must not mutate the world it is capturing). The bytes can be turned back into a
+     * fully initialized model with {@link #fromBytes(byte[])}.
+     */
+    public byte[] toBytes(letrain.mvp.Model model) {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            newMapper().writeValue(out, model);
+            return out.toByteArray();
+        } catch (Exception e) {
+            log.error("Error serializing model to bytes", e);
+            throw new IllegalArgumentException("Could not snapshot the model in memory", e);
+        }
+    }
+
+    /** Deserializes a model previously produced by {@link #toBytes(letrain.mvp.Model)}. */
+    public letrain.mvp.impl.Model fromBytes(byte[] data) {
+        if (data == null) {
+            log.warn("Ignoring restore request with null byte array");
+            return null;
+        }
+        try {
+            letrain.mvp.impl.Model loaded =
+                    newMapper().readValue(new ByteArrayInputStream(data),
+                            letrain.mvp.impl.Model.class);
+            loaded.postLoadInit();
+            return loaded;
+        } catch (Exception e) {
+            log.error("Error restoring model from bytes", e);
+            return null;
+        }
+    }
+
+    public Optional<letrain.mvp.impl.Model> load(InputStream is) {
         if (is == null) {
             log.warn("Ignoring load request with null input stream");
             return Optional.empty();
         }
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            configureObjectMapper(mapper);
-            letrain.mvp.impl.Model loadedModel = mapper.readValue(is, letrain.mvp.impl.Model.class);
+            letrain.mvp.impl.Model loadedModel = newMapper().readValue(is,
+                    letrain.mvp.impl.Model.class);
             loadedModel.postLoadInit();
             return Optional.of(loadedModel);
         } catch (Exception e) {

@@ -48,6 +48,8 @@ INVERT: 'invert';
 NEW: 'new';
 RECORD: 'record';
 JOURNAL: 'journal';
+UNDO: 'undo';
+REDO: 'redo';
 SLIDE: 'slide';
 LS: 'ls';
 INFO: 'info';

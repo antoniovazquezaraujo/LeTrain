@@ -17,18 +17,26 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     private letrain.command.TurtleDelegate turtleDelegate;
     private java.util.function.BiConsumer<String, String> onMessage;
     private Runnable onQuit;
+    private java.util.function.IntConsumer onUndo;
+    private java.util.function.IntConsumer onRedo;
 
     public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate) {
         this(model, onSave, onLoad, turtleDelegate, null, null);
     }
     
     public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit) {
+        this(model, onSave, onLoad, turtleDelegate, onMessage, onQuit, null, null);
+    }
+
+    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit, java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo) {
         this.model = model;
         this.onSave = onSave;
         this.onLoad = onLoad;
         this.turtleDelegate = turtleDelegate;
         this.onMessage = onMessage;
         this.onQuit = onQuit;
+        this.onUndo = onUndo;
+        this.onRedo = onRedo;
     }
 
     public PlayerCommandExecutor(Model model) {
@@ -36,14 +44,18 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
     public static String execute(String commandText, Model model) {
-        return execute(commandText, model, null, null, null, null, null);
+        return execute(commandText, model, null, null, null, null, null, null, null);
     }
 
     public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate) {
-        return execute(commandText, model, onSave, onLoad, turtleDelegate, null, null);
+        return execute(commandText, model, onSave, onLoad, turtleDelegate, null, null, null, null);
     }
-    
+
     public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit) {
+        return execute(commandText, model, onSave, onLoad, turtleDelegate, onMessage, onQuit, null, null);
+    }
+
+    public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit, java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo) {
         if (!commandText.trim().endsWith(";")) {
             commandText = commandText.trim() + ";";
         }
@@ -74,7 +86,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         }
 
         try {
-            PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad, turtleDelegate, onMessage, onQuit);
+            PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad, turtleDelegate, onMessage, onQuit, onUndo, onRedo);
             executor.visit(tree);
             if (!executor.toggledRecording && model != null) {
                 letrain.command.CommandJournal journal = model.getCommandJournal();
@@ -87,6 +99,28 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             log.error("Command execution error", e);
             return e.getMessage();
         }
+    }
+
+    @Override
+    public Object visitUndoCommand(PlayerCommandsParser.UndoCommandContext ctx) {
+        toggledRecording = true;
+        int steps = ctx.NUMBER() != null ? Integer.parseInt(ctx.NUMBER().getText()) : 1;
+        if (onUndo == null) {
+            throw new RuntimeException("Undo is not supported in this context (no undo handler wired).");
+        }
+        onUndo.accept(steps);
+        return null;
+    }
+
+    @Override
+    public Object visitRedoCommand(PlayerCommandsParser.RedoCommandContext ctx) {
+        toggledRecording = true;
+        int steps = ctx.NUMBER() != null ? Integer.parseInt(ctx.NUMBER().getText()) : 1;
+        if (onRedo == null) {
+            throw new RuntimeException("Redo is not supported in this context (no redo handler wired).");
+        }
+        onRedo.accept(steps);
+        return null;
     }
 
     private boolean toggledRecording = false;

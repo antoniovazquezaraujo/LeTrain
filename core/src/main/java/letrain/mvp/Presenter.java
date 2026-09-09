@@ -11,4 +11,14 @@ public interface Presenter extends GameViewListener {
     Model getModel();
 
     letrain.audio.AudioController getAudioController();
+
+    /**
+     * The paused-editing undo/redo session (ADR-020 item 3), owned by the presenter so it survives
+     * the model swaps an undo performs. Returns null while no editing session is active (e.g. the
+     * terminal presenter when pause-editing is off). A presenter that never records an edit history
+     * may simply not override this.
+     */
+    default letrain.command.UndoRedoHistory getUndoRedoHistory() {
+        return null;
+    }
 }
