@@ -54,11 +54,6 @@ public class Gdx3DInputHandler implements InputProcessor {
     private long locomotiveInputTimeout = 0;
     private Locomotive lastCreatedLoco = null;
 
-    // Console command history (':' mode), mirroring the terminal presenter: ArrowUp/Down (or
-    // Ctrl+P/Ctrl+N) navigate it and '.' outside COMMAND repeats the last command.
-    private final java.util.List<String> commandHistory = new java.util.ArrayList<>();
-    private int historyIndex = -1;
-
     public Gdx3DInputHandler(Model model, GraphicPresenter view, CameraController cameraController,
             RailTrackMaker trackMaker, AudioController audioController) {
         this.model = model;
@@ -128,6 +123,25 @@ public class Gdx3DInputHandler implements InputProcessor {
         // COMMAND console or the PROGRAM IDE.
         boolean ctrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)
                 || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
+        // Ctrl+P / Ctrl+N navigate the ':' command history on keyDown (LibGDX does not deliver a
+        // typed character for Ctrl+letter combos, so the arrows are the main path).
+        if (ctrlPressed && model.getMode() == Model.GameMode.COMMAND) {
+            if (keycode == Input.Keys.P) {
+                String text = view.getCommandHistory().up();
+                if (text != null) {
+                    model.setCommandText(text);
+                    model.setCommandError("");
+                }
+                return true;
+            } else if (keycode == Input.Keys.N) {
+                String text = view.getCommandHistory().down();
+                if (text != null) {
+                    model.setCommandText(text);
+                    model.setCommandError("");
+                }
+                return true;
+            }
+        }
         if (ctrlPressed && keycode == Input.Keys.R
                 && model.getMode() != Model.GameMode.COMMAND
                 && model.getMode() != Model.GameMode.PROGRAM) {
@@ -309,11 +323,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     model.setCommandError("");
                     return;
                 }
-                if (commandHistory.isEmpty()
-                        || !commandHistory.get(commandHistory.size() - 1).equals(cmd)) {
-                    commandHistory.add(cmd);
-                }
-                historyIndex = commandHistory.size();
+                view.getCommandHistory().remember(cmd);
                 executeConsoleCommand(model.getCommandText());
                 return;
             } else if (stroke.getKeyType() == KeyType.Backspace) {
@@ -325,46 +335,22 @@ public class Gdx3DInputHandler implements InputProcessor {
                 return;
             } else if (stroke.getKeyType() == KeyType.Character) {
                 Character c = stroke.getCharacter();
-                if (c != null) {
-                    if (stroke.isCtrlDown() && (c == 'p' || c == 'P' || c == 16)) {
-                        if (historyIndex > 0) {
-                            historyIndex--;
-                            model.setCommandText(commandHistory.get(historyIndex));
-                            model.setCommandError("");
-                        }
-                        return;
-                    } else if (stroke.isCtrlDown() && (c == 'n' || c == 'N' || c == 14)) {
-                        if (historyIndex < commandHistory.size() - 1) {
-                            historyIndex++;
-                            model.setCommandText(commandHistory.get(historyIndex));
-                            model.setCommandError("");
-                        } else if (historyIndex == commandHistory.size() - 1) {
-                            historyIndex++;
-                            model.setCommandText("");
-                            model.setCommandError("");
-                        }
-                        return;
-                    } else if (!stroke.isCtrlDown() && !stroke.isAltDown()) {
-                        model.setCommandText(model.getCommandText() + c);
-                        model.setCommandError("");
-                    }
+                if (c != null && !stroke.isCtrlDown() && !stroke.isAltDown()) {
+                    model.setCommandText(model.getCommandText() + c);
+                    model.setCommandError("");
                 }
                 return;
             } else if (stroke.getKeyType() == KeyType.ArrowUp) {
-                if (historyIndex > 0) {
-                    historyIndex--;
-                    model.setCommandText(commandHistory.get(historyIndex));
+                String text = view.getCommandHistory().up();
+                if (text != null) {
+                    model.setCommandText(text);
                     model.setCommandError("");
                 }
                 return;
             } else if (stroke.getKeyType() == KeyType.ArrowDown) {
-                if (historyIndex < commandHistory.size() - 1) {
-                    historyIndex++;
-                    model.setCommandText(commandHistory.get(historyIndex));
-                    model.setCommandError("");
-                } else if (historyIndex == commandHistory.size() - 1) {
-                    historyIndex++;
-                    model.setCommandText("");
+                String text = view.getCommandHistory().down();
+                if (text != null) {
+                    model.setCommandText(text);
                     model.setCommandError("");
                 }
                 return;
@@ -376,9 +362,11 @@ public class Gdx3DInputHandler implements InputProcessor {
         // a literal '.' typed while editing a program).
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
                 && stroke.getCharacter() == '.'
-                && model.getMode() != Model.GameMode.PROGRAM
-                && !commandHistory.isEmpty()) {
-            executeConsoleCommand(commandHistory.get(commandHistory.size() - 1));
+                && model.getMode() != Model.GameMode.PROGRAM) {
+            String last = view.getCommandHistory().last();
+            if (last != null) {
+                executeConsoleCommand(last);
+            }
             return;
         }
 
@@ -393,7 +381,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 model.setMode(Model.GameMode.COMMAND);
                 model.setCommandText("");
                 model.setCommandError("");
-                historyIndex = commandHistory.size();
+                view.getCommandHistory().resetToNew();
                 return;
             }
         }

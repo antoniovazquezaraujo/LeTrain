@@ -26,6 +26,7 @@ class Gdx3DInputHandlerConsoleTest {
     private Model model;
     private GraphicPresenter view;
     private Gdx3DInputHandler handler;
+    private RailTrackMaker trackMaker;
 
     private static InputEvent key(KeyType type) {
         return new InputEvent(type);
@@ -47,13 +48,14 @@ class Gdx3DInputHandlerConsoleTest {
         when(view.getModel()).thenReturn(model);
         when(view.getView()).thenReturn(mock(View.class));
         when(view.getUndoRedoHistory()).thenReturn(null);
+        when(view.getCommandHistory()).thenReturn(new CommandHistory());
 
         Presenter makerPresenter = mock(Presenter.class);
         when(makerPresenter.getModel()).thenReturn(model);
         when(makerPresenter.getView()).thenReturn(mock(View.class));
         when(makerPresenter.getAudioController()).thenReturn(null);
         when(makerPresenter.getUndoRedoHistory()).thenReturn(null);
-        RailTrackMaker trackMaker = new RailTrackMaker(makerPresenter);
+        trackMaker = new RailTrackMaker(makerPresenter);
 
         handler = new Gdx3DInputHandler(model, view, new CameraController(model), trackMaker, null);
     }
@@ -123,5 +125,19 @@ class Gdx3DInputHandlerConsoleTest {
         assertEquals(Model.GameMode.RAILS, model.getMode());
         assertEquals(1, model.getSensors().size());
         assertEquals("Cannot place sensor: Track already has a component.", model.getCommandError());
+    }
+
+    @Test
+    @DisplayName("history survives a model/handler swap like the one an undo performs")
+    void history_survivesHandlerRecreation() {
+        executeInConsole("go 5,0; face e; write 1;");
+        assertEquals(Model.GameMode.RAILS, model.getMode());
+
+        // An undo swaps the model and recreates the input handler (applyModel); the command history
+        // lives in the presenter and must still be navigable from the brand-new handler.
+        handler = new Gdx3DInputHandler(model, view, new CameraController(model), trackMaker, null);
+        handler.onChar(charKey(':'));
+        handler.onChar(key(KeyType.ArrowUp));
+        assertEquals("go 5,0; face e; write 1;", model.getCommandText());
     }
 }

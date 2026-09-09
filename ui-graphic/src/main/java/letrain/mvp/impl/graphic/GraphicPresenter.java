@@ -101,6 +101,12 @@ public class GraphicPresenter extends ApplicationAdapter
      */
     private letrain.command.UndoRedoHistory undoRedoHistory;
 
+    /**
+     * Console (' :') command history. Kept at the presenter so it survives the input-handler
+     * recreations an undo/redo performs (each undo rebuilds the handler against the restored model).
+     */
+    private final CommandHistory commandHistory = new CommandHistory();
+
     private CameraController cameraController;
     private Gdx3DInputHandler inputHandler;
 
@@ -418,6 +424,11 @@ public class GraphicPresenter extends ApplicationAdapter
         } else {
             getUndoRedoHistory().end();
         }
+    }
+
+    /** Console (' :') command history, shared by the (recreated) input handlers. */
+    public CommandHistory getCommandHistory() {
+        return commandHistory;
     }
 
     /**
