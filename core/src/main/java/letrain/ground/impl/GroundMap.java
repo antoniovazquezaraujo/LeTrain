@@ -102,6 +102,14 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
                 return value;
             }
         }
+        // Cells are only materialized in rendered blocks; any other read (e.g. track building over
+        // terrain the checkpoint did not serialize) must still return the deterministic terrain this
+        // generator would produce for that coordinate, so a replayed world behaves exactly like the
+        // live one regardless of how much of it was materialized. Falls back to void (-1) when no
+        // generator is available (model not post-load initialized yet).
+        if (noise != null) {
+            return computeTerrainValue(col, row);
+        }
         return -1;
     }
 
@@ -165,67 +173,71 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
             for (int col = 0; col < width; col++) {
                 int colIndex = ((startX) + col);
                 int rowIndex = ((startY) + row);
-
-                // LAYER 0: Base Terrain
-                float baseNoise = noise.smoothNoise((colIndex * 0.01F),
-                        (rowIndex * 0.02F), 0, OCTAVES);
-                float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
-
-                float waterThreshold =
-                        (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
-                float rockThreshold =
-                        (economyManager != null) ? economyManager.getRockThreshold() : 180f;
-
-                if (scaledBase < waterThreshold) {
-                    setValueAt(colIndex, rowIndex, 1);
-                } else if (scaledBase > rockThreshold) {
-                    setValueAt(colIndex, rowIndex, 2);
-                } else {
-                    // GROUND - check for industries
-                    int terrain = 0; // Default Ground
-
-                    float goldThreshold =
-                            (economyManager != null) ? economyManager.getGoldThreshold() : 0.28f;
-                    float coalThreshold =
-                            (economyManager != null) ? economyManager.getCoalThreshold() : 0.28f;
-                    float rubyThreshold =
-                            (economyManager != null) ? economyManager.getRubyThreshold() : 0.28f;
-
-                    // LAYER 1: Gold Industry (z=1)
-                    float woodNoise = noise.smoothNoise((colIndex * 0.01F),
-                            (rowIndex * 0.02F), 1, OCTAVES);
-                    if (woodNoise > goldThreshold) {
-                        terrain = GOLD_MINE;
-                    } else if (woodNoise < -goldThreshold) {
-                        terrain = JEWELRY_STORE;
-                    }
-
-                    // LAYER 2: Coal Industry (z=2) - Only if no gold
-                    if (terrain == 0) {
-                        float coalNoise = noise.smoothNoise((colIndex * 0.01F),
-                                (rowIndex * 0.02F), 2, OCTAVES);
-                        if (coalNoise > coalThreshold) {
-                            terrain = MINE;
-                        } else if (coalNoise < -coalThreshold) {
-                            terrain = POWER_PLANT;
-                        }
-                    }
-
-                    // LAYER 3: Ruby Industry (z=3) - Only if no gold or coal
-                    if (terrain == 0) {
-                        float fishNoise = noise.smoothNoise((colIndex * 0.01F),
-                                (rowIndex * 0.02F), 3, OCTAVES);
-                        if (fishNoise > rubyThreshold) {
-                            terrain = RUBY_MINE;
-                        } else if (fishNoise < -rubyThreshold) {
-                            terrain = RUBY_STORE;
-                        }
-                    }
-
-                    setValueAt(colIndex, rowIndex, terrain);
-                }
+                setValueAt(colIndex, rowIndex, computeTerrainValue(colIndex, rowIndex));
             }
         }
+    }
+
+    /**
+     * The deterministic terrain value for a single coordinate, derived from the generator's noise
+     * and the economy thresholds. Shared by {@link #generateTerrain} (block materialization) and the
+     * {@link #getValueAt} on-demand fallback so both always agree.
+     */
+    int computeTerrainValue(int colIndex, int rowIndex) {
+        // LAYER 0: Base Terrain
+        float baseNoise =
+                noise.smoothNoise((colIndex * 0.01F), (rowIndex * 0.02F), 0, OCTAVES);
+        float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
+
+        float waterThreshold =
+                (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
+        float rockThreshold =
+                (economyManager != null) ? economyManager.getRockThreshold() : 180f;
+
+        if (scaledBase < waterThreshold) {
+            return 1;
+        } else if (scaledBase > rockThreshold) {
+            return 2;
+        }
+        // GROUND - check for industries
+        int terrain = 0; // Default Ground
+
+        float goldThreshold =
+                (economyManager != null) ? economyManager.getGoldThreshold() : 0.28f;
+        float coalThreshold =
+                (economyManager != null) ? economyManager.getCoalThreshold() : 0.28f;
+        float rubyThreshold =
+                (economyManager != null) ? economyManager.getRubyThreshold() : 0.28f;
+
+        // LAYER 1: Gold Industry (z=1)
+        float woodNoise = noise.smoothNoise((colIndex * 0.01F), (rowIndex * 0.02F), 1, OCTAVES);
+        if (woodNoise > goldThreshold) {
+            terrain = GOLD_MINE;
+        } else if (woodNoise < -goldThreshold) {
+            terrain = JEWELRY_STORE;
+        }
+
+        // LAYER 2: Coal Industry (z=2) - Only if no gold
+        if (terrain == 0) {
+            float coalNoise = noise.smoothNoise((colIndex * 0.01F), (rowIndex * 0.02F), 2, OCTAVES);
+            if (coalNoise > coalThreshold) {
+                terrain = MINE;
+            } else if (coalNoise < -coalThreshold) {
+                terrain = POWER_PLANT;
+            }
+        }
+
+        // LAYER 3: Ruby Industry (z=3) - Only if no gold or coal
+        if (terrain == 0) {
+            float fishNoise = noise.smoothNoise((colIndex * 0.01F), (rowIndex * 0.02F), 3, OCTAVES);
+            if (fishNoise > rubyThreshold) {
+                terrain = RUBY_MINE;
+            } else if (fishNoise < -rubyThreshold) {
+                terrain = RUBY_STORE;
+            }
+        }
+
+        return terrain;
     }
 
     public void compactBlocks() {
