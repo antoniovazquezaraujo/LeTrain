@@ -85,6 +85,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     SimulationController simulationController;
     private final GameSaveService gameSaveService;
 
+    /**
+     * Paused-editing undo/redo session (ADR-020 item 3). Created lazily on the first pause toggle;
+     * survives model swaps because it is a field of the presenter, not of the model.
+     */
+    private letrain.command.UndoRedoHistory undoRedoHistory;
+
     private static final int AMBIENT_BASE_CELLS = 80 * 25;
     private static final int AMBIENT_FULL_CELLS = 120 * 40;
 
@@ -106,6 +112,24 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private Locomotive lastCreatedLoco;
+
+    @Override
+    public letrain.command.UndoRedoHistory getUndoRedoHistory() {
+        if (undoRedoHistory == null) {
+            undoRedoHistory = new letrain.command.UndoRedoHistory(new letrain.command.UndoRedoHistory.Codec() {
+                @Override
+                public byte[] toBytes(letrain.mvp.Model m) {
+                    return gameSaveService.toBytes(m);
+                }
+
+                @Override
+                public letrain.mvp.Model fromBytes(byte[] data) {
+                    return gameSaveService.fromBytes(data);
+                }
+            });
+        }
+        return undoRedoHistory;
+    }
 
     private void initModeKeyHandlers() {
         modeKeyHandlers.put(RAILS, keyEvent -> railTrackMaker.onChar(keyEvent));
@@ -163,6 +187,43 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
         // Register this as global listener for all present and future trains
         this.model.addCoreTrainEventListener(this);
+    }
+
+    /**
+     * Atomically swaps the live model for {@code newModel} while keeping the presenter running, and
+     * re-applies transient UI state that serialization drops (pause-editing). Used by the undo/redo
+     * path (ADR-020 item 3); unlike {@link #onLoadGame} it registers the presenter listener exactly
+     * once (via {@link #setModel}).
+     */
+    void applyModel(letrain.mvp.Model newModel) {
+        if (newModel == null) {
+            return;
+        }
+        boolean wasPaused = model.isPauseEditing();
+        // Lightweight swap for paused editing: re-point the audio controller in place (no sample
+        // reload / mixer restart) and rebuild only the cheap simulation controller. The view reads
+        // the model field every frame.
+        this.model = newModel;
+        if (this.audioController == null) {
+            this.audioController = new letrain.audio.AudioController(this.model);
+        } else {
+            this.audioController.retarget(this.model);
+        }
+        // CRITICAL for deterministic undo/redo replay: RailTrackMaker keeps per-model internal state
+        // (oldTrack, oldGroundType, dir, makingTracks...). If we reused the instance built against
+        // the outgoing model, the replay of a recorded command could "continue" from a stale rail
+        // tile of the discarded world and redraw the figure misplaced / truncated. Recreate it bound
+        // to the restored model, exactly as GraphicPresenter.applyLoadedModel does on a load.
+        this.railTrackMaker = new RailTrackMaker(this);
+        this.simulationController =
+                new SimulationController(this.model, audioController, railTrackMaker);
+        this.model.addCoreTrainEventListener(this);
+        this.model.setPauseEditing(wasPaused);
+        letrain.map.Point focus = getActiveFocusPoint();
+        if (focus != null) {
+            view.centerOn(focus.getX(), focus.getY());
+        }
+        this.model.updateGroundMap(view.getScrollOffset(), view.getCols(), view.getRows());
     }
 
     private boolean stopped = false;
@@ -273,18 +334,135 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void executeCommand(String cmd) {
         log.info("Execute command: " + cmd);
+        // Capture the cursor BEFORE executing so the journaled copy is self-positioned and the
+        // replay (undo) is deterministic regardless of any (unrecorded) keyboard navigation.
+        String prefix = cursorPrefix();
         String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                 file -> onSaveGame(file), file -> onLoadGame(file),
                 new letrain.command.TurtleBuilder(model, railTrackMaker),
-                (title, msg) -> view.showMessage(title, msg), () -> onExitGame());
+                (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
+                steps -> undo(steps), steps -> redo(steps));
 
         if (error != null) {
             model.setCommandError(error);
             return;
         }
+        // Auto-capture in pause (ADR-020): while pause-editing freezes the world, every successful
+        // editing command is journaled for undo/redo.
+        letrain.command.UndoRedoHistory history = getUndoRedoHistory();
+        if (model.isSimulationPaused() && !isNonRecordableCommand(cmd)) {
+            history.record(prefix + cmd);
+        }
         model.setMode(letrain.mvp.Model.GameMode.RAILS);
         model.setCommandText("");
         model.setCommandError("");
+        view.centerOn(model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY());
+    }
+
+    /** Console commands that must never enter the undo history (control / navigation / info). */
+    private static boolean isNonRecordableCommand(String cmd) {
+        String t = cmd.trim().toLowerCase();
+        return t.startsWith("record ") || t.startsWith("record;") || t.equals("record")
+                || t.startsWith("journal") || t.startsWith("undo") || t.startsWith("redo")
+                || t.startsWith("ls ") || t.equals("ls")
+                || t.startsWith("info ") || t.startsWith("save") || t.startsWith("load")
+                || t.startsWith("quit") || t.equals("q") || t.startsWith("q!")
+                || t.startsWith("wq") || t.startsWith("help")
+                || t.startsWith("go ") || t.startsWith("face ") || t.startsWith("move ")
+                || t.startsWith("mark ") || t.startsWith("m ");
+    }
+
+    /** Absolute cursor prefix: {@code "go x,y; face d; "} from the current cursor state. */
+    private String cursorPrefix() {
+        letrain.map.Point pos = model.getCursor().getPosition();
+        return "go " + pos.getX() + "," + pos.getY() + "; face "
+                + model.getCursor().getDir().name().toLowerCase() + "; ";
+    }
+
+    /** Undoes {@code steps} editing commands (ADR-020 item 3). */
+    public void undo(int steps) {
+        if (!model.isSimulationPaused()) {
+            view.setStatusBarText("Undo needs paused editing (x)");
+            return;
+        }
+        letrain.command.UndoRedoHistory history = getUndoRedoHistory();
+        letrain.command.UndoRedoHistory.UndoPlan plan = history.planUndo(steps);
+        if (plan == null) {
+            view.setStatusBarText("Nothing to undo");
+            return;
+        }
+        applyPlan(history, plan, true);
+    }
+
+    /** Redoes {@code steps} editing commands (ADR-020 item 3). */
+    public void redo(int steps) {
+        if (!model.isSimulationPaused()) {
+            view.setStatusBarText("Redo needs paused editing (x)");
+            return;
+        }
+        letrain.command.UndoRedoHistory history = getUndoRedoHistory();
+        letrain.command.UndoRedoHistory.UndoPlan plan = history.planRedo(steps);
+        if (plan == null) {
+            view.setStatusBarText("Nothing to redo");
+            return;
+        }
+        applyPlan(history, plan, false);
+    }
+
+    /**
+     * Applies an undo/redo plan: restore the checkpoint base (undo) via {@link #applyModel}, then
+     * re-execute the recorded command slice on the restored world through the same console path.
+     * On a replay error the applied counter is only advanced to the last command that actually
+     * succeeded, so the history never claims commands were applied when they were not (a desync here
+     * makes the next redo incomplete).
+     */
+    private void applyPlan(letrain.command.UndoRedoHistory history,
+            letrain.command.UndoRedoHistory.UndoPlan plan, boolean restoring) {
+        log.info("[undoredo] {} from={} to={} target={} appliedBefore={} size={}",
+                restoring ? "UNDO" : "REDO", plan.fromIndex(), plan.toIndex(), plan.target(),
+                history.applied(), history.size());
+        if (restoring) {
+            letrain.mvp.Model restored = history.restore(plan);
+            if (restored == null) {
+                view.setStatusBarText("Undo failed: could not restore checkpoint");
+                return;
+            }
+            applyModel(restored);
+            history.bind(model);
+        }
+        // Re-seed the fresh maker so a slice that begins mid-gesture can continue the rail it
+        // would have chained from before the slice. The maker's chaining state (oldTrack) is
+        // transient UI state that a checkpoint restore loses: without it the first replayed piece
+        // starts disconnected (or with the wrong entry direction) and the undo breaks rails that
+        // should survive. See UndoRedoHistory.resumeFrom / RailTrackMaker.resumeChainFrom.
+        letrain.map.Point resumeOrigin = history.resumeFrom(plan.fromIndex());
+        if (resumeOrigin != null) {
+            letrain.track.Track predecessor =
+                    model.getRailMap().getTrackAt(resumeOrigin.getX(), resumeOrigin.getY());
+            if (predecessor != null) {
+                railTrackMaker.resumeChainFrom(predecessor);
+            }
+        }
+        int replayedTo = plan.fromIndex();
+        int count = 0;
+        for (String cmd : plan.commandsToReplay(history.entries())) {
+            String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                    file -> onSaveGame(file), file -> onLoadGame(file),
+                    new letrain.command.TurtleBuilder(model, railTrackMaker),
+                    (title, msg) -> view.showMessage(title, msg), () -> onExitGame());
+            if (error != null) {
+                log.error("Undo/redo replay failed on '{}': {}", cmd, error);
+                view.setStatusBarText("Replay error: " + error);
+                break;
+            }
+            replayedTo++;
+            count++;
+        }
+        log.info("[undoredo] replayed={} replayedTo={} committing", count, replayedTo);
+        // Commit only up to the last command that really applied, so the history stays in sync with
+        // the live world (never claim commands were applied when a replay broke half-way).
+        history.commit(replayedTo);
+        view.setStatusBarText((restoring ? "Undid" : "Redid") + " " + plan.toIndex() + " steps");
         view.centerOn(model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY());
     }
 
@@ -378,6 +556,21 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return; // Ignore other keys in COMMAND mode
         }
 
+        if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null) {
+            Character c = keyEvent.getCharacter();
+            // Ctrl+R -> redo paused editing (ADR-020 item 3). Lanterna may deliver the control code
+            // 0x12 (18) with or without the ctrl flag, or the letter 'r'/'R' with the ctrl flag —
+            // mirroring the Ctrl+P/Ctrl+N handling in COMMAND mode. A plain 'r' is NOT redo (it
+            // switches to RAILS via the mode hotkeys below).
+            // (Ctrl+Z is NOT used because in a terminal it suspends the task via SIGTSTP.)
+            boolean ctrlR = c == 18
+                    || (keyEvent.isCtrlDown() && (c == 'r' || c == 'R'));
+            if (ctrlR) {
+                redo(1);
+                return;
+            }
+        }
+
         if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null && keyEvent.getCharacter() == '.') {
             if (model.getMode() != letrain.mvp.Model.GameMode.COMMAND && !commandHistory.isEmpty()) {
                 String cmd = commandHistory.get(commandHistory.size() - 1);
@@ -454,6 +647,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         model.setPauseEditing(paused);
         view.setStatusBarText(paused ? "Paused editing: ON (world freezes in edit modes; instant build)"
                 : "Paused editing: OFF");
+        if (paused) {
+            // Start a fresh undo/redo session snapshotting the world as it is now.
+            getUndoRedoHistory().begin(model);
+        } else {
+            // Leaving pause invalidates the journal (world runs again), so drop the session.
+            getUndoRedoHistory().end();
+        }
     }
 
     private boolean handleModeHotkey(InputEvent keyEvent) {
@@ -532,6 +732,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 return false;
             case 'u':
+                // While pause-editing is on (undo history active), 'u' = undo (vim-like). Ctrl+Z
+                // cannot be used because in a terminal it suspends the task (SIGTSTP).
+                if (model.isSimulationPaused()) {
+                    undo(1);
+                    return true;
+                }
                 if (model.canEnterUnlinkMode()) {
                     model.setMode(UNLINK);
                     if (model.getSelectedLocomotive() != null

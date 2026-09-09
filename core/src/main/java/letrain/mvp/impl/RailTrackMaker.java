@@ -38,6 +38,76 @@ public class RailTrackMaker {
     Point lastCursorPosition = null;
     Integer oldGroundType = null;
     int trackConstructionTimeCounter = 0;
+
+    /**
+     * True while a console turtle sequence (write/move/del via {@code TurtleBuilder}) is running.
+     * Console lines are already recorded whole by the presenter funnel, so per-tile keyboard
+     * recording must be suppressed while the console drives this maker.
+     */
+    private boolean journalSuppressed = false;
+
+    /** Toggled by the console turtle builder around its sequences. */
+    public void setJournalSuppressed(boolean suppressed) {
+        this.journalSuppressed = suppressed;
+    }
+
+    /**
+     * Records a keyboard edit as a canonical, self-positioned DSL command (ADR-020 item 3). Only
+     * fires while pause-editing is on (undo history active) and the edit is keyboard-driven, not a
+     * console turtle sequence. The action is prefixed with the absolute cursor position and facing
+     * captured at the moment of the mutation, so a replay is deterministic.
+     */
+    private void journalKeyboardEdit(Point position, Dir dir, String action) {
+        journalKeyboardEdit(position, dir, action, null);
+    }
+
+    /**
+     * Like {@link #journalKeyboardEdit(Point, Dir, String)}, but also records the {@code resumeFrom}
+     * origin when the placed piece continued the previous rail (chaining). Without it, a slice
+     * replayed after a checkpoint restore would start the fresh maker with no {@code oldTrack} and
+     * lay that piece disconnected/wrong.
+     */
+    private void journalKeyboardEdit(Point position, Dir dir, String action, Point resumeFrom) {
+        if (journalSuppressed || presenter == null) {
+            return;
+        }
+        letrain.mvp.Model model = presenter.getModel();
+        if (model == null || !model.isSimulationPaused()) {
+            return;
+        }
+        letrain.command.UndoRedoHistory history = presenter.getUndoRedoHistory();
+        if (history == null) {
+            return;
+        }
+        history.record("go " + position.getX() + "," + position.getY() + "; face "
+                + dir.name().toLowerCase() + "; " + action + ";", resumeFrom);
+    }
+
+    /**
+     * The position of the rail piece this maker's last successful build left {@code oldTrack}
+     * pointing at, when it is adjacent to {@code cell} (i.e. the next piece would chain from it).
+     * Null when the build started a disconnected piece.
+     */
+    private Point resumeOriginAdjacentTo(Point cell) {
+        if (oldTrack == null || oldTrack.getPosition() == null) {
+            return null;
+        }
+        return Point.distance(oldTrack.getPosition(), cell) <= 1.5
+                ? new Point(oldTrack.getPosition())
+                : null;
+    }
+
+    /**
+     * Re-seeds this maker so the next build continues the rail {@code predecessor} instead of
+     * starting a disconnected piece. Used by the undo/redo slice replay right after a checkpoint
+     * restore, when the maker was recreated fresh and its transient chaining state was lost. {@code
+     * reset()} (run by the turtle builder before each sequence) recomputes the actual resume
+     * direction/ground from this track and the cursor.
+     */
+    public void resumeChainFrom(Track predecessor) {
+        this.oldTrack = predecessor;
+    }
+
     public void startTrackConstruction(TrackType type) {
         if (type == null) {
             this.trackConstructionTimeCounter = 0;
@@ -234,12 +304,14 @@ public class RailTrackMaker {
             letrain.track.TrackComponent component = track.getComponent();
             if (component instanceof letrain.track.SpeedSignal) {
                 presenter.getModel().removeSensor((letrain.track.SpeedSignal) component);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "del sg");
             } else if (component == null) {
                 letrain.track.SpeedSignal speedSignal =
                         new letrain.track.SpeedSignal(presenter.getModel().nextSpeedSignalId(),
                                 presenter.getModel().getCursor().getDir(), 3, true);
                 speedSignal.setTrack(track);
                 presenter.getModel().addSensor(speedSignal);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "new sg");
             }
         }
     }
@@ -255,12 +327,14 @@ public class RailTrackMaker {
                     && !(component instanceof letrain.track.SpeedSignal)
                     && !(component instanceof RailSemaphore)) {
                 presenter.getModel().removeSensor((letrain.track.Sensor) component);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "del sn");
             } else if (component == null) {
                 Sensor sensor = new Sensor(presenter.getModel().nextSensorId());
                 sensor.setTrack(track);
                 sensor.setCreationDir(presenter.getModel().getCursor().getDir());
                 presenter.getModel().addSensor(sensor);
                 track.setComponent(sensor);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "new sn");
             }
         }
     }
@@ -273,12 +347,14 @@ public class RailTrackMaker {
             letrain.track.TrackComponent component = track.getComponent();
             if (component instanceof RailSemaphore) {
                 presenter.getModel().removeSemaphore((RailSemaphore) component);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "del sm");
             } else if (component == null) {
                 RailSemaphore semaphore =
                         new RailSemaphore(presenter.getModel().nextSemaphoreId());
                 semaphore.setCreationDir(presenter.getModel().getCursor().getDir());
                 semaphore.setTrack(track);
                 presenter.getModel().addSemaphore(semaphore);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "new sm");
             }
         }
     }
@@ -291,6 +367,7 @@ public class RailTrackMaker {
             letrain.track.TrackComponent component = track.getComponent();
             if (component instanceof Station) {
                 presenter.getModel().removeStation((Station) component);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "del st");
             } else if (component == null) {
                 // Allow building on industry (removed the block)
                 Integer terrainAtPos = presenter.getModel().getGroundMap().getValueAt(position);
@@ -310,6 +387,7 @@ public class RailTrackMaker {
 
                 presenter.getModel().addStation(station);
                 track.setComponent(station);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "new st");
             }
         }
     }
@@ -365,6 +443,9 @@ public class RailTrackMaker {
                 return;
             }
             presenter.getModel().removeTrack(position);
+            // Keyboard erase of one tile, journaled as a canonical self-positioned delete.
+            journalKeyboardEdit(new Point(position), presenter.getModel().getCursor().getDir(),
+                    "del 1");
         }
 
         if (moveCursor) {
@@ -629,6 +710,14 @@ public class RailTrackMaker {
             track.connect(oldDir, oldTrack);
             // conectamos a oldTrack con track, en la inversa
             oldTrack.connect(oldDir.inverse(), track);
+        }
+
+        // Keyboard build of one tile, journaled as a canonical self-positioned write. Reverse
+        // building is not expressible as a plain "write 1" so it is skipped (rare in the UI).
+        if (!reversed) {
+            journalKeyboardEdit(new Point(actualCursorPosition),
+                    presenter.getModel().getCursor().getDir(), "write 1",
+                    resumeOriginAdjacentTo(actualCursorPosition));
         }
 
         Point newPos = new Point(actualCursorPosition);

@@ -18,8 +18,20 @@ playerStatement : statement
                 | infoCommand SEMI
                 | setNameCommand SEMI
                 | slideCommand SEMI
+                | recordCommand SEMI
+                | journalCommand SEMI
+                | undoCommand SEMI
+                | redoCommand SEMI
                 | quitCommand SEMI
                 ;
+
+recordCommand : RECORD (ON | OFF)? ;
+
+journalCommand : JOURNAL ;
+
+undoCommand : UNDO (NUMBER)? ;
+
+redoCommand : REDO (NUMBER)? ;
 
 goCmdToken : GO | G ;
 

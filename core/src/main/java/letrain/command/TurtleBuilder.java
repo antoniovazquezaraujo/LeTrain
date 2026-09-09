@@ -71,6 +71,7 @@ public class TurtleBuilder implements TurtleDelegate {
 
     @Override
     public void startSequence() {
+        trackMaker.setJournalSuppressed(true);
         trackMaker.reset();
         trackMaker.makingTracks = false;
     }
@@ -103,5 +104,6 @@ public class TurtleBuilder implements TurtleDelegate {
     @Override
     public void endSequence() {
         trackMaker.makingTracks = false;
+        trackMaker.setJournalSuppressed(false);
     }
 }

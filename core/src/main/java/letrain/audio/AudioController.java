@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class AudioController {
     private static final Logger log = LoggerFactory.getLogger(AudioController.class);
-    private final Model model;
+    private Model model;
     private final Map<Integer, TrainSynthesizer> synthesizers = new HashMap<>();
     private final AudioMixer mixer;
     private boolean enabled = true;
@@ -99,8 +99,7 @@ public class AudioController {
         }
     }
 
-    public void setJackhammerActive(boolean active, float x, float y) {
-        if (!enabled) {
+    public void setJackhammerActive(boolean active, float x, float y) {        if (!enabled) {
             return;
         }
         if (active) {
@@ -390,5 +389,21 @@ public class AudioController {
             synth.stopAudio();
         }
         synthesizers.clear();
+    }
+
+    /**
+     * Re-points this controller to a new live model without reloading samples or restarting the
+     * mixer (used by paused-editing undo swaps, ADR-020). During an undo the world is frozen and the
+     * restored model is deterministic, so existing locomotive synthesizers are <b>kept alive</b>:
+     * their internal sound state (throttle, motion, position) is unchanged while muted, and on the
+     * next {@link #update()} they are reconciled against the new model — synthesizers whose
+     * locomotive no longer exists are removed (step 1), the rest resume seamlessly. This preserves
+     * the "engine keeps running" feel across an undo/unpause instead of restarting from idle.
+     */
+    public void retarget(Model newModel) {
+        if (newModel == null || newModel == this.model) {
+            return;
+        }
+        this.model = newModel;
     }
 }
