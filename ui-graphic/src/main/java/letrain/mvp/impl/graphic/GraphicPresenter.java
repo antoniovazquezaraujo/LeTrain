@@ -804,6 +804,10 @@ public class GraphicPresenter extends ApplicationAdapter
         }
         log.info("[undoredo] replayed={} replayedTo={} committing", count, replayedTo);
         history.commit(replayedTo);
+        // TEMP DEBUG: summary after the plan, to correlate with what the user sees.
+        log.info("[undoredo] after: applied={} size={} cursor={} {}",
+                history.applied(), history.size(), model.getCursor().getPosition(),
+                model.getCursor().getDir());
         cameraController.forceSnap();
     }
 
