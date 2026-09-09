@@ -449,9 +449,21 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         view.flashCameraDeadzone();
     }
 
+    private void togglePauseEditing() {
+        boolean paused = !model.isPauseEditing();
+        model.setPauseEditing(paused);
+        view.setStatusBarText(paused ? "Paused editing: ON (world freezes in edit modes; instant build)"
+                : "Paused editing: OFF");
+    }
+
     private boolean handleModeHotkey(InputEvent keyEvent) {
         if (keyEvent.getKeyType() != KeyType.Character || keyEvent.getCharacter() == ' ') {
             return false;
+        }
+
+        if (keyEvent.getCharacter() == 'x' && !keyEvent.isCtrlDown() && !keyEvent.isAltDown()) {
+            togglePauseEditing();
+            return true;
         }
 
         if (model.getMode() == letrain.mvp.Model.GameMode.ADD) {

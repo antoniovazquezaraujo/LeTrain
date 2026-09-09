@@ -77,6 +77,18 @@ public class TrainSynthesizer implements AudioSource {
     private float baseLocoVolume = 1.0f;
     private float baseCoachVolume = 1.0f;
 
+    /**
+     * Master gain applied to the final mixed buffer of every engine. Volatile because it is written
+     * from the game/render thread (pause mute) and read from the audio mixer thread. Set to 0 to
+     * silence the whole synthesizer reversibly (paused editing); back to 1 to resume.
+     */
+    private volatile float masterVolume = 1.0f;
+
+    /** Mutes/unmutes the whole synthesizer via {@link #masterVolume}. */
+    public void setMasterVolume(float masterVolume) {
+        this.masterVolume = Math.max(0f, Math.min(1f, masterVolume));
+    }
+
     // --- Segmentos (en segundos, de las labels) ---
     private double startSegStart = 0, startSegEnd = 0;
     private double stopSegStart = 0, stopSegEnd = 0;
@@ -352,6 +364,11 @@ public class TrainSynthesizer implements AudioSource {
         updateLoadVolume();
         if (loadEngine != null) {
             loadEngine.read(buffer);
+        }
+        if (masterVolume != 1f) {
+            for (int i = 0; i < buffer.length; i++) {
+                buffer[i] *= masterVolume;
+            }
         }
         return true;
     }

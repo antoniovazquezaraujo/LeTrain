@@ -160,6 +160,10 @@ public class AudioController {
             return;
         }
 
+        // Paused editing (ADR-020): mute the continuous world sounds (locomotive synthesizers and
+        // ambience) while keeping their sources alive so they resume seamlessly when unpaused.
+        boolean worldPaused = model.isSimulationPaused();
+
         // 1. Remove synthesizers for destroyed locomotives
         Iterator<Map.Entry<Integer, TrainSynthesizer>> it = synthesizers.entrySet().iterator();
         while (it.hasNext()) {
@@ -192,8 +196,8 @@ public class AudioController {
 
             TrainSynthesizer synth = synthesizers.get(loco.getId());
             if (synth == null) {
-                // Solo crear el synth si el motor está encendido
-                if (!loco.isEngineOn()) {
+                // Solo crear el synth si el motor está encendido (y el mundo no está pausado)
+                if (!loco.isEngineOn() || worldPaused) {
                     continue;
                 }
                 synth = new TrainSynthesizer();
@@ -221,6 +225,13 @@ public class AudioController {
                 // Add to mixer
                 mixer.addSource(synth);
                 synthesizers.put(loco.getId(), synth);
+            }
+
+            // Paused editing (ADR-020): silence the whole synthesizer (loco, wagons, brakes, load)
+            // via its master gain and keep its internal state frozen so it resumes seamlessly.
+            synth.setMasterVolume(worldPaused ? 0f : 1f);
+            if (worldPaused) {
+                continue;
             }
 
             synth.update();
@@ -296,8 +307,17 @@ public class AudioController {
             return;
         }
 
+        // Paused editing: silence the world ambience (birds/wind) while keeping sources alive.
+        boolean worldPaused = model.isSimulationPaused();
+
         float targetBirdsVol = isTopDown ? 0.25f * (1f - zoomFactor) : 0.3f + zoomFactor * 0.5f;
         float targetWindVol = isTopDown ? 0.1f + zoomFactor * 0.3f : 0.0f;
+
+        // Paused editing: silence the world ambience (birds/wind) while keeping sources alive.
+        if (worldPaused) {
+            targetBirdsVol = 0f;
+            targetWindVol = 0f;
+        }
 
         // Birds
         if (targetBirdsVol > 0.01f) {

@@ -43,7 +43,15 @@ public class RailTrackMaker {
             this.trackConstructionTimeCounter = 0;
             return;
         }
-        this.trackConstructionTimeCounter = presenter.getModel().getEconomyManager().getConstructionDelay(type);
+        if (presenter == null) {
+            this.trackConstructionTimeCounter = 0;
+            return;
+        }
+        // Paused editing (ADR-020): construction is instantaneous, so bridges/tunnels skip their
+        // construction delay.
+        boolean paused = presenter.getModel().isSimulationPaused();
+        this.trackConstructionTimeCounter = paused ? 0
+                : presenter.getModel().getEconomyManager().getConstructionDelay(type);
     }
 
     public boolean isTrackConstructionFinished() {

@@ -319,6 +319,12 @@ public class Gdx3DInputHandler implements InputProcessor {
             return; // Ignore other keys in COMMAND mode
         }
 
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null && stroke.getCharacter() == 'x'
+                && !stroke.isCtrlDown() && !stroke.isAltDown()) {
+            togglePauseEditing();
+            return;
+        }
+
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null && stroke.getCharacter() == ':') {
             if (model.getMode() != Model.GameMode.PROGRAM) {
                 model.setMode(Model.GameMode.COMMAND);
@@ -491,6 +497,13 @@ public class Gdx3DInputHandler implements InputProcessor {
             default:
                 break;
         }
+    }
+
+    private void togglePauseEditing() {
+        boolean paused = !model.isPauseEditing();
+        model.setPauseEditing(paused);
+        view.setStatusBarText(paused ? "Paused editing: ON (world freezes in edit modes; instant build)"
+                : "Paused editing: OFF");
     }
 
     public void onKeyUp(InputEvent stroke) {
