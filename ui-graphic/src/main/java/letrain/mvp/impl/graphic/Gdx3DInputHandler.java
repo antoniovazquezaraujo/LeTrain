@@ -365,8 +365,6 @@ public class Gdx3DInputHandler implements InputProcessor {
                 && model.getMode() != Model.GameMode.PROGRAM) {
             String last = view.getCommandHistory().last();
             if (last != null) {
-                // TEMP DEBUG
-                log.info("[undoJournal] '.' repeat about to run last command: '{}'", last);
                 executeConsoleCommand(last);
             }
             return;
@@ -595,13 +593,6 @@ public class Gdx3DInputHandler implements InputProcessor {
         letrain.command.UndoRedoHistory history = view.getUndoRedoHistory();
         if (history != null && current.isSimulationPaused() && !isNonRecordableCommand(cmd)) {
             history.record(prefix + cmd);
-            // TEMP DEBUG: trace what the paused-editing journal captures (undo/redo diagnosis).
-            log.info("[undoJournal] recorded #{}: '{}' (history size={}, applied={})",
-                    history.size(), prefix + cmd, history.size(), history.applied());
-        } else {
-            // TEMP DEBUG
-            log.info("[undoJournal] NOT recorded: '{}' (paused={}, history={}, cmd={})", cmd,
-                    current.isSimulationPaused(), history != null, cmd);
         }
         current.setMode(Model.GameMode.RAILS);
         current.setCommandText("");
