@@ -95,6 +95,12 @@ public class GraphicPresenter extends ApplicationAdapter
     // Persistence
     private final GameSaveService gameSaveService;
 
+    /**
+     * Paused-editing undo/redo session (ADR-020 item 3). Created lazily on the first pause toggle;
+     * survives model swaps because it is a field of the presenter, not of the model.
+     */
+    private letrain.command.UndoRedoHistory undoRedoHistory;
+
     private CameraController cameraController;
     private Gdx3DInputHandler inputHandler;
 
@@ -384,6 +390,86 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     @Override
+    public letrain.command.UndoRedoHistory getUndoRedoHistory() {
+        if (undoRedoHistory == null) {
+            undoRedoHistory =
+                    new letrain.command.UndoRedoHistory(new letrain.command.UndoRedoHistory.Codec() {
+                        @Override
+                        public byte[] toBytes(letrain.mvp.Model m) {
+                            return gameSaveService.toBytes(m);
+                        }
+
+                        @Override
+                        public letrain.mvp.Model fromBytes(byte[] data) {
+                            return gameSaveService.fromBytes(data);
+                        }
+                    });
+        }
+        return undoRedoHistory;
+    }
+
+    /**
+     * Starts/clears the paused-editing undo/redo session when the editing pause is toggled (called
+     * by the input handler on {@code x}), mirroring TerminalPresenter.togglePauseEditing.
+     */
+    public void onPauseEditingChanged(boolean paused) {
+        if (paused) {
+            getUndoRedoHistory().begin(model);
+        } else {
+            getUndoRedoHistory().end();
+        }
+    }
+
+    /**
+     * Atomically swaps the live model for {@code newModel} while keeping the presenter running, in
+     * a lightweight way: audio is re-pointed in place (no sample reload / mixer restart), the
+     * renderer/resources/camera pose are kept and the HUD + input handler are recreated against the
+     * new model. Used by the undo/redo path (ADR-020 item 3). Unlike {@link #applyLoadedModel} it
+     * does not reset the camera nor reload audio, so an undo is seamless (the frozen world looks
+     * identical).
+     */
+    void applyModel(letrain.mvp.Model newModel) {
+        if (newModel == null) {
+            return;
+        }
+        boolean wasPaused = model.isPauseEditing();
+        this.model = newModel;
+        if (audioController == null) {
+            this.audioController = new letrain.audio.AudioController(newModel);
+        } else {
+            this.audioController.retarget(newModel);
+        }
+        // CRITICAL for deterministic undo/redo replay: RailTrackMaker keeps per-model internal state
+        // (oldTrack, oldGroundType, dir, makingTracks...), so recreate it bound to the restored
+        // model exactly as applyLoadedModel does on a load.
+        this.trackMaker = new RailTrackMaker(this);
+        this.cameraController.rebind(newModel);
+        this.inputHandler = new Gdx3DInputHandler(newModel, this, cameraController, trackMaker,
+                audioController);
+        this.simulationController = new SimulationController(newModel, audioController, trackMaker);
+        // The HUD keeps a direct reference to the model, so rebuild it against the restored one.
+        if (hud != null) {
+            hud.dispose();
+        }
+        this.hud = new Gdx3DHud(newModel, this);
+        com.badlogic.gdx.InputMultiplexer multiplexer =
+                Gdx.input.getInputProcessor() instanceof com.badlogic.gdx.InputMultiplexer
+                        ? (com.badlogic.gdx.InputMultiplexer) Gdx.input.getInputProcessor()
+                        : null;
+        if (multiplexer != null) {
+            multiplexer.getProcessors().clear();
+            multiplexer.addProcessor(hud.getStage());
+            multiplexer.addProcessor(inputHandler);
+        }
+        newModel.addCoreTrainEventListener(this);
+        newModel.setPauseEditing(wasPaused);
+        letrain.map.Point startPos = newModel.getCursor().getPosition();
+        newModel.getGroundMap().renderBlock(startPos.getX() - getCols() / 2,
+                startPos.getY() - getRows() / 2, getCols(), getRows());
+        cameraController.forceSnap();
+    }
+
+    @Override
     public void onMapPageChanged(letrain.map.Point pos, int cols, int rows) {}
 
     @Override
@@ -630,6 +716,84 @@ public class GraphicPresenter extends ApplicationAdapter
             showMessage("Load Error",
                     "A critical error occurred while applying loaded game state.");
         }
+    }
+
+    /** Undoes {@code steps} editing commands (ADR-020 item 3). */
+    public void undo(int steps) {
+        if (!model.isSimulationPaused()) {
+            log.info("Undo needs paused editing (x)");
+            return;
+        }
+        letrain.command.UndoRedoHistory history = getUndoRedoHistory();
+        letrain.command.UndoRedoHistory.UndoPlan plan = history.planUndo(steps);
+        if (plan == null) {
+            log.info("Nothing to undo");
+            return;
+        }
+        applyPlan(history, plan, true);
+    }
+
+    /** Redoes {@code steps} editing commands (ADR-020 item 3). */
+    public void redo(int steps) {
+        if (!model.isSimulationPaused()) {
+            log.info("Redo needs paused editing (x)");
+            return;
+        }
+        letrain.command.UndoRedoHistory history = getUndoRedoHistory();
+        letrain.command.UndoRedoHistory.UndoPlan plan = history.planRedo(steps);
+        if (plan == null) {
+            log.info("Nothing to redo");
+            return;
+        }
+        applyPlan(history, plan, false);
+    }
+
+    /**
+     * Applies an undo/redo plan: restore the checkpoint base (undo) via {@link #applyModel}, then
+     * re-execute the recorded command slice on the restored world through the console path. Mirrors
+     * TerminalPresenter.applyPlan; before replaying it re-seeds the fresh maker from the recorded
+     * resume origin so a slice starting mid-gesture keeps the rail connected.
+     */
+    private void applyPlan(letrain.command.UndoRedoHistory history,
+            letrain.command.UndoRedoHistory.UndoPlan plan, boolean restoring) {
+        log.info("[undoredo] {} from={} to={} target={} appliedBefore={} size={}",
+                restoring ? "UNDO" : "REDO", plan.fromIndex(), plan.toIndex(), plan.target(),
+                history.applied(), history.size());
+        if (restoring) {
+            letrain.mvp.Model restored = history.restore(plan);
+            if (restored == null) {
+                showMessage("Undo", "Undo failed: could not restore checkpoint");
+                return;
+            }
+            applyModel(restored);
+            history.bind(model);
+        }
+        letrain.map.Point resumeOrigin = history.resumeFrom(plan.fromIndex());
+        if (resumeOrigin != null) {
+            letrain.track.Track predecessor =
+                    model.getRailMap().getTrackAt(resumeOrigin.getX(), resumeOrigin.getY());
+            if (predecessor != null) {
+                trackMaker.resumeChainFrom(predecessor);
+            }
+        }
+        int replayedTo = plan.fromIndex();
+        int count = 0;
+        for (String cmd : plan.commandsToReplay(history.entries())) {
+            String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                    file -> onSaveGame(file), file -> onLoadGame(file),
+                    new letrain.command.TurtleBuilder(model, trackMaker),
+                    (title, msg) -> showMessage(title, msg), () -> onExitGame());
+            if (error != null) {
+                log.error("Undo/redo replay failed on '{}': {}", cmd, error);
+                showMessage("Undo/Redo", "Replay error: " + error);
+                break;
+            }
+            replayedTo++;
+            count++;
+        }
+        log.info("[undoredo] replayed={} replayedTo={} committing", count, replayedTo);
+        history.commit(replayedTo);
+        cameraController.forceSnap();
     }
 
     @Override
