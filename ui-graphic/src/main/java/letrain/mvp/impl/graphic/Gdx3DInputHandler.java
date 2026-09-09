@@ -54,6 +54,11 @@ public class Gdx3DInputHandler implements InputProcessor {
     private long locomotiveInputTimeout = 0;
     private Locomotive lastCreatedLoco = null;
 
+    // Console command history (':' mode), mirroring the terminal presenter: ArrowUp/Down (or
+    // Ctrl+P/Ctrl+N) navigate it and '.' outside COMMAND repeats the last command.
+    private final java.util.List<String> commandHistory = new java.util.ArrayList<>();
+    private int historyIndex = -1;
+
     public Gdx3DInputHandler(Model model, GraphicPresenter view, CameraController cameraController,
             RailTrackMaker trackMaker, AudioController audioController) {
         this.model = model;
@@ -297,6 +302,18 @@ public class Gdx3DInputHandler implements InputProcessor {
                 model.setCommandError("");
                 return;
             } else if (stroke.getKeyType() == KeyType.Enter) {
+                String cmd = model.getCommandText().trim();
+                if (cmd.isEmpty()) {
+                    model.setMode(Model.GameMode.RAILS);
+                    model.setCommandText("");
+                    model.setCommandError("");
+                    return;
+                }
+                if (commandHistory.isEmpty()
+                        || !commandHistory.get(commandHistory.size() - 1).equals(cmd)) {
+                    commandHistory.add(cmd);
+                }
+                historyIndex = commandHistory.size();
                 executeConsoleCommand(model.getCommandText());
                 return;
             } else if (stroke.getKeyType() == KeyType.Backspace) {
@@ -309,12 +326,60 @@ public class Gdx3DInputHandler implements InputProcessor {
             } else if (stroke.getKeyType() == KeyType.Character) {
                 Character c = stroke.getCharacter();
                 if (c != null) {
-                    model.setCommandText(model.getCommandText() + c);
+                    if (stroke.isCtrlDown() && (c == 'p' || c == 'P' || c == 16)) {
+                        if (historyIndex > 0) {
+                            historyIndex--;
+                            model.setCommandText(commandHistory.get(historyIndex));
+                            model.setCommandError("");
+                        }
+                        return;
+                    } else if (stroke.isCtrlDown() && (c == 'n' || c == 'N' || c == 14)) {
+                        if (historyIndex < commandHistory.size() - 1) {
+                            historyIndex++;
+                            model.setCommandText(commandHistory.get(historyIndex));
+                            model.setCommandError("");
+                        } else if (historyIndex == commandHistory.size() - 1) {
+                            historyIndex++;
+                            model.setCommandText("");
+                            model.setCommandError("");
+                        }
+                        return;
+                    } else if (!stroke.isCtrlDown() && !stroke.isAltDown()) {
+                        model.setCommandText(model.getCommandText() + c);
+                        model.setCommandError("");
+                    }
+                }
+                return;
+            } else if (stroke.getKeyType() == KeyType.ArrowUp) {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    model.setCommandText(commandHistory.get(historyIndex));
+                    model.setCommandError("");
+                }
+                return;
+            } else if (stroke.getKeyType() == KeyType.ArrowDown) {
+                if (historyIndex < commandHistory.size() - 1) {
+                    historyIndex++;
+                    model.setCommandText(commandHistory.get(historyIndex));
+                    model.setCommandError("");
+                } else if (historyIndex == commandHistory.size() - 1) {
+                    historyIndex++;
+                    model.setCommandText("");
                     model.setCommandError("");
                 }
                 return;
             }
             return; // Ignore other keys in COMMAND mode
+        }
+
+        // '.' -> repeat the last console command (only outside COMMAND/PROGRAM to avoid stealing
+        // a literal '.' typed while editing a program).
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
+                && stroke.getCharacter() == '.'
+                && model.getMode() != Model.GameMode.PROGRAM
+                && !commandHistory.isEmpty()) {
+            executeConsoleCommand(commandHistory.get(commandHistory.size() - 1));
+            return;
         }
 
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null && stroke.getCharacter() == 'x'
@@ -328,6 +393,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 model.setMode(Model.GameMode.COMMAND);
                 model.setCommandText("");
                 model.setCommandError("");
+                historyIndex = commandHistory.size();
                 return;
             }
         }
