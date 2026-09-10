@@ -102,6 +102,12 @@ public class GraphicPresenter extends ApplicationAdapter
     private letrain.command.UndoRedoHistory undoRedoHistory;
 
     /**
+     * Experiment-mode session (ADR-020 item 5): snapshots the world on enter and restores it on
+     * exit, so the user can try things in the live simulation without consequences.
+     */
+    private letrain.command.ExperimentSession experimentSession;
+
+    /**
      * Console (' :') command history. Kept at the presenter so it survives the input-handler
      * recreations an undo/redo performs (each undo rebuilds the handler against the restored model).
      */
@@ -412,6 +418,48 @@ public class GraphicPresenter extends ApplicationAdapter
                     });
         }
         return undoRedoHistory;
+    }
+
+    /** Experiment-mode session (ADR-020 item 5), created lazily with the same in-memory codec. */
+    public letrain.command.ExperimentSession getExperimentSession() {
+        if (experimentSession == null) {
+            experimentSession =
+                    new letrain.command.ExperimentSession(new letrain.command.ExperimentSession.Codec() {
+                        @Override
+                        public byte[] toBytes(letrain.mvp.Model m) {
+                            return gameSaveService.toBytes(m);
+                        }
+
+                        @Override
+                        public letrain.mvp.Model fromBytes(byte[] data) {
+                            return gameSaveService.fromBytes(data);
+                        }
+                    });
+        }
+        return experimentSession;
+    }
+
+    /**
+     * Toggles experiment mode (ADR-020 item 5). Entering turns paused editing off and snapshots the
+     * live world; leaving restores that snapshot. While active the simulation runs (no journal, no
+     * undo), exactly like a "try things freely" sandbox.
+     */
+    public void toggleExperimentMode() {
+        letrain.command.ExperimentSession session = getExperimentSession();
+        if (session.isActive()) {
+            letrain.mvp.Model restored = session.end();
+            if (restored != null) {
+                applyModel(restored);
+            }
+            log.info("Experiment mode: OFF (state restored)");
+        } else {
+            if (model.isPauseEditing()) {
+                model.setPauseEditing(false);
+                getUndoRedoHistory().end();
+            }
+            session.begin(model);
+            log.info("Experiment mode: ON (live simulation; press X to discard and restore)");
+        }
     }
 
     /**
