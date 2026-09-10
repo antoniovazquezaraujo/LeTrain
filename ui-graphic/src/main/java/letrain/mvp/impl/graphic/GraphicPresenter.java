@@ -37,6 +37,7 @@ public class GraphicPresenter extends ApplicationAdapter
         implements letrain.mvp.View, letrain.mvp.Presenter, CoreTrainEventListener {
     private static final Logger log = LoggerFactory.getLogger(GraphicPresenter.class);
     private static final String DEFAULT_SAVEGAME_FILENAME = "savegame.json";
+    private static final String DEFAULT_SCENARIO_FILENAME = "scenario.ltr";
     private com.badlogic.gdx.graphics.PerspectiveCamera cam;
     private ModelBatch modelBatch;
     private ModelBuilder modelBuilder;
@@ -536,11 +537,18 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void onChar(InputEvent stroke) {
+        // While the PROGRAM editor is open only the editor/buttons handle keys; game shortcuts off.
+        if (hud != null && hud.isIDEOpen()) {
+            return;
+        }
         inputHandler.onChar(stroke);
     }
 
     @Override
     public void onKeyUp(InputEvent stroke) {
+        if (hud != null && hud.isIDEOpen()) {
+            return;
+        }
         inputHandler.onKeyUp(stroke);
     }
 
@@ -701,10 +709,6 @@ public class GraphicPresenter extends ApplicationAdapter
             log.warn("Ignoring save request with null file");
             return;
         }
-        if (letrain.command.ScenarioFile.isScenarioName(file.getName())) {
-            saveScenario(file);
-            return;
-        }
         boolean ok = gameSaveService.save(model, file);
         if (!ok) {
             showMessage("Save Error", "Could not save game to\n" + file.getAbsolutePath());
@@ -833,10 +837,6 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void onLoadGame(File file) {
-        if (file != null && letrain.command.ScenarioFile.isScenarioName(file.getName())) {
-            playScenario(file);
-            return;
-        }
         Optional<letrain.mvp.impl.Model> maybeModel = gameSaveService.load(file);
         if (maybeModel.isEmpty()) {
             if (file != null) {
@@ -1007,6 +1007,42 @@ public class GraphicPresenter extends ApplicationAdapter
     @Override
     public void showExitDialog() {
         showMessage("Exit", "Use ALT+F4 to exit the application.");
+    }
+
+    /** Exports the current editing journal as a scenario file (called by the DSL and the UI). */
+    public void onExportScenario(File file) {
+        saveScenario(file);
+    }
+
+    /** Imports (plays) a scenario file: fresh same-seed world + replayed commands. */
+    public void onImportScenario(File file) {
+        playScenario(file);
+    }
+
+    public void showExportDialog() {
+        hud.showFileDialog("Export Scenario", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.SAVE,
+                DEFAULT_SCENARIO_FILENAME, (text) -> {
+                    if (text != null && !text.trim().isEmpty()) {
+                        File file = new File(text);
+                        log.info("Exporting scenario to {}", file.getAbsolutePath());
+                        onExportScenario(file);
+                    }
+                });
+    }
+
+    public void showImportDialog() {
+        hud.showFileDialog("Import Scenario", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN,
+                DEFAULT_SCENARIO_FILENAME, (text) -> {
+                    if (text != null && !text.trim().isEmpty()) {
+                        File file = new File(text);
+                        if (file.exists()) {
+                            log.info("Importing scenario from {}", file.getAbsolutePath());
+                            onImportScenario(file);
+                        } else {
+                            showMessage("Import Error", "Scenario not found:\n" + text);
+                        }
+                    }
+                });
     }
 
     @Override

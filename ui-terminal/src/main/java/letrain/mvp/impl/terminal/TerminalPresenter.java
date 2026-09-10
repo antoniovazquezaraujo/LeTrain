@@ -389,7 +389,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 file -> onSaveGame(file), file -> onLoadGame(file),
                 new letrain.command.TurtleBuilder(model, railTrackMaker),
                 (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
-                steps -> undo(steps), steps -> redo(steps), false);
+                steps -> undo(steps), steps -> redo(steps),
+                file -> saveScenario(file), file -> playScenario(file), false);
 
         if (error != null) {
             model.setCommandError(error);
@@ -419,6 +420,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         String t = cmd.trim().toLowerCase();
         return t.startsWith("record ") || t.startsWith("record;") || t.equals("record")
                 || t.startsWith("journal") || t.startsWith("undo") || t.startsWith("redo")
+                || t.startsWith("export") || t.startsWith("import")
                 || t.startsWith("ls ") || t.equals("ls")
                 || t.startsWith("info ") || t.startsWith("save") || t.startsWith("load")
                 || t.startsWith("quit") || t.equals("q") || t.startsWith("q!")
@@ -1900,10 +1902,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (file == null) {
             return;
         }
-        if (letrain.command.ScenarioFile.isScenarioName(file.getName())) {
-            saveScenario(file);
-            return;
-        }
         boolean ok = gameSaveService.save(this.model, file);
         if (!ok) {
             view.showMessage("Save Error", "Could not save game to\n" + file.getAbsolutePath());
@@ -1985,10 +1983,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     @Override
     public void onLoadGame(File file) {
         if (file != null && file.exists()) {
-            if (letrain.command.ScenarioFile.isScenarioName(file.getName())) {
-                playScenario(file);
-                return;
-            }
             try {
                 java.util.Optional<letrain.mvp.impl.Model> optionalModel =
                         gameSaveService.load(file);

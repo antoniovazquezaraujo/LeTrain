@@ -28,6 +28,22 @@ class SaveLoadCommandTest {
         return ref.get().getName();
     }
 
+    private String exportedName(String command) {
+        AtomicReference<File> ref = new AtomicReference<>();
+        PlayerCommandExecutor.execute(command, model, null, null, null, null, null, null, null,
+                ref::set, f -> {
+                }, true);
+        return ref.get().getName();
+    }
+
+    private String importedName(String command) {
+        AtomicReference<File> ref = new AtomicReference<>();
+        PlayerCommandExecutor.execute(command, model, null, null, null, null, null, null, null,
+                f -> {
+                }, ref::set, true);
+        return ref.get().getName();
+    }
+
     @Test
     @DisplayName("save partida -> partida.json (no quotes stripped wrongly)")
     void save_unquotedName_keepsWholeName() {
@@ -59,15 +75,25 @@ class SaveLoadCommandTest {
     }
 
     @Test
-    @DisplayName("save \"mi-red.ltr\" keeps the scenario extension (no .json forced)")
+    @DisplayName("save keeps an explicit extension or defaults to .json")
     void save_explicitExtension_isRespected() {
-        assertEquals("mi-red.ltr", savedName("save \"mi-red.ltr\";"));
+        assertEquals("mi-cosa.json", savedName("save \"mi-cosa.json\";"));
         assertEquals("savegame.json", savedName("save \"savegame.json\";"));
     }
 
     @Test
-    @DisplayName("load \"mi-red.ltr\" keeps the scenario extension")
-    void load_explicitExtension_isRespected() {
-        assertEquals("mi-red.ltr", loadedName("load \"mi-red.ltr\";"));
+    @DisplayName("export uses the scenario extension (.ltr) by default")
+    void export_scenarioExtension() {
+        assertEquals("mi-red.ltr", exportedName("export \"mi-red.ltr\";"));
+        assertEquals("mi-red.ltr", exportedName("export \"mi-red\";"));
+        assertEquals("scenario.ltr", exportedName("export;"));
+    }
+
+    @Test
+    @DisplayName("import uses the scenario extension (.ltr) by default")
+    void import_scenarioExtension() {
+        assertEquals("mi-red.ltr", importedName("import \"mi-red.ltr\";"));
+        assertEquals("mi-red.ltr", importedName("import \"mi-red\";"));
+        assertEquals("scenario.ltr", importedName("import;"));
     }
 }

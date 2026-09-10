@@ -68,6 +68,8 @@ R: 'r';
 FACE: 'face';
 STEP: 'step';
 SAVE: 'save';
+EXPORT: 'export';
+IMPORT: 'import';
 QUIT: 'quit';
 WQ: 'wq';
 MARK: 'mark';

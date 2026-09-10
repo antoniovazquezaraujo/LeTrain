@@ -61,6 +61,11 @@ public class Gdx3DHud {
         return stage;
     }
 
+    /** True while the PROGRAM editor window is open (game shortcuts must be ignored then). */
+    public boolean isIDEOpen() {
+        return ideWindow != null;
+    }
+
     private void initUI() {
         skin = new Skin();
 
@@ -968,6 +973,8 @@ public class Gdx3DHud {
             final TextButton applyBtn = new TextButton(" APPLY ", skin, "monospace-button");
             final TextButton saveBtn = new TextButton(" SAVE ", skin, "monospace-button");
             final TextButton loadBtn = new TextButton(" LOAD ", skin, "monospace-button");
+            final TextButton exportBtn = new TextButton(" EXPORT ", skin, "monospace-button");
+            final TextButton importBtn = new TextButton(" IMPORT ", skin, "monospace-button");
             final TextButton okBtn = new TextButton(" OK ", skin, "monospace-button");
             okBtn.setColor(Color.GREEN);
             final TextButton cancelBtn = new TextButton(" CANCEL ", skin, "monospace-button");
@@ -975,6 +982,8 @@ public class Gdx3DHud {
             footer.add(applyBtn).pad(5);
             footer.add(saveBtn).pad(5);
             footer.add(loadBtn).pad(5);
+            footer.add(exportBtn).pad(5);
+            footer.add(importBtn).pad(5);
             footer.add(okBtn).pad(5);
             footer.add(cancelBtn).pad(5);
 
@@ -1102,6 +1111,20 @@ public class Gdx3DHud {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
                     view.showLoadDialog();
+                }
+            });
+
+            exportBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    view.showExportDialog();
+                }
+            });
+
+            importBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    view.showImportDialog();
                 }
             });
 
