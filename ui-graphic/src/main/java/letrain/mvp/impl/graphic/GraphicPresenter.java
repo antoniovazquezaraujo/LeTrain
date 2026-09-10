@@ -701,9 +701,61 @@ public class GraphicPresenter extends ApplicationAdapter
             log.warn("Ignoring save request with null file");
             return;
         }
+        if (letrain.command.ScenarioFile.isScenarioName(file.getName())) {
+            saveScenario(file);
+            return;
+        }
         boolean ok = gameSaveService.save(model, file);
         if (!ok) {
             showMessage("Save Error", "Could not save game to\n" + file.getAbsolutePath());
+        }
+    }
+
+    /** Exports the current editing journal as a scenario file (seed + commands). */
+    private void saveScenario(File file) {
+        try {
+            letrain.command.CommandJournal journal = model.getCommandJournal();
+            java.nio.file.Files.writeString(file.toPath(),
+                    letrain.command.ScenarioFile.render(model.getSeed(), journal.entries()));
+            if (journal.isEmpty()) {
+                showMessage("Scenario",
+                        "Saved an empty scenario (turn 'record on' before editing to capture it).");
+            } else {
+                log.info("Scenario saved to {}", file.getAbsolutePath());
+            }
+        } catch (Exception e) {
+            log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
+            showMessage("Scenario Error", "Could not save scenario: " + e.getMessage());
+        }
+    }
+
+    /** Rebuilds a fresh same-seed world and replays the scenario commands on it (free constructor). */
+    private void playScenario(File file) {
+        try {
+            String text = java.nio.file.Files.readString(file.toPath());
+            int seed = letrain.command.ScenarioFile.parseSeed(text);
+            applyLoadedModel(new letrain.mvp.impl.Model(seed), file);
+            for (String cmd : letrain.command.ScenarioFile.commandLines(text)) {
+                String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                        f -> onSaveGame(f), f -> onLoadGame(f),
+                        new letrain.command.TurtleBuilder(model, trackMaker),
+                        (title, msg) -> showMessage(title, msg), () -> onExitGame(),
+                        null, null, false);
+                if (error != null) {
+                    log.error("Scenario command failed: '{}': {}", cmd, error);
+                    showMessage("Scenario Error", cmd + "\n" + error);
+                    return;
+                }
+            }
+            // Scenario = free construction mode: keep paused editing on (instant build, frozen world).
+            if (!model.isPauseEditing()) {
+                model.setPauseEditing(true);
+                getUndoRedoHistory().begin(model);
+            }
+            log.info("Scenario played from {}", file.getAbsolutePath());
+        } catch (Exception e) {
+            log.error("Error playing scenario from {}", file.getAbsolutePath(), e);
+            showMessage("Scenario Error", "Could not play scenario: " + e.getMessage());
         }
     }
 
@@ -756,6 +808,10 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void onLoadGame(File file) {
+        if (file != null && letrain.command.ScenarioFile.isScenarioName(file.getName())) {
+            playScenario(file);
+            return;
+        }
         Optional<letrain.mvp.impl.Model> maybeModel = gameSaveService.load(file);
         if (maybeModel.isEmpty()) {
             if (file != null) {
@@ -841,7 +897,8 @@ public class GraphicPresenter extends ApplicationAdapter
             String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                     file -> onSaveGame(file), file -> onLoadGame(file),
                     new letrain.command.TurtleBuilder(model, trackMaker),
-                    (title, msg) -> showMessage(title, msg), () -> onExitGame());
+                    (title, msg) -> showMessage(title, msg), () -> onExitGame(),
+                    null, null, false);
             if (error != null) {
                 log.error("Undo/redo replay failed on '{}': {}", cmd, error);
                 showMessage("Undo/Redo", "Replay error: " + error);

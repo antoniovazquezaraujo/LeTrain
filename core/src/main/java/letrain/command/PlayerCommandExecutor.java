@@ -56,6 +56,18 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
     public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit, java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo) {
+        return execute(commandText, model, onSave, onLoad, turtleDelegate, onMessage, onQuit, onUndo,
+                onRedo, true);
+    }
+
+    /**
+     * @param autoRecordJournal when false, the executor does not auto-record the raw command into
+     *                          the {@link CommandJournal}; callers that capture a canonical,
+     *                          self-positioned form (e.g. the console funnels prepend
+     *                          {@code go x,y; face d;}) do their own recording. Pass false for
+     *                          internal replays (undo/redo/scenario) to avoid re-journaling them.
+     */
+    public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit, java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo, boolean autoRecordJournal) {
         if (!commandText.trim().endsWith(";")) {
             commandText = commandText.trim() + ";";
         }
@@ -87,8 +99,9 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
         try {
             PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad, turtleDelegate, onMessage, onQuit, onUndo, onRedo);
+            executor.setAutoRecordJournal(autoRecordJournal);
             executor.visit(tree);
-            if (!executor.toggledRecording && model != null) {
+            if (autoRecordJournal && !executor.toggledRecording && model != null) {
                 letrain.command.CommandJournal journal = model.getCommandJournal();
                 if (journal != null && journal.isRecording()) {
                     journal.record(commandText.trim());
@@ -124,6 +137,13 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
     private boolean toggledRecording = false;
+
+    /** See the static {@code execute(..., boolean autoRecordJournal)} overload. */
+    private boolean autoRecordJournal = true;
+
+    public void setAutoRecordJournal(boolean autoRecordJournal) {
+        this.autoRecordJournal = autoRecordJournal;
+    }
 
     @Override
     public Object visitRecordCommand(PlayerCommandsParser.RecordCommandContext ctx) {
@@ -854,8 +874,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitSaveCommand(PlayerCommandsParser.SaveCommandContext ctx) {
         String filename = "quicksave.json";
         if (ctx.identifier() != null) {
-            filename = unquote(ctx.identifier().getText());
-            if (!filename.endsWith(".json")) filename += ".json";
+            filename = withDefaultExtension(unquote(ctx.identifier().getText()));
         }
         if (onSave != null) {
             onSave.accept(new java.io.File(filename));
@@ -869,8 +888,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitLoadCommand(PlayerCommandsParser.LoadCommandContext ctx) {
         String filename = "quicksave.json";
         if (ctx.identifier() != null) {
-            filename = unquote(ctx.identifier().getText());
-            if (!filename.endsWith(".json")) filename += ".json";
+            filename = withDefaultExtension(unquote(ctx.identifier().getText()));
         }
         if (onLoad != null) {
             onLoad.accept(new java.io.File(filename));
@@ -878,6 +896,20 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
              throw new RuntimeException("Load not supported in this context.");
         }
         return null;
+    }
+
+    /**
+     * Appends the default savegame extension ({@code .json}) only when the name has none, so a
+     * scenario name like {@code mi-red.ltr} is respected instead of being turned into
+     * {@code mi-red.ltr.json}.
+     */
+    private static String withDefaultExtension(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return "quicksave.json";
+        }
+        int slash = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'));
+        String name = slash >= 0 ? filename.substring(slash + 1) : filename;
+        return name.contains(".") ? filename : filename + ".json";
     }
 
     private static String unquote(String text) {

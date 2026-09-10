@@ -590,7 +590,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 file -> view.onSaveGame(file), file -> view.onLoadGame(file),
                 new letrain.command.TurtleBuilder(model, trackMaker),
                 (title, msg) -> view.showMessage(title, msg), () -> view.onExitGame(),
-                steps -> view.undo(steps), steps -> view.redo(steps));
+                steps -> view.undo(steps), steps -> view.redo(steps), false);
 
         if (error != null) {
             model.setCommandError(error);
@@ -600,8 +600,14 @@ public class Gdx3DInputHandler implements InputProcessor {
         // from under this handler (applyModel rebuilds handler + model), so the cleanup and the
         // auto-capture must target the current model, not the stale one this handler was built on.
         letrain.mvp.Model current = view.getModel();
-        // Auto-capture in pause (ADR-020): while pause-editing freezes the world, every successful
-        // editing command is journaled for undo/redo.
+        // Command journal (ADR-020 item 2): record the canonical, self-positioned form so an
+        // exported scenario replays at the right place (the executor's raw auto-record is disabled).
+        letrain.command.CommandJournal journal = current.getCommandJournal();
+        if (journal != null && journal.isRecording() && !isNonRecordableCommand(cmd)) {
+            journal.record(prefix + cmd);
+        }
+        // Auto-capture in pause (ADR-020 item 3): while pause-editing freezes the world, every
+        // successful editing command is journaled for undo/redo.
         letrain.command.UndoRedoHistory history = view.getUndoRedoHistory();
         if (history != null && current.isSimulationPaused() && !isNonRecordableCommand(cmd)) {
             history.record(prefix + cmd);
