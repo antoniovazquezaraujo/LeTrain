@@ -1294,6 +1294,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         Dir cursorDir = Dir.E;
+        String prefix = cursorPrefix();
         if (c.toUpperCase().equals(c)) {
             int locoId = model.peekNextLocomotiveId();
             Locomotive locomotive = new Locomotive(locoId, c);
@@ -1317,6 +1318,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             train.getSafetyManager().claimOccupiedSegments();
             cursorDir = locomotive.getDir();
             lastCreatedLoco = locomotive;
+            journalEditingCommand(prefix + "new locomotive " + c + " "
+                    + locomotive.getColor().toLowerCase() + ";");
         } else {
             Wagon wagon = new Wagon(c);
             wagon.setExclusiveCargoType(model.getSelectedWagonType());
@@ -1335,6 +1338,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 wagon.getTrain().getSafetyManager().claimOccupiedSegments();
             }
             cursorDir = wagon.getDir();
+            String cargoToken = wagon.getExclusiveCargoType() == null
+                    || wagon.getExclusiveCargoType() == letrain.track.CargoTypes.NONE
+                            ? ""
+                            : " " + wagon.getExclusiveCargoType().name().toLowerCase();
+            journalEditingCommand(prefix + "new wagon " + c + cargoToken + ";");
         }
         Point newPos = new Point(model.getCursor().getPosition());
         newPos.move(cursorDir, 1);
@@ -1632,7 +1640,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             if (loco.getTrain() != null) {
                 Train train = loco.getTrain();
                 if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
+                    boolean forward = train.isJoinFront();
+                    int count = train.getNumLinkersToJoin();
                     train.getTrainCouplingManager().joinLinkers(train);
+                    journalEditingCommand("train " + loco.getId() + " couple "
+                            + (forward ? "forward" : "backward") + " " + count + ";");
                 }
                 model.setMode(letrain.mvp.Model.GameMode.MENU);
             }
@@ -1686,10 +1698,35 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         Locomotive loco = model.getSelectedLocomotive();
         if (loco != null && loco.getTrain() != null) {
             Train train = loco.getTrain();
+            // Map the division sense to the DSL 'forward/backward' the canonical replay expects
+            // (prepareUnlink flips the sense when the director is reversed).
+            boolean forward = train.isDivisionFront() != loco.isReversed();
+            int count = train.getNumLinkersToRemove();
 
             train.getTrainCouplingManager().divideTrain(train, () -> model.nextTrainId());
+            if (count > 0) {
+                journalEditingCommand("train " + loco.getId() + " uncouple "
+                        + (forward ? "forward" : "backward") + " " + count + ";");
+            }
             audioController.playOneShot("link", (float) loco.getPosition().getX(),
                     (float) loco.getPosition().getY());
+        }
+    }
+
+    /**
+     * Records a canonical editing command (e.g. a coupling) into the command journal while recording
+     * and into the paused-editing undo history. Coupling commands are id-based, so no cursor prefix.
+     */
+    private void journalEditingCommand(String command) {
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        if (journal != null && journal.isRecording()) {
+            journal.record(command);
+        }
+        if (model.isSimulationPaused()) {
+            letrain.command.UndoRedoHistory history = getUndoRedoHistory();
+            if (history != null) {
+                history.record(command);
+            }
         }
     }
 
@@ -1909,6 +1946,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     return;
                 }
             }
+            // Materialize the terrain under the whole rebuilt network; otherwise tracks outside the
+            // cursor/render radius appear floating over void until the cursor passes over them.
+            materializeGroundUnderTracks();
             // Scenario = free construction mode: keep paused editing on (instant build, frozen world).
             if (!model.isPauseEditing()) {
                 togglePauseEditing();
@@ -1918,6 +1958,15 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             log.error("Error playing scenario from {}", file.getAbsolutePath(), e);
             view.showMessage("Scenario Error", "Could not play scenario: " + e.getMessage());
         }
+    }
+
+    /** Generates the ground blocks around every rail tile so the loaded world has terrain visible. */
+    private void materializeGroundUnderTracks() {
+        int r = 2;
+        model.getRailMap().forEach(track -> {
+            letrain.map.Point p = track.getPosition();
+            model.getGroundMap().renderBlock(p.getX() - r, p.getY() - r, r * 2 + 1, r * 2 + 1);
+        });
     }
 
     @Override

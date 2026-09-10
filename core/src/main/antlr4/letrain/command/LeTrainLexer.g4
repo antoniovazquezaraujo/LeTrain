@@ -127,6 +127,14 @@ ORANGE: 'orange';
 PURPLE: 'purple';
 GRAY: 'gray';
 BROWN: 'brown';
+// Locomotive palette variants (must cover Locomotive.COLOR_PALETTE for exact scenario replay)
+RED_BRIGHT: 'red_bright';
+GREEN_BRIGHT: 'green_bright';
+YELLOW_BRIGHT: 'yellow_bright';
+BLUE_BRIGHT: 'blue_bright';
+MAGENTA_BRIGHT: 'magenta_bright';
+CYAN_BRIGHT: 'cyan_bright';
+PINK: 'pink';
 
 // Cargos
 COAL: 'coal';

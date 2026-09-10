@@ -524,6 +524,16 @@ public class Train implements Renderable {
         return linkerJoinSense;
     }
 
+    /** True when the pending join/link is on the front sense (for canonical coupling recording). */
+    public boolean isJoinFront() {
+        return linkerJoinSense == LinkersSense.FRONT;
+    }
+
+    /** True when the pending division/unlink is on the front sense. */
+    public boolean isDivisionFront() {
+        return linkerDivisionSense == LinkersSense.FRONT;
+    }
+
     public void setLinkerJoinSense(LinkersSense linkerJoinSense) {
         this.linkerJoinSense = linkerJoinSense;
     }

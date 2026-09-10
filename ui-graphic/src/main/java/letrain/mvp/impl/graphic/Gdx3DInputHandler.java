@@ -931,7 +931,11 @@ public class Gdx3DInputHandler implements InputProcessor {
             if (loco != null && loco.getTrain() != null) {
                 Train train = loco.getTrain();
                 if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
+                    boolean forward = train.isJoinFront();
+                    int count = train.getNumLinkersToJoin();
                     train.getTrainCouplingManager().joinLinkers(train);
+                    view.journalEditingCommand("train " + loco.getId() + " couple "
+                            + (forward ? "forward" : "backward") + " " + count + ";");
                 }
                 model.setMode(model.getPreviousMode());
             }
@@ -952,7 +956,14 @@ public class Gdx3DInputHandler implements InputProcessor {
                 train.getTrainCouplingManager().selectNextDivisionLink(train);
             } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
 
+                Locomotive loco = model.getSelectedLocomotive();
+                boolean forward = train.isDivisionFront() != loco.isReversed();
+                int count = train.getNumLinkersToRemove();
                 train.getTrainCouplingManager().divideTrain(train, () -> model.nextTrainId());
+                if (count > 0) {
+                    view.journalEditingCommand("train " + loco.getId() + " uncouple "
+                            + (forward ? "forward" : "backward") + " " + count + ";");
+                }
                 audioController.playOneShot("link",
                         (float) model.getSelectedLocomotive().getPosition().getX(),
                         (float) model.getSelectedLocomotive().getPosition().getY());
@@ -1250,6 +1261,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
 
         Dir cursorDir = model.getCursor().getDir();
+        String prefix = cursorPrefix();
 
         if (Character.isUpperCase(c)) {
             int locoId = model.peekNextLocomotiveId();
@@ -1274,6 +1286,8 @@ public class Gdx3DInputHandler implements InputProcessor {
             train.getSafetyManager().claimOccupiedSegments();
             cursorDir = locomotive.getDir();
             lastCreatedLoco = locomotive;
+            view.journalEditingCommand(prefix + "new locomotive " + c + " "
+                    + locomotive.getColor().toLowerCase() + ";");
         } else {
             Wagon wagon = new Wagon("" + c);
             wagon.setExclusiveCargoType(model.getSelectedWagonType());
@@ -1292,6 +1306,11 @@ public class Gdx3DInputHandler implements InputProcessor {
             }
             cursorDir = wagon.getDir();
             lastCreatedLoco = null;
+            String cargoToken = wagon.getExclusiveCargoType() == null
+                    || wagon.getExclusiveCargoType() == CargoTypes.NONE
+                            ? ""
+                            : " " + wagon.getExclusiveCargoType().name().toLowerCase();
+            view.journalEditingCommand(prefix + "new wagon " + c + cargoToken + ";");
         }
         model.getCursor().setDir(cursorDir);
         model.getCursor().getPosition().move(cursorDir);
