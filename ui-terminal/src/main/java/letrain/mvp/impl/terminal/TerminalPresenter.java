@@ -389,14 +389,21 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 file -> onSaveGame(file), file -> onLoadGame(file),
                 new letrain.command.TurtleBuilder(model, railTrackMaker),
                 (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
-                steps -> undo(steps), steps -> redo(steps));
+                steps -> undo(steps), steps -> redo(steps), false);
 
         if (error != null) {
             model.setCommandError(error);
             return;
         }
-        // Auto-capture in pause (ADR-020): while pause-editing freezes the world, every successful
-        // editing command is journaled for undo/redo.
+        // Command journal (ADR-020 item 2): record the canonical, self-positioned form so an
+        // exported scenario replays at the right place (the executor's raw auto-record is disabled
+        // above). Only editing commands, and only while 'record' is on.
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        if (journal != null && journal.isRecording() && !isNonRecordableCommand(cmd)) {
+            journal.record(prefix + cmd);
+        }
+        // Auto-capture in pause (ADR-020 item 3): while pause-editing freezes the world, every
+        // successful editing command is journaled for undo/redo.
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
         if (model.isSimulationPaused() && !isNonRecordableCommand(cmd)) {
             history.record(prefix + cmd);
@@ -497,7 +504,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                     file -> onSaveGame(file), file -> onLoadGame(file),
                     new letrain.command.TurtleBuilder(model, railTrackMaker),
-                    (title, msg) -> view.showMessage(title, msg), () -> onExitGame());
+                    (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
+                    null, null, false);
             if (error != null) {
                 log.error("Undo/redo replay failed on '{}': {}", cmd, error);
                 view.setStatusBarText("Replay error: " + error);
@@ -1893,7 +1901,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                         f -> onSaveGame(f), f -> onLoadGame(f),
                         new letrain.command.TurtleBuilder(model, railTrackMaker),
-                        (title, msg) -> view.showMessage(title, msg), () -> onExitGame());
+                        (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
+                        null, null, false);
                 if (error != null) {
                     log.error("Scenario command failed: '{}': {}", cmd, error);
                     view.showMessage("Scenario Error", cmd + "\n" + error);

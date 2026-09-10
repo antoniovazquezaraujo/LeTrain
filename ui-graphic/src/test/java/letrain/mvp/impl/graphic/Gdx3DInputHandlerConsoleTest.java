@@ -118,6 +118,15 @@ class Gdx3DInputHandlerConsoleTest {
     }
 
     @Test
+    @DisplayName("console commands journal the canonical self-positioned form while recording")
+    void consoleCommand_recordsCanonicalJournal() {
+        model.getCommandJournal().startRecording();
+        executeInConsole("write 1;");
+        assertEquals(1, model.getCommandJournal().size());
+        assertEquals("go 0,0; face e; write 1;", model.getCommandJournal().entries().get(0));
+    }
+
+    @Test
     @DisplayName("'.' outside COMMAND repeats the last executed command")
     void dotRepeatsLastCommand() {
         executeInConsole("go 7,0; face e; write 1;"); // build a tile at (7,0)

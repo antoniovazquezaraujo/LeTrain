@@ -56,6 +56,18 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
     public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit, java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo) {
+        return execute(commandText, model, onSave, onLoad, turtleDelegate, onMessage, onQuit, onUndo,
+                onRedo, true);
+    }
+
+    /**
+     * @param autoRecordJournal when false, the executor does not auto-record the raw command into
+     *                          the {@link CommandJournal}; callers that capture a canonical,
+     *                          self-positioned form (e.g. the console funnels prepend
+     *                          {@code go x,y; face d;}) do their own recording. Pass false for
+     *                          internal replays (undo/redo/scenario) to avoid re-journaling them.
+     */
+    public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit, java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo, boolean autoRecordJournal) {
         if (!commandText.trim().endsWith(";")) {
             commandText = commandText.trim() + ";";
         }
@@ -87,8 +99,9 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
         try {
             PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad, turtleDelegate, onMessage, onQuit, onUndo, onRedo);
+            executor.setAutoRecordJournal(autoRecordJournal);
             executor.visit(tree);
-            if (!executor.toggledRecording && model != null) {
+            if (autoRecordJournal && !executor.toggledRecording && model != null) {
                 letrain.command.CommandJournal journal = model.getCommandJournal();
                 if (journal != null && journal.isRecording()) {
                     journal.record(commandText.trim());
@@ -124,6 +137,13 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
     private boolean toggledRecording = false;
+
+    /** See the static {@code execute(..., boolean autoRecordJournal)} overload. */
+    private boolean autoRecordJournal = true;
+
+    public void setAutoRecordJournal(boolean autoRecordJournal) {
+        this.autoRecordJournal = autoRecordJournal;
+    }
 
     @Override
     public Object visitRecordCommand(PlayerCommandsParser.RecordCommandContext ctx) {

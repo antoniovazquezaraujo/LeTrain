@@ -739,7 +739,8 @@ public class GraphicPresenter extends ApplicationAdapter
                 String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                         f -> onSaveGame(f), f -> onLoadGame(f),
                         new letrain.command.TurtleBuilder(model, trackMaker),
-                        (title, msg) -> showMessage(title, msg), () -> onExitGame());
+                        (title, msg) -> showMessage(title, msg), () -> onExitGame(),
+                        null, null, false);
                 if (error != null) {
                     log.error("Scenario command failed: '{}': {}", cmd, error);
                     showMessage("Scenario Error", cmd + "\n" + error);
@@ -896,7 +897,8 @@ public class GraphicPresenter extends ApplicationAdapter
             String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                     file -> onSaveGame(file), file -> onLoadGame(file),
                     new letrain.command.TurtleBuilder(model, trackMaker),
-                    (title, msg) -> showMessage(title, msg), () -> onExitGame());
+                    (title, msg) -> showMessage(title, msg), () -> onExitGame(),
+                    null, null, false);
             if (error != null) {
                 log.error("Undo/redo replay failed on '{}': {}", cmd, error);
                 showMessage("Undo/Redo", "Replay error: " + error);
