@@ -47,6 +47,15 @@ class CouplingCommandTest {
     }
 
     @Test
+    @DisplayName("bright palette colors are valid DSL colors (exact scenario replay)")
+    void brightPaletteColor_isValid() {
+        assertEquals(null, run("go 10,0; face e; write 3;"));
+        assertEquals(null, run("go 10,0; face e; new locomotive C blue_bright;"));
+        assertEquals(2, model.getLocomotives().size());
+        assertEquals("BLUE_BRIGHT", model.getLocomotives().get(1).getColor());
+    }
+
+    @Test
     @DisplayName("couple joins the adjacent wagon and uncouple splits it back")
     void coupleUncouple_roundTrip() {
         int locoId = model.getLocomotives().get(0).getId();

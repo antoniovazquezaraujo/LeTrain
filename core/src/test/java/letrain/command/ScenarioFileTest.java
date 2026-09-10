@@ -59,23 +59,16 @@ class ScenarioFileTest {
     }
 
     @Test
-    @DisplayName("phase 1 is infrastructure-only: train commands are filtered from the export")
-    void render_filtersVehicleCommands() {
+    @DisplayName("vehicles and coupling commands are exported in order (operator)")
+    void render_includesVehiclesAndCoupling() {
         List<String> commands = List.of(
-                "go 0,0; face e; write 5;",
-                "go 2,0; face e; new locomotive A red;",
-                "go 3,0; face e; new wagon b coal;",
-                "clear train 1;",
+                "go 0,0; face e; write 3;",
+                "go 0,0; face e; new locomotive A red;",
+                "go 1,0; face e; new wagon b coal;",
+                "train 0 couple forward 1;",
                 "go 5,0; face e; new sn;");
         String text = ScenarioFile.render(7, commands);
 
-        assertEquals(List.of(
-                "go 0,0; face e; write 5;",
-                "go 5,0; face e; new sn;"), ScenarioFile.commandLines(text));
-        assertTrue(ScenarioFile.isInfrastructureCommand("go 0,0; face e; write 5;"));
-        assertTrue(ScenarioFile.isInfrastructureCommand("go 0,0; face e; new sn;"));
-        assertFalse(ScenarioFile.isInfrastructureCommand("go 2,0; face e; new locomotive A red;"));
-        assertFalse(ScenarioFile.isInfrastructureCommand("go 3,0; face e; new wagon b coal;"));
-        assertFalse(ScenarioFile.isInfrastructureCommand("clear train 1;"));
+        assertEquals(commands, ScenarioFile.commandLines(text));
     }
 }

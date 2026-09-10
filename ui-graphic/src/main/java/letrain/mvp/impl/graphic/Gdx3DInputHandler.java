@@ -1261,6 +1261,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
 
         Dir cursorDir = model.getCursor().getDir();
+        String prefix = cursorPrefix();
 
         if (Character.isUpperCase(c)) {
             int locoId = model.peekNextLocomotiveId();
@@ -1285,6 +1286,8 @@ public class Gdx3DInputHandler implements InputProcessor {
             train.getSafetyManager().claimOccupiedSegments();
             cursorDir = locomotive.getDir();
             lastCreatedLoco = locomotive;
+            view.journalEditingCommand(prefix + "new locomotive " + c + " "
+                    + locomotive.getColor().toLowerCase() + ";");
         } else {
             Wagon wagon = new Wagon("" + c);
             wagon.setExclusiveCargoType(model.getSelectedWagonType());
@@ -1303,6 +1306,11 @@ public class Gdx3DInputHandler implements InputProcessor {
             }
             cursorDir = wagon.getDir();
             lastCreatedLoco = null;
+            String cargoToken = wagon.getExclusiveCargoType() == null
+                    || wagon.getExclusiveCargoType() == CargoTypes.NONE
+                            ? ""
+                            : " " + wagon.getExclusiveCargoType().name().toLowerCase();
+            view.journalEditingCommand(prefix + "new wagon " + c + cargoToken + ";");
         }
         model.getCursor().setDir(cursorDir);
         model.getCursor().getPosition().move(cursorDir);

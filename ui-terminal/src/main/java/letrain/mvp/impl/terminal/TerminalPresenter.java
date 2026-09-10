@@ -1294,6 +1294,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         Dir cursorDir = Dir.E;
+        String prefix = cursorPrefix();
         if (c.toUpperCase().equals(c)) {
             int locoId = model.peekNextLocomotiveId();
             Locomotive locomotive = new Locomotive(locoId, c);
@@ -1317,6 +1318,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             train.getSafetyManager().claimOccupiedSegments();
             cursorDir = locomotive.getDir();
             lastCreatedLoco = locomotive;
+            journalEditingCommand(prefix + "new locomotive " + c + " "
+                    + locomotive.getColor().toLowerCase() + ";");
         } else {
             Wagon wagon = new Wagon(c);
             wagon.setExclusiveCargoType(model.getSelectedWagonType());
@@ -1335,6 +1338,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 wagon.getTrain().getSafetyManager().claimOccupiedSegments();
             }
             cursorDir = wagon.getDir();
+            String cargoToken = wagon.getExclusiveCargoType() == null
+                    || wagon.getExclusiveCargoType() == letrain.track.CargoTypes.NONE
+                            ? ""
+                            : " " + wagon.getExclusiveCargoType().name().toLowerCase();
+            journalEditingCommand(prefix + "new wagon " + c + cargoToken + ";");
         }
         Point newPos = new Point(model.getCursor().getPosition());
         newPos.move(cursorDir, 1);

@@ -2,7 +2,6 @@ package letrain.command;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * Scenario file format (ADR-020 roadmap, item 4 — phase 1). A scenario is a small text file that
@@ -32,35 +31,21 @@ public final class ScenarioFile {
     private static final String HEADER = "# LeTrain scenario v1";
     private static final String SEED_PREFIX = "seed ";
 
-    /**
-     * Vehicles are not exported yet: rebuilding a train faithfully needs the coupling (loco + wagons)
-     * commands of ADR-020 item 3 phase 2, which the DSL does not have. Until then, phase 1 scenarios
-     * are infrastructure-only.
-     */
-    private static final Pattern VEHICLE_COMMAND =
-            Pattern.compile(".*\\b(new\\s+(locomotive|loco|wagon)|clear\\s+train)\\b.*");
-
     private ScenarioFile() {}
-
-    /** True when {@code command} is a network (infrastructure) edit, i.e. not a train command. */
-    public static boolean isInfrastructureCommand(String command) {
-        return command != null && !VEHICLE_COMMAND.matcher(command.trim().toLowerCase()).matches();
-    }
 
     /** True when {@code name} looks like a scenario file ({@code *.ltr}). */
     public static boolean isScenarioName(String name) {
         return name != null && name.toLowerCase().endsWith(EXTENSION);
     }
 
-    /** Renders {@code seed} + the given infrastructure commands as scenario text. */
+    /** Renders {@code seed} + the given commands as scenario text. */
     public static String render(int seed, List<String> commands) {
         StringBuilder sb = new StringBuilder();
         sb.append(HEADER).append('\n');
         sb.append(SEED_PREFIX).append(seed).append('\n');
         if (commands != null) {
             for (String command : commands) {
-                if (command != null && !command.trim().isEmpty()
-                        && isInfrastructureCommand(command)) {
+                if (command != null && !command.trim().isEmpty()) {
                     sb.append(command.trim()).append('\n');
                 }
             }
