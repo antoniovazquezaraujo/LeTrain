@@ -833,9 +833,25 @@ public class GraphicPresenter extends ApplicationAdapter
         }
     }
 
+    /**
+     * Records a canonical editing command (e.g. a coupling) into the command journal while recording
+     * and into the paused-editing undo history. Coupling commands are id-based, so no cursor prefix.
+     */
+    public void journalEditingCommand(String command) {
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        if (journal != null && journal.isRecording()) {
+            journal.record(command);
+        }
+        if (model.isSimulationPaused()) {
+            letrain.command.UndoRedoHistory history = getUndoRedoHistory();
+            if (history != null) {
+                history.record(command);
+            }
+        }
+    }
+
     /** Undoes {@code steps} editing commands (ADR-020 item 3). */
-    public void undo(int steps) {
-        if (!model.isSimulationPaused()) {
+    public void undo(int steps) {        if (!model.isSimulationPaused()) {
             log.info("Undo needs paused editing (x)");
             return;
         }

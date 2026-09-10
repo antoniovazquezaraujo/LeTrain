@@ -1632,7 +1632,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             if (loco.getTrain() != null) {
                 Train train = loco.getTrain();
                 if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
+                    boolean forward = train.isJoinFront();
+                    int count = train.getNumLinkersToJoin();
                     train.getTrainCouplingManager().joinLinkers(train);
+                    journalEditingCommand("train " + loco.getId() + " couple "
+                            + (forward ? "forward" : "backward") + " " + count + ";");
                 }
                 model.setMode(letrain.mvp.Model.GameMode.MENU);
             }
@@ -1686,10 +1690,35 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         Locomotive loco = model.getSelectedLocomotive();
         if (loco != null && loco.getTrain() != null) {
             Train train = loco.getTrain();
+            // Map the division sense to the DSL 'forward/backward' the canonical replay expects
+            // (prepareUnlink flips the sense when the director is reversed).
+            boolean forward = train.isDivisionFront() != loco.isReversed();
+            int count = train.getNumLinkersToRemove();
 
             train.getTrainCouplingManager().divideTrain(train, () -> model.nextTrainId());
+            if (count > 0) {
+                journalEditingCommand("train " + loco.getId() + " uncouple "
+                        + (forward ? "forward" : "backward") + " " + count + ";");
+            }
             audioController.playOneShot("link", (float) loco.getPosition().getX(),
                     (float) loco.getPosition().getY());
+        }
+    }
+
+    /**
+     * Records a canonical editing command (e.g. a coupling) into the command journal while recording
+     * and into the paused-editing undo history. Coupling commands are id-based, so no cursor prefix.
+     */
+    private void journalEditingCommand(String command) {
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        if (journal != null && journal.isRecording()) {
+            journal.record(command);
+        }
+        if (model.isSimulationPaused()) {
+            letrain.command.UndoRedoHistory history = getUndoRedoHistory();
+            if (history != null) {
+                history.record(command);
+            }
         }
     }
 
