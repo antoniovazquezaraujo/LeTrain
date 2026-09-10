@@ -13,6 +13,10 @@ public interface GameViewListener {
 
     void onLoadGame(File file);
 
+    default void onExportScenario(File file) {}
+
+    default void onImportScenario(File file) {}
+
     void onSaveCommands(File file);
 
     void onLoadCommands(File file);

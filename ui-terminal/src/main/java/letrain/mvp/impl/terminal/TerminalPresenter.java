@@ -1980,6 +1980,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         });
     }
 
+    /** Exports the current editing journal as a scenario file (called by the UI/DSL). */
+    @Override
+    public void onExportScenario(File file) {
+        saveScenario(file);
+    }
+
+    /** Imports (plays) a scenario file: fresh same-seed world + replayed commands. */
+    @Override
+    public void onImportScenario(File file) {
+        playScenario(file);
+    }
+
     @Override
     public void onLoadGame(File file) {
         if (file != null && file.exists()) {

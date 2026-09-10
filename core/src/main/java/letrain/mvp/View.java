@@ -72,6 +72,10 @@ public interface View {
 
     void showLoadDialog();
 
+    default void showExportDialog() {}
+
+    default void showImportDialog() {}
+
     void showIDE();
 
     void showExitDialog();
