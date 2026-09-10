@@ -1795,6 +1795,21 @@ public class Model implements letrain.mvp.Model {
         this.seed = seed;
     }
 
+    public int getSeed() {
+        return seed;
+    }
+
+    /**
+     * Creates a model whose procedural terrain is generated from {@code seed} (ADR-020 scenario
+     * import). Use it to rebuild a fresh world that a scenario file will be replayed onto, so the
+     * reconstructed infrastructure matches the original world.
+     */
+    public Model(int seed) {
+        this();
+        this.seed = seed;
+        this.groundMap = new letrain.ground.impl.GroundMap(seed, this.economyManager);
+    }
+
     public void setEventLogManager(EventLogManager eventLogManager) {
         this.eventLogManager = eventLogManager;
     }

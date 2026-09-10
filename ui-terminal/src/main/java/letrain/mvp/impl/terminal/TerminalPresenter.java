@@ -1852,26 +1852,79 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     @Override
     public void onSaveGame(File file) {
-        if (file != null) {
-            boolean ok = gameSaveService.save(this.model, file);
-            if (!ok) {
-                view.showMessage("Save Error", "Could not save game to\n" + file.getAbsolutePath());
+        if (file == null) {
+            return;
+        }
+        if (letrain.command.ScenarioFile.isScenarioName(file.getName())) {
+            saveScenario(file);
+            return;
+        }
+        boolean ok = gameSaveService.save(this.model, file);
+        if (!ok) {
+            view.showMessage("Save Error", "Could not save game to\n" + file.getAbsolutePath());
+        }
+    }
+
+    /** Exports the current editing journal as a scenario file (seed + commands). */
+    private void saveScenario(File file) {
+        try {
+            letrain.command.CommandJournal journal = model.getCommandJournal();
+            java.nio.file.Files.writeString(file.toPath(),
+                    letrain.command.ScenarioFile.render(model.getSeed(), journal.entries()));
+            if (journal.isEmpty()) {
+                view.showMessage("Scenario",
+                        "Saved an empty scenario (turn 'record on' before editing to capture it).");
+            } else {
+                view.setStatusBarText("Scenario saved: " + file.getName());
             }
+        } catch (Exception e) {
+            log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
+            view.showMessage("Scenario Error", "Could not save scenario: " + e.getMessage());
+        }
+    }
+
+    /** Rebuilds a fresh same-seed world and replays the scenario commands on it (free constructor). */
+    private void playScenario(File file) {
+        try {
+            String text = java.nio.file.Files.readString(file.toPath());
+            int seed = letrain.command.ScenarioFile.parseSeed(text);
+            applyModel(new letrain.mvp.impl.Model(seed));
+            for (String cmd : letrain.command.ScenarioFile.commandLines(text)) {
+                String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                        f -> onSaveGame(f), f -> onLoadGame(f),
+                        new letrain.command.TurtleBuilder(model, railTrackMaker),
+                        (title, msg) -> view.showMessage(title, msg), () -> onExitGame());
+                if (error != null) {
+                    log.error("Scenario command failed: '{}': {}", cmd, error);
+                    view.showMessage("Scenario Error", cmd + "\n" + error);
+                    return;
+                }
+            }
+            // Scenario = free construction mode: keep paused editing on (instant build, frozen world).
+            if (!model.isPauseEditing()) {
+                togglePauseEditing();
+            }
+            view.setStatusBarText("Scenario played: " + file.getName());
+        } catch (Exception e) {
+            log.error("Error playing scenario from {}", file.getAbsolutePath(), e);
+            view.showMessage("Scenario Error", "Could not play scenario: " + e.getMessage());
         }
     }
 
     @Override
     public void onLoadGame(File file) {
         if (file != null && file.exists()) {
+            if (letrain.command.ScenarioFile.isScenarioName(file.getName())) {
+                playScenario(file);
+                return;
+            }
             try {
                 java.util.Optional<letrain.mvp.impl.Model> optionalModel =
                         gameSaveService.load(file);
                 if (optionalModel.isPresent()) {
                     letrain.mvp.impl.Model loadedModel = optionalModel.get();
-                    // Just replace the model and let the existing loop continue
+                    // setModel already registers this presenter as a train event listener.
                     setModel(loadedModel);
-                    // View specific listener
-                    loadedModel.addCoreTrainEventListener(this);
                     letrain.map.Point startPos = getActiveFocusPoint();
                     if (startPos != null) {
                         view.centerOn(startPos.getX(), startPos.getY());

@@ -357,6 +357,9 @@ public interface Model {
      */
     letrain.command.CommandJournal getCommandJournal();
 
+    /** Terrain seed of this model; a scenario stores it to rebuild an identical world. */
+    int getSeed();
+
     String getGameObjectsReport();
 
     String getRailwayGraphReport();

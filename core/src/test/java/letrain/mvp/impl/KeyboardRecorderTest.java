@@ -267,6 +267,24 @@ class KeyboardRecorderTest {
     }
 
     @Test
+    @DisplayName("keyboard edits feed the command journal while 'record' is on (scenario capture)")
+    void keyboardEdits_feedCommandJournal() {
+        letrain.mvp.impl.Model live = pausedWorld();
+        live.getCommandJournal().startRecording();
+        UndoRedoHistory history = newHistory(live);
+        RailTrackMaker maker = makerFor(live, history);
+
+        maker.createTrack(null);
+        maker.createTrack(null);
+
+        assertEquals(2, live.getCommandJournal().size(),
+                "hand-painted tiles must be captured by the command journal");
+        assertTrue(live.getCommandJournal().entries().get(0).startsWith("go 0,0; face e; write 1;"),
+                "journal entries must be canonical and self-positioned: "
+                        + live.getCommandJournal().entries().get(0));
+    }
+
+    @Test
     @DisplayName("console turtle sequences are not double-journaled by the maker")
     void consoleSequences_notDoubleJournaled() {
         letrain.mvp.impl.Model live = pausedWorld();
