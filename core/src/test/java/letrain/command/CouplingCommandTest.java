@@ -47,6 +47,45 @@ class CouplingCommandTest {
     }
 
     @Test
+    @DisplayName("optimized straight writes replay identically to the per-tile commands")
+    void optimize_replayEquivalent() {
+        java.util.List<String> original = java.util.List.of(
+                "go 0,0; face e; write 1;",
+                "go 1,0; face e; write 1;",
+                "go 2,0; face e; write 1;",
+                "go 3,0; face e; write 1;");
+        java.util.List<String> optimized = ScenarioFile.optimize(original);
+
+        letrain.mvp.impl.Model a = freshWorld();
+        letrain.mvp.impl.Model b = freshWorld();
+        for (String cmd : original) {
+            assertEquals(null, PlayerCommandExecutor.execute(cmd, a, null, null,
+                    new TurtleBuilder(a, headlessMaker(a))));
+        }
+        for (String cmd : optimized) {
+            assertEquals(null, PlayerCommandExecutor.execute(cmd, b, null, null,
+                    new TurtleBuilder(b, headlessMaker(b))));
+        }
+        assertEquals(semanticKey(a), semanticKey(b),
+                "optimized scenario must replay to the same tracks/cursor");
+    }
+
+    private static letrain.mvp.impl.Model freshWorld() {
+        letrain.mvp.impl.Model m = new letrain.mvp.impl.Model();
+        m.updateGroundMap(new Point(-30, -30), 60, 60);
+        m.getCursor().setPosition(new Point(0, 0));
+        m.getCursor().setDir(Dir.E);
+        m.setMode(Model.GameMode.RAILS);
+        return m;
+    }
+
+    private static String semanticKey(letrain.mvp.impl.Model m) {
+        java.util.TreeSet<String> tiles = new java.util.TreeSet<>();
+        m.getRailMap().forEach(t -> tiles.add(t.getPosition().getX() + "," + t.getPosition().getY()));
+        return m.getCursor().getPosition() + " " + m.getCursor().getDir() + " " + tiles;
+    }
+
+    @Test
     @DisplayName("bright palette colors are valid DSL colors (exact scenario replay)")
     void brightPaletteColor_isValid() {
         assertEquals(null, run("go 10,0; face e; write 3;"));

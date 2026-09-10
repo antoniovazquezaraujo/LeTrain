@@ -71,4 +71,35 @@ class ScenarioFileTest {
 
         assertEquals(commands, ScenarioFile.commandLines(text));
     }
+
+    @Test
+    @DisplayName("consecutive straight writes are merged into one write N")
+    void optimize_mergesStraightWrites() {
+        List<String> commands = List.of(
+                "go 0,0; face e; write 1;",
+                "go 1,0; face e; write 1;",
+                "go 2,0; face e; write 1;");
+        assertEquals(List.of("go 0,0; face e; write 3;"), ScenarioFile.optimize(commands));
+    }
+
+    @Test
+    @DisplayName("a turn or a non-write command breaks the run")
+    void optimize_breaksOnTurnAndOtherCommands() {
+        assertEquals(List.of(
+                "go 0,0; face e; write 2;",
+                "go 2,0; face n; write 1;"),
+                ScenarioFile.optimize(List.of(
+                        "go 0,0; face e; write 1;",
+                        "go 1,0; face e; write 1;",
+                        "go 2,0; face n; write 1;")));
+
+        assertEquals(List.of(
+                "go 0,0; face e; write 1;",
+                "new st;",
+                "go 1,0; face e; write 1;"),
+                ScenarioFile.optimize(List.of(
+                        "go 0,0; face e; write 1;",
+                        "new st;",
+                        "go 1,0; face e; write 1;")));
+    }
 }
