@@ -91,6 +91,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      */
     private letrain.command.UndoRedoHistory undoRedoHistory;
 
+    /**
+     * Experiment-mode session (ADR-020 item 5): snapshots the world on enter and restores it on
+     * exit, so the user can try things in the live simulation without consequences.
+     */
+    private letrain.command.ExperimentSession experimentSession;
+
     private static final int AMBIENT_BASE_CELLS = 80 * 25;
     private static final int AMBIENT_FULL_CELLS = 120 * 40;
 
@@ -129,6 +135,48 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             });
         }
         return undoRedoHistory;
+    }
+
+    /** Experiment-mode session (ADR-020 item 5), created lazily with the same in-memory codec. */
+    public letrain.command.ExperimentSession getExperimentSession() {
+        if (experimentSession == null) {
+            experimentSession =
+                    new letrain.command.ExperimentSession(new letrain.command.ExperimentSession.Codec() {
+                        @Override
+                        public byte[] toBytes(letrain.mvp.Model m) {
+                            return gameSaveService.toBytes(m);
+                        }
+
+                        @Override
+                        public letrain.mvp.Model fromBytes(byte[] data) {
+                            return gameSaveService.fromBytes(data);
+                        }
+                    });
+        }
+        return experimentSession;
+    }
+
+    /**
+     * Toggles experiment mode (ADR-020 item 5). Entering turns paused editing off and snapshots the
+     * live world; leaving restores that snapshot. While active the simulation runs (no journal, no
+     * undo), exactly like a "try things freely" sandbox.
+     */
+    public void toggleExperimentMode() {
+        letrain.command.ExperimentSession session = getExperimentSession();
+        if (session.isActive()) {
+            letrain.mvp.Model restored = session.end();
+            if (restored != null) {
+                applyModel(restored);
+            }
+            view.setStatusBarText("Experiment: OFF (estado restaurado)");
+        } else {
+            if (model.isPauseEditing()) {
+                model.setPauseEditing(false);
+                getUndoRedoHistory().end();
+            }
+            session.begin(model);
+            view.setStatusBarText("Experiment: ON (simulación en vivo; X para descartar y restaurar)");
+        }
     }
 
     private void initModeKeyHandlers() {
@@ -651,6 +699,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void togglePauseEditing() {
+        if (getExperimentSession().isActive()) {
+            view.setStatusBarText("Experiment ON: pulsa X para salir y restaurar antes de pausar");
+            return;
+        }
         boolean paused = !model.isPauseEditing();
         model.setPauseEditing(paused);
         view.setStatusBarText(paused ? "Paused editing: ON (world freezes in edit modes; instant build)"
@@ -684,6 +736,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
 
         switch (keyEvent.getCharacter()) {
+            case 'X':
+                if (model.getMode() != letrain.mvp.Model.GameMode.PROGRAM) {
+                    toggleExperimentMode();
+                    return true;
+                }
+                return false;
             case 'z':
                 if (model.getMode() != TRAINS) {
                     cycleCameraDeadzone();

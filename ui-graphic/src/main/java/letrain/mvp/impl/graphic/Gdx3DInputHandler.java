@@ -376,6 +376,14 @@ public class Gdx3DInputHandler implements InputProcessor {
             return;
         }
 
+        // Shift+X toggles experiment mode (live sandbox with in-memory snapshot/restore).
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
+                && stroke.getCharacter() == 'X' && !stroke.isCtrlDown() && !stroke.isAltDown()
+                && model.getMode() != Model.GameMode.PROGRAM) {
+            view.toggleExperimentMode();
+            return;
+        }
+
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null && stroke.getCharacter() == ':') {
             if (model.getMode() != Model.GameMode.PROGRAM) {
                 model.setMode(Model.GameMode.COMMAND);
@@ -558,6 +566,10 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private void togglePauseEditing() {
+        if (view.getExperimentSession().isActive()) {
+            log.info("Experiment ON: press X to exit and restore before pausing");
+            return;
+        }
         boolean paused = !model.isPauseEditing();
         model.setPauseEditing(paused);
         view.setStatusBarText(paused ? "Paused editing: ON (world freezes in edit modes; instant build)"
