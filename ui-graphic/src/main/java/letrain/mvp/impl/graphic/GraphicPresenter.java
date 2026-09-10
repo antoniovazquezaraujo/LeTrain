@@ -747,6 +747,9 @@ public class GraphicPresenter extends ApplicationAdapter
                     return;
                 }
             }
+            // Materialize the terrain under the whole rebuilt network; otherwise tracks outside the
+            // cursor/render radius appear floating over void until the cursor passes over them.
+            materializeGroundUnderTracks();
             // Scenario = free construction mode: keep paused editing on (instant build, frozen world).
             if (!model.isPauseEditing()) {
                 model.setPauseEditing(true);
@@ -757,6 +760,15 @@ public class GraphicPresenter extends ApplicationAdapter
             log.error("Error playing scenario from {}", file.getAbsolutePath(), e);
             showMessage("Scenario Error", "Could not play scenario: " + e.getMessage());
         }
+    }
+
+    /** Generates the ground blocks around every rail tile so the loaded world has terrain visible. */
+    private void materializeGroundUnderTracks() {
+        int r = 2;
+        model.getRailMap().forEach(track -> {
+            letrain.map.Point p = track.getPosition();
+            model.getGroundMap().renderBlock(p.getX() - r, p.getY() - r, r * 2 + 1, r * 2 + 1);
+        });
     }
 
     private void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) {
