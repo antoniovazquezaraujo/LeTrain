@@ -865,7 +865,10 @@ public class TerminalView implements letrain.mvp.View {
                         refList.takeFocus();
                         deliverEvent.set(false);
                     } else if (c == 'e') {
-                        editor.takeFocus();
+                        exportAction.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'i') {
+                        importAction.run();
                         deliverEvent.set(false);
                     } else if (c == 'a') {
                         applyAction.run();

@@ -1212,7 +1212,10 @@ public class Gdx3DHud {
                             }
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.E) {
-                            stage.setKeyboardFocus(textArea);
+                            exportBtn.fire(new ChangeListener.ChangeEvent());
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.I) {
+                            importBtn.fire(new ChangeListener.ChangeEvent());
                             return true;
                         }
                     }
