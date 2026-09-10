@@ -14,3 +14,8 @@ video-list.txt
 load-unload
 inject_2d_videos.py
 **/target/
+
+# Eclipse / m2e project metadata (formatter/IDE local)
+.project
+.classpath
+.settings/
