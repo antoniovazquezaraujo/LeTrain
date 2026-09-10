@@ -1289,10 +1289,11 @@ public class Gdx3DHud {
             fileChooser.setSelectionMode(
                     com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode.FILES);
 
-            // Only show .json files by default
+            // Savegames (*.json) and scenarios (*.ltr)
             com.kotcrab.vis.ui.widget.file.FileTypeFilter filter =
                     new com.kotcrab.vis.ui.widget.file.FileTypeFilter(true);
             filter.addRule("Save game (*.json)", "json");
+            filter.addRule("Scenario (*.ltr)", "ltr");
             fileChooser.setFileTypeFilter(filter);
 
             fileChooser.setDirectory(Gdx.files.local("."));

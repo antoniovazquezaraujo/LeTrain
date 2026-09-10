@@ -854,8 +854,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitSaveCommand(PlayerCommandsParser.SaveCommandContext ctx) {
         String filename = "quicksave.json";
         if (ctx.identifier() != null) {
-            filename = unquote(ctx.identifier().getText());
-            if (!filename.endsWith(".json")) filename += ".json";
+            filename = withDefaultExtension(unquote(ctx.identifier().getText()));
         }
         if (onSave != null) {
             onSave.accept(new java.io.File(filename));
@@ -869,8 +868,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitLoadCommand(PlayerCommandsParser.LoadCommandContext ctx) {
         String filename = "quicksave.json";
         if (ctx.identifier() != null) {
-            filename = unquote(ctx.identifier().getText());
-            if (!filename.endsWith(".json")) filename += ".json";
+            filename = withDefaultExtension(unquote(ctx.identifier().getText()));
         }
         if (onLoad != null) {
             onLoad.accept(new java.io.File(filename));
@@ -878,6 +876,20 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
              throw new RuntimeException("Load not supported in this context.");
         }
         return null;
+    }
+
+    /**
+     * Appends the default savegame extension ({@code .json}) only when the name has none, so a
+     * scenario name like {@code mi-red.ltr} is respected instead of being turned into
+     * {@code mi-red.ltr.json}.
+     */
+    private static String withDefaultExtension(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return "quicksave.json";
+        }
+        int slash = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'));
+        String name = slash >= 0 ? filename.substring(slash + 1) : filename;
+        return name.contains(".") ? filename : filename + ".json";
     }
 
     private static String unquote(String text) {

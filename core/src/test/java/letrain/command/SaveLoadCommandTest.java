@@ -57,4 +57,17 @@ class SaveLoadCommandTest {
     void save_withoutName_defaultsToQuicksave() {
         assertEquals("quicksave.json", savedName("save;"));
     }
+
+    @Test
+    @DisplayName("save \"mi-red.ltr\" keeps the scenario extension (no .json forced)")
+    void save_explicitExtension_isRespected() {
+        assertEquals("mi-red.ltr", savedName("save \"mi-red.ltr\";"));
+        assertEquals("savegame.json", savedName("save \"savegame.json\";"));
+    }
+
+    @Test
+    @DisplayName("load \"mi-red.ltr\" keeps the scenario extension")
+    void load_explicitExtension_isRespected() {
+        assertEquals("mi-red.ltr", loadedName("load \"mi-red.ltr\";"));
+    }
 }
