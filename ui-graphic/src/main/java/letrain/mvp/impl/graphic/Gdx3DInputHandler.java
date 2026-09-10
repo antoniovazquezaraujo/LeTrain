@@ -384,21 +384,6 @@ public class Gdx3DInputHandler implements InputProcessor {
             return;
         }
 
-        // Shift+E exports a scenario, 'i' imports one (dialog with *.ltr). Lowercase 'e' is kept
-        // for the SENSORS mode shortcut.
-        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
-                && stroke.getCharacter() == 'E' && !stroke.isCtrlDown() && !stroke.isAltDown()
-                && model.getMode() != Model.GameMode.PROGRAM) {
-            view.showExportDialog();
-            return;
-        }
-        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
-                && stroke.getCharacter() == 'i' && !stroke.isCtrlDown() && !stroke.isAltDown()
-                && model.getMode() != Model.GameMode.PROGRAM) {
-            view.showImportDialog();
-            return;
-        }
-
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null && stroke.getCharacter() == ':') {
             if (model.getMode() != Model.GameMode.PROGRAM) {
                 model.setMode(Model.GameMode.COMMAND);
