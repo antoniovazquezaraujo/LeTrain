@@ -1932,16 +1932,29 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void playScenario(File file) {
         try {
             String text = java.nio.file.Files.readString(file.toPath());
-            int seed = letrain.command.ScenarioFile.parseSeed(text);
-            applyModel(new letrain.mvp.impl.Model(seed));
-            for (String cmd : letrain.command.ScenarioFile.commandLines(text)) {
+            letrain.command.ScenarioFile.Scenario scenario =
+                    letrain.command.ScenarioFile.parse(text);
+            applyModel(new letrain.mvp.impl.Model(scenario.seed()));
+            for (String cmd : scenario.buildCommands()) {
                 String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                         f -> onSaveGame(f), f -> onLoadGame(f),
                         new letrain.command.TurtleBuilder(model, railTrackMaker),
                         (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
                         null, null, false);
                 if (error != null) {
-                    log.error("Scenario command failed: '{}': {}", cmd, error);
+                    log.error("Scenario build command failed: '{}': {}", cmd, error);
+                    view.showMessage("Scenario Error", cmd + "\n" + error);
+                    return;
+                }
+            }
+            for (String cmd : scenario.startCommands()) {
+                String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                        f -> onSaveGame(f), f -> onLoadGame(f),
+                        new letrain.command.TurtleBuilder(model, railTrackMaker),
+                        (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
+                        null, null, false);
+                if (error != null) {
+                    log.error("Scenario start command failed: '{}': {}", cmd, error);
                     view.showMessage("Scenario Error", cmd + "\n" + error);
                     return;
                 }

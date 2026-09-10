@@ -6,26 +6,32 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Scenario file format (ADR-020 roadmap, item 4 — phase 1). A scenario is a small text file that
- * rebuilds a world's infrastructure on top of a given terrain seed: a {@code seed} header plus the
- * canonical editing commands (the command journal) one per line.
+ * Scenario file format (ADR-020 roadmap, item 4). A scenario is a plain-text file that rebuilds a
+ * world's infrastructure (and operator) on top of a terrain seed:
  *
  * <pre>
  * # LeTrain scenario v1
  * seed 123
- * go 0,0; face e; write 5;
- * new st;
+ * on build {
+ *   go 0,0; face e; write 5;
+ *   new st;
+ * }
+ * on start {
+ *   semaphore 1 close;
+ * }
  * </pre>
  *
  * <p>
- * This class only parses/renders the text; it never touches a model or the filesystem. The caller
- * reads/writes the file and replays {@link #commandLines(String)} through its own command machinery
- * (the same one the console and undo use), on a fresh {@code Model(seed)}.
+ * The {@code on build} section holds the canonical editing commands (the command journal) and is
+ * replayed first; {@code on start} holds optional initial conditions applied right after the build.
+ * Both sections are optional: a flat file with just a seed and commands (no braces) is valid and its
+ * lines are treated as build commands, so older scenarios keep working.
  *
  * <p>
- * Blank lines and {@code #} comments are ignored, so users can annotate scenarios by hand (external
- * editor friendly). The format leaves room to grow into explicit {@code on build}/{@code on start}
- * sections later without breaking these files.
+ * This class only parses/renders the text; it never touches a model or the filesystem. The caller
+ * reads/writes the file and replays the commands through its own command machinery (the same one the
+ * console and undo use), on a fresh {@code Model(seed)}. Blank lines and {@code #} comments are
+ * ignored, so users can annotate scenarios by hand (external editor friendly).
  */
 public final class ScenarioFile {
 
@@ -37,6 +43,9 @@ public final class ScenarioFile {
     private static final Pattern STRAIGHT_WRITE =
             Pattern.compile("go (-?\\d+),(-?\\d+); face ([a-z]{1,2}); write (\\d+);");
 
+    /** Parsed scenario: seed + the two ordered command sections. */
+    public record Scenario(int seed, List<String> buildCommands, List<String> startCommands) {}
+
     private ScenarioFile() {}
 
     /** True when {@code name} looks like a scenario file ({@code *.ltr}). */
@@ -44,15 +53,65 @@ public final class ScenarioFile {
         return name != null && name.toLowerCase().endsWith(EXTENSION);
     }
 
-    /** Renders {@code seed} + the given commands as scenario text. */
-    public static String render(int seed, List<String> commands) {
+    /** Renders the seed and the build commands (no {@code on start}) as scenario text. */
+    public static String render(int seed, List<String> buildCommands) {
+        return render(seed, buildCommands, null);
+    }
+
+    /** Renders {@code seed} + the {@code on build}/{@code on start} sections as scenario text. */
+    public static String render(int seed, List<String> buildCommands, List<String> startCommands) {
         StringBuilder sb = new StringBuilder();
         sb.append(HEADER).append('\n');
         sb.append(SEED_PREFIX).append(seed).append('\n');
-        for (String command : optimize(commands)) {
+        sb.append("on build {\n");
+        for (String command : optimize(buildCommands)) {
             sb.append(command).append('\n');
         }
+        sb.append("}\n");
+        if (startCommands != null && !startCommands.isEmpty()) {
+            sb.append("on start {\n");
+            for (String command : startCommands) {
+                if (command != null && !command.trim().isEmpty()) {
+                    sb.append(command.trim()).append('\n');
+                }
+            }
+            sb.append("}\n");
+        }
         return sb.toString();
+    }
+
+    /**
+     * Parses the terrain seed and the two command sections. Flat files without sections put all
+     * commands in {@code on build}.
+     *
+     * @throws IllegalArgumentException when the file has no {@code seed} line
+     */
+    public static Scenario parse(String text) {
+        int seed = parseSeed(text);
+        List<String> build = new ArrayList<>();
+        List<String> start = new ArrayList<>();
+        boolean inStart = false;
+        for (String rawLine : safeLines(text)) {
+            String line = rawLine.trim();
+            if (line.isEmpty() || line.startsWith("#") || line.startsWith(SEED_PREFIX)) {
+                continue;
+            }
+            String lower = line.toLowerCase();
+            if (lower.startsWith("on build")) {
+                inStart = false;
+                continue;
+            }
+            if (lower.startsWith("on start")) {
+                inStart = true;
+                continue;
+            }
+            if (line.equals("}")) {
+                inStart = false;
+                continue;
+            }
+            (inStart ? start : build).add(line);
+        }
+        return new Scenario(seed, build, start);
     }
 
     /**
@@ -155,17 +214,9 @@ public final class ScenarioFile {
         throw new IllegalArgumentException("Scenario has no '" + SEED_PREFIX.trim() + "' line");
     }
 
-    /** The replayable commands, skipping blank lines, comments and the seed header. */
+    /** The build commands (backward-compatible shortcut for {@code parse(text).buildCommands()}). */
     public static List<String> commandLines(String text) {
-        List<String> commands = new ArrayList<>();
-        for (String rawLine : safeLines(text)) {
-            String line = rawLine.trim();
-            if (line.isEmpty() || line.startsWith("#") || line.startsWith(SEED_PREFIX)) {
-                continue;
-            }
-            commands.add(line);
-        }
-        return commands;
+        return parse(text).buildCommands();
     }
 
     private static String[] safeLines(String text) {

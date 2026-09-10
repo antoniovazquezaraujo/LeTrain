@@ -73,6 +73,32 @@ class ScenarioFileTest {
     }
 
     @Test
+    @DisplayName("on build / on start sections are parsed and rendered")
+    void sections_roundTrip() {
+        String text = ScenarioFile.render(9,
+                List.of("go 0,0; face e; write 2;"),
+                List.of("semaphore 1 close;"));
+        ScenarioFile.Scenario s = ScenarioFile.parse(text);
+
+        assertEquals(9, s.seed());
+        assertEquals(List.of("go 0,0; face e; write 2;"), s.buildCommands());
+        assertEquals(List.of("semaphore 1 close;"), s.startCommands());
+        assertTrue(text.contains("on build {"));
+        assertTrue(text.contains("on start {"));
+    }
+
+    @Test
+    @DisplayName("a flat scenario without sections is treated as on build (backward compatible)")
+    void flat_isBuild() {
+        String text = "# LeTrain scenario v1\nseed 5\ngo 0,0; face e; write 1;\n";
+        ScenarioFile.Scenario s = ScenarioFile.parse(text);
+
+        assertEquals(5, s.seed());
+        assertEquals(List.of("go 0,0; face e; write 1;"), s.buildCommands());
+        assertTrue(s.startCommands().isEmpty());
+    }
+
+    @Test
     @DisplayName("consecutive straight writes are merged into one write N")
     void optimize_mergesStraightWrites() {
         List<String> commands = List.of(

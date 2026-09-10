@@ -733,16 +733,29 @@ public class GraphicPresenter extends ApplicationAdapter
     private void playScenario(File file) {
         try {
             String text = java.nio.file.Files.readString(file.toPath());
-            int seed = letrain.command.ScenarioFile.parseSeed(text);
-            applyLoadedModel(new letrain.mvp.impl.Model(seed), file);
-            for (String cmd : letrain.command.ScenarioFile.commandLines(text)) {
+            letrain.command.ScenarioFile.Scenario scenario =
+                    letrain.command.ScenarioFile.parse(text);
+            applyLoadedModel(new letrain.mvp.impl.Model(scenario.seed()), file);
+            for (String cmd : scenario.buildCommands()) {
                 String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                         f -> onSaveGame(f), f -> onLoadGame(f),
                         new letrain.command.TurtleBuilder(model, trackMaker),
                         (title, msg) -> showMessage(title, msg), () -> onExitGame(),
                         null, null, false);
                 if (error != null) {
-                    log.error("Scenario command failed: '{}': {}", cmd, error);
+                    log.error("Scenario build command failed: '{}': {}", cmd, error);
+                    showMessage("Scenario Error", cmd + "\n" + error);
+                    return;
+                }
+            }
+            for (String cmd : scenario.startCommands()) {
+                String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                        f -> onSaveGame(f), f -> onLoadGame(f),
+                        new letrain.command.TurtleBuilder(model, trackMaker),
+                        (title, msg) -> showMessage(title, msg), () -> onExitGame(),
+                        null, null, false);
+                if (error != null) {
+                    log.error("Scenario start command failed: '{}': {}", cmd, error);
                     showMessage("Scenario Error", cmd + "\n" + error);
                     return;
                 }
