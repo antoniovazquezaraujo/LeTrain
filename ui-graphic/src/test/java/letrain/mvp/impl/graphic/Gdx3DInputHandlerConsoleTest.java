@@ -111,6 +111,13 @@ class Gdx3DInputHandlerConsoleTest {
     }
 
     @Test
+    @DisplayName("Shift+X triggers experiment mode toggle")
+    void shiftX_togglesExperimentMode() {
+        handler.onChar(charKey('X'));
+        org.mockito.Mockito.verify(view).toggleExperimentMode();
+    }
+
+    @Test
     @DisplayName("'.' outside COMMAND repeats the last executed command")
     void dotRepeatsLastCommand() {
         executeInConsole("go 7,0; face e; write 1;"); // build a tile at (7,0)
