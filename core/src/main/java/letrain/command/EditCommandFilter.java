@@ -4,11 +4,14 @@ package letrain.command;
  * Classifies console command lines for the recorders (command journal and undo history, ADR-020).
  *
  * <p>A line is <b>non-recordable</b> when it changes no world state: pure navigation ({@code go},
- * {@code face}, {@code move}, {@code mark}) or control/info commands ({@code undo}, {@code save},
- * ...). A line that mixes navigation with an edit — e.g. {@code go 0,0; face e; new sg;} — IS
- * recordable: the funnel stores the canonical self-positioned form, so recording the whole line is
- * deterministic. The earlier check looked only at the first token, so any line starting with
- * {@code go} was dropped even when it contained an edit.
+ * {@code face}, {@code move}) or control/info commands ({@code undo}, {@code save}, ...). A line that
+ * mixes navigation with an edit — e.g. {@code go 0,0; face e; new sg;} — IS recordable: the funnel
+ * stores the canonical self-positioned form, so recording the whole line is deterministic. The
+ * earlier check looked only at the first token, so any line starting with {@code go} was dropped even
+ * when it contained an edit.
+ *
+ * <p>{@code mark x;} (and its alias {@code m x;}) is treated as an edit: it changes model state (a
+ * named position). Recording it keeps {@code go mark x;} reproducible in a replayed scenario.
  */
 public final class EditCommandFilter {
 
@@ -48,7 +51,6 @@ public final class EditCommandFilter {
 
     private static boolean isNavigation(String statement) {
         return statement.startsWith("go") || statement.startsWith("face")
-                || statement.startsWith("move") || statement.startsWith("mark")
-                || statement.startsWith("m ");
+                || statement.startsWith("move");
     }
 }

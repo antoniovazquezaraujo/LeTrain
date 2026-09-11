@@ -1,6 +1,7 @@
 package letrain.mvp.impl.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import letrain.audio.AudioController;
@@ -233,5 +234,29 @@ class TerminalPresenterKeyboardEditTest {
         console(presenter, "go 1,1;");
         assertEquals(1, model.getCommandJournal().size(),
                 "pure navigation must not be recorded");
+    }
+
+    @Test
+    @DisplayName("setting a mark is journaled so 'go mark' is reproducible on replay")
+    void consoleMark_isJournaled() {
+        Model model = new Model(1);
+        model.updateGroundMap(new Point(-30, -30), 60, 60);
+        model.getCursor().setPosition(new Point(7, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.RAILS);
+
+        TerminalPresenter presenter = silentPresenter(model);
+        presenter.onChar(charKey('R')); // Record/edit mode: recording starts
+
+        console(presenter, "mark home;");
+        assertEquals(1, model.getCommandJournal().size(),
+                "setting a mark must be recorded");
+        assertTrue(model.getCommandJournal().entries().get(0).endsWith("mark home;"),
+                model.getCommandJournal().entries().get(0));
+
+        // Jumping to a mark is navigation: not recorded on its own (the mark already is).
+        console(presenter, "go mark home;");
+        assertEquals(1, model.getCommandJournal().size(),
+                "navigating to a mark must not be recorded");
     }
 }

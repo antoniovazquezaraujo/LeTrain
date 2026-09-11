@@ -15,8 +15,8 @@ class EditCommandFilterTest {
         assertTrue(EditCommandFilter.isNonRecordable("go 5,5;"));
         assertTrue(EditCommandFilter.isNonRecordable("go 5,5; face e;"));
         assertTrue(EditCommandFilter.isNonRecordable("move 3;"));
-        assertTrue(EditCommandFilter.isNonRecordable("mark 2;"));
-        assertTrue(EditCommandFilter.isNonRecordable("m 2;"));
+        assertTrue(EditCommandFilter.isNonRecordable("go mark home;"));
+        assertTrue(EditCommandFilter.isNonRecordable("face mark home;"));
         assertTrue(EditCommandFilter.isNonRecordable("undo;"));
         assertTrue(EditCommandFilter.isNonRecordable("ls;"));
         assertTrue(EditCommandFilter.isNonRecordable("save foo;"));
@@ -32,6 +32,10 @@ class EditCommandFilterTest {
         assertFalse(EditCommandFilter.isNonRecordable("go 7,0; face e; write 1;"));
         assertFalse(EditCommandFilter.isNonRecordable("go 7,0; face e; signal 1 set limit 4;"));
         assertFalse(EditCommandFilter.isNonRecordable("go 7,0; face e; slide sn 1 fw 2;"));
+        // Setting a mark is state (so 'go mark' is reproducible on replay).
+        assertFalse(EditCommandFilter.isNonRecordable("mark home;"));
+        assertFalse(EditCommandFilter.isNonRecordable("m home;"));
+        assertFalse(EditCommandFilter.isNonRecordable("go mark home; new sn;"));
     }
 
     @Test
