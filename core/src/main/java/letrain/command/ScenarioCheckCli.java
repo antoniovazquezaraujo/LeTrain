@@ -5,7 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Headless scenario check CLI (ADR-020 item 4 tooling): {@code <launcher> --check file.ltr}. Prints
+ * Headless scenario check CLI (ADR-020 item 4 tooling), used by the {@code letrain-check} executable:
+ * {@code letrain-check file.ltr} (a leading {@code --check}/{@code -c} is accepted). Prints
  * compiler-style diagnostics ({@code path:line:col: error: message}) and returns an exit code, so
  * editors (e.g. vim's {@code :make}) can validate a scenario without starting the game.
  *
@@ -16,19 +17,19 @@ public final class ScenarioCheckCli {
 
     private ScenarioCheckCli() {}
 
-    /** True when these program args request a scenario check. */
-    public static boolean isCheckInvocation(String[] args) {
-        return args != null && args.length >= 1
-                && ("--check".equals(args[0]) || "-c".equals(args[0]) || "check".equals(args[0]));
-    }
-
     /** Runs the check and returns the process exit code. */
     public static int run(String[] args) {
-        if (args.length < 2 || args[1] == null || args[1].isEmpty()) {
-            System.err.println("usage: --check <file.ltr>");
+        String path = null;
+        if (args != null && args.length >= 1 && args[0] != null && !args[0].isEmpty()) {
+            path = args[0];
+            if ("--check".equals(path) || "-c".equals(path) || "check".equals(path)) {
+                path = args.length >= 2 ? args[1] : null;
+            }
+        }
+        if (path == null || path.isEmpty()) {
+            System.err.println("usage: letrain-check <file.ltr>");
             return 2;
         }
-        String path = args[1];
         try {
             String text = Files.readString(Path.of(path));
             ScenarioCompiler.Result result = ScenarioCompiler.compile(text);

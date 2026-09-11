@@ -7,10 +7,6 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 
 public class LeTrainGraphic {
     public static void main(String[] args) {
-        if (letrain.command.ScenarioCheckCli.isCheckInvocation(args)) {
-            System.exit(letrain.command.ScenarioCheckCli.run(args));
-            return;
-        }
         Model model = new Model();
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
         config.setTitle("LeTrain 3D - Wooden Edition");
