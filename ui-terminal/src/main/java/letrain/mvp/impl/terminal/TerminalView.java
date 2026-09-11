@@ -695,6 +695,8 @@ public class TerminalView implements letrain.mvp.View {
         final String[] programBuffer = {gameViewListener.getProgram()};
         final String[] scenarioBuffer = {
                 scenarioDraft != null ? scenarioDraft : gameViewListener.getScenarioText()};
+        final Runnable[] rebuildTabFooter = {() -> {
+        }};
 
         Panel tabBar = new Panel(new LinearLayout(Direction.HORIZONTAL));
         mainPanel.addComponent(tabBar, BorderLayout.Location.TOP);
@@ -790,8 +792,10 @@ public class TerminalView implements letrain.mvp.View {
 
         mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
 
-        // Footer (Buttons): rebuilt per tab.
-        final Panel footer = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        // Footer: one row for the active tab's actions, one common row below.
+        final Panel tabFooter = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        final Panel commonFooter = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        final Panel footerColumn = new Panel(new LinearLayout(Direction.VERTICAL));
 
         final Runnable switchToProgram = () -> {
             if (!scenarioTab[0]) {
@@ -801,6 +805,7 @@ public class TerminalView implements letrain.mvp.View {
             scenarioDraft = scenarioBuffer[0];
             scenarioTab[0] = false;
             editor.setText(programBuffer[0]);
+            rebuildTabFooter[0].run();
         };
         final Runnable switchToScenario = () -> {
             if (scenarioTab[0]) {
@@ -809,6 +814,7 @@ public class TerminalView implements letrain.mvp.View {
             programBuffer[0] = editor.getText();
             scenarioTab[0] = true;
             editor.setText(scenarioBuffer[0]);
+            rebuildTabFooter[0].run();
         };
 
         final Runnable regenerateAction = () -> {
@@ -946,15 +952,23 @@ public class TerminalView implements letrain.mvp.View {
                     }
                 };
 
-        // Single footer for both tabs.
-        addFooterButton(footer, mnemonicRenderer, "Save", saveAction);
-        addFooterButton(footer, mnemonicRenderer, "Load", loadAction);
-        addFooterButton(footer, mnemonicRenderer, "Import", importAction);
-        addFooterButton(footer, mnemonicRenderer, "Export", exportScenario);
-        addFooterButton(footer, mnemonicRenderer, "Apply", applyAction);
-        addFooterButton(footer, mnemonicRenderer, "Regenerate", regenerateScenario);
-        addFooterButton(footer, mnemonicRenderer, "Ok", okAction);
-        addFooterButton(footer, mnemonicRenderer, "Cancel", cancelAction);
+        // Row 1: actions for the active tab (rebuilt on switch). Row 2: common actions.
+        rebuildTabFooter[0] = () -> {
+            tabFooter.removeAllComponents();
+            if (scenarioTab[0]) {
+                addFooterButton(tabFooter, mnemonicRenderer, "Import", importAction);
+                addFooterButton(tabFooter, mnemonicRenderer, "Export", exportScenario);
+                addFooterButton(tabFooter, mnemonicRenderer, "Regenerate", regenerateScenario);
+            }
+            addFooterButton(tabFooter, mnemonicRenderer, "Apply", applyAction);
+        };
+        addFooterButton(commonFooter, mnemonicRenderer, "Save game", saveAction);
+        addFooterButton(commonFooter, mnemonicRenderer, "Load game", loadAction);
+        addFooterButton(commonFooter, mnemonicRenderer, "Ok", okAction);
+        addFooterButton(commonFooter, mnemonicRenderer, "Cancel", cancelAction);
+        footerColumn.addComponent(tabFooter);
+        footerColumn.addComponent(commonFooter);
+        rebuildTabFooter[0].run();
 
         Button programTabBtn = new Button("Program", switchToProgram);
         programTabBtn.setRenderer(mnemonicRenderer);
@@ -1007,7 +1021,7 @@ public class TerminalView implements letrain.mvp.View {
             }
         });
 
-        mainPanel.addComponent(footer, BorderLayout.Location.BOTTOM);
+        mainPanel.addComponent(footerColumn, BorderLayout.Location.BOTTOM);
 
         window.setComponent(mainPanel);
         gui.addWindowAndWait(window);
