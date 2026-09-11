@@ -9,12 +9,17 @@ import letrain.map.Point;
 import letrain.mvp.impl.Model;
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
+import letrain.track.RailSemaphore;
+import letrain.track.Sensor;
+import letrain.track.Station;
+import letrain.track.rail.RailTrack;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Keyboard state toggles (signal invert/mode/limit, fork route) must be recorded into the journal
- * exactly like console commands, so they show up in the exported scenario and can be undone.
+ * Keyboard state toggles (signal invert/mode/limit, fork route, station/sensor/semaphore invert) must
+ * be recorded into the journal exactly like console commands, so they show up in the exported
+ * scenario and can be undone.
  */
 @DisplayName("2D terminal: keyboard state toggles are recorded")
 class TerminalPresenterKeyboardEditTest {
@@ -98,6 +103,86 @@ class TerminalPresenterKeyboardEditTest {
                 model.getCommandJournal().entries().get(1));
         assertEquals("go 7,0; face e; signal " + sig.getId() + " set limit 4;",
                 model.getCommandJournal().entries().get(2));
+    }
+
+    /** An east-west rail tile at (x,y) with no component yet. */
+    private static RailTrack trackAt(Model model, int x, int y) {
+        RailTrack track = new RailTrack();
+        track.addRoute(Dir.E, Dir.W);
+        track.addRoute(Dir.W, Dir.E);
+        track.setPosition(new Point(x, y));
+        model.getRailMap().addTrack(track.getPosition(), track);
+        return track;
+    }
+
+    @Test
+    @DisplayName("inverting a plain sensor from the keyboard is journaled")
+    void keyboardSensorInvert_isJournaled() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = silentPresenter(model);
+        RailTrack track = trackAt(model, 0, 0);
+        Sensor sensor = new Sensor(model.nextSensorId());
+        sensor.setTrack(track);
+        sensor.setCreationDir(Dir.E);
+        track.setComponent(sensor);
+        model.addSensor(sensor);
+
+        presenter.onChar(charKey('R')); // Record/edit mode: recording starts
+        model.selectSensor(sensor.getId());
+        model.setMode(Model.GameMode.SENSORS);
+
+        presenter.onChar(charKey(' '));
+
+        assertEquals(1, model.getCommandJournal().size());
+        assertEquals("sensor " + sensor.getId() + " invert;",
+                model.getCommandJournal().entries().get(0));
+    }
+
+    @Test
+    @DisplayName("inverting a station from the keyboard is journaled")
+    void keyboardStationInvert_isJournaled() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = silentPresenter(model);
+        RailTrack track = trackAt(model, 0, 0);
+        Station station = new Station(model.nextStationId());
+        station.setTrack(track);
+        station.setCreationDir(Dir.E);
+        station.setSideDir(Dir.E.turnRight().turnRight());
+        track.setComponent(station);
+        model.addStation(station);
+
+        presenter.onChar(charKey('R'));
+        model.selectStation(station.getId());
+        model.setMode(Model.GameMode.STATIONS);
+
+        presenter.onChar(charKey(' '));
+
+        assertEquals(1, model.getCommandJournal().size());
+        assertEquals("station " + station.getId() + " invert;",
+                model.getCommandJournal().entries().get(0));
+    }
+
+    @Test
+    @DisplayName("inverting a semaphore from the keyboard is journaled")
+    void keyboardSemaphoreInvert_isJournaled() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = silentPresenter(model);
+        RailTrack track = trackAt(model, 0, 0);
+        RailSemaphore semaphore = new RailSemaphore(model.nextSemaphoreId());
+        semaphore.setTrack(track);
+        semaphore.setCreationDir(Dir.E);
+        track.setComponent(semaphore);
+        model.addSemaphore(semaphore);
+
+        presenter.onChar(charKey('R'));
+        model.selectSemaphore(semaphore.getId());
+        model.setMode(Model.GameMode.SEMAPHORES);
+
+        presenter.onChar(charKey(' ')); // Space inverts the semaphore direction
+
+        assertEquals(1, model.getCommandJournal().size());
+        assertEquals("semaphore " + semaphore.getId() + " invert;",
+                model.getCommandJournal().entries().get(0));
     }
 
     @Test

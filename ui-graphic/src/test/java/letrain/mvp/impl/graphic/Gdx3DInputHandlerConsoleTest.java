@@ -191,6 +191,58 @@ class Gdx3DInputHandlerConsoleTest {
                 .journalEditingCommand("fork " + fork.getId() + " set curved;");
     }
 
+    /** An east-west rail tile at (x,y) with no component yet. */
+    private static letrain.track.rail.RailTrack trackAt(Model model, int x, int y) {
+        letrain.track.rail.RailTrack track = new letrain.track.rail.RailTrack();
+        track.addRoute(Dir.E, Dir.W);
+        track.addRoute(Dir.W, Dir.E);
+        track.setPosition(new Point(x, y));
+        model.getRailMap().addTrack(track.getPosition(), track);
+        return track;
+    }
+
+    @Test
+    @DisplayName("inverting station/sensor/semaphore from the keyboard journals the commands")
+    void keyboardElementToggles_areJournaled() {
+        letrain.track.rail.RailTrack sensorTrack = trackAt(model, 0, 0);
+        letrain.track.Sensor sensor = new letrain.track.Sensor(model.nextSensorId());
+        sensor.setTrack(sensorTrack);
+        sensor.setCreationDir(Dir.E);
+        sensorTrack.setComponent(sensor);
+        model.addSensor(sensor);
+        model.selectSensor(sensor.getId());
+        model.setMode(Model.GameMode.SENSORS);
+        handler.onChar(charKey(' '));
+        org.mockito.Mockito.verify(view)
+                .journalEditingCommand("sensor " + sensor.getId() + " invert;");
+
+        letrain.track.rail.RailTrack semaphoreTrack = trackAt(model, 2, 0);
+        letrain.track.RailSemaphore semaphore =
+                new letrain.track.RailSemaphore(model.nextSemaphoreId());
+        semaphore.setTrack(semaphoreTrack);
+        semaphore.setCreationDir(Dir.E);
+        semaphoreTrack.setComponent(semaphore);
+        model.addSemaphore(semaphore);
+        model.selectSemaphore(semaphore.getId());
+        model.setMode(Model.GameMode.SEMAPHORES);
+        handler.onChar(charKey(' '));
+        org.mockito.Mockito.verify(view)
+                .journalEditingCommand("semaphore " + semaphore.getId() + " invert;");
+
+        letrain.track.rail.RailTrack stationTrack = trackAt(model, 4, 0);
+        letrain.track.Station station = new letrain.track.Station(model.nextStationId());
+        station.setTrack(stationTrack);
+        station.setCreationDir(Dir.E);
+        station.setSideDir(Dir.E.turnRight().turnRight());
+        stationTrack.setComponent(station);
+        model.addStation(station);
+        model.selectStation(station.getId());
+        model.setMode(Model.GameMode.STATIONS);
+        handler.onChar(charKey(' '));
+        org.mockito.Mockito.verify(view)
+                .journalEditingCommand("station " + station.getId() + " invert;");
+    }
+
     @Test
     @DisplayName("finishing a train (Enter in TRAINS) returns to RAILS, not the empty menu")
     void enterInTrains_returnsToRails() {

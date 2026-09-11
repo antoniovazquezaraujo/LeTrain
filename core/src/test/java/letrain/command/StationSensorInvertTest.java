@@ -163,4 +163,21 @@ class StationSensorInvertTest {
                 .findFirst().orElseThrow();
         assertEquals(Dir.W, plain.getCreationDir());
     }
+
+    @Test
+    @DisplayName("semaphore 1 invert flips its creation direction")
+    void semaphore_invert_flipsCreationDir() {
+        // Arrange
+        buildEastWestLine(0, 3);
+        run("new sm;");
+        letrain.track.RailSemaphore semaphore = model.getSemaphores().get(0);
+        assertEquals(Dir.E, semaphore.getCreationDir(), "cursor faced E at creation");
+
+        // Act
+        run("semaphore 1 invert;");
+
+        // Assert
+        assertEquals(Dir.W, semaphore.getCreationDir(), "semaphore should now face west");
+        assertSame(semaphore, model.getSemaphore(1), "invert must keep the same semaphore");
+    }
 }
