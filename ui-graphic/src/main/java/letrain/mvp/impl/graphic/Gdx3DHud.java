@@ -66,6 +66,10 @@ public class Gdx3DHud {
         return ideWindow != null;
     }
 
+    private boolean hasScenarioToExport() {
+        return model.getCommandJournal() != null && !model.getCommandJournal().isEmpty();
+    }
+
     private void initUI() {
         skin = new Skin();
 
@@ -988,8 +992,10 @@ public class Gdx3DHud {
             footer.add(cancelBtn).pad(5);
 
             // Nothing to export if the command journal is empty.
-            exportBtn.setDisabled(
-                    model.getCommandJournal() == null || model.getCommandJournal().isEmpty());
+            exportBtn.setDisabled(!hasScenarioToExport());
+            if (exportBtn.isDisabled()) {
+                exportBtn.getLabel().setColor(Color.GRAY);
+            }
 
             // ASSEMBLY & VISIBILITY SYNC
             Table mainContent = new Table();
@@ -1121,6 +1127,9 @@ public class Gdx3DHud {
             exportBtn.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
+                    if (!hasScenarioToExport()) {
+                        return;
+                    }
                     view.showExportDialog();
                 }
             });
@@ -1216,7 +1225,9 @@ public class Gdx3DHud {
                             }
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.E) {
-                            exportBtn.fire(new ChangeListener.ChangeEvent());
+                            if (!exportBtn.isDisabled()) {
+                                exportBtn.fire(new ChangeListener.ChangeEvent());
+                            }
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.I) {
                             importBtn.fire(new ChangeListener.ChangeEvent());
