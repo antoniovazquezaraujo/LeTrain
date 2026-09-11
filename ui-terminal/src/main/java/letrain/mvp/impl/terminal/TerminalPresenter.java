@@ -1920,7 +1920,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 return;
             }
             java.nio.file.Files.writeString(file.toPath(),
-                    letrain.command.ScenarioFile.render(model.getSeed(), journal.entries()));
+                    letrain.command.ScenarioExporter.render(model, journal.entries()));
             view.setStatusBarText("Scenario saved: " + file.getName());
         } catch (Exception e) {
             log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
