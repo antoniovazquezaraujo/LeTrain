@@ -996,7 +996,7 @@ public class TerminalView implements letrain.mvp.View {
                     } else if (c == 'l') {
                         loadAction.run();
                         deliverEvent.set(false);
-                    } else if (c == 'k') {
+                    } else if (c == 'o') {
                         okAction.run();
                         deliverEvent.set(false);
                     } else if (c == 'c') {
