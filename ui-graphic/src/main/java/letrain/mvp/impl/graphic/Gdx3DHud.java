@@ -39,6 +39,7 @@ public class Gdx3DHud {
     private Table menuTable;
     private Label descLabel;
     private Label globalHelpLabel;
+    private Label recDot;
     private Label balanceLabel;
     private Label incomeLabel;
     private Label expensesLabel;
@@ -287,6 +288,16 @@ public class Gdx3DHud {
         pixmapTriangleW.fillTriangle(0, 8, 16, 0, 16, 16);
         skin.add("white-triangle", new Texture(pixmapTriangleW));
 
+        // Top-left REC indicator (blinking red dot while the command journal records)
+        Table mainTopTable = new Table();
+        mainTopTable.setFillParent(true);
+        mainTopTable.top().left();
+        recDot = new Label("● REC", skin, "small");
+        recDot.setColor(Color.RED);
+        recDot.setVisible(false);
+        mainTopTable.add(recDot).pad(6);
+        stage.addActor(mainTopTable);
+
         // Bottom UI Container
         Table mainBottomTable = new Table();
         mainBottomTable.setFillParent(true);
@@ -300,7 +311,7 @@ public class Gdx3DHud {
         descLabel.setWrap(true);
         descLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
         globalHelpLabel = new Label(
-                "[LIGHT_GRAY][ALT+⏶⏷/kj / MOUSE WHEEL]: ZOOM | [ALT+⏴⏵/hl]: ROTATE CAMERA | [Z]: CHANGE CAMERA VIEW[]",
+                "[LIGHT_GRAY][ALT+⏶⏷/kj / MOUSE WHEEL]: ZOOM | [ALT+⏴⏵/hl]: ROTATE CAMERA | [Z]: CHANGE CAMERA VIEW | [R]: RECORD[]",
                 skin, "tiny");
         globalHelpLabel.setWrap(true);
         globalHelpLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
@@ -427,6 +438,12 @@ public class Gdx3DHud {
     }
 
     public void updateUIData() {
+        // Blinking REC indicator while the command journal records.
+        if (recDot != null) {
+            boolean recording = model.getCommandJournal() != null
+                    && model.getCommandJournal().isRecording();
+            recDot.setVisible(recording && (System.currentTimeMillis() / 500) % 2 == 0);
+        }
         // Update HUD (Finances)
         if (model.getEconomyManager() != null) {
             long balance = (long) model.getEconomyManager().getBalance();

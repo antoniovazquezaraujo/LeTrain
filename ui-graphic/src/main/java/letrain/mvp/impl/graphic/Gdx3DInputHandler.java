@@ -384,6 +384,16 @@ public class Gdx3DInputHandler implements InputProcessor {
             return;
         }
 
+        // Shift+R toggles command-journal recording (the red REC dot shows the state).
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
+                && stroke.getCharacter() == 'R' && !stroke.isCtrlDown() && !stroke.isAltDown()
+                && model.getMode() != Model.GameMode.PROGRAM) {
+            model.getCommandJournal().toggleRecording();
+            log.info("Record: {}",
+                    model.getCommandJournal().isRecording() ? "ON" : "OFF");
+            return;
+        }
+
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null && stroke.getCharacter() == ':') {
             if (model.getMode() != Model.GameMode.PROGRAM) {
                 model.setMode(Model.GameMode.COMMAND);

@@ -179,6 +179,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
+    /** Toggles command-journal recording (key R) and reports the new state. */
+    private void toggleCommandRecording() {
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        journal.toggleRecording();
+        view.setStatusBarText(journal.isRecording() ? "Record: ON" : "Record: OFF");
+    }
+
     private void initModeKeyHandlers() {
         modeKeyHandlers.put(RAILS, keyEvent -> railTrackMaker.onChar(keyEvent));
         modeKeyHandlers.put(letrain.mvp.Model.GameMode.ADD, keyEvent -> handleAddModeKey(keyEvent));
@@ -754,6 +761,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             case 'X':
                 if (model.getMode() != letrain.mvp.Model.GameMode.PROGRAM) {
                     toggleExperimentMode();
+                    return true;
+                }
+                return false;
+            case 'R':
+                if (model.getMode() != letrain.mvp.Model.GameMode.PROGRAM) {
+                    toggleCommandRecording();
                     return true;
                 }
                 return false;
@@ -2007,6 +2020,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     public boolean canExportScenario() {
         letrain.command.CommandJournal journal = model.getCommandJournal();
         return journal != null && !journal.isEmpty();
+    }
+
+    @Override
+    public boolean isRecordingCommands() {
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        return journal != null && journal.isRecording();
     }
 
     @Override
