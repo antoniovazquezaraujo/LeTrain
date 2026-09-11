@@ -136,6 +136,8 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Register as listener for audio events
         model.addCoreTrainEventListener(this);
+        // Command journal ON by default so exports never miss edits the player forgot to record.
+        model.getCommandJournal().startRecording();
     }
 
     public Stage getStage() {
@@ -523,6 +525,7 @@ public class GraphicPresenter extends ApplicationAdapter
         }
         newModel.addCoreTrainEventListener(this);
         newModel.setPauseEditing(wasPaused);
+        newModel.getCommandJournal().startRecording();
         letrain.map.Point startPos = newModel.getCursor().getPosition();
         newModel.getGroundMap().renderBlock(startPos.getX() - getCols() / 2,
                 startPos.getY() - getRows() / 2, getCols(), getRows());
@@ -837,6 +840,7 @@ public class GraphicPresenter extends ApplicationAdapter
                 startPos.getY() - getRows() / 2, getCols(), getRows());
         // Loading a savegame uses normal economy (scenario import re-enables free construction).
         model.getEconomyManager().setFreeConstruction(false);
+        model.getCommandJournal().startRecording();
     }
 
     @Override

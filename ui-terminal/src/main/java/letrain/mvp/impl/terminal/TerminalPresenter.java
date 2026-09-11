@@ -237,6 +237,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         this.model.addCoreTrainEventListener(this);
         // Loading a savegame / starting fresh uses normal economy (scenario import re-enables it).
         this.model.getEconomyManager().setFreeConstruction(false);
+        // Command journal ON by default so exports never miss edits the player forgot to record.
+        this.model.getCommandJournal().startRecording();
     }
 
     /**
@@ -269,6 +271,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 new SimulationController(this.model, audioController, railTrackMaker);
         this.model.addCoreTrainEventListener(this);
         this.model.setPauseEditing(wasPaused);
+        this.model.getCommandJournal().startRecording();
         letrain.map.Point focus = getActiveFocusPoint();
         if (focus != null) {
             view.centerOn(focus.getX(), focus.getY());
