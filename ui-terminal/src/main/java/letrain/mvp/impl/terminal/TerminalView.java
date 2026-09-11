@@ -342,6 +342,18 @@ public class TerminalView implements letrain.mvp.View {
                 }
             }
             
+            // REC indicator: blinking red "REC" in the top-left corner while the journal records.
+            if (gameViewListener.isRecordingCommands()
+                    && (System.currentTimeMillis() / 500) % 2 == 0) {
+                String rec = "REC";
+                for (int i = 0; i < rec.length(); i++) {
+                    gameBox.setCharacter(i, 0,
+                            TextCharacter.fromCharacter(rec.charAt(i),
+                                    com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT,
+                                    com.googlecode.lanterna.TextColor.ANSI.BLACK)[0]);
+                }
+            }
+
             if (overlayMessage != null) {
                 int width = Math.min(60, screen.getTerminalSize().getColumns() - 2);
                 int height = Math.min(25, screen.getTerminalSize().getRows() - 2);
@@ -459,7 +471,8 @@ public class TerminalView implements letrain.mvp.View {
             return;
         }
         menuBox.setForegroundColor(DISABLED_FG_COLOR);
-        menuBox.putString(menuBoxPosition.withRelative(1, 4), text);
+        menuBox.putString(menuBoxPosition.withRelative(1, 4),
+                text + " | [R]: Record " + (gameViewListener.isRecordingCommands() ? "ON" : "OFF"));
         menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
     }
 

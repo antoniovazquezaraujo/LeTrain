@@ -77,16 +77,14 @@ public class RailTrackMaker {
         }
         String text = "go " + position.getX() + "," + position.getY() + "; face "
                 + dir.name().toLowerCase() + "; " + action + ";";
-        // The command journal (ADR-020 item 2) records the editing session whenever recording is on,
-        // so a scenario can be exported from hand-painted work too (the console funnel records its
-        // own lines and suppresses this path via TurtleBuilder).
+        // Only while the world is frozen in edit mode: the command journal (ADR-020 item 2) and the
+        // undo history (item 3) must capture the same edits, in lockstep.
+        if (!model.isSimulationPaused()) {
+            return;
+        }
         letrain.command.CommandJournal journal = model.getCommandJournal();
         if (journal != null && journal.isRecording()) {
             journal.record(text);
-        }
-        // The undo history (item 3) only exists while paused editing freezes the world.
-        if (!model.isSimulationPaused()) {
-            return;
         }
         letrain.command.UndoRedoHistory history = presenter.getUndoRedoHistory();
         if (history == null) {

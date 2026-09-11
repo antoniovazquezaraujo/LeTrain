@@ -370,17 +370,19 @@ public class Gdx3DInputHandler implements InputProcessor {
             return;
         }
 
-        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null && stroke.getCharacter() == 'x'
-                && !stroke.isCtrlDown() && !stroke.isAltDown()) {
-            togglePauseEditing();
-            return;
-        }
-
         // Shift+X toggles experiment mode (live sandbox with in-memory snapshot/restore).
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
                 && stroke.getCharacter() == 'X' && !stroke.isCtrlDown() && !stroke.isAltDown()
                 && model.getMode() != Model.GameMode.PROGRAM) {
             view.toggleExperimentMode();
+            return;
+        }
+
+        // Shift+R toggles the Record/edit mode (freeze + instant build + undo/redo + journal).
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
+                && stroke.getCharacter() == 'R' && !stroke.isCtrlDown() && !stroke.isAltDown()
+                && model.getMode() != Model.GameMode.PROGRAM) {
+            togglePauseEditing();
             return;
         }
 
@@ -602,9 +604,10 @@ public class Gdx3DInputHandler implements InputProcessor {
         // auto-capture must target the current model, not the stale one this handler was built on.
         letrain.mvp.Model current = view.getModel();
         // Command journal (ADR-020 item 2): record the canonical, self-positioned form so an
-        // exported scenario replays at the right place (the executor's raw auto-record is disabled).
+        // exported scenario replays at the right place. Same gate as undo, so both stay 1:1.
         letrain.command.CommandJournal journal = current.getCommandJournal();
-        if (journal != null && journal.isRecording() && !isNonRecordableCommand(cmd)) {
+        if (current.isSimulationPaused() && journal.isRecording()
+                && !isNonRecordableCommand(cmd)) {
             journal.record(prefix + cmd);
         }
         // Auto-capture in pause (ADR-020 item 3): while pause-editing freezes the world, every

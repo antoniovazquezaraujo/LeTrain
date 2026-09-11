@@ -22,6 +22,11 @@ public interface GameViewListener {
         return true;
     }
 
+    /** Whether the command journal is currently recording edits (for the REC indicator). */
+    default boolean isRecordingCommands() {
+        return false;
+    }
+
     void onSaveCommands(File file);
 
     void onLoadCommands(File file);

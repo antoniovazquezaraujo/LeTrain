@@ -357,6 +357,9 @@ public interface Model {
      */
     letrain.command.CommandJournal getCommandJournal();
 
+    /** Binds a (presenter-owned) journal so it survives model swaps. */
+    void setCommandJournal(letrain.command.CommandJournal journal);
+
     /** Terrain seed of this model; a scenario stores it to rebuild an identical world. */
     int getSeed();
 
