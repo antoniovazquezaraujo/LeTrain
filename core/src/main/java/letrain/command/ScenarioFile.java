@@ -19,12 +19,16 @@ import java.util.regex.Pattern;
  * on start {
  *   semaphore 1 close;
  * }
+ * program {
+ *   sensor 1 on train enter { semaphore 1 open; }
+ * }
  * </pre>
  *
  * <p>
  * The {@code on build} section holds the canonical editing commands (the command journal) and is
- * replayed first; {@code on start} holds optional initial conditions applied right after the build.
- * Both sections are optional: a flat file with just a seed and commands (no braces) is valid and its
+ * replayed first; {@code on start} holds optional initial conditions applied right after the build;
+ * {@code program} holds the verbatim automation script installed after that (may nest braces). All
+ * sections are optional: a flat file with just a seed and commands (no braces) is valid and its
  * lines are treated as build commands, so older scenarios keep working.
  *
  * <p>
@@ -43,8 +47,12 @@ public final class ScenarioFile {
     private static final Pattern STRAIGHT_WRITE =
             Pattern.compile("go (-?\\d+),(-?\\d+); face ([a-z]{1,2}); write (\\d+);");
 
-    /** Parsed scenario: seed + the two ordered command sections. */
-    public record Scenario(int seed, List<String> buildCommands, List<String> startCommands) {}
+    /**
+     * Parsed scenario: seed + the ordered build/start command sections + the (verbatim) automation
+     * program, which may be empty.
+     */
+    public record Scenario(
+            int seed, List<String> buildCommands, List<String> startCommands, String program) {}
 
     private ScenarioFile() {}
 
@@ -55,11 +63,20 @@ public final class ScenarioFile {
 
     /** Renders the seed and the build commands (no {@code on start}) as scenario text. */
     public static String render(int seed, List<String> buildCommands) {
-        return render(seed, buildCommands, null);
+        return render(seed, buildCommands, null, null);
     }
 
     /** Renders {@code seed} + the {@code on build}/{@code on start} sections as scenario text. */
     public static String render(int seed, List<String> buildCommands, List<String> startCommands) {
+        return render(seed, buildCommands, startCommands, null);
+    }
+
+    /**
+     * Renders {@code seed} + the {@code on build}/{@code on start}/{@code program} sections. The
+     * program is written verbatim (comments/indentation preserved), so it stays editable by hand.
+     */
+    public static String render(int seed, List<String> buildCommands, List<String> startCommands,
+            String program) {
         StringBuilder sb = new StringBuilder();
         sb.append(HEADER).append('\n');
         sb.append(SEED_PREFIX).append(seed).append('\n');
@@ -77,12 +94,20 @@ public final class ScenarioFile {
             }
             sb.append("}\n");
         }
+        if (program != null && !program.isBlank()) {
+            sb.append("program {\n");
+            sb.append(program.stripTrailing()).append('\n');
+            sb.append("}\n");
+        }
         return sb.toString();
     }
 
     /**
-     * Parses the terrain seed and the two command sections. Flat files without sections put all
-     * commands in {@code on build}.
+     * Parses the terrain seed and the {@code on build}/{@code on start}/{@code program} sections.
+     * Flat files without sections put all commands in {@code on build}. Section bodies are read with
+     * a brace-depth counter, so the {@code program} section may contain nested blocks
+     * ({@code trigger ... { ... }}); the program is captured verbatim (comments and indentation
+     * preserved) so it stays editable by hand.
      *
      * @throws IllegalArgumentException when the file has no {@code seed} line
      */
@@ -90,28 +115,77 @@ public final class ScenarioFile {
         int seed = parseSeed(text);
         List<String> build = new ArrayList<>();
         List<String> start = new ArrayList<>();
-        boolean inStart = false;
+        StringBuilder program = new StringBuilder();
+        List<String> target = null; // non-null while inside a build/start section
+        boolean inProgram = false;
+        int depth = 0;
         for (String rawLine : safeLines(text)) {
             String line = rawLine.trim();
-            if (line.isEmpty() || line.startsWith("#") || line.startsWith(SEED_PREFIX)) {
+            if (depth == 0) {
+                if (line.isEmpty() || line.startsWith("#") || line.startsWith(SEED_PREFIX)) {
+                    continue;
+                }
+                String lower = line.toLowerCase();
+                if (lower.startsWith("on build")) {
+                    target = build;
+                    depth = 1;
+                    continue;
+                }
+                if (lower.startsWith("on start")) {
+                    target = start;
+                    depth = 1;
+                    continue;
+                }
+                if (lower.startsWith("program")) {
+                    inProgram = true;
+                    depth = 1;
+                    continue;
+                }
+                build.add(line); // legacy flat file: everything is a build command
                 continue;
             }
-            String lower = line.toLowerCase();
-            if (lower.startsWith("on build")) {
-                inStart = false;
-                continue;
+            if (inProgram) {
+                int delta = braceDelta(line);
+                if (depth + delta > 0) {
+                    if (program.length() > 0) {
+                        program.append('\n');
+                    }
+                    program.append(rawLine); // verbatim, indentation preserved
+                }
+                depth += delta;
+                if (depth <= 0) {
+                    depth = 0;
+                    inProgram = false;
+                }
+            } else {
+                if (line.startsWith("#")) {
+                    continue; // comments are ignored inside build/start
+                }
+                int delta = braceDelta(line);
+                if (depth + delta > 0 && target != null) {
+                    target.add(line);
+                }
+                depth += delta;
+                if (depth <= 0) {
+                    depth = 0;
+                    target = null;
+                }
             }
-            if (lower.startsWith("on start")) {
-                inStart = true;
-                continue;
-            }
-            if (line.equals("}")) {
-                inStart = false;
-                continue;
-            }
-            (inStart ? start : build).add(line);
         }
-        return new Scenario(seed, build, start);
+        return new Scenario(seed, build, start, program.toString().stripTrailing());
+    }
+
+    /** Net brace count of a line ({@code {}), used to follow nested program blocks. */
+    private static int braceDelta(String line) {
+        int delta = 0;
+        for (int i = 0; i < line.length(); i++) {
+            if (line.charAt(i) == '{') {
+                delta++;
+            } else if (line.charAt(i) == '}') {
+                delta--;
+            }
+        }
+        return delta;
     }
 
     /**

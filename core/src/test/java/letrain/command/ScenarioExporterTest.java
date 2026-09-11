@@ -57,4 +57,17 @@ class ScenarioExporterTest {
         assertTrue(text.contains("on start {"), text);
         assertTrue(text.contains("semaphore " + id + " open;"), text);
     }
+
+    @Test
+    @DisplayName("the automation program is exported into the program section")
+    void program_exported() {
+        letrain.mvp.impl.Model model = new letrain.mvp.impl.Model(1);
+        String program = "sensor 1 on train enter { semaphore 1 open; }";
+        model.setProgram(program);
+
+        String text = ScenarioExporter.render(model, List.of("go 0,0; face e; write 3;"));
+
+        assertTrue(text.contains("program {"), text);
+        assertTrue(text.contains(program), text);
+    }
 }
