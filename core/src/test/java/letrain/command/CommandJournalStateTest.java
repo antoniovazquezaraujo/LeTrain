@@ -43,6 +43,29 @@ class CommandJournalStateTest {
     }
 
     @Test
+    @DisplayName("consecutive limit tweaks for the same signal collapse into the last one")
+    void coalesce_consecutiveLimits() {
+        CommandJournal j = new CommandJournal();
+        j.record("go 7,0; face e; signal 1 set limit 3;");
+        j.recordCoalescing("go 7,0; face e; signal 1 set limit 4;");
+        j.recordCoalescing("go 7,0; face e; signal 1 set limit 5;");
+        assertEquals(1, j.size());
+        assertEquals(java.util.List.of("go 7,0; face e; signal 1 set limit 5;"),
+                j.appliedEntries());
+    }
+
+    @Test
+    @DisplayName("limit tweaks only collapse when consecutive and for the same signal")
+    void coalesce_onlyConsecutiveSameSignal() {
+        CommandJournal j = new CommandJournal();
+        j.recordCoalescing("go 0,0; face e; signal 1 set limit 3;");
+        j.record("go 0,0; face e; signal 1 invert;"); // breaks the run
+        j.recordCoalescing("go 0,0; face e; signal 1 set limit 5;");
+        j.recordCoalescing("go 0,0; face e; signal 2 set limit 5;"); // different signal
+        assertEquals(4, j.size());
+    }
+
+    @Test
     @DisplayName("base stops undo and bake commits the applied commands")
     void base_and_bake() {
         CommandJournal j = new CommandJournal();

@@ -658,11 +658,11 @@ public class Gdx3DInputHandler implements InputProcessor {
         String text = cursorPrefix() + action + ";";
         letrain.command.CommandJournal journal = current.getCommandJournal();
         if (journal != null && journal.isRecording()) {
-            journal.record(text);
+            journal.recordCoalescing(text);
         }
         letrain.command.UndoRedoHistory history = view.getUndoRedoHistory();
         if (history != null) {
-            history.record(text);
+            history.recordCoalescing(text);
         }
     }
 

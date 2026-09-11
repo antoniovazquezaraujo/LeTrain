@@ -63,13 +63,15 @@ class TerminalPresenterSignalEditTest {
         presenter.onChar(charKey(' ')); // invert
         presenter.onChar(charKey('m')); // mode max -> min
         presenter.onChar(charKey('7')); // limit -> 7
+        presenter.onChar(charKey('4')); // limit -> 4 (collapses into the previous one)
 
-        assertEquals(3, model.getCommandJournal().size());
+        assertEquals(3, model.getCommandJournal().size(),
+                "consecutive limit tweaks must collapse into a single command");
         assertEquals("go 7,0; face e; signal " + sig.getId() + " invert;",
                 model.getCommandJournal().entries().get(0));
         assertEquals("go 7,0; face e; signal " + sig.getId() + " set mode min;",
                 model.getCommandJournal().entries().get(1));
-        assertEquals("go 7,0; face e; signal " + sig.getId() + " set limit 7;",
+        assertEquals("go 7,0; face e; signal " + sig.getId() + " set limit 4;",
                 model.getCommandJournal().entries().get(2));
     }
 }

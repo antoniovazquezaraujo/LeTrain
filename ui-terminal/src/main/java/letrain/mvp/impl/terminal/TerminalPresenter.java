@@ -467,11 +467,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
         String text = cursorPrefix() + action + ";";
         if (commandJournal.isRecording()) {
-            commandJournal.record(text);
+            commandJournal.recordCoalescing(text);
         }
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
         if (history != null) {
-            history.record(text);
+            history.recordCoalescing(text);
         }
     }
 
