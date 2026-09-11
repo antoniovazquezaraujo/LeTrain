@@ -680,9 +680,17 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     @Override
     public Object visitDirectSignalCommand(ScriptLogicParser.DirectSignalCommandContext ctx) {
         int id = Integer.parseInt(ctx.signalSelector().NUMBER().getText());
-        letrain.track.Sensor sensor = model.getSensor(id);
-        if (sensor instanceof letrain.track.SpeedSignal) {
-            letrain.track.SpeedSignal signal = (letrain.track.SpeedSignal) sensor;
+        // Plain sensors and speed signals have separate id counters, so getSensor(id) can return a
+        // plain sensor sharing the numeric id. Resolve the signal among the speed signals only;
+        // otherwise the command is silently dropped (e.g. an imported scenario kept limit 3).
+        letrain.track.SpeedSignal signal = null;
+        for (letrain.track.SpeedSignal s : model.getSpeedSignals()) {
+            if (s.getId() == id) {
+                signal = s;
+                break;
+            }
+        }
+        if (signal != null) {
             ScriptLogicParser.SignalActionContext act = ctx.signalAction();
             if (act.INVERT() != null) {
                 signal.setCreationDir(signal.getCreationDir().inverse());
