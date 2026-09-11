@@ -235,6 +235,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
         // Register this as global listener for all present and future trains
         this.model.addCoreTrainEventListener(this);
+        // Loading a savegame / starting fresh uses normal economy (scenario import re-enables it).
+        this.model.getEconomyManager().setFreeConstruction(false);
     }
 
     /**
@@ -1933,6 +1935,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             letrain.command.ScenarioFile.Scenario scenario =
                     letrain.command.ScenarioFile.parse(text);
             applyModel(new letrain.mvp.impl.Model(scenario.seed()));
+            // Constructor libre: building the scenario costs nothing (ADR-020).
+            model.getEconomyManager().setFreeConstruction(true);
             for (String cmd : scenario.buildCommands()) {
                 String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                         f -> onSaveGame(f), f -> onLoadGame(f),

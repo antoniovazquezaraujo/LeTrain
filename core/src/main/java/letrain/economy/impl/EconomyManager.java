@@ -31,6 +31,10 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("balance")
     float balance = 0f;
 
+    /** ADR-020 scenario constructor-libre: skip spending while building a scenario. */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private boolean freeConstruction = false;
+
     @com.fasterxml.jackson.annotation.JsonProperty("prices")
     Map<ExpenseType, Float> prices = new HashMap<>();
 
@@ -190,6 +194,9 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @Override
     public void spend(ExpenseType type) {
+        if (freeConstruction) {
+            return;
+        }
         Float amount = prices.get(type);
         totalExpenses += amount;
         balance -= amount;
@@ -197,10 +204,23 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @Override
     public void spend(ExpenseType type, int amount) {
+        if (freeConstruction) {
+            return;
+        }
         Float price = prices.get(type);
         float total = price * amount;
         totalExpenses += total;
         balance -= total;
+    }
+
+    @Override
+    public void setFreeConstruction(boolean free) {
+        this.freeConstruction = free;
+    }
+
+    @Override
+    public boolean isFreeConstruction() {
+        return freeConstruction;
     }
 
     @Override
