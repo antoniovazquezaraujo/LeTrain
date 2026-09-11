@@ -86,6 +86,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private final GameSaveService gameSaveService;
 
     /**
+     * True while a programmatic replay (scenario import, undo/redo) executes commands. Train-event
+     * sounds (link/unlink) are muted then, since the player did not perform those actions.
+     */
+    private boolean eventSoundsSuppressed = false;
+
+    /**
      * Paused-editing undo/redo session (ADR-020 item 3). Created lazily on the first pause toggle;
      * survives model swaps because it is a field of the presenter, not of the model.
      */
@@ -506,6 +512,21 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
+     * Runs {@code action} with train-event sounds muted. Used by programmatic replays (scenario
+     * import, undo/redo): the replayed commands must not play the sounds of the user actions they
+     * represent (e.g. the coupling "link" sound when an exported linked train is imported).
+     */
+    void runWithoutEventSounds(Runnable action) {
+        boolean previous = eventSoundsSuppressed;
+        eventSoundsSuppressed = true;
+        try {
+            action.run();
+        } finally {
+            eventSoundsSuppressed = previous;
+        }
+    }
+
+    /**
      * Applies an undo/redo plan: restore the checkpoint base (undo) via {@link #applyModel}, then
      * re-execute the recorded command slice on the restored world through the same console path.
      * On a replay error the applied counter is only advanced to the last command that actually
@@ -539,30 +560,33 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 railTrackMaker.resumeChainFrom(predecessor);
             }
         }
-        int replayedTo = plan.fromIndex();
-        int count = 0;
-        for (String cmd : plan.commandsToReplay(history.entries())) {
-            String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
-                    file -> onSaveGame(file), file -> onLoadGame(file),
-                    new letrain.command.TurtleBuilder(model, railTrackMaker),
-                    (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
-                    null, null, false);
-            if (error != null) {
-                log.error("Undo/redo replay failed on '{}': {}", cmd, error);
-                view.setStatusBarText("Replay error: " + error);
-                break;
+        int[] progress = {plan.fromIndex(), 0};
+        runWithoutEventSounds(() -> {
+            for (String cmd : plan.commandsToReplay(history.entries())) {
+                String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                        file -> onSaveGame(file), file -> onLoadGame(file),
+                        new letrain.command.TurtleBuilder(model, railTrackMaker),
+                        (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
+                        null, null, false);
+                if (error != null) {
+                    log.error("Undo/redo replay failed on '{}': {}", cmd, error);
+                    view.setStatusBarText("Replay error: " + error);
+                    break;
+                }
+                // Reproduce the terrain materialization the live session performed between edits (the
+                // render loop generates ground blocks around the cursor each frame). Replay runs with
+                // no frames, so without this, painting beyond the blocks stored in the checkpoint would
+                // hit void (-1) terrain and silently fail to lay rails.
+                letrain.map.Point cp = model.getCursor().getPosition();
+                int radius = model.getEconomyManager().getViewRadius();
+                model.getGroundMap().renderBlock(cp.getX() - radius, cp.getY() - radius,
+                        radius * 2 + 1, radius * 2 + 1);
+                progress[0]++;
+                progress[1]++;
             }
-            // Reproduce the terrain materialization the live session performed between edits (the
-            // render loop generates ground blocks around the cursor each frame). Replay runs with
-            // no frames, so without this, painting beyond the blocks stored in the checkpoint would
-            // hit void (-1) terrain and silently fail to lay rails.
-            letrain.map.Point cp = model.getCursor().getPosition();
-            int radius = model.getEconomyManager().getViewRadius();
-            model.getGroundMap().renderBlock(cp.getX() - radius, cp.getY() - radius,
-                    radius * 2 + 1, radius * 2 + 1);
-            replayedTo++;
-            count++;
-        }
+        });
+        int replayedTo = progress[0];
+        int count = progress[1];
         log.info("[undoredo] replayed={} replayedTo={} committing", count, replayedTo);
         // Commit only up to the last command that really applied, so the history stays in sync with
         // the live world (never claim commands were applied when a replay broke half-way).
@@ -1995,29 +2019,31 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             applyModel(new letrain.mvp.impl.Model(scenario.seed()));
             // Constructor libre: building the scenario costs nothing (ADR-020).
             model.getEconomyManager().setFreeConstruction(true);
-            for (String cmd : scenario.buildCommands()) {
-                String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
-                        f -> onSaveGame(f), f -> onLoadGame(f),
-                        new letrain.command.TurtleBuilder(model, railTrackMaker),
-                        (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
-                        null, null, false);
-                if (error != null) {
-                    log.error("Scenario build command failed: '{}': {}", cmd, error);
-                    view.showMessage("Scenario Error", cmd + "\n" + error);
-                    return;
+            // Replay silently: re-running a coupling must not play the "link" sound of the user
+            // action it represents.
+            boolean[] failed = {false};
+            runWithoutEventSounds(() -> {
+                for (String cmd : scenario.buildCommands()) {
+                    String error = executeScenarioCommand(cmd);
+                    if (error != null) {
+                        log.error("Scenario build command failed: '{}': {}", cmd, error);
+                        view.showMessage("Scenario Error", cmd + "\n" + error);
+                        failed[0] = true;
+                        return;
+                    }
                 }
-            }
-            for (String cmd : scenario.startCommands()) {
-                String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
-                        f -> onSaveGame(f), f -> onLoadGame(f),
-                        new letrain.command.TurtleBuilder(model, railTrackMaker),
-                        (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
-                        null, null, false);
-                if (error != null) {
-                    log.error("Scenario start command failed: '{}': {}", cmd, error);
-                    view.showMessage("Scenario Error", cmd + "\n" + error);
-                    return;
+                for (String cmd : scenario.startCommands()) {
+                    String error = executeScenarioCommand(cmd);
+                    if (error != null) {
+                        log.error("Scenario start command failed: '{}': {}", cmd, error);
+                        view.showMessage("Scenario Error", cmd + "\n" + error);
+                        failed[0] = true;
+                        return;
+                    }
                 }
+            });
+            if (failed[0]) {
+                return;
             }
             // Materialize the terrain under the whole rebuilt network; otherwise tracks outside the
             // cursor/render radius appear floating over void until the cursor passes over them.
@@ -2038,6 +2064,15 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             log.error("Error playing scenario from {}", file.getAbsolutePath(), e);
             view.showMessage("Scenario Error", "Could not play scenario: " + e.getMessage());
         }
+    }
+
+    /** Runs one scenario command through the same console path used by the UI. */
+    private String executeScenarioCommand(String cmd) {
+        return letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                f -> onSaveGame(f), f -> onLoadGame(f),
+                new letrain.command.TurtleBuilder(model, railTrackMaker),
+                (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
+                null, null, false);
     }
 
     /** Generates the ground blocks around every rail tile so the loaded world has terrain visible. */
@@ -2262,26 +2297,28 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     @Override
     public void onLink(Train train) {
-        if (audioController != null) {
-            Linker firstLinker = train.getLinkers().peekFirst();
-            if (firstLinker != null) {
-                letrain.map.Point pos = firstLinker.getPosition();
-                if (pos != null) {
-                    audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
-                }
+        if (eventSoundsSuppressed || audioController == null) {
+            return;
+        }
+        Linker firstLinker = train.getLinkers().peekFirst();
+        if (firstLinker != null) {
+            letrain.map.Point pos = firstLinker.getPosition();
+            if (pos != null) {
+                audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
             }
         }
     }
 
     @Override
     public void onUnlink(Train train) {
-        if (audioController != null) {
-            Linker firstLinker = train.getLinkers().peekFirst();
-            if (firstLinker != null) {
-                letrain.map.Point pos = firstLinker.getPosition();
-                if (pos != null) {
-                    audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
-                }
+        if (eventSoundsSuppressed || audioController == null) {
+            return;
+        }
+        Linker firstLinker = train.getLinkers().peekFirst();
+        if (firstLinker != null) {
+            letrain.map.Point pos = firstLinker.getPosition();
+            if (pos != null) {
+                audioController.playOneShot("link", (float) pos.getX(), (float) pos.getY());
             }
         }
     }
