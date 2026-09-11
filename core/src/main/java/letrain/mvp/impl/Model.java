@@ -201,13 +201,9 @@ public class Model implements letrain.mvp.Model {
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
 
-        int minOffset = 10000;
-        int maxOffset = 100000;
-        int offsetX = (minOffset + (int) (Math.random() * (maxOffset - minOffset)))
-                * (Math.random() > 0.5 ? 1 : -1);
-        int offsetY = (minOffset + (int) (Math.random() * (maxOffset - minOffset)))
-                * (Math.random() > 0.5 ? 1 : -1);
-        this.cursor.setPosition(new Point(offsetX, offsetY));
+        // Always start at the origin: the world is asymmetric, so a shared (0,0) makes
+        // coordinates in scenarios and the console simpler and reproducible.
+        this.cursor.setPosition(new Point(0, 0));
         this.locomotives = new ArrayList<>();
         this.wagons = new ArrayList<>();
         this.forks = new ArrayList<>();
