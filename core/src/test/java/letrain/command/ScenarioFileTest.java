@@ -83,8 +83,28 @@ class ScenarioFileTest {
         assertEquals(9, s.seed());
         assertEquals(List.of("go 0,0; face e; write 2;"), s.buildCommands());
         assertEquals(List.of("semaphore 1 close;"), s.startCommands());
+        assertTrue(s.program().isEmpty(), "no program section means empty program");
         assertTrue(text.contains("on build {"));
         assertTrue(text.contains("on start {"));
+    }
+
+    @Test
+    @DisplayName("the program section is parsed (with nested braces) and rendered verbatim")
+    void program_roundTrip() {
+        String program = "sensor 1 on train enter {\n  semaphore 1 open;\n}\n"
+                + "create itinerary \"x\" { add station 1; }";
+        String text = ScenarioFile.render(9,
+                List.of("go 0,0; face e; write 2;"),
+                List.of("semaphore 1 close;"),
+                program);
+
+        ScenarioFile.Scenario s = ScenarioFile.parse(text);
+
+        assertEquals(9, s.seed());
+        assertEquals(List.of("go 0,0; face e; write 2;"), s.buildCommands());
+        assertEquals(List.of("semaphore 1 close;"), s.startCommands());
+        assertEquals(program, s.program(), "the program must survive verbatim (nested braces)");
+        assertTrue(text.contains("program {"));
     }
 
     @Test
@@ -96,6 +116,7 @@ class ScenarioFileTest {
         assertEquals(5, s.seed());
         assertEquals(List.of("go 0,0; face e; write 1;"), s.buildCommands());
         assertTrue(s.startCommands().isEmpty());
+        assertTrue(s.program().isEmpty());
     }
 
     @Test

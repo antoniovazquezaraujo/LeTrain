@@ -30,8 +30,9 @@ public final class ScenarioExporter {
         return start;
     }
 
-    /** Renders the full scenario (seed + on build from the journal + on start initial state). */
+    /** Renders the full scenario (seed + on build from the journal + on start + the program). */
     public static String render(Model model, List<String> buildCommands) {
-        return ScenarioFile.render(model.getSeed(), buildCommands, initialConditions(model));
+        return ScenarioFile.render(model.getSeed(), buildCommands, initialConditions(model),
+                model.getProgram());
     }
 }

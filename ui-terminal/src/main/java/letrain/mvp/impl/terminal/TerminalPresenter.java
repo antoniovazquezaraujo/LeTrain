@@ -2067,6 +2067,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             // Materialize the terrain under the whole rebuilt network; otherwise tracks outside the
             // cursor/render radius appear floating over void until the cursor passes over them.
             materializeGroundUnderTracks();
+            // Install the scenario's automation program (the operator), if any. It references the
+            // elements just built, so it runs after the build/start replay.
+            if (scenario.program() != null && !scenario.program().isBlank()) {
+                handleScriptErrors(model.setProgram(scenario.program()));
+            }
             // The imported recipe becomes the journal base, so a later export keeps the whole
             // network (imported + subsequent edits).
             commandJournal.clear();
