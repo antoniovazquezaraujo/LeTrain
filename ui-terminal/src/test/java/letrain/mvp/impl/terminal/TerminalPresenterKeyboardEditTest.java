@@ -108,9 +108,14 @@ class TerminalPresenterKeyboardEditTest {
         model.setMode(Model.GameMode.FORKS);
 
         presenter.onChar(charKey(' ')); // straight -> curved
-
         assertEquals(1, model.getCommandJournal().size());
         assertEquals("fork " + fork.getId() + " set curved;",
+                model.getCommandJournal().entries().get(0));
+
+        presenter.onChar(charKey(' ')); // curved -> straight (collapses into the previous one)
+        assertEquals(1, model.getCommandJournal().size(),
+                "consecutive route flips must collapse into a single command");
+        assertEquals("fork " + fork.getId() + " set straight;",
                 model.getCommandJournal().entries().get(0));
     }
 }

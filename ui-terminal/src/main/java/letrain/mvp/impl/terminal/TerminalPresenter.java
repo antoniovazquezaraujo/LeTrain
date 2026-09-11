@@ -1777,12 +1777,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void journalEditingCommand(String command) {
         letrain.command.CommandJournal journal = model.getCommandJournal();
         if (journal != null && journal.isRecording()) {
-            journal.record(command);
+            journal.recordCoalescing(command);
         }
         if (model.isSimulationPaused()) {
             letrain.command.UndoRedoHistory history = getUndoRedoHistory();
             if (history != null) {
-                history.record(command);
+                history.recordCoalescing(command);
             }
         }
     }

@@ -79,7 +79,7 @@ public class CommandJournal {
             return;
         }
         if (applied == commands.size() && applied > 0
-                && CommandMerge.consecutiveSignalLimit(commands.get(applied - 1), c)) {
+                && CommandMerge.consecutiveProperty(commands.get(applied - 1), c)) {
             commands.set(applied - 1, c);
             return;
         }
