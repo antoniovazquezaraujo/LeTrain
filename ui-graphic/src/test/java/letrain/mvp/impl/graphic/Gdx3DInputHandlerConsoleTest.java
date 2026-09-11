@@ -192,6 +192,14 @@ class Gdx3DInputHandlerConsoleTest {
     }
 
     @Test
+    @DisplayName("finishing a train (Enter in TRAINS) returns to RAILS, not the empty menu")
+    void enterInTrains_returnsToRails() {
+        model.setMode(Model.GameMode.TRAINS);
+        handler.onChar(key(KeyType.Enter));
+        assertEquals(Model.GameMode.RAILS, model.getMode());
+    }
+
+    @Test
     @DisplayName("'.' outside COMMAND repeats the last executed command")
     void dotRepeatsLastCommand() {
         executeInConsole("go 7,0; face e; write 1;"); // build a tile at (7,0)
