@@ -128,6 +128,38 @@ class Gdx3DInputHandlerConsoleTest {
     }
 
     @Test
+    @DisplayName("keyboard signal toggles are journaled as canonical commands")
+    void keyboardSignalToggles_areJournaled() {
+        model.setPauseEditing(true);
+        model.getCommandJournal().startRecording();
+        // Build a tile and a speed signal through the console (default limit 3, mode max, facing E).
+        executeInConsole("go 7,0; face e; write 1;");
+        executeInConsole("go 7,0; face e; new sg;");
+        assertEquals("", model.getCommandError());
+        assertEquals(1, model.getSpeedSignals().size());
+        model.getCommandJournal().clear();
+        model.getCommandJournal().startRecording();
+
+        letrain.track.SpeedSignal sig = model.getSpeedSignals().get(0);
+        model.selectSpeedSignal(sig.getId());
+        model.setMode(Model.GameMode.SPEED_SIGNALS);
+        model.getCursor().setPosition(new Point(7, 0));
+        model.getCursor().setDir(Dir.E);
+
+        handler.onChar(charKey(' ')); // invert
+        handler.onChar(charKey('m')); // mode max -> min
+        handler.onChar(charKey('7')); // limit -> 7
+
+        assertEquals(3, model.getCommandJournal().size());
+        assertEquals("go 7,0; face e; signal " + sig.getId() + " invert;",
+                model.getCommandJournal().entries().get(0));
+        assertEquals("go 7,0; face e; signal " + sig.getId() + " set mode min;",
+                model.getCommandJournal().entries().get(1));
+        assertEquals("go 7,0; face e; signal " + sig.getId() + " set limit 7;",
+                model.getCommandJournal().entries().get(2));
+    }
+
+    @Test
     @DisplayName("'.' outside COMMAND repeats the last executed command")
     void dotRepeatsLastCommand() {
         executeInConsole("go 7,0; face e; write 1;"); // build a tile at (7,0)

@@ -645,6 +645,27 @@ public class Gdx3DInputHandler implements InputProcessor {
                 + model.getCursor().getDir().name().toLowerCase() + "; ";
     }
 
+    /**
+     * Records a keyboard state toggle (signal invert/mode/limit) as a canonical, self-positioned DSL
+     * command into the journal and the undo history, exactly like the console funnel. Only while the
+     * world is frozen in edit mode, so undo and the exported scenario stay 1:1 with the edits.
+     */
+    private void recordKeyboardEdit(String action) {
+        letrain.mvp.Model current = view.getModel();
+        if (current == null || !current.isSimulationPaused()) {
+            return;
+        }
+        String text = cursorPrefix() + action + ";";
+        letrain.command.CommandJournal journal = current.getCommandJournal();
+        if (journal != null && journal.isRecording()) {
+            journal.record(text);
+        }
+        letrain.command.UndoRedoHistory history = view.getUndoRedoHistory();
+        if (history != null) {
+            history.record(text);
+        }
+    }
+
     public void onKeyUp(InputEvent stroke) {
         if (model.getMode() == Model.GameMode.RAILS) {
             trackMaker.onKeyUp(stroke);
@@ -1019,8 +1040,10 @@ public class Gdx3DInputHandler implements InputProcessor {
             case Character:
                 if (stroke.getCharacter() == 'm' || stroke.getCharacter() == 'M') {
                     if (model.getSelectedSpeedSignal() != null) {
-                        model.getSelectedSpeedSignal()
-                                .setMax(!model.getSelectedSpeedSignal().isMax());
+                        letrain.track.SpeedSignal sig = model.getSelectedSpeedSignal();
+                        sig.setMax(!sig.isMax());
+                        recordKeyboardEdit("signal " + sig.getId() + " set mode "
+                                + (sig.isMax() ? "max" : "min"));
                     }
                 } else if (stroke.getCharacter() == ' ') {
                     if (speedSignalId > 0) {
@@ -1030,6 +1053,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     if (model.getSelectedSpeedSignal() != null) {
                         letrain.track.SpeedSignal sig = model.getSelectedSpeedSignal();
                         sig.setCreationDir(sig.getCreationDir().inverse());
+                        recordKeyboardEdit("signal " + sig.getId() + " invert");
                         cameraController.forceSnap();
                     }
                 } else if (stroke.getCharacter() >= '0' && stroke.getCharacter() <= '9') {
@@ -1039,6 +1063,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                             val = 10;
                         }
                         model.getSelectedSpeedSignal().setLimit(val);
+                        recordKeyboardEdit("signal " + model.getSelectedSpeedSignal().getId()
+                                + " set limit " + val);
                     } else {
                         speedSignalId = speedSignalId * 10 + (stroke.getCharacter() - '0');
                     }
@@ -1055,6 +1081,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                     int l = model.getSelectedSpeedSignal().getLimit();
                     if (l < 10) {
                         model.getSelectedSpeedSignal().setLimit(l + 1);
+                        recordKeyboardEdit("signal " + model.getSelectedSpeedSignal().getId()
+                                + " set limit " + (l + 1));
                     }
                 }
                 break;
@@ -1063,6 +1091,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                     int l = model.getSelectedSpeedSignal().getLimit();
                     if (l > 1) {
                         model.getSelectedSpeedSignal().setLimit(l - 1);
+                        recordKeyboardEdit("signal " + model.getSelectedSpeedSignal().getId()
+                                + " set limit " + (l - 1));
                     }
                 }
                 break;

@@ -456,6 +456,25 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 + model.getCursor().getDir().name().toLowerCase() + "; ";
     }
 
+    /**
+     * Records a keyboard state toggle (signal invert/mode/limit) as a canonical, self-positioned DSL
+     * command into the journal and the undo history, exactly like the console funnel. Only while the
+     * world is frozen in edit mode, so undo and the exported scenario stay 1:1 with the edits.
+     */
+    private void recordKeyboardEdit(String action) {
+        if (!model.isSimulationPaused()) {
+            return;
+        }
+        String text = cursorPrefix() + action + ";";
+        if (commandJournal.isRecording()) {
+            commandJournal.record(text);
+        }
+        letrain.command.UndoRedoHistory history = getUndoRedoHistory();
+        if (history != null) {
+            history.record(text);
+        }
+    }
+
     /** Undoes {@code steps} editing commands (ADR-020 item 3). */
     public void undo(int steps) {
         if (!model.isSimulationPaused()) {
@@ -1067,8 +1086,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             case Character:
                 if (keyEvent.getCharacter() == 'm' || keyEvent.getCharacter() == 'M') {
                     if (model.getSelectedSpeedSignal() != null) {
-                        model.getSelectedSpeedSignal()
-                                .setMax(!model.getSelectedSpeedSignal().isMax());
+                        letrain.track.SpeedSignal sig = model.getSelectedSpeedSignal();
+                        sig.setMax(!sig.isMax());
+                        recordKeyboardEdit("signal " + sig.getId() + " set mode "
+                                + (sig.isMax() ? "max" : "min"));
                     }
                 } else if (keyEvent.getCharacter() == ' ') {
                     if (speedSignalId > 0) {
@@ -1079,6 +1100,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     if (model.getSelectedSpeedSignal() != null) {
                         letrain.track.SpeedSignal sig = model.getSelectedSpeedSignal();
                         sig.setCreationDir(sig.getCreationDir().inverse());
+                        recordKeyboardEdit("signal " + sig.getId() + " invert");
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     if (model.getSelectedSpeedSignal() != null) {
@@ -1087,6 +1109,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                             val = 10;
                         }
                         model.getSelectedSpeedSignal().setLimit(val);
+                        recordKeyboardEdit("signal " + model.getSelectedSpeedSignal().getId()
+                                + " set limit " + val);
                     } else {
                         speedSignalId = speedSignalId * 10 + (keyEvent.getCharacter() - '0');
                         speedSignalInputTimeout = System.currentTimeMillis() + 1000;
@@ -1108,6 +1132,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     int l = model.getSelectedSpeedSignal().getLimit();
                     if (l < 10) {
                         model.getSelectedSpeedSignal().setLimit(l + 1);
+                        recordKeyboardEdit("signal " + model.getSelectedSpeedSignal().getId()
+                                + " set limit " + (l + 1));
                     }
                 }
                 break;
@@ -1116,6 +1142,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     int l = model.getSelectedSpeedSignal().getLimit();
                     if (l > 1) {
                         model.getSelectedSpeedSignal().setLimit(l - 1);
+                        recordKeyboardEdit("signal " + model.getSelectedSpeedSignal().getId()
+                                + " set limit " + (l - 1));
                     }
                 }
                 break;
