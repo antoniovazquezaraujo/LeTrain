@@ -725,7 +725,7 @@ public class GraphicPresenter extends ApplicationAdapter
                 return;
             }
             java.nio.file.Files.writeString(file.toPath(),
-                    letrain.command.ScenarioFile.render(model.getSeed(), journal.entries()));
+                    letrain.command.ScenarioExporter.render(model, journal.entries()));
             log.info("Scenario saved to {}", file.getAbsolutePath());
         } catch (Exception e) {
             log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
