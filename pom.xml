@@ -25,6 +25,7 @@
         <module>ui-graphic</module>
         <module>launcher-terminal</module>
         <module>launcher-graphic</module>
+        <module>launcher-check</module>
     </modules>
 
     <dependencyManagement>
