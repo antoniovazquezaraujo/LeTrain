@@ -719,14 +719,14 @@ public class GraphicPresenter extends ApplicationAdapter
     private void saveScenario(File file) {
         try {
             letrain.command.CommandJournal journal = model.getCommandJournal();
-            java.nio.file.Files.writeString(file.toPath(),
-                    letrain.command.ScenarioFile.render(model.getSeed(), journal.entries()));
             if (journal.isEmpty()) {
                 showMessage("Scenario",
-                        "Saved an empty scenario (turn 'record on' before editing to capture it).");
-            } else {
-                log.info("Scenario saved to {}", file.getAbsolutePath());
+                        "Cannot export: the command journal is empty (turn 'record on' before editing).");
+                return;
             }
+            java.nio.file.Files.writeString(file.toPath(),
+                    letrain.command.ScenarioFile.render(model.getSeed(), journal.entries()));
+            log.info("Scenario saved to {}", file.getAbsolutePath());
         } catch (Exception e) {
             log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
             showMessage("Scenario Error", "Could not save scenario: " + e.getMessage());

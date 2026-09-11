@@ -987,6 +987,10 @@ public class Gdx3DHud {
             footer.add(okBtn).pad(5);
             footer.add(cancelBtn).pad(5);
 
+            // Nothing to export if the command journal is empty.
+            exportBtn.setDisabled(
+                    model.getCommandJournal() == null || model.getCommandJournal().isEmpty());
+
             // ASSEMBLY & VISIBILITY SYNC
             Table mainContent = new Table();
 

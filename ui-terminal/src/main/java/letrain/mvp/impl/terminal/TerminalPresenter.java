@@ -1912,14 +1912,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void saveScenario(File file) {
         try {
             letrain.command.CommandJournal journal = model.getCommandJournal();
-            java.nio.file.Files.writeString(file.toPath(),
-                    letrain.command.ScenarioFile.render(model.getSeed(), journal.entries()));
             if (journal.isEmpty()) {
                 view.showMessage("Scenario",
-                        "Saved an empty scenario (turn 'record on' before editing to capture it).");
-            } else {
-                view.setStatusBarText("Scenario saved: " + file.getName());
+                        "Cannot export: the command journal is empty (turn 'record on' before editing).");
+                return;
             }
+            java.nio.file.Files.writeString(file.toPath(),
+                    letrain.command.ScenarioFile.render(model.getSeed(), journal.entries()));
+            view.setStatusBarText("Scenario saved: " + file.getName());
         } catch (Exception e) {
             log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
             view.showMessage("Scenario Error", "Could not save scenario: " + e.getMessage());
@@ -1994,6 +1994,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (file != null) {
             playScenario(file);
         }
+    }
+
+    @Override
+    public boolean canExportScenario() {
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        return journal != null && !journal.isEmpty();
     }
 
     @Override

@@ -846,6 +846,9 @@ public class TerminalView implements letrain.mvp.View {
 
         Button exportBtn = new Button("Export", exportAction);
         exportBtn.setRenderer(mnemonicRenderer);
+        if (!gameViewListener.canExportScenario()) {
+            exportBtn.setEnabled(false);
+        }
         footer.addComponent(exportBtn);
 
         Button importBtn = new Button("Import", importAction);

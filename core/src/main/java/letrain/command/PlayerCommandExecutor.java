@@ -921,6 +921,11 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     @Override
     public Object visitExportCommand(PlayerCommandsParser.ExportCommandContext ctx) {
         toggledRecording = true;
+        if (model != null && model.getCommandJournal() != null
+                && model.getCommandJournal().isEmpty()) {
+            throw new RuntimeException(
+                    "Cannot export: the command journal is empty (turn 'record on' before editing).");
+        }
         String filename = ctx.identifier() != null
                 ? withScenarioExtension(unquote(ctx.identifier().getText()))
                 : "scenario" + ScenarioFile.EXTENSION;

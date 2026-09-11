@@ -1,6 +1,8 @@
 package letrain.command;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 
 import java.io.File;
@@ -95,5 +97,17 @@ class SaveLoadCommandTest {
         assertEquals("mi-red.ltr", importedName("import \"mi-red.ltr\";"));
         assertEquals("mi-red.ltr", importedName("import \"mi-red\";"));
         assertEquals("scenario.ltr", importedName("import;"));
+    }
+
+    @Test
+    @DisplayName("export with an empty command journal returns an error and does not call the handler")
+    void export_emptyJournal_errors() {
+        letrain.mvp.Model realModel = new letrain.mvp.impl.Model();
+        AtomicReference<File> ref = new AtomicReference<>();
+        String error = PlayerCommandExecutor.execute("export \"x.ltr\";", realModel, null, null, null,
+                null, null, null, null, ref::set, f -> {
+                }, true);
+        assertNotNull(error, "export must fail with an empty journal");
+        assertNull(ref.get(), "the export handler must not be called");
     }
 }
