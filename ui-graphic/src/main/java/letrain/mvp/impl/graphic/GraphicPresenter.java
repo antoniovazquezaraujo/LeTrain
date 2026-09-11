@@ -1011,17 +1011,21 @@ public class GraphicPresenter extends ApplicationAdapter
 
     /** Exports the current editing journal as a scenario file (called by the DSL and the UI). */
     public void onExportScenario(File file) {
-        saveScenario(file);
+        if (file != null) {
+            saveScenario(file);
+        }
     }
 
     /** Imports (plays) a scenario file: fresh same-seed world + replayed commands. */
     public void onImportScenario(File file) {
-        playScenario(file);
+        if (file != null) {
+            playScenario(file);
+        }
     }
 
     public void showExportDialog() {
         hud.showFileDialog("Export Scenario", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.SAVE,
-                DEFAULT_SCENARIO_FILENAME, (text) -> {
+                DEFAULT_SCENARIO_FILENAME, new String[] {"ltr"}, (text) -> {
                     if (text != null && !text.trim().isEmpty()) {
                         File file = new File(text);
                         log.info("Exporting scenario to {}", file.getAbsolutePath());
@@ -1032,7 +1036,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
     public void showImportDialog() {
         hud.showFileDialog("Import Scenario", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN,
-                DEFAULT_SCENARIO_FILENAME, (text) -> {
+                DEFAULT_SCENARIO_FILENAME, new String[] {"ltr"}, (text) -> {
                     if (text != null && !text.trim().isEmpty()) {
                         File file = new File(text);
                         if (file.exists()) {

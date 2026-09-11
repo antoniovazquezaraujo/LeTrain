@@ -647,7 +647,9 @@ public class TerminalView implements letrain.mvp.View {
         File result = new FileDialogBuilder().setTitle("Export Scenario")
                 .setDescription("Choose a file:").setActionLabel(LocalizedString.Save.toString())
                 .build().showDialog(gui);
-        TerminalView.this.gameViewListener.onExportScenario(result);
+        if (result != null) {
+            TerminalView.this.gameViewListener.onExportScenario(result);
+        }
     }
 
     @Override
@@ -656,7 +658,9 @@ public class TerminalView implements letrain.mvp.View {
         File result = new FileDialogBuilder().setTitle("Import Scenario")
                 .setDescription("Choose a file:").setActionLabel(LocalizedString.Open.toString())
                 .build().showDialog(gui);
-        TerminalView.this.gameViewListener.onImportScenario(result);
+        if (result != null) {
+            TerminalView.this.gameViewListener.onImportScenario(result);
+        }
     }
 
     @Override

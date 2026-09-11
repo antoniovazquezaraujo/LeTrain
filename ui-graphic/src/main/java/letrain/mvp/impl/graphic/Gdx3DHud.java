@@ -1267,6 +1267,11 @@ public class Gdx3DHud {
 
     public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
             String defaultText, Consumer<String> onResult) {
+        showFileDialog(title, mode, defaultText, new String[] {"json"}, onResult);
+    }
+
+    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
+            String defaultText, String[] extensions, Consumer<String> onResult) {
         Gdx.app.postRunnable(() -> {
             if (!com.kotcrab.vis.ui.VisUI.isLoaded()) {
                 com.kotcrab.vis.ui.VisUI.load();
@@ -1315,11 +1320,12 @@ public class Gdx3DHud {
             fileChooser.setSelectionMode(
                     com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode.FILES);
 
-            // Savegames (*.json) and scenarios (*.ltr)
+            // Filter by the requested extensions (json for savegames, ltr for scenarios).
             com.kotcrab.vis.ui.widget.file.FileTypeFilter filter =
                     new com.kotcrab.vis.ui.widget.file.FileTypeFilter(true);
-            filter.addRule("Save game (*.json)", "json");
-            filter.addRule("Scenario (*.ltr)", "ltr");
+            for (String ext : extensions) {
+                filter.addRule(ext.toUpperCase() + " files (*." + ext + ")", ext);
+            }
             fileChooser.setFileTypeFilter(filter);
 
             fileChooser.setDirectory(Gdx.files.local("."));
