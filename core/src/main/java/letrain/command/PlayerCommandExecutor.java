@@ -19,6 +19,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     private Runnable onQuit;
     private java.util.function.IntConsumer onUndo;
     private java.util.function.IntConsumer onRedo;
+    private java.util.function.Consumer<java.io.File> onExport;
+    private java.util.function.Consumer<java.io.File> onImport;
 
     public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate) {
         this(model, onSave, onLoad, turtleDelegate, null, null);
@@ -29,6 +31,10 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
     public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit, java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo) {
+        this(model, onSave, onLoad, turtleDelegate, onMessage, onQuit, onUndo, onRedo, null, null);
+    }
+
+    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit, java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo, java.util.function.Consumer<java.io.File> onExport, java.util.function.Consumer<java.io.File> onImport) {
         this.model = model;
         this.onSave = onSave;
         this.onLoad = onLoad;
@@ -37,6 +43,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         this.onQuit = onQuit;
         this.onUndo = onUndo;
         this.onRedo = onRedo;
+        this.onExport = onExport;
+        this.onImport = onImport;
     }
 
     public PlayerCommandExecutor(Model model) {
@@ -68,6 +76,18 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
      *                          internal replays (undo/redo/scenario) to avoid re-journaling them.
      */
     public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit, java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo, boolean autoRecordJournal) {
+        return execute(commandText, model, onSave, onLoad, turtleDelegate, onMessage, onQuit, onUndo,
+                onRedo, null, null, autoRecordJournal);
+    }
+
+    /**
+     * @param autoRecordJournal when false, the executor does not auto-record the raw command into
+     *                          the {@link CommandJournal}; callers that capture a canonical,
+     *                          self-positioned form (e.g. the console funnels prepend
+     *                          {@code go x,y; face d;}) do their own recording. Pass false for
+     *                          internal replays (undo/redo/scenario) to avoid re-journaling them.
+     */
+    public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit, java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo, java.util.function.Consumer<java.io.File> onExport, java.util.function.Consumer<java.io.File> onImport, boolean autoRecordJournal) {
         if (!commandText.trim().endsWith(";")) {
             commandText = commandText.trim() + ";";
         }
@@ -98,7 +118,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         }
 
         try {
-            PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad, turtleDelegate, onMessage, onQuit, onUndo, onRedo);
+            PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad, turtleDelegate, onMessage, onQuit, onUndo, onRedo, onExport, onImport);
             executor.setAutoRecordJournal(autoRecordJournal);
             executor.visit(tree);
             if (autoRecordJournal && !executor.toggledRecording && model != null) {
@@ -896,6 +916,47 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
              throw new RuntimeException("Load not supported in this context.");
         }
         return null;
+    }
+
+    @Override
+    public Object visitExportCommand(PlayerCommandsParser.ExportCommandContext ctx) {
+        toggledRecording = true;
+        if (model != null && model.getCommandJournal() != null
+                && model.getCommandJournal().isEmpty()) {
+            throw new RuntimeException(
+                    "Cannot export: the command journal is empty (turn 'record on' before editing).");
+        }
+        String filename = ctx.identifier() != null
+                ? withScenarioExtension(unquote(ctx.identifier().getText()))
+                : "scenario" + ScenarioFile.EXTENSION;
+        if (onExport == null) {
+            throw new RuntimeException("Export not supported in this context.");
+        }
+        onExport.accept(new java.io.File(filename));
+        return null;
+    }
+
+    @Override
+    public Object visitImportCommand(PlayerCommandsParser.ImportCommandContext ctx) {
+        toggledRecording = true;
+        String filename = ctx.identifier() != null
+                ? withScenarioExtension(unquote(ctx.identifier().getText()))
+                : "scenario" + ScenarioFile.EXTENSION;
+        if (onImport == null) {
+            throw new RuntimeException("Import not supported in this context.");
+        }
+        onImport.accept(new java.io.File(filename));
+        return null;
+    }
+
+    /** Appends the scenario extension ({@code .ltr}) only when the name has none. */
+    private static String withScenarioExtension(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return "scenario" + ScenarioFile.EXTENSION;
+        }
+        int slash = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'));
+        String name = slash >= 0 ? filename.substring(slash + 1) : filename;
+        return name.contains(".") ? filename : filename + ScenarioFile.EXTENSION;
     }
 
     /**

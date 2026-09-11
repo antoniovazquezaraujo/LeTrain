@@ -590,7 +590,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                 file -> view.onSaveGame(file), file -> view.onLoadGame(file),
                 new letrain.command.TurtleBuilder(model, trackMaker),
                 (title, msg) -> view.showMessage(title, msg), () -> view.onExitGame(),
-                steps -> view.undo(steps), steps -> view.redo(steps), false);
+                steps -> view.undo(steps), steps -> view.redo(steps),
+                file -> view.onExportScenario(file), file -> view.onImportScenario(file), false);
 
         if (error != null) {
             model.setCommandError(error);
@@ -625,6 +626,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         String t = cmd.trim().toLowerCase();
         return t.startsWith("record ") || t.startsWith("record;") || t.equals("record")
                 || t.startsWith("journal") || t.startsWith("undo") || t.startsWith("redo")
+                || t.startsWith("export") || t.startsWith("import")
                 || t.startsWith("ls ") || t.equals("ls")
                 || t.startsWith("info ") || t.startsWith("save") || t.startsWith("load")
                 || t.startsWith("quit") || t.equals("q") || t.startsWith("q!")

@@ -13,6 +13,15 @@ public interface GameViewListener {
 
     void onLoadGame(File file);
 
+    default void onExportScenario(File file) {}
+
+    default void onImportScenario(File file) {}
+
+    /** Whether there is an edit journal to export (used to enable/disable the Export button). */
+    default boolean canExportScenario() {
+        return true;
+    }
+
     void onSaveCommands(File file);
 
     void onLoadCommands(File file);

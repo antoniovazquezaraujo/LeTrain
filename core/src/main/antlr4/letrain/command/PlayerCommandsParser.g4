@@ -12,6 +12,8 @@ playerStatement : statement
                 | turtleCommand SEMI
                 | saveCommand SEMI
                 | loadCommand SEMI
+                | exportCommand SEMI
+                | importCommand SEMI
                 | markCommand SEMI
                 | faceCommand SEMI
                 | lsCommand SEMI
@@ -78,6 +80,8 @@ turtleStep : NUMBER | L | R | identifier | M identifier | MARK identifier ;
 
 saveCommand : SAVE identifier? ;
 loadCommand : LOAD identifier? ;
+exportCommand : EXPORT identifier? ;
+importCommand : IMPORT identifier? ;
 
 markCommand : (MARK | M) (identifier | NUMBER) ;
 

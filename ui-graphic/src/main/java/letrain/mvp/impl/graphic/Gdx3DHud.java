@@ -61,6 +61,15 @@ public class Gdx3DHud {
         return stage;
     }
 
+    /** True while the PROGRAM editor window is open (game shortcuts must be ignored then). */
+    public boolean isIDEOpen() {
+        return ideWindow != null;
+    }
+
+    private boolean hasScenarioToExport() {
+        return model.getCommandJournal() != null && !model.getCommandJournal().isEmpty();
+    }
+
     private void initUI() {
         skin = new Skin();
 
@@ -968,6 +977,8 @@ public class Gdx3DHud {
             final TextButton applyBtn = new TextButton(" APPLY ", skin, "monospace-button");
             final TextButton saveBtn = new TextButton(" SAVE ", skin, "monospace-button");
             final TextButton loadBtn = new TextButton(" LOAD ", skin, "monospace-button");
+            final TextButton exportBtn = new TextButton(" EXPORT ", skin, "monospace-button");
+            final TextButton importBtn = new TextButton(" IMPORT ", skin, "monospace-button");
             final TextButton okBtn = new TextButton(" OK ", skin, "monospace-button");
             okBtn.setColor(Color.GREEN);
             final TextButton cancelBtn = new TextButton(" CANCEL ", skin, "monospace-button");
@@ -975,8 +986,16 @@ public class Gdx3DHud {
             footer.add(applyBtn).pad(5);
             footer.add(saveBtn).pad(5);
             footer.add(loadBtn).pad(5);
+            footer.add(exportBtn).pad(5);
+            footer.add(importBtn).pad(5);
             footer.add(okBtn).pad(5);
             footer.add(cancelBtn).pad(5);
+
+            // Nothing to export if the command journal is empty.
+            exportBtn.setDisabled(!hasScenarioToExport());
+            if (exportBtn.isDisabled()) {
+                exportBtn.getLabel().setColor(Color.GRAY);
+            }
 
             // ASSEMBLY & VISIBILITY SYNC
             Table mainContent = new Table();
@@ -1105,6 +1124,23 @@ public class Gdx3DHud {
                 }
             });
 
+            exportBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    if (!hasScenarioToExport()) {
+                        return;
+                    }
+                    view.showExportDialog();
+                }
+            });
+
+            importBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    view.showImportDialog();
+                }
+            });
+
             okBtn.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
@@ -1189,7 +1225,12 @@ public class Gdx3DHud {
                             }
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.E) {
-                            stage.setKeyboardFocus(textArea);
+                            if (!exportBtn.isDisabled()) {
+                                exportBtn.fire(new ChangeListener.ChangeEvent());
+                            }
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.I) {
+                            importBtn.fire(new ChangeListener.ChangeEvent());
                             return true;
                         }
                     }
@@ -1241,6 +1282,11 @@ public class Gdx3DHud {
 
     public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
             String defaultText, Consumer<String> onResult) {
+        showFileDialog(title, mode, defaultText, new String[] {"json"}, onResult);
+    }
+
+    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
+            String defaultText, String[] extensions, Consumer<String> onResult) {
         Gdx.app.postRunnable(() -> {
             if (!com.kotcrab.vis.ui.VisUI.isLoaded()) {
                 com.kotcrab.vis.ui.VisUI.load();
@@ -1289,11 +1335,12 @@ public class Gdx3DHud {
             fileChooser.setSelectionMode(
                     com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode.FILES);
 
-            // Savegames (*.json) and scenarios (*.ltr)
+            // Filter by the requested extensions (json for savegames, ltr for scenarios).
             com.kotcrab.vis.ui.widget.file.FileTypeFilter filter =
                     new com.kotcrab.vis.ui.widget.file.FileTypeFilter(true);
-            filter.addRule("Save game (*.json)", "json");
-            filter.addRule("Scenario (*.ltr)", "ltr");
+            for (String ext : extensions) {
+                filter.addRule(ext.toUpperCase() + " files (*." + ext + ")", ext);
+            }
             fileChooser.setFileTypeFilter(filter);
 
             fileChooser.setDirectory(Gdx.files.local("."));

@@ -642,6 +642,28 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     @Override
+    public void showExportDialog() {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        File result = new FileDialogBuilder().setTitle("Export Scenario")
+                .setDescription("Choose a file:").setActionLabel(LocalizedString.Save.toString())
+                .build().showDialog(gui);
+        if (result != null) {
+            TerminalView.this.gameViewListener.onExportScenario(result);
+        }
+    }
+
+    @Override
+    public void showImportDialog() {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        File result = new FileDialogBuilder().setTitle("Import Scenario")
+                .setDescription("Choose a file:").setActionLabel(LocalizedString.Open.toString())
+                .build().showDialog(gui);
+        if (result != null) {
+            TerminalView.this.gameViewListener.onImportScenario(result);
+        }
+    }
+
+    @Override
     public void showIDE() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
         BasicWindow window = new BasicWindow();
@@ -755,6 +777,17 @@ public class TerminalView implements letrain.mvp.View {
             showLoadDialog();
             window.close();
         };
+        Runnable exportAction = () -> {
+            if (!gameViewListener.canExportScenario()) {
+                return;
+            }
+            gameViewListener.onEditCommands(editor.getText());
+            showExportDialog();
+        };
+        Runnable importAction = () -> {
+            showImportDialog();
+            window.close();
+        };
         Runnable cancelAction = window::close;
 
         com.googlecode.lanterna.gui2.InteractableRenderer<Button> mnemonicRenderer =
@@ -775,8 +808,13 @@ public class TerminalView implements letrain.mvp.View {
                         }
                         String label = component.getLabel();
                         graphics.putString(0, 0, "< " + label + " >");
-                        graphics.setForegroundColor(
-                                com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+                        if (!component.isEnabled()) {
+                            graphics.setForegroundColor(
+                                    com.googlecode.lanterna.TextColor.ANSI.BLACK);
+                        } else {
+                            graphics.setForegroundColor(
+                                    com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+                        }
                         if (label.length() > 0) {
                             graphics.putString(2, 0, label.substring(0, 1));
                         }
@@ -814,6 +852,17 @@ public class TerminalView implements letrain.mvp.View {
         loadBtn.setRenderer(mnemonicRenderer);
         footer.addComponent(loadBtn);
 
+        Button exportBtn = new Button("Export", exportAction);
+        exportBtn.setRenderer(mnemonicRenderer);
+        if (!gameViewListener.canExportScenario()) {
+            exportBtn.setEnabled(false);
+        }
+        footer.addComponent(exportBtn);
+
+        Button importBtn = new Button("Import", importAction);
+        importBtn.setRenderer(mnemonicRenderer);
+        footer.addComponent(importBtn);
+
         Button cancelBtn = new Button("Cancel", cancelAction);
         cancelBtn.setRenderer(mnemonicRenderer);
         footer.addComponent(cancelBtn);
@@ -831,7 +880,10 @@ public class TerminalView implements letrain.mvp.View {
                         refList.takeFocus();
                         deliverEvent.set(false);
                     } else if (c == 'e') {
-                        editor.takeFocus();
+                        exportAction.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'i') {
+                        importAction.run();
                         deliverEvent.set(false);
                     } else if (c == 'a') {
                         applyAction.run();

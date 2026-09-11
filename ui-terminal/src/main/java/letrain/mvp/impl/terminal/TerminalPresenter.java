@@ -389,7 +389,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 file -> onSaveGame(file), file -> onLoadGame(file),
                 new letrain.command.TurtleBuilder(model, railTrackMaker),
                 (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
-                steps -> undo(steps), steps -> redo(steps), false);
+                steps -> undo(steps), steps -> redo(steps),
+                file -> saveScenario(file), file -> playScenario(file), false);
 
         if (error != null) {
             model.setCommandError(error);
@@ -419,6 +420,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         String t = cmd.trim().toLowerCase();
         return t.startsWith("record ") || t.startsWith("record;") || t.equals("record")
                 || t.startsWith("journal") || t.startsWith("undo") || t.startsWith("redo")
+                || t.startsWith("export") || t.startsWith("import")
                 || t.startsWith("ls ") || t.equals("ls")
                 || t.startsWith("info ") || t.startsWith("save") || t.startsWith("load")
                 || t.startsWith("quit") || t.equals("q") || t.startsWith("q!")
@@ -1900,10 +1902,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (file == null) {
             return;
         }
-        if (letrain.command.ScenarioFile.isScenarioName(file.getName())) {
-            saveScenario(file);
-            return;
-        }
         boolean ok = gameSaveService.save(this.model, file);
         if (!ok) {
             view.showMessage("Save Error", "Could not save game to\n" + file.getAbsolutePath());
@@ -1914,14 +1912,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void saveScenario(File file) {
         try {
             letrain.command.CommandJournal journal = model.getCommandJournal();
-            java.nio.file.Files.writeString(file.toPath(),
-                    letrain.command.ScenarioFile.render(model.getSeed(), journal.entries()));
             if (journal.isEmpty()) {
                 view.showMessage("Scenario",
-                        "Saved an empty scenario (turn 'record on' before editing to capture it).");
-            } else {
-                view.setStatusBarText("Scenario saved: " + file.getName());
+                        "Cannot export: the command journal is empty (turn 'record on' before editing).");
+                return;
             }
+            java.nio.file.Files.writeString(file.toPath(),
+                    letrain.command.ScenarioFile.render(model.getSeed(), journal.entries()));
+            view.setStatusBarText("Scenario saved: " + file.getName());
         } catch (Exception e) {
             log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
             view.showMessage("Scenario Error", "Could not save scenario: " + e.getMessage());
@@ -1932,16 +1930,29 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void playScenario(File file) {
         try {
             String text = java.nio.file.Files.readString(file.toPath());
-            int seed = letrain.command.ScenarioFile.parseSeed(text);
-            applyModel(new letrain.mvp.impl.Model(seed));
-            for (String cmd : letrain.command.ScenarioFile.commandLines(text)) {
+            letrain.command.ScenarioFile.Scenario scenario =
+                    letrain.command.ScenarioFile.parse(text);
+            applyModel(new letrain.mvp.impl.Model(scenario.seed()));
+            for (String cmd : scenario.buildCommands()) {
                 String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                         f -> onSaveGame(f), f -> onLoadGame(f),
                         new letrain.command.TurtleBuilder(model, railTrackMaker),
                         (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
                         null, null, false);
                 if (error != null) {
-                    log.error("Scenario command failed: '{}': {}", cmd, error);
+                    log.error("Scenario build command failed: '{}': {}", cmd, error);
+                    view.showMessage("Scenario Error", cmd + "\n" + error);
+                    return;
+                }
+            }
+            for (String cmd : scenario.startCommands()) {
+                String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                        f -> onSaveGame(f), f -> onLoadGame(f),
+                        new letrain.command.TurtleBuilder(model, railTrackMaker),
+                        (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
+                        null, null, false);
+                if (error != null) {
+                    log.error("Scenario start command failed: '{}': {}", cmd, error);
                     view.showMessage("Scenario Error", cmd + "\n" + error);
                     return;
                 }
@@ -1969,13 +1980,31 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         });
     }
 
+    /** Exports the current editing journal as a scenario file (called by the UI/DSL). */
+    @Override
+    public void onExportScenario(File file) {
+        if (file != null) {
+            saveScenario(file);
+        }
+    }
+
+    /** Imports (plays) a scenario file: fresh same-seed world + replayed commands. */
+    @Override
+    public void onImportScenario(File file) {
+        if (file != null) {
+            playScenario(file);
+        }
+    }
+
+    @Override
+    public boolean canExportScenario() {
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        return journal != null && !journal.isEmpty();
+    }
+
     @Override
     public void onLoadGame(File file) {
         if (file != null && file.exists()) {
-            if (letrain.command.ScenarioFile.isScenarioName(file.getName())) {
-                playScenario(file);
-                return;
-            }
             try {
                 java.util.Optional<letrain.mvp.impl.Model> optionalModel =
                         gameSaveService.load(file);
