@@ -211,4 +211,27 @@ class TerminalPresenterKeyboardEditTest {
         assertEquals("fork " + fork.getId() + " set straight;",
                 model.getCommandJournal().entries().get(0));
     }
+
+    @Test
+    @DisplayName("a console line mixing navigation and an edit is journaled; pure navigation is not")
+    void consoleLineWithNavigationAndEdit_isJournaled() {
+        Model model = new Model(1);
+        model.updateGroundMap(new Point(-30, -30), 60, 60);
+        model.getCursor().setPosition(new Point(7, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.RAILS);
+
+        TerminalPresenter presenter = silentPresenter(model);
+        presenter.onChar(charKey('R')); // Record/edit mode: recording starts
+
+        // Full self-positioned edit line: must be recorded (it used to be dropped for starting 'go').
+        console(presenter, "go 7,0; face e; write 1;");
+        assertEquals(1, model.getCommandJournal().size(),
+                "a line with navigation + an edit must be recorded");
+
+        // Pure navigation must still be ignored.
+        console(presenter, "go 1,1;");
+        assertEquals(1, model.getCommandJournal().size(),
+                "pure navigation must not be recorded");
+    }
 }

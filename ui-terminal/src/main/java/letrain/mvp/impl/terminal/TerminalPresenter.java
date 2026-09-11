@@ -451,33 +451,19 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         // exported scenario replays at the right place. Only editing commands, and only while the
         // world is frozen in edit mode (same gate as undo, so both stay 1:1).
         letrain.command.CommandJournal journal = model.getCommandJournal();
-        if (model.isSimulationPaused() && journal.isRecording() && !isNonRecordableCommand(cmd)) {
+        if (model.isSimulationPaused() && journal.isRecording() && !letrain.command.EditCommandFilter.isNonRecordable(cmd)) {
             journal.record(prefix + cmd);
         }
         // Auto-capture in pause (ADR-020 item 3): while pause-editing freezes the world, every
         // successful editing command is journaled for undo/redo.
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
-        if (model.isSimulationPaused() && !isNonRecordableCommand(cmd)) {
+        if (model.isSimulationPaused() && !letrain.command.EditCommandFilter.isNonRecordable(cmd)) {
             history.record(prefix + cmd);
         }
         model.setMode(letrain.mvp.Model.GameMode.RAILS);
         model.setCommandText("");
         model.setCommandError("");
         view.centerOn(model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY());
-    }
-
-    /** Console commands that must never enter the undo history (control / navigation / info). */
-    private static boolean isNonRecordableCommand(String cmd) {
-        String t = cmd.trim().toLowerCase();
-        return t.startsWith("record ") || t.startsWith("record;") || t.equals("record")
-                || t.startsWith("journal") || t.startsWith("undo") || t.startsWith("redo")
-                || t.startsWith("export") || t.startsWith("import")
-                || t.startsWith("ls ") || t.equals("ls")
-                || t.startsWith("info ") || t.startsWith("save") || t.startsWith("load")
-                || t.startsWith("quit") || t.equals("q") || t.startsWith("q!")
-                || t.startsWith("wq") || t.startsWith("help")
-                || t.startsWith("go ") || t.startsWith("face ") || t.startsWith("move ")
-                || t.startsWith("mark ") || t.startsWith("m ");
     }
 
     /** Absolute cursor prefix: {@code "go x,y; face d; "} from the current cursor state. */
