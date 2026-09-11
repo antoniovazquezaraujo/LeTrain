@@ -176,6 +176,31 @@ public class UndoRedoHistory {
     }
 
     /**
+     * Records like {@link #record}, but collapses consecutive {@code signal N set limit X} tweaks for
+     * the same signal into a single entry (the last value wins). Any checkpoint at or after the
+     * replaced command is dropped, since its snapshot would no longer match the rewritten command.
+     */
+    public void recordCoalescing(String canonicalCommand) {
+        recordCoalescing(canonicalCommand, null);
+    }
+
+    /** Coalescing variant of {@link #record(String, Point)}. */
+    public void recordCoalescing(String canonicalCommand, Point resumeFrom) {
+        String command = canonicalCommand == null ? null : canonicalCommand.trim();
+        if (command == null || command.isEmpty() || live == null) {
+            return;
+        }
+        if (applied == commands.size() && applied > 0
+                && CommandMerge.consecutiveSignalLimit(commands.get(applied - 1), command)) {
+            commands.set(applied - 1, command);
+            resumeFroms.set(applied - 1, resumeFrom);
+            checkpoints.removeIf(c -> c.commandIndex() >= applied);
+            return;
+        }
+        record(command, resumeFrom);
+    }
+
+    /**
      * The optional position of the rail piece that the command at {@code commandIndex} chained
      * from, or null when the command was a fresh/disconnected piece or not a build. Only meaningful
      * for commands recorded by the keyboard funnel; used by undo/redo slice replay to re-seed the

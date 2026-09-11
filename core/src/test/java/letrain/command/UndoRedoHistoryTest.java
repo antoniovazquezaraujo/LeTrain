@@ -274,6 +274,71 @@ class UndoRedoHistoryTest {
     }
 
     @Test
+    @DisplayName("coalesced limit tweaks stay coherent across a checkpoint boundary")
+    void coalesce_limit_acrossCheckpoint_isDeterministic() throws Exception {
+        Model live = newBaseWorld();
+        byte[] baseBytes = serialize(live);
+        UndoRedoHistory history = newHistory();
+        history.begin(live);
+
+        // Two build commands create the track and the signal (indices 0-1).
+        String[] build = {
+            "go 0,0; face e; write 1;",
+            "go 0,0; face e; new sg;"
+        };
+        for (String cmd : build) {
+            assertEquals(null, runScript(live, cmd));
+            history.record(cmd);
+        }
+        int signalId = live.getSpeedSignals().get(0).getId();
+
+        // Seven filler edits (indices 2-8), so the next command lands on the checkpoint at 10.
+        for (int i = 1; i <= 7; i++) {
+            String cmd = "go " + (i * 2) + ",0; face e; write 1;";
+            assertEquals(null, runScript(live, cmd));
+            history.record(cmd);
+        }
+        // First limit tweak at index 9 -> applied 10, checkpoint at 10 is taken.
+        String limit1 = "go 0,0; face e; signal " + signalId + " set limit 5;";
+        assertEquals(null, runScript(live, limit1));
+        history.record(limit1);
+        assertEquals(10, history.applied());
+
+        // Two more tweaks coalesce into index 9, invalidating the stale checkpoint at 10.
+        for (String limit : new String[] {
+            "go 0,0; face e; signal " + signalId + " set limit 6;",
+            "go 0,0; face e; signal " + signalId + " set limit 7;"}) {
+            assertEquals(null, runScript(live, limit));
+            history.recordCoalescing(limit);
+        }
+        assertEquals(10, history.size(), "limit tweaks must collapse into one command");
+
+        // A different edit past the boundary (index 10), applied 11.
+        String after = "go 20,0; face e; write 1;";
+        assertEquals(null, runScript(live, after));
+        history.record(after);
+        assertEquals(11, history.applied());
+
+        // Reference: base + the 9 first commands + the FINAL limit value.
+        Model ref = deserialize(baseBytes);
+        for (String cmd : build) {
+            assertEquals(null, runScript(ref, cmd));
+        }
+        for (int i = 1; i <= 7; i++) {
+            assertEquals(null, runScript(ref, "go " + (i * 2) + ",0; face e; write 1;"));
+        }
+        assertEquals(null,
+                runScript(ref, "go 0,0; face e; signal " + signalId + " set limit 7;"));
+        byte[] expected = serialize(ref);
+
+        // Undo to the boundary must reproduce the coalesced final limit, not the stale snapshot.
+        letrain.mvp.Model restored = applyPlan(history, history.planUndo(1));
+        assertNotNull(restored);
+        assertEquals(10, history.applied());
+        assertArrayEquals(expected, serialize((Model) restored));
+    }
+
+    @Test
     @DisplayName("plan undoing past the start clamps to zero and returns the base world")
     void undo_beyondStart_clampsToBase() throws Exception {
         Model live = newBaseWorld();
