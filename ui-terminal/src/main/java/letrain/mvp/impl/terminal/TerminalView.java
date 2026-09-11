@@ -969,7 +969,13 @@ public class TerminalView implements letrain.mvp.View {
                     java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
                 if (ks.isAltDown() && ks.getCharacter() != null) {
                     char c = Character.toLowerCase(ks.getCharacter());
-                    if (c == 'r') {
+                    if (c == '1') {
+                        switchToProgram.run();
+                        deliverEvent.set(false);
+                    } else if (c == '2') {
+                        switchToScenario.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'r') {
                         refList.takeFocus();
                         deliverEvent.set(false);
                     } else if (c == 'e') {
