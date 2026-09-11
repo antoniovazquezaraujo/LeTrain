@@ -120,6 +120,7 @@ class Gdx3DInputHandlerConsoleTest {
     @Test
     @DisplayName("console commands journal the canonical self-positioned form while recording")
     void consoleCommand_recordsCanonicalJournal() {
+        model.setPauseEditing(true); // recording only while frozen in edit mode
         model.getCommandJournal().startRecording();
         executeInConsole("write 1;");
         assertEquals(1, model.getCommandJournal().size());

@@ -206,7 +206,7 @@ class CommandJournalTest {
         // Assert: the report shows recording OFF and both entries in order.
         String report = out.toString();
         assertTrue(report.contains("Recording: OFF"), "report must show recording state: " + report);
-        assertTrue(report.contains("Entries (2)"), "report must count 2 entries: " + report);
+        assertTrue(report.contains("Entries (2/2)"), "report must count 2 applied entries: " + report);
         assertTrue(report.indexOf("go 0,0; face e;") < report.indexOf("write 2;"),
                 "entries must appear in recorded order: " + report);
     }

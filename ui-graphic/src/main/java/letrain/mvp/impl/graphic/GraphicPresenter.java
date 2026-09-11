@@ -103,6 +103,13 @@ public class GraphicPresenter extends ApplicationAdapter
     private letrain.command.UndoRedoHistory undoRedoHistory;
 
     /**
+     * Editing command journal (ADR-020 item 2). Presenter-owned so it survives the model swaps that
+     * undo/redo perform (the model field is transient); the model is bound to this instance.
+     */
+    private final letrain.command.CommandJournal commandJournal =
+            new letrain.command.CommandJournal();
+
+    /**
      * Experiment-mode session (ADR-020 item 5): snapshots the world on enter and restores it on
      * exit, so the user can try things in the live simulation without consequences.
      */
@@ -136,6 +143,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Register as listener for audio events
         model.addCoreTrainEventListener(this);
+        model.setCommandJournal(commandJournal);
     }
 
     public Stage getStage() {
@@ -470,10 +478,11 @@ public class GraphicPresenter extends ApplicationAdapter
     public void onPauseEditingChanged(boolean paused) {
         if (paused) {
             getUndoRedoHistory().begin(model);
-            model.getCommandJournal().startRecording();
+            commandJournal.startRecording();
         } else {
             getUndoRedoHistory().end();
-            model.getCommandJournal().stopRecording();
+            commandJournal.stopRecording();
+            commandJournal.bake();
         }
     }
 
@@ -525,10 +534,11 @@ public class GraphicPresenter extends ApplicationAdapter
         }
         newModel.addCoreTrainEventListener(this);
         newModel.setPauseEditing(wasPaused);
+        newModel.setCommandJournal(commandJournal);
         if (wasPaused) {
-            newModel.getCommandJournal().startRecording();
+            commandJournal.startRecording();
         } else {
-            newModel.getCommandJournal().stopRecording();
+            commandJournal.stopRecording();
         }
         letrain.map.Point startPos = newModel.getCursor().getPosition();
         newModel.getGroundMap().renderBlock(startPos.getX() - getCols() / 2,
@@ -725,14 +735,13 @@ public class GraphicPresenter extends ApplicationAdapter
     /** Exports the current editing journal as a scenario file (seed + commands). */
     private void saveScenario(File file) {
         try {
-            letrain.command.CommandJournal journal = model.getCommandJournal();
-            if (journal.isEmpty()) {
+            if (commandJournal.appliedEntries().isEmpty()) {
                 showMessage("Scenario",
                         "Cannot export: nothing recorded yet (toggle Record/edit mode with 'R' and edit).");
                 return;
             }
             java.nio.file.Files.writeString(file.toPath(),
-                    letrain.command.ScenarioExporter.render(model, journal.entries()));
+                    letrain.command.ScenarioExporter.render(model, commandJournal.appliedEntries()));
             log.info("Scenario saved to {}", file.getAbsolutePath());
         } catch (Exception e) {
             log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
@@ -776,12 +785,17 @@ public class GraphicPresenter extends ApplicationAdapter
             // Materialize the terrain under the whole rebuilt network; otherwise tracks outside the
             // cursor/render radius appear floating over void until the cursor passes over them.
             materializeGroundUnderTracks();
-            // Scenario = free construction mode: keep paused editing on (instant build, frozen world).
-            if (!model.isPauseEditing()) {
-                model.setPauseEditing(true);
-                getUndoRedoHistory().begin(model);
+            // The imported recipe becomes the journal base, so a later export keeps the whole
+            // network (imported + subsequent edits).
+            commandJournal.clear();
+            for (String cmd : scenario.buildCommands()) {
+                commandJournal.record(cmd);
             }
-            model.getCommandJournal().startRecording();
+            commandJournal.bake();
+            // Scenario = free construction mode: enter the Record/edit mode (frozen, instant, undo).
+            model.setPauseEditing(true);
+            commandJournal.startRecording();
+            getUndoRedoHistory().begin(model);
             log.info("Scenario played from {}", file.getAbsolutePath());
         } catch (Exception e) {
             log.error("Error playing scenario from {}", file.getAbsolutePath(), e);
@@ -845,8 +859,10 @@ public class GraphicPresenter extends ApplicationAdapter
                 startPos.getY() - getRows() / 2, getCols(), getRows());
         // Loading a savegame uses normal economy (scenario import re-enables free construction).
         model.getEconomyManager().setFreeConstruction(false);
-        // Normal play: recording follows the edit mode (R), which is off after a load.
-        model.getCommandJournal().stopRecording();
+        // Normal play: no recipe yet; bind the presenter-owned journal.
+        commandJournal.clear();
+        commandJournal.stopRecording();
+        model.setCommandJournal(commandJournal);
     }
 
     @Override
@@ -972,6 +988,8 @@ public class GraphicPresenter extends ApplicationAdapter
         }
         log.info("[undoredo] replayed={} replayedTo={} committing", count, replayedTo);
         history.commit(replayedTo);
+        // Keep the export journal cursor in sync with the applied edits of this session.
+        commandJournal.setApplied(commandJournal.base() + replayedTo);
         cameraController.forceSnap();
     }
 

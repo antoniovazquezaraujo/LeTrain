@@ -1539,6 +1539,12 @@ public class Model implements letrain.mvp.Model {
         return commandJournal;
     }
 
+    /** Binds a presenter-owned journal so it survives model swaps (undo/redo/load). */
+    @Override
+    public void setCommandJournal(letrain.command.CommandJournal journal) {
+        this.commandJournal = journal;
+    }
+
     @JsonIgnore
     @Override
     public String getGameObjectsReport() {

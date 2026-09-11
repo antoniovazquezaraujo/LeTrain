@@ -92,6 +92,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private letrain.command.UndoRedoHistory undoRedoHistory;
 
     /**
+     * Editing command journal (ADR-020 item 2). Presenter-owned so it survives the model swaps that
+     * undo/redo perform (the model field is transient); the model is bound to this instance.
+     */
+    private final letrain.command.CommandJournal commandJournal =
+            new letrain.command.CommandJournal();
+
+    /**
      * Experiment-mode session (ADR-020 item 5): snapshots the world on enter and restores it on
      * exit, so the user can try things in the live simulation without consequences.
      */
@@ -237,6 +244,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         this.model.addCoreTrainEventListener(this);
         // Loading a savegame / starting fresh uses normal economy (scenario import re-enables it).
         this.model.getEconomyManager().setFreeConstruction(false);
+        // Fresh world: no recipe yet. Bind the presenter-owned journal to the new model.
+        this.commandJournal.clear();
+        this.commandJournal.stopRecording();
+        this.model.setCommandJournal(commandJournal);
     }
 
     /**
@@ -269,11 +280,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 new SimulationController(this.model, audioController, railTrackMaker);
         this.model.addCoreTrainEventListener(this);
         this.model.setPauseEditing(wasPaused);
+        this.model.setCommandJournal(commandJournal);
         // Recording follows the edit mode: keep capturing if we swapped while editing.
         if (wasPaused) {
-            this.model.getCommandJournal().startRecording();
+            commandJournal.startRecording();
         } else {
-            this.model.getCommandJournal().stopRecording();
+            commandJournal.stopRecording();
         }
         letrain.map.Point focus = getActiveFocusPoint();
         if (focus != null) {
@@ -405,10 +417,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         // Command journal (ADR-020 item 2): record the canonical, self-positioned form so an
-        // exported scenario replays at the right place (the executor's raw auto-record is disabled
-        // above). Only editing commands, and only while 'record' is on.
+        // exported scenario replays at the right place. Only editing commands, and only while the
+        // world is frozen in edit mode (same gate as undo, so both stay 1:1).
         letrain.command.CommandJournal journal = model.getCommandJournal();
-        if (journal != null && journal.isRecording() && !isNonRecordableCommand(cmd)) {
+        if (model.isSimulationPaused() && journal.isRecording() && !isNonRecordableCommand(cmd)) {
             journal.record(prefix + cmd);
         }
         // Auto-capture in pause (ADR-020 item 3): while pause-editing freezes the world, every
@@ -536,6 +548,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         // Commit only up to the last command that really applied, so the history stays in sync with
         // the live world (never claim commands were applied when a replay broke half-way).
         history.commit(replayedTo);
+        // Keep the export journal cursor in sync with the applied edits of this session.
+        commandJournal.setApplied(commandJournal.base() + replayedTo);
         view.setStatusBarText((restoring ? "Undid" : "Redid") + " " + plan.toIndex() + " steps");
         view.centerOn(model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY());
     }
@@ -729,11 +743,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (recording) {
             // Editing session: snapshot for undo/redo and start capturing the scenario recipe.
             getUndoRedoHistory().begin(model);
-            model.getCommandJournal().startRecording();
+            commandJournal.startRecording();
         } else {
-            // Leaving edit mode drops the undo session; the recorded recipe is kept for export.
+            // Leaving edit mode drops the undo session; the recipe is baked and kept for export.
             getUndoRedoHistory().end();
-            model.getCommandJournal().stopRecording();
+            commandJournal.stopRecording();
+            commandJournal.bake();
         }
     }
 
@@ -1923,14 +1938,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     /** Exports the current editing journal as a scenario file (seed + commands). */
     private void saveScenario(File file) {
         try {
-            letrain.command.CommandJournal journal = model.getCommandJournal();
-            if (journal.isEmpty()) {
+            if (commandJournal.appliedEntries().isEmpty()) {
                 view.showMessage("Scenario",
                         "Cannot export: nothing recorded yet (toggle Record/edit mode with 'R' and edit).");
                 return;
             }
             java.nio.file.Files.writeString(file.toPath(),
-                    letrain.command.ScenarioExporter.render(model, journal.entries()));
+                    letrain.command.ScenarioExporter.render(model, commandJournal.appliedEntries()));
             view.setStatusBarText("Scenario saved: " + file.getName());
         } catch (Exception e) {
             log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
@@ -1974,10 +1988,17 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             // Materialize the terrain under the whole rebuilt network; otherwise tracks outside the
             // cursor/render radius appear floating over void until the cursor passes over them.
             materializeGroundUnderTracks();
-            // Scenario = free construction mode: keep paused editing on (instant build, frozen world).
-            if (!model.isPauseEditing()) {
-                togglePauseEditing();
+            // The imported recipe becomes the journal base, so a later export keeps the whole
+            // network (imported + subsequent edits).
+            commandJournal.clear();
+            for (String cmd : scenario.buildCommands()) {
+                commandJournal.record(cmd);
             }
+            commandJournal.bake();
+            // Scenario = free construction mode: enter the Record/edit mode (frozen, instant, undo).
+            model.setPauseEditing(true);
+            commandJournal.startRecording();
+            getUndoRedoHistory().begin(model);
             view.setStatusBarText("Scenario played: " + file.getName());
         } catch (Exception e) {
             log.error("Error playing scenario from {}", file.getAbsolutePath(), e);
@@ -2012,14 +2033,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     @Override
     public boolean canExportScenario() {
-        letrain.command.CommandJournal journal = model.getCommandJournal();
-        return journal != null && !journal.isEmpty();
+        return !commandJournal.appliedEntries().isEmpty();
     }
 
     @Override
     public boolean isRecordingCommands() {
-        letrain.command.CommandJournal journal = model.getCommandJournal();
-        return journal != null && journal.isRecording();
+        return commandJournal.isRecording() && model.isSimulationPaused();
     }
 
     @Override

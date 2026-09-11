@@ -68,7 +68,8 @@ public class Gdx3DHud {
     }
 
     private boolean hasScenarioToExport() {
-        return model.getCommandJournal() != null && !model.getCommandJournal().isEmpty();
+        return model.getCommandJournal() != null
+                && !model.getCommandJournal().appliedEntries().isEmpty();
     }
 
     private void initUI() {
@@ -441,7 +442,7 @@ public class Gdx3DHud {
         // Blinking REC indicator while the command journal records.
         if (recDot != null) {
             boolean recording = model.getCommandJournal() != null
-                    && model.getCommandJournal().isRecording();
+                    && model.getCommandJournal().isRecording() && model.isSimulationPaused();
             recDot.setVisible(recording && (System.currentTimeMillis() / 500) % 2 == 0);
         }
         // Update HUD (Finances)

@@ -170,9 +170,10 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         letrain.command.CommandJournal journal = model.getCommandJournal();
         StringBuilder sb = new StringBuilder();
         sb.append(journal.isRecording() ? "Recording: ON\n" : "Recording: OFF\n");
-        sb.append("Entries (").append(journal.size()).append("):");
+        sb.append("Entries (").append(journal.applied()).append("/").append(journal.size())
+                .append("):");
         int i = 1;
-        for (String entry : journal.entries()) {
+        for (String entry : journal.appliedEntries()) {
             sb.append("\n  ").append(i++).append(". ").append(entry);
         }
         String text = sb.toString();
