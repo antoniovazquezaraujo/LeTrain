@@ -105,8 +105,16 @@ class PocJournalReplayTest {
 
     private static final int HALF = 150; // rendered world spans [-HALF, HALF] on both axes
 
+    /**
+     * Fixed terrain seed. This PoC proves that replaying the same script on two copies of the same
+     * base world is byte-identical; it is not a terrain-coverage test. A random seed made it flaky
+     * (some worlds have no matching feature; some produce two fork nodes instead of one at the
+     * branch spot), so the world is pinned for reproducibility.
+     */
+    private static final int SEED = 1;
+
     private static Model newBaseWorld() {
-        Model base = new Model();
+        Model base = new Model(SEED);
         base.updateGroundMap(new Point(-HALF, -HALF), 2 * HALF, 2 * HALF);
         // Deterministic starting cursor; every script segment repositions with `go` anyway.
         base.getCursor().setPosition(new Point(0, 0));
