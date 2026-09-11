@@ -67,6 +67,11 @@ public final class ScenarioCompiler {
                     continue;
                 }
                 String lower = line.toLowerCase();
+                if (lower.startsWith("configuration")) {
+                    section = "configuration";
+                    depth = 1;
+                    continue;
+                }
                 if (lower.startsWith("on build")) {
                     section = "build";
                     depth = 1;
@@ -95,6 +100,13 @@ public final class ScenarioCompiler {
                     program.append(raw);
                 }
                 depth += delta;
+                if (depth <= 0) {
+                    section = null;
+                    depth = 0;
+                }
+            } else if ("configuration".equals(section)) {
+                // Settings (key=value), not commands: nothing to compile.
+                depth += braceDelta(line);
                 if (depth <= 0) {
                     section = null;
                     depth = 0;

@@ -124,7 +124,7 @@ mvn test -X             # Verbose
 3. Name the class: `ClassNameTest.java`.
 
 ### Modify Economy
-Edit `economy.properties` to adjust gameplay values.
+Edit `letrain.cfg` to adjust gameplay values.
 
 ## Quality Assurance
 - Ensure all code adheres to the above standards.

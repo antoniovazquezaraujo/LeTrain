@@ -119,6 +119,12 @@ public interface EconomyManager {
 
     public void reloadConfig();
 
+    /** All effective settings (defaults + file overrides) as key=value entries, for scenario export. */
+    java.util.Map<String, String> effectiveConfig();
+
+    /** Applies settings (from a scenario's {@code configuration} section); they win over the file. */
+    void applyConfig(java.util.Map<String, String> config);
+
     public float getGoldThreshold();
 
     public float getCoalThreshold();

@@ -17,7 +17,7 @@ Detalles:
 - **Velocidad mínima**: por debajo de `derail.minSpeed` (configurable) un tren **nunca descarrila**, aunque encadene curvas (a baja velocidad no se descarrila).
 - Qué es una curva: una pieza cuyo paso cambia el rumbo (en este motor no existe un tipo `Curve`; se detecta porque el rumbo de salida difiere del de entrada, con los dirs que ya se calculan al mover el tren). Los **desvíos no son un caso especial**: un `ForkRailTrack` recorrido en recto es una recta más y un desvío desviado es una curva normal. El peligro es el cambio de rumbo, no el objeto "desvío".
 - El único estado es el instante de la última curva; se resetea al parar o invertir la marcha. Marcha atrás usa la misma regla.
-- Parámetros simbólicos en `economy.properties` (`derail.minCurveInterval`, `derail.minSpeed`), para afinar el balance sin recompilar.
+- Parámetros simbólicos en `letrain.cfg` (`derail.minCurveInterval`, `derail.minSpeed`), para afinar el balance sin recompilar.
 
 ## Consecuencias
 - Las señales de velocidad ganan propósito mecánico: anticipar el frenado antes de tramos sinuosos o desvíos.

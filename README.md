@@ -53,7 +53,7 @@ The game now features a fully integrated financial system:
 - **Logistics Engine**: Transport specialized cargo (**GOLD**, **COAL**, **RUBY**) from Producers to Consumers.
 - **Smart Pricing**: Revenue scales with travel distance. Every meter counts!
 - **Construction Costs**: Balancing infrastructure expansion vs. operational fuel costs.
-- **Configurable Gameplay**: Fine-tune the entire economy via the `economy.properties` file.
+- **Configurable Gameplay**: Fine-tune the entire game via the `letrain.cfg` file.
 
 ## 🌍 Infinite Procedural World
 - **Entropy Booster**: Every new game starts at a unique, randomized coordinate (±10k to ±100k units) to ensure fresh exploration every time.

@@ -101,7 +101,7 @@ Empiezas con tu cuenta a cero. Para ganar dinero debes:
 2. Construir un tren y sus vagones (¡cuidado con los costes de combustible!).
 3. Transportar la mercancía. **El beneficio se calcula en base a la distancia recorrida**: cuanto más largo sea el trayecto desde la zona productora hasta la zona consumidora, ¡mayor será el pago!
 
-Puedes ajustar los costes y recompensas base modificando el archivo `economy.properties` antes de lanzar el juego.
+Puedes ajustar los costes y recompensas base modificando el archivo `letrain.cfg` antes de lanzar el juego.
 
 ## 🤖 Autopilot y Rutas
 

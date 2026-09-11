@@ -2071,7 +2071,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         try {
             letrain.command.ScenarioFile.Scenario scenario =
                     letrain.command.ScenarioFile.parse(text);
-            applyModel(new letrain.mvp.impl.Model(scenario.seed()));
+            // Apply the scenario's settings (configuration section) to the fresh world BEFORE any
+            // terrain generation, so the scenario reproduces the same terrain and rules regardless
+            // of the local letrain.cfg.
+            letrain.mvp.impl.Model fresh = new letrain.mvp.impl.Model(scenario.seed());
+            fresh.getEconomyManager().applyConfig(scenario.configuration());
+            applyModel(fresh);
             // Constructor libre: building the scenario costs nothing (ADR-020).
             model.getEconomyManager().setFreeConstruction(true);
             // Replay silently: re-running a coupling must not play the "link" sound of the user

@@ -99,7 +99,7 @@ You start with your account at zero. To earn money you must:
 2. Build a train and its wagons (beware of fuel costs!).
 3. Transport the cargo. **Profit is calculated based on the distance traveled**: the longer the journey from the producing zone to the consuming zone, the higher the payout!
 
-You can adjust the base costs and rewards by modifying the `economy.properties` file before launching the game.
+You can adjust the base costs and rewards by modifying the `letrain.cfg` file before launching the game.
 
 ## 🤖 Autopilot and Routes
 

@@ -1,7 +1,11 @@
 package letrain.command;
 
+import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,6 +16,9 @@ import java.util.regex.Pattern;
  * <pre>
  * # LeTrain scenario v1
  * seed 123
+ * configuration {
+ *   threshold.WATER=130
+ * }
  * on build {
  *   go 0,0; face e; write 5;
  *   new st;
@@ -25,11 +32,13 @@ import java.util.regex.Pattern;
  * </pre>
  *
  * <p>
- * The {@code on build} section holds the canonical editing commands (the command journal) and is
- * replayed first; {@code on start} holds optional initial conditions applied right after the build;
- * {@code program} holds the verbatim automation script installed after that (may nest braces). All
- * sections are optional: a flat file with just a seed and commands (no braces) is valid and its
- * lines are treated as build commands, so older scenarios keep working.
+ * {@code configuration} holds the game settings (the effective {@code letrain.cfg}) so the scenario
+ * reproduces the same terrain and rules; it wins over the local file. {@code on build} holds the
+ * canonical editing commands (the command journal) and is replayed first; {@code on start} holds
+ * optional initial conditions applied right after the build; {@code program} holds the verbatim
+ * automation script installed after that (may nest braces). All sections are optional: a flat file
+ * with just a seed and commands (no braces) is valid and its lines are treated as build commands, so
+ * older scenarios keep working.
  *
  * <p>
  * This class only parses/renders the text; it never touches a model or the filesystem. The caller
@@ -48,11 +57,11 @@ public final class ScenarioFile {
             Pattern.compile("go (-?\\d+),(-?\\d+); face ([a-z]{1,2}); write (\\d+);");
 
     /**
-     * Parsed scenario: seed + the ordered build/start command sections + the (verbatim) automation
-     * program, which may be empty.
+     * Parsed scenario: seed + the game settings + the ordered build/start command sections + the
+     * (verbatim) automation program, which may be empty.
      */
-    public record Scenario(
-            int seed, List<String> buildCommands, List<String> startCommands, String program) {}
+    public record Scenario(int seed, Map<String, String> configuration,
+            List<String> buildCommands, List<String> startCommands, String program) {}
 
     private ScenarioFile() {}
 
@@ -63,12 +72,12 @@ public final class ScenarioFile {
 
     /** Renders the seed and the build commands (no {@code on start}) as scenario text. */
     public static String render(int seed, List<String> buildCommands) {
-        return render(seed, buildCommands, null, null);
+        return render(seed, null, buildCommands, null, null);
     }
 
     /** Renders {@code seed} + the {@code on build}/{@code on start} sections as scenario text. */
     public static String render(int seed, List<String> buildCommands, List<String> startCommands) {
-        return render(seed, buildCommands, startCommands, null);
+        return render(seed, null, buildCommands, startCommands, null);
     }
 
     /**
@@ -77,9 +86,26 @@ public final class ScenarioFile {
      */
     public static String render(int seed, List<String> buildCommands, List<String> startCommands,
             String program) {
+        return render(seed, null, buildCommands, startCommands, program);
+    }
+
+    /**
+     * Renders the full scenario. {@code configuration} is the game settings map (written sorted as
+     * {@code key=value}); {@code program} is written verbatim.
+     */
+    public static String render(int seed, Map<String, String> configuration,
+            List<String> buildCommands, List<String> startCommands, String program) {
         StringBuilder sb = new StringBuilder();
         sb.append(HEADER).append('\n');
         sb.append(SEED_PREFIX).append(seed).append('\n');
+        if (configuration != null && !configuration.isEmpty()) {
+            sb.append("configuration {\n");
+            configuration.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(e -> sb.append(e.getKey()).append('=').append(e.getValue())
+                            .append('\n'));
+            sb.append("}\n");
+        }
         sb.append("on build {\n");
         for (String command : optimize(buildCommands)) {
             sb.append(command).append('\n');
@@ -113,11 +139,13 @@ public final class ScenarioFile {
      */
     public static Scenario parse(String text) {
         int seed = parseSeed(text);
+        List<String> configLines = new ArrayList<>();
         List<String> build = new ArrayList<>();
         List<String> start = new ArrayList<>();
         StringBuilder program = new StringBuilder();
         List<String> target = null; // non-null while inside a build/start section
         boolean inProgram = false;
+        boolean inConfig = false;
         int depth = 0;
         for (String rawLine : safeLines(text)) {
             String line = rawLine.trim();
@@ -126,6 +154,11 @@ public final class ScenarioFile {
                     continue;
                 }
                 String lower = line.toLowerCase();
+                if (lower.startsWith("configuration")) {
+                    inConfig = true;
+                    depth = 1;
+                    continue;
+                }
                 if (lower.startsWith("on build")) {
                     target = build;
                     depth = 1;
@@ -144,7 +177,17 @@ public final class ScenarioFile {
                 build.add(line); // legacy flat file: everything is a build command
                 continue;
             }
-            if (inProgram) {
+            if (inConfig) {
+                int delta = braceDelta(line);
+                if (depth + delta > 0 && !line.isEmpty()) {
+                    configLines.add(rawLine);
+                }
+                depth += delta;
+                if (depth <= 0) {
+                    depth = 0;
+                    inConfig = false;
+                }
+            } else if (inProgram) {
                 int delta = braceDelta(line);
                 if (depth + delta > 0) {
                     if (program.length() > 0) {
@@ -172,7 +215,26 @@ public final class ScenarioFile {
                 }
             }
         }
-        return new Scenario(seed, build, start, program.toString().stripTrailing());
+        return new Scenario(seed, parseConfig(configLines), build, start,
+                program.toString().stripTrailing());
+    }
+
+    /** Parses {@code key=value} settings lines (java.util.Properties syntax) into an ordered map. */
+    private static Map<String, String> parseConfig(List<String> lines) {
+        Map<String, String> config = new LinkedHashMap<>();
+        if (lines == null || lines.isEmpty()) {
+            return config;
+        }
+        Properties props = new Properties();
+        try {
+            props.load(new StringReader(String.join("\n", lines)));
+        } catch (Exception e) {
+            // Ignore malformed lines; whatever parsed is kept.
+        }
+        for (String name : props.stringPropertyNames()) {
+            config.put(name, props.getProperty(name));
+        }
+        return config;
     }
 
     /** Net brace count of a line ({@code {}), used to follow nested program blocks. */
@@ -303,7 +365,8 @@ public final class ScenarioFile {
      */
     public static Parts split(String fullText) {
         Scenario s = parse(fullText);
-        return new Parts(s.seed(), render(s.seed(), s.buildCommands(), s.startCommands(), null),
+        return new Parts(s.seed(),
+                render(s.seed(), s.configuration(), s.buildCommands(), s.startCommands(), null),
                 s.program());
     }
 
@@ -313,7 +376,7 @@ public final class ScenarioFile {
      */
     public static String withProgram(String recipeText, String program) {
         Scenario s = parse(recipeText);
-        return render(s.seed(), s.buildCommands(), s.startCommands(), program);
+        return render(s.seed(), s.configuration(), s.buildCommands(), s.startCommands(), program);
     }
 
     private static String[] safeLines(String text) {

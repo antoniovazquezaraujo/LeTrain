@@ -80,4 +80,25 @@ class TerminalPresenterScenarioEditorTest {
         assertTrue(presenter.getModel().getProgram().contains("sensor 1 on train enter"),
                 presenter.getModel().getProgram());
     }
+
+    @Test
+    @DisplayName("onPlayScenarioText applies the scenario configuration (wins over the local file)")
+    void playText_appliesConfiguration() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = presenterWith(model);
+        String text = "# LeTrain scenario v1\n"
+                + "seed 1\n"
+                + "configuration {\n"
+                + "threshold.WATER=99.5\n"
+                + "threshold.ROCK=199.5\n"
+                + "}\n"
+                + "on build {\n"
+                + "go 0,0; face e; write 3;\n"
+                + "}\n";
+
+        presenter.onPlayScenarioText(text);
+
+        assertEquals(99.5f, presenter.getModel().getEconomyManager().getWaterThreshold(), 0.001f);
+        assertEquals(199.5f, presenter.getModel().getEconomyManager().getRockThreshold(), 0.001f);
+    }
 }

@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -121,6 +123,27 @@ class ScenarioFileTest {
         assertEquals(9, parts.seed());
         assertFalse(parts.recipeText().contains("program {"), parts.recipeText());
         assertEquals(program, parts.program());
+        assertEquals(full, ScenarioFile.withProgram(parts.recipeText(), parts.program()));
+    }
+
+    @Test
+    @DisplayName("the configuration section round-trips and survives split/withProgram")
+    void configuration_roundTrip() {
+        Map<String, String> config = new LinkedHashMap<>();
+        config.put("threshold.WATER", "100.0");
+        config.put("threshold.ROCK", "200.0");
+        String full = ScenarioFile.render(9, config,
+                List.of("go 0,0; face e; write 1;"),
+                List.of("semaphore 1 close;"),
+                "sensor 1 on train enter { semaphore 1 open; }");
+
+        ScenarioFile.Scenario s = ScenarioFile.parse(full);
+        assertEquals("100.0", s.configuration().get("threshold.WATER"));
+        assertEquals("200.0", s.configuration().get("threshold.ROCK"));
+
+        ScenarioFile.Parts parts = ScenarioFile.split(full);
+        assertTrue(parts.recipeText().contains("configuration {"), parts.recipeText());
+        assertTrue(parts.recipeText().contains("threshold.WATER=100.0"), parts.recipeText());
         assertEquals(full, ScenarioFile.withProgram(parts.recipeText(), parts.program()));
     }
 
