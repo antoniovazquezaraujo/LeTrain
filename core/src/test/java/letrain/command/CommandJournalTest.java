@@ -21,11 +21,13 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Tests for the editing command journal (ADR-020 roadmap, item 2): the {@link CommandJournal}
- * storage and the {@code record on/off} DSL commands that feed it from the console. A replay test
- * proves that executing the journaled commands on a fresh byte-identical copy of the same base
- * world reproduces the exact same state.
+ * storage and its feed from the console. A replay test proves that executing the journaled commands
+ * on a fresh byte-identical copy of the same base world reproduces the exact same state.
+ *
+ * <p>
+ * Recording is now part of the edit mode (key R); the DSL {@code record on/off} command was removed.
  */
-@DisplayName("Command journal (record on/off + replay)")
+@DisplayName("Command journal (recording + replay)")
 class CommandJournalTest {
 
     private letrain.mvp.impl.Model model;
@@ -96,7 +98,7 @@ class CommandJournalTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("journal records nothing until record on, then every successful command")
+    @DisplayName("journal records nothing while off, then every successful command while on")
     void journal_recordsOnlyWhileOn() {
         assertFalse(model.getCommandJournal().isRecording());
         assertEquals(0, model.getCommandJournal().size());
@@ -106,29 +108,29 @@ class CommandJournalTest {
         assertEquals(0, model.getCommandJournal().size());
 
         // Turn recording on and execute editing commands.
-        runOk(model, "record on;");
+        model.getCommandJournal().startRecording();
         assertTrue(model.getCommandJournal().isRecording());
         runOk(model, "go 0,0; face e; new st;");
         runOk(model, "go 1,0; face e; new sn;");
         assertEquals(2, model.getCommandJournal().size());
 
         // Turn it off: further commands are not recorded.
-        runOk(model, "record off;");
+        model.getCommandJournal().stopRecording();
         assertFalse(model.getCommandJournal().isRecording());
         runOk(model, "go 2,0; face e;");
         assertEquals(2, model.getCommandJournal().size());
     }
 
     @Test
-    @DisplayName("record toggles without argument and clear empties the journal")
+    @DisplayName("toggle without argument and clear empties the journal")
     void journal_toggleAndClear() {
-        runOk(model, "record on;");
+        model.getCommandJournal().startRecording();
         runOk(model, "go 0,0; face e; write 2;");
         assertEquals(1, model.getCommandJournal().size());
 
-        runOk(model, "record;"); // toggle off
+        model.getCommandJournal().toggleRecording(); // off
         assertFalse(model.getCommandJournal().isRecording());
-        runOk(model, "record;"); // toggle on again
+        model.getCommandJournal().toggleRecording(); // on again
         assertTrue(model.getCommandJournal().isRecording());
 
         model.getCommandJournal().clear();
@@ -138,7 +140,7 @@ class CommandJournalTest {
     @Test
     @DisplayName("failed commands are not journaled")
     void journal_ignoresFailedCommands() {
-        runOk(model, "record on;");
+        model.getCommandJournal().startRecording();
         String error = PlayerCommandExecutor.execute("del station 99;", model, null, null, null);
         assertNotNull(error, "del of a missing station must fail");
         assertEquals(0, model.getCommandJournal().size());
@@ -158,24 +160,22 @@ class CommandJournalTest {
 
         // 2. Record a representative editing session on the first copy, command by command so the
         //    journal stores individual entries.
+        recorded.getCommandJournal().startRecording();
         String[] session = {
-            "record on;",
             "go 0,0; face e;",
             "write 8;",
             "go 2,0; face e;",
             "new st;",
             "go 3,0; face e;",
             "new sn;",
-            "slide sn 1 fw 2;",
-            "record off;"
+            "slide sn 1 fw 2;"
         };
         for (String cmd : session) {
             runOk(recorded, cmd);
         }
+        recorded.getCommandJournal().stopRecording();
         List<String> journal = recorded.getCommandJournal().entries();
         assertTrue(journal.size() >= 4, "expected several journaled commands, got: " + journal);
-        assertTrue(journal.stream().noneMatch(c -> c.startsWith("record")),
-                "record on/off frames must not be journaled");
 
         // 3. Replay each journaled command (frames already stripped) on the fresh copy.
         for (String cmd : journal) {
@@ -190,11 +190,11 @@ class CommandJournalTest {
     @Test
     @DisplayName("journal command reports recording state and lists the entries")
     void journalCommand_listsEntriesViaMessage() {
-        // Arrange: record two commands, then turn recording off.
-        runOk(model, "record on;");
+        // Arrange: record two commands, then stop recording.
+        model.getCommandJournal().startRecording();
         runOk(model, "go 0,0; face e;");
         runOk(model, "write 2;");
-        runOk(model, "record off;");
+        model.getCommandJournal().stopRecording();
 
         // Act: run 'journal;' capturing the onMessage output (as the 2D/3D console would show it).
         StringBuilder out = new StringBuilder();

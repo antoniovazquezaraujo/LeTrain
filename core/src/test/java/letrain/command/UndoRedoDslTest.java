@@ -55,8 +55,8 @@ class UndoRedoDslTest {
     @DisplayName("undo/redo control commands are never auto-recorded into the journal")
     void undoRedo_areNotJournaled() {
         Model model = newModel();
-        // 'record on' first (whole line = control frame, excluded).
-        assertNull(PlayerCommandExecutor.execute("record on;", model, null, null, null));
+        // Recording on (edit mode).
+        model.getCommandJournal().startRecording();
         // undo/redo lines must not be journaled.
         assertNull(PlayerCommandExecutor.execute("undo 2; redo;", model, null, null, null,
                 null, null, steps -> {

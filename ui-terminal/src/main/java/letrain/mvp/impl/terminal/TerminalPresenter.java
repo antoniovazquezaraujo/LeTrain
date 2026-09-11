@@ -179,13 +179,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    /** Toggles command-journal recording (key R) and reports the new state. */
-    private void toggleCommandRecording() {
-        letrain.command.CommandJournal journal = model.getCommandJournal();
-        journal.toggleRecording();
-        view.setStatusBarText(journal.isRecording() ? "Record: ON" : "Record: OFF");
-    }
-
     private void initModeKeyHandlers() {
         modeKeyHandlers.put(RAILS, keyEvent -> railTrackMaker.onChar(keyEvent));
         modeKeyHandlers.put(letrain.mvp.Model.GameMode.ADD, keyEvent -> handleAddModeKey(keyEvent));
@@ -244,8 +237,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         this.model.addCoreTrainEventListener(this);
         // Loading a savegame / starting fresh uses normal economy (scenario import re-enables it).
         this.model.getEconomyManager().setFreeConstruction(false);
-        // Command journal ON by default so exports never miss edits the player forgot to record.
-        this.model.getCommandJournal().startRecording();
     }
 
     /**
@@ -278,7 +269,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 new SimulationController(this.model, audioController, railTrackMaker);
         this.model.addCoreTrainEventListener(this);
         this.model.setPauseEditing(wasPaused);
-        this.model.getCommandJournal().startRecording();
+        // Recording follows the edit mode: keep capturing if we swapped while editing.
+        if (wasPaused) {
+            this.model.getCommandJournal().startRecording();
+        } else {
+            this.model.getCommandJournal().stopRecording();
+        }
         letrain.map.Point focus = getActiveFocusPoint();
         if (focus != null) {
             view.centerOn(focus.getX(), focus.getY());
@@ -725,27 +721,25 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             view.setStatusBarText("Experiment ON: pulsa X para salir y restaurar antes de pausar");
             return;
         }
-        boolean paused = !model.isPauseEditing();
-        model.setPauseEditing(paused);
-        view.setStatusBarText(paused ? "Paused editing: ON (world freezes in edit modes; instant build)"
-                : "Paused editing: OFF");
-        if (paused) {
-            // Start a fresh undo/redo session snapshotting the world as it is now.
+        boolean recording = !model.isPauseEditing();
+        model.setPauseEditing(recording);
+        view.setStatusBarText(recording
+                ? "Record: ON (edit mode: frozen world, instant build, undo/redo)"
+                : "Record: OFF");
+        if (recording) {
+            // Editing session: snapshot for undo/redo and start capturing the scenario recipe.
             getUndoRedoHistory().begin(model);
+            model.getCommandJournal().startRecording();
         } else {
-            // Leaving pause invalidates the journal (world runs again), so drop the session.
+            // Leaving edit mode drops the undo session; the recorded recipe is kept for export.
             getUndoRedoHistory().end();
+            model.getCommandJournal().stopRecording();
         }
     }
 
     private boolean handleModeHotkey(InputEvent keyEvent) {
         if (keyEvent.getKeyType() != KeyType.Character || keyEvent.getCharacter() == ' ') {
             return false;
-        }
-
-        if (keyEvent.getCharacter() == 'x' && !keyEvent.isCtrlDown() && !keyEvent.isAltDown()) {
-            togglePauseEditing();
-            return true;
         }
 
         if (model.getMode() == letrain.mvp.Model.GameMode.ADD) {
@@ -766,7 +760,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 return false;
             case 'R':
                 if (model.getMode() != letrain.mvp.Model.GameMode.PROGRAM) {
-                    toggleCommandRecording();
+                    togglePauseEditing();
                     return true;
                 }
                 return false;
@@ -1932,7 +1926,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             letrain.command.CommandJournal journal = model.getCommandJournal();
             if (journal.isEmpty()) {
                 view.showMessage("Scenario",
-                        "Cannot export: the command journal is empty (turn 'record on' before editing).");
+                        "Cannot export: nothing recorded yet (toggle Record/edit mode with 'R' and edit).");
                 return;
             }
             java.nio.file.Files.writeString(file.toPath(),

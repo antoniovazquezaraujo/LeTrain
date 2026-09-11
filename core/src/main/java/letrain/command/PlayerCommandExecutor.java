@@ -166,20 +166,6 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
     @Override
-    public Object visitRecordCommand(PlayerCommandsParser.RecordCommandContext ctx) {
-        toggledRecording = true;
-        letrain.command.CommandJournal journal = model.getCommandJournal();
-        if (ctx.ON() != null) {
-            journal.startRecording();
-        } else if (ctx.OFF() != null) {
-            journal.stopRecording();
-        } else {
-            journal.toggleRecording();
-        }
-        return null;
-    }
-
-    @Override
     public Object visitJournalCommand(PlayerCommandsParser.JournalCommandContext ctx) {
         letrain.command.CommandJournal journal = model.getCommandJournal();
         StringBuilder sb = new StringBuilder();
@@ -924,7 +910,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         if (model != null && model.getCommandJournal() != null
                 && model.getCommandJournal().isEmpty()) {
             throw new RuntimeException(
-                    "Cannot export: the command journal is empty (turn 'record on' before editing).");
+                    "Cannot export: nothing recorded yet (toggle Record/edit mode with 'R' and edit).");
         }
         String filename = ctx.identifier() != null
                 ? withScenarioExtension(unquote(ctx.identifier().getText()))

@@ -187,15 +187,9 @@ public class GrammarReference {
         slideNode.add(new Node("signal", "slide signal # fw n;"));
         root.add(slideNode);
 
-        // RECORD (editing command journal)
+        // EDITING JOURNAL (recording is part of the edit mode, key R; journal is read-only)
         Node journalHeading = new Node("EDITING JOURNAL").setHeading(true);
         root.add(journalHeading);
-
-        Node recordNode = new Node("record <on|off>");
-        recordNode.add(new Node("on", "record on;"));
-        recordNode.add(new Node("off", "record off;"));
-        recordNode.add(new Node("toggle", "record;"));
-        root.add(recordNode);
 
         Node journalNode = new Node("journal", "journal;");
         root.add(journalNode);

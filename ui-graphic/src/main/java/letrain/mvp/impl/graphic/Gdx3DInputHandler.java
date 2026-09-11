@@ -370,12 +370,6 @@ public class Gdx3DInputHandler implements InputProcessor {
             return;
         }
 
-        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null && stroke.getCharacter() == 'x'
-                && !stroke.isCtrlDown() && !stroke.isAltDown()) {
-            togglePauseEditing();
-            return;
-        }
-
         // Shift+X toggles experiment mode (live sandbox with in-memory snapshot/restore).
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
                 && stroke.getCharacter() == 'X' && !stroke.isCtrlDown() && !stroke.isAltDown()
@@ -384,13 +378,11 @@ public class Gdx3DInputHandler implements InputProcessor {
             return;
         }
 
-        // Shift+R toggles command-journal recording (the red REC dot shows the state).
+        // Shift+R toggles the Record/edit mode (freeze + instant build + undo/redo + journal).
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
                 && stroke.getCharacter() == 'R' && !stroke.isCtrlDown() && !stroke.isAltDown()
                 && model.getMode() != Model.GameMode.PROGRAM) {
-            model.getCommandJournal().toggleRecording();
-            log.info("Record: {}",
-                    model.getCommandJournal().isRecording() ? "ON" : "OFF");
+            togglePauseEditing();
             return;
         }
 

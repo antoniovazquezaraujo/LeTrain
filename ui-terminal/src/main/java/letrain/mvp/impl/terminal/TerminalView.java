@@ -472,7 +472,7 @@ public class TerminalView implements letrain.mvp.View {
         }
         menuBox.setForegroundColor(DISABLED_FG_COLOR);
         menuBox.putString(menuBoxPosition.withRelative(1, 4),
-                text + " | [R]: record " + (gameViewListener.isRecordingCommands() ? "ON" : "OFF"));
+                text + " | [R]: Record " + (gameViewListener.isRecordingCommands() ? "ON" : "OFF"));
         menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
     }
 

@@ -136,8 +136,6 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Register as listener for audio events
         model.addCoreTrainEventListener(this);
-        // Command journal ON by default so exports never miss edits the player forgot to record.
-        model.getCommandJournal().startRecording();
     }
 
     public Stage getStage() {
@@ -472,8 +470,10 @@ public class GraphicPresenter extends ApplicationAdapter
     public void onPauseEditingChanged(boolean paused) {
         if (paused) {
             getUndoRedoHistory().begin(model);
+            model.getCommandJournal().startRecording();
         } else {
             getUndoRedoHistory().end();
+            model.getCommandJournal().stopRecording();
         }
     }
 
@@ -525,7 +525,11 @@ public class GraphicPresenter extends ApplicationAdapter
         }
         newModel.addCoreTrainEventListener(this);
         newModel.setPauseEditing(wasPaused);
-        newModel.getCommandJournal().startRecording();
+        if (wasPaused) {
+            newModel.getCommandJournal().startRecording();
+        } else {
+            newModel.getCommandJournal().stopRecording();
+        }
         letrain.map.Point startPos = newModel.getCursor().getPosition();
         newModel.getGroundMap().renderBlock(startPos.getX() - getCols() / 2,
                 startPos.getY() - getRows() / 2, getCols(), getRows());
@@ -724,7 +728,7 @@ public class GraphicPresenter extends ApplicationAdapter
             letrain.command.CommandJournal journal = model.getCommandJournal();
             if (journal.isEmpty()) {
                 showMessage("Scenario",
-                        "Cannot export: the command journal is empty (turn 'record on' before editing).");
+                        "Cannot export: nothing recorded yet (toggle Record/edit mode with 'R' and edit).");
                 return;
             }
             java.nio.file.Files.writeString(file.toPath(),
@@ -777,6 +781,7 @@ public class GraphicPresenter extends ApplicationAdapter
                 model.setPauseEditing(true);
                 getUndoRedoHistory().begin(model);
             }
+            model.getCommandJournal().startRecording();
             log.info("Scenario played from {}", file.getAbsolutePath());
         } catch (Exception e) {
             log.error("Error playing scenario from {}", file.getAbsolutePath(), e);
@@ -840,7 +845,8 @@ public class GraphicPresenter extends ApplicationAdapter
                 startPos.getY() - getRows() / 2, getCols(), getRows());
         // Loading a savegame uses normal economy (scenario import re-enables free construction).
         model.getEconomyManager().setFreeConstruction(false);
-        model.getCommandJournal().startRecording();
+        // Normal play: recording follows the edit mode (R), which is off after a load.
+        model.getCommandJournal().stopRecording();
     }
 
     @Override
