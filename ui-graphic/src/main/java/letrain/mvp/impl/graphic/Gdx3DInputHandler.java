@@ -426,7 +426,10 @@ public class Gdx3DInputHandler implements InputProcessor {
                 return;
             } else if (model.getMode() != Model.GameMode.DRIVE) {
                 lastCreatedLoco = null;
-                model.setMode(Model.GameMode.MENU);
+                // Finishing a train returns to the editing mode, not the empty main menu.
+                model.setMode(model.getMode() == Model.GameMode.TRAINS
+                        ? Model.GameMode.RAILS
+                        : Model.GameMode.MENU);
                 return;
             }
         }

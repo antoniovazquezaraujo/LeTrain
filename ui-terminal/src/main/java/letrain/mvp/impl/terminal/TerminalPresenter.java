@@ -113,6 +113,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private static final int AMBIENT_BASE_CELLS = 80 * 25;
     private static final int AMBIENT_FULL_CELLS = 120 * 40;
 
+    /** Menu + help bar shown from the start so newcomers see the controls (see setHelpLevel). */
+    private static final int FULL_HELP_LEVEL = 2;
+
     public TerminalPresenter() {
         this(null);
     }
@@ -137,6 +140,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 new SimulationController(this.model, audioController, railTrackMaker);
         this.gameSaveService = new GameSaveService();
         initModeKeyHandlers();
+        // Start with the full menu/help visible so the controls are discoverable (Tab cycles it).
+        this.model.setHelpLevel(FULL_HELP_LEVEL);
+        this.view.setHelpLevel(FULL_HELP_LEVEL);
     }
 
     private Locomotive lastCreatedLoco;
@@ -748,7 +754,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             // The logic is handled inside trainDriverOnChar.
             if (model.getMode() != DRIVE) {
                 lastCreatedLoco = null;
-                model.setMode(MENU);
+                // Finishing a train returns to the editing mode (so the player keeps building)
+                // instead of the empty main menu; any other mode opens the menu as before.
+                model.setMode(model.getMode() == TRAINS ? RAILS : MENU);
                 return;
             }
         } else if (keyEvent.getKeyType() == KeyType.Tab) {
@@ -934,6 +942,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             case 'p':
                 model.setMode(PROGRAM);
                 view.showIDE();
+                // The IDE window is modal; once it closes, leave PROGRAM so the menu does not stay
+                // highlighting it and the player is back in the editing mode.
+                model.setMode(RAILS);
                 return true;
             case 'o':
                 handleSnapCursor();
