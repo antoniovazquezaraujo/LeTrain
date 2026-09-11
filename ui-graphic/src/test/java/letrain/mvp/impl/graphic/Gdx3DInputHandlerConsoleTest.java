@@ -57,7 +57,24 @@ class Gdx3DInputHandlerConsoleTest {
         when(makerPresenter.getUndoRedoHistory()).thenReturn(null);
         trackMaker = new RailTrackMaker(makerPresenter);
 
-        handler = new Gdx3DInputHandler(model, view, new CameraController(model), trackMaker, null);
+        handler = new Gdx3DInputHandler(model, view, new CameraController(model), trackMaker,
+                mock(letrain.audio.AudioController.class));
+    }
+
+    /** A fork splitting an incoming west line into east (normal) and south (alternative). */
+    private static letrain.track.rail.ForkRailTrack addFork(Model model, int x, int y) {
+        letrain.track.rail.ForkRailTrack fork =
+                new letrain.track.rail.ForkRailTrack(model.nextForkId());
+        fork.setPosition(new Point(x, y));
+        fork.setCreationDir(Dir.E);
+        fork.addRoute(Dir.W, Dir.E);
+        fork.addRoute(Dir.E, Dir.W);
+        fork.addRoute(Dir.W, Dir.S);
+        fork.addRoute(Dir.S, Dir.W);
+        fork.setNormalRoute();
+        model.getRailMap().addTrack(fork.getPosition(), fork);
+        model.addFork(fork);
+        return fork;
     }
 
     private void typeCommand(String cmd) {
@@ -159,6 +176,19 @@ class Gdx3DInputHandlerConsoleTest {
                 model.getCommandJournal().entries().get(1));
         assertEquals("go 7,0; face e; signal " + sig.getId() + " set limit 4;",
                 model.getCommandJournal().entries().get(2));
+    }
+
+    @Test
+    @DisplayName("flipping a fork from the keyboard journals an absolute route command")
+    void keyboardForkFlip_isJournaled() {
+        letrain.track.rail.ForkRailTrack fork = addFork(model, 0, 0);
+        model.selectFork(fork.getId());
+        model.setMode(Model.GameMode.FORKS);
+
+        handler.onChar(charKey(' ')); // straight -> curved
+
+        org.mockito.Mockito.verify(view)
+                .journalEditingCommand("fork " + fork.getId() + " set curved;");
     }
 
     @Test
