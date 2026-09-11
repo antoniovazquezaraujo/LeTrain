@@ -302,11 +302,21 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
         stopped = true;
         running = false;
-        if (audioController != null) {
-            audioController.stop();
-        }
+        // Hand the terminal back FIRST: it must never be skipped by a later failure (e.g. audio),
+        // or the shell would be left in raw mode. Each step is isolated so one cannot block another.
         if (view != null) {
-            view.stop();
+            try {
+                view.stop();
+            } catch (Exception e) {
+                log.warn("Error stopping the view", e);
+            }
+        }
+        if (audioController != null) {
+            try {
+                audioController.stop();
+            } catch (Exception e) {
+                log.warn("Error stopping audio", e);
+            }
         }
     }
 

@@ -28,11 +28,9 @@ import com.googlecode.lanterna.terminal.Terminal;
 import java.awt.Font;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -57,10 +55,6 @@ public class TerminalView implements letrain.mvp.View {
     private Screen screen;
     private DefaultTerminalFactory terminalFactory;
     private Terminal terminal;
-
-    /** Original tty mode captured before Lanterna takes over, to restore it exactly on exit. */
-    private String savedSttyMode;
-
     private TerminalSize terminalSize;
     private TextGraphics gameBox;
     private TerminalPosition gameBoxPosition;
@@ -123,9 +117,6 @@ public class TerminalView implements letrain.mvp.View {
         try {
             terminalFactory.setUnixTerminalCtrlCBehaviour(
                     com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal.CtrlCBehaviour.TRAP);
-            // Capture the tty mode before Lanterna switches it to raw mode, so we can restore it
-            // exactly on exit (see stop()). Null on systems without a controlling /dev/tty.
-            savedSttyMode = readSttyMode();
             terminal = terminalFactory.createTerminal();
             terminal.setCursorVisible(false);
             setScreen(createScreen(terminal));
@@ -1026,56 +1017,40 @@ public class TerminalView implements letrain.mvp.View {
                 // Ignore
             }
         }
+        boolean terminalClosed = false;
         if (terminal != null) {
             try {
+                // Lanterna saves the tty mode on construction and restores it here (and in its own
+                // shutdown hook), so it owns the terminal-state handback.
                 terminal.close();
+                terminalClosed = true;
             } catch (Exception e) {
                 // Ignore
             }
         }
-        restoreTerminalState();
+        if (!terminalClosed) {
+            // Lanterna could not hand the terminal back (no terminal object, or close failed):
+            // best-effort recovery so the shell is not left in raw mode (no echo).
+            fallbackSttySane();
+        }
     }
 
-    /**
-     * Last-resort terminal restoration. Lanterna's close usually restores the tty, but when the
-     * teardown throws or the process is interrupted the terminal can be left in raw mode (no echo).
-     * Emit the ANSI reset/leave-alternate/show-cursor sequence and, on Unix, restore the mode we
-     * captured at startup (falling back to {@code stty sane}). Best-effort: failures are ignored.
-     */
-    private void restoreTerminalState() {
+    /** Last-resort tty recovery, only for when Lanterna could not close the terminal itself. */
+    private void fallbackSttySane() {
         try {
             System.out.print("\033[0m\033[?1049l\033[?25h");
             System.out.flush();
         } catch (Exception ignored) {
             // Ignore
         }
-        String mode = savedSttyMode == null || savedSttyMode.isBlank() ? "sane" : savedSttyMode;
         try {
             Process p = Runtime.getRuntime()
-                    .exec(new String[] {"sh", "-c", "stty " + mode + " < /dev/tty"});
+                    .exec(new String[] {"sh", "-c", "stty sane < /dev/tty"});
             if (!p.waitFor(2, TimeUnit.SECONDS)) {
                 p.destroyForcibly();
             }
         } catch (Exception ignored) {
             // Not a Unix tty (e.g. Windows/Swing): nothing to restore here
-        }
-    }
-
-    /** Current tty mode ({@code stty -g}), or null when there is no controlling terminal. */
-    private static String readSttyMode() {
-        try {
-            Process p = Runtime.getRuntime().exec(new String[] {"sh", "-c", "stty -g < /dev/tty"});
-            if (!p.waitFor(2, TimeUnit.SECONDS)) {
-                p.destroyForcibly();
-                return null;
-            }
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(p.getInputStream()))) {
-                String mode = reader.readLine();
-                return mode == null || mode.isBlank() ? null : mode.trim();
-            }
-        } catch (Exception ignored) {
-            return null;
         }
     }
 
