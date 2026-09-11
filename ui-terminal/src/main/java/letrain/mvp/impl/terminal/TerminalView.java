@@ -73,6 +73,9 @@ public class TerminalView implements letrain.mvp.View {
     boolean endOfGame = false;
     private int helpLevel = 0;
 
+    /** Hand-edited scenario text kept between IDE openings; null means "regenerate from the world". */
+    private String scenarioDraft = null;
+
     @Override
     public void setHelpLevel(int helpLevel) {
         if (this.helpLevel == helpLevel) {
@@ -681,13 +684,25 @@ public class TerminalView implements letrain.mvp.View {
     public void showIDE() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
         BasicWindow window = new BasicWindow();
-        window.setTitle("LT-IDE v1.1 - LeTrain Integrated Development Environment (2D)");
+        window.setTitle("LT-IDE v1.2 - LeTrain Integrated Development Environment (2D)");
         window.setHints(Arrays.asList(Window.Hint.CENTERED, Window.Hint.EXPANDED));
 
         Panel mainPanel = new Panel(new BorderLayout());
 
+        // Program / Scenario tabs share one editor whose content follows the active tab. The
+        // scenario draft persists between openings until the user hits Regenerate.
+        final boolean[] scenarioTab = {false};
+        final String[] programBuffer = {gameViewListener.getProgram()};
+        final String[] scenarioBuffer = {
+                scenarioDraft != null ? scenarioDraft : gameViewListener.getScenarioText()};
+        final Runnable[] rebuildFooter = {() -> {
+        }};
+
+        Panel tabBar = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        mainPanel.addComponent(tabBar, BorderLayout.Location.TOP);
+
         // Editor Area
-        final TextBox editor = new TextBox(new TerminalSize(60, 20), gameViewListener.getProgram(),
+        final TextBox editor = new TextBox(new TerminalSize(60, 20), programBuffer[0],
                 TextBox.Style.MULTI_LINE);
         mainPanel.addComponent(editor, BorderLayout.Location.CENTER);
 
@@ -777,32 +792,124 @@ public class TerminalView implements letrain.mvp.View {
 
         mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
 
-        // Footer (Buttons)
-        Panel footer = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        Runnable applyAction = () -> {
+        // Footer (Buttons): rebuilt per tab.
+        final Panel footer = new Panel(new LinearLayout(Direction.HORIZONTAL));
+
+        final Runnable switchToProgram = () -> {
+            if (!scenarioTab[0]) {
+                return;
+            }
+            scenarioBuffer[0] = editor.getText();
+            scenarioDraft = scenarioBuffer[0];
+            scenarioTab[0] = false;
+            editor.setText(programBuffer[0]);
+            rebuildFooter[0].run();
+        };
+        final Runnable switchToScenario = () -> {
+            if (scenarioTab[0]) {
+                return;
+            }
+            programBuffer[0] = editor.getText();
+            scenarioTab[0] = true;
+            editor.setText(scenarioBuffer[0]);
+            rebuildFooter[0].run();
+        };
+
+        final Runnable regenerateAction = () -> {
+            scenarioDraft = null;
+            scenarioBuffer[0] = gameViewListener.getScenarioText();
+            editor.setText(scenarioBuffer[0]);
+        };
+        final Runnable exportAction = () -> {
+            String text = editor.getText();
+            scenarioDraft = text;
+            scenarioBuffer[0] = text;
+            letrain.command.ScenarioCompiler.Result result =
+                    letrain.command.ScenarioCompiler.compile(text);
+            if (!result.ok() && !confirmExportAnyway(gui, diagnosticsText(result))) {
+                return;
+            }
+            MultiWindowTextGUI fileGui = new MultiWindowTextGUI(screen);
+            File file = new FileDialogBuilder().setTitle("Export Scenario")
+                    .setDescription("Choose a file:").setActionLabel(LocalizedString.Save.toString())
+                    .build().showDialog(fileGui);
+            if (file != null) {
+                gameViewListener.onExportScenarioText(file, text);
+            }
+        };
+        final Runnable playAction = () -> {
+            String text = editor.getText();
+            scenarioDraft = text;
+            scenarioBuffer[0] = text;
+            letrain.command.ScenarioCompiler.Result result =
+                    letrain.command.ScenarioCompiler.compile(text);
+            if (!result.ok()) {
+                com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui,
+                        "Scenario has errors", diagnosticsText(result));
+                return;
+            }
+            gameViewListener.onPlayScenarioText(text);
+            window.close();
+        };
+        final Runnable openScenarioAction = () -> {
+            MultiWindowTextGUI fileGui = new MultiWindowTextGUI(screen);
+            File file = new FileDialogBuilder().setTitle("Open Scenario")
+                    .setDescription("Choose a file:").setActionLabel(LocalizedString.Open.toString())
+                    .build().showDialog(fileGui);
+            if (file == null) {
+                return;
+            }
+            try {
+                String text = java.nio.file.Files.readString(file.toPath());
+                scenarioDraft = text;
+                scenarioBuffer[0] = text;
+                editor.setText(text);
+            } catch (Exception ex) {
+                com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui,
+                        "Scenario Error", String.valueOf(ex.getMessage()));
+            }
+        };
+
+        final Runnable applyProgram = () -> {
             gameViewListener.onEditCommands(editor.getText());
             window.close();
         };
-        Runnable saveAction = () -> {
+        final Runnable saveProgram = () -> {
             gameViewListener.onEditCommands(editor.getText());
             showSaveDialog();
         };
-        Runnable loadAction = () -> {
+        final Runnable loadProgram = () -> {
             showLoadDialog();
             window.close();
         };
-        Runnable exportAction = () -> {
-            if (!gameViewListener.canExportScenario()) {
-                return;
+
+        final Runnable applyAction = () -> {
+            if (scenarioTab[0]) {
+                playAction.run();
+            } else {
+                applyProgram.run();
             }
-            gameViewListener.onEditCommands(editor.getText());
-            showExportDialog();
         };
-        Runnable importAction = () -> {
-            showImportDialog();
+        final Runnable saveAction = () -> {
+            if (scenarioTab[0]) {
+                exportAction.run();
+            } else {
+                saveProgram.run();
+            }
+        };
+        final Runnable loadAction = () -> {
+            if (scenarioTab[0]) {
+                openScenarioAction.run();
+            } else {
+                loadProgram.run();
+            }
+        };
+        final Runnable cancelAction = () -> {
+            if (scenarioTab[0]) {
+                scenarioDraft = editor.getText();
+            }
             window.close();
         };
-        Runnable cancelAction = window::close;
 
         com.googlecode.lanterna.gui2.InteractableRenderer<Button> mnemonicRenderer =
                 new com.googlecode.lanterna.gui2.InteractableRenderer<Button>() {
@@ -850,36 +957,33 @@ public class TerminalView implements letrain.mvp.View {
                 editor.setPreferredSize(new TerminalSize(60, 20));
             }
         };
-        Button togglePanelsBtn = new Button("Toggle", togglePanelsAction);
-        togglePanelsBtn.setRenderer(mnemonicRenderer);
-        footer.addComponent(togglePanelsBtn);
 
-        Button applyBtn = new Button("Apply", applyAction);
-        applyBtn.setRenderer(mnemonicRenderer);
-        footer.addComponent(applyBtn);
+        rebuildFooter[0] = () -> {
+            footer.removeAllComponents();
+            addFooterButton(footer, mnemonicRenderer, "Toggle", togglePanelsAction);
+            if (scenarioTab[0]) {
+                addFooterButton(footer, mnemonicRenderer, "Regenerate", regenerateAction);
+                addFooterButton(footer, mnemonicRenderer, "Open", openScenarioAction);
+                addFooterButton(footer, mnemonicRenderer, "Play", playAction);
+                Button exportBtn = new Button("Export", exportAction);
+                exportBtn.setRenderer(mnemonicRenderer);
+                exportBtn.setEnabled(gameViewListener.canExportScenario() || scenarioDraft != null);
+                footer.addComponent(exportBtn);
+            } else {
+                addFooterButton(footer, mnemonicRenderer, "Apply", applyProgram);
+                addFooterButton(footer, mnemonicRenderer, "Save", saveProgram);
+                addFooterButton(footer, mnemonicRenderer, "Load", loadProgram);
+            }
+            addFooterButton(footer, mnemonicRenderer, "Cancel", cancelAction);
+        };
+        rebuildFooter[0].run();
 
-        Button saveBtn = new Button("Save", saveAction);
-        saveBtn.setRenderer(mnemonicRenderer);
-        footer.addComponent(saveBtn);
-
-        Button loadBtn = new Button("Load", loadAction);
-        loadBtn.setRenderer(mnemonicRenderer);
-        footer.addComponent(loadBtn);
-
-        Button exportBtn = new Button("Export", exportAction);
-        exportBtn.setRenderer(mnemonicRenderer);
-        if (!gameViewListener.canExportScenario()) {
-            exportBtn.setEnabled(false);
-        }
-        footer.addComponent(exportBtn);
-
-        Button importBtn = new Button("Import", importAction);
-        importBtn.setRenderer(mnemonicRenderer);
-        footer.addComponent(importBtn);
-
-        Button cancelBtn = new Button("Cancel", cancelAction);
-        cancelBtn.setRenderer(mnemonicRenderer);
-        footer.addComponent(cancelBtn);
+        Button programTabBtn = new Button("Program", switchToProgram);
+        programTabBtn.setRenderer(mnemonicRenderer);
+        Button scenarioTabBtn = new Button("Scenario", switchToScenario);
+        scenarioTabBtn.setRenderer(mnemonicRenderer);
+        tabBar.addComponent(programTabBtn);
+        tabBar.addComponent(scenarioTabBtn);
         window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
             @Override
             public void onInput(com.googlecode.lanterna.gui2.Window w,
@@ -894,10 +998,16 @@ public class TerminalView implements letrain.mvp.View {
                         refList.takeFocus();
                         deliverEvent.set(false);
                     } else if (c == 'e') {
+                        if (!scenarioTab[0]) {
+                            switchToScenario.run();
+                        }
                         exportAction.run();
                         deliverEvent.set(false);
                     } else if (c == 'i') {
-                        importAction.run();
+                        if (!scenarioTab[0]) {
+                            switchToScenario.run();
+                        }
+                        openScenarioAction.run();
                         deliverEvent.set(false);
                     } else if (c == 'a') {
                         applyAction.run();
@@ -920,6 +1030,40 @@ public class TerminalView implements letrain.mvp.View {
 
         window.setComponent(mainPanel);
         gui.addWindowAndWait(window);
+    }
+
+    /** Renders the diagnostics of a scenario check as one line per diagnostic. */
+    private static String diagnosticsText(letrain.command.ScenarioCompiler.Result result) {
+        StringBuilder sb = new StringBuilder();
+        for (letrain.command.ScenarioCompiler.Diagnostic d : result.diagnostics()) {
+            if (sb.length() > 0) {
+                sb.append('\n');
+            }
+            sb.append(d.line()).append(':').append(d.col()).append(": ").append(d.message());
+        }
+        return sb.toString();
+    }
+
+    /** Asks whether to export a scenario that has syntax errors. */
+    private static boolean confirmExportAnyway(MultiWindowTextGUI gui, String diagnostics) {
+        com.googlecode.lanterna.gui2.dialogs.MessageDialogButton choice =
+                new com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder()
+                        .setTitle("Scenario has errors")
+                        .setText(diagnostics + "\n\nExport anyway?")
+                        .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes)
+                        .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.No)
+                        .build()
+                        .showDialog(gui);
+        return choice == com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes;
+    }
+
+    /** Adds a footer button with the IDE's mnemonic renderer. */
+    private static void addFooterButton(Panel footer,
+            com.googlecode.lanterna.gui2.InteractableRenderer<Button> renderer, String label,
+            Runnable action) {
+        Button button = new Button(label, action);
+        button.setRenderer(renderer);
+        footer.addComponent(button);
     }
 
     private void insertAtCaret(TextBox editor, String text) {

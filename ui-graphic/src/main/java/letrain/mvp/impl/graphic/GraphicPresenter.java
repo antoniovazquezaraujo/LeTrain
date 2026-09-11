@@ -746,8 +746,30 @@ public class GraphicPresenter extends ApplicationAdapter
                         "Cannot export: nothing recorded yet (toggle Record/edit mode with 'R' and edit).");
                 return;
             }
-            java.nio.file.Files.writeString(file.toPath(),
-                    letrain.command.ScenarioExporter.render(model, commandJournal.appliedEntries()));
+            writeScenario(file, getScenarioText());
+        } catch (Exception e) {
+            log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
+            showMessage("Scenario Error", "Could not save scenario: " + e.getMessage());
+        }
+    }
+
+    /** Generates the current scenario text (seed + on build + on start + program) for the editor. */
+    @Override
+    public String getScenarioText() {
+        return letrain.command.ScenarioExporter.render(model, commandJournal.appliedEntries());
+    }
+
+    /** Exports the (possibly hand-edited) scenario text to a file. */
+    @Override
+    public void onExportScenarioText(File file, String text) {
+        if (file != null && text != null) {
+            writeScenario(file, text);
+        }
+    }
+
+    private void writeScenario(File file, String text) {
+        try {
+            java.nio.file.Files.writeString(file.toPath(), text);
             log.info("Scenario saved to {}", file.getAbsolutePath());
         } catch (Exception e) {
             log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
@@ -758,7 +780,21 @@ public class GraphicPresenter extends ApplicationAdapter
     /** Rebuilds a fresh same-seed world and replays the scenario commands on it (free constructor). */
     private void playScenario(File file) {
         try {
-            String text = java.nio.file.Files.readString(file.toPath());
+            playScenarioText(java.nio.file.Files.readString(file.toPath()), file);
+        } catch (Exception e) {
+            log.error("Error reading scenario from {}", file.getAbsolutePath(), e);
+            showMessage("Scenario Error", "Could not play scenario: " + e.getMessage());
+        }
+    }
+
+    /** Plays a scenario from its text (used by the editor's Play button). */
+    @Override
+    public void onPlayScenarioText(String text) {
+        playScenarioText(text, null);
+    }
+
+    private void playScenarioText(String text, File file) {
+        try {
             letrain.command.ScenarioFile.Scenario scenario =
                     letrain.command.ScenarioFile.parse(text);
             applyLoadedModel(new letrain.mvp.impl.Model(scenario.seed()), file);
@@ -809,9 +845,9 @@ public class GraphicPresenter extends ApplicationAdapter
             model.setPauseEditing(true);
             commandJournal.startRecording();
             getUndoRedoHistory().begin(model);
-            log.info("Scenario played from {}", file.getAbsolutePath());
+            log.info("Scenario played from {}", file != null ? file.getAbsolutePath() : "(editor)");
         } catch (Exception e) {
-            log.error("Error playing scenario from {}", file.getAbsolutePath(), e);
+            log.error("Error playing scenario", e);
             showMessage("Scenario Error", "Could not play scenario: " + e.getMessage());
         }
     }
@@ -837,7 +873,7 @@ public class GraphicPresenter extends ApplicationAdapter
     private void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) {
         this.model = ValidationUtils.requireNonNull(loadedModel, "loadedModel");
 
-        log.info("Game loaded successfully from {}", file.getAbsolutePath());
+        log.info("Game loaded successfully from {}", file != null ? file.getAbsolutePath() : "(editor)");
 
         // Stop previous sounds
         if (this.audioController != null) {
