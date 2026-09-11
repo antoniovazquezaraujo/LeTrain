@@ -342,13 +342,16 @@ public class TerminalView implements letrain.mvp.View {
                 }
             }
             
-            // REC indicator: blinking red dot in the top-left corner while the journal records.
+            // REC indicator: blinking red "REC" in the top-left corner while the journal records.
             if (gameViewListener.isRecordingCommands()
                     && (System.currentTimeMillis() / 500) % 2 == 0) {
-                gameBox.setCharacter(0, 0,
-                        TextCharacter.fromCharacter('●',
-                                com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT,
-                                com.googlecode.lanterna.TextColor.ANSI.BLACK)[0]);
+                String rec = "REC";
+                for (int i = 0; i < rec.length(); i++) {
+                    gameBox.setCharacter(i, 0,
+                            TextCharacter.fromCharacter(rec.charAt(i),
+                                    com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT,
+                                    com.googlecode.lanterna.TextColor.ANSI.BLACK)[0]);
+                }
             }
 
             if (overlayMessage != null) {

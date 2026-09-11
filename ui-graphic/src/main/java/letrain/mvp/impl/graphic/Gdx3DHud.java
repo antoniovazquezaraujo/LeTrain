@@ -292,7 +292,7 @@ public class Gdx3DHud {
         Table mainTopTable = new Table();
         mainTopTable.setFillParent(true);
         mainTopTable.top().left();
-        recDot = new Label("● REC", skin, "small");
+        recDot = new Label("REC", skin, "small");
         recDot.setColor(Color.RED);
         recDot.setVisible(false);
         mainTopTable.add(recDot).pad(6);
