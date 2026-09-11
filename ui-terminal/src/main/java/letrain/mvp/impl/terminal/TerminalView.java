@@ -695,8 +695,6 @@ public class TerminalView implements letrain.mvp.View {
         final String[] programBuffer = {gameViewListener.getProgram()};
         final String[] scenarioBuffer = {
                 scenarioDraft != null ? scenarioDraft : gameViewListener.getScenarioText()};
-        final Runnable[] rebuildFooter = {() -> {
-        }};
 
         Panel tabBar = new Panel(new LinearLayout(Direction.HORIZONTAL));
         mainPanel.addComponent(tabBar, BorderLayout.Location.TOP);
@@ -803,7 +801,6 @@ public class TerminalView implements letrain.mvp.View {
             scenarioDraft = scenarioBuffer[0];
             scenarioTab[0] = false;
             editor.setText(programBuffer[0]);
-            rebuildFooter[0].run();
         };
         final Runnable switchToScenario = () -> {
             if (scenarioTab[0]) {
@@ -812,7 +809,6 @@ public class TerminalView implements letrain.mvp.View {
             programBuffer[0] = editor.getText();
             scenarioTab[0] = true;
             editor.setText(scenarioBuffer[0]);
-            rebuildFooter[0].run();
         };
 
         final Runnable regenerateAction = () -> {
@@ -837,20 +833,6 @@ public class TerminalView implements letrain.mvp.View {
                 gameViewListener.onExportScenarioText(file, text);
             }
         };
-        final Runnable playAction = () -> {
-            String text = editor.getText();
-            scenarioDraft = text;
-            scenarioBuffer[0] = text;
-            letrain.command.ScenarioCompiler.Result result =
-                    letrain.command.ScenarioCompiler.compile(text);
-            if (!result.ok()) {
-                com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui,
-                        "Scenario has errors", diagnosticsText(result));
-                return;
-            }
-            gameViewListener.onPlayScenarioText(text);
-            window.close();
-        };
         final Runnable openScenarioAction = () -> {
             MultiWindowTextGUI fileGui = new MultiWindowTextGUI(screen);
             File file = new FileDialogBuilder().setTitle("Open Scenario")
@@ -870,39 +852,55 @@ public class TerminalView implements letrain.mvp.View {
             }
         };
 
-        final Runnable applyProgram = () -> {
-            gameViewListener.onEditCommands(editor.getText());
-            window.close();
+        final Runnable applyProgram = () -> gameViewListener.onEditCommands(editor.getText());
+
+        // Import loads a .ltr into the Scenario editor; Export writes the Scenario editor.
+        final Runnable importAction = () -> {
+            switchToScenario.run();
+            openScenarioAction.run();
         };
-        final Runnable saveProgram = () -> {
-            gameViewListener.onEditCommands(editor.getText());
-            showSaveDialog();
+        final Runnable exportScenario = () -> {
+            switchToScenario.run();
+            exportAction.run();
         };
-        final Runnable loadProgram = () -> {
-            showLoadDialog();
-            window.close();
+        final Runnable regenerateScenario = () -> {
+            switchToScenario.run();
+            regenerateAction.run();
         };
 
-        final Runnable applyAction = () -> {
+        // Apply (stay open) and Ok (apply + close) act on the active tab.
+        final java.util.function.BooleanSupplier applyActive = () -> {
             if (scenarioTab[0]) {
-                playAction.run();
-            } else {
-                applyProgram.run();
+                String scenarioText = editor.getText();
+                scenarioDraft = scenarioText;
+                scenarioBuffer[0] = scenarioText;
+                letrain.command.ScenarioCompiler.Result result =
+                        letrain.command.ScenarioCompiler.compile(scenarioText);
+                if (!result.ok()) {
+                    com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui,
+                            "Scenario has errors", diagnosticsText(result));
+                    return false;
+                }
+                gameViewListener.onPlayScenarioText(scenarioText);
+                return true;
+            }
+            applyProgram.run();
+            return true;
+        };
+        final Runnable applyAction = () -> applyActive.getAsBoolean();
+        final Runnable okAction = () -> {
+            if (applyActive.getAsBoolean()) {
+                window.close();
             }
         };
         final Runnable saveAction = () -> {
-            if (scenarioTab[0]) {
-                exportAction.run();
-            } else {
-                saveProgram.run();
+            if (applyActive.getAsBoolean()) {
+                showSaveDialog();
             }
         };
         final Runnable loadAction = () -> {
-            if (scenarioTab[0]) {
-                openScenarioAction.run();
-            } else {
-                loadProgram.run();
-            }
+            showLoadDialog();
+            window.close();
         };
         final Runnable cancelAction = () -> {
             if (scenarioTab[0]) {
@@ -948,35 +946,15 @@ public class TerminalView implements letrain.mvp.View {
                     }
                 };
 
-        Runnable togglePanelsAction = () -> {
-            if (sidePanel.getParent() != null) {
-                mainPanel.removeComponent(sidePanel);
-                editor.setPreferredSize(new TerminalSize(90, 20));
-            } else {
-                mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
-                editor.setPreferredSize(new TerminalSize(60, 20));
-            }
-        };
-
-        rebuildFooter[0] = () -> {
-            footer.removeAllComponents();
-            addFooterButton(footer, mnemonicRenderer, "Toggle", togglePanelsAction);
-            if (scenarioTab[0]) {
-                addFooterButton(footer, mnemonicRenderer, "Regenerate", regenerateAction);
-                addFooterButton(footer, mnemonicRenderer, "Open", openScenarioAction);
-                addFooterButton(footer, mnemonicRenderer, "Play", playAction);
-                Button exportBtn = new Button("Export", exportAction);
-                exportBtn.setRenderer(mnemonicRenderer);
-                exportBtn.setEnabled(gameViewListener.canExportScenario() || scenarioDraft != null);
-                footer.addComponent(exportBtn);
-            } else {
-                addFooterButton(footer, mnemonicRenderer, "Apply", applyProgram);
-                addFooterButton(footer, mnemonicRenderer, "Save", saveProgram);
-                addFooterButton(footer, mnemonicRenderer, "Load", loadProgram);
-            }
-            addFooterButton(footer, mnemonicRenderer, "Cancel", cancelAction);
-        };
-        rebuildFooter[0].run();
+        // Single footer for both tabs.
+        addFooterButton(footer, mnemonicRenderer, "Save", saveAction);
+        addFooterButton(footer, mnemonicRenderer, "Load", loadAction);
+        addFooterButton(footer, mnemonicRenderer, "Import", importAction);
+        addFooterButton(footer, mnemonicRenderer, "Export", exportScenario);
+        addFooterButton(footer, mnemonicRenderer, "Apply", applyAction);
+        addFooterButton(footer, mnemonicRenderer, "Regenerate", regenerateScenario);
+        addFooterButton(footer, mnemonicRenderer, "Ok", okAction);
+        addFooterButton(footer, mnemonicRenderer, "Cancel", cancelAction);
 
         Button programTabBtn = new Button("Program", switchToProgram);
         programTabBtn.setRenderer(mnemonicRenderer);
@@ -991,32 +969,29 @@ public class TerminalView implements letrain.mvp.View {
                     java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
                 if (ks.isAltDown() && ks.getCharacter() != null) {
                     char c = Character.toLowerCase(ks.getCharacter());
-                    if (c == 't') {
-                        togglePanelsAction.run();
-                        deliverEvent.set(false);
-                    } else if (c == 'r') {
+                    if (c == 'r') {
                         refList.takeFocus();
                         deliverEvent.set(false);
                     } else if (c == 'e') {
-                        if (!scenarioTab[0]) {
-                            switchToScenario.run();
-                        }
-                        exportAction.run();
+                        exportScenario.run();
                         deliverEvent.set(false);
                     } else if (c == 'i') {
-                        if (!scenarioTab[0]) {
-                            switchToScenario.run();
-                        }
-                        openScenarioAction.run();
+                        importAction.run();
                         deliverEvent.set(false);
                     } else if (c == 'a') {
                         applyAction.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'g') {
+                        regenerateScenario.run();
                         deliverEvent.set(false);
                     } else if (c == 's') {
                         saveAction.run();
                         deliverEvent.set(false);
                     } else if (c == 'l') {
                         loadAction.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'k') {
+                        okAction.run();
                         deliverEvent.set(false);
                     } else if (c == 'c') {
                         cancelAction.run();
