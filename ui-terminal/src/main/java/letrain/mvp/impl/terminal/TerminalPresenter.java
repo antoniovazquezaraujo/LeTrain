@@ -2027,10 +2027,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    /** Generates the current scenario text (seed + on build + on start + program) for the editor. */
+    /** Generates the current world recipe (seed + on build + on start, no program) for the editor. */
     @Override
     public String getScenarioText() {
-        return letrain.command.ScenarioExporter.render(model, commandJournal.appliedEntries());
+        return letrain.command.ScenarioExporter.renderRecipe(model, commandJournal.appliedEntries());
     }
 
     /** Exports the (possibly hand-edited) scenario text to a file. */

@@ -293,6 +293,29 @@ public final class ScenarioFile {
         return parse(text).buildCommands();
     }
 
+    /** A scenario split into its world recipe (no {@code program}) and its program. */
+    public record Parts(int seed, String recipeText, String program) {}
+
+    /**
+     * Splits a full scenario text into the world recipe (seed + on build + on start, rendered
+     * <b>without</b> the program) and the program text. Used by the editor, which edits both in
+     * separate tabs.
+     */
+    public static Parts split(String fullText) {
+        Scenario s = parse(fullText);
+        return new Parts(s.seed(), render(s.seed(), s.buildCommands(), s.startCommands(), null),
+                s.program());
+    }
+
+    /**
+     * Builds a full scenario text from a recipe text (no program section) and a program. Used when
+     * exporting/playing from the editor, which edits the recipe and the program separately.
+     */
+    public static String withProgram(String recipeText, String program) {
+        Scenario s = parse(recipeText);
+        return render(s.seed(), s.buildCommands(), s.startCommands(), program);
+    }
+
     private static String[] safeLines(String text) {
         return text == null ? new String[0] : text.split("\\R");
     }

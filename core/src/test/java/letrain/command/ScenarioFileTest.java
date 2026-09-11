@@ -108,6 +108,23 @@ class ScenarioFileTest {
     }
 
     @Test
+    @DisplayName("split/withProgram round-trip the recipe and the program")
+    void splitWithProgram_roundTrip() {
+        String program = "sensor 1 on train enter { semaphore 1 open; }";
+        String full = ScenarioFile.render(9,
+                List.of("go 0,0; face e; write 2;"),
+                List.of("semaphore 1 close;"),
+                program);
+
+        ScenarioFile.Parts parts = ScenarioFile.split(full);
+
+        assertEquals(9, parts.seed());
+        assertFalse(parts.recipeText().contains("program {"), parts.recipeText());
+        assertEquals(program, parts.program());
+        assertEquals(full, ScenarioFile.withProgram(parts.recipeText(), parts.program()));
+    }
+
+    @Test
     @DisplayName("a flat scenario without sections is treated as on build (backward compatible)")
     void flat_isBuild() {
         String text = "# LeTrain scenario v1\nseed 5\ngo 0,0; face e; write 1;\n";

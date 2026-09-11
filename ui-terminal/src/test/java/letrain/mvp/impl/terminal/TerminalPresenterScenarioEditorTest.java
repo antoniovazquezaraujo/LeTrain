@@ -30,8 +30,8 @@ class TerminalPresenterScenarioEditorTest {
     }
 
     @Test
-    @DisplayName("getScenarioText includes the journal and the program")
-    void getScenarioText_includesJournalAndProgram() {
+    @DisplayName("getScenarioText returns the world recipe (journal + on start) without the program")
+    void getScenarioText_isRecipeWithoutProgram() {
         Model model = new Model(1);
         model.setProgram("sensor 1 on train enter { semaphore 1 open; }");
         TerminalPresenter presenter = presenterWith(model);
@@ -41,8 +41,8 @@ class TerminalPresenterScenarioEditorTest {
 
         assertTrue(text.contains("seed 1"), text);
         assertTrue(text.contains("go 0,0; face e; write 1;"), text);
-        assertTrue(text.contains("program {"), text);
-        assertTrue(text.contains("sensor 1 on train enter"), text);
+        assertFalse(text.contains("program {"), "the recipe must not carry the program: " + text);
+        assertFalse(text.contains("sensor 1 on train enter"), text);
     }
 
     @Test

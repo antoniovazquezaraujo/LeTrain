@@ -806,6 +806,7 @@ public class TerminalView implements letrain.mvp.View {
             scenarioTab[0] = false;
             editor.setText(programBuffer[0]);
             rebuildTabFooter[0].run();
+            window.invalidate();
         };
         final Runnable switchToScenario = () -> {
             if (scenarioTab[0]) {
@@ -815,6 +816,7 @@ public class TerminalView implements letrain.mvp.View {
             scenarioTab[0] = true;
             editor.setText(scenarioBuffer[0]);
             rebuildTabFooter[0].run();
+            window.invalidate();
         };
 
         final Runnable regenerateAction = () -> {
@@ -836,7 +838,13 @@ public class TerminalView implements letrain.mvp.View {
                     .setDescription("Choose a file:").setActionLabel(LocalizedString.Save.toString())
                     .build().showDialog(fileGui);
             if (file != null) {
-                gameViewListener.onExportScenarioText(file, text);
+                String full = text;
+                try {
+                    full = letrain.command.ScenarioFile.withProgram(text, programBuffer[0]);
+                } catch (Exception ignore) {
+                    // invalid recipe (export anyway): write it as-is
+                }
+                gameViewListener.onExportScenarioText(file, full);
             }
         };
         final Runnable openScenarioAction = () -> {
@@ -848,10 +856,12 @@ public class TerminalView implements letrain.mvp.View {
                 return;
             }
             try {
-                String text = java.nio.file.Files.readString(file.toPath());
-                scenarioDraft = text;
-                scenarioBuffer[0] = text;
-                editor.setText(text);
+                String fileText = java.nio.file.Files.readString(file.toPath());
+                letrain.command.ScenarioFile.Parts parts = letrain.command.ScenarioFile.split(fileText);
+                scenarioDraft = parts.recipeText();
+                scenarioBuffer[0] = parts.recipeText();
+                programBuffer[0] = parts.program();
+                editor.setText(parts.recipeText());
             } catch (Exception ex) {
                 com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui,
                         "Scenario Error", String.valueOf(ex.getMessage()));
@@ -887,7 +897,13 @@ public class TerminalView implements letrain.mvp.View {
                             "Scenario has errors", diagnosticsText(result));
                     return false;
                 }
-                gameViewListener.onPlayScenarioText(scenarioText);
+                String full = scenarioText;
+                try {
+                    full = letrain.command.ScenarioFile.withProgram(scenarioText, programBuffer[0]);
+                } catch (Exception ignore) {
+                    // defensive: play the recipe alone
+                }
+                gameViewListener.onPlayScenarioText(full);
                 return true;
             }
             applyProgram.run();
@@ -970,10 +986,44 @@ public class TerminalView implements letrain.mvp.View {
         footerColumn.addComponent(commonFooter);
         rebuildTabFooter[0].run();
 
+        // Tabs glow their own colour when active (distinct from the focus style).
+        com.googlecode.lanterna.gui2.InteractableRenderer<Button> tabRenderer =
+                new com.googlecode.lanterna.gui2.InteractableRenderer<Button>() {
+                    @Override
+                    public com.googlecode.lanterna.TerminalSize getPreferredSize(Button component) {
+                        return new com.googlecode.lanterna.TerminalSize(
+                                component.getLabel().length() + 4, 1);
+                    }
+
+                    @Override
+                    public void drawComponent(com.googlecode.lanterna.gui2.TextGUIGraphics graphics,
+                            Button component) {
+                        boolean isScenario = "Scenario".equals(component.getLabel());
+                        boolean active = isScenario == scenarioTab[0];
+                        String label = component.getLabel();
+                        if (active) {
+                            graphics.setForegroundColor(
+                                    com.googlecode.lanterna.TextColor.ANSI.BLACK);
+                            graphics.setBackgroundColor(
+                                    com.googlecode.lanterna.TextColor.ANSI.CYAN);
+                        } else if (component.isFocused()) {
+                            graphics.applyThemeStyle(component.getThemeDefinition().getActive());
+                        } else {
+                            graphics.applyThemeStyle(component.getThemeDefinition().getNormal());
+                        }
+                        graphics.putString(0, 0, "< " + label + " >");
+                    }
+
+                    @Override
+                    public com.googlecode.lanterna.TerminalPosition getCursorLocation(
+                            Button component) {
+                        return null;
+                    }
+                };
         Button programTabBtn = new Button("Program", switchToProgram);
-        programTabBtn.setRenderer(mnemonicRenderer);
+        programTabBtn.setRenderer(tabRenderer);
         Button scenarioTabBtn = new Button("Scenario", switchToScenario);
-        scenarioTabBtn.setRenderer(mnemonicRenderer);
+        scenarioTabBtn.setRenderer(tabRenderer);
         tabBar.addComponent(programTabBtn);
         tabBar.addComponent(scenarioTabBtn);
         window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
