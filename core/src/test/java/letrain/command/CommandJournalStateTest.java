@@ -66,6 +66,33 @@ class CommandJournalStateTest {
     }
 
     @Test
+    @DisplayName("consecutive fork route sets for the same fork collapse into the last one")
+    void coalesce_forkRoute() {
+        CommandJournal j = new CommandJournal();
+        j.recordCoalescing("fork 1 set curved;");
+        j.recordCoalescing("fork 1 set straight;");
+        j.recordCoalescing("fork 1 set curved;");
+        assertEquals(1, j.size());
+        assertEquals(java.util.List.of("fork 1 set curved;"), j.appliedEntries());
+        // A different fork starts a new entry.
+        j.recordCoalescing("fork 2 set curved;");
+        assertEquals(2, j.size());
+    }
+
+    @Test
+    @DisplayName("consecutive mode sets collapse, but different properties of the same signal do not")
+    void coalesce_signalMode_andSeparateProperties() {
+        CommandJournal j = new CommandJournal();
+        j.recordCoalescing("signal 1 set mode max;");
+        j.recordCoalescing("signal 1 set mode min;");
+        assertEquals(1, j.size(), "same property must collapse");
+        assertEquals(java.util.List.of("signal 1 set mode min;"), j.appliedEntries());
+
+        j.recordCoalescing("signal 1 set limit 5;"); // different property -> new entry
+        assertEquals(2, j.size());
+    }
+
+    @Test
     @DisplayName("base stops undo and bake commits the applied commands")
     void base_and_bake() {
         CommandJournal j = new CommandJournal();

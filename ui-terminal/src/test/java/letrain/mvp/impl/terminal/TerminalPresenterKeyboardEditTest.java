@@ -13,12 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 /**
- * Keyboard signal toggles (invert/mode/limit) must be recorded into the journal exactly like console
- * commands, so they show up in the exported scenario and can be undone.
+ * Keyboard state toggles (signal invert/mode/limit, fork route) must be recorded into the journal
+ * exactly like console commands, so they show up in the exported scenario and can be undone.
  */
 @DisabledIfEnvironmentVariable(named = "CI", matches = "true")
-@DisplayName("2D terminal: keyboard signal toggles are recorded")
-class TerminalPresenterSignalEditTest {
+@DisplayName("2D terminal: keyboard state toggles are recorded")
+class TerminalPresenterKeyboardEditTest {
 
     private static InputEvent charKey(char c) {
         return new InputEvent(KeyType.Character, c, false, false, false);
@@ -30,6 +30,22 @@ class TerminalPresenterSignalEditTest {
             presenter.onChar(charKey(cmd.charAt(i)));
         }
         presenter.onChar(new InputEvent(KeyType.Enter));
+    }
+
+    /** A fork splitting an incoming west line into east (normal) and south (alternative). */
+    private static letrain.track.rail.ForkRailTrack addFork(Model model, int x, int y) {
+        letrain.track.rail.ForkRailTrack fork =
+                new letrain.track.rail.ForkRailTrack(model.nextForkId());
+        fork.setPosition(new Point(x, y));
+        fork.setCreationDir(Dir.E);
+        fork.addRoute(Dir.W, Dir.E);
+        fork.addRoute(Dir.E, Dir.W);
+        fork.addRoute(Dir.W, Dir.S);
+        fork.addRoute(Dir.S, Dir.W);
+        fork.setNormalRoute();
+        model.getRailMap().addTrack(fork.getPosition(), fork);
+        model.addFork(fork);
+        return fork;
     }
 
     @Test
@@ -73,5 +89,33 @@ class TerminalPresenterSignalEditTest {
                 model.getCommandJournal().entries().get(1));
         assertEquals("go 7,0; face e; signal " + sig.getId() + " set limit 4;",
                 model.getCommandJournal().entries().get(2));
+    }
+
+    @Test
+    @DisplayName("flipping a fork from the keyboard is journaled as an absolute route command")
+    void keyboardForkFlip_isJournaled() {
+        Model model = new Model(1);
+        model.updateGroundMap(new Point(-30, -30), 60, 60);
+        model.setMode(Model.GameMode.RAILS);
+
+        TerminalPresenter presenter = new TerminalPresenter(model);
+        presenter.view = mock(TerminalView.class);
+
+        letrain.track.rail.ForkRailTrack fork = addFork(model, 0, 0);
+
+        presenter.onChar(charKey('R')); // Record/edit mode: recording starts
+        model.selectFork(fork.getId());
+        model.setMode(Model.GameMode.FORKS);
+
+        presenter.onChar(charKey(' ')); // straight -> curved
+        assertEquals(1, model.getCommandJournal().size());
+        assertEquals("fork " + fork.getId() + " set curved;",
+                model.getCommandJournal().entries().get(0));
+
+        presenter.onChar(charKey(' ')); // curved -> straight (collapses into the previous one)
+        assertEquals(1, model.getCommandJournal().size(),
+                "consecutive route flips must collapse into a single command");
+        assertEquals("fork " + fork.getId() + " set straight;",
+                model.getCommandJournal().entries().get(0));
     }
 }

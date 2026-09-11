@@ -1010,7 +1010,13 @@ public class Gdx3DInputHandler implements InputProcessor {
                 forkInputTimeout = 0;
             }
             if (model.getSelectedFork() != null) {
-                model.getSelectedFork().flipRoute();
+                letrain.track.rail.ForkRailTrack fork = model.getSelectedFork();
+                boolean wasAlternative = fork.isUsingAlternativeRoute();
+                fork.flipRoute();
+                if (fork.isUsingAlternativeRoute() != wasAlternative) {
+                    view.journalEditingCommand("fork " + fork.getId() + " set "
+                            + (fork.isUsingAlternativeRoute() ? "curved" : "straight") + ";");
+                }
                 audioController.playOneShot("fork",
                         (float) model.getSelectedFork().getPosition().getX(),
                         (float) model.getSelectedFork().getPosition().getY());

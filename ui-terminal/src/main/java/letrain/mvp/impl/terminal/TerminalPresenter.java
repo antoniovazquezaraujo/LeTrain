@@ -1777,12 +1777,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void journalEditingCommand(String command) {
         letrain.command.CommandJournal journal = model.getCommandJournal();
         if (journal != null && journal.isRecording()) {
-            journal.record(command);
+            journal.recordCoalescing(command);
         }
         if (model.isSimulationPaused()) {
             letrain.command.UndoRedoHistory history = getUndoRedoHistory();
             if (history != null) {
-                history.record(command);
+                history.recordCoalescing(command);
             }
         }
     }
@@ -1818,7 +1818,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void toggleFork() {
         if (model.getSelectedFork() != null) {
-            model.getSelectedFork().flipRoute();
+            letrain.track.rail.ForkRailTrack fork = model.getSelectedFork();
+            boolean wasAlternative = fork.isUsingAlternativeRoute();
+            fork.flipRoute();
+            if (fork.isUsingAlternativeRoute() != wasAlternative) {
+                journalEditingCommand("fork " + fork.getId() + " set "
+                        + (fork.isUsingAlternativeRoute() ? "curved" : "straight") + ";");
+            }
             audioController.playOneShot("fork",
                     (float) model.getSelectedFork().getPosition().getX(),
                     (float) model.getSelectedFork().getPosition().getY());
