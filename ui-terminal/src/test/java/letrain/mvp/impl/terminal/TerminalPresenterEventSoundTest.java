@@ -17,13 +17,11 @@ import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 /**
  * Importing an exported (linked) train must not play the coupling "link" sound: the replayed command
  * represents a past user action, not a live one. Same for undo/redo replays.
  */
-@DisabledIfEnvironmentVariable(named = "CI", matches = "true")
 @DisplayName("2D terminal: train-event sounds are muted during programmatic replay")
 class TerminalPresenterEventSoundTest {
 
@@ -40,7 +38,7 @@ class TerminalPresenterEventSoundTest {
     @Test
     @DisplayName("onLink plays the link sound, but stays silent inside runWithoutEventSounds")
     void linkSound_isMutedDuringReplay() {
-        TerminalPresenter presenter = new TerminalPresenter(new Model(1));
+        TerminalPresenter presenter = new TerminalPresenter(new Model(1), mock(TerminalView.class));
         AudioController audio = mock(AudioController.class);
         presenter.audioController = audio;
         Train train = trainWithLinkerAt(3, 4);

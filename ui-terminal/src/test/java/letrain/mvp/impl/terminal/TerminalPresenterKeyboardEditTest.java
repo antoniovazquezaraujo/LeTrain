@@ -11,13 +11,11 @@ import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 /**
  * Keyboard state toggles (signal invert/mode/limit, fork route) must be recorded into the journal
  * exactly like console commands, so they show up in the exported scenario and can be undone.
  */
-@DisabledIfEnvironmentVariable(named = "CI", matches = "true")
 @DisplayName("2D terminal: keyboard state toggles are recorded")
 class TerminalPresenterKeyboardEditTest {
 
@@ -27,8 +25,7 @@ class TerminalPresenterKeyboardEditTest {
 
     /** A presenter with the view and audio mocked out, so tests never draw or make sound. */
     private static TerminalPresenter silentPresenter(Model model) {
-        TerminalPresenter presenter = new TerminalPresenter(model);
-        presenter.view = mock(TerminalView.class);
+        TerminalPresenter presenter = new TerminalPresenter(model, mock(TerminalView.class));
         AudioController realAudio = presenter.audioController;
         presenter.audioController = mock(AudioController.class);
         if (realAudio != null) {

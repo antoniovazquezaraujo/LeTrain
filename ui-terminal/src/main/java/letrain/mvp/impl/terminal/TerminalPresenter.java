@@ -118,10 +118,19 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     public TerminalPresenter(Model model) {
+        this(model, null);
+    }
+
+    /**
+     * Seam for tests: when {@code view} is non-null it is used as-is instead of creating a real
+     * Lanterna terminal, so tests need no tty/display and never open the Swing terminal emulator.
+     * Production always passes {@code null}.
+     */
+    TerminalPresenter(Model model, TerminalView view) {
         setModel(model);
-        view = new TerminalView(this);
-        renderer = new RenderVisitor(view);
-        informer = new InfoVisitor(view);
+        this.view = view != null ? view : new TerminalView(this);
+        renderer = new RenderVisitor(this.view);
+        informer = new InfoVisitor(this.view);
         railTrackMaker = new RailTrackMaker(this);
         audioController = new letrain.audio.AudioController(this.model);
         simulationController =
