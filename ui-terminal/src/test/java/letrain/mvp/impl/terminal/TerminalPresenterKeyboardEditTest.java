@@ -3,6 +3,7 @@ package letrain.mvp.impl.terminal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
+import letrain.audio.AudioController;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.impl.Model;
@@ -22,6 +23,18 @@ class TerminalPresenterKeyboardEditTest {
 
     private static InputEvent charKey(char c) {
         return new InputEvent(KeyType.Character, c, false, false, false);
+    }
+
+    /** A presenter with the view and audio mocked out, so tests never draw or make sound. */
+    private static TerminalPresenter silentPresenter(Model model) {
+        TerminalPresenter presenter = new TerminalPresenter(model);
+        presenter.view = mock(TerminalView.class);
+        AudioController realAudio = presenter.audioController;
+        presenter.audioController = mock(AudioController.class);
+        if (realAudio != null) {
+            realAudio.stop();
+        }
+        return presenter;
     }
 
     private static void console(TerminalPresenter presenter, String cmd) {
@@ -57,8 +70,7 @@ class TerminalPresenterKeyboardEditTest {
         model.getCursor().setDir(Dir.E);
         model.setMode(Model.GameMode.RAILS);
 
-        TerminalPresenter presenter = new TerminalPresenter(model);
-        presenter.view = mock(TerminalView.class);
+        TerminalPresenter presenter = silentPresenter(model);
 
         // Build a tile and a speed signal through the console (default limit 3, mode max, facing E).
         console(presenter, "go 7,0; face e; write 1;");
@@ -98,8 +110,7 @@ class TerminalPresenterKeyboardEditTest {
         model.updateGroundMap(new Point(-30, -30), 60, 60);
         model.setMode(Model.GameMode.RAILS);
 
-        TerminalPresenter presenter = new TerminalPresenter(model);
-        presenter.view = mock(TerminalView.class);
+        TerminalPresenter presenter = silentPresenter(model);
 
         letrain.track.rail.ForkRailTrack fork = addFork(model, 0, 0);
 
