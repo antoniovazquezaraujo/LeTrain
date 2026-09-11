@@ -28,6 +28,14 @@ public interface EconomyManager {
 
     void spend(ExpenseType type, int amount);
 
+    /**
+     * Free-construction mode (ADR-020 scenario "constructor libre"): while true, spending has no
+     * effect on the balance or totals (statistics counters still update).
+     */
+    void setFreeConstruction(boolean free);
+
+    boolean isFreeConstruction();
+
     void earn(ExpenseType type);
 
     void earn(ExpenseType type, int amount);

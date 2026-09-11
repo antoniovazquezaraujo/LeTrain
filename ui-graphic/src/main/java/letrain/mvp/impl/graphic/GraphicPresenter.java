@@ -740,6 +740,8 @@ public class GraphicPresenter extends ApplicationAdapter
             letrain.command.ScenarioFile.Scenario scenario =
                     letrain.command.ScenarioFile.parse(text);
             applyLoadedModel(new letrain.mvp.impl.Model(scenario.seed()), file);
+            // Constructor libre: building the scenario costs nothing (ADR-020).
+            model.getEconomyManager().setFreeConstruction(true);
             for (String cmd : scenario.buildCommands()) {
                 String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                         f -> onSaveGame(f), f -> onLoadGame(f),
@@ -833,6 +835,8 @@ public class GraphicPresenter extends ApplicationAdapter
         letrain.map.Point startPos = model.getCursor().getPosition();
         model.getGroundMap().renderBlock(startPos.getX() - getCols() / 2,
                 startPos.getY() - getRows() / 2, getCols(), getRows());
+        // Loading a savegame uses normal economy (scenario import re-enables free construction).
+        model.getEconomyManager().setFreeConstruction(false);
     }
 
     @Override
