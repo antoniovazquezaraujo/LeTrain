@@ -1017,25 +1017,24 @@ public class TerminalView implements letrain.mvp.View {
                 // Ignore
             }
         }
-        boolean terminalClosed = false;
         if (terminal != null) {
             try {
                 // Lanterna saves the tty mode on construction and restores it here (and in its own
                 // shutdown hook), so it owns the terminal-state handback.
                 terminal.close();
-                terminalClosed = true;
             } catch (Exception e) {
                 // Ignore
             }
         }
-        if (!terminalClosed) {
-            // Lanterna could not hand the terminal back (no terminal object, or close failed):
-            // best-effort recovery so the shell is not left in raw mode (no echo).
-            fallbackSttySane();
-        }
+        // Lanterna's restore swallows its own IO errors, so a failure is invisible here; always
+        // apply the last-resort recovery to guarantee the shell is not left in raw mode (no echo).
+        fallbackSttySane();
     }
 
-    /** Last-resort tty recovery, only for when Lanterna could not close the terminal itself. */
+    /**
+     * Last-resort tty recovery: emit the ANSI reset/leave-alternate/show-cursor sequence and, on
+     * Unix, run {@code stty sane < /dev/tty}. Best-effort; failures are ignored (e.g. Windows).
+     */
     private void fallbackSttySane() {
         try {
             System.out.print("\033[0m\033[?1049l\033[?25h");
