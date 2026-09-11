@@ -252,6 +252,21 @@ class Gdx3DInputHandlerConsoleTest {
     }
 
     @Test
+    @DisplayName("a console line mixing navigation and an edit is journaled; pure navigation is not")
+    void consoleLineWithNavigationAndEdit_isJournaled() {
+        model.setPauseEditing(true);
+        model.getCommandJournal().startRecording();
+
+        executeInConsole("go 5,0; face e; write 1;");
+        assertEquals(1, model.getCommandJournal().size(),
+                "a line with navigation + an edit must be recorded");
+
+        executeInConsole("go 1,1;");
+        assertEquals(1, model.getCommandJournal().size(),
+                "pure navigation must not be recorded");
+    }
+
+    @Test
     @DisplayName("'.' outside COMMAND repeats the last executed command")
     void dotRepeatsLastCommand() {
         executeInConsole("go 7,0; face e; write 1;"); // build a tile at (7,0)

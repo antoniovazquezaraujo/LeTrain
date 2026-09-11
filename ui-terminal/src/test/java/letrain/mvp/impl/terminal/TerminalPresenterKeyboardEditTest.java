@@ -1,6 +1,7 @@
 package letrain.mvp.impl.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import letrain.audio.AudioController;
@@ -210,5 +211,52 @@ class TerminalPresenterKeyboardEditTest {
                 "consecutive route flips must collapse into a single command");
         assertEquals("fork " + fork.getId() + " set straight;",
                 model.getCommandJournal().entries().get(0));
+    }
+
+    @Test
+    @DisplayName("a console line mixing navigation and an edit is journaled; pure navigation is not")
+    void consoleLineWithNavigationAndEdit_isJournaled() {
+        Model model = new Model(1);
+        model.updateGroundMap(new Point(-30, -30), 60, 60);
+        model.getCursor().setPosition(new Point(7, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.RAILS);
+
+        TerminalPresenter presenter = silentPresenter(model);
+        presenter.onChar(charKey('R')); // Record/edit mode: recording starts
+
+        // Full self-positioned edit line: must be recorded (it used to be dropped for starting 'go').
+        console(presenter, "go 7,0; face e; write 1;");
+        assertEquals(1, model.getCommandJournal().size(),
+                "a line with navigation + an edit must be recorded");
+
+        // Pure navigation must still be ignored.
+        console(presenter, "go 1,1;");
+        assertEquals(1, model.getCommandJournal().size(),
+                "pure navigation must not be recorded");
+    }
+
+    @Test
+    @DisplayName("setting a mark is journaled so 'go mark' is reproducible on replay")
+    void consoleMark_isJournaled() {
+        Model model = new Model(1);
+        model.updateGroundMap(new Point(-30, -30), 60, 60);
+        model.getCursor().setPosition(new Point(7, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.RAILS);
+
+        TerminalPresenter presenter = silentPresenter(model);
+        presenter.onChar(charKey('R')); // Record/edit mode: recording starts
+
+        console(presenter, "mark home;");
+        assertEquals(1, model.getCommandJournal().size(),
+                "setting a mark must be recorded");
+        assertTrue(model.getCommandJournal().entries().get(0).endsWith("mark home;"),
+                model.getCommandJournal().entries().get(0));
+
+        // Jumping to a mark is navigation: not recorded on its own (the mark already is).
+        console(presenter, "go mark home;");
+        assertEquals(1, model.getCommandJournal().size(),
+                "navigating to a mark must not be recorded");
     }
 }
