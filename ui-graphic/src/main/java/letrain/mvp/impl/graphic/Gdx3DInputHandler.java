@@ -1137,6 +1137,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             if (model.getSelectedSensor() != null) {
                 letrain.track.Sensor sensor = model.getSelectedSensor();
                 sensor.setCreationDir(sensor.getCreationDir().inverse());
+                view.journalEditingCommand("sensor " + sensor.getId() + " invert;");
             }
         }
     }
@@ -1166,6 +1167,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             RailSemaphore s = model.getSelectedSemaphore();
             if (s != null && s.getCreationDir() != null) {
                 s.setCreationDir(s.getCreationDir().inverse());
+                view.journalEditingCommand("semaphore " + s.getId() + " invert;");
                 if (cameraController != null) {
                     cameraController.forceSnap();
                 }
@@ -1207,6 +1209,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     train.getLogisticsManager().performIndustrialAction(station);
                 } else if (station.getCreationDir() != null) {
                     station.flipOrientation();
+                    view.journalEditingCommand("station " + station.getId() + " invert;");
                     if (cameraController != null) {
                         cameraController.forceSnap();
                     }

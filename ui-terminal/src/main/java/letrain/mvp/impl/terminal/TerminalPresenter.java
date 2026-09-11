@@ -1110,6 +1110,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                             train.getLogisticsManager().performIndustrialAction(selectedStation);
                         } else {
                             selectedStation.flipOrientation();
+                            journalEditingCommand("station " + selectedStation.getId() + " invert;");
                         }
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
@@ -1225,6 +1226,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     if (model.getSelectedSensor() != null) {
                         letrain.track.Sensor sensor = model.getSelectedSensor();
                         sensor.setCreationDir(sensor.getCreationDir().inverse());
+                        journalEditingCommand("sensor " + sensor.getId() + " invert;");
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
                     sensorId = sensorId * 10 + (keyEvent.getCharacter() - '0');
@@ -1268,8 +1270,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     }
                     if (model.getSelectedSemaphore() != null
                             && model.getSelectedSemaphore().getCreationDir() != null) {
-                        model.getSelectedSemaphore().setCreationDir(
-                                model.getSelectedSemaphore().getCreationDir().inverse());
+                        letrain.track.RailSemaphore semaphore = model.getSelectedSemaphore();
+                        semaphore.setCreationDir(semaphore.getCreationDir().inverse());
+                        journalEditingCommand("semaphore " + semaphore.getId() + " invert;");
                     }
                     semaphoreId = 0;
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
