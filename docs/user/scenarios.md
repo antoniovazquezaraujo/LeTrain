@@ -74,6 +74,8 @@ Press `p` to open the **LeTrain Editor**. Its three tabs together make up the sc
 - **Program** — the `program { ... }` block.
 - **Config** — the `configuration { ... }` settings.
 
+![The LeTrain Editor with the Config tab selected](images/config-editor.png)
+
 The quick reference on the right shows only the commands that make sense for the active tab;
 selecting one inserts it on a new line. The footer holds `Save`/`Load` (savegame),
 `Export`/`Import` (scenario file), `Refresh` (reload from the world), `Reprogram` (apply the
