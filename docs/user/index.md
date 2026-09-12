@@ -69,8 +69,8 @@ You can run either the modern 3D version or the classic 2D version:
 ## 📖 Documentation
 
 - [User Manual](manual.md)
-- [Moving Track Elements](manual.md#moving-track-elements) — slide semaphores, sensors, stations and speed signals along the rail with `Shift + Up/k` (forward) and `Shift + Down/j` (backward).
 - [Scripting and Automation Grammar](grammar.md)
+- [Scenarios (.ltr) and the editor](scenarios.md)
 
 ## 🎥 Media & Tutorials
 

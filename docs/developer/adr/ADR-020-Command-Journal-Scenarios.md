@@ -1,6 +1,29 @@
 # ADR-020: Diario de comandos, escenarios, undo/redo y modo experimento
 
-## Estado: PROPUESTO
+## Estado: ACEPTADO (implementado en gran parte)
+
+### Estado de implementación (2026-09-12)
+
+**Implementado**
+- Modo Record/edición (`R`): congela el mundo y hace la construcción instantánea.
+- Diario de comandos (`R` graba; `journal;` lo muestra) con checkpoints.
+- Undo/redo de edición (2D y 3D): constructivo y toggles de estado (fork/semáforo/señal), con
+  `resumeFrom` para no romper gestos continuos. Teclas `u` / `Ctrl+R` y comandos `undo;` / `redo;`.
+- Escenario como fichero `.ltr`: `seed`, `configuration { }`, `on build { }`, `on start { }`,
+  `program { }`; exportación/importación, constructor libre y re-ejecución determinista.
+- Editor de escenario 2D (pestañas Scenario/Program/Config, referencia rápida por pestaña,
+  validación con lista de errores navegable) y editor de programa en 3D.
+- Ajustes del escenario: sección `configuration` (el `letrain.cfg` efectivo) que gana sobre el
+  fichero local; `letrain.cfg` se distribuye junto a la app.
+- Validador sintáctico headless y ejecutable `letrain-check`.
+
+**Pendiente**
+- Paridad completa del IDE 3D con el 2D (issue #524).
+- Comando `help` y catálogo único de comandos, e `info`/`ls` sin argumentos (issue #526).
+- Mejoras del panel de salida de consola (issue #525; en gran parte hecho).
+- `on start` para forks/señales; composición (`@import`), huellas save↔escenario y hot-reload.
+- Modo experimento (snapshot en memoria y restauración).
+- Validación semántica (dry-run) además de la sintáctica.
 
 ## Contexto
 Hoy conviven dos formas de "programar" que el usuario percibe como separadas: la **consola** (comandos inmediatos y efímeros) y el **programa** del IDE (texto persistente que se re-ejecuta con APPLY). Además, **guardar** solo guarda el *estado* de la partida. El equipo quiere:
@@ -67,7 +90,7 @@ Save y escenario son artefactos distintos (runtime vs mundo nuevo) y **no deben 
 - **Modo experimento (en vivo)**: una opción desactiva la pausa; al entrar se toma un **snapshot completo del Model en memoria** (misma maquinaria que save/load, sin fichero). La simulación sigue y el usuario hace experimentos sin diario ni undo/redo. Al salir se **restaura el snapshot** (o se conserva si así se decide). Solo pruebas y diversión.
 
 ## Consecuencias
-- El **grabador** (`record on/off`) apunta las acciones manuales al diario; el escenario y el undo comparten maquinaria.
+- El **grabador** (`R`) apunta las acciones manuales al diario; el escenario y el undo comparten maquinaria.
 - La simulación en vivo NO es reconstruible por el diario (trenes/dinero/descarrilamientos son estado): para "deshacer en vivo" solo valdría un snapshot (viaje en el tiempo), nunca el diario. Por eso el undo de edición exige el modelo pausado.
 - Reutiliza lo existente: `GameSaveService`/serialización (snapshot en memoria), el `setModel`/carga en presentadores (restaurar tras experimento), el DSL de tortuga (`write/move/del/clear`, `go`, `new`) y el parser único del CLI.
 - La unificación total de gramáticas (consola/programa en una sola ANTLR) es **opcional y posterior**; el parser de consola ya importa el de script.

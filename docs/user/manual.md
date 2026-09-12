@@ -42,7 +42,7 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`e`**: **Sensors Mode** - Select and inspect sensors.
 - **`p`**: **Program Mode** - Open the IDE to write automation scripts.
 - **`:`**: **CLI Mode** - Open the command line interface.
-- **`x`**: **Toggle paused editing** (off by default). When enabled, the world (trains, economy, derailments) freezes while you are in any editing mode (Rails, Add, Stations, Sensors, Semaphores, Speed Signals, Forks, Trains, console or program editor) and track construction becomes instantaneous — the state ADR-020 needs for an exact edit journal and deterministic undo. Simulation only runs in play/view modes (Drive, Menu, Link/Unlink) or when the toggle is off.
+- **`R`**: **Toggle Record/edit mode** (off by default). When enabled, the world (trains, economy, derailments) freezes while you are in any editing mode (Rails, Add, Stations, Sensors, Semaphores, Speed Signals, Forks, Trains, console or program editor), track construction becomes instantaneous, and every edit is journaled for deterministic undo and scenario export. Simulation only runs in play/view modes (Drive, Menu, Link/Unlink) or when the toggle is off.
 
 ### Construction (Rails Mode)
 - **Shift + Arrows (or H, J, K, L)**: Build new tracks.
@@ -75,7 +75,15 @@ Some useful commands:
 - `ls st;` - List all stations.
 - `quit;` or `q` - Exit the game.
 
-For a complete reference of the CLI commands, check out the developer documentation or type `info` in the console.
+For a complete reference of the CLI commands, see **[grammar.md](grammar.md)**.
+
+### Scenario Editor and Undo/Redo
+- **`p`**: Open the **LeTrain Editor** (scenario editor). It has three tabs — **Scenario**
+  (`seed` + `on build` + `on start`), **Program** (the automation script) and **Config** (game
+  settings) — a per-tab quick reference, and a footer with `Export`/`Import` of `.ltr` scenario
+  files, `Refresh`, `Reprogram` and `Rebuild`. `Esc` closes it. See **[scenarios.md](scenarios.md)**.
+- **Record/edit mode (`R`)**: while it is on, **`u`** undoes and **Ctrl+R** redoes edits (the same
+  as `undo;` / `redo;`). Outside this mode, `u` is the **Unlink** mode.
 
 ### Interaction
 - **Spacebar**: In Semaphores, Speed Signals, or Sensors mode, invert the direction of the device.
@@ -99,7 +107,8 @@ You start with your account at zero. To earn money you must:
 2. Build a train and its wagons (beware of fuel costs!).
 3. Transport the cargo. **Profit is calculated based on the distance traveled**: the longer the journey from the producing zone to the consuming zone, the higher the payout!
 
-You can adjust the base costs and rewards by modifying the `letrain.cfg` file before launching the game.
+You can adjust the base costs and rewards by modifying the `letrain.cfg` file. It ships next to the
+game; a `letrain.cfg` in the working directory overrides the packaged one.
 
 ## 🤖 Autopilot and Routes
 

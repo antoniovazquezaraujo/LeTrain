@@ -44,7 +44,7 @@ LeTrain está fuertemente basado en modos. Al pulsar las siguientes teclas cambi
 - **`e`**: **Modo Sensors (Sensores)** - Seleccionar e inspeccionar sensores.
 - **`p`**: **Modo Program (Programa)** - Abrir el IDE para programar automatizaciones.
 - **`:`**: **Modo CLI (Consola)** - Abrir la consola de comandos integrados.
-- **`x`**: **Conmutar edición pausada** (apagada por defecto). Al activarla, el mundo (trenes, economía, descarrilamientos) se congela mientras estés en cualquier modo de edición (Rails, Add, Estaciones, Sensores, Semáforos, Señales, Desvíos, Trenes, consola o editor de programa) y la construcción de vía se vuelve instantánea — el estado que el ADR-020 necesita para un diario de edición exacto y un undo determinista. La simulación solo corre en modos de juego/vista (Drive, Menú, Link/Unlink) o cuando el toggle está apagado.
+- **`R`**: **Conmutar el modo Record/edición** (apagado por defecto). Al activarlo, el mundo (trenes, economía, descarrilamientos) se congela mientras estés en cualquier modo de edición (Rails, Add, Estaciones, Sensores, Semáforos, Señales, Desvíos, Trenes, consola o editor de programa), la construcción de vía se vuelve instantánea y cada edición se graba en el diario para el undo determinista y la exportación de escenarios. La simulación solo corre en modos de juego/vista (Drive, Menú, Link/Unlink) o cuando el toggle está apagado.
 
 ### Construcción (Modo Rails)
 - **Mayús + Flechas (o H, J, K, L)**: Construir vías nuevas.
@@ -77,7 +77,17 @@ Algunos comandos útiles:
 - `ls st;` - Lista todas las estaciones.
 - `quit;` o `q` - Sale del juego.
 
-Para una referencia completa de los comandos, consulta la documentación o escribe `info` en la consola.
+Para una referencia completa de los comandos, consulta **[grammar_es.md](grammar_es.md)**.
+
+### Editor de Escenarios y Undo/Redo
+- **`p`**: Abre el **LeTrain Editor** (editor de escenarios). Tiene tres pestañas — **Scenario**
+  (`seed` + `on build` + `on start`), **Program** (el script de automatización) y **Config**
+  (ajustes del juego) — una referencia rápida por pestaña, y un pie con `Export`/`Import` de
+  ficheros de escenario `.ltr`, `Refresh`, `Reprogram` y `Rebuild`. `Esc` lo cierra. Ver
+  **[scenarios_es.md](scenarios_es.md)**.
+- **Modo Record/edición (`R`)**: mientras está activo, **`u`** deshace y **Ctrl+R** rehace
+  ediciones (igual que `undo;` / `redo;`). Fuera de este modo, `u` es el modo **Unlink**
+  (Desenganchar).
 
 ### Interacción
 - **Espacio**: En el modo Semáforos, Señales de Velocidad o Sensores, invertir el sentido del dispositivo.
@@ -101,7 +111,8 @@ Empiezas con tu cuenta a cero. Para ganar dinero debes:
 2. Construir un tren y sus vagones (¡cuidado con los costes de combustible!).
 3. Transportar la mercancía. **El beneficio se calcula en base a la distancia recorrida**: cuanto más largo sea el trayecto desde la zona productora hasta la zona consumidora, ¡mayor será el pago!
 
-Puedes ajustar los costes y recompensas base modificando el archivo `letrain.cfg` antes de lanzar el juego.
+Puedes ajustar los costes y recompensas base modificando el archivo `letrain.cfg`. Se distribuye
+junto al juego; un `letrain.cfg` en el directorio de trabajo tiene prioridad sobre el empaquetado.
 
 ## 🤖 Autopilot y Rutas
 

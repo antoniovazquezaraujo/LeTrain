@@ -1,6 +1,6 @@
 # LeTrain - Gramática de Scripting (Automation)
 
-LeTrain incluye su propio analizador léxico/sintáctico (basado en ANTLR4) que te permite automatizar la red ferroviaria usando un lenguaje específico. Los scripts se ejecutan línea a línea.
+LeTrain incluye su propio analizador léxico/sintáctico (basado en ANTLR4) que te permite automatizar la red ferroviaria usando un lenguaje específico. Los scripts se ejecutan línea a línea. El mismo lenguaje se usa desde la consola (comandos directos) y dentro de la sección `program { ... }` de un fichero de escenario (ver **[scenarios_es.md](scenarios_es.md)**).
 
 ## ⚙️ Estructura del Lenguaje
 
@@ -70,7 +70,8 @@ Responde a eventos del juego en tiempo real.
 Puedes teclear estos comandos directamente en el CLI para gestionar el estado del juego, el cursor y los archivos.
 
 **Estado del Juego y Archivos:**
-- `save [archivo];` / `load [archivo];` - Guardar o cargar un mapa.
+- `save [archivo];` / `load [archivo];` - Guardar o cargar un mapa (partida guardada: el *estado* actual).
+- `export [archivo];` / `import [archivo];` - Exportar o importar un escenario (una *receta* `.ltr`; ver **[scenarios_es.md](scenarios_es.md)**).
 - `quit;` o `q` - Salir del juego.
 
 **Información y Borrado:**
@@ -101,14 +102,14 @@ Desplaza una estación/sensor/semáforo/señal de velocidad una o más celdas de
 - `slide sensor [ID] fw [N];` / `slide sensor [ID] bw [N];` - Mover un sensor.
 - `slide semaphore [ID] fw [N];` / `slide semaphore [ID] bw [N];` - Mover un semáforo.
 - `slide signal [ID] fw [N];` / `slide signal [ID] bw [N];` - Mover una señal de velocidad.
-- `slide sensor [ID];` - Por defecto mueve una celda hacia delante. Si el elemento está bloqueado o al final de la vía, el comando devuelve un error.
 
-**Diario de Edición (record):**
-Inicia/detiene la grabación de los comandos de edición que escribes en la consola. Mientras se graba, cada comando ejecutado con éxito se añade al diario de comandos de la sesión (ADR-020) — la base para reproducir una sesión sobre un mundo fresco y para el undo determinista.
-- `record on;` - Empezar a grabar comandos.
-- `record off;` - Dejar de grabar comandos.
-- `record;` - Conmutar la grabación.
-- `journal;` - Muestra el estado de grabación y la lista de comandos grabados (en el orden en que se registraron). Útil para inspeccionar qué reproducirá una sesión grabada.
+Por defecto mueve una celda hacia delante. Si el elemento está bloqueado o al final de la vía, el comando devuelve un error.
+
+**Diario de Edición, Undo y Redo (Durante grabación):**
+Mientras la **grabación** está activa, cada edición se graba en el diario de comandos, de modo que se puede deshacer y rehacer de forma determinista. La grabación se conmuta con la tecla **`R`**.
+- `journal;` - Muestra el estado de grabación y la lista de comandos grabados (en orden) — lo que reproduciría una exportación.
+- `undo;` / `undo [N];` - Deshace las últimas N ediciones (1 por defecto). La tecla **`u`** hace lo mismo.
+- `redo;` / `redo [N];` - Rehace las últimas N ediciones deshechas. **Ctrl+R** hace lo mismo.
 
 **Modo Tortuga (Construcción por Script):**
 Puedes usar `write`, `move`, `del`, o `clear` para hacer secuencias de movimientos con el cursor y automatizar la construcción de vías.
