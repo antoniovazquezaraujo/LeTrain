@@ -794,10 +794,8 @@ public class TerminalView implements letrain.mvp.View {
 
         mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
 
-        // Footer: one row for the active tab's actions, one common row below.
-        final Panel tabFooter = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        final Panel commonFooter = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        final Panel footerColumn = new Panel(new LinearLayout(Direction.VERTICAL));
+        // Footer: a single row; the apply button is labelled per tab (Reprogram / Rebuild).
+        final Panel footer = new Panel(new LinearLayout(Direction.HORIZONTAL));
 
         final Runnable switchToProgram = () -> {
             if (!scenarioTab[0]) {
@@ -915,11 +913,6 @@ public class TerminalView implements letrain.mvp.View {
             return true;
         };
         final Runnable applyAction = () -> applyActive.getAsBoolean();
-        final Runnable okAction = () -> {
-            if (applyActive.getAsBoolean()) {
-                window.close();
-            }
-        };
         final Runnable saveAction = () -> {
             if (applyActive.getAsBoolean()) {
                 showSaveDialog();
@@ -973,22 +966,21 @@ public class TerminalView implements letrain.mvp.View {
                     }
                 };
 
-        // Row 1: actions for the active tab (rebuilt on switch). Row 2: common actions.
+        // Single row; the apply button is labelled per tab.
         rebuildTabFooter[0] = () -> {
-            tabFooter.removeAllComponents();
+            footer.removeAllComponents();
+            addFooterButton(footer, mnemonicRenderer, "Save", saveAction);
+            addFooterButton(footer, mnemonicRenderer, "Load", loadAction);
+            addFooterButton(footer, mnemonicRenderer, "Export", exportScenario);
+            addFooterButton(footer, mnemonicRenderer, "Import", importAction);
+            addFooterButton(footer, mnemonicRenderer, "Refresh", regenerateScenario);
             if (scenarioTab[0]) {
-                addFooterButton(tabFooter, mnemonicRenderer, "Import", importAction);
-                addFooterButton(tabFooter, mnemonicRenderer, "Export", exportScenario);
-                addFooterButton(tabFooter, mnemonicRenderer, "Regenerate", regenerateScenario);
+                addFooterButton(footer, mnemonicRenderer, "Rebuild", applyAction);
+            } else {
+                addFooterButton(footer, mnemonicRenderer, "Reprogram", applyProgram);
             }
-            addFooterButton(tabFooter, mnemonicRenderer, "Apply", applyAction);
+            addFooterButton(footer, mnemonicRenderer, "Close", cancelAction);
         };
-        addFooterButton(commonFooter, mnemonicRenderer, "Save game", saveAction);
-        addFooterButton(commonFooter, mnemonicRenderer, "Load game", loadAction);
-        addFooterButton(commonFooter, mnemonicRenderer, "Ok", okAction);
-        addFooterButton(commonFooter, mnemonicRenderer, "Cancel", cancelAction);
-        footerColumn.addComponent(tabFooter);
-        footerColumn.addComponent(commonFooter);
         rebuildTabFooter[0].run();
 
         // Tabs glow their own colour when active (distinct from the focus style).
@@ -1065,9 +1057,6 @@ public class TerminalView implements letrain.mvp.View {
                     } else if (c == 'l') {
                         loadAction.run();
                         deliverEvent.set(false);
-                    } else if (c == 'o') {
-                        okAction.run();
-                        deliverEvent.set(false);
                     } else if (c == 'c') {
                         cancelAction.run();
                         deliverEvent.set(false);
@@ -1076,7 +1065,7 @@ public class TerminalView implements letrain.mvp.View {
             }
         });
 
-        mainPanel.addComponent(footerColumn, BorderLayout.Location.BOTTOM);
+        mainPanel.addComponent(footer, BorderLayout.Location.BOTTOM);
 
         window.setComponent(mainPanel);
         // Start with the caret in the editor, not on the tabs/buttons.
