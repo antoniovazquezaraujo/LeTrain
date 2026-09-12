@@ -27,7 +27,7 @@
     *   `ui-graphic/`: 3D UI implementation using LibGDX.
     *   `launcher-terminal/`: Entrypoint and fat JAR generator for the terminal version.
     *   `launcher-graphic/`: Entrypoint and fat JAR generator for the 3D version.
-    *   `economy.properties`: Central configuration file for game economy tuning.
+    *   `letrain.cfg`: Central configuration file for game settings (economy, terrain, delays...).
 *   **Git Workflow & Merging:**
     *   **CRITICAL RULE (ABSOLUTE PROHIBITION):** You are STRICTLY FORBIDDEN from merging any branch into `develop` or `main` on your own initiative.
     *   `main` is the sacred release branch. `develop` is the integration branch. YOU CANNOT TOUCH THEM without explicit, unambiguous permission from the user AFTER they have tested the changes.

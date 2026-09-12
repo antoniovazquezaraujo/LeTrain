@@ -42,5 +42,5 @@ El motor de movimiento de LeTrain gestiona el avance de los trenes mediante una 
   desvío desviado es una curva normal (cuenta para el intervalo). El peligro es el cambio de rumbo,
   no el objeto "desvío".
 - **Reset**: el historial se limpia cuando el tren se detiene por completo o invierte la marcha.
-- Parámetros en `economy.properties`: `derail.minCurveInterval`, `derail.minSpeed`. La evaluación
+- Parámetros en `letrain.cfg`: `derail.minCurveInterval`, `derail.minSpeed`. La evaluación
   ocurre en `TrainMovementManager` (Fase 1A), antes de mover o reservar ningún linker.

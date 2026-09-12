@@ -485,70 +485,124 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @Override
     public void reloadConfig() {
-        File configFile = new File("economy.properties");
+        File configFile = new File("letrain.cfg");
         if (!configFile.exists()) {
             return;
         }
-
         Properties props = new Properties();
         try (FileInputStream fis = new FileInputStream(configFile)) {
             props.load(fis);
-            log.info("Loading economy configuration from {}", configFile.getAbsolutePath());
-
-            // Load general costs
-            fuelCostPerMeter = Float.parseFloat(
-                    props.getProperty("fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
-            cargoLoadingFee = Float.parseFloat(
-                    props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
-            float newStartingBalance = Float.parseFloat(
-                    props.getProperty("startingBalance", String.valueOf(startingBalance)));
-
-            // Only update current balance if it's the very beginning of the game (total
-            // income/expenses are zero)
-            if (totalIncome == 0 && totalExpenses == 0) {
-                balance = newStartingBalance;
-            }
-            startingBalance = newStartingBalance;
-
-            // Load thresholds
-            goldThreshold = Float.parseFloat(props.getProperty("threshold.GOLD", String.valueOf(goldThreshold)));
-            coalThreshold = Float.parseFloat(props.getProperty("threshold.COAL", String.valueOf(coalThreshold)));
-            rubyThreshold = Float.parseFloat(props.getProperty("threshold.RUBY", String.valueOf(rubyThreshold)));
-            waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER", String.valueOf(waterThreshold)));
-            rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK", String.valueOf(rockThreshold)));
-            viewRadius = Integer.parseInt(props.getProperty("map.VIEW_RADIUS", String.valueOf(viewRadius)));
-
-            // Load derailment rules (issue #350)
-            derailMinCurveInterval = Integer.parseInt(
-                    props.getProperty("derail.minCurveInterval", String.valueOf(derailMinCurveInterval)));
-            derailMinSpeed = Integer.parseInt(
-                    props.getProperty("derail.minSpeed", String.valueOf(derailMinSpeed)));
-
-            // Load Construction Delays
-            for (Presenter.TrackType type : Presenter.TrackType.values()) {
-                String key = "delay." + type.name();
-                int currentDelay = constructionDelays.getOrDefault(type, 0);
-                int delay = Integer.parseInt(props.getProperty(key, String.valueOf(currentDelay)));
-                constructionDelays.put(type, delay);
-            }
-
-            // Load ExpenseType prices
-            for (ExpenseType type : ExpenseType.values()) {
-                String key = "price." + type.name();
-                if (props.containsKey(key)) {
-                    prices.put(type, Float.parseFloat(props.getProperty(key)));
-                }
-            }
-
-            // Load CargoTypes values
-            for (CargoTypes type : CargoTypes.values()) {
-                String key = "cargo." + type.name();
-                if (props.containsKey(key)) {
-                    cargoBaseValues.put(type, Float.parseFloat(props.getProperty(key)));
-                }
-            }
+            log.info("Loading configuration from {}", configFile.getAbsolutePath());
+            applyProperties(props);
         } catch (IOException | NumberFormatException e) {
-            log.error("Error loading economy configuration: {}", e.getMessage());
+            log.error("Error loading configuration: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Applies a configuration map (from a scenario's {@code configuration} section). Stored/imported
+     * settings win over the local file: this is how a scenario carries its own rules.
+     */
+    @Override
+    public void applyConfig(Map<String, String> config) {
+        if (config == null || config.isEmpty()) {
+            return;
+        }
+        Properties props = new Properties();
+        props.putAll(config);
+        try {
+            applyProperties(props);
+        } catch (NumberFormatException e) {
+            log.error("Error applying configuration: {}", e.getMessage());
+        }
+    }
+
+    /** Snapshot of the effective configuration (defaults + file overrides), for scenario export. */
+    @Override
+    public Map<String, String> effectiveConfig() {
+        Map<String, String> config = new java.util.LinkedHashMap<>();
+        config.put("fuelCostPerMeter", String.valueOf(fuelCostPerMeter));
+        config.put("cargoLoadingFee", String.valueOf(cargoLoadingFee));
+        config.put("startingBalance", String.valueOf(startingBalance));
+        for (ExpenseType type : ExpenseType.values()) {
+            config.put("price." + type.name(), String.valueOf(prices.getOrDefault(type, 0f)));
+        }
+        for (CargoTypes type : CargoTypes.values()) {
+            config.put("cargo." + type.name(),
+                    String.valueOf(cargoBaseValues.getOrDefault(type, 0f)));
+        }
+        config.put("threshold.GOLD", String.valueOf(goldThreshold));
+        config.put("threshold.COAL", String.valueOf(coalThreshold));
+        config.put("threshold.RUBY", String.valueOf(rubyThreshold));
+        config.put("threshold.WATER", String.valueOf(waterThreshold));
+        config.put("threshold.ROCK", String.valueOf(rockThreshold));
+        config.put("map.VIEW_RADIUS", String.valueOf(viewRadius));
+        for (Presenter.TrackType type : Presenter.TrackType.values()) {
+            config.put("delay." + type.name(), String.valueOf(getConstructionDelay(type)));
+        }
+        config.put("derail.minCurveInterval", String.valueOf(derailMinCurveInterval));
+        config.put("derail.minSpeed", String.valueOf(derailMinSpeed));
+        return config;
+    }
+
+    private void applyProperties(Properties props) {
+        // Load general costs
+        fuelCostPerMeter = Float.parseFloat(
+                props.getProperty("fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
+        cargoLoadingFee = Float.parseFloat(
+                props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
+        float newStartingBalance = Float.parseFloat(
+                props.getProperty("startingBalance", String.valueOf(startingBalance)));
+
+        // Only update current balance if it's the very beginning of the game (total
+        // income/expenses are zero)
+        if (totalIncome == 0 && totalExpenses == 0) {
+            balance = newStartingBalance;
+        }
+        startingBalance = newStartingBalance;
+
+        // Load thresholds
+        goldThreshold = Float.parseFloat(
+                props.getProperty("threshold.GOLD", String.valueOf(goldThreshold)));
+        coalThreshold = Float.parseFloat(
+                props.getProperty("threshold.COAL", String.valueOf(coalThreshold)));
+        rubyThreshold = Float.parseFloat(
+                props.getProperty("threshold.RUBY", String.valueOf(rubyThreshold)));
+        waterThreshold = Float.parseFloat(
+                props.getProperty("threshold.WATER", String.valueOf(waterThreshold)));
+        rockThreshold = Float.parseFloat(
+                props.getProperty("threshold.ROCK", String.valueOf(rockThreshold)));
+        viewRadius = Integer.parseInt(
+                props.getProperty("map.VIEW_RADIUS", String.valueOf(viewRadius)));
+
+        // Load derailment rules (issue #350)
+        derailMinCurveInterval = Integer.parseInt(
+                props.getProperty("derail.minCurveInterval", String.valueOf(derailMinCurveInterval)));
+        derailMinSpeed = Integer.parseInt(
+                props.getProperty("derail.minSpeed", String.valueOf(derailMinSpeed)));
+
+        // Load Construction Delays
+        for (Presenter.TrackType type : Presenter.TrackType.values()) {
+            String key = "delay." + type.name();
+            int currentDelay = constructionDelays.getOrDefault(type, 0);
+            int delay = Integer.parseInt(props.getProperty(key, String.valueOf(currentDelay)));
+            constructionDelays.put(type, delay);
+        }
+
+        // Load ExpenseType prices
+        for (ExpenseType type : ExpenseType.values()) {
+            String key = "price." + type.name();
+            if (props.containsKey(key)) {
+                prices.put(type, Float.parseFloat(props.getProperty(key)));
+            }
+        }
+
+        // Load CargoTypes values
+        for (CargoTypes type : CargoTypes.values()) {
+            String key = "cargo." + type.name();
+            if (props.containsKey(key)) {
+                cargoBaseValues.put(type, Float.parseFloat(props.getProperty(key)));
+            }
         }
     }
 

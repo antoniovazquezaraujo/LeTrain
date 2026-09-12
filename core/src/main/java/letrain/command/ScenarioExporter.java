@@ -30,9 +30,22 @@ public final class ScenarioExporter {
         return start;
     }
 
-    /** Renders the full scenario (seed + on build from the journal + on start + the program). */
+    /** Renders the full scenario (seed + settings + on build + on start + the program). */
     public static String render(Model model, List<String> buildCommands) {
-        return ScenarioFile.render(model.getSeed(), buildCommands, initialConditions(model),
-                model.getProgram());
+        return ScenarioFile.render(model.getSeed(), configuration(model), buildCommands,
+                initialConditions(model), model.getProgram());
+    }
+
+    /** Renders the editable world recipe (seed + on build + on start), without settings or program. */
+    public static String renderWorld(Model model, List<String> buildCommands) {
+        return ScenarioFile.render(model.getSeed(), null, buildCommands,
+                initialConditions(model), null);
+    }
+
+    /** The model's effective settings (so the scenario reproduces terrain and rules), or null. */
+    private static java.util.Map<String, String> configuration(Model model) {
+        return model != null && model.getEconomyManager() != null
+                ? model.getEconomyManager().effectiveConfig()
+                : null;
     }
 }

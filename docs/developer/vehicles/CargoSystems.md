@@ -19,7 +19,7 @@ El método crítico para la interacción entre el tren y la infraestructura es `
 4. La velocidad de transferencia depende del `transferRate` de la estación (basado en la densidad industrial circundante).
 
 ## Configuración Económica
-El sistema carga sus parámetros desde el archivo `economy.properties`:
+El sistema carga sus parámetros desde el archivo `letrain.cfg`:
 - **Precios Base**: Define el valor de cada acción económica (CONSTRUCTED_STATION, LOAD_PASSENGERS, etc.).
 - **Umbrales de Terreno**: Determinan dónde se generan las minas e industrias en el `GroundMap`.
 

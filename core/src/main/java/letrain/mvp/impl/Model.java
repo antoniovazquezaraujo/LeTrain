@@ -273,10 +273,10 @@ public class Model implements letrain.mvp.Model {
     }
 
     public void postLoadInit() {
+        // NOTE: the economy/settings are NOT reloaded from the local file here on purpose: a
+        // savegame or an imported scenario carries its own settings, and those must win over the
+        // local letrain.cfg for the world (terrain included) to be reproducible.
         rebuildTrackConnections();
-        if (this.economyManager != null) {
-            this.economyManager.reloadConfig();
-        }
         if (nextSpeedSignalId == 0) {
             for (Sensor s : getSensors()) {
                 if (s instanceof letrain.track.SpeedSignal && s.getId() > nextSpeedSignalId) {
