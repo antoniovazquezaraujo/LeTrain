@@ -2,8 +2,11 @@ name: Build and Release
 
 on:
   push:
+    branches:
+      - 'feature/release-beta4-prep' # temporary: dry-run the build without publishing
     tags:
       - 'v*' # Trigger release when a tag starting with "v" (e.g. v1.0.0) is pushed
+  workflow_dispatch:
 
 permissions:
   contents: write
