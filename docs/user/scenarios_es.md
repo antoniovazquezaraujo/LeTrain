@@ -77,6 +77,8 @@ Pulsa `p` para abrir el **LeTrain Editor**. Sus tres pestañas forman el escenar
 - **Program** — el bloque `program { ... }`.
 - **Config** — los ajustes de `configuration { ... }`.
 
+![El LeTrain Editor con la pestaña Config seleccionada](images/config-editor.png)
+
 La referencia rápida de la derecha muestra solo los comandos que tienen sentido en la pestaña
 activa; al elegir uno se inserta en una línea nueva. El pie tiene `Save`/`Load` (partida guardada),
 `Export`/`Import` (fichero de escenario), `Refresh` (recargar desde el mundo), `Reprogram` (aplicar

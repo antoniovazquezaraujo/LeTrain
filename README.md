@@ -55,6 +55,10 @@ The editing workflow is now first-class — in both the 2D and 3D clients:
 - **Built-in editor (`p`)**: a tabbed Scenario / Program / Config editor with a per-tab quick reference and error navigation.
 - **Experiment mode (`X`)**: snapshot the live world, try anything, then restore it.
 
+<p align="center">
+  <img width="80%" alt="The LeTrain Editor with the Config tab selected" src="docs/user/images/config-editor.png" />
+</p>
+
 ## 💰 Deep Economy & Industry
 The game now features a fully integrated financial system:
 - **Capital Management**: Start with **$0** (Zero-to-Hero challenge) and grow your wealth.
