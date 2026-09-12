@@ -1,6 +1,29 @@
 # ADR-020: Diario de comandos, escenarios, undo/redo y modo experimento
 
-## Estado: PROPUESTO
+## Estado: ACEPTADO (implementado en gran parte)
+
+### Estado de implementación (2026-09-12)
+
+**Implementado**
+- Pausa de simulación (`x`) y construcción instantánea.
+- Diario de comandos (`R` graba; `journal;` lo muestra) con checkpoints.
+- Undo/redo de edición (2D y 3D): constructivo y toggles de estado (fork/semáforo/señal), con
+  `resumeFrom` para no romper gestos continuos. Teclas `u` / `Ctrl+R` y comandos `undo;` / `redo;`.
+- Escenario como fichero `.ltr`: `seed`, `configuration { }`, `on build { }`, `on start { }`,
+  `program { }`; exportación/importación, constructor libre y re-ejecución determinista.
+- Editor de escenario 2D (pestañas Scenario/Program/Config, referencia rápida por pestaña,
+  validación con lista de errores navegable) y editor de programa en 3D.
+- Ajustes del escenario: sección `configuration` (el `letrain.cfg` efectivo) que gana sobre el
+  fichero local; `letrain.cfg` se distribuye junto a la app.
+- Validador sintáctico headless y ejecutable `letrain-check`.
+
+**Pendiente**
+- Paridad completa del IDE 3D con el 2D (issue #524).
+- Comando `help` y catálogo único de comandos, e `info`/`ls` sin argumentos (issue #526).
+- Mejoras del panel de salida de consola (issue #525; en gran parte hecho).
+- `on start` para forks/señales; composición (`@import`), huellas save↔escenario y hot-reload.
+- Modo experimento (snapshot en memoria y restauración).
+- Validación semántica (dry-run) además de la sintáctica.
 
 ## Contexto
 Hoy conviven dos formas de "programar" que el usuario percibe como separadas: la **consola** (comandos inmediatos y efímeros) y el **programa** del IDE (texto persistente que se re-ejecuta con APPLY). Además, **guardar** solo guarda el *estado* de la partida. El equipo quiere:

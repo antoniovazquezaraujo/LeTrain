@@ -1,6 +1,6 @@
 # LeTrain - Scripting Grammar (Automation)
 
-LeTrain includes its own lexer/parser (based on ANTLR4) that allows you to automate the railway network using a domain-specific language. Scripts are executed line by line.
+LeTrain includes its own lexer/parser (based on ANTLR4) that allows you to automate the railway network using a domain-specific language. Scripts are executed line by line. The same language is used from the console (direct commands) and inside the `program { ... }` section of a scenario file (see **[scenarios.md](scenarios.md)**).
 
 ## ⚙️ Language Structure
 
@@ -70,7 +70,8 @@ Responds to game events in real-time.
 You can type these commands directly into the CLI to manage the game state, cursor, and files.
 
 **Game State & Files:**
-- `save [filename];` / `load [filename];` - Save or load a map.
+- `save [filename];` / `load [filename];` - Save or load a map (a savegame: the current *state*).
+- `export [filename];` / `import [filename];` - Export or import a scenario (a `.ltr` *recipe*; see **[scenarios.md](scenarios.md)**).
 - `quit;` or `q` - Exit the game.
 
 **Information & Deletion:**
@@ -103,12 +104,11 @@ Move a station/sensor/semaphore/speed signal one or more resting cells along the
 - `slide signal [ID] fw [N];` / `slide signal [ID] bw [N];` - Move a speed signal.
 - `slide sensor [ID];` - Defaults to moving one cell forward. If the element is blocked or at the end of the line, the command reports an error.
 
-**Editing Journal (Record):**
-Start/stop recording the editing commands you type into the console. While recording, every successfully executed command is appended to the session's in-memory command journal (ADR-020) — the basis for replaying a session on a fresh world and for deterministic undo.
-- `record on;` - Start recording commands.
-- `record off;` - Stop recording commands.
-- `record;` - Toggle recording.
-- `journal;` - Show the recording state and the list of journaled commands (in the order they were recorded). Useful to inspect what a recorded session will replay.
+**Editing Journal, Undo & Redo (Paused Editing):**
+While **paused editing** is on (`x`), every edit is recorded in the command journal so it can be undone and redone deterministically. Recording is toggled with the **`R`** key (there is no `record` console command).
+- `journal;` - Show the recording state and the list of journaled commands (in order) — what an export would replay.
+- `undo;` / `undo [N];` - Undo the last N edits (1 by default). The **`u`** key does the same.
+- `redo;` / `redo [N];` - Redo the last N undone edits. **Ctrl+R** does the same.
 
 **Turtle Mode (Scripted Building):**
 You can use `write`, `move`, `del`, or `clear` to script sequential cursor movements and track construction.

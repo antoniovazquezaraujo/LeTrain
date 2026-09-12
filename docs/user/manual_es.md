@@ -77,7 +77,16 @@ Algunos comandos útiles:
 - `ls st;` - Lista todas las estaciones.
 - `quit;` o `q` - Sale del juego.
 
-Para una referencia completa de los comandos, consulta la documentación o escribe `info` en la consola.
+Para una referencia completa de los comandos, consulta **[grammar_es.md](grammar_es.md)**.
+
+### Editor de Escenarios y Undo/Redo
+- **`p`**: Abre el **LeTrain Editor** (editor de escenarios). Tiene tres pestañas — **Scenario**
+  (`seed` + `on build` + `on start`), **Program** (el script de automatización) y **Config**
+  (ajustes del juego) — una referencia rápida por pestaña, y un pie con `Export`/`Import` de
+  ficheros de escenario `.ltr`, `Refresh`, `Reprogram` y `Rebuild`. `Esc` lo cierra. Ver
+  **[scenarios_es.md](scenarios_es.md)**.
+- **Edición pausada (`x`)**: mientras está activa, **`u`** deshace y **Ctrl+R** rehace ediciones
+  (igual que `undo;` / `redo;`). Fuera de la pausa, `u` es el modo **Unlink** (Desenganchar).
 
 ### Interacción
 - **Espacio**: En el modo Semáforos, Señales de Velocidad o Sensores, invertir el sentido del dispositivo.
@@ -101,7 +110,8 @@ Empiezas con tu cuenta a cero. Para ganar dinero debes:
 2. Construir un tren y sus vagones (¡cuidado con los costes de combustible!).
 3. Transportar la mercancía. **El beneficio se calcula en base a la distancia recorrida**: cuanto más largo sea el trayecto desde la zona productora hasta la zona consumidora, ¡mayor será el pago!
 
-Puedes ajustar los costes y recompensas base modificando el archivo `letrain.cfg` antes de lanzar el juego.
+Puedes ajustar los costes y recompensas base modificando el archivo `letrain.cfg`. Se distribuye
+junto al juego; un `letrain.cfg` en el directorio de trabajo tiene prioridad sobre el empaquetado.
 
 ## 🤖 Autopilot y Rutas
 

@@ -75,7 +75,15 @@ Some useful commands:
 - `ls st;` - List all stations.
 - `quit;` or `q` - Exit the game.
 
-For a complete reference of the CLI commands, check out the developer documentation or type `info` in the console.
+For a complete reference of the CLI commands, see **[grammar.md](grammar.md)**.
+
+### Scenario Editor and Undo/Redo
+- **`p`**: Open the **LeTrain Editor** (scenario editor). It has three tabs — **Scenario**
+  (`seed` + `on build` + `on start`), **Program** (the automation script) and **Config** (game
+  settings) — a per-tab quick reference, and a footer with `Export`/`Import` of `.ltr` scenario
+  files, `Refresh`, `Reprogram` and `Rebuild`. `Esc` closes it. See **[scenarios.md](scenarios.md)**.
+- **Paused editing (`x`)**: while it is on, **`u`** undoes and **Ctrl+R** redoes edits (the same as
+  `undo;` / `redo;`). Outside pause, `u` is the **Unlink** mode.
 
 ### Interaction
 - **Spacebar**: In Semaphores, Speed Signals, or Sensors mode, invert the direction of the device.
@@ -99,7 +107,8 @@ You start with your account at zero. To earn money you must:
 2. Build a train and its wagons (beware of fuel costs!).
 3. Transport the cargo. **Profit is calculated based on the distance traveled**: the longer the journey from the producing zone to the consuming zone, the higher the payout!
 
-You can adjust the base costs and rewards by modifying the `letrain.cfg` file before launching the game.
+You can adjust the base costs and rewards by modifying the `letrain.cfg` file. It ships next to the
+game; a `letrain.cfg` in the working directory overrides the packaged one.
 
 ## 🤖 Autopilot and Routes
 
