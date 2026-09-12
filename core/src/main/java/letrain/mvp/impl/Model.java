@@ -242,41 +242,10 @@ public class Model implements letrain.mvp.Model {
         selectedStationIndex = 0;
     }
 
-    /**
-     * Rebuilds each track's adjacency ({@code connections}) from its router routes and the positions
-     * of the tracks in the rail map. Adjacency is not serialized (Jackson recursed through the whole
-     * graph, so a long connected line blew the document nesting limit); it is derived here after a
-     * load. Tracks created by commands already have their connections set, so this only matters for
-     * deserialized models (savegame / undo checkpoint).
-     */
-    private void rebuildTrackConnections() {
-        if (map == null) {
-            return;
-        }
-        map.forEach(track -> {
-            if (track == null || track.getRouter() == null || track.getPosition() == null) {
-                return;
-            }
-            for (letrain.map.Dir dir : letrain.map.Dir.values()) {
-                if (track.getRouter().getDir(dir) == null) {
-                    continue;
-                }
-                letrain.map.Point neighbour = new letrain.map.Point(track.getPosition());
-                neighbour.move(dir, 1);
-                letrain.track.Track connected =
-                        map.getTrackAt(neighbour.getX(), neighbour.getY());
-                if (connected != null) {
-                    track.connect(dir, connected);
-                }
-            }
-        });
-    }
-
     public void postLoadInit() {
         // NOTE: the economy/settings are NOT reloaded from the local file here on purpose: a
         // savegame or an imported scenario carries its own settings, and those must win over the
         // local letrain.cfg for the world (terrain included) to be reproducible.
-        rebuildTrackConnections();
         if (nextSpeedSignalId == 0) {
             for (Sensor s : getSensors()) {
                 if (s instanceof letrain.track.SpeedSignal && s.getId() > nextSpeedSignalId) {

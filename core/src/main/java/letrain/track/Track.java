@@ -46,13 +46,7 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
     private Sensor component = null;
     private Point pos = new Point(0, 0);
 
-    /**
-     * Adjacency to the neighbouring tracks, indexed by direction. NOT serialized: it is derivable
-     * from the router routes plus the positions of the tracks in the rail map. Serializing it made
-     * Jackson recurse through the whole connectivity graph, so a long connected line blew the
-     * document nesting limit. {@code Model.postLoadInit} rebuilds it after loading.
-     */
-    @JsonIgnore
+    @com.fasterxml.jackson.annotation.JsonProperty("connectedTracks")
     protected Track[] connections;
 
     @JsonIgnore
