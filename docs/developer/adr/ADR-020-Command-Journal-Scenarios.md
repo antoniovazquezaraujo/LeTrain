@@ -5,6 +5,7 @@
 ### Estado de implementación (2026-09-12)
 
 **Implementado**
+- Modo Record/edición (`R`): congela el mundo y hace la construcción instantánea.
 - Diario de comandos (`R` graba; `journal;` lo muestra) con checkpoints.
 - Undo/redo de edición (2D y 3D): constructivo y toggles de estado (fork/semáforo/señal), con
   `resumeFrom` para no romper gestos continuos. Teclas `u` / `Ctrl+R` y comandos `undo;` / `redo;`.
