@@ -47,13 +47,21 @@ LeTrain has evolved! While maintaining its terminal roots, it now features a **h
 - **Classic Soul**: Industrial zones and trains retain their iconic character-based charm, now rendered as physical 3D objects.
 - **Visual Polish**: Dynamic transparency for mountains, semantic color-coded stations, and high-resolution typography.
 
+## 🎬 Record, Undo & Scenarios
+The editing workflow is now first-class — in both the 2D and 3D clients:
+- **Record/edit mode (`R`)**: freeze the world, build instantly, and journal every edit.
+- **Undo / redo**: `u` and **Ctrl+R** (or `undo;` / `redo;`), for construction *and* state changes (forks, semaphores, signals).
+- **Scenarios (`.ltr`)**: export your whole network as a small text recipe and import anyone else's. The same seed rebuilds the same world, so a scenario travels as plain text. Validate one headlessly with the bundled **`letrain-check`**.
+- **Built-in editor (`p`)**: a tabbed Scenario / Program / Config editor with a per-tab quick reference and error navigation.
+- **Experiment mode (`X`)**: snapshot the live world, try anything, then restore it.
+
 ## 💰 Deep Economy & Industry
 The game now features a fully integrated financial system:
 - **Capital Management**: Start with **$0** (Zero-to-Hero challenge) and grow your wealth.
 - **Logistics Engine**: Transport specialized cargo (**GOLD**, **COAL**, **RUBY**) from Producers to Consumers.
 - **Smart Pricing**: Revenue scales with travel distance. Every meter counts!
 - **Construction Costs**: Balancing infrastructure expansion vs. operational fuel costs.
-- **Configurable Gameplay**: Fine-tune the entire game via the `letrain.cfg` file.
+- **Configurable Gameplay**: Fine-tune the entire game via the `letrain.cfg` file (it ships next to the launchers).
 
 ## 🌍 Infinite Procedural World
 - **Entropy Booster**: Every new game starts at a unique, randomized coordinate (±10k to ±100k units) to ensure fresh exploration every time.
@@ -69,15 +77,21 @@ The game now features a fully integrated financial system:
 - **Maven**.
 
 ### Quick Launch
-The build system is now fully automated. Simply run:
+The build system is fully automated. Simply run:
 ```bash
-mvn package -DskipTests
+mvn clean package -DskipTests
 ```
-This generates a standalone native distribution for your OS in the `output/LeTrain` folder.
+This generates three standalone distributions in `output/`:
+- **`output/LeTrain`** — the modern **3D** experience.
+- **`output/LeTrain2D`** — the classic, high-speed **ASCII terminal** view.
+- **`output/letrain-check`** — the headless scenario (`.ltr`) validator.
 
-### Dual Launchers
-- **`LeTrain`** (or `.exe` on Windows): The modern experience. Launches directly into **3D mode**.
-- **`LeTrain2D`** (or `.exe` on Windows): For those who prefer the classic, high-speed ASCII terminal view.
+A default `letrain.cfg` ships next to each launcher, so you can tweak the game without touching the code.
+
+### Launchers
+- **`LeTrain`** (or `.exe` / `.sh`): Launches directly into **3D mode**.
+- **`LeTrain2D`** (or `.exe` / `.sh`): For those who prefer the classic terminal view.
+- **`letrain-check <file.ltr>`**: Validates a scenario file and prints `file:line:col` diagnostics.
 
 ---
 
