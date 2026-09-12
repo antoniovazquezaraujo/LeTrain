@@ -9,7 +9,7 @@ public class LeTrainGraphic {
     public static void main(String[] args) {
         Model model = new Model();
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
-        config.setTitle("LeTrain 3D - Wooden Edition");
+        config.setTitle("LeTrain Editor " + letrain.BuildInfo.versionTag() + " (3D)");
         config.setMaximized(true);
         GraphicPresenter view3D = new GraphicPresenter(model);
         new Lwjgl3Application(view3D, config);

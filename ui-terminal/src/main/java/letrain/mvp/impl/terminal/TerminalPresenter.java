@@ -444,7 +444,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 file -> saveScenario(file), file -> playScenario(file), false);
 
         if (error != null) {
-            model.setCommandError(error);
+            // Short form for the one-line command bar; the full message goes to the scrollable panel.
+            model.setCommandError(letrain.command.SyntaxMessages.shorten(error));
+            if (error.contains("\n") || error.length() > 60) {
+                view.showMessage("Command error", error);
+            }
             return;
         }
         // Command journal (ADR-020 item 2): record the canonical, self-positioned form so an
@@ -611,12 +615,26 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     @Override
     public void onChar(InputEvent keyEvent) {
         if (((TerminalView) view).isShowingOverlay()) {
+            TerminalView tv = (TerminalView) view;
             if (keyEvent.getKeyType() == KeyType.ArrowUp) {
-                ((TerminalView) view).scrollOverlay(-1);
+                tv.scrollOverlay(-1);
             } else if (keyEvent.getKeyType() == KeyType.ArrowDown) {
-                ((TerminalView) view).scrollOverlay(1);
+                tv.scrollOverlay(1);
+            } else if (keyEvent.getKeyType() == KeyType.ArrowLeft) {
+                tv.resizeOverlay(-4);
+            } else if (keyEvent.getKeyType() == KeyType.ArrowRight) {
+                tv.resizeOverlay(4);
             } else if (keyEvent.getKeyType() == KeyType.Escape) {
-                ((TerminalView) view).clearOverlay();
+                tv.clearOverlay();
+            } else if (keyEvent.getCharacter() != null) {
+                char c = Character.toLowerCase(keyEvent.getCharacter());
+                if (c == '+' || c == '=') {
+                    tv.resizeOverlay(4);
+                } else if (c == '-' || c == '_') {
+                    tv.resizeOverlay(-4);
+                } else if (c == 'f') {
+                    tv.toggleOverlayMaximize();
+                }
             }
             return;
         }

@@ -49,6 +49,8 @@ public class TerminalView implements letrain.mvp.View {
     private String overlayTitle;
     private String overlayMessage;
     private int overlayScroll = 0;
+    private int overlayWidth = 60;
+    private boolean overlayMaximized = false;
     private static final Logger log = LoggerFactory.getLogger(TerminalView.class);
     private final GameViewListener gameViewListener;
     private Point scrollOffset = new Point(0, 0);
@@ -359,50 +361,49 @@ public class TerminalView implements letrain.mvp.View {
             }
 
             if (overlayMessage != null) {
-                int width = Math.min(60, screen.getTerminalSize().getColumns() - 2);
-                int height = Math.min(25, screen.getTerminalSize().getRows() - 2);
-                int startX = screen.getTerminalSize().getColumns() - width - 1;
+                int cols = screen.getTerminalSize().getColumns();
+                int rows = screen.getTerminalSize().getRows();
+                int width = overlayMaximized ? cols - 2 : Math.min(Math.max(20, overlayWidth), cols - 2);
+                int height = overlayMaximized ? rows - 2 : Math.min(25, rows - 2);
+                int innerWidth = Math.max(10, width - 4);
+                int contentRows = Math.max(1, height - 4);
+                int startX = overlayMaximized ? 1 : cols - width - 1;
                 int startY = 1;
-                
+
+                java.util.List<String> wrapped =
+                        wrapLines(overlayMessage.split("\n", -1), innerWidth);
+                int maxScroll = Math.max(0, wrapped.size() - contentRows);
+                if (overlayScroll > maxScroll) overlayScroll = maxScroll;
+                if (overlayScroll < 0) overlayScroll = 0;
+
                 com.googlecode.lanterna.graphics.TextGraphics tg = screen.newTextGraphics();
                 tg.setBackgroundColor(com.googlecode.lanterna.TextColor.ANSI.BLUE);
                 tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE);
                 tg.fillRectangle(new com.googlecode.lanterna.TerminalPosition(startX, startY), new com.googlecode.lanterna.TerminalSize(width, height), ' ');
-                
+
                 // Draw title
                 if (overlayTitle != null) {
                     tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.GREEN_BRIGHT);
                     tg.putString(startX + 2, startY + 1, "== " + overlayTitle + " ==");
                     tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE);
                 }
-                
-                // Draw message
-                String[] lines = overlayMessage.split("\n");
-                
-                // Enforce max scroll
-                int maxScroll = Math.max(0, lines.length - (height - 4));
-                if (overlayScroll > maxScroll) overlayScroll = maxScroll;
-                
-                for (int i = 0; i < lines.length - overlayScroll && i < height - 4; i++) {
-                    String line = lines[i + overlayScroll];
-                    if (line.length() > width - 4) {
-                        line = line.substring(0, width - 4) + "...";
-                    }
-                    tg.putString(startX + 2, startY + 3 + i, line);
+
+                for (int i = 0; i < contentRows && i + overlayScroll < wrapped.size(); i++) {
+                    tg.putString(startX + 2, startY + 3 + i, wrapped.get(i + overlayScroll));
                 }
-                
+
                 if (overlayScroll > 0) {
                     tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.MAGENTA);
                     tg.putString(startX + width - 3, startY + 3, "^");
                 }
-                if (lines.length - overlayScroll > height - 4) {
+                if (overlayScroll + contentRows < wrapped.size()) {
                     tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.MAGENTA);
                     tg.putString(startX + width - 3, startY + height - 2, "v");
                 }
-                
-                
+
                 tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.YELLOW);
-                tg.putString(startX + 2, startY + height - 1, "[ESC to close | Up/Down to scroll]");
+                tg.putString(startX + 2, startY + height - 1,
+                        "[ESC close | up/down scroll | left/right +/- width | F max]");
             }
 
             this.screen.refresh();
@@ -683,8 +684,9 @@ public class TerminalView implements letrain.mvp.View {
     @Override
     public void showIDE() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        gui.setTheme(centeredTitleTheme(gui.getTheme()));
         BasicWindow window = new BasicWindow();
-        window.setTitle("LT-IDE v1.2 - LeTrain Integrated Development Environment (2D)");
+        window.setTitle("LeTrain Editor " + letrain.BuildInfo.versionTag() + " (2D)");
         window.setHints(Arrays.asList(Window.Hint.CENTERED, Window.Hint.EXPANDED));
 
         Panel mainPanel = new Panel(new BorderLayout());
@@ -705,16 +707,27 @@ public class TerminalView implements letrain.mvp.View {
         Panel tabBar = new Panel(new LinearLayout(Direction.HORIZONTAL));
         mainPanel.addComponent(tabBar, BorderLayout.Location.TOP);
 
-        // Editor Area
+        // Editor Area (the caret position is mirrored in the status bar below).
+        final Label statusLabel = new Label("");
         final TextBox editor = new TextBox(new TerminalSize(60, 20), scenarioBuffer[0],
-                TextBox.Style.MULTI_LINE);
+                TextBox.Style.MULTI_LINE) {
+            @Override
+            public com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(
+                    com.googlecode.lanterna.input.KeyStroke ks) {
+                com.googlecode.lanterna.gui2.Interactable.Result result = super.handleKeyStroke(ks);
+                updateStatusLabel(statusLabel, this);
+                return result;
+            }
+        };
+        final Runnable refreshStatus = () -> updateStatusLabel(statusLabel, editor);
+        refreshStatus.run();
         mainPanel.addComponent(editor, BorderLayout.Location.CENTER);
 
         // Side Panel (Reference)
         Panel sidePanel = new Panel(new LinearLayout(Direction.VERTICAL));
         sidePanel.addComponent(new Label("QUICK REFERENCE").setLabelWidth(30));
 
-        ActionListBox refList = new ActionListBox(new TerminalSize(30, 20)) {
+        ActionListBox refList = new ActionListBox(new TerminalSize(30, 30)) {
             private long lastClickTime = 0;
 
             @Override
@@ -746,6 +759,7 @@ public class TerminalView implements letrain.mvp.View {
                 } else if (node.snippet != null && node.children.isEmpty()) {
                     refList.addItem(indent + node.label, () -> {
                         insertAtCaret(editor, node.snippet);
+                        refreshStatus.run();
                     });
                 } else {
                     String prefix = node.expanded ? "[-]" : "[+]";
@@ -766,8 +780,13 @@ public class TerminalView implements letrain.mvp.View {
             public void run() {
                 int selected = refList.getSelectedIndex();
                 refList.clearItems();
+                letrain.command.GrammarReference.Group group =
+                        activeTab[0] == tabProgram ? letrain.command.GrammarReference.Group.PROGRAM
+                                : activeTab[0] == tabConfig
+                                        ? letrain.command.GrammarReference.Group.CONFIG
+                                        : letrain.command.GrammarReference.Group.BUILD;
                 for (letrain.command.GrammarReference.Node rootNode : letrain.command.GrammarReference
-                        .getReferenceTree()) {
+                        .getReferenceTree(group)) {
                     build(rootNode, "");
                 }
                 if (selected >= 0 && selected < refList.getItems().size()) {
@@ -777,22 +796,6 @@ public class TerminalView implements letrain.mvp.View {
         };
         updateList.run();
         sidePanel.addComponent(refList);
-
-        sidePanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        sidePanel.addComponent(new Label("OBJECTS STATUS:"));
-        TextBox objectsStatus =
-                new TextBox(new TerminalSize(30, 4), gameViewListener.getGameObjectsReport());
-        objectsStatus.setReadOnly(true);
-        sidePanel.addComponent(objectsStatus);
-
-        sidePanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        sidePanel.addComponent(new Label("LATEST LOGS:"));
-        List<String> logs = gameViewListener.getEventLogEntries();
-        int start = Math.max(0, logs.size() - 5);
-        String recentLogs = String.join("\n", logs.subList(start, logs.size()));
-        TextBox logsBox = new TextBox(new TerminalSize(30, 4), recentLogs);
-        logsBox.setReadOnly(true);
-        sidePanel.addComponent(logsBox);
 
         mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
 
@@ -823,11 +826,22 @@ public class TerminalView implements letrain.mvp.View {
             } else {
                 editor.setText(scenarioBuffer[0]);
             }
+            updateList.run();
+            refreshStatus.run();
             window.invalidate();
         };
         final Runnable switchToScenario = () -> switchTo.accept(tabScenario);
         final Runnable switchToProgram = () -> switchTo.accept(tabProgram);
         final Runnable switchToConfig = () -> switchTo.accept(tabConfig);
+
+        // Moves the caret to a line of a given tab (used by the error picker).
+        final java.util.function.BiConsumer<Integer, Integer> jumpTo = (tab, line) -> {
+            switchTo.accept(tab);
+            editor.setCaretPosition(Math.max(0, line - 1), 0);
+            editor.takeFocus();
+            refreshStatus.run();
+            window.invalidate();
+        };
 
         // Composes the full scenario (recipe + settings + program) from the three tab buffers.
         final java.util.function.Supplier<String> composeFull = () -> {
@@ -853,6 +867,7 @@ public class TerminalView implements letrain.mvp.View {
             } else {
                 editor.setText(scenarioBuffer[0]);
             }
+            refreshStatus.run();
         };
         final Runnable exportAction = () -> {
             String full = composeFull.get();
@@ -886,6 +901,7 @@ public class TerminalView implements letrain.mvp.View {
                 programBuffer[0] = parts.programText();
                 editor.setText(activeTab[0] == tabProgram ? programBuffer[0]
                         : activeTab[0] == tabConfig ? configBuffer[0] : scenarioBuffer[0]);
+                refreshStatus.run();
             } catch (Exception ex) {
                 com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui,
                         "Scenario Error", String.valueOf(ex.getMessage()));
@@ -901,8 +917,10 @@ public class TerminalView implements letrain.mvp.View {
             letrain.command.ScenarioCompiler.Result result =
                     letrain.command.ScenarioCompiler.compile(full);
             if (!result.ok()) {
-                com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui,
-                        "Scenario has errors", diagnosticsText(result));
+                Jump jump = pickDiagnostic(gui, result, full);
+                if (jump != null) {
+                    jumpTo.accept(jump.tab(), jump.line());
+                }
                 return;
             }
             gameViewListener.onPlayScenarioText(full);
@@ -953,6 +971,21 @@ public class TerminalView implements letrain.mvp.View {
                             graphics.applyThemeStyle(component.getThemeDefinition().getNormal());
                         }
                         graphics.putString(0, 0, "< " + label + " >");
+                        // Highlight the mnemonic letter (Alt+A / Alt+G / Alt+F) like the buttons.
+                        char mnemonic = tab == tabScenario ? 'A' : tab == tabProgram ? 'G' : 'F';
+                        int at = indexOfIgnoreCase(label, mnemonic);
+                        if (at >= 0) {
+                            if (tab == activeTab[0]) {
+                                graphics.setForegroundColor(
+                                        com.googlecode.lanterna.TextColor.ANSI.BLACK);
+                                graphics.enableModifiers(com.googlecode.lanterna.SGR.BOLD);
+                            } else {
+                                graphics.setForegroundColor(
+                                        com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+                            }
+                            graphics.putString(2 + at, 0, label.substring(at, at + 1));
+                            graphics.disableModifiers(com.googlecode.lanterna.SGR.BOLD);
+                        }
                     }
 
                     @Override
@@ -991,7 +1024,16 @@ public class TerminalView implements letrain.mvp.View {
                     } else if (c == '3') {
                         switchToConfig.run();
                         deliverEvent.set(false);
-                    } else if (c == 'r') {
+                    } else if (c == 'a') {
+                        switchToScenario.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'g') {
+                        switchToProgram.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'f') {
+                        switchToConfig.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'q') {
                         refList.takeFocus();
                         deliverEvent.set(false);
                     } else if (c == 'e') {
@@ -1000,7 +1042,7 @@ public class TerminalView implements letrain.mvp.View {
                     } else if (c == 'i') {
                         importAction.run();
                         deliverEvent.set(false);
-                    } else if (c == 'g') {
+                    } else if (c == 'r') {
                         refreshAction.run();
                         deliverEvent.set(false);
                     } else if (c == 'p') {
@@ -1023,12 +1065,122 @@ public class TerminalView implements letrain.mvp.View {
             }
         });
 
-        mainPanel.addComponent(footer, BorderLayout.Location.BOTTOM);
+        // Footer with the caret status line below it.
+        Panel bottomPanel = new Panel(new LinearLayout(Direction.VERTICAL));
+        bottomPanel.addComponent(footer);
+        bottomPanel.addComponent(statusLabel);
+        mainPanel.addComponent(bottomPanel, BorderLayout.Location.BOTTOM);
 
         window.setComponent(mainPanel);
         // Start with the caret in the editor, not on the tabs/buttons.
         window.setFocusedInteractable(editor);
         gui.addWindowAndWait(window);
+    }
+
+    /** Mirrors the editor caret in the status bar as {@code Ln X, Col Y}. */
+    private static void updateStatusLabel(Label label, TextBox editor) {
+        TerminalPosition caret = editor.getCaretPosition();
+        label.setText("Ln " + (caret.getRow() + 1) + ", Col " + (caret.getColumn() + 1));
+    }
+
+    /** A location in the editor: which tab and which 1-based line inside it. */
+    record Jump(int tab, int line) {}
+
+    /**
+     * Shows the diagnostics in a scrollable list; returns the location picked with Enter, or
+     * {@code null} if the dialog was just closed. Diagnostics refer to the composed scenario, so
+     * the line is mapped back to the tab that owns the section.
+     */
+    private static Jump pickDiagnostic(MultiWindowTextGUI gui,
+            letrain.command.ScenarioCompiler.Result result, String full) {
+        final Jump[] picked = {null};
+        BasicWindow dialog = new BasicWindow("Scenario errors");
+        dialog.setHints(Arrays.asList(Window.Hint.CENTERED, Window.Hint.MODAL));
+
+        Panel panel = new Panel(new LinearLayout(Direction.VERTICAL));
+        panel.addComponent(new Label("Select an error and press Enter to jump to its line:"));
+        ActionListBox list = new ActionListBox(new TerminalSize(60, 12));
+        for (letrain.command.ScenarioCompiler.Diagnostic d : result.diagnostics()) {
+            int line = d.line();
+            list.addItem(d.line() + ":" + d.col() + ": " + d.message(), () -> {
+                picked[0] = locateDiagnostic(full, line);
+                dialog.close();
+            });
+        }
+        panel.addComponent(list);
+        panel.addComponent(new Button("Close", dialog::close));
+        dialog.setComponent(panel);
+        dialog.setFocusedInteractable(list);
+        gui.addWindowAndWait(dialog);
+        return picked[0];
+    }
+
+    /**
+     * Maps a 1-based line of the composed scenario to the editor tab that owns it. The Scenario tab
+     * omits the {@code configuration} section (it has its own tab), so lines after it shift up.
+     */
+    static Jump locateDiagnostic(String full, int line) {
+        String[] lines = full.split("\n", -1);
+        int configStart = -1;
+        int configEnd = -1;
+        int programStart = -1;
+        int programEnd = -1;
+        String section = null;
+        int depth = 0;
+        for (int i = 0; i < lines.length; i++) {
+            String text = lines[i].trim();
+            if (depth == 0) {
+                String lower = text.toLowerCase();
+                if (lower.startsWith("configuration")) {
+                    configStart = i + 1;
+                    section = "configuration";
+                    depth = 1;
+                    continue;
+                } else if (lower.startsWith("program")) {
+                    programStart = i + 1;
+                    section = "program";
+                    depth = 1;
+                    continue;
+                } else if (lower.startsWith("on build") || lower.startsWith("on start")) {
+                    section = "build";
+                    depth = 1;
+                    continue;
+                }
+            } else {
+                depth += braceDelta(text);
+                if (depth <= 0) {
+                    if ("configuration".equals(section)) {
+                        configEnd = i + 1;
+                    } else if ("program".equals(section)) {
+                        programEnd = i + 1;
+                    }
+                    section = null;
+                    depth = 0;
+                }
+            }
+        }
+        if (configStart > 0 && line >= configStart && line <= configEnd) {
+            return new Jump(2, line - configStart + 1);
+        }
+        if (programStart > 0 && line >= programStart && line <= programEnd) {
+            return new Jump(1, line - programStart + 1);
+        }
+        int configLines = configStart > 0 ? configEnd - configStart + 1 : 0;
+        int scenarioLine = (configStart > 0 && line > configEnd) ? line - configLines : line;
+        return new Jump(0, scenarioLine);
+    }
+
+    /** Net brace count of a line ({@code {}). */
+    private static int braceDelta(String line) {
+        int delta = 0;
+        for (int i = 0; i < line.length(); i++) {
+            if (line.charAt(i) == '{') {
+                delta++;
+            } else if (line.charAt(i) == '}') {
+                delta--;
+            }
+        }
+        return delta;
     }
 
     /** Keeps the Config tab editable even when the world has no settings yet. */
@@ -1038,12 +1190,23 @@ public class TerminalView implements letrain.mvp.View {
 
     /** Renders the diagnostics of a scenario check as one line per diagnostic. */
     private static String diagnosticsText(letrain.command.ScenarioCompiler.Result result) {
+        // Keep the dialog on screen: show only the first few problems.
+        final int maxLines = 8;
         StringBuilder sb = new StringBuilder();
+        int total = result.diagnostics().size();
+        int shown = 0;
         for (letrain.command.ScenarioCompiler.Diagnostic d : result.diagnostics()) {
-            if (sb.length() > 0) {
+            if (shown >= maxLines) {
+                break;
+            }
+            if (shown > 0) {
                 sb.append('\n');
             }
             sb.append(d.line()).append(':').append(d.col()).append(": ").append(d.message());
+            shown++;
+        }
+        if (total > shown) {
+            sb.append("\n... (").append(total - shown).append(" more)");
         }
         return sb.toString();
     }
@@ -1114,27 +1277,61 @@ public class TerminalView implements letrain.mvp.View {
         return text.toLowerCase().indexOf(Character.toLowerCase(letter));
     }
 
+    /**
+     * Wraps a theme so the window decoration centers its title (lanterna's {@code CENTER_TITLE}
+     * property is false by default).
+     */
+    private static com.googlecode.lanterna.graphics.Theme centeredTitleTheme(
+            com.googlecode.lanterna.graphics.Theme base) {
+        return new com.googlecode.lanterna.graphics.DelegatingTheme(base) {
+            @Override
+            public com.googlecode.lanterna.graphics.ThemeDefinition getDefinition(Class<?> clazz) {
+                com.googlecode.lanterna.graphics.ThemeDefinition definition = super.getDefinition(clazz);
+                if (clazz == com.googlecode.lanterna.gui2.DefaultWindowDecorationRenderer.class) {
+                    return new com.googlecode.lanterna.graphics.DelegatingThemeDefinition(definition) {
+                        @Override
+                        public boolean getBooleanProperty(String name, boolean defaultValue) {
+                            return "CENTER_TITLE".equals(name)
+                                    || super.getBooleanProperty(name, defaultValue);
+                        }
+                    };
+                }
+                return definition;
+            }
+        };
+    }
+
     private void insertAtCaret(TextBox editor, String text) {
         String current = editor.getText();
         TerminalPosition pos = editor.getCaretPosition();
 
-        // Convert TerminalPosition to linear offset
+        // Snap to the beginning of the caret's line so we never split an existing line.
         String[] lines = current.split("\n", -1);
+        int row = Math.min(pos.getRow(), lines.length - 1);
         int offset = 0;
-        for (int i = 0; i < pos.getRow() && i < lines.length; i++) {
+        for (int i = 0; i < row; i++) {
             offset += lines[i].length() + 1; // +1 for the newline
         }
-        offset += pos.getColumn();
-        offset = Math.min(offset, current.length());
 
         String before = current.substring(0, offset);
         String after = current.substring(offset);
-        editor.setText(before + text + after);
+        String insertion = text + "\n"; // finish the line so the next insert starts clean
+        String updated = before + insertion + after;
+        editor.setText(updated);
 
-        // Refocus and place caret after insertion would be nice, but
-        // setCaretPosition with TerminalPosition is complex to calculate accurately
-        // with multi-line snippets.
-        // For now, refocusing will suffice as the user can see the change.
+        // Leave the caret on the line after the inserted snippet, ready to insert another.
+        int caret = Math.min(offset + insertion.length(), updated.length());
+        int newRow = 0;
+        int col = 0;
+        for (int i = 0; i < caret; i++) {
+            if (updated.charAt(i) == '\n') {
+                newRow++;
+                col = 0;
+            } else {
+                col++;
+            }
+        }
+        editor.setCaretPosition(newRow, col);
         editor.takeFocus();
     }
 
@@ -1148,11 +1345,54 @@ public class TerminalView implements letrain.mvp.View {
         paint();
     }
 
+    /** Grows (positive) or shrinks (negative) the overlay width in columns. */
+    public void resizeOverlay(int deltaColumns) {
+        overlayWidth = Math.max(20, overlayWidth + deltaColumns);
+        overlayMaximized = false;
+        overlayScroll = 0;
+        paint();
+    }
+
+    /** Maximizes the overlay to fill the screen, or restores its previous width. */
+    public void toggleOverlayMaximize() {
+        overlayMaximized = !overlayMaximized;
+        overlayScroll = 0;
+        paint();
+    }
+
+    /** Word-wraps {@code lines} to {@code width} columns, hard-breaking words that don't fit. */
+    static java.util.List<String> wrapLines(String[] lines, int width) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String line : lines) {
+            if (line.length() <= width) {
+                out.add(line);
+                continue;
+            }
+            int start = 0;
+            while (start < line.length()) {
+                int end = Math.min(start + width, line.length());
+                if (end < line.length()) {
+                    int space = line.lastIndexOf(' ', end);
+                    if (space > start) {
+                        end = space;
+                    }
+                }
+                out.add(line.substring(start, end));
+                start = end;
+                while (start < line.length() && line.charAt(start) == ' ') {
+                    start++;
+                }
+            }
+        }
+        return out;
+    }
+
     public boolean clearOverlay() {
         if (overlayMessage != null) {
             overlayMessage = null;
             overlayTitle = null;
             overlayScroll = 0;
+            overlayMaximized = false;
             // Clear the screen right away to erase the overlay
             try { screen.clear(); } catch (Exception e) {}
             return true;
