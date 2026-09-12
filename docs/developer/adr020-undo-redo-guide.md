@@ -16,9 +16,9 @@ Estas PRs entregan las tres primeras piezas del roadmap:
 
 | # | Pieza | Problema que resuelve |
 |---|-------|-----------------------|
-| **1** (PR #493) | **Pausa de edición** (`x`) | Congelar el mundo en los modos de edición: nada se mueve mientras construyes, y construir es instantáneo (sin esperar el "túnel"). |
-| **2** (PR #495) | **Diario de comandos** (`record on/off`, `journal;`) | Grabar los comandos que escribes para poder reproducirlos. |
-| **3 fase 1** (PR #495 + #496) | **Undo/redo constructivo** | Deshacer y rehacer las ediciones hechas en pausa, tanto escritas en consola como pintadas por teclado, en la 2D y en la 3D. |
+| **1** (PR #493) | **Modo Record/edición** (`R`) | Congelar el mundo en los modos de edición: nada se mueve mientras construyes, y construir es instantáneo (sin esperar el "túnel"). |
+| **2** (PR #495) | **Diario de comandos** (`R` graba, `journal;` lo muestra) | Grabar los comandos que escribes para poder reproducirlos. |
+| **3 fase 1** (PR #495 + #496) | **Undo/redo constructivo** | Deshacer y rehacer las ediciones hechas en modo Record, tanto escritas en consola como pintadas por teclado, en la 2D y en la 3D. |
 
 
 Todo lo de abajo se refiere sobre todo a la **pieza 3** (la más jugosa), pero las otras dos son sus cimientos.
@@ -60,7 +60,7 @@ Es exactamente el mismo truco que un videojuego con **partidas guardadas**:
 | Término | Qué significa |
 |---------|---------------|
 | **Entrada / comando grabado** | Un string canónico, p. ej. `go 10,4; face e; write 5;` |
-| **Checkpoint** | Foto (bytes) del mundo completo, tomada cada 10 entradas. El checkpooint 0 = el mundo al pulsar `x`. |
+| **Checkpoint** | Foto (bytes) del mundo completo, tomada cada 10 entradas. El checkpoint 0 = el mundo al pulsar `R`. |
 | **Slice / rebanada** | Los comandos entre un checkpoint y el punto donde queremos quedar (`[desde, hasta)`). |
 | **Planner** | Quien *calcula* qué hacer (no lo ejecuta): dado "undo 2", decide qué checkpoint cargar y qué comandos re-ejecutar. |
 | **Funnel (embudo)** | El punto donde las ediciones *entran* al historial: consola y teclado. |
@@ -89,12 +89,12 @@ Regla de oro del diseño:
 
 ### El contrato del historial (léelo en el Javadoc de `UndoRedoHistory`)
 
-- `begin(mundo)` → arranca sesión al activar pausa; guarda el checkpoint 0.
+- `begin(mundo)` → arranca sesión al activar el modo Record; guarda el checkpoint 0.
 - `record(comando)` → se llama **después** de que el comando ya se aplicó al mundo vivo.
 - `planUndo(n)` / `planRedo(n)` → devuelven un `UndoPlan(base?, desde, hasta, destino)`.
 - `restore(plan)` → deserializa el checkpoint base en un mundo **nuevo** (no muta el vivo).
 - `commit(n)` → el llamador confirma "el mundo actual refleja exactamente n comandos".
-- `end()` → al salir de pausa, se descarta todo (el mundo vuelve a correr).
+- `end()` → al salir del modo Record, se descarta todo (el mundo vuelve a correr).
 
 Fíjate en la pareja `applied` / `size`:
 - `size` = comandos totales grabados.
@@ -106,11 +106,11 @@ Fíjate en la pareja `applied` / `size`:
 
 ## 5. Qué ocurre exactamente cuando pulsas `u`
 
-Supón: pausa ON, has hecho 3 comandos (`size=3`, `applied=3`) y pulsas `u`.
+Supón: REC ON, has hecho 3 comandos (`size=3`, `applied=3`) y pulsas `u`.
 
 1. `TerminalPresenter.undo(1)` (o `GraphicPresenter.undo(1)`).
 2. `planUndo(1)` → quiere `applied=2`. Como no hay checkpoint en 2, elige el **checkpoint 0**
-   (la foto de cuando pulsaste `x`) y el slice = comandos `[0, 2)`, es decir "re-ejecuta los dos
+   (la foto de cuando pulsaste `R`) y el slice = comandos `[0, 2)`, es decir "re-ejecuta los dos
    primeros".
 3. `restore(plan)` → deserializa el checkpoint 0 en un mundo nuevo y vacío.
 4. El presenter aplica ese mundo (`applyModel`): sin ruido en 2D; en 3D conserva cámara y audio.
@@ -239,7 +239,7 @@ un test de bytes te falla raro, sospecha primero del comparador, no de la lógic
 
 Si un undo se comporta raro en el futuro, sigue esta escalera:
 
-1. **¿El mundo estaba en pausa?** Sin pausa no hay historial: comprueba que la tecla `x` está ON.
+1. **¿Está activo el modo Record?** Sin modo Record no hay historial: comprueba que `R` está ON.
 2. **¿El comando entró en el historial?** En el código, busca el funnel que corresponda (consola o
    teclado). Pista: solo entran comandos **exitosos** y en pausa.
 3. **¿El replay reproduce lo que pasó?** Ejecuta el escenario en un test con comparación **semántica**.

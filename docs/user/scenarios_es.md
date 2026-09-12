@@ -35,7 +35,7 @@ program {
 
 - `seed <n>` — **obligatorio**. La semilla del terreno; la misma semilla reproduce el mismo terreno.
 - `configuration { ... }` — ajustes como `clave=valor` (las mismas claves que `letrain.cfg`). El
-  escenario lleva sus propias reglas y **ganan sobre** el `letrain.cfg` local.
+  escenario lleva sus propias reglas y **tienen preferencia sobre** el fichero `letrain.cfg` local.
 - `on build { ... }` — los comandos de construcción (vías, elementos, trenes). Se reproducen una vez,
   primero.
 - `on start { ... }` — condiciones iniciales opcionales aplicadas justo después de construir (por
@@ -49,14 +49,13 @@ que los escenarios antiguos siguen funcionando.
 
 ## Crear y jugar
 
-1. Activa la **edición pausada** (`x`) para congelar el mundo y que el diario sea exacto.
-2. Construye y edita (teclado o consola). La grabación se conmuta con **`R`**; el diario es lo que
+1. Construye y edita (teclado o consola). La grabación se conmuta con **`R`**; el diario es lo que
    reproduce una exportación.
-3. Abre el editor (`p`) y **Exporta** (o usa el comando `export` de la consola). Obtienes un `.ltr`.
-4. **Importa** un `.ltr` (editor) o juégalo: el mundo se reconstruye en un modelo nuevo con esa
-   semilla, en **modo construcción libre** (sin costes) y con la edición pausada activada.
+2. Abre el editor (`p`) y **Exporta** (o usa el comando `export` de la consola). Obtienes un `.ltr`.
+3. **Importa** un `.ltr` (editor) o juégalo: el mundo se reconstruye en un modelo nuevo con esa
+   semilla, en **modo construcción libre** (sin costes) y con la grabación activada.
 
-En pausa, las ediciones se pueden deshacer/rehacer con `u` / **Ctrl+R** (o `undo;` / `redo;`).
+Durante la grabación, las ediciones se pueden deshacer/rehacer con `u` / **Ctrl+R** (o `undo;` / `redo;`).
 
 ## Validar un escenario
 

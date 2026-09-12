@@ -5,7 +5,6 @@
 ### Estado de implementación (2026-09-12)
 
 **Implementado**
-- Pausa de simulación (`x`) y construcción instantánea.
 - Diario de comandos (`R` graba; `journal;` lo muestra) con checkpoints.
 - Undo/redo de edición (2D y 3D): constructivo y toggles de estado (fork/semáforo/señal), con
   `resumeFrom` para no romper gestos continuos. Teclas `u` / `Ctrl+R` y comandos `undo;` / `redo;`.
@@ -90,7 +89,7 @@ Save y escenario son artefactos distintos (runtime vs mundo nuevo) y **no deben 
 - **Modo experimento (en vivo)**: una opción desactiva la pausa; al entrar se toma un **snapshot completo del Model en memoria** (misma maquinaria que save/load, sin fichero). La simulación sigue y el usuario hace experimentos sin diario ni undo/redo. Al salir se **restaura el snapshot** (o se conserva si así se decide). Solo pruebas y diversión.
 
 ## Consecuencias
-- El **grabador** (`record on/off`) apunta las acciones manuales al diario; el escenario y el undo comparten maquinaria.
+- El **grabador** (`R`) apunta las acciones manuales al diario; el escenario y el undo comparten maquinaria.
 - La simulación en vivo NO es reconstruible por el diario (trenes/dinero/descarrilamientos son estado): para "deshacer en vivo" solo valdría un snapshot (viaje en el tiempo), nunca el diario. Por eso el undo de edición exige el modelo pausado.
 - Reutiliza lo existente: `GameSaveService`/serialización (snapshot en memoria), el `setModel`/carga en presentadores (restaurar tras experimento), el DSL de tortuga (`write/move/del/clear`, `go`, `new`) y el parser único del CLI.
 - La unificación total de gramáticas (consola/programa en una sola ANTLR) es **opcional y posterior**; el parser de consola ya importa el de script.

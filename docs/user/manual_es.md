@@ -44,7 +44,7 @@ LeTrain está fuertemente basado en modos. Al pulsar las siguientes teclas cambi
 - **`e`**: **Modo Sensors (Sensores)** - Seleccionar e inspeccionar sensores.
 - **`p`**: **Modo Program (Programa)** - Abrir el IDE para programar automatizaciones.
 - **`:`**: **Modo CLI (Consola)** - Abrir la consola de comandos integrados.
-- **`x`**: **Conmutar edición pausada** (apagada por defecto). Al activarla, el mundo (trenes, economía, descarrilamientos) se congela mientras estés en cualquier modo de edición (Rails, Add, Estaciones, Sensores, Semáforos, Señales, Desvíos, Trenes, consola o editor de programa) y la construcción de vía se vuelve instantánea — el estado que el ADR-020 necesita para un diario de edición exacto y un undo determinista. La simulación solo corre en modos de juego/vista (Drive, Menú, Link/Unlink) o cuando el toggle está apagado.
+- **`R`**: **Conmutar el modo Record/edición** (apagado por defecto). Al activarlo, el mundo (trenes, economía, descarrilamientos) se congela mientras estés en cualquier modo de edición (Rails, Add, Estaciones, Sensores, Semáforos, Señales, Desvíos, Trenes, consola o editor de programa), la construcción de vía se vuelve instantánea y cada edición se graba en el diario para el undo determinista y la exportación de escenarios. La simulación solo corre en modos de juego/vista (Drive, Menú, Link/Unlink) o cuando el toggle está apagado.
 
 ### Construcción (Modo Rails)
 - **Mayús + Flechas (o H, J, K, L)**: Construir vías nuevas.
@@ -85,8 +85,9 @@ Para una referencia completa de los comandos, consulta **[grammar_es.md](grammar
   (ajustes del juego) — una referencia rápida por pestaña, y un pie con `Export`/`Import` de
   ficheros de escenario `.ltr`, `Refresh`, `Reprogram` y `Rebuild`. `Esc` lo cierra. Ver
   **[scenarios_es.md](scenarios_es.md)**.
-- **Edición pausada (`x`)**: mientras está activa, **`u`** deshace y **Ctrl+R** rehace ediciones
-  (igual que `undo;` / `redo;`). Fuera de la pausa, `u` es el modo **Unlink** (Desenganchar).
+- **Modo Record/edición (`R`)**: mientras está activo, **`u`** deshace y **Ctrl+R** rehace
+  ediciones (igual que `undo;` / `redo;`). Fuera de este modo, `u` es el modo **Unlink**
+  (Desenganchar).
 
 ### Interacción
 - **Espacio**: En el modo Semáforos, Señales de Velocidad o Sensores, invertir el sentido del dispositivo.

@@ -102,10 +102,11 @@ Move a station/sensor/semaphore/speed signal one or more resting cells along the
 - `slide sensor [ID] fw [N];` / `slide sensor [ID] bw [N];` - Move a sensor.
 - `slide semaphore [ID] fw [N];` / `slide semaphore [ID] bw [N];` - Move a semaphore.
 - `slide signal [ID] fw [N];` / `slide signal [ID] bw [N];` - Move a speed signal.
-- `slide sensor [ID];` - Defaults to moving one cell forward. If the element is blocked or at the end of the line, the command reports an error.
 
-**Editing Journal, Undo & Redo (Paused Editing):**
-While **paused editing** is on (`x`), every edit is recorded in the command journal so it can be undone and redone deterministically. Recording is toggled with the **`R`** key (there is no `record` console command).
+By default it moves one cell forward. If the element is blocked or at the end of the line, the command reports an error.
+
+**Editing Journal, Undo & Redo (While recording):**
+While **recording** is on, every edit is recorded in the command journal so it can be undone and redone deterministically. Recording is toggled with the **`R`** key.
 - `journal;` - Show the recording state and the list of journaled commands (in order) — what an export would replay.
 - `undo;` / `undo [N];` - Undo the last N edits (1 by default). The **`u`** key does the same.
 - `redo;` / `redo [N];` - Redo the last N undone edits. **Ctrl+R** does the same.

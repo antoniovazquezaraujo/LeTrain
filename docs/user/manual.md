@@ -42,7 +42,7 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`e`**: **Sensors Mode** - Select and inspect sensors.
 - **`p`**: **Program Mode** - Open the IDE to write automation scripts.
 - **`:`**: **CLI Mode** - Open the command line interface.
-- **`x`**: **Toggle paused editing** (off by default). When enabled, the world (trains, economy, derailments) freezes while you are in any editing mode (Rails, Add, Stations, Sensors, Semaphores, Speed Signals, Forks, Trains, console or program editor) and track construction becomes instantaneous — the state ADR-020 needs for an exact edit journal and deterministic undo. Simulation only runs in play/view modes (Drive, Menu, Link/Unlink) or when the toggle is off.
+- **`R`**: **Toggle Record/edit mode** (off by default). When enabled, the world (trains, economy, derailments) freezes while you are in any editing mode (Rails, Add, Stations, Sensors, Semaphores, Speed Signals, Forks, Trains, console or program editor), track construction becomes instantaneous, and every edit is journaled for deterministic undo and scenario export. Simulation only runs in play/view modes (Drive, Menu, Link/Unlink) or when the toggle is off.
 
 ### Construction (Rails Mode)
 - **Shift + Arrows (or H, J, K, L)**: Build new tracks.
@@ -82,8 +82,8 @@ For a complete reference of the CLI commands, see **[grammar.md](grammar.md)**.
   (`seed` + `on build` + `on start`), **Program** (the automation script) and **Config** (game
   settings) — a per-tab quick reference, and a footer with `Export`/`Import` of `.ltr` scenario
   files, `Refresh`, `Reprogram` and `Rebuild`. `Esc` closes it. See **[scenarios.md](scenarios.md)**.
-- **Paused editing (`x`)**: while it is on, **`u`** undoes and **Ctrl+R** redoes edits (the same as
-  `undo;` / `redo;`). Outside pause, `u` is the **Unlink** mode.
+- **Record/edit mode (`R`)**: while it is on, **`u`** undoes and **Ctrl+R** redoes edits (the same
+  as `undo;` / `redo;`). Outside this mode, `u` is the **Unlink** mode.
 
 ### Interaction
 - **Spacebar**: In Semaphores, Speed Signals, or Sensors mode, invert the direction of the device.

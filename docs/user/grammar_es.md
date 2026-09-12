@@ -102,10 +102,11 @@ Desplaza una estación/sensor/semáforo/señal de velocidad una o más celdas de
 - `slide sensor [ID] fw [N];` / `slide sensor [ID] bw [N];` - Mover un sensor.
 - `slide semaphore [ID] fw [N];` / `slide semaphore [ID] bw [N];` - Mover un semáforo.
 - `slide signal [ID] fw [N];` / `slide signal [ID] bw [N];` - Mover una señal de velocidad.
-- `slide sensor [ID];` - Por defecto mueve una celda hacia delante. Si el elemento está bloqueado o al final de la vía, el comando devuelve un error.
 
-**Diario de Edición, Undo y Redo (Edición Pausada):**
-Mientras la **edición pausada** está activa (`x`), cada edición se graba en el diario de comandos, de modo que se puede deshacer y rehacer de forma determinista. La grabación se conmuta con la tecla **`R`** (ya no existe el comando `record`).
+Por defecto mueve una celda hacia delante. Si el elemento está bloqueado o al final de la vía, el comando devuelve un error.
+
+**Diario de Edición, Undo y Redo (Durante grabación):**
+Mientras la **grabación** está activa, cada edición se graba en el diario de comandos, de modo que se puede deshacer y rehacer de forma determinista. La grabación se conmuta con la tecla **`R`**.
 - `journal;` - Muestra el estado de grabación y la lista de comandos grabados (en orden) — lo que reproduciría una exportación.
 - `undo;` / `undo [N];` - Deshace las últimas N ediciones (1 por defecto). La tecla **`u`** hace lo mismo.
 - `redo;` / `redo [N];` - Rehace las últimas N ediciones deshechas. **Ctrl+R** hace lo mismo.

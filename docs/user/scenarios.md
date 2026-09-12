@@ -34,7 +34,7 @@ program {
 
 - `seed <n>` — **required**. The terrain seed; the same seed reproduces the same terrain.
 - `configuration { ... }` — game settings as `key=value` (the same keys as `letrain.cfg`). The
-  scenario carries its own rules and they **win over** the local `letrain.cfg`.
+  scenario carries its own rules and they **take precedence over** the local `letrain.cfg` file.
 - `on build { ... }` — the construction commands (tracks, elements, trains). Replayed once, first.
 - `on start { ... }` — optional initial conditions applied right after the build (e.g. semaphore
   states).
@@ -46,14 +46,13 @@ seed and commands (no braces) is valid and treated as `on build`, so older scena
 
 ## Creating and playing
 
-1. Turn on **paused editing** (`x`) so the world is frozen and the journal is exact.
-2. Build and edit (keyboard or console). Recording is toggled with **`R`**; the journal is what an
+1. Build and edit (keyboard or console). Recording is toggled with **`R`**; the journal is what an
    export replays.
-3. Open the editor (`p`) and **Export** (or use the console `export`). You get a `.ltr` file.
-4. **Import** a `.ltr` (editor) or play it: the world is rebuilt on a fresh model with that seed, in
-   **free construction mode** (no costs) and with paused editing on.
+2. Open the editor (`p`) and **Export** (or use the console `export`). You get a `.ltr` file.
+3. **Import** a `.ltr` (editor) or play it: the world is rebuilt on a fresh model with that seed, in
+   **free construction mode** (no costs) and with recording on.
 
-While paused, edits can be undone/redone with `u` / **Ctrl+R** (or `undo;` / `redo;`).
+While recording, edits can be undone/redone with `u` / **Ctrl+R** (or `undo;` / `redo;`).
 
 ## Validating a scenario
 
