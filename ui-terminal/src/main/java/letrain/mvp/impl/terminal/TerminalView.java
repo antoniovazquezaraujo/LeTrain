@@ -691,7 +691,8 @@ public class TerminalView implements letrain.mvp.View {
 
         // Program / Scenario tabs share one editor whose content follows the active tab. The
         // scenario draft persists between openings until the user hits Regenerate.
-        final boolean[] scenarioTab = {false};
+        // Scenario first (default), Program second. The Scenario draft persists until Regenerate.
+        final boolean[] scenarioTab = {true};
         final String[] programBuffer = {gameViewListener.getProgram()};
         final String[] scenarioBuffer = {
                 scenarioDraft != null ? scenarioDraft : gameViewListener.getScenarioText()};
@@ -702,7 +703,7 @@ public class TerminalView implements letrain.mvp.View {
         mainPanel.addComponent(tabBar, BorderLayout.Location.TOP);
 
         // Editor Area
-        final TextBox editor = new TextBox(new TerminalSize(60, 20), programBuffer[0],
+        final TextBox editor = new TextBox(new TerminalSize(60, 20), scenarioBuffer[0],
                 TextBox.Style.MULTI_LINE);
         mainPanel.addComponent(editor, BorderLayout.Location.CENTER);
 
@@ -1020,12 +1021,12 @@ public class TerminalView implements letrain.mvp.View {
                         return null;
                     }
                 };
-        Button programTabBtn = new Button("Program", switchToProgram);
-        programTabBtn.setRenderer(tabRenderer);
         Button scenarioTabBtn = new Button("Scenario", switchToScenario);
         scenarioTabBtn.setRenderer(tabRenderer);
-        tabBar.addComponent(programTabBtn);
+        Button programTabBtn = new Button("Program", switchToProgram);
+        programTabBtn.setRenderer(tabRenderer);
         tabBar.addComponent(scenarioTabBtn);
+        tabBar.addComponent(programTabBtn);
         window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
             @Override
             public void onInput(com.googlecode.lanterna.gui2.Window w,
@@ -1074,6 +1075,8 @@ public class TerminalView implements letrain.mvp.View {
         mainPanel.addComponent(footerColumn, BorderLayout.Location.BOTTOM);
 
         window.setComponent(mainPanel);
+        // Start with the caret in the editor, not on the tabs/buttons.
+        window.setFocusedInteractable(editor);
         gui.addWindowAndWait(window);
     }
 
