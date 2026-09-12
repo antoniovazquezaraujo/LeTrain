@@ -746,17 +746,27 @@ public class GraphicPresenter extends ApplicationAdapter
                         "Cannot export: nothing recorded yet (toggle Record/edit mode with 'R' and edit).");
                 return;
             }
-            writeScenario(file, getScenarioText());
+            writeScenario(file, letrain.command.ScenarioExporter.render(model,
+                    commandJournal.appliedEntries()));
         } catch (Exception e) {
             log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
             showMessage("Scenario Error", "Could not save scenario: " + e.getMessage());
         }
     }
 
-    /** Generates the current world recipe (seed + on build + on start, no program) for the editor. */
+    /** Generates the world recipe (seed + on build + on start, no settings/program) for the editor. */
     @Override
     public String getScenarioText() {
-        return letrain.command.ScenarioExporter.renderRecipe(model, commandJournal.appliedEntries());
+        return letrain.command.ScenarioExporter.renderWorld(model, commandJournal.appliedEntries());
+    }
+
+    /** Generates the scenario's settings section (the model's effective configuration). */
+    @Override
+    public String getConfigurationText() {
+        String section = letrain.command.ScenarioFile.configurationSection(
+                model.getEconomyManager() != null ? model.getEconomyManager().effectiveConfig()
+                        : null);
+        return section.isBlank() ? "configuration {\n}\n" : section;
     }
 
     /** Exports the (possibly hand-edited) scenario text to a file. */

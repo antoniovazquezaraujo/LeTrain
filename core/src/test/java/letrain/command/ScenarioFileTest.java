@@ -110,8 +110,25 @@ class ScenarioFileTest {
     }
 
     @Test
-    @DisplayName("split/withProgram round-trip the recipe and the program")
-    void splitWithProgram_roundTrip() {
+    @DisplayName("render indents section bodies two spaces per brace level")
+    void render_indentsBodies() {
+        String text = ScenarioFile.render(9,
+                List.of("go 0,0; face e; write 2;"),
+                List.of("semaphore 1 close;"),
+                "sensor 1 on train enter {\nsemaphore 1 open;\n}");
+
+        assertTrue(text.contains("on build {\n  go 0,0; face e; write 2;\n}"), text);
+        assertTrue(text.contains("on start {\n  semaphore 1 close;\n}"), text);
+        assertTrue(text.contains("program {\n"
+                + "  sensor 1 on train enter {\n"
+                + "    semaphore 1 open;\n"
+                + "  }\n"
+                + "}"), text);
+    }
+
+    @Test
+    @DisplayName("split/compose round-trip the three editor parts")
+    void splitCompose_roundTrip() {
         String program = "sensor 1 on train enter { semaphore 1 open; }";
         String full = ScenarioFile.render(9,
                 List.of("go 0,0; face e; write 2;"),
@@ -121,13 +138,14 @@ class ScenarioFileTest {
         ScenarioFile.Parts parts = ScenarioFile.split(full);
 
         assertEquals(9, parts.seed());
-        assertFalse(parts.recipeText().contains("program {"), parts.recipeText());
-        assertEquals(program, parts.program());
-        assertEquals(full, ScenarioFile.withProgram(parts.recipeText(), parts.program()));
+        assertFalse(parts.scenarioText().contains("program {"), parts.scenarioText());
+        assertEquals(program, ScenarioFile.programSectionBody(parts.programText()));
+        assertEquals(full, ScenarioFile.compose(parts.scenarioText(), parts.configurationText(),
+                parts.programText()));
     }
 
     @Test
-    @DisplayName("the configuration section round-trips and survives split/withProgram")
+    @DisplayName("the configuration section round-trips and lives in its own part")
     void configuration_roundTrip() {
         Map<String, String> config = new LinkedHashMap<>();
         config.put("threshold.WATER", "100.0");
@@ -142,9 +160,12 @@ class ScenarioFileTest {
         assertEquals("200.0", s.configuration().get("threshold.ROCK"));
 
         ScenarioFile.Parts parts = ScenarioFile.split(full);
-        assertTrue(parts.recipeText().contains("configuration {"), parts.recipeText());
-        assertTrue(parts.recipeText().contains("threshold.WATER=100.0"), parts.recipeText());
-        assertEquals(full, ScenarioFile.withProgram(parts.recipeText(), parts.program()));
+        assertFalse(parts.scenarioText().contains("configuration {"), parts.scenarioText());
+        assertTrue(parts.configurationText().contains("configuration {"), parts.configurationText());
+        assertTrue(parts.configurationText().contains("threshold.WATER=100.0"),
+                parts.configurationText());
+        assertEquals(full, ScenarioFile.compose(parts.scenarioText(), parts.configurationText(),
+                parts.programText()));
     }
 
     @Test

@@ -46,6 +46,18 @@ class TerminalPresenterScenarioEditorTest {
     }
 
     @Test
+    @DisplayName("getConfigurationText returns the settings section (edited in the Config tab)")
+    void getConfigurationText_returnsSection() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = presenterWith(model);
+
+        String text = presenter.getConfigurationText();
+
+        assertTrue(text.startsWith("configuration {"), text);
+        assertTrue(text.contains("threshold.WATER="), text);
+    }
+
+    @Test
     @DisplayName("onExportScenarioText writes the given text verbatim")
     void exportText_writesFile() throws Exception {
         Model model = new Model(1);

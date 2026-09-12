@@ -22,6 +22,11 @@ public interface GameViewListener {
         return "";
     }
 
+    /** Generates the scenario's {@code configuration { ... }} section (the effective settings). */
+    default String getConfigurationText() {
+        return "";
+    }
+
     /** Exports the (possibly hand-edited) scenario text to {@code file}. */
     default void onExportScenarioText(File file, String text) {}
 

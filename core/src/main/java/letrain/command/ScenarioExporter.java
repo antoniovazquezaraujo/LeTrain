@@ -36,9 +36,9 @@ public final class ScenarioExporter {
                 initialConditions(model), model.getProgram());
     }
 
-    /** Renders only the world recipe (seed + settings + on build + on start), without the program. */
-    public static String renderRecipe(Model model, List<String> buildCommands) {
-        return ScenarioFile.render(model.getSeed(), configuration(model), buildCommands,
+    /** Renders the editable world recipe (seed + on build + on start), without settings or program. */
+    public static String renderWorld(Model model, List<String> buildCommands) {
+        return ScenarioFile.render(model.getSeed(), null, buildCommands,
                 initialConditions(model), null);
     }
 

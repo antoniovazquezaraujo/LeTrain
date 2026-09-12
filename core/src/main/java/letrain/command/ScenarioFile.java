@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * {@code configuration} holds the game settings (the effective {@code letrain.cfg}) so the scenario
  * reproduces the same terrain and rules; it wins over the local file. {@code on build} holds the
  * canonical editing commands (the command journal) and is replayed first; {@code on start} holds
- * optional initial conditions applied right after the build; {@code program} holds the verbatim
+ * optional initial conditions applied right after the build; {@code program} holds the
  * automation script installed after that (may nest braces). All sections are optional: a flat file
  * with just a seed and commands (no braces) is valid and its lines are treated as build commands, so
  * older scenarios keep working.
@@ -58,7 +58,7 @@ public final class ScenarioFile {
 
     /**
      * Parsed scenario: seed + the game settings + the ordered build/start command sections + the
-     * (verbatim) automation program, which may be empty.
+     * automation program (stored at base column 0), which may be empty.
      */
     public record Scenario(int seed, Map<String, String> configuration,
             List<String> buildCommands, List<String> startCommands, String program) {}
@@ -82,7 +82,7 @@ public final class ScenarioFile {
 
     /**
      * Renders {@code seed} + the {@code on build}/{@code on start}/{@code program} sections. The
-     * program is written verbatim (comments/indentation preserved), so it stays editable by hand.
+     * program is re-indented by brace depth (comments preserved), so nested blocks line up.
      */
     public static String render(int seed, List<String> buildCommands, List<String> startCommands,
             String program) {
@@ -91,39 +91,24 @@ public final class ScenarioFile {
 
     /**
      * Renders the full scenario. {@code configuration} is the game settings map (written sorted as
-     * {@code key=value}); {@code program} is written verbatim.
+     * {@code key=value}); {@code program} is re-indented by brace depth so nested blocks line up.
      */
     public static String render(int seed, Map<String, String> configuration,
             List<String> buildCommands, List<String> startCommands, String program) {
         StringBuilder sb = new StringBuilder();
         sb.append(HEADER).append('\n');
         sb.append(SEED_PREFIX).append(seed).append('\n');
-        if (configuration != null && !configuration.isEmpty()) {
-            sb.append("configuration {\n");
-            configuration.entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> sb.append(e.getKey()).append('=').append(e.getValue())
-                            .append('\n'));
-            sb.append("}\n");
-        }
+        sb.append(configurationSection(configuration));
         sb.append("on build {\n");
-        for (String command : optimize(buildCommands)) {
-            sb.append(command).append('\n');
-        }
+        sb.append(indentBody(String.join("\n", optimize(buildCommands)), 1));
         sb.append("}\n");
         if (startCommands != null && !startCommands.isEmpty()) {
             sb.append("on start {\n");
-            for (String command : startCommands) {
-                if (command != null && !command.trim().isEmpty()) {
-                    sb.append(command.trim()).append('\n');
-                }
-            }
+            sb.append(indentBody(String.join("\n", startCommands), 1));
             sb.append("}\n");
         }
         if (program != null && !program.isBlank()) {
-            sb.append("program {\n");
-            sb.append(program.stripTrailing()).append('\n');
-            sb.append("}\n");
+            sb.append(programSection(program));
         }
         return sb.toString();
     }
@@ -132,8 +117,8 @@ public final class ScenarioFile {
      * Parses the terrain seed and the {@code on build}/{@code on start}/{@code program} sections.
      * Flat files without sections put all commands in {@code on build}. Section bodies are read with
      * a brace-depth counter, so the {@code program} section may contain nested blocks
-     * ({@code trigger ... { ... }}); the program is captured verbatim (comments and indentation
-     * preserved) so it stays editable by hand.
+     * ({@code trigger ... { ... }}); the program keeps its comments and relative indentation (the
+     * wrapper's base indent is stripped) so it stays editable by hand.
      *
      * @throws IllegalArgumentException when the file has no {@code seed} line
      */
@@ -216,7 +201,36 @@ public final class ScenarioFile {
             }
         }
         return new Scenario(seed, parseConfig(configLines), build, start,
-                program.toString().stripTrailing());
+                stripCommonIndent(program.toString().stripTrailing()));
+    }
+
+    /**
+     * Removes the common leading indentation shared by all non-blank lines, preserving relative
+     * nesting. The in-memory program is thus stored at base column 0; the renderer re-indents it
+     * inside the {@code program { ... }} wrapper.
+     */
+    private static String stripCommonIndent(String text) {
+        String[] lines = safeLines(text);
+        int min = Integer.MAX_VALUE;
+        for (String line : lines) {
+            if (line.isBlank()) {
+                continue;
+            }
+            int indent = 0;
+            while (indent < line.length()
+                    && (line.charAt(indent) == ' ' || line.charAt(indent) == '\t')) {
+                indent++;
+            }
+            min = Math.min(min, indent);
+        }
+        if (min == Integer.MAX_VALUE || min == 0) {
+            return text;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String line : lines) {
+            sb.append(line.length() >= min ? line.substring(min) : line).append('\n');
+        }
+        return sb.toString().stripTrailing();
     }
 
     /** Parses {@code key=value} settings lines (java.util.Properties syntax) into an ordered map. */
@@ -248,6 +262,37 @@ public final class ScenarioFile {
             }
         }
         return delta;
+    }
+
+    /**
+     * Re-indents a section body with two spaces per brace nesting level, starting at {@code base}
+     * (1 for a top-level section, so its contents sit two spaces in). Original leading whitespace is
+     * discarded and recomputed from the braces, so nested blocks line up. Comments and inline
+     * {@code { ... }} blocks are preserved.
+     */
+    private static String indentBody(String body, int base) {
+        StringBuilder sb = new StringBuilder();
+        int depth = 0;
+        for (String raw : safeLines(body)) {
+            String line = raw.strip();
+            if (line.isEmpty()) {
+                sb.append('\n');
+                continue;
+            }
+            int indent = Math.max(0, depth - leadingCloses(line));
+            sb.append("  ".repeat(base + indent)).append(line).append('\n');
+            depth = Math.max(0, depth + braceDelta(line));
+        }
+        return sb.toString();
+    }
+
+    /** Number of leading {@code }} before any other character (a line that closes one or more blocks). */
+    private static int leadingCloses(String line) {
+        int closes = 0;
+        while (closes < line.length() && line.charAt(closes) == '}') {
+            closes++;
+        }
+        return closes;
     }
 
     /**
@@ -355,19 +400,19 @@ public final class ScenarioFile {
         return parse(text).buildCommands();
     }
 
-    /** Wraps raw program text in a {@code program { ... }} section (empty section when blank). */
+    /** Wraps raw program text in a {@code program { ... }} section, indented by brace depth. */
     public static String programSection(String program) {
         StringBuilder sb = new StringBuilder("program {\n");
         if (program != null && !program.isBlank()) {
-            sb.append(program.stripTrailing()).append('\n');
+            sb.append(indentBody(program, 1));
         }
         sb.append("}\n");
         return sb.toString();
     }
 
     /**
-     * Extracts the body of a {@code program { ... }} section, verbatim. If {@code section} has no
-     * program wrapper it is returned as-is (so the editor accepts raw program text too).
+     * Extracts the body of a {@code program { ... }} section at base column 0. If {@code section}
+     * has no program wrapper it is returned as-is (so the editor accepts raw program text too).
      */
     public static String programSectionBody(String section) {
         if (section == null || section.isBlank()) {
@@ -384,28 +429,66 @@ public final class ScenarioFile {
         }
     }
 
-    /** A scenario split into its world recipe (no {@code program}) and its program. */
-    public record Parts(int seed, String recipeText, String program) {}
-
     /**
-     * Splits a full scenario text into the world recipe (seed + on build + on start, rendered
-     * <b>without</b> the program) and the program text. Used by the editor, which edits both in
-     * separate tabs.
+     * Renders a {@code configuration { ... }} section from a settings map (written sorted as
+     * {@code key=value}). Returns an empty string when there is nothing to write.
      */
-    public static Parts split(String fullText) {
-        Scenario s = parse(fullText);
-        return new Parts(s.seed(),
-                render(s.seed(), s.configuration(), s.buildCommands(), s.startCommands(), null),
-                s.program());
+    public static String configurationSection(Map<String, String> configuration) {
+        if (configuration == null || configuration.isEmpty()) {
+            return "";
+        }
+        StringBuilder body = new StringBuilder();
+        configuration.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> body.append(e.getKey()).append('=').append(e.getValue()).append('\n'));
+        return "configuration {\n" + indentBody(body.toString(), 1) + "}\n";
     }
 
     /**
-     * Builds a full scenario text from a recipe text (no program section) and a program. Used when
-     * exporting/playing from the editor, which edits the recipe and the program separately.
+     * Parses the body of a {@code configuration { ... }} section into an ordered settings map. If
+     * {@code section} has no wrapper it is parsed as raw {@code key=value} lines (so the editor
+     * accepts bare settings too). Malformed lines are ignored.
      */
-    public static String withProgram(String recipeText, String program) {
-        Scenario s = parse(recipeText);
-        return render(s.seed(), s.configuration(), s.buildCommands(), s.startCommands(), program);
+    public static Map<String, String> configurationSectionBody(String section) {
+        if (section == null || section.isBlank()) {
+            return new LinkedHashMap<>();
+        }
+        String trimmed = section.trim();
+        if (!trimmed.toLowerCase().startsWith("configuration")) {
+            return parseConfig(new ArrayList<>(List.of(section.split("\\R"))));
+        }
+        try {
+            return parse(SEED_PREFIX + "0\n" + section).configuration();
+        } catch (Exception e) {
+            return new LinkedHashMap<>();
+        }
+    }
+
+    /**
+     * A scenario split into its three editor parts: the world recipe (seed + on build + on start,
+     * no settings or program), the {@code configuration { ... }} section and the
+     * {@code program { ... }} section. Either section may be empty.
+     */
+    public record Parts(int seed, String scenarioText, String configurationText, String programText) {}
+
+    /** Splits a full scenario text into the three editor parts (see {@link Parts}). */
+    public static Parts split(String fullText) {
+        Scenario s = parse(fullText);
+        return new Parts(s.seed(),
+                render(s.seed(), null, s.buildCommands(), s.startCommands(), null),
+                configurationSection(s.configuration()),
+                programSection(s.program()));
+    }
+
+    /**
+     * Builds a full scenario text from the three editor parts. Sections are re-rendered in canonical
+     * order (seed + settings + on build + on start + program), so callers can concatenate the parts
+     * in any order.
+     */
+    public static String compose(String scenarioText, String configurationText, String programText) {
+        Scenario base = parse(scenarioText);
+        return render(base.seed(), configurationSectionBody(configurationText),
+                base.buildCommands(), base.startCommands(), programSectionBody(programText));
     }
 
     private static String[] safeLines(String text) {
