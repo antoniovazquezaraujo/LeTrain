@@ -499,7 +499,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     /** Undoes {@code steps} editing commands (ADR-020 item 3). */
     public void undo(int steps) {
         if (!model.isSimulationPaused()) {
-            view.setStatusBarText("Undo needs paused editing (x)");
+            view.setStatusBarText("Undo needs the Record/edit mode (R)");
             return;
         }
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
@@ -514,7 +514,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     /** Redoes {@code steps} editing commands (ADR-020 item 3). */
     public void redo(int steps) {
         if (!model.isSimulationPaused()) {
-            view.setStatusBarText("Redo needs paused editing (x)");
+            view.setStatusBarText("Redo needs the Record/edit mode (R)");
             return;
         }
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
@@ -806,7 +806,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void togglePauseEditing() {
         if (getExperimentSession().isActive()) {
-            view.setStatusBarText("Experiment ON: pulsa X para salir y restaurar antes de pausar");
+            view.setStatusBarText(
+                    "Experiment ON: pulsa X para salir y restaurar antes del modo Record");
             return;
         }
         boolean recording = !model.isPauseEditing();

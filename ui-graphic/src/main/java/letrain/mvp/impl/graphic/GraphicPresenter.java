@@ -980,7 +980,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
     /** Undoes {@code steps} editing commands (ADR-020 item 3). */
     public void undo(int steps) {        if (!model.isSimulationPaused()) {
-            log.info("Undo needs paused editing (x)");
+            log.info("Undo needs the Record/edit mode (R)");
             return;
         }
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
@@ -995,7 +995,7 @@ public class GraphicPresenter extends ApplicationAdapter
     /** Redoes {@code steps} editing commands (ADR-020 item 3). */
     public void redo(int steps) {
         if (!model.isSimulationPaused()) {
-            log.info("Redo needs paused editing (x)");
+            log.info("Redo needs the Record/edit mode (R)");
             return;
         }
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
