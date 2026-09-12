@@ -148,6 +148,18 @@ class ScenarioFileTest {
     }
 
     @Test
+    @DisplayName("programSection wraps and programSectionBody extracts (round-trip)")
+    void programSection_roundTrip() {
+        String body = "sensor 1 on train enter { semaphore 1 open; }";
+        String section = ScenarioFile.programSection(body);
+        assertTrue(section.startsWith("program {"), section);
+        assertEquals(body, ScenarioFile.programSectionBody(section));
+        assertEquals("", ScenarioFile.programSectionBody(ScenarioFile.programSection("")));
+        // Raw program text (no wrapper) is returned as-is.
+        assertEquals(body, ScenarioFile.programSectionBody(body));
+    }
+
+    @Test
     @DisplayName("a flat scenario without sections is treated as on build (backward compatible)")
     void flat_isBuild() {
         String text = "# LeTrain scenario v1\nseed 5\ngo 0,0; face e; write 1;\n";

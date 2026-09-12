@@ -355,6 +355,35 @@ public final class ScenarioFile {
         return parse(text).buildCommands();
     }
 
+    /** Wraps raw program text in a {@code program { ... }} section (empty section when blank). */
+    public static String programSection(String program) {
+        StringBuilder sb = new StringBuilder("program {\n");
+        if (program != null && !program.isBlank()) {
+            sb.append(program.stripTrailing()).append('\n');
+        }
+        sb.append("}\n");
+        return sb.toString();
+    }
+
+    /**
+     * Extracts the body of a {@code program { ... }} section, verbatim. If {@code section} has no
+     * program wrapper it is returned as-is (so the editor accepts raw program text too).
+     */
+    public static String programSectionBody(String section) {
+        if (section == null || section.isBlank()) {
+            return "";
+        }
+        String trimmed = section.trim();
+        if (!trimmed.toLowerCase().startsWith("program")) {
+            return trimmed; // raw program text without the wrapper
+        }
+        try {
+            return parse(SEED_PREFIX + "0\n" + section).program();
+        } catch (Exception e) {
+            return trimmed;
+        }
+    }
+
     /** A scenario split into its world recipe (no {@code program}) and its program. */
     public record Parts(int seed, String recipeText, String program) {}
 

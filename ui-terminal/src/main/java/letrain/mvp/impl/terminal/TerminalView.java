@@ -693,7 +693,8 @@ public class TerminalView implements letrain.mvp.View {
         // scenario draft persists between openings until the user hits Regenerate.
         // Scenario first (default), Program second. The Scenario draft persists until Regenerate.
         final boolean[] scenarioTab = {true};
-        final String[] programBuffer = {gameViewListener.getProgram()};
+        final String[] programBuffer = {letrain.command.ScenarioFile
+                .programSection(gameViewListener.getProgram())};
         final String[] scenarioBuffer = {
                 scenarioDraft != null ? scenarioDraft : gameViewListener.getScenarioText()};
         final Runnable[] rebuildTabFooter = {() -> {
@@ -841,7 +842,8 @@ public class TerminalView implements letrain.mvp.View {
             if (file != null) {
                 String full = text;
                 try {
-                    full = letrain.command.ScenarioFile.withProgram(text, programBuffer[0]);
+                    full = letrain.command.ScenarioFile.withProgram(text,
+                            letrain.command.ScenarioFile.programSectionBody(programBuffer[0]));
                 } catch (Exception ignore) {
                     // invalid recipe (export anyway): write it as-is
                 }
@@ -861,7 +863,7 @@ public class TerminalView implements letrain.mvp.View {
                 letrain.command.ScenarioFile.Parts parts = letrain.command.ScenarioFile.split(fileText);
                 scenarioDraft = parts.recipeText();
                 scenarioBuffer[0] = parts.recipeText();
-                programBuffer[0] = parts.program();
+                programBuffer[0] = letrain.command.ScenarioFile.programSection(parts.program());
                 editor.setText(parts.recipeText());
             } catch (Exception ex) {
                 com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui,
@@ -869,7 +871,8 @@ public class TerminalView implements letrain.mvp.View {
             }
         };
 
-        final Runnable applyProgram = () -> gameViewListener.onEditCommands(editor.getText());
+        final Runnable applyProgram = () -> gameViewListener.onEditCommands(
+                letrain.command.ScenarioFile.programSectionBody(editor.getText()));
 
         // Import loads a .ltr into the Scenario editor; Export writes the Scenario editor.
         final Runnable importAction = () -> {
@@ -900,7 +903,8 @@ public class TerminalView implements letrain.mvp.View {
                 }
                 String full = scenarioText;
                 try {
-                    full = letrain.command.ScenarioFile.withProgram(scenarioText, programBuffer[0]);
+                    full = letrain.command.ScenarioFile.withProgram(scenarioText,
+                            letrain.command.ScenarioFile.programSectionBody(programBuffer[0]));
                 } catch (Exception ignore) {
                     // defensive: play the recipe alone
                 }
