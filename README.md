@@ -107,7 +107,10 @@ A default `letrain.cfg` ships next to each launcher, so you can tweak the game w
 - **Audio**: Granular synthesis engine for realistic locomotive sounds.
 
 ## 🤝 Contributing
-Contributions are welcome! Whether it's bug fixes, performance improvements, or new "letter" models for wagons, feel free to open a Pull Request.
+Contributions are welcome! Bug reports, feature ideas, docs and code are all appreciated.
+- Read **[CONTRIBUTING.md](CONTRIBUTING.md)** for the build/test and PR workflow.
+- [Open an issue](https://github.com/antoniovazquezaraujo/LeTrain/issues/new/choose) for a bug or a feature request.
+- For code, branch from `develop` (`feature/...` / `fix/...`), keep the PR focused, and make sure `mvn clean test` passes.
 
 ---
 *Created by Antonio Vazquez Araujo.*  
