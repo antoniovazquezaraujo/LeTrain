@@ -47,6 +47,55 @@ class ScenarioCompilerTest {
     }
 
     @Test
+    @DisplayName("blank lines inside on build/on start are ignored")
+    void blankLinesInSections_ok() {
+        String text = "# LeTrain scenario v1\n"
+                + "seed 5\n"
+                + "on build {\n"
+                + "\n"
+                + "  go 0,0; face e; write 2;\n"
+                + "\n"
+                + "}\n"
+                + "on start {\n"
+                + "\n"
+                + "  semaphore 1 close;\n"
+                + "\n"
+                + "}\n";
+        ScenarioCompiler.Result result = ScenarioCompiler.compile(text);
+        assertTrue(result.ok(), "blank lines must not fail: " + result.diagnostics());
+    }
+
+    @Test
+    @DisplayName("an empty/whitespace program section is not validated")
+    void emptyProgram_ok() {
+        String text = "# LeTrain scenario v1\n"
+                + "seed 5\n"
+                + "on build {\n"
+                + "  go 0,0; face e; write 2;\n"
+                + "}\n"
+                + "program {\n"
+                + "  \n"
+                + "}\n";
+        assertTrue(ScenarioCompiler.compile(text).ok(),
+                "empty program must not fail: " + ScenarioCompiler.compile(text).diagnostics());
+    }
+
+    @Test
+    @DisplayName("diagnostics don't dump the whole expected-token set")
+    void diagnostics_areShort() {
+        String text = "# LeTrain scenario v1\n"
+                + "seed 5\n"
+                + "on build {\n"
+                + "  frobnicate;\n"
+                + "}\n";
+        ScenarioCompiler.Result result = ScenarioCompiler.compile(text);
+        assertFalse(result.ok());
+        String message = result.diagnostics().get(0).message();
+        assertFalse(message.contains("expecting"), message);
+        assertTrue(message.length() <= 63, "message too long: " + message);
+    }
+
+    @Test
     @DisplayName("missing seed is reported")
     void missingSeed_reported() {
         ScenarioCompiler.Result result = ScenarioCompiler.compile("# c\ngo 0,0; face e; write 1;\n");

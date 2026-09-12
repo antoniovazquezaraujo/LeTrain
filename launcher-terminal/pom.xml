@@ -102,6 +102,10 @@
                                 <copy file="${project.build.directory}/${project.build.finalName}-jar-with-dependencies.jar"
                                       tofile="${maven.multiModuleProjectDirectory}/output/LeTrain2D/lib/app/${project.build.finalName}-jar-with-dependencies.jar"/>
 
+                                <!-- Ship the default configuration next to the app -->
+                                <copy file="${maven.multiModuleProjectDirectory}/letrain.cfg"
+                                      tofile="${maven.multiModuleProjectDirectory}/output/LeTrain2D/letrain.cfg"/>
+
                                 <!-- Create the shell script -->
                                 <mkdir dir="${maven.multiModuleProjectDirectory}/output/LeTrain2D/bin"/>
                                 <echo file="${maven.multiModuleProjectDirectory}/output/LeTrain2D/bin/LeTrain2D.sh">#!/bin/sh

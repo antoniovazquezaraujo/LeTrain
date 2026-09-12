@@ -1492,7 +1492,7 @@ public class Model implements letrain.mvp.Model {
                         () -> this.canEnterUnlinkMode(), () -> this.getMode() == GameMode.UNLINK,
                         () -> GameMode.UNLINK),
                 new GameModeMenuOption("&Program",
-                        "Integrated Development Environment (Apply/Save/Load/Cancel)", () -> true,
+                        "Scenario editor (Save/Load/Export/Import/Close)", () -> true,
                         () -> this.getMode() == GameMode.PROGRAM, () -> GameMode.PROGRAM),
                 new GameModeMenuOption("Statio&ns",
                         "[⏴⏵/hl]:Select [o]:Locate [#]:ID",

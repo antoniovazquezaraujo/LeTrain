@@ -112,8 +112,8 @@ public final class ScenarioCompiler {
                     depth = 0;
                 }
             } else {
-                if (line.startsWith("#")) {
-                    continue;
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue; // blank lines and comments carry no statements
                 }
                 int delta = braceDelta(line);
                 if (depth + delta > 0) {
@@ -127,7 +127,7 @@ public final class ScenarioCompiler {
             }
         }
 
-        if (program.length() > 0) {
+        if (program != null && !program.toString().isBlank()) {
             compileProgram(program.toString(), programStartLine, diagnostics);
         }
         return new Result(diagnostics.isEmpty(), diagnostics);
@@ -173,7 +173,8 @@ public final class ScenarioCompiler {
             public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line,
                     int charPositionInLine, String msg, RecognitionException e) {
                 int absoluteLine = lineOffset + Math.max(0, line - relativeBase);
-                diagnostics.add(new Diagnostic(absoluteLine, charPositionInLine + 1, msg));
+                diagnostics.add(new Diagnostic(absoluteLine, charPositionInLine + 1,
+                        SyntaxMessages.shorten(msg)));
             }
         };
     }

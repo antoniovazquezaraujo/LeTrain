@@ -485,8 +485,8 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @Override
     public void reloadConfig() {
-        File configFile = new File("letrain.cfg");
-        if (!configFile.exists()) {
+        File configFile = findConfigFile();
+        if (configFile == null) {
             return;
         }
         Properties props = new Properties();
@@ -496,6 +496,50 @@ public class EconomyManager implements letrain.economy.EconomyManager {
             applyProperties(props);
         } catch (IOException | NumberFormatException e) {
             log.error("Error loading configuration: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Finds {@code letrain.cfg}: the working directory first (so a local file overrides), then next
+     * to the application and its ancestors. This makes the packaged default work no matter where the
+     * launcher is started from.
+     */
+    static File findConfigFile() {
+        java.util.List<File> dirs = new java.util.ArrayList<>();
+        dirs.add(new File("."));
+        File dir = jarDirectory();
+        for (int i = 0; i < 3 && dir != null; i++) {
+            dirs.add(dir);
+            dir = dir.getParentFile();
+        }
+        return firstConfig(dirs);
+    }
+
+    /** First directory in {@code dirs} that holds a {@code letrain.cfg} file, or null. */
+    static File firstConfig(java.util.List<File> dirs) {
+        for (File dir : dirs) {
+            if (dir != null) {
+                File candidate = new File(dir, "letrain.cfg");
+                if (candidate.isFile()) {
+                    return candidate;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Directory holding this class's jar (or classes dir), or null when it cannot be resolved. */
+    private static File jarDirectory() {
+        try {
+            java.net.URL location =
+                    EconomyManager.class.getProtectionDomain().getCodeSource().getLocation();
+            if (location == null) {
+                return null;
+            }
+            File file = new File(location.toURI());
+            return file.isFile() ? file.getParentFile() : file;
+        } catch (Exception e) {
+            return null;
         }
     }
 
