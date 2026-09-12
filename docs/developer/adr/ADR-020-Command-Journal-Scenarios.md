@@ -16,13 +16,14 @@
 - Ajustes del escenario: sección `configuration` (el `letrain.cfg` efectivo) que gana sobre el
   fichero local; `letrain.cfg` se distribuye junto a la app.
 - Validador sintáctico headless y ejecutable `letrain-check`.
+- Modo experimento (`X`): snapshot del mundo en vivo y restauración al salir.
+- Panel de salida de consola redimensionable y con wrap; errores recortados en la línea y completos
+  en el panel (issue #525).
 
 **Pendiente**
 - Paridad completa del IDE 3D con el 2D (issue #524).
 - Comando `help` y catálogo único de comandos, e `info`/`ls` sin argumentos (issue #526).
-- Mejoras del panel de salida de consola (issue #525; en gran parte hecho).
 - `on start` para forks/señales; composición (`@import`), huellas save↔escenario y hot-reload.
-- Modo experimento (snapshot en memoria y restauración).
 - Validación semántica (dry-run) además de la sintáctica.
 
 ## Contexto
