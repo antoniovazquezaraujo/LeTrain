@@ -444,7 +444,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 file -> saveScenario(file), file -> playScenario(file), false);
 
         if (error != null) {
-            model.setCommandError(error);
+            // Short form for the one-line command bar; the full message goes to the scrollable panel.
+            model.setCommandError(letrain.command.SyntaxMessages.shorten(error));
+            if (error.contains("\n") || error.length() > 60) {
+                view.showMessage("Command error", error);
+            }
             return;
         }
         // Command journal (ADR-020 item 2): record the canonical, self-positioned form so an
@@ -495,7 +499,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     /** Undoes {@code steps} editing commands (ADR-020 item 3). */
     public void undo(int steps) {
         if (!model.isSimulationPaused()) {
-            view.setStatusBarText("Undo needs paused editing (x)");
+            view.setStatusBarText("Undo needs the Record/edit mode (R)");
             return;
         }
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
@@ -510,7 +514,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     /** Redoes {@code steps} editing commands (ADR-020 item 3). */
     public void redo(int steps) {
         if (!model.isSimulationPaused()) {
-            view.setStatusBarText("Redo needs paused editing (x)");
+            view.setStatusBarText("Redo needs the Record/edit mode (R)");
             return;
         }
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
@@ -611,12 +615,26 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     @Override
     public void onChar(InputEvent keyEvent) {
         if (((TerminalView) view).isShowingOverlay()) {
+            TerminalView tv = (TerminalView) view;
             if (keyEvent.getKeyType() == KeyType.ArrowUp) {
-                ((TerminalView) view).scrollOverlay(-1);
+                tv.scrollOverlay(-1);
             } else if (keyEvent.getKeyType() == KeyType.ArrowDown) {
-                ((TerminalView) view).scrollOverlay(1);
+                tv.scrollOverlay(1);
+            } else if (keyEvent.getKeyType() == KeyType.ArrowLeft) {
+                tv.resizeOverlay(-4);
+            } else if (keyEvent.getKeyType() == KeyType.ArrowRight) {
+                tv.resizeOverlay(4);
             } else if (keyEvent.getKeyType() == KeyType.Escape) {
-                ((TerminalView) view).clearOverlay();
+                tv.clearOverlay();
+            } else if (keyEvent.getCharacter() != null) {
+                char c = Character.toLowerCase(keyEvent.getCharacter());
+                if (c == '+' || c == '=') {
+                    tv.resizeOverlay(4);
+                } else if (c == '-' || c == '_') {
+                    tv.resizeOverlay(-4);
+                } else if (c == 'f') {
+                    tv.toggleOverlayMaximize();
+                }
             }
             return;
         }
@@ -788,7 +806,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void togglePauseEditing() {
         if (getExperimentSession().isActive()) {
-            view.setStatusBarText("Experiment ON: pulsa X para salir y restaurar antes de pausar");
+            view.setStatusBarText(
+                    "Experiment ON: pulsa X para salir y restaurar antes del modo Record");
             return;
         }
         boolean recording = !model.isPauseEditing();

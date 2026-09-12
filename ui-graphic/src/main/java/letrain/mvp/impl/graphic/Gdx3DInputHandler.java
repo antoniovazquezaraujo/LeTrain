@@ -599,7 +599,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 file -> view.onExportScenario(file), file -> view.onImportScenario(file), false);
 
         if (error != null) {
-            model.setCommandError(error);
+            model.setCommandError(letrain.command.SyntaxMessages.shorten(error));
             return;
         }
         // Use the presenter's live model: an undo/redo typed in the console swaps the model out

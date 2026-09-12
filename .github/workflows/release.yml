@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*' # Trigger release when a tag starting with "v" (e.g. v1.0.0) is pushed
+  workflow_dispatch:
 
 permissions:
   contents: write

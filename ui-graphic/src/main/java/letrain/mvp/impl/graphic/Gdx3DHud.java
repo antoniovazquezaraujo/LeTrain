@@ -542,7 +542,7 @@ public class Gdx3DHud {
             if (ideWindow != null)
                 return; // double check inside runnable
             final Window window =
-                    new Window("LT-IDE v1.1 - LeTrain Integrated Development Environment", skin);
+                    new Window("LeTrain Editor " + letrain.BuildInfo.versionTag() + " (3D)", skin);
             window.setModal(true);
             window.setMovable(true);
             window.setResizable(true);

@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.progmatic</groupId>
         <artifactId>JLeTrain</artifactId>
-        <version>1.0.0-beta.4-SNAPSHOT</version>
+        <version>1.0.0-beta.4</version>
     </parent>
     <artifactId>JLeTrain-core</artifactId>
     <packaging>jar</packaging>
@@ -54,6 +54,24 @@
     </dependencies>
 
     <build>
+        <!-- Filter only version.properties; the other resources (fonts, sound, ...) are binary and
+             must never go through Maven filtering. -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>version.properties</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>version.properties</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.antlr</groupId>
