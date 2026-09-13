@@ -1094,10 +1094,26 @@ public class Gdx3DHud {
                 }
             });
 
-            // Highlight the hotkey letter while Alt is held (2D parity).
+            // Focus/hotkey highlight: the focused element stands out (cyan) and Alt tints the mnemonics.
             final boolean[] altState = {false};
             window.addAction(com.badlogic.gdx.scenes.scene2d.actions.Actions.forever(
                     com.badlogic.gdx.scenes.scene2d.actions.Actions.run(() -> {
+                        Actor focused = stage.getKeyboardFocus();
+                        scenarioTabBtn.setColor(focused == scenarioTabBtn ? Color.CYAN
+                                : (activeTab[0] == 0 ? Color.GREEN : Color.WHITE));
+                        programTabBtn.setColor(focused == programTabBtn ? Color.CYAN
+                                : (activeTab[0] == 1 ? Color.GREEN : Color.WHITE));
+                        configTabBtn.setColor(focused == configTabBtn ? Color.CYAN
+                                : (activeTab[0] == 2 ? Color.GREEN : Color.WHITE));
+                        saveBtn.setColor(focused == saveBtn ? Color.CYAN : Color.WHITE);
+                        loadBtn.setColor(focused == loadBtn ? Color.CYAN : Color.WHITE);
+                        exportBtn.setColor(focused == exportBtn ? Color.CYAN : Color.WHITE);
+                        importBtn.setColor(focused == importBtn ? Color.CYAN : Color.WHITE);
+                        refreshBtn.setColor(focused == refreshBtn ? Color.CYAN : Color.WHITE);
+                        reprogramBtn.setColor(focused == reprogramBtn ? Color.CYAN : Color.WHITE);
+                        rebuildBtn.setColor(focused == rebuildBtn ? Color.CYAN : Color.WHITE);
+                        closeBtn.setColor(focused == closeBtn ? Color.CYAN : Color.WHITE);
+
                         boolean alt = Gdx.input
                                 .isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
                                 || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
@@ -1105,17 +1121,17 @@ public class Gdx3DHud {
                             return;
                         }
                         altState[0] = alt;
-                        saveBtn.setText(alt ? " [YELLOW]S[]AVE " : " SAVE ");
-                        loadBtn.setText(alt ? " [YELLOW]L[]OAD " : " LOAD ");
-                        exportBtn.setText(alt ? " [YELLOW]E[]XPORT " : " EXPORT ");
-                        importBtn.setText(alt ? " [YELLOW]I[]MPORT " : " IMPORT ");
-                        refreshBtn.setText(alt ? " [YELLOW]R[]EFRESH " : " REFRESH ");
-                        reprogramBtn.setText(alt ? " [YELLOW]P[]ROGRAM " : " REPROGRAM ");
-                        rebuildBtn.setText(alt ? " [YELLOW]B[]UILD " : " REBUILD ");
-                        closeBtn.setText(alt ? " [YELLOW]C[]LOSE " : " CLOSE ");
-                        scenarioTabBtn.setText(alt ? " Scen[YELLOW]a[]rio " : " Scenario ");
-                        programTabBtn.setText(alt ? " Pro[YELLOW]g[]ram " : " Program ");
-                        configTabBtn.setText(alt ? " Con[YELLOW]f[]ig " : " Config ");
+                        saveBtn.setText(alt ? " [#42A5F5]S[]AVE " : " SAVE ");
+                        loadBtn.setText(alt ? " [#42A5F5]L[]OAD " : " LOAD ");
+                        exportBtn.setText(alt ? " [#42A5F5]E[]XPORT " : " EXPORT ");
+                        importBtn.setText(alt ? " [#42A5F5]I[]MPORT " : " IMPORT ");
+                        refreshBtn.setText(alt ? " [#42A5F5]R[]EFRESH " : " REFRESH ");
+                        reprogramBtn.setText(alt ? " RE[#42A5F5]P[]ROGRAM " : " REPROGRAM ");
+                        rebuildBtn.setText(alt ? " RE[#42A5F5]B[]UILD " : " REBUILD ");
+                        closeBtn.setText(alt ? " [#42A5F5]C[]LOSE " : " CLOSE ");
+                        scenarioTabBtn.setText(alt ? " Scen[#42A5F5]a[]rio " : " Scenario ");
+                        programTabBtn.setText(alt ? " Pro[#42A5F5]g[]ram " : " Program ");
+                        configTabBtn.setText(alt ? " Con[#42A5F5]f[]ig " : " Config ");
                     })));
 
             Table mainContent = new Table();
@@ -1180,6 +1196,15 @@ public class Gdx3DHud {
                             switchTo.accept(1);
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.NUM_3) {
+                            switchTo.accept(2);
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.A) {
+                            switchTo.accept(0);
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.G) {
+                            switchTo.accept(1);
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.F) {
                             switchTo.accept(2);
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.S) {
