@@ -672,9 +672,7 @@ public class Gdx3DHud {
                             for (letrain.command.GrammarReference.Node child : refNode.children) {
                                 n.add(build(child, indent + "  "));
                             }
-                            if (refNode.expanded) {
-                                n.setExpanded(true);
-                            }
+                            n.setExpanded(refNode.expanded);
                             return n;
                         }
                     }
@@ -763,7 +761,9 @@ public class Gdx3DHud {
                             Label l = (Label) current.getActor();
                             String text = l.getText().toString();
                             if (text.contains("[+]") || text.contains("[-]")) {
-                                l.setText(current.isExpanded() ? text.replace("[+]", "[-]")
+                                boolean expanded = !current.isExpanded();
+                                current.setExpanded(expanded);
+                                l.setText(expanded ? text.replace("[+]", "[-]")
                                         : text.replace("[-]", "[+]"));
                                 return true;
                             }
