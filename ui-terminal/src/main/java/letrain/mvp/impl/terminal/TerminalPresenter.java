@@ -615,26 +615,34 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     @Override
     public void onChar(InputEvent keyEvent) {
         if (((TerminalView) view).isShowingOverlay()) {
+            // Vim-style pager: j/k (or Ctrl+N/P) scroll, h/l change width, PageUp/PageDown page,
+            // +/- width, F maximize.
             TerminalView tv = (TerminalView) view;
-            if (keyEvent.getKeyType() == KeyType.ArrowUp) {
+            KeyType type = keyEvent.getKeyType();
+            Character raw = keyEvent.getCharacter();
+            char c = raw == null ? 0 : Character.toLowerCase(raw);
+            boolean ctrl = keyEvent.isCtrlDown();
+            boolean plain = !ctrl && !keyEvent.isAltDown();
+            if (type == KeyType.ArrowUp || (plain && c == 'k')) {
                 tv.scrollOverlay(-1);
-            } else if (keyEvent.getKeyType() == KeyType.ArrowDown) {
+            } else if (type == KeyType.ArrowDown || (plain && c == 'j')) {
                 tv.scrollOverlay(1);
-            } else if (keyEvent.getKeyType() == KeyType.ArrowLeft) {
-                tv.resizeOverlay(-4);
-            } else if (keyEvent.getKeyType() == KeyType.ArrowRight) {
+            } else if (type == KeyType.PageUp || (ctrl && (c == 'p' || c == 16))) {
+                tv.scrollOverlayPage(-1);
+            } else if (type == KeyType.PageDown || (ctrl && (c == 'n' || c == 14))) {
+                tv.scrollOverlayPage(1);
+            } else if (type == KeyType.ArrowLeft || (plain && c == 'h')) {
                 tv.resizeOverlay(4);
-            } else if (keyEvent.getKeyType() == KeyType.Escape) {
+            } else if (type == KeyType.ArrowRight || (plain && c == 'l')) {
+                tv.resizeOverlay(-4);
+            } else if (type == KeyType.Escape) {
                 tv.clearOverlay();
-            } else if (keyEvent.getCharacter() != null) {
-                char c = Character.toLowerCase(keyEvent.getCharacter());
-                if (c == '+' || c == '=') {
-                    tv.resizeOverlay(4);
-                } else if (c == '-' || c == '_') {
-                    tv.resizeOverlay(-4);
-                } else if (c == 'f') {
-                    tv.toggleOverlayMaximize();
-                }
+            } else if (plain && (c == '+' || c == '=')) {
+                tv.resizeOverlay(4);
+            } else if (plain && (c == '-' || c == '_')) {
+                tv.resizeOverlay(-4);
+            } else if (plain && c == 'f') {
+                tv.toggleOverlayMaximize();
             }
             return;
         }

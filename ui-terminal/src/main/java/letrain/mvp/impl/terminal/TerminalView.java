@@ -403,7 +403,7 @@ public class TerminalView implements letrain.mvp.View {
 
                 tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.YELLOW);
                 tg.putString(startX + 2, startY + height - 1,
-                        "[ESC close | up/down scroll | left/right +/- width | F max]");
+                        "[ESC close | j/k scroll | h/l width | PgUp/PgDn | F max]");
             }
 
             this.screen.refresh();
@@ -1343,6 +1343,14 @@ public class TerminalView implements letrain.mvp.View {
         overlayScroll += amount;
         if (overlayScroll < 0) overlayScroll = 0;
         paint();
+    }
+
+    /** Scrolls the overlay by one page (its visible content height). */
+    public void scrollOverlayPage(int direction) {
+        int rows = screen.getTerminalSize().getRows();
+        int height = overlayMaximized ? rows - 2 : Math.min(25, rows - 2);
+        int page = Math.max(1, height - 4);
+        scrollOverlay(direction * page);
     }
 
     /** Grows (positive) or shrinks (negative) the overlay width in columns. */
