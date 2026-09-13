@@ -683,9 +683,9 @@ public class Gdx3DHud {
 
             // ---- Tab bar
             Table tabBar = new Table();
-            final TextButton scenarioTabBtn = new TextButton(" Scenario ", skin, "monospace-toggle");
-            final TextButton programTabBtn = new TextButton(" Program ", skin, "monospace-toggle");
-            final TextButton configTabBtn = new TextButton(" Config ", skin, "monospace-toggle");
+            final TextButton scenarioTabBtn = new TextButton(" Scenario ", skin, "monospace-button");
+            final TextButton programTabBtn = new TextButton(" Program ", skin, "monospace-button");
+            final TextButton configTabBtn = new TextButton(" Config ", skin, "monospace-button");
             tabBar.add(scenarioTabBtn).padRight(5);
             tabBar.add(programTabBtn).padRight(5);
             tabBar.add(configTabBtn);
@@ -699,6 +699,11 @@ public class Gdx3DHud {
                     scenarioBuffer[0] = textArea.getText();
                 }
             };
+            final Runnable updateTabHighlight = () -> {
+                scenarioTabBtn.setColor(activeTab[0] == 0 ? Color.GREEN : Color.WHITE);
+                programTabBtn.setColor(activeTab[0] == 1 ? Color.GREEN : Color.WHITE);
+                configTabBtn.setColor(activeTab[0] == 2 ? Color.GREEN : Color.WHITE);
+            };
             final java.util.function.IntConsumer switchTo = tab -> {
                 if (activeTab[0] == tab) {
                     return;
@@ -711,32 +716,30 @@ public class Gdx3DHud {
                 updateLineNumbers.run();
                 updateStatus.run();
                 rebuildRef.run();
-                scenarioTabBtn.setChecked(tab == 0);
-                programTabBtn.setChecked(tab == 1);
-                configTabBtn.setChecked(tab == 2);
+                updateTabHighlight.run();
                 if (stage != null) {
                     stage.setKeyboardFocus(textArea);
                 }
             };
-            scenarioTabBtn.addListener(new ChangeListener() {
+            scenarioTabBtn.addListener(new ClickListener() {
                 @Override
-                public void changed(ChangeEvent event, Actor actor) {
+                public void clicked(InputEvent event, float x, float y) {
                     switchTo.accept(0);
                 }
             });
-            programTabBtn.addListener(new ChangeListener() {
+            programTabBtn.addListener(new ClickListener() {
                 @Override
-                public void changed(ChangeEvent event, Actor actor) {
+                public void clicked(InputEvent event, float x, float y) {
                     switchTo.accept(1);
                 }
             });
-            configTabBtn.addListener(new ChangeListener() {
+            configTabBtn.addListener(new ClickListener() {
                 @Override
-                public void changed(ChangeEvent event, Actor actor) {
+                public void clicked(InputEvent event, float x, float y) {
                     switchTo.accept(2);
                 }
             });
-            scenarioTabBtn.setChecked(true);
+            updateTabHighlight.run();
             rebuildRef.run();
 
             // Recompute the status and line numbers after the editor handles a key.
@@ -762,44 +765,43 @@ public class Gdx3DHud {
                 }
             };
 
-            final com.badlogic.gdx.scenes.scene2d.ui.List<String> errorList =
-                    new com.badlogic.gdx.scenes.scene2d.ui.List<>(skin);
-            final java.util.List<letrain.command.ScenarioCompiler.Diagnostic> diagnostics =
-                    new ArrayList<>();
+            final Table errorItems = new Table();
+            errorItems.top().left();
+            ScrollPane errorScroll = new ScrollPane(errorItems, skin);
+            errorScroll.setFadeScrollBars(false);
             final Table errorTable = new Table();
             errorTable.setBackground(skin.newDrawable("white", Color.MAROON));
-            errorTable.add(new Label("ERRORS (select to jump):", skin, "monospace")).left().padLeft(5)
+            errorTable.add(new Label("ERRORS (click to jump):", skin, "monospace")).left().padLeft(5)
                     .row();
-            errorTable.add(errorList).growX().pad(5);
+            errorTable.add(errorScroll).growX().height(120).pad(5);
             errorTable.setVisible(false);
-            errorList.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    int idx = errorList.getSelectedIndex();
-                    if (idx < 0 || idx >= diagnostics.size()) {
-                        return;
-                    }
-                    letrain.command.ScenarioCompiler.Diagnostic d = diagnostics.get(idx);
-                    letrain.command.ScenarioFile.LineTarget target =
-                            letrain.command.ScenarioFile.locateLine(composeFull.get(), d.line());
-                    switchTo.accept(target.tab());
-                    int pos = offsetOfLine(textArea.getText(), target.line());
-                    textArea.setCursorPosition(Math.min(pos, textArea.getText().length()));
-                    if (stage != null) {
-                        stage.setKeyboardFocus(textArea);
-                    }
+
+            final Consumer<letrain.command.ScenarioCompiler.Diagnostic> jumpTo = d -> {
+                letrain.command.ScenarioFile.LineTarget target =
+                        letrain.command.ScenarioFile.locateLine(composeFull.get(), d.line());
+                switchTo.accept(target.tab());
+                int pos = offsetOfLine(textArea.getText(), target.line());
+                textArea.setCursorPosition(Math.min(pos, textArea.getText().length()));
+                if (stage != null) {
+                    stage.setKeyboardFocus(textArea);
                 }
-            });
+            };
             final Consumer<letrain.command.ScenarioCompiler.Result> showDiagnostics = result -> {
-                diagnostics.clear();
-                errorList.clearItems();
+                errorItems.clearChildren();
                 if (result.ok()) {
                     errorTable.setVisible(false);
                     return;
                 }
-                diagnostics.addAll(result.diagnostics());
                 for (letrain.command.ScenarioCompiler.Diagnostic d : result.diagnostics()) {
-                    errorList.getItems().add(d.line() + ":" + d.col() + ": " + d.message());
+                    TextButton b = new TextButton(d.line() + ":" + d.col() + ": " + d.message(), skin,
+                            "monospace-button");
+                    b.addListener(new ChangeListener() {
+                        @Override
+                        public void changed(ChangeEvent event, Actor actor) {
+                            jumpTo.accept(d);
+                        }
+                    });
+                    errorItems.add(b).left().padBottom(2).row();
                 }
                 errorTable.setVisible(true);
                 window.invalidateHierarchy();
