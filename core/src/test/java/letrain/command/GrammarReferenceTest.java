@@ -102,4 +102,13 @@ class GrammarReferenceTest {
         assertTrue(GrammarReference.helpText("configuration").contains("threshold.WATER"));
         assertTrue(GrammarReference.helpText("nonsense").contains("No help"));
     }
+
+    @Test
+    @DisplayName("help flattens multi-line snippets onto a single line")
+    void helpText_flattensSnippets() {
+        String program = GrammarReference.helpText("program");
+
+        assertFalse(program.contains("{\n"), program);
+        assertTrue(program.contains("sensor # on train enter { }"), program);
+    }
 }

@@ -477,7 +477,7 @@ public class GrammarReference {
             }
             sb.append(node.label).append('\n');
         } else if (node.snippet != null && node.children.isEmpty()) {
-            sb.append("  ").append(indent).append(node.snippet);
+            sb.append("  ").append(indent).append(oneLine(node.snippet));
             if (node.label != null && !node.label.isBlank()) {
                 sb.append("  — ").append(node.label);
             }
@@ -488,6 +488,11 @@ public class GrammarReference {
                 renderHelp(child, sb, indent + "  ");
             }
         }
+    }
+
+    /** Collapses a (possibly multi-line) snippet into a single line for help output. */
+    private static String oneLine(String text) {
+        return text.replaceAll("\\s*\\R\\s*", " ").replaceAll("\\s+", " ").trim();
     }
 
     public static List<String[]> getFlatReferenceList() {
