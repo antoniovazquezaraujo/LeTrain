@@ -729,6 +729,13 @@ public class Gdx3DHud {
                     return parent;
                 }
 
+                private void scrollRefTo(Tree.Node node) {
+                    if (node.getActor() != null) {
+                        refScroll.scrollTo(node.getActor().getX(), node.getActor().getY(),
+                                node.getActor().getWidth(), node.getActor().getHeight());
+                    }
+                }
+
                 @Override
                 public boolean keyDown(InputEvent event, int keycode) {
                     com.badlogic.gdx.utils.Array<Tree.Node> selection =
@@ -738,12 +745,14 @@ public class Gdx3DHud {
                         Tree.Node next = nextVisible(current);
                         if (next != null) {
                             refTree.getSelection().set(next);
+                            scrollRefTo(next);
                         }
                         return true;
                     } else if (keycode == com.badlogic.gdx.Input.Keys.UP) {
                         Tree.Node prev = prevVisible(current);
                         if (prev != null) {
                             refTree.getSelection().set(prev);
+                            scrollRefTo(prev);
                         }
                         return true;
                     } else if (keycode == com.badlogic.gdx.Input.Keys.ENTER && current != null) {
@@ -1171,7 +1180,12 @@ public class Gdx3DHud {
                                 || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
                         int dir = shift ? -1 : 1;
                         int next = (idx + dir + focusCycle.size()) % focusCycle.size();
-                        stage.setKeyboardFocus(focusCycle.get(next));
+                        Actor target = focusCycle.get(next);
+                        stage.setKeyboardFocus(target);
+                        if (target == refTree && refTree.getSelection().isEmpty()
+                                && refTree.getRootNodes().size > 0) {
+                            refTree.getSelection().set((Tree.Node) refTree.getRootNodes().get(0));
+                        }
                         return true;
                     }
                     Actor focused = stage.getKeyboardFocus();
