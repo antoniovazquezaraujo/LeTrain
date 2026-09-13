@@ -488,6 +488,55 @@ public class Train implements Renderable {
         return linkers;
     }
 
+    /**
+     * Human-readable composition: the tractive locomotive's color and the number of wagons per
+     * cargo type, e.g. {@code Loco color: RED} / {@code Wagons (3): COAL x2 GOLD x1}.
+     */
+    public String describeComposition() {
+        StringBuilder sb = new StringBuilder();
+
+        String color = null;
+        if (directorLinker instanceof Locomotive) {
+            color = ((Locomotive) directorLinker).getColor();
+        }
+        if (color == null) {
+            for (Linker linker : linkers) {
+                if (linker instanceof Locomotive) {
+                    color = ((Locomotive) linker).getColor();
+                    break;
+                }
+            }
+        }
+        if (color != null) {
+            sb.append("Loco color: ").append(color).append('\n');
+        }
+
+        java.util.Map<letrain.track.CargoTypes, Integer> counts =
+                new java.util.EnumMap<>(letrain.track.CargoTypes.class);
+        int wagons = 0;
+        for (Linker linker : linkers) {
+            if (linker instanceof Wagon) {
+                wagons++;
+                letrain.track.CargoTypes type = ((Wagon) linker).getCargoType();
+                if (type == null) {
+                    type = letrain.track.CargoTypes.NONE;
+                }
+                counts.merge(type, 1, Integer::sum);
+            }
+        }
+        sb.append("Wagons (").append(wagons).append("):");
+        if (counts.isEmpty()) {
+            sb.append(" none");
+        } else {
+            for (java.util.Map.Entry<letrain.track.CargoTypes, Integer> e : counts.entrySet()) {
+                sb.append(' ').append(e.getKey()).append(" x").append(e.getValue());
+            }
+        }
+        sb.append('\n');
+
+        return sb.toString();
+    }
+
     public Deque<Linker> getLinkersToJoin() {
         return linkersToJoin;
     }

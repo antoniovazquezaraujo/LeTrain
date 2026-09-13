@@ -297,6 +297,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 sb.append("Train ID: ").append(found.getId()).append("\n");
                 sb.append("Name: ").append(found.getTrain().getName()).append("\n");
                 sb.append("Speed: ").append(found.getSpeed()).append("\n");
+                sb.append(found.getTrain().describeComposition());
             } else return "Train not found";
         } else if (type.STATION() != null) {
             letrain.track.Station found = null;

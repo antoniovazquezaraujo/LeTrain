@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import letrain.mvp.impl.Model;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.Wagon;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -77,5 +80,25 @@ class CommandHelpTest {
         assertNotNull(text);
         assertTrue(text.contains("Forks:"), text);
         assertFalse(text.contains("Trains:"), text);
+    }
+
+    @Test
+    @DisplayName("info train <id> shows the loco color and wagons per type")
+    void info_train_showsComposition() {
+        Model model = new Model(1);
+        Train train = new Train(1);
+        Locomotive loco = new Locomotive(1, "A", "RED");
+        loco.setTrain(train);
+        train.pushBack(loco);
+        Wagon wagon = new Wagon("b");
+        wagon.setCargoType(letrain.track.CargoTypes.COAL);
+        train.pushBack(wagon);
+        model.addLocomotive(loco);
+
+        String text = run(model, "info train 1;");
+
+        assertNotNull(text);
+        assertTrue(text.contains("Loco color: RED"), text);
+        assertTrue(text.contains("COAL x1"), text);
     }
 }
