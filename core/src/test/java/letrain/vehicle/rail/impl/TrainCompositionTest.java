@@ -15,11 +15,11 @@ class TrainCompositionTest {
         Train train = new Train(1);
         train.pushBack(new Locomotive(1, "A", "RED"));
         Wagon coal1 = new Wagon("b");
-        coal1.setCargoType(CargoTypes.COAL);
+        coal1.setExclusiveCargoType(CargoTypes.COAL);
         Wagon coal2 = new Wagon("c");
-        coal2.setCargoType(CargoTypes.COAL);
+        coal2.setExclusiveCargoType(CargoTypes.COAL);
         Wagon gold = new Wagon("d");
-        gold.setCargoType(CargoTypes.GOLD);
+        gold.setExclusiveCargoType(CargoTypes.GOLD);
         train.pushBack(coal1);
         train.pushBack(coal2);
         train.pushBack(gold);
@@ -41,5 +41,19 @@ class TrainCompositionTest {
         String text = train.describeComposition();
 
         assertTrue(text.contains("Wagons (0): none"), text);
+    }
+
+    @Test
+    @DisplayName("falls back to the loaded cargo type when no exclusive type is set")
+    void fallsBackToCargoType() {
+        Train train = new Train(3);
+        train.pushBack(new Locomotive(3, "C", "BLUE"));
+        Wagon wagon = new Wagon("e");
+        wagon.setCargoType(CargoTypes.RUBY);
+        train.pushBack(wagon);
+
+        String text = train.describeComposition();
+
+        assertTrue(text.contains("RUBY x1"), text);
     }
 }

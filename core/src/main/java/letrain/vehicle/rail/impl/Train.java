@@ -517,7 +517,11 @@ public class Train implements Renderable {
         for (Linker linker : linkers) {
             if (linker instanceof Wagon) {
                 wagons++;
-                letrain.track.CargoTypes type = ((Wagon) linker).getCargoType();
+                Wagon wagon = (Wagon) linker;
+                letrain.track.CargoTypes type = wagon.getExclusiveCargoType();
+                if (type == null || type == letrain.track.CargoTypes.NONE) {
+                    type = wagon.getCargoType();
+                }
                 if (type == null) {
                     type = letrain.track.CargoTypes.NONE;
                 }

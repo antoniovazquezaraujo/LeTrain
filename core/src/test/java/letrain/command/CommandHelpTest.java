@@ -91,7 +91,7 @@ class CommandHelpTest {
         loco.setTrain(train);
         train.pushBack(loco);
         Wagon wagon = new Wagon("b");
-        wagon.setCargoType(letrain.track.CargoTypes.COAL);
+        wagon.setExclusiveCargoType(letrain.track.CargoTypes.COAL);
         train.pushBack(wagon);
         model.addLocomotive(loco);
 
