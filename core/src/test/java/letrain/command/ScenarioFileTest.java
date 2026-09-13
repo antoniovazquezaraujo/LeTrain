@@ -222,4 +222,25 @@ class ScenarioFileTest {
                         "new st;",
                         "go 1,0; face e; write 1;")));
     }
+
+    @Test
+    @DisplayName("locateLine maps a composed line to its editor tab and local line")
+    void locateLine_tabs() {
+        String full = "# LeTrain scenario v1\n" // 1
+                + "seed 1\n" // 2
+                + "configuration {\n" // 3
+                + "threshold.WATER=130\n" // 4
+                + "}\n" // 5
+                + "on build {\n" // 6
+                + "go 0,0; face e; write 1;\n" // 7
+                + "}\n" // 8
+                + "program {\n" // 9
+                + "sensor 1 on train enter { semaphore 1 open; }\n" // 10
+                + "}\n"; // 11
+
+        assertEquals(new ScenarioFile.LineTarget(0, 2), ScenarioFile.locateLine(full, 2));
+        assertEquals(new ScenarioFile.LineTarget(0, 4), ScenarioFile.locateLine(full, 7));
+        assertEquals(new ScenarioFile.LineTarget(2, 2), ScenarioFile.locateLine(full, 4));
+        assertEquals(new ScenarioFile.LineTarget(1, 2), ScenarioFile.locateLine(full, 10));
+    }
 }

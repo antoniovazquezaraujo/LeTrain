@@ -251,7 +251,6 @@ public class GraphicPresenter extends ApplicationAdapter
 
             simulationController.tick();
             inputHandler.update();
-            hud.updateIDE();
 
             stateTime -= 0.05f;
             if (stateTime > 0.05f)

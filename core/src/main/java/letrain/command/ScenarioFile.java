@@ -491,6 +491,68 @@ public final class ScenarioFile {
                 base.buildCommands(), base.startCommands(), programSectionBody(programText));
     }
 
+    /**
+     * Editor tab a composed-scenario line belongs to: {@code 0} = Scenario (seed + on build +
+     * on start), {@code 1} = Program, {@code 2} = Config.
+     */
+    public record LineTarget(int tab, int line) {}
+
+    /**
+     * Maps a 1-based line of a composed scenario to the editor tab that owns it and the 1-based local
+     * line inside that tab. The Scenario tab omits the {@code configuration} section, so lines after
+     * it shift up. Shared by the 2D and 3D editors.
+     */
+    public static LineTarget locateLine(String fullText, int line) {
+        String[] lines = fullText.split("\n", -1);
+        int configStart = -1;
+        int configEnd = -1;
+        int programStart = -1;
+        int programEnd = -1;
+        String section = null;
+        int depth = 0;
+        for (int i = 0; i < lines.length; i++) {
+            String text = lines[i].trim();
+            if (depth == 0) {
+                String lower = text.toLowerCase();
+                if (lower.startsWith("configuration")) {
+                    configStart = i + 1;
+                    section = "configuration";
+                    depth = 1;
+                    continue;
+                } else if (lower.startsWith("program")) {
+                    programStart = i + 1;
+                    section = "program";
+                    depth = 1;
+                    continue;
+                } else if (lower.startsWith("on build") || lower.startsWith("on start")) {
+                    section = "build";
+                    depth = 1;
+                    continue;
+                }
+            } else {
+                depth += braceDelta(text);
+                if (depth <= 0) {
+                    if ("configuration".equals(section)) {
+                        configEnd = i + 1;
+                    } else if ("program".equals(section)) {
+                        programEnd = i + 1;
+                    }
+                    section = null;
+                    depth = 0;
+                }
+            }
+        }
+        if (configStart > 0 && line >= configStart && line <= configEnd) {
+            return new LineTarget(2, line - configStart + 1);
+        }
+        if (programStart > 0 && line >= programStart && line <= programEnd) {
+            return new LineTarget(1, line - programStart + 1);
+        }
+        int configLines = configStart > 0 ? configEnd - configStart + 1 : 0;
+        int scenarioLine = (configStart > 0 && line > configEnd) ? line - configLines : line;
+        return new LineTarget(0, scenarioLine);
+    }
+
     private static String[] safeLines(String text) {
         return text == null ? new String[0] : text.split("\\R");
     }
