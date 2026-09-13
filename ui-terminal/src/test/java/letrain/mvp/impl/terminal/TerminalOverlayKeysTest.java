@@ -41,33 +41,33 @@ class TerminalOverlayKeysTest {
     }
 
     @Test
-    @DisplayName("j / Ctrl+N scroll down, k / Ctrl+P scroll up")
+    @DisplayName("j / k scroll one line")
     void scrollKeys() {
         presenter.onChar(key('j', false));
-        presenter.onChar(key('n', true));
-        verify(view, times(2)).scrollOverlay(1);
-
+        verify(view).scrollOverlay(1);
         presenter.onChar(key('k', false));
-        presenter.onChar(key('p', true));
-        verify(view, times(2)).scrollOverlay(-1);
+        verify(view).scrollOverlay(-1);
     }
 
     @Test
-    @DisplayName("h / l change the width")
-    void widthKeys() {
-        presenter.onChar(key('h', false));
-        verify(view).resizeOverlay(-4);
-        presenter.onChar(key('l', false));
-        verify(view).resizeOverlay(4);
-    }
-
-    @Test
-    @DisplayName("PageUp / PageDown scroll a page")
+    @DisplayName("PageUp / PageDown and Ctrl+P / Ctrl+N scroll a page")
     void pageKeys() {
         presenter.onChar(new InputEvent(KeyType.PageDown));
-        verify(view).scrollOverlayPage(1);
+        presenter.onChar(key('n', true));
+        verify(view, times(2)).scrollOverlayPage(1);
+
         presenter.onChar(new InputEvent(KeyType.PageUp));
-        verify(view).scrollOverlayPage(-1);
+        presenter.onChar(key('p', true));
+        verify(view, times(2)).scrollOverlayPage(-1);
+    }
+
+    @Test
+    @DisplayName("h / left grow the panel width, l / right shrink it")
+    void widthKeys() {
+        presenter.onChar(key('h', false));
+        verify(view).resizeOverlay(4);
+        presenter.onChar(key('l', false));
+        verify(view).resizeOverlay(-4);
     }
 
     @Test

@@ -623,19 +623,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             char c = raw == null ? 0 : Character.toLowerCase(raw);
             boolean ctrl = keyEvent.isCtrlDown();
             boolean plain = !ctrl && !keyEvent.isAltDown();
-            if (type == KeyType.ArrowUp || (plain && c == 'k') || (ctrl && (c == 'p' || c == 16))) {
+            if (type == KeyType.ArrowUp || (plain && c == 'k')) {
                 tv.scrollOverlay(-1);
-            } else if (type == KeyType.ArrowDown || (plain && c == 'j')
-                    || (ctrl && (c == 'n' || c == 14))) {
+            } else if (type == KeyType.ArrowDown || (plain && c == 'j')) {
                 tv.scrollOverlay(1);
-            } else if (type == KeyType.PageUp) {
+            } else if (type == KeyType.PageUp || (ctrl && (c == 'p' || c == 16))) {
                 tv.scrollOverlayPage(-1);
-            } else if (type == KeyType.PageDown) {
+            } else if (type == KeyType.PageDown || (ctrl && (c == 'n' || c == 14))) {
                 tv.scrollOverlayPage(1);
             } else if (type == KeyType.ArrowLeft || (plain && c == 'h')) {
-                tv.resizeOverlay(-4);
-            } else if (type == KeyType.ArrowRight || (plain && c == 'l')) {
                 tv.resizeOverlay(4);
+            } else if (type == KeyType.ArrowRight || (plain && c == 'l')) {
+                tv.resizeOverlay(-4);
             } else if (type == KeyType.Escape) {
                 tv.clearOverlay();
             } else if (plain && (c == '+' || c == '=')) {
