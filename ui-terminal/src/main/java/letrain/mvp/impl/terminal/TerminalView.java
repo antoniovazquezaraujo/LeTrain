@@ -1120,67 +1120,9 @@ public class TerminalView implements letrain.mvp.View {
      * omits the {@code configuration} section (it has its own tab), so lines after it shift up.
      */
     static Jump locateDiagnostic(String full, int line) {
-        String[] lines = full.split("\n", -1);
-        int configStart = -1;
-        int configEnd = -1;
-        int programStart = -1;
-        int programEnd = -1;
-        String section = null;
-        int depth = 0;
-        for (int i = 0; i < lines.length; i++) {
-            String text = lines[i].trim();
-            if (depth == 0) {
-                String lower = text.toLowerCase();
-                if (lower.startsWith("configuration")) {
-                    configStart = i + 1;
-                    section = "configuration";
-                    depth = 1;
-                    continue;
-                } else if (lower.startsWith("program")) {
-                    programStart = i + 1;
-                    section = "program";
-                    depth = 1;
-                    continue;
-                } else if (lower.startsWith("on build") || lower.startsWith("on start")) {
-                    section = "build";
-                    depth = 1;
-                    continue;
-                }
-            } else {
-                depth += braceDelta(text);
-                if (depth <= 0) {
-                    if ("configuration".equals(section)) {
-                        configEnd = i + 1;
-                    } else if ("program".equals(section)) {
-                        programEnd = i + 1;
-                    }
-                    section = null;
-                    depth = 0;
-                }
-            }
-        }
-        if (configStart > 0 && line >= configStart && line <= configEnd) {
-            return new Jump(2, line - configStart + 1);
-        }
-        if (programStart > 0 && line >= programStart && line <= programEnd) {
-            return new Jump(1, line - programStart + 1);
-        }
-        int configLines = configStart > 0 ? configEnd - configStart + 1 : 0;
-        int scenarioLine = (configStart > 0 && line > configEnd) ? line - configLines : line;
-        return new Jump(0, scenarioLine);
-    }
-
-    /** Net brace count of a line ({@code {}). */
-    private static int braceDelta(String line) {
-        int delta = 0;
-        for (int i = 0; i < line.length(); i++) {
-            if (line.charAt(i) == '{') {
-                delta++;
-            } else if (line.charAt(i) == '}') {
-                delta--;
-            }
-        }
-        return delta;
+        letrain.command.ScenarioFile.LineTarget target =
+                letrain.command.ScenarioFile.locateLine(full, line);
+        return new Jump(target.tab(), target.line());
     }
 
     /** Keeps the Config tab editable even when the world has no settings yet. */

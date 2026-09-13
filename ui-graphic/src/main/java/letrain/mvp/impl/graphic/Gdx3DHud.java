@@ -46,8 +46,6 @@ public class Gdx3DHud {
 
     private NotchLever notchLever;
     private ShapeRenderer shapeRenderer;
-    private Label ideLogContent;
-    private Label ideObjsContent;
     private Window ideWindow;
 
     public Gdx3DHud(Model model, GraphicPresenter view) {
@@ -103,6 +101,7 @@ public class Gdx3DHud {
 
         // Monospace font for IDE
         BitmapFont monospaceFont = FontManager.loadMonospaceFont(18);
+        monospaceFont.getData().markupEnabled = true;
         skin.add("monospace-font", monospaceFont);
 
         Label.LabelStyle monoLabelStyle = new Label.LabelStyle();
@@ -534,13 +533,16 @@ public class Gdx3DHud {
     public void showIDE() {
         if (ideWindow != null) {
             ideWindow.toFront();
-            stage.setKeyboardFocus(ideWindow.findActor("editorTextArea")); // Need to name the
-                                                                           // textArea
+            Actor editor = ideWindow.findActor("editorTextArea");
+            if (editor != null) {
+                stage.setKeyboardFocus(editor);
+            }
             return;
         }
         Gdx.app.postRunnable(() -> {
-            if (ideWindow != null)
-                return; // double check inside runnable
+            if (ideWindow != null) {
+                return;
+            }
             final Window window =
                     new Window("LeTrain Editor " + letrain.BuildInfo.versionTag() + " (3D)", skin);
             window.setModal(true);
@@ -556,8 +558,423 @@ public class Gdx3DHud {
                     new Window.WindowStyle(skin.get(Window.WindowStyle.class));
             ideWindowStyle.background = windowWhite;
             window.setStyle(ideWindowStyle);
+            // Center the title (the title table also holds the close/max buttons on the right).
+            window.getTitleLabel().setAlignment(com.badlogic.gdx.utils.Align.center);
+            window.getTitleTable().getCells().first().expandX();
 
-            // Title bar buttons
+            // ---- State: three tabs (Scenario / Program / Config)
+            final String[] scenarioBuffer = {view.getScenarioText()};
+            final String[] programBuffer = {letrain.command.ScenarioFile.programSection(view.getProgram())};
+            final String[] configBuffer = {configSectionOrEmpty(view.getConfigurationText())};
+            final int[] activeTab = {0};
+
+            // ---- Editor with line numbers
+            final com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea =
+                    new com.badlogic.gdx.scenes.scene2d.ui.TextArea(scenarioBuffer[0], skin,
+                            "monospace-textarea");
+            textArea.setName("editorTextArea");
+
+            final Table lineNumbersTable = new Table();
+            lineNumbersTable.top().right();
+            final Runnable updateLineNumbers = () -> {
+                lineNumbersTable.clearChildren();
+                int lines = textArea.getText().split("\n", -1).length;
+                float lineHeight = textArea.getStyle().font.getLineHeight();
+                for (int i = 1; i <= lines; i++) {
+                    Label l = new Label(String.valueOf(i), skin, "monospace");
+                    l.setColor(Color.GRAY);
+                    lineNumbersTable.add(l).height(lineHeight).top().right().padRight(10).row();
+                }
+            };
+            textArea.setTextFieldListener((textField, c) -> updateLineNumbers.run());
+            updateLineNumbers.run();
+
+            float topPad = textArea.getStyle().background != null
+                    ? textArea.getStyle().background.getTopHeight() : 0;
+            Table editorSubContainer = new Table();
+            editorSubContainer.top().left();
+            editorSubContainer.add(lineNumbersTable).top().padTop(topPad + 2.5f);
+            editorSubContainer.add(textArea).grow().top();
+            ScrollPane editorScroll = new ScrollPane(editorSubContainer, skin);
+            editorScroll.setFadeScrollBars(false);
+
+            // ---- Status bar (Ln/Col)
+            final Label statusLabel = new Label("", skin, "monospace");
+            final Runnable updateStatus = () -> {
+                String text = textArea.getText();
+                int pos = Math.min(textArea.getCursorPosition(), text.length());
+                int row = 0;
+                int col = 0;
+                for (int i = 0; i < pos; i++) {
+                    if (text.charAt(i) == '\n') {
+                        row++;
+                        col = 0;
+                    } else {
+                        col++;
+                    }
+                }
+                statusLabel.setText("Ln " + (row + 1) + ", Col " + (col + 1));
+            };
+            updateStatus.run();
+
+            // ---- Quick reference (rebuilt per tab)
+            com.badlogic.gdx.scenes.scene2d.ui.Tree.TreeStyle treeStyle =
+                    new com.badlogic.gdx.scenes.scene2d.ui.Tree.TreeStyle();
+            treeStyle.plus = skin.newDrawable("white", new Color(0.6f, 0.6f, 0.6f, 1f));
+            treeStyle.minus = skin.newDrawable("white", new Color(0.6f, 0.6f, 0.6f, 1f));
+            treeStyle.selection = skin.newDrawable("white", new Color(0.2f, 0.4f, 0.6f, 0.8f));
+            final Tree refTree = new Tree(treeStyle);
+            refTree.setPadding(5f);
+            refTree.setIconSpacing(6f, 0);
+            refTree.setIndentSpacing(12f);
+            ScrollPane refScroll = new ScrollPane(refTree, skin);
+
+            final Consumer<String> insertSnippet = snippet -> insertQuickRef(textArea, snippet);
+
+            final Runnable rebuildRef = () -> {
+                refTree.clearChildren();
+                letrain.command.GrammarReference.Group group = activeTab[0] == 1
+                        ? letrain.command.GrammarReference.Group.PROGRAM
+                        : activeTab[0] == 2 ? letrain.command.GrammarReference.Group.CONFIG
+                                : letrain.command.GrammarReference.Group.BUILD;
+                class TreeBuilder {
+                    Tree.Node build(letrain.command.GrammarReference.Node refNode, String indent) {
+                        if (refNode.isHeading) {
+                            Label l = new Label(refNode.label, skin, "monospace");
+                            l.setColor(Color.ORANGE);
+                            return new Tree.Node(l) {};
+                        } else if (refNode.snippet != null && refNode.children.isEmpty()) {
+                            Label l = new Label("   " + refNode.label, skin, "monospace");
+                            Tree.Node n = new Tree.Node(l) {};
+                            n.setValue(refNode.snippet);
+                            l.addListener(new ClickListener() {
+                                @Override
+                                public void clicked(InputEvent event, float x, float y) {
+                                    insertSnippet.accept(refNode.snippet);
+                                    event.stop();
+                                }
+                            });
+                            return n;
+                        } else {
+                            String prefix = refNode.expanded ? "[-]" : "[+]";
+                            Label l = new Label(indent + prefix + " " + refNode.label, skin,
+                                    "monospace");
+                            Tree.Node n = new Tree.Node(l) {};
+                            l.addListener(new ClickListener() {
+                                @Override
+                                public void clicked(InputEvent event, float x, float y) {
+                                    n.setExpanded(!n.isExpanded());
+                                    l.setText(n.isExpanded() ? indent + "[-] " + refNode.label
+                                            : indent + "[+] " + refNode.label);
+                                    event.stop();
+                                }
+                            });
+                            for (letrain.command.GrammarReference.Node child : refNode.children) {
+                                n.add(build(child, indent + "  "));
+                            }
+                            n.setExpanded(refNode.expanded);
+                            return n;
+                        }
+                    }
+                }
+                TreeBuilder tb = new TreeBuilder();
+                for (letrain.command.GrammarReference.Node rootNode : letrain.command.GrammarReference
+                        .getReferenceTree(group)) {
+                    refTree.add(tb.build(rootNode, "  "));
+                }
+            };
+
+            // Keyboard navigation inside the quick reference (arrows + Enter to insert/expand).
+            refTree.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                private Tree.Node nextVisible(Tree.Node current) {
+                    if (current == null) {
+                        return refTree.getRootNodes().size > 0
+                                ? (Tree.Node) refTree.getRootNodes().get(0) : null;
+                    }
+                    if (current.isExpanded() && current.getChildren().size > 0) {
+                        return (Tree.Node) current.getChildren().get(0);
+                    }
+                    Tree.Node node = current;
+                    while (node != null) {
+                        Tree.Node parent = node.getParent();
+                        com.badlogic.gdx.utils.Array siblings =
+                                parent == null ? refTree.getRootNodes() : parent.getChildren();
+                        int idx = siblings.indexOf(node, true);
+                        if (idx < siblings.size - 1) {
+                            return (Tree.Node) siblings.get(idx + 1);
+                        }
+                        node = parent;
+                    }
+                    return null;
+                }
+
+                private Tree.Node prevVisible(Tree.Node current) {
+                    if (current == null) {
+                        return refTree.getRootNodes().size > 0
+                                ? (Tree.Node) refTree.getRootNodes().get(0) : null;
+                    }
+                    Tree.Node parent = current.getParent();
+                    com.badlogic.gdx.utils.Array siblings =
+                            parent == null ? refTree.getRootNodes() : parent.getChildren();
+                    int idx = siblings.indexOf(current, true);
+                    if (idx > 0) {
+                        Tree.Node node = (Tree.Node) siblings.get(idx - 1);
+                        while (node.isExpanded() && node.getChildren().size > 0) {
+                            node = (Tree.Node) node.getChildren().peek();
+                        }
+                        return node;
+                    }
+                    return parent;
+                }
+
+                private void scrollRefTo(Tree.Node node) {
+                    if (node.getActor() != null) {
+                        refScroll.scrollTo(node.getActor().getX(), node.getActor().getY(),
+                                node.getActor().getWidth(), node.getActor().getHeight());
+                    }
+                }
+
+                @Override
+                public boolean keyDown(InputEvent event, int keycode) {
+                    com.badlogic.gdx.utils.Array<Tree.Node> selection =
+                            refTree.getSelection().toArray();
+                    Tree.Node current = selection.size > 0 ? selection.get(0) : null;
+                    if (keycode == com.badlogic.gdx.Input.Keys.DOWN) {
+                        Tree.Node next = nextVisible(current);
+                        if (next != null) {
+                            refTree.getSelection().set(next);
+                            scrollRefTo(next);
+                        }
+                        return true;
+                    } else if (keycode == com.badlogic.gdx.Input.Keys.UP) {
+                        Tree.Node prev = prevVisible(current);
+                        if (prev != null) {
+                            refTree.getSelection().set(prev);
+                            scrollRefTo(prev);
+                        }
+                        return true;
+                    } else if (keycode == com.badlogic.gdx.Input.Keys.ENTER && current != null) {
+                        if (current.getValue() instanceof String) {
+                            insertSnippet.accept((String) current.getValue());
+                            return true;
+                        } else if (current.getActor() instanceof Label) {
+                            Label l = (Label) current.getActor();
+                            String text = l.getText().toString();
+                            if (text.contains("[+]") || text.contains("[-]")) {
+                                boolean expanded = !current.isExpanded();
+                                current.setExpanded(expanded);
+                                l.setText(expanded ? text.replace("[+]", "[-]")
+                                        : text.replace("[-]", "[+]"));
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                }
+            });
+
+            // ---- Tab bar
+            Table tabBar = new Table();
+            final TextButton scenarioTabBtn = new TextButton(" Scenario ", skin, "monospace-button");
+            final TextButton programTabBtn = new TextButton(" Program ", skin, "monospace-button");
+            final TextButton configTabBtn = new TextButton(" Config ", skin, "monospace-button");
+            tabBar.add(scenarioTabBtn).padRight(5);
+            tabBar.add(programTabBtn).padRight(5);
+            tabBar.add(configTabBtn);
+
+            final Runnable saveActive = () -> {
+                if (activeTab[0] == 1) {
+                    programBuffer[0] = textArea.getText();
+                } else if (activeTab[0] == 2) {
+                    configBuffer[0] = textArea.getText();
+                } else {
+                    scenarioBuffer[0] = textArea.getText();
+                }
+            };
+            final Runnable updateTabHighlight = () -> {
+                scenarioTabBtn.setColor(activeTab[0] == 0 ? Color.GREEN : Color.WHITE);
+                programTabBtn.setColor(activeTab[0] == 1 ? Color.GREEN : Color.WHITE);
+                configTabBtn.setColor(activeTab[0] == 2 ? Color.GREEN : Color.WHITE);
+            };
+            final java.util.function.IntConsumer switchTo = tab -> {
+                if (activeTab[0] == tab) {
+                    return;
+                }
+                saveActive.run();
+                activeTab[0] = tab;
+                textArea.setText(tab == 1 ? programBuffer[0]
+                        : tab == 2 ? configBuffer[0] : scenarioBuffer[0]);
+                textArea.setCursorPosition(0);
+                updateLineNumbers.run();
+                updateStatus.run();
+                rebuildRef.run();
+                updateTabHighlight.run();
+                if (stage != null) {
+                    stage.setKeyboardFocus(textArea);
+                }
+            };
+            scenarioTabBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    switchTo.accept(0);
+                }
+            });
+            programTabBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    switchTo.accept(1);
+                }
+            });
+            configTabBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    switchTo.accept(2);
+                }
+            });
+            updateTabHighlight.run();
+            rebuildRef.run();
+
+            // Recompute the status and line numbers after the editor handles a key.
+            textArea.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
+                @Override
+                public boolean keyDown(InputEvent event, int keycode) {
+                    Gdx.app.postRunnable(() -> {
+                        updateStatus.run();
+                        updateLineNumbers.run();
+                    });
+                    return false;
+                }
+            });
+
+            // ---- Composed scenario + diagnostics
+            final java.util.function.Supplier<String> composeFull = () -> {
+                saveActive.run();
+                try {
+                    return letrain.command.ScenarioFile.compose(scenarioBuffer[0], configBuffer[0],
+                            programBuffer[0]);
+                } catch (Exception e) {
+                    return scenarioBuffer[0] + "\n" + configBuffer[0] + "\n" + programBuffer[0];
+                }
+            };
+
+            final Table errorItems = new Table();
+            errorItems.top().left();
+            ScrollPane errorScroll = new ScrollPane(errorItems, skin);
+            errorScroll.setFadeScrollBars(false);
+            final Table errorTable = new Table();
+            errorTable.setBackground(skin.newDrawable("white", Color.MAROON));
+            errorTable.add(new Label("ERRORS (click to jump):", skin, "monospace")).left().padLeft(5)
+                    .row();
+            errorTable.add(errorScroll).growX().height(120).pad(5);
+            errorTable.setVisible(false);
+
+            final Consumer<letrain.command.ScenarioCompiler.Diagnostic> jumpTo = d -> {
+                letrain.command.ScenarioFile.LineTarget target =
+                        letrain.command.ScenarioFile.locateLine(composeFull.get(), d.line());
+                switchTo.accept(target.tab());
+                int pos = offsetOfLine(textArea.getText(), target.line());
+                textArea.setCursorPosition(Math.min(pos, textArea.getText().length()));
+                if (stage != null) {
+                    stage.setKeyboardFocus(textArea);
+                }
+            };
+            final Consumer<letrain.command.ScenarioCompiler.Result> showDiagnostics = result -> {
+                errorItems.clearChildren();
+                if (result.ok()) {
+                    errorTable.setVisible(false);
+                    return;
+                }
+                for (letrain.command.ScenarioCompiler.Diagnostic d : result.diagnostics()) {
+                    TextButton b = new TextButton(d.line() + ":" + d.col() + ": " + d.message(), skin,
+                            "monospace-button");
+                    b.addListener(new ChangeListener() {
+                        @Override
+                        public void changed(ChangeEvent event, Actor actor) {
+                            jumpTo.accept(d);
+                        }
+                    });
+                    errorItems.add(b).left().padBottom(2).row();
+                }
+                errorTable.setVisible(true);
+                window.invalidateHierarchy();
+            };
+
+            // ---- Actions
+            final Runnable saveAction = () -> {
+                saveActive.run();
+                view.showSaveDialog();
+            };
+            final Runnable loadAction = () -> view.showLoadDialog();
+            final Runnable refreshAction = () -> {
+                scenarioBuffer[0] = view.getScenarioText();
+                programBuffer[0] = letrain.command.ScenarioFile.programSection(view.getProgram());
+                configBuffer[0] = configSectionOrEmpty(view.getConfigurationText());
+                textArea.setText(activeTab[0] == 1 ? programBuffer[0]
+                        : activeTab[0] == 2 ? configBuffer[0] : scenarioBuffer[0]);
+                textArea.setCursorPosition(0);
+                updateLineNumbers.run();
+                updateStatus.run();
+                rebuildRef.run();
+            };
+            final Runnable reprogramAction = () -> {
+                saveActive.run();
+                view.onEditCommands(letrain.command.ScenarioFile.programSectionBody(programBuffer[0]));
+            };
+            final Runnable exportAction = () -> {
+                String full = composeFull.get();
+                letrain.command.ScenarioCompiler.Result result =
+                        letrain.command.ScenarioCompiler.compile(full);
+                showDiagnostics.accept(result);
+                showFileDialog("Export Scenario",
+                        com.kotcrab.vis.ui.widget.file.FileChooser.Mode.SAVE, "scenario.ltr",
+                        new String[] {"ltr"}, path -> {
+                            if (path != null && !path.trim().isEmpty()) {
+                                view.onExportScenarioText(new java.io.File(path), full);
+                            }
+                        });
+            };
+            final Runnable importAction = () -> showFileDialog("Open Scenario",
+                    com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN, "scenario.ltr",
+                    new String[] {"ltr"}, path -> {
+                        if (path == null || path.trim().isEmpty()) {
+                            return;
+                        }
+                        try {
+                            String fileText = java.nio.file.Files
+                                    .readString(new java.io.File(path).toPath());
+                            letrain.command.ScenarioFile.Parts parts =
+                                    letrain.command.ScenarioFile.split(fileText);
+                            scenarioBuffer[0] = parts.scenarioText();
+                            programBuffer[0] = parts.programText();
+                            configBuffer[0] = configSectionOrEmpty(parts.configurationText());
+                            textArea.setText(activeTab[0] == 1 ? programBuffer[0]
+                                    : activeTab[0] == 2 ? configBuffer[0] : scenarioBuffer[0]);
+                            textArea.setCursorPosition(0);
+                            updateLineNumbers.run();
+                            updateStatus.run();
+                            rebuildRef.run();
+                        } catch (Exception ex) {
+                            showMessage("Scenario Error", String.valueOf(ex.getMessage()));
+                        }
+                    });
+            final Runnable rebuildAction = () -> {
+                String full = composeFull.get();
+                letrain.command.ScenarioCompiler.Result result =
+                        letrain.command.ScenarioCompiler.compile(full);
+                showDiagnostics.accept(result);
+                if (result.ok()) {
+                    view.onPlayScenarioText(full);
+                }
+            };
+            final Runnable closeAction = () -> {
+                saveActive.run();
+                ideWindow = null;
+                window.remove();
+                model.setMode(letrain.mvp.Model.GameMode.RAILS);
+                view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
+            };
+
+            // ---- Title bar buttons
             Table titleTable = window.getTitleTable();
             TextButton.TextButtonStyle titleBtnStyle =
                     new TextButton.TextButtonStyle(skin.get(TextButton.TextButtonStyle.class));
@@ -567,19 +984,12 @@ public class Gdx3DHud {
             TextButton maxBtnTitle = new TextButton(" [ ] ", titleBtnStyle);
             titleTable.add(maxBtnTitle).size(30, 22).right().padRight(5);
             titleTable.add(closeBtnTitle).size(30, 22).right().padRight(10);
-
             closeBtnTitle.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
-                    ideWindow = null;
-                    ideLogContent = null;
-                    ideObjsContent = null;
-                    window.remove();
-                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                    view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
+                    closeAction.run();
                 }
             });
-
             final boolean[] isMaximized = {false};
             final float[] prevX = {0}, prevY = {0}, prevW = {0}, prevH = {0};
             maxBtnTitle.addListener(new ChangeListener() {
@@ -595,8 +1005,6 @@ public class Gdx3DHud {
                         window.setMovable(false);
                         isMaximized[0] = true;
                         maxBtnTitle.setText(" [-] ");
-                        ideWindowStyle.background = windowWhite;
-                        window.setBackground(windowWhite);
                     } else {
                         window.setResizable(true);
                         window.setMovable(true);
@@ -607,24 +1015,14 @@ public class Gdx3DHud {
                     window.invalidateHierarchy();
                 }
             });
-
             window.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
                 @Override
                 public boolean mouseMoved(InputEvent event, float x, float y) {
                     if (!isMaximized[0]) {
-                        // Use a 20px margin to make it easy to trigger and visible
                         boolean nearBorder = (x <= 20 || x >= window.getWidth() - 20 || y <= 20
                                 || y >= window.getHeight() - 20);
-                        if (nearBorder) {
-                            ideWindowStyle.background = windowBlue;
-                            window.setBackground(windowBlue);
-                        } else {
-                            ideWindowStyle.background = windowWhite;
-                            window.setBackground(windowWhite);
-                        }
-                    } else {
-                        ideWindowStyle.background = windowWhite;
-                        window.setBackground(windowWhite);
+                        ideWindowStyle.background = nearBorder ? windowBlue : windowWhite;
+                        window.setBackground(ideWindowStyle.background);
                     }
                     return false;
                 }
@@ -638,617 +1036,218 @@ public class Gdx3DHud {
                 }
             });
 
-            // Toggle Buttons Bar
-            Table toggleBar = new Table();
-            final TextButton toggleRef = new TextButton("Ref", skin, "monospace-toggle");
-            final TextButton toggleObjs = new TextButton("Objs", skin, "monospace-toggle");
-            final TextButton toggleEx = new TextButton("Ex", skin, "monospace-toggle");
-            final TextButton toggleLog = new TextButton("Logs", skin, "monospace-toggle");
-
-            // Toggles automatically managed by "toggle" style and its internal listeners
-
-            toggleRef.setChecked(true);
-            toggleObjs.setChecked(true);
-            toggleEx.setChecked(false);
-
-            toggleBar.add(new Label("Panels: ", skin, "monospace")).padRight(5);
-            toggleBar.add(toggleRef).padRight(5);
-            toggleBar.add(toggleObjs).padRight(5);
-            toggleBar.add(toggleEx).padRight(5);
-            toggleBar.add(toggleLog);
-
-            // Editor Area
-            final com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea =
-                    new com.badlogic.gdx.scenes.scene2d.ui.TextArea(view.getProgram(), skin,
-                            "monospace-textarea");
-            textArea.setName("editorTextArea");
-
-            // Line numbers in a separate table for perfect row-by-row alignment
-            final Table lineNumbersTable = new Table();
-            lineNumbersTable.top().right();
-
-            Table editorSubContainer = new Table();
-            editorSubContainer.top().left();
-
-            Runnable updateLineNumbers = () -> {
-                lineNumbersTable.clearChildren();
-                String text = textArea.getText();
-                int lines = text.split("\n", -1).length;
-                float lineHeight = textArea.getStyle().font.getLineHeight();
-                for (int i = 1; i <= lines; i++) {
-                    Label l = new Label(String.valueOf(i), skin, "monospace");
-                    l.setColor(com.badlogic.gdx.graphics.Color.GRAY);
-                    lineNumbersTable.add(l).height(lineHeight).top().right().padRight(10).row();
-                }
-            };
-            textArea.setTextFieldListener((textField, c) -> updateLineNumbers.run());
-            updateLineNumbers.run();
-
-            float topPad = textArea.getStyle().background != null
-                    ? textArea.getStyle().background.getTopHeight()
-                    : 0;
-            // Add a small manual adjustment (2px) often helps with multi-line alignment in
-            // Scene2D
-            editorSubContainer.add(lineNumbersTable).top().padTop(topPad + 2.5f);
-            editorSubContainer.add(textArea).grow().top();
-
-            ScrollPane editorScroll = new ScrollPane(editorSubContainer, skin);
-            editorScroll.setFadeScrollBars(false);
-
-            // Side Panels
-            final Table sideTable = new Table();
-
-            // 1. Reference
-            final Table refTable = new Table();
-            refTable.setBackground(skin.newDrawable("white", new Color(0.1f, 0.1f, 0.1f, 0.95f)));
-            Label refTitle = new Label("QUICK REFERENCE", skin, "monospace");
-            refTitle.setColor(Color.YELLOW);
-            refTable.add(refTitle).pad(5).row();
-
-            com.badlogic.gdx.scenes.scene2d.ui.Tree.TreeStyle treeStyle =
-                    new com.badlogic.gdx.scenes.scene2d.ui.Tree.TreeStyle();
-            treeStyle.plus = skin.newDrawable("white", new Color(0.6f, 0.6f, 0.6f, 1f));
-            treeStyle.minus = skin.newDrawable("white", new Color(0.6f, 0.6f, 0.6f, 1f));
-            treeStyle.selection = skin.newDrawable("white", new Color(0.2f, 0.4f, 0.6f, 0.8f));
-            Tree refTree = new Tree(treeStyle);
-            refTree.setPadding(5f);
-            refTree.setIconSpacing(6f, 0);
-            refTree.setIndentSpacing(12f);
-
-            final ScrollPane[] scrollPaneHolder = new ScrollPane[1];
-
-            refTree.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
-                private Tree.Node getNextVisible(Tree.Node current) {
-                    if (current == null)
-                        return refTree.getRootNodes().size > 0
-                                ? (Tree.Node) refTree.getRootNodes().get(0)
-                                : null;
-                    if (current.isExpanded() && current.getChildren().size > 0)
-                        return (Tree.Node) current.getChildren().get(0);
-                    Tree.Node node = current;
-                    while (node != null) {
-                        Tree.Node p = node.getParent();
-                        com.badlogic.gdx.utils.Array siblings =
-                                p == null ? refTree.getRootNodes() : p.getChildren();
-                        int idx = siblings.indexOf(node, true);
-                        if (idx < siblings.size - 1)
-                            return (Tree.Node) siblings.get(idx + 1);
-                        node = p;
-                    }
-                    return null;
-                }
-
-                private Tree.Node getPrevVisible(Tree.Node current) {
-                    if (current == null)
-                        return refTree.getRootNodes().size > 0
-                                ? (Tree.Node) refTree.getRootNodes().get(0)
-                                : null;
-                    Tree.Node p = current.getParent();
-                    com.badlogic.gdx.utils.Array siblings =
-                            p == null ? refTree.getRootNodes() : p.getChildren();
-                    int idx = siblings.indexOf(current, true);
-                    if (idx > 0) {
-                        Tree.Node node = (Tree.Node) siblings.get(idx - 1);
-                        while (node.isExpanded() && node.getChildren().size > 0)
-                            node = (Tree.Node) node.getChildren().peek();
-                        return node;
-                    }
-                    return p;
-                }
-
-                @Override
-                public boolean keyDown(com.badlogic.gdx.scenes.scene2d.InputEvent event,
-                        int keycode) {
-                    com.badlogic.gdx.utils.Array<Tree.Node> selection =
-                            refTree.getSelection().toArray();
-                    Tree.Node current = selection.size > 0 ? selection.get(0) : null;
-
-                    if (keycode == com.badlogic.gdx.Input.Keys.DOWN) {
-                        Tree.Node next = getNextVisible(current);
-                        if (next != null) {
-                            refTree.getSelection().set(next);
-                            if (scrollPaneHolder[0] != null && next.getActor() != null) {
-                                scrollPaneHolder[0].scrollTo(next.getActor().getX(),
-                                        next.getActor().getY(), next.getActor().getWidth(),
-                                        next.getActor().getHeight());
-                            }
-                        }
-                        return true;
-                    } else if (keycode == com.badlogic.gdx.Input.Keys.UP) {
-                        Tree.Node prev = getPrevVisible(current);
-                        if (prev != null) {
-                            refTree.getSelection().set(prev);
-                            if (scrollPaneHolder[0] != null && prev.getActor() != null) {
-                                scrollPaneHolder[0].scrollTo(prev.getActor().getX(),
-                                        prev.getActor().getY(), prev.getActor().getWidth(),
-                                        prev.getActor().getHeight());
-                            }
-                        }
-                        return true;
-                    } else if (keycode == com.badlogic.gdx.Input.Keys.ENTER && current != null) {
-                        if (current.getValue() instanceof String) {
-                            insertAtCursor(textArea, (String) current.getValue() + "\n");
-                            return true;
-                        } else if (current.getActor() instanceof Label) {
-                            Label l = (Label) current.getActor();
-                            String text = l.getText().toString();
-                            if (text.contains("[+]") || text.contains("[-]")) {
-                                current.setExpanded(!current.isExpanded());
-                                l.setText(current.isExpanded() ? text.replace("[+]", "[-]")
-                                        : text.replace("[-]", "[+]"));
-                                return true;
-                            }
-                        }
-                    }
-                    return false;
-                }
-            });
-
-            // Helper: creates a clickable leaf node that inserts a snippet on click
-            java.util.function.BiFunction<String, String, Tree.Node> leaf =
-                    (labelText, snippet) -> {
-                        Label l = new Label("   " + labelText, skin, "monospace");
-                        Tree.Node n = new Tree.Node(l) {};
-                        n.setValue(snippet);
-                        l.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-                            @Override
-                            public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event,
-                                    float x, float y) {
-                                insertAtCursor(textArea, snippet + "\n");
-                                event.stop();
-                            }
-
-                            @Override
-                            public void enter(com.badlogic.gdx.scenes.scene2d.InputEvent event,
-                                    float x, float y, int pointer,
-                                    com.badlogic.gdx.scenes.scene2d.Actor fromActor) {
-                                refTree.getSelection().set(n);
-                            }
-                        });
-                        return n;
-                    };
-            // Helper: section heading (non-clickable, orange)
-            java.util.function.Function<String, Tree.Node> heading = (text) -> {
-                Label l = new Label(text, skin, "monospace");
-                l.setColor(Color.ORANGE);
-                return new Tree.Node(l) {};
-            };
-            // Helper: creates a parent node (click to expand/collapse, toggles +/-)
-            java.util.function.Function<String, Tree.Node> parent = (text) -> {
-                Label l = new Label(text, skin, "monospace");
-                Tree.Node n = new Tree.Node(l) {};
-                l.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-                    @Override
-                    public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x,
-                            float y) {
-                        n.setExpanded(!n.isExpanded());
-                        l.setText(n.isExpanded() ? text.replace("[+]", "[-]")
-                                : text.replace("[-]", "[+]"));
-                        event.stop();
-                    }
-
-                    @Override
-                    public void enter(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x,
-                            float y, int pointer, com.badlogic.gdx.scenes.scene2d.Actor fromActor) {
-                        refTree.getSelection().set(n);
-                    }
-                });
-                return n;
-            };
-
-            // ── BUILD TREE ──
-            class TreeBuilder {
-                Tree.Node build(letrain.command.GrammarReference.Node refNode, String indent) {
-                    if (refNode.isHeading) {
-                        return heading.apply(refNode.label);
-                    } else if (refNode.snippet != null && refNode.children.isEmpty()) {
-                        return leaf.apply(refNode.label, refNode.snippet);
-                    } else {
-                        String prefix = refNode.expanded ? "[-]" : "[+]";
-                        Tree.Node n = parent.apply(indent + prefix + " " + refNode.label);
-                        for (letrain.command.GrammarReference.Node child : refNode.children) {
-                            n.add(build(child, indent + "  "));
-                        }
-                        if (refNode.expanded) {
-                            n.setExpanded(true);
-                        }
-                        return n;
-                    }
-                }
-            }
-            TreeBuilder tb = new TreeBuilder();
-            for (letrain.command.GrammarReference.Node rootNode : letrain.command.GrammarReference
-                    .getReferenceTree()) {
-                refTree.add(tb.build(rootNode, "  "));
-            }
-
-            ScrollPane refScroll = new ScrollPane(refTree, skin);
-            scrollPaneHolder[0] = refScroll;
-            refTable.add(refScroll).grow().pad(5);
-
-            // 2. Objects
-            final Table objsTable = new Table();
-            objsTable.setBackground(
-                    skin.newDrawable("white", new Color(0.12f, 0.12f, 0.12f, 0.95f)));
-            Label objsTitle = new Label("OBJECTS STATUS", skin, "monospace");
-            objsTitle.setColor(Color.CYAN);
-            final Label objsContent = new Label("", skin, "monospace");
-            objsContent.setFontScale(1.0f);
-            objsTable.add(objsTitle).pad(5).row();
-            ScrollPane objsScroll = new ScrollPane(objsContent, skin);
-            objsTable.add(objsScroll).grow().pad(5);
-
-            // 3. Examples
-            final Table examplesTable = new Table();
-            examplesTable.setBackground(
-                    skin.newDrawable("white", new Color(0.14f, 0.14f, 0.14f, 0.95f)));
-            Label examplesTitle = new Label("EXAMPLES", skin, "monospace");
-            examplesTitle.setColor(Color.GREEN);
-            Label examplesContent = new Label("station 1 on train enter {\n"
-                    + "  train unlink backward 1;\n" + "  train set speed 2;\n" + "}\n"
-                    + "sensor 5 on train enter {\n" + "  train stop;\n" + "}", skin, "monospace");
-            examplesContent.setFontScale(1.0f);
-            examplesContent.setWrap(true);
-            examplesTable.add(examplesTitle).pad(5).row();
-            ScrollPane examplesScroll = new ScrollPane(examplesContent, skin);
-            examplesTable.add(examplesScroll).grow().pad(5);
-
-            // 4. Logs
-            final Table logTable = new Table();
-            logTable.setBackground(
-                    skin.newDrawable("white", new Color(0.08f, 0.08f, 0.08f, 0.95f)));
-            Label logTitle = new Label("LOGS", skin, "monospace");
-            logTitle.setColor(Color.ORANGE);
-            final Label logContent = new Label("", skin, "monospace");
-            logContent.setWrap(true);
-            logTable.add(logTitle).pad(5).row();
-            ScrollPane logScroll = new ScrollPane(logContent, skin);
-            logTable.add(logScroll).grow().pad(5);
-
-            // Hover focus listeners for all panels and editor
-            java.util.function.Function<ScrollPane, com.badlogic.gdx.scenes.scene2d.InputListener> createScrollFocusListener =
-                    (sp) -> new com.badlogic.gdx.scenes.scene2d.InputListener() {
-                        @Override
-                        public void enter(InputEvent event, float x, float y, int pointer,
-                                Actor fromActor) {
-                            if (pointer == -1 && stage != null) {
-                                stage.setScrollFocus(sp);
-                            }
-                        }
-                    };
-
-            refTable.addListener(createScrollFocusListener.apply(refScroll));
-            refScroll.addListener(createScrollFocusListener.apply(refScroll));
-            objsTable.addListener(createScrollFocusListener.apply(objsScroll));
-            objsScroll.addListener(createScrollFocusListener.apply(objsScroll));
-            examplesTable.addListener(createScrollFocusListener.apply(examplesScroll));
-            examplesScroll.addListener(createScrollFocusListener.apply(examplesScroll));
-            logTable.addListener(createScrollFocusListener.apply(logScroll));
-            logScroll.addListener(createScrollFocusListener.apply(logScroll));
-            editorScroll.addListener(createScrollFocusListener.apply(editorScroll));
-            textArea.addListener(createScrollFocusListener.apply(editorScroll));
-
-            sideTable.add(refTable).grow().row();
-            sideTable.add(objsTable).grow().row();
-            sideTable.add(examplesTable).grow().row();
-
-            // Error Table
-            final Table errorTable = new Table();
-            errorTable.setBackground(skin.newDrawable("white", Color.MAROON));
-            final Label errorLabel = new Label("", skin, "monospace");
-            errorLabel.setWrap(true);
-            errorTable.add(new Label("ERRORS:", skin, "monospace")).left().padLeft(5).row();
-            errorLabel.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-                @Override
-                public void clicked(InputEvent event, float x, float y) {
-                    String text = textArea.getText();
-                    String[] errorLines = errorLabel.getText().toString().split("\n");
-                    for (String err : errorLines) {
-                        java.util.regex.Matcher m =
-                                java.util.regex.Pattern.compile("line (\\d+):(\\d+)").matcher(err);
-                        if (m.find()) {
-                            int lineNum = Integer.parseInt(m.group(1));
-                            int colNum = Integer.parseInt(m.group(2));
-                            // Convert line:col to character position in the text
-                            // area
-                            int pos = 0;
-                            String[] srcLines = text.split("\n", -1);
-                            for (int i = 0; i < Math.min(lineNum - 1, srcLines.length); i++) {
-                                pos += srcLines[i].length() + 1; // +1 for the newline
-                            }
-                            pos += Math.max(0, colNum - 1);
-                            textArea.setCursorPosition(Math.min(pos, text.length()));
-                            textArea.getStage().setKeyboardFocus(textArea);
-                            break;
-                        }
-                    }
-                }
-            });
-            ScrollPane errorScroll = new ScrollPane(errorLabel, skin);
-            errorScroll.setFadeScrollBars(false);
-            errorScroll.setScrollingDisabled(true, false);
-            errorTable.add(errorScroll).left().padLeft(15).padBottom(5).growX().minHeight(100f);
-            errorTable.setVisible(false);
-
-            // Footer
+            // ---- Footer
             Table footer = new Table();
-            final TextButton applyBtn = new TextButton(" APPLY ", skin, "monospace-button");
-            final TextButton saveBtn = new TextButton(" SAVE ", skin, "monospace-button");
-            final TextButton loadBtn = new TextButton(" LOAD ", skin, "monospace-button");
-            final TextButton exportBtn = new TextButton(" EXPORT ", skin, "monospace-button");
-            final TextButton importBtn = new TextButton(" IMPORT ", skin, "monospace-button");
-            final TextButton okBtn = new TextButton(" OK ", skin, "monospace-button");
-            okBtn.setColor(Color.GREEN);
-            final TextButton cancelBtn = new TextButton(" CANCEL ", skin, "monospace-button");
-            applyBtn.getLabel().getStyle().font.getData().markupEnabled = true;
-            footer.add(applyBtn).pad(5);
-            footer.add(saveBtn).pad(5);
-            footer.add(loadBtn).pad(5);
-            footer.add(exportBtn).pad(5);
-            footer.add(importBtn).pad(5);
-            footer.add(okBtn).pad(5);
-            footer.add(cancelBtn).pad(5);
-
-            // Nothing to export if the command journal is empty.
-            exportBtn.setDisabled(!hasScenarioToExport());
-            if (exportBtn.isDisabled()) {
-                exportBtn.getLabel().setColor(Color.GRAY);
-            }
-
-            // ASSEMBLY & VISIBILITY SYNC
-            Table mainContent = new Table();
-
-            ChangeListener visibilitySync = new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    mainContent.clear();
-
-                    refTable.setVisible(toggleRef.isChecked());
-                    objsTable.setVisible(toggleObjs.isChecked());
-                    examplesTable.setVisible(toggleEx.isChecked());
-                    logTable.setVisible(toggleLog.isChecked());
-
-                    if (toggleObjs.isChecked()) {
-                        objsContent.setText(model.getGameObjectsReport());
-                    }
-                    if (toggleLog.isChecked()) {
-                        logContent.setText(
-                                String.join("\n", model.getEventLogManager().getEntries()));
-                    }
-
-                    // Side panels stack logic
-                    List<Actor> visibleSidePanels = new ArrayList<>();
-                    if (toggleRef.isChecked()) {
-                        visibleSidePanels.add(refTable);
-                    }
-                    if (toggleObjs.isChecked()) {
-                        visibleSidePanels.add(objsTable);
-                    }
-                    if (toggleEx.isChecked()) {
-                        visibleSidePanels.add(examplesTable);
-                    }
-                    if (toggleLog.isChecked()) {
-                        visibleSidePanels.add(logTable);
-                    }
-
-                    if (visibleSidePanels.isEmpty()) {
-                        mainContent.add(editorScroll).grow();
-                    } else {
-                        // Create Side Component (Nested vertical split panes)
-                        Actor sideComponent = visibleSidePanels.get(visibleSidePanels.size() - 1);
-                        for (int i = visibleSidePanels.size() - 2; i >= 0; i--) {
-                            final SplitPane sp = new SplitPane(visibleSidePanels.get(i),
-                                    sideComponent, true, skin, "default-vertical");
-                            sp.setSplitAmount(0.5f);
-                            sp.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
-                                @Override
-                                public void enter(InputEvent event, float x, float y, int pointer,
-                                        Actor fromActor) {
-                                    sp.setStyle(skin.get("default-vertical-hover",
-                                            SplitPane.SplitPaneStyle.class));
-                                }
-
-                                @Override
-                                public void exit(InputEvent event, float x, float y, int pointer,
-                                        Actor toActor) {
-                                    sp.setStyle(skin.get("default-vertical",
-                                            SplitPane.SplitPaneStyle.class));
-                                }
-                            });
-                            sideComponent = sp;
-                        }
-
-                        final SplitPane mainSplit = new SplitPane(editorScroll, sideComponent,
-                                false, skin, "default-horizontal");
-                        mainSplit.setSplitAmount(0.75f);
-                        mainSplit.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
-                            @Override
-                            public void enter(InputEvent event, float x, float y, int pointer,
-                                    Actor fromActor) {
-                                mainSplit.setStyle(skin.get("default-horizontal-hover",
-                                        SplitPane.SplitPaneStyle.class));
-                            }
-
-                            @Override
-                            public void exit(InputEvent event, float x, float y, int pointer,
-                                    Actor toActor) {
-                                mainSplit.setStyle(skin.get("default-horizontal",
-                                        SplitPane.SplitPaneStyle.class));
-                            }
-                        });
-                        mainContent.add(mainSplit).grow();
-                    }
-                    window.invalidateHierarchy();
-                }
-            };
-
-            toggleRef.addListener(visibilitySync);
-            toggleObjs.addListener(visibilitySync);
-            toggleEx.addListener(visibilitySync);
-            toggleLog.addListener(visibilitySync);
-            visibilitySync.changed(null, null);
-
-            window.add(toggleBar).right().padRight(10).padBottom(5).row();
-            window.add(mainContent).grow().row();
-            window.add(errorTable).growX().row();
-            window.add(footer).growX().pad(10);
-
-            // Actions
-            applyBtn.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    List<String> errors = model.setProgram(textArea.getText());
-                    if (errors != null && !errors.isEmpty()) {
-                        errorLabel.setText(String.join("\n", errors));
-                        errorTable.setVisible(true);
-                    } else {
-                        errorTable.setVisible(false);
-                    }
-                }
-            });
-
+            TextButton saveBtn = new TextButton(" SAVE ", skin, "monospace-button");
+            TextButton loadBtn = new TextButton(" LOAD ", skin, "monospace-button");
+            TextButton exportBtn = new TextButton(" EXPORT ", skin, "monospace-button");
+            TextButton importBtn = new TextButton(" IMPORT ", skin, "monospace-button");
+            TextButton refreshBtn = new TextButton(" REFRESH ", skin, "monospace-button");
+            TextButton reprogramBtn = new TextButton(" REPROGRAM ", skin, "monospace-button");
+            TextButton rebuildBtn = new TextButton(" REBUILD ", skin, "monospace-button");
+            TextButton closeBtn = new TextButton(" CLOSE ", skin, "monospace-button");
+            footer.add(saveBtn).pad(4);
+            footer.add(loadBtn).pad(4);
+            footer.add(exportBtn).pad(4);
+            footer.add(importBtn).pad(4);
+            footer.add(refreshBtn).pad(4);
+            footer.add(reprogramBtn).pad(4);
+            footer.add(rebuildBtn).pad(4);
+            footer.add(closeBtn).pad(4);
             saveBtn.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
-                    model.setProgram(textArea.getText());
-                    view.showSaveDialog();
+                    saveAction.run();
                 }
             });
-
             loadBtn.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
-                    view.showLoadDialog();
+                    loadAction.run();
                 }
             });
-
             exportBtn.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
-                    if (!hasScenarioToExport()) {
-                        return;
-                    }
-                    view.showExportDialog();
+                    exportAction.run();
                 }
             });
-
             importBtn.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
-                    view.showImportDialog();
+                    importAction.run();
                 }
             });
-
-            okBtn.addListener(new ChangeListener() {
+            refreshBtn.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
-                    List<String> errors = model.setProgram(textArea.getText());
-                    if (errors != null && !errors.isEmpty()) {
-                        errorLabel.setText(String.join("\n", errors));
-                        errorTable.setVisible(true);
-                    } else {
-                        errorTable.setVisible(false);
-                        ideWindow = null;
-                        ideLogContent = null;
-                        ideObjsContent = null;
-                        window.remove();
-                        model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                        view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
-                    }
+                    refreshAction.run();
                 }
             });
-
-            cancelBtn.addListener(new ChangeListener() {
+            reprogramBtn.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
-                    ideWindow = null;
-                    ideLogContent = null;
-                    ideObjsContent = null;
-                    window.remove();
-                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                    view.onGameModeSelected(letrain.mvp.Model.GameMode.RAILS);
+                    reprogramAction.run();
+                }
+            });
+            rebuildBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    rebuildAction.run();
+                }
+            });
+            closeBtn.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    closeAction.run();
                 }
             });
 
-            window.addAction(com.badlogic.gdx.scenes.scene2d.actions.Actions
-                    .forever(com.badlogic.gdx.scenes.scene2d.actions.Actions.run(new Runnable() {
-                        @Override
-                        public void run() {
-                            boolean altDown = com.badlogic.gdx.Gdx.input
-                                    .isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
-                                    || com.badlogic.gdx.Gdx.input
-                                            .isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
-                            applyBtn.setText(altDown ? " [YELLOW]A[]PPLY " : " APPLY ");
-                            saveBtn.setText(altDown ? " [YELLOW]S[]AVE " : " SAVE ");
-                            loadBtn.setText(altDown ? " [YELLOW]L[]OAD " : " LOAD ");
-                            okBtn.setText(altDown ? " [YELLOW]O[]K " : " OK ");
-                            cancelBtn.setText(altDown ? " [YELLOW]C[]ANCEL " : " CANCEL ");
+            // Focus/hotkey highlight: the focused element stands out (cyan) and Alt tints the mnemonics.
+            final boolean[] altState = {false};
+            window.addAction(com.badlogic.gdx.scenes.scene2d.actions.Actions.forever(
+                    com.badlogic.gdx.scenes.scene2d.actions.Actions.run(() -> {
+                        Actor focused = stage.getKeyboardFocus();
+                        scenarioTabBtn.setColor(focused == scenarioTabBtn ? Color.CYAN
+                                : (activeTab[0] == 0 ? Color.GREEN : Color.WHITE));
+                        programTabBtn.setColor(focused == programTabBtn ? Color.CYAN
+                                : (activeTab[0] == 1 ? Color.GREEN : Color.WHITE));
+                        configTabBtn.setColor(focused == configTabBtn ? Color.CYAN
+                                : (activeTab[0] == 2 ? Color.GREEN : Color.WHITE));
+                        saveBtn.setColor(focused == saveBtn ? Color.CYAN : Color.WHITE);
+                        loadBtn.setColor(focused == loadBtn ? Color.CYAN : Color.WHITE);
+                        exportBtn.setColor(focused == exportBtn ? Color.CYAN : Color.WHITE);
+                        importBtn.setColor(focused == importBtn ? Color.CYAN : Color.WHITE);
+                        refreshBtn.setColor(focused == refreshBtn ? Color.CYAN : Color.WHITE);
+                        reprogramBtn.setColor(focused == reprogramBtn ? Color.CYAN : Color.WHITE);
+                        rebuildBtn.setColor(focused == rebuildBtn ? Color.CYAN : Color.WHITE);
+                        closeBtn.setColor(focused == closeBtn ? Color.CYAN : Color.WHITE);
+
+                        // The quick reference is only highlighted while it has the keyboard focus.
+                        if (focused == refTree) {
+                            if (refTree.getSelection().isEmpty()
+                                    && refTree.getRootNodes().size > 0) {
+                                refTree.getSelection()
+                                        .set((Tree.Node) refTree.getRootNodes().get(0));
+                            }
+                        } else if (!refTree.getSelection().isEmpty()) {
+                            refTree.getSelection().clear();
                         }
+
+                        boolean alt = Gdx.input
+                                .isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
+                                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
+                        if (alt == altState[0]) {
+                            return;
+                        }
+                        altState[0] = alt;
+                        saveBtn.setText(alt ? " [#42A5F5]S[]AVE " : " SAVE ");
+                        loadBtn.setText(alt ? " [#42A5F5]L[]OAD " : " LOAD ");
+                        exportBtn.setText(alt ? " [#42A5F5]E[]XPORT " : " EXPORT ");
+                        importBtn.setText(alt ? " [#42A5F5]I[]MPORT " : " IMPORT ");
+                        refreshBtn.setText(alt ? " [#42A5F5]R[]EFRESH " : " REFRESH ");
+                        reprogramBtn.setText(alt ? " RE[#42A5F5]P[]ROGRAM " : " REPROGRAM ");
+                        rebuildBtn.setText(alt ? " RE[#42A5F5]B[]UILD " : " REBUILD ");
+                        closeBtn.setText(alt ? " [#42A5F5]C[]LOSE " : " CLOSE ");
+                        scenarioTabBtn.setText(alt ? " Scen[#42A5F5]a[]rio " : " Scenario ");
+                        programTabBtn.setText(alt ? " Pro[#42A5F5]g[]ram " : " Program ");
+                        configTabBtn.setText(alt ? " Con[#42A5F5]f[]ig " : " Config ");
                     })));
+
+            Table mainContent = new Table();
+            mainContent.add(editorScroll).grow();
+            mainContent.add(refScroll).width(340).growY().padLeft(5);
+
+            window.add(tabBar).left().pad(5).row();
+            window.add(mainContent).grow().row();
+            window.add(errorTable).growX().row();
+            window.add(footer).growX().pad(8).row();
+            window.add(statusLabel).left().padLeft(10).padBottom(5);
+
+            // Tab cycles focus between the editor, the quick reference and the buttons. Tabs are
+            // reached with their hotkeys (Alt+A/G/F or Alt+1/2/3), not with Tab.
+            final java.util.List<Actor> focusCycle = new ArrayList<>();
+            focusCycle.add(textArea);
+            focusCycle.add(refTree);
+            focusCycle.add(saveBtn);
+            focusCycle.add(loadBtn);
+            focusCycle.add(exportBtn);
+            focusCycle.add(importBtn);
+            focusCycle.add(refreshBtn);
+            focusCycle.add(reprogramBtn);
+            focusCycle.add(rebuildBtn);
+            focusCycle.add(closeBtn);
 
             window.addCaptureListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
                 @Override
                 public boolean keyDown(InputEvent event, int keycode) {
-                    boolean altDown = com.badlogic.gdx.Gdx.input
-                            .isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
-                            || com.badlogic.gdx.Gdx.input
-                                    .isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
+                    if (keycode == com.badlogic.gdx.Input.Keys.TAB) {
+                        Actor focused = stage.getKeyboardFocus();
+                        int idx = focusCycle.indexOf(focused);
+                        boolean shift = Gdx.input
+                                .isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)
+                                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
+                        int dir = shift ? -1 : 1;
+                        int next = (idx + dir + focusCycle.size()) % focusCycle.size();
+                        stage.setKeyboardFocus(focusCycle.get(next));
+                        return true;
+                    }
+                    Actor focused = stage.getKeyboardFocus();
+                    if (focused instanceof com.badlogic.gdx.scenes.scene2d.ui.Button
+                            && (keycode == com.badlogic.gdx.Input.Keys.ENTER
+                                    || keycode == com.badlogic.gdx.Input.Keys.SPACE)) {
+                        ((com.badlogic.gdx.scenes.scene2d.ui.Button) focused)
+                                .fire(new ChangeListener.ChangeEvent());
+                        return true;
+                    }
+                    boolean altDown = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
+                            || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
+                    if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE) {
+                        closeAction.run();
+                        return true;
+                    }
                     if (altDown) {
-                        if (keycode == com.badlogic.gdx.Input.Keys.A) {
-                            applyBtn.fire(new ChangeListener.ChangeEvent());
+                        if (keycode == com.badlogic.gdx.Input.Keys.NUM_1) {
+                            switchTo.accept(0);
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.NUM_2) {
+                            switchTo.accept(1);
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.NUM_3) {
+                            switchTo.accept(2);
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.A) {
+                            switchTo.accept(0);
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.G) {
+                            switchTo.accept(1);
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.F) {
+                            switchTo.accept(2);
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.S) {
-                            saveBtn.fire(new ChangeListener.ChangeEvent());
+                            saveAction.run();
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.L) {
-                            loadBtn.fire(new ChangeListener.ChangeEvent());
-                            return true;
-                        } else if (keycode == com.badlogic.gdx.Input.Keys.O) {
-                            okBtn.fire(new ChangeListener.ChangeEvent());
-                            return true;
-                        } else if (keycode == com.badlogic.gdx.Input.Keys.C) {
-                            cancelBtn.fire(new ChangeListener.ChangeEvent());
-                            return true;
-                        } else if (keycode == com.badlogic.gdx.Input.Keys.R) {
-                            stage.setKeyboardFocus(refTree);
-                            if (refTree.getSelection().isEmpty()
-                                    && refTree.getRootNodes().size > 0) {
-                                Tree.Node root = (Tree.Node) refTree.getRootNodes().get(0);
-                                refTree.getSelection().set(root);
-                                if (scrollPaneHolder[0] != null && root.getActor() != null) {
-                                    scrollPaneHolder[0].scrollTo(root.getActor().getX(),
-                                            root.getActor().getY(), root.getActor().getWidth(),
-                                            root.getActor().getHeight());
-                                }
-                            }
+                            loadAction.run();
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.E) {
-                            if (!exportBtn.isDisabled()) {
-                                exportBtn.fire(new ChangeListener.ChangeEvent());
-                            }
+                            exportAction.run();
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.I) {
-                            importBtn.fire(new ChangeListener.ChangeEvent());
+                            importAction.run();
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.R) {
+                            refreshAction.run();
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.P) {
+                            reprogramAction.run();
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.B) {
+                            rebuildAction.run();
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.C) {
+                            closeAction.run();
                             return true;
                         }
                     }
@@ -1257,9 +1256,6 @@ public class Gdx3DHud {
             });
 
             ideWindow = window;
-            ideLogContent = logContent;
-            ideObjsContent = objsContent;
-
             window.setSize(1200, 800);
             window.setPosition((stage.getWidth() - window.getWidth()) / 2,
                     (stage.getHeight() - window.getHeight()) / 2);
@@ -1268,31 +1264,39 @@ public class Gdx3DHud {
         });
     }
 
-    public void updateIDE() {
-        if (ideWindow == null || !ideWindow.isVisible() || ideWindow.getStage() == null) {
-            return;
-        }
-
-        if (ideObjsContent != null) {
-            ideObjsContent.setText(model.getGameObjectsReport());
-        }
-
-        if (ideLogContent != null) {
-            List<String> entries = model.getEventLogManager().getEntries();
-            int start = Math.max(0, entries.size() - 20);
-            List<String> last20 = entries.subList(start, entries.size());
-            ideLogContent.setText(String.join("\n", last20));
-        }
+    private static String configSectionOrEmpty(String section) {
+        return section == null || section.isBlank() ? "configuration {\n}\n" : section;
     }
 
-    private void insertAtCursor(com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea,
-            String insertion) {
-        int pos = textArea.getCursorPosition();
+    private static int offsetOfLine(String text, int line) {
+        if (line <= 1) {
+            return 0;
+        }
+        String[] lines = text.split("\n", -1);
+        int pos = 0;
+        for (int i = 0; i < line - 1 && i < lines.length; i++) {
+            pos += lines[i].length() + 1;
+        }
+        return pos;
+    }
+
+    /**
+     * Inserts a quick-reference snippet as its own line: moves to the end of the caret's line (never
+     * mid-line), adds the snippet on a new line and leaves the caret on the line after it.
+     */
+    private void insertQuickRef(com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea, String snippet) {
         String text = textArea.getText();
-        String before = text.substring(0, pos);
-        String after = text.substring(pos);
-        textArea.setText(before + insertion + after);
-        textArea.setCursorPosition(pos + insertion.length());
+        int pos = Math.min(textArea.getCursorPosition(), text.length());
+        int lineStart = text.lastIndexOf('\n', Math.max(0, pos - 1)) + 1;
+        int lineEnd = text.indexOf('\n', pos);
+        if (lineEnd < 0) {
+            lineEnd = text.length();
+        }
+        boolean emptyLine = lineEnd == lineStart;
+        String insertion = emptyLine ? snippet + "\n" : "\n" + snippet + "\n";
+        String updated = text.substring(0, lineEnd) + insertion + text.substring(lineEnd);
+        textArea.setText(updated);
+        textArea.setCursorPosition(Math.min(lineEnd + insertion.length(), updated.length()));
         if (stage != null) {
             stage.setKeyboardFocus(textArea);
         }
