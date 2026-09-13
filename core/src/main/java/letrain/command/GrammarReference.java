@@ -479,7 +479,7 @@ public class GrammarReference {
         } else if (node.snippet != null && node.children.isEmpty()) {
             sb.append("  ").append(indent).append(oneLine(node.snippet));
             if (node.label != null && !node.label.isBlank()) {
-                sb.append("  — ").append(node.label);
+                sb.append("  // ").append(node.label);
             }
             sb.append('\n');
         } else {
