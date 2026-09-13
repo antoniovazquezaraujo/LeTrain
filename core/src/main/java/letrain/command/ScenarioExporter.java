@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import letrain.mvp.Model;
 import letrain.track.RailSemaphore;
+import letrain.track.SpeedSignal;
+import letrain.track.rail.ForkRailTrack;
 
 /**
  * Builds a scenario text from the live model (ADR-020 item 4). The {@code on build} section comes
@@ -17,13 +19,39 @@ public final class ScenarioExporter {
 
     private ScenarioExporter() {}
 
-    /** Initial-state commands derived from the current model (semaphore open/closed states). */
+    /**
+     * Initial-state commands derived from the current model: semaphore open/closed, fork routes and
+     * speed-signal mode/limit. These are the element states that a rebuilt world must restore so the
+     * scenario starts exactly as it was exported (they are not always captured by the journal, e.g.
+     * when changed outside the Record mode or altered at runtime by triggers).
+     */
     public static List<String> initialConditions(Model model) {
         List<String> start = new ArrayList<>();
-        if (model != null && model.getSemaphores() != null) {
+        if (model == null) {
+            return start;
+        }
+        if (model.getSemaphores() != null) {
             for (RailSemaphore semaphore : model.getSemaphores()) {
                 if (semaphore != null) {
-                    start.add("semaphore " + semaphore.getId() + (semaphore.isOpen() ? " open;" : " close;"));
+                    start.add("semaphore " + semaphore.getId()
+                            + (semaphore.isOpen() ? " open;" : " close;"));
+                }
+            }
+        }
+        if (model.getForks() != null) {
+            for (ForkRailTrack fork : model.getForks()) {
+                if (fork != null) {
+                    start.add("fork " + fork.getId()
+                            + (fork.isUsingAlternativeRoute() ? " set curved;" : " set straight;"));
+                }
+            }
+        }
+        if (model.getSpeedSignals() != null) {
+            for (SpeedSignal signal : model.getSpeedSignals()) {
+                if (signal != null) {
+                    start.add("signal " + signal.getId() + " set mode "
+                            + (signal.isMax() ? "max;" : "min;"));
+                    start.add("signal " + signal.getId() + " set limit " + signal.getLimit() + ";");
                 }
             }
         }

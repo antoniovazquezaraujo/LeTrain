@@ -36,8 +36,8 @@ program {
 - `configuration { ... }` — game settings as `key=value` (the same keys as `letrain.cfg`). The
   scenario carries its own rules and they **take precedence over** the local `letrain.cfg` file.
 - `on build { ... }` — the construction commands (tracks, elements, trains). Replayed once, first.
-- `on start { ... }` — optional initial conditions applied right after the build (e.g. semaphore
-  states).
+- `on start { ... }` — optional initial conditions applied right after the build: semaphore states,
+  fork routes and speed-signal mode/limit, so the rebuilt world starts exactly as exported.
 - `program { ... }` — the automation script (itineraries, triggers). Installed after the build, so
   it can reference the freshly built elements.
 

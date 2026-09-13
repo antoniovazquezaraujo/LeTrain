@@ -38,8 +38,9 @@ program {
   escenario lleva sus propias reglas y **tienen preferencia sobre** el fichero `letrain.cfg` local.
 - `on build { ... }` — los comandos de construcción (vías, elementos, trenes). Se reproducen una vez,
   primero.
-- `on start { ... }` — condiciones iniciales opcionales aplicadas justo después de construir (por
-  ejemplo, el estado de los semáforos).
+- `on start { ... }` — condiciones iniciales opcionales aplicadas justo después de construir: estado
+  de los semáforos, ruta de los desvíos y modo/límite de las señales, para que el mundo reconstruido
+  arranque exactamente como se exportó.
 - `program { ... }` — el script de automatización (itinerarios, triggers). Se instala después de
   construir, así puede referenciar los elementos recién creados.
 
