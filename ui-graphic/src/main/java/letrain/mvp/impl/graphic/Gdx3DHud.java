@@ -1123,6 +1123,17 @@ public class Gdx3DHud {
                         rebuildBtn.setColor(focused == rebuildBtn ? Color.CYAN : Color.WHITE);
                         closeBtn.setColor(focused == closeBtn ? Color.CYAN : Color.WHITE);
 
+                        // The quick reference is only highlighted while it has the keyboard focus.
+                        if (focused == refTree) {
+                            if (refTree.getSelection().isEmpty()
+                                    && refTree.getRootNodes().size > 0) {
+                                refTree.getSelection()
+                                        .set((Tree.Node) refTree.getRootNodes().get(0));
+                            }
+                        } else if (!refTree.getSelection().isEmpty()) {
+                            refTree.getSelection().clear();
+                        }
+
                         boolean alt = Gdx.input
                                 .isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
                                 || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
@@ -1153,12 +1164,10 @@ public class Gdx3DHud {
             window.add(footer).growX().pad(8).row();
             window.add(statusLabel).left().padLeft(10).padBottom(5);
 
-            // Tab cycles focus between the editor, the tabs, the quick reference and the buttons.
+            // Tab cycles focus between the editor, the quick reference and the buttons. Tabs are
+            // reached with their hotkeys (Alt+A/G/F or Alt+1/2/3), not with Tab.
             final java.util.List<Actor> focusCycle = new ArrayList<>();
             focusCycle.add(textArea);
-            focusCycle.add(scenarioTabBtn);
-            focusCycle.add(programTabBtn);
-            focusCycle.add(configTabBtn);
             focusCycle.add(refTree);
             focusCycle.add(saveBtn);
             focusCycle.add(loadBtn);
@@ -1180,12 +1189,7 @@ public class Gdx3DHud {
                                 || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
                         int dir = shift ? -1 : 1;
                         int next = (idx + dir + focusCycle.size()) % focusCycle.size();
-                        Actor target = focusCycle.get(next);
-                        stage.setKeyboardFocus(target);
-                        if (target == refTree && refTree.getSelection().isEmpty()
-                                && refTree.getRootNodes().size > 0) {
-                            refTree.getSelection().set((Tree.Node) refTree.getRootNodes().get(0));
-                        }
+                        stage.setKeyboardFocus(focusCycle.get(next));
                         return true;
                     }
                     Actor focused = stage.getKeyboardFocus();
