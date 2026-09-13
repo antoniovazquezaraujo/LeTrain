@@ -73,4 +73,33 @@ class GrammarReferenceTest {
         assertTrue(anyContains(full, "create itinerary"));
         assertTrue(anyContains(full, "threshold.WATER=130"));
     }
+
+    @Test
+    @DisplayName("CONSOLE group holds the special/info commands")
+    void consoleGroup() {
+        List<String> snippets = snippets(GrammarReference.Group.CONSOLE);
+
+        assertTrue(anyContains(snippets, "ls;"));
+        assertTrue(anyContains(snippets, "info;"));
+        assertTrue(anyContains(snippets, "journal;"));
+        assertFalse(anyContains(snippets, "new st;"));
+    }
+
+    @Test
+    @DisplayName("helpText renders every section and can filter by topic")
+    void helpText() {
+        String all = GrammarReference.helpText();
+        assertTrue(all.contains("CONSOLE"), all);
+        assertTrue(all.contains("ON BUILD"), all);
+        assertTrue(all.contains("ITINERARY DSL"), all);
+        assertTrue(all.contains("CONFIGURATION"), all);
+
+        String console = GrammarReference.helpText("console");
+        assertTrue(console.contains("journal;"), console);
+        assertFalse(console.contains("ITINERARY DSL"), console);
+
+        assertTrue(GrammarReference.helpText("ls").contains("ls;"));
+        assertTrue(GrammarReference.helpText("configuration").contains("threshold.WATER"));
+        assertTrue(GrammarReference.helpText("nonsense").contains("No help"));
+    }
 }

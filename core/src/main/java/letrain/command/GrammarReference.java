@@ -10,6 +10,7 @@ import java.util.Map;
  * tab shows only what makes sense there:
  *
  * <ul>
+ * <li>{@link Group#CONSOLE} — console/app commands (save, load, ls, info, journal, undo...).</li>
  * <li>{@link Group#BUILD} — the scenario recipe ({@code on build} + {@code on start}): turtle
  * navigation/construction and infrastructure elements.</li>
  * <li>{@link Group#PROGRAM} — the {@code program { ... }} operator: itineraries, triggers and
@@ -17,12 +18,16 @@ import java.util.Map;
  * <li>{@link Group#CONFIG} — the {@code configuration { ... }} settings keys
  * ({@code key=value}).</li>
  * </ul>
+ *
+ * <p>
+ * This is the single source of truth for the human-facing command metadata: the editor quick
+ * reference and the console {@code help} command both render these trees.
  */
 public class GrammarReference {
 
-    /** Editor tab a reference tree belongs to. */
+    /** A reference tree / console help section. */
     public enum Group {
-        BUILD, PROGRAM, CONFIG
+        CONSOLE, BUILD, PROGRAM, CONFIG
     }
 
     public static class Node {
@@ -78,6 +83,8 @@ public class GrammarReference {
 
     private static List<Node> buildGroup(Group group) {
         switch (group) {
+            case CONSOLE:
+                return consoleTree();
             case BUILD:
                 return buildTree();
             case PROGRAM:
@@ -87,6 +94,32 @@ public class GrammarReference {
             default:
                 return new ArrayList<>();
         }
+    }
+
+    /** Console/app commands: the "special" commands that are not edits. */
+    private static List<Node> consoleTree() {
+        List<Node> root = new ArrayList<>();
+        root.add(new Node("CONSOLE").setHeading(true));
+
+        Node info = new Node("info");
+        info.add(new Node("all", "info;"));
+        info.add(new Node("by type", "info station;"));
+        info.add(new Node("by id/name", "info station 1;"));
+        root.add(info);
+
+        Node ls = new Node("ls");
+        ls.add(new Node("all", "ls;"));
+        ls.add(new Node("by type", "ls station;"));
+        root.add(ls);
+
+        root.add(new Node("journal", "journal;"));
+        root.add(new Node("undo / redo", "undo; redo;"));
+        root.add(new Node("record/edit mode", "R (Shift+R)"));
+        root.add(new Node("save / load", "save backup; load backup;"));
+        root.add(new Node("export / import", "export my-network; import my-network;"));
+        root.add(new Node("quit", "quit;"));
+
+        return root;
     }
 
     /** Scenario recipe: turtle navigation/construction plus infrastructure (on build + on start). */
@@ -350,6 +383,111 @@ public class GrammarReference {
         root.add(derail);
 
         return root;
+    }
+
+    /** Console help for everything, grouped by section. */
+    public static String helpText() {
+        return helpText(null);
+    }
+
+    /**
+     * Console help for {@code topic}: a section name ({@code console}, {@code build},
+     * {@code program}, {@code config}) or a single command (e.g. {@code ls}, {@code fork}). Returns a
+     * hint when the topic is unknown.
+     */
+    public static String helpText(String topic) {
+        List<Node> tree;
+        if (topic == null || topic.isBlank()) {
+            tree = getReferenceTree();
+        } else {
+            tree = treeForTopic(topic.trim().toLowerCase(java.util.Locale.ROOT));
+            if (tree == null) {
+                return "No help for '" + topic.trim()
+                        + "'. Try: console, build, program, config (or a command like 'ls').";
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Node node : tree) {
+            renderHelp(node, sb, "");
+        }
+        return sb.toString().stripTrailing();
+    }
+
+    private static List<Node> treeForTopic(String topic) {
+        switch (topic) {
+            case "console":
+            case "app":
+                return getReferenceTree(Group.CONSOLE);
+            case "build":
+            case "on build":
+            case "on start":
+                return getReferenceTree(Group.BUILD);
+            case "program":
+            case "script":
+                return getReferenceTree(Group.PROGRAM);
+            case "config":
+            case "configuration":
+            case "settings":
+                return getReferenceTree(Group.CONFIG);
+            default:
+                break;
+        }
+        Node match = findCommand(topic);
+        return match == null ? null : List.of(match);
+    }
+
+    private static Node findCommand(String topic) {
+        for (Group group : Group.values()) {
+            Node found = findCommand(getReferenceTree(group), topic);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    private static Node findCommand(List<Node> nodes, String topic) {
+        for (Node node : nodes) {
+            if (!node.isHeading && node.snippet != null && node.children.isEmpty()
+                    && (firstWord(node.snippet).equals(topic)
+                            || node.label.equalsIgnoreCase(topic))) {
+                return node;
+            }
+            Node child = findCommand(node.children, topic);
+            if (child != null) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    private static String firstWord(String snippet) {
+        int i = 0;
+        while (i < snippet.length() && !Character.isWhitespace(snippet.charAt(i))
+                && snippet.charAt(i) != ';') {
+            i++;
+        }
+        return snippet.substring(0, i).toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private static void renderHelp(Node node, StringBuilder sb, String indent) {
+        if (node.isHeading) {
+            if (sb.length() > 0) {
+                sb.append('\n');
+            }
+            sb.append(node.label).append('\n');
+        } else if (node.snippet != null && node.children.isEmpty()) {
+            sb.append("  ").append(indent).append(node.snippet);
+            if (node.label != null && !node.label.isBlank()) {
+                sb.append("  — ").append(node.label);
+            }
+            sb.append('\n');
+        } else {
+            sb.append("  ").append(indent).append(node.label).append('\n');
+            for (Node child : node.children) {
+                renderHelp(child, sb, indent + "  ");
+            }
+        }
     }
 
     public static List<String[]> getFlatReferenceList() {
