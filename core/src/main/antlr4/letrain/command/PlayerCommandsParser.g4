@@ -82,8 +82,8 @@ importCommand : IMPORT identifier? ;
 
 markCommand : (MARK | M) (identifier | NUMBER) ;
 
-lsCommand : LS entityType ;
-infoCommand : INFO entityType (NUMBER | identifier)? ;
+lsCommand : LS entityType? ;
+infoCommand : INFO entityType? (NUMBER | identifier)? ;
 setNameCommand : entityType (NUMBER | STRING) SET NAME STRING ;
 quitCommand : QUIT | Q | Q_BANG | WQ ;
 

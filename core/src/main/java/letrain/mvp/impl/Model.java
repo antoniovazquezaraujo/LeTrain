@@ -1618,13 +1618,9 @@ public class Model implements letrain.mvp.Model {
                             .append("\n");
                 }
 
-                int wagonCount = 0;
-                for (letrain.vehicle.rail.Linker l : train.getLinkers()) {
-                    if (l instanceof Wagon) {
-                        wagonCount++;
-                    }
+                for (String line : train.describeComposition().split("\n")) {
+                    sb.append("  ").append(line).append("\n");
                 }
-                sb.append("  Wagons: ").append(wagonCount).append("\n");
                 if (train.getDirectorLinker() != null) {
                     if (train.getDirectorLinker() instanceof letrain.vehicle.rail.Linker)
                         sb.append("  Pos: ")

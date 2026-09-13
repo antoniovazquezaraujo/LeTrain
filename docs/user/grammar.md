@@ -74,9 +74,12 @@ You can type these commands directly into the CLI to manage the game state, curs
 - `export [filename];` / `import [filename];` - Export or import a scenario (a `.ltr` *recipe*; see **[scenarios.md](scenarios.md)**).
 - `quit;` or `q` - Exit the game.
 
-**Information & Deletion:**
-- `ls [entityType];` - List entities of a type (e.g., `ls train;`, `ls station;`).
-- `info [entityType] [ID];` - Get details of a specific entity.
+**Information & Help:**
+- `help;` - Show every command group (`CONSOLE`, `BUILD`, `PROGRAM`, `CONFIG`). Filter it with `help console;`, `help build;`, `help program;`, `help config;`, or a single topic such as `help ls;`.
+- `ls;` - List every entity. `ls [entityType];` lists one type (e.g. `ls station;`).
+- `info;` - Show an overview of the whole world. `info [entityType];` lists that type; `info [entityType] [ID|name];` details a single entity.
+
+**Deletion:**
 - `del [entityType] [ID];` - Delete specific infrastructure (e.g., `del station 1;`). *Note: Cannot be used for trains.*
 - `clear train [ID];` - Delete a specific train from the map (e.g., `clear train 1;`). *Note: CLEAR is exclusively for vehicles.*
 

@@ -74,9 +74,12 @@ Puedes teclear estos comandos directamente en el CLI para gestionar el estado de
 - `export [archivo];` / `import [archivo];` - Exportar o importar un escenario (una *receta* `.ltr`; ver **[scenarios_es.md](scenarios_es.md)**).
 - `quit;` o `q` - Salir del juego.
 
-**Información y Borrado:**
-- `ls [tipoEntidad];` - Listar entidades de un tipo (ej., `ls train;`, `ls station;`).
-- `info [tipoEntidad] [ID];` - Obtener detalles de una entidad específica.
+**Información y Ayuda:**
+- `help;` - Muestra todos los grupos de comandos (`CONSOLE`, `BUILD`, `PROGRAM`, `CONFIG`). Fíltralo con `help console;`, `help build;`, `help program;`, `help config;`, o un tema suelto como `help ls;`.
+- `ls;` - Lista todas las entidades. `ls [tipoEntidad];` lista un tipo (ej., `ls station;`).
+- `info;` - Muestra una vista general de todo el mundo. `info [tipoEntidad];` lista ese tipo; `info [tipoEntidad] [ID|nombre];` detalla una entidad concreta.
+
+**Borrado:**
 - `del [tipoEntidad] [ID];` - Borrar una infraestructura específica (ej., `del station 1;`). *Nota: No sirve para trenes.*
 - `clear train [ID];` - Borrar un tren específico del mapa (ej., `clear train 1;`). *Nota: CLEAR es exclusivo para vehículos.*
 

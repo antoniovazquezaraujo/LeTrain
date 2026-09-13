@@ -88,6 +88,26 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
      *                          internal replays (undo/redo/scenario) to avoid re-journaling them.
      */
     public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit, java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo, java.util.function.Consumer<java.io.File> onExport, java.util.function.Consumer<java.io.File> onImport, boolean autoRecordJournal) {
+        // `help` is handled here (not in the grammar) so any topic works, reserved words included.
+        if (commandText != null) {
+            String trimmed = commandText.trim();
+            String lower = trimmed.toLowerCase(java.util.Locale.ROOT);
+            if (lower.startsWith("help")
+                    && (lower.length() == 4 || !Character.isLetterOrDigit(lower.charAt(4)))) {
+                String after = trimmed.substring(4);
+                int semi = after.indexOf(';');
+                if (semi >= 0) {
+                    after = after.substring(0, semi);
+                }
+                String text = letrain.command.GrammarReference.helpText(after.trim());
+                if (onMessage == null) {
+                    return text;
+                }
+                onMessage.accept("Help", text);
+                return null;
+            }
+        }
+
         if (!commandText.trim().endsWith(";")) {
             commandText = commandText.trim() + ";";
         }
@@ -188,53 +208,85 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
     public Object visitLsCommand(PlayerCommandsParser.LsCommandContext ctx) {
         if (onMessage == null) return "Command 'ls' not supported in this context";
+        String listing = listEntities(ctx.entityType());
+        if (listing.isEmpty()) {
+            return "Entity type not supported for 'ls'";
+        }
+        onMessage.accept("List", listing.stripTrailing());
+        return null;
+    }
+
+    /**
+     * Lists entities. When {@code type} is null every type is listed; otherwise only that type.
+     * Returns an empty string for an unsupported type.
+     */
+    private String listEntities(PlayerCommandsParser.EntityTypeContext type) {
+        boolean all = type == null;
         StringBuilder sb = new StringBuilder();
-        if (ctx.entityType().TRAIN() != null) {
+        if (all || type.TRAIN() != null) {
             sb.append("Trains:\n");
             for (letrain.vehicle.rail.impl.Locomotive l : model.getLocomotives()) {
                 sb.append(" - ").append(l.getId()).append(": ").append(l.getTrain().getName()).append("\n");
             }
-        } else if (ctx.entityType().STATION() != null) {
+        }
+        if (all || type.STATION() != null) {
             sb.append("Stations:\n");
             for (letrain.track.Station s : model.getStations()) {
                 sb.append(" - ").append(s.getId()).append(": ").append(s.getName()).append("\n");
             }
-        } else if (ctx.entityType().SENSOR() != null) {
+        }
+        if (all || type.SENSOR() != null) {
             sb.append("Sensors:\n");
             for (letrain.track.Sensor s : model.getSensors()) {
                 sb.append(" - ").append(s.getId()).append(": ").append(s.getName()).append("\n");
             }
-        } else if (ctx.entityType().SEMAPHORE() != null) {
+        }
+        if (all || type.SEMAPHORE() != null) {
             sb.append("Semaphores:\n");
             for (letrain.track.RailSemaphore s : model.getSemaphores()) {
                 sb.append(" - ").append(s.getId()).append("\n");
             }
-        } else if (ctx.entityType().FORK() != null) {
+        }
+        if (all || type.FORK() != null) {
             sb.append("Forks:\n");
             for (letrain.track.rail.ForkRailTrack f : model.getForks()) {
                 sb.append(" - ").append(f.getId()).append("\n");
             }
-        } else if (ctx.entityType().SIGNAL() != null) {
+        }
+        if (all || type.SIGNAL() != null) {
             sb.append("Speed Signals:\n");
             for (letrain.track.SpeedSignal s : model.getSpeedSignals()) {
                 sb.append(" - ").append(s.getId()).append("\n");
             }
-        } else {
-            return "Entity type not supported for 'ls'";
         }
-        onMessage.accept("List", sb.toString());
-        return null;
+        return sb.toString();
     }
 
     public Object visitInfoCommand(PlayerCommandsParser.InfoCommandContext ctx) {
         if (onMessage == null) return "Command 'info' not supported in this context";
+        PlayerCommandsParser.EntityTypeContext type = ctx.entityType();
+
+        // info; -> everything
+        if (type == null) {
+            onMessage.accept("Info", model.getGameObjectsReport());
+            return null;
+        }
+
         int id = -1;
         String name = null;
         if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
         if (ctx.identifier() != null) name = ctx.identifier().getText().replace("\"", "");
 
+        // info <type>; -> list everything of that type
+        if (id == -1 && name == null) {
+            String listing = listEntities(type);
+            if (listing.isEmpty()) return "Entity type not supported for 'info'";
+            onMessage.accept("Info", listing.stripTrailing());
+            return null;
+        }
+
         StringBuilder sb = new StringBuilder();
-        if (ctx.entityType().TRAIN() != null) {
+        if (type.TRAIN() != null) {
             letrain.vehicle.rail.impl.Locomotive found = null;
             for (letrain.vehicle.rail.impl.Locomotive l : model.getLocomotives()) {
                 if ((name != null && name.equals(l.getTrain().getName())) || (id != -1 && l.getId() == id)) {
@@ -245,8 +297,9 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 sb.append("Train ID: ").append(found.getId()).append("\n");
                 sb.append("Name: ").append(found.getTrain().getName()).append("\n");
                 sb.append("Speed: ").append(found.getSpeed()).append("\n");
+                sb.append(found.getTrain().describeComposition());
             } else return "Train not found";
-        } else if (ctx.entityType().STATION() != null) {
+        } else if (type.STATION() != null) {
             letrain.track.Station found = null;
             for (letrain.track.Station s : model.getStations()) {
                 if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
@@ -258,7 +311,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 sb.append("Name: ").append(found.getName()).append("\n");
                 sb.append("Position: ").append(found.getPosition()).append("\n");
             } else return "Station not found";
-        } else if (ctx.entityType().SENSOR() != null) {
+        } else if (type.SENSOR() != null) {
             letrain.track.Sensor found = null;
             for (letrain.track.Sensor s : model.getSensors()) {
                 if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
