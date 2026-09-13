@@ -36,10 +36,14 @@
 
 - **Automatización Avanzada e IDE:**
   - Incluye un lenguaje de programación integrado (analizado mediante ANTLR4) para una verdadera automatización.
-  - Cuenta con un entorno de desarrollo integrado (IDE) directamente dentro del juego para escribir, compilar y ejecutar scripts lógicos para los trenes.
+  - Un editor en el juego con pestañas (**Scenario / Program / Config**), referencia rápida por pestaña, navegación de errores y validador sin interfaz (`letrain-check`).
   - Automatiza desvíos, configura rutas con piloto automático y gestiona itinerarios complejos.
 
+- **Grabar, Deshacer y Escenarios:** Congela el mundo y graba cada edición (`R`), deshaz/rehaz de forma determinista (`u` / `Ctrl+R`) y exporta toda tu red como una pequeña receta de texto `.ltr` que puedes compartir, importar y reproducir. La misma semilla reconstruye el mismo mundo — sin partida guardada.
+
 - **Economía y Logística:** Construye vías, gestiona recursos y equilibra tu presupuesto. El sistema de economía central reacciona a tus decisiones.
+
+![El LeTrain Editor con la pestaña Config seleccionada](images/config-editor.png)
 
 ## 🚀 Inicio Rápido
 

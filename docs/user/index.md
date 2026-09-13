@@ -37,10 +37,14 @@
 
 - **Advanced Automation & IDE:**
   - Includes a built-in programming language (parsed via ANTLR4) for true automation.
-  - Features an integrated development environment (IDE) directly within the game to write, compile, and execute train logistics scripts.
+  - A tabbed in-game editor (**Scenario / Program / Config**) with a per-tab quick reference, error navigation and a headless validator (`letrain-check`).
   - Automate switches, set up autopilot routes, and manage complex itineraries.
 
+- **Record, Undo & Scenarios:** Freeze the world and record every edit (`R`), undo/redo deterministically (`u` / `Ctrl+R`), and export your whole network as a small `.ltr` text recipe you can share, import and replay. The same seed rebuilds the same world — no savegame needed.
+
 - **Economy & Logistics:** Build tracks, manage resources, and balance your budget. The central economy system reacts to your decisions.
+
+![The LeTrain Editor with the Config tab selected](images/config-editor.png)
 
 ## 🚀 Quick Start
 
