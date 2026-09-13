@@ -10,7 +10,8 @@
 - Undo/redo de edición (2D y 3D): constructivo y toggles de estado (fork/semáforo/señal), con
   `resumeFrom` para no romper gestos continuos. Teclas `u` / `Ctrl+R` y comandos `undo;` / `redo;`.
 - Escenario como fichero `.ltr`: `seed`, `configuration { }`, `on build { }`, `on start { }`,
-  `program { }`; exportación/importación, constructor libre y re-ejecución determinista.
+  `program { }`; exportación/importación, constructor libre y re-ejecución determinista. `on start`
+  exporta fielmente semáforos, **ruta de los desvíos** y **modo/límite de las señales**.
 - Editor de escenario 2D (pestañas Scenario/Program/Config, referencia rápida por pestaña,
   validación con lista de errores navegable) y editor de programa en 3D.
 - Ajustes del escenario: sección `configuration` (el `letrain.cfg` efectivo) que gana sobre el
@@ -23,7 +24,7 @@
 **Pendiente**
 - Paridad completa del IDE 3D con el 2D (issue #524).
 - Comando `help` y catálogo único de comandos, e `info`/`ls` sin argumentos (issue #526).
-- `on start` para forks/señales; composición (`@import`), huellas save↔escenario y hot-reload.
+- Composición (`@import`), huellas save↔escenario y hot-reload.
 - Validación semántica (dry-run) además de la sintáctica.
 
 ## Contexto
