@@ -34,5 +34,9 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 ## 🎨 Interfaz y Visualización
 - [[ui/RenderingDeepDive|Profundización en el Motor de Renderizado]]
 
+## 📦 Release y Distribución
+- [[release/Release_Process|Proceso de Release y Despliegue]]
+- [[release/itch-description|Ficha de Tienda (Itch.io)]]
+
 ---
 *Nota: Esta wiki se mantiene actualizada periódicamente para reflejar el estado real del repositorio.*

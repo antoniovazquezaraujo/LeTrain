@@ -63,6 +63,8 @@ The technical documentation is organized as an interconnected Obsidian wiki. Sta
   * ANTLR4 command executor, action catalogue, and editor implementation.
 * **[Architectural Decision Records (`adr/`)](adr/ADR-000-Design-decisions.md):**
   * Chronological records of all foundational decisions (from ADR-000 to ADR-020).
+* **[Release & Distribution (`release/`)](release/Release_Process.md):**
+  * Automated CI/CD deployment, GitHub releases, and store metadata (Itch.io).
 
 ---
 

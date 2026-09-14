@@ -1,4 +1,4 @@
-LeTrain - Procedural Tycoon
+# LeTrain - Procedural Tycoon (Itch.io)
 
 LeTrain is a procedural train logistics and economy simulator that lets you play in two completely different dimensions — and now also record, undo and share everything you build.
 
