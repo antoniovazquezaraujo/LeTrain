@@ -25,8 +25,8 @@ import letrain.visitor.Visitor;
                 name = "Station"),
         @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.SpeedSignal.class,
                 name = "SpeedSignal"),
-        @com.fasterxml.jackson.annotation.JsonSubTypes.Type(value = letrain.track.RailSemaphore.class,
-                name = "Semaphore")})
+        @com.fasterxml.jackson.annotation.JsonSubTypes.Type(
+                value = letrain.track.RailSemaphore.class, name = "Semaphore")})
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class Sensor implements Renderable, TrackComponent {
     private int id;

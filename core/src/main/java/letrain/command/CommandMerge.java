@@ -10,13 +10,15 @@ import java.util.regex.Pattern;
 final class CommandMerge {
 
     // "set" statements are absolute (last value wins), so consecutive ones for the same element and
-    // property collapse. Toggles (invert/flip) are NOT merged here: dropping one would change parity.
+    // property collapse. Toggles (invert/flip) are NOT merged here: dropping one would change
+    // parity.
 
     /** {@code signal N set limit X;}, allowing the {@code go ...; face ...; } prefix. */
     private static final Pattern SIGNAL_LIMIT = Pattern.compile("signal (\\d+) set limit \\d+;");
 
     /** {@code signal N set mode max|min;}. */
-    private static final Pattern SIGNAL_MODE = Pattern.compile("signal (\\d+) set mode (?:max|min);");
+    private static final Pattern SIGNAL_MODE =
+            Pattern.compile("signal (\\d+) set mode (?:max|min);");
 
     /** {@code fork N set <route>;}. */
     private static final Pattern FORK_ROUTE = Pattern.compile("fork (\\d+) set [a-z]+;");

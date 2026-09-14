@@ -69,9 +69,9 @@ public class CommandJournal {
     }
 
     /**
-     * Records like {@link #record}, but collapses consecutive {@code signal N set limit X} tweaks for
-     * the same signal into a single entry (the last value wins). Any other command, or a limit for a
-     * different signal, starts a new entry.
+     * Records like {@link #record}, but collapses consecutive {@code signal N set limit X} tweaks
+     * for the same signal into a single entry (the last value wins). Any other command, or a limit
+     * for a different signal, starts a new entry.
      */
     public void recordCoalescing(String command) {
         String c = command == null ? null : command.trim();

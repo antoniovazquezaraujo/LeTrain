@@ -8,19 +8,11 @@ import org.junit.jupiter.api.Test;
 @DisplayName("2D terminal: maps a composed-scenario line back to an editor tab")
 class TerminalViewDiagnosticLocatorTest {
 
-    // 1: header     2: seed     3: configuration {   4: key   5: }
-    // 6: on build { 7: command  8: }                 9: program { 10: body  11: }
-    private static final String FULL = "# LeTrain scenario v1\n"
-            + "seed 1\n"
-            + "configuration {\n"
-            + "threshold.WATER=130\n"
-            + "}\n"
-            + "on build {\n"
-            + "go 0,0; face e; write 1;\n"
-            + "}\n"
-            + "program {\n"
-            + "sensor 1 on train enter { semaphore 1 open; }\n"
-            + "}\n";
+    // 1: header 2: seed 3: configuration { 4: key 5: }
+    // 6: on build { 7: command 8: } 9: program { 10: body 11: }
+    private static final String FULL = "# LeTrain scenario v1\n" + "seed 1\n" + "configuration {\n"
+            + "threshold.WATER=130\n" + "}\n" + "on build {\n" + "go 0,0; face e; write 1;\n"
+            + "}\n" + "program {\n" + "sensor 1 on train enter { semaphore 1 open; }\n" + "}\n";
 
     @Test
     @DisplayName("header/seed and on build lines go to the Scenario tab")

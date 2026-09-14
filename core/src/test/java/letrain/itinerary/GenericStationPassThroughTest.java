@@ -26,9 +26,9 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Regression guard for issue #468: a {@link Station} with role {@code GENERIC} and cargo
- * {@code NONE} (for example after being moved out of an industry zone) must be a pure
- * pass-through for itineraries that carry LOAD/UNLOAD commands: the train neither brakes nor
- * loads/unloads when it reaches the waypoint.
+ * {@code NONE} (for example after being moved out of an industry zone) must be a pure pass-through
+ * for itineraries that carry LOAD/UNLOAD commands: the train neither brakes nor loads/unloads when
+ * it reaches the waypoint.
  *
  * <p>
  * Unlike the mock-based {@code TrainActionManagerTest}, this test wires the real {@code
@@ -57,8 +57,8 @@ class GenericStationPassThroughTest {
         linkers.add(wagon);
         when(train.getLinkers()).thenReturn(linkers);
 
-        TrainLogisticsManager realLogistics = new letrain.vehicle.rail.impl.TrainLogisticsManager(
-                train);
+        TrainLogisticsManager realLogistics =
+                new letrain.vehicle.rail.impl.TrainLogisticsManager(train);
         when(train.getLogisticsManager()).thenReturn(realLogistics);
         when(train.getDirectorLinker()).thenReturn(loco);
         when(loco.getSpeed()).thenReturn(3);

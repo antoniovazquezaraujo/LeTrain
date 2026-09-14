@@ -126,9 +126,8 @@ public class GameSaveService {
             return null;
         }
         try {
-            letrain.mvp.impl.Model loaded =
-                    newMapper().readValue(new ByteArrayInputStream(data),
-                            letrain.mvp.impl.Model.class);
+            letrain.mvp.impl.Model loaded = newMapper().readValue(new ByteArrayInputStream(data),
+                    letrain.mvp.impl.Model.class);
             loaded.postLoadInit();
             return loaded;
         } catch (Exception e) {
@@ -143,8 +142,8 @@ public class GameSaveService {
             return Optional.empty();
         }
         try {
-            letrain.mvp.impl.Model loadedModel = newMapper().readValue(is,
-                    letrain.mvp.impl.Model.class);
+            letrain.mvp.impl.Model loadedModel =
+                    newMapper().readValue(is, letrain.mvp.impl.Model.class);
             loadedModel.postLoadInit();
             return Optional.of(loadedModel);
         } catch (Exception e) {

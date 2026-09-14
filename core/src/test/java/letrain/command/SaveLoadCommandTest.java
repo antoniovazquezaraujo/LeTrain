@@ -104,8 +104,8 @@ class SaveLoadCommandTest {
     void export_emptyJournal_errors() {
         letrain.mvp.Model realModel = new letrain.mvp.impl.Model();
         AtomicReference<File> ref = new AtomicReference<>();
-        String error = PlayerCommandExecutor.execute("export \"x.ltr\";", realModel, null, null, null,
-                null, null, null, null, ref::set, f -> {
+        String error = PlayerCommandExecutor.execute("export \"x.ltr\";", realModel, null, null,
+                null, null, null, null, null, ref::set, f -> {
                 }, true);
         assertNotNull(error, "export must fail with an empty journal");
         assertNull(ref.get(), "the export handler must not be called");

@@ -122,7 +122,9 @@ public class GrammarReference {
         return root;
     }
 
-    /** Scenario recipe: turtle navigation/construction plus infrastructure (on build + on start). */
+    /**
+     * Scenario recipe: turtle navigation/construction plus infrastructure (on build + on start).
+     */
     private static List<Node> buildTree() {
         List<Node> root = new ArrayList<>();
         root.add(new Node("ON BUILD").setHeading(true));
@@ -392,8 +394,8 @@ public class GrammarReference {
 
     /**
      * Console help for {@code topic}: a section name ({@code console}, {@code build},
-     * {@code program}, {@code config}) or a single command (e.g. {@code ls}, {@code fork}). Returns a
-     * hint when the topic is unknown.
+     * {@code program}, {@code config}) or a single command (e.g. {@code ls}, {@code fork}). Returns
+     * a hint when the topic is unknown.
      */
     public static String helpText(String topic) {
         List<Node> tree;

@@ -159,8 +159,7 @@ class StationSensorInvertTest {
         // Assert: the speed signal orientation is untouched, the plain sensor flipped.
         assertEquals(originalDir, signal.getCreationDir());
         letrain.track.Sensor plain = model.getSensors().stream()
-                .filter(s -> s.getClass() == letrain.track.Sensor.class)
-                .findFirst().orElseThrow();
+                .filter(s -> s.getClass() == letrain.track.Sensor.class).findFirst().orElseThrow();
         assertEquals(Dir.W, plain.getCreationDir());
     }
 

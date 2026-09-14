@@ -10,8 +10,8 @@ import org.antlr.v4.runtime.Recognizer;
 
 /**
  * Headless scenario validator (ADR-020 item 4, editor tooling): parses a scenario text and reports
- * <b>syntax</b> diagnostics without touching a running game or executing any command, so an external
- * editor (vim, VS Code…) can "compile" a {@code .ltr} and show errors in its quickfix.
+ * <b>syntax</b> diagnostics without touching a running game or executing any command, so an
+ * external editor (vim, VS Code…) can "compile" a {@code .ltr} and show errors in its quickfix.
  *
  * <p>
  * Sections are read with a brace-depth counter (like {@link ScenarioFile}), so the {@code program}
@@ -148,7 +148,8 @@ public final class ScenarioCompiler {
         }
     }
 
-    private static void compileProgram(String program, int startLine, List<Diagnostic> diagnostics) {
+    private static void compileProgram(String program, int startLine,
+            List<Diagnostic> diagnostics) {
         try {
             LeTrainLexer lexer = new LeTrainLexer(CharStreams.fromString(program));
             lexer.removeErrorListeners();

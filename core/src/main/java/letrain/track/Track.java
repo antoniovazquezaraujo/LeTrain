@@ -40,7 +40,8 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
     private Linker reservation = null; // NEW: Track reservation to prevent race conditions during
                                        // multi-train ticks
     @com.fasterxml.jackson.annotation.JsonAlias({"sensor", "semaphore"})
-    @com.fasterxml.jackson.annotation.JsonSetter(nulls = com.fasterxml.jackson.annotation.Nulls.SKIP)
+    @com.fasterxml.jackson.annotation.JsonSetter(
+            nulls = com.fasterxml.jackson.annotation.Nulls.SKIP)
     private Sensor component = null;
     private Point pos = new Point(0, 0);
 

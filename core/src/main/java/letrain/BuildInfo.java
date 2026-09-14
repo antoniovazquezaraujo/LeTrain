@@ -18,7 +18,9 @@ public final class BuildInfo {
         return VERSION;
     }
 
-    /** The version with a single leading {@code v} (e.g. {@code v1.0.0-beta.4-SNAPSHOT}) for titles. */
+    /**
+     * The version with a single leading {@code v} (e.g. {@code v1.0.0-beta.4-SNAPSHOT}) for titles.
+     */
     public static String versionTag() {
         if (VERSION.startsWith("v") || VERSION.startsWith("V")) {
             return VERSION;

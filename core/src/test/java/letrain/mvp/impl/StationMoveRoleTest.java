@@ -19,8 +19,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Contract tests for issue #468: moving a {@link Station} re-evaluates its industrial
- * role/cargo using the same industry-influence logic used at creation time
+ * Contract tests for issue #468: moving a {@link Station} re-evaluates its industrial role/cargo
+ * using the same industry-influence logic used at creation time
  * ({@code RailTrackMaker.manageStationSensor}, radius 5).
  *
  * <p>
@@ -86,8 +86,7 @@ class StationMoveRoleTest {
         station.setStorage(50);
 
         // The origin is inside a coal-mine zone; the destination is in the middle of nowhere.
-        when(groundMap.findClosestIndustry(eq(t0.getPosition()), eq(5)))
-                .thenReturn(GroundMap.MINE);
+        when(groundMap.findClosestIndustry(eq(t0.getPosition()), eq(5))).thenReturn(GroundMap.MINE);
         when(groundMap.findClosestIndustry(eq(t1.getPosition()), eq(5))).thenReturn(null);
 
         // Act
@@ -120,8 +119,7 @@ class StationMoveRoleTest {
         station.setCargoType(CargoTypes.NONE);
 
         when(groundMap.findClosestIndustry(eq(t0.getPosition()), eq(5))).thenReturn(null);
-        when(groundMap.findClosestIndustry(eq(t1.getPosition()), eq(5)))
-                .thenReturn(GroundMap.MINE);
+        when(groundMap.findClosestIndustry(eq(t1.getPosition()), eq(5))).thenReturn(GroundMap.MINE);
         when(groundMap.countIndustryDensity(eq(t1.getPosition()), eq(5), eq(GroundMap.MINE)))
                 .thenReturn(2);
 
@@ -153,9 +151,8 @@ class StationMoveRoleTest {
         when(groundMap.findClosestIndustry(eq(t0.getPosition()), eq(5))).thenReturn(null);
         when(groundMap.findClosestIndustry(eq(t1.getPosition()), eq(5)))
                 .thenReturn(GroundMap.JEWELRY_STORE);
-        when(groundMap.countIndustryDensity(
-                        eq(t1.getPosition()), eq(5), eq(GroundMap.JEWELRY_STORE)))
-                .thenReturn(4);
+        when(groundMap.countIndustryDensity(eq(t1.getPosition()), eq(5),
+                eq(GroundMap.JEWELRY_STORE))).thenReturn(4);
 
         // Act
         boolean moved = model.moveSensor(station, Dir.E);

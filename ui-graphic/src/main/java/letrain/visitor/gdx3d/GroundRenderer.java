@@ -43,7 +43,8 @@ public class GroundRenderer extends BaseSubRenderer {
 
         boolean hasTrack = false;
         if (modelRef != null && modelRef.getRailMap() != null) {
-            hasTrack = modelRef.getRailMap().getTrackAt(ground.getPosition().getX(), ground.getPosition().getY()) != null;
+            hasTrack = modelRef.getRailMap().getTrackAt(ground.getPosition().getX(),
+                    ground.getPosition().getY()) != null;
         }
 
         if (type >= 10 && type <= 19) {

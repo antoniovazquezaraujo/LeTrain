@@ -49,8 +49,7 @@ class PocJournalReplayTest {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.addMixIn(letrain.mvp.Model.class, letrain.mvp.impl.ModelMixin.class);
         mapper.addMixIn(letrain.mvp.impl.Model.class, letrain.mvp.impl.ModelMixin.class);
-        mapper.addMixIn(letrain.vehicle.rail.impl.Train.class,
-                letrain.mvp.impl.TrainMixin.class);
+        mapper.addMixIn(letrain.vehicle.rail.impl.Train.class, letrain.mvp.impl.TrainMixin.class);
         mapper.addMixIn(letrain.itinerary.Waypoint.class, letrain.mvp.impl.WaypointMixin.class);
         mapper.addMixIn(letrain.itinerary.impl.WaypointImpl.class,
                 letrain.mvp.impl.WaypointMixin.class);
@@ -137,8 +136,8 @@ class PocJournalReplayTest {
     /**
      * Scans rows in {@code [minX,maxX]x[minY,maxY]} for a horizontal crossing that starts on
      * GROUND, crosses {@code run >= minRun} cells of {@code target} terrain and exits again on
-     * GROUND. {@code totalPieces} is the number of {@code write} steps needed (start ground + target
-     * run + exit ground).
+     * GROUND. {@code totalPieces} is the number of {@code write} steps needed (start ground +
+     * target run + exit ground).
      */
     private static Crossing findCrossing(Model model, int target, int minRun, int minX, int maxX,
             int minY, int maxY) {
@@ -148,8 +147,7 @@ class PocJournalReplayTest {
                     continue;
                 }
                 int run = 0;
-                while (terrainValue(model, x + 1 + run, y) == target
-                        && x + 1 + run <= HALF - 1) {
+                while (terrainValue(model, x + 1 + run, y) == target && x + 1 + run <= HALF - 1) {
                     run++;
                 }
                 if (run >= minRun && isPlainGround(model, x + 1 + run, y)) {
@@ -246,22 +244,32 @@ class PocJournalReplayTest {
             GroundRun curve, GroundRun fork) {
         StringBuilder sb = new StringBuilder();
         // Plain straight + elements + move along the rail.
-        sb.append("go ").append(plain.x()).append(",").append(plain.y()).append("; face e; write 8; ");
+        sb.append("go ").append(plain.x()).append(",").append(plain.y())
+                .append("; face e; write 8; ");
         // Sensor created facing east is then slid 2 resting cells along the rail (slide command).
-        sb.append("go ").append(plain.x()).append(",").append(plain.y()).append("; face e; new sn; ");
+        sb.append("go ").append(plain.x()).append(",").append(plain.y())
+                .append("; face e; new sn; ");
         sb.append("slide sn 1 fw 2; ");
         // Station and semaphore on clear cells not crossed by the sensor slide.
-        sb.append("go ").append(plain.x() + 4).append(",").append(plain.y()).append("; face e; new st; ");
-        sb.append("go ").append(plain.x() + 5).append(",").append(plain.y()).append("; face e; new sm; ");
-        sb.append("go ").append(plain.x()).append(",").append(plain.y()).append("; face e; move 8; ");
+        sb.append("go ").append(plain.x() + 4).append(",").append(plain.y())
+                .append("; face e; new st; ");
+        sb.append("go ").append(plain.x() + 5).append(",").append(plain.y())
+                .append("; face e; new sm; ");
+        sb.append("go ").append(plain.x()).append(",").append(plain.y())
+                .append("; face e; move 8; ");
         // Operator: spawn two locomotives on the plain line (cursor must face along the rail).
-        sb.append("go ").append(plain.x() + 1).append(",").append(plain.y()).append("; face e; new loco A red; ");
-        sb.append("go ").append(plain.x() + 3).append(",").append(plain.y()).append("; face e; new loco B blue; ");
+        sb.append("go ").append(plain.x() + 1).append(",").append(plain.y())
+                .append("; face e; new loco A red; ");
+        sb.append("go ").append(plain.x() + 3).append(",").append(plain.y())
+                .append("; face e; new loco B blue; ");
         // Curve: 4 straight pieces then turn right and lay 3 diagonal pieces.
-        sb.append("go ").append(curve.x()).append(",").append(curve.y()).append("; face e; write 4, r, 3; ");
+        sb.append("go ").append(curve.x()).append(",").append(curve.y())
+                .append("; face e; write 4, r, 3; ");
         // Fork: a line A (fork.x..fork.x+3), a west approach to the tile fork.x, then leave SE.
-        sb.append("go ").append(fork.x()).append(",").append(fork.y()).append("; face e; write 4; ");
-        sb.append("go ").append(fork.x() - 2).append(",").append(fork.y()).append("; face e; write 2; ");
+        sb.append("go ").append(fork.x()).append(",").append(fork.y())
+                .append("; face e; write 4; ");
+        sb.append("go ").append(fork.x() - 2).append(",").append(fork.y())
+                .append("; face e; write 2; ");
         sb.append("face se; write 3; ");
         // Water crossing (bridges + gates).
         sb.append("go ").append(water.x()).append(",").append(water.y()).append("; face e; write ")
@@ -284,8 +292,8 @@ class PocJournalReplayTest {
         // 1. Virgin world; locate the terrain features and freeze the world as bytes.
         Model base = newBaseWorld();
 
-        Crossing water = findCrossing(base, GroundMap.WATER, 3, -HALF + 5, -HALF / 2, -HALF + 5,
-                HALF - 5);
+        Crossing water =
+                findCrossing(base, GroundMap.WATER, 3, -HALF + 5, -HALF / 2, -HALF + 5, HALF - 5);
         assertNotNull(water, "No GROUND->WATER->GROUND horizontal crossing found in the world");
         Crossing rock = findCrossing(base, GroundMap.ROCK, 2, -HALF / 2 + 1, -HALF / 4, -HALF + 5,
                 HALF - 5);
@@ -333,21 +341,21 @@ class PocJournalReplayTest {
     }
 
     private static void assertRichNetwork(Model model) {
-        assertTrue(model.getRailMap().getRails().values().stream()
-                .mapToInt(m -> m.values().size()).sum() > 15, "expected a sizeable network");
+        assertTrue(model.getRailMap().getRails().values().stream().mapToInt(m -> m.values().size())
+                .sum() > 15, "expected a sizeable network");
         long forks = model.getForks().size();
         assertEquals(1, forks, "expected exactly one fork created by the branch segment");
-        long bridgeVisual = model.getRailMap().getRails().values().stream()
-                .flatMap(m -> m.values().stream())
-                .filter(t -> t.getVisualType() == RailTrack.VisualType.BRIDGE
-                        || t.getVisualType() == RailTrack.VisualType.BRIDGE_GATE)
-                .count();
+        long bridgeVisual =
+                model.getRailMap().getRails().values().stream().flatMap(m -> m.values().stream())
+                        .filter(t -> t.getVisualType() == RailTrack.VisualType.BRIDGE
+                                || t.getVisualType() == RailTrack.VisualType.BRIDGE_GATE)
+                        .count();
         assertTrue(bridgeVisual >= 3, "expected bridge/gate pieces over water");
-        long tunnelVisual = model.getRailMap().getRails().values().stream()
-                .flatMap(m -> m.values().stream())
-                .filter(t -> t.getVisualType() == RailTrack.VisualType.TUNNEL
-                        || t.getVisualType() == RailTrack.VisualType.TUNNEL_GATE)
-                .count();
+        long tunnelVisual =
+                model.getRailMap().getRails().values().stream().flatMap(m -> m.values().stream())
+                        .filter(t -> t.getVisualType() == RailTrack.VisualType.TUNNEL
+                                || t.getVisualType() == RailTrack.VisualType.TUNNEL_GATE)
+                        .count();
         assertTrue(tunnelVisual >= 2, "expected tunnel/gate pieces in rock");
         assertEquals(1, model.getStations().size(), "expected one station");
         assertEquals(1, model.getSensors().size(), "expected one plain sensor");

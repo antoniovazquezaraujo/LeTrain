@@ -123,7 +123,8 @@ public class GraphicPresenter extends ApplicationAdapter
 
     /**
      * Console (' :') command history. Kept at the presenter so it survives the input-handler
-     * recreations an undo/redo performs (each undo rebuilds the handler against the restored model).
+     * recreations an undo/redo performs (each undo rebuilds the handler against the restored
+     * model).
      */
     private final CommandHistory commandHistory = new CommandHistory();
 
@@ -227,7 +228,8 @@ public class GraphicPresenter extends ApplicationAdapter
         multiplexer.addProcessor(inputHandler);
         Gdx.input.setInputProcessor(multiplexer);
 
-        // The app starts fullscreen (no maximize animation), but switch to a normal maximized window
+        // The app starts fullscreen (no maximize animation), but switch to a normal maximized
+        // window
         // right away so the OS/window behaviour (Esc exit menu, etc.) is the usual one.
         com.badlogic.gdx.Graphics.DisplayMode dm = Gdx.graphics.getDisplayMode();
         Gdx.graphics.setWindowedMode(dm.width, dm.height);
@@ -427,8 +429,8 @@ public class GraphicPresenter extends ApplicationAdapter
     @Override
     public letrain.command.UndoRedoHistory getUndoRedoHistory() {
         if (undoRedoHistory == null) {
-            undoRedoHistory =
-                    new letrain.command.UndoRedoHistory(new letrain.command.UndoRedoHistory.Codec() {
+            undoRedoHistory = new letrain.command.UndoRedoHistory(
+                    new letrain.command.UndoRedoHistory.Codec() {
                         @Override
                         public byte[] toBytes(letrain.mvp.Model m) {
                             return gameSaveService.toBytes(m);
@@ -446,8 +448,8 @@ public class GraphicPresenter extends ApplicationAdapter
     /** Experiment-mode session (ADR-020 item 5), created lazily with the same in-memory codec. */
     public letrain.command.ExperimentSession getExperimentSession() {
         if (experimentSession == null) {
-            experimentSession =
-                    new letrain.command.ExperimentSession(new letrain.command.ExperimentSession.Codec() {
+            experimentSession = new letrain.command.ExperimentSession(
+                    new letrain.command.ExperimentSession.Codec() {
                         @Override
                         public byte[] toBytes(letrain.mvp.Model m) {
                             return gameSaveService.toBytes(m);
@@ -524,7 +526,8 @@ public class GraphicPresenter extends ApplicationAdapter
         } else {
             this.audioController.retarget(newModel);
         }
-        // CRITICAL for deterministic undo/redo replay: RailTrackMaker keeps per-model internal state
+        // CRITICAL for deterministic undo/redo replay: RailTrackMaker keeps per-model internal
+        // state
         // (oldTrack, oldGroundType, dir, makingTracks...), so recreate it bound to the restored
         // model exactly as applyLoadedModel does on a load.
         this.trackMaker = new RailTrackMaker(this);
@@ -762,7 +765,9 @@ public class GraphicPresenter extends ApplicationAdapter
         }
     }
 
-    /** Generates the world recipe (seed + on build + on start, no settings/program) for the editor. */
+    /**
+     * Generates the world recipe (seed + on build + on start, no settings/program) for the editor.
+     */
     @Override
     public String getScenarioText() {
         return letrain.command.ScenarioExporter.renderWorld(model, commandJournal.appliedEntries());
@@ -795,7 +800,9 @@ public class GraphicPresenter extends ApplicationAdapter
         }
     }
 
-    /** Rebuilds a fresh same-seed world and replays the scenario commands on it (free constructor). */
+    /**
+     * Rebuilds a fresh same-seed world and replays the scenario commands on it (free constructor).
+     */
     private void playScenario(File file) {
         try {
             playScenarioText(java.nio.file.Files.readString(file.toPath()), file);
@@ -864,7 +871,8 @@ public class GraphicPresenter extends ApplicationAdapter
                 commandJournal.record(cmd);
             }
             commandJournal.bake();
-            // Scenario = free construction mode: enter the Record/edit mode (frozen, instant, undo).
+            // Scenario = free construction mode: enter the Record/edit mode (frozen, instant,
+            // undo).
             model.setPauseEditing(true);
             commandJournal.startRecording();
             getUndoRedoHistory().begin(model);
@@ -877,14 +885,14 @@ public class GraphicPresenter extends ApplicationAdapter
 
     /** Runs one scenario command through the same console path used by the UI. */
     private String executeScenarioCommand(String cmd) {
-        return letrain.command.PlayerCommandExecutor.execute(cmd, model,
-                f -> onSaveGame(f), f -> onLoadGame(f),
-                new letrain.command.TurtleBuilder(model, trackMaker),
-                (title, msg) -> showMessage(title, msg), () -> onExitGame(),
-                null, null, false);
+        return letrain.command.PlayerCommandExecutor.execute(cmd, model, f -> onSaveGame(f),
+                f -> onLoadGame(f), new letrain.command.TurtleBuilder(model, trackMaker),
+                (title, msg) -> showMessage(title, msg), () -> onExitGame(), null, null, false);
     }
 
-    /** Generates the ground blocks around every rail tile so the loaded world has terrain visible. */
+    /**
+     * Generates the ground blocks around every rail tile so the loaded world has terrain visible.
+     */
     private void materializeGroundUnderTracks() {
         int r = 2;
         model.getRailMap().forEach(track -> {
@@ -896,7 +904,8 @@ public class GraphicPresenter extends ApplicationAdapter
     private void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) {
         this.model = ValidationUtils.requireNonNull(loadedModel, "loadedModel");
 
-        log.info("Game loaded successfully from {}", file != null ? file.getAbsolutePath() : "(editor)");
+        log.info("Game loaded successfully from {}",
+                file != null ? file.getAbsolutePath() : "(editor)");
 
         // Stop previous sounds
         if (this.audioController != null) {
@@ -970,8 +979,9 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     /**
-     * Records a canonical editing command (e.g. a coupling) into the command journal while recording
-     * and into the paused-editing undo history. Coupling commands are id-based, so no cursor prefix.
+     * Records a canonical editing command (e.g. a coupling) into the command journal while
+     * recording and into the paused-editing undo history. Coupling commands are id-based, so no
+     * cursor prefix.
      */
     public void journalEditingCommand(String command) {
         letrain.command.CommandJournal journal = model.getCommandJournal();
@@ -987,7 +997,8 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     /** Undoes {@code steps} editing commands (ADR-020 item 3). */
-    public void undo(int steps) {        if (!model.isSimulationPaused()) {
+    public void undo(int steps) {
+        if (!model.isSimulationPaused()) {
             log.info("Undo needs the Record/edit mode (R)");
             return;
         }
@@ -1063,16 +1074,19 @@ public class GraphicPresenter extends ApplicationAdapter
                 String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                         file -> onSaveGame(file), file -> onLoadGame(file),
                         new letrain.command.TurtleBuilder(model, trackMaker),
-                        (title, msg) -> showMessage(title, msg), () -> onExitGame(),
-                        null, null, false);
+                        (title, msg) -> showMessage(title, msg), () -> onExitGame(), null, null,
+                        false);
                 if (error != null) {
                     log.error("Undo/redo replay failed on '{}': {}", cmd, error);
                     showMessage("Undo/Redo", "Replay error: " + error);
                     break;
                 }
-                // Reproduce the terrain materialization the live session performed between edits (the
-                // render loop generates ground blocks around the cursor each frame). Replay runs with
-                // no frames, so without this, painting beyond the blocks stored in the checkpoint would
+                // Reproduce the terrain materialization the live session performed between edits
+                // (the
+                // render loop generates ground blocks around the cursor each frame). Replay runs
+                // with
+                // no frames, so without this, painting beyond the blocks stored in the checkpoint
+                // would
                 // hit void (-1) terrain and silently fail to lay rails.
                 letrain.map.Point cp = model.getCursor().getPosition();
                 int radius = model.getEconomyManager().getViewRadius();

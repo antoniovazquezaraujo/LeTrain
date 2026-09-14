@@ -18,8 +18,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Keyboard state toggles (signal invert/mode/limit, fork route, station/sensor/semaphore invert) must
- * be recorded into the journal exactly like console commands, so they show up in the exported
+ * Keyboard state toggles (signal invert/mode/limit, fork route, station/sensor/semaphore invert)
+ * must be recorded into the journal exactly like console commands, so they show up in the exported
  * scenario and can be undone.
  */
 @DisplayName("2D terminal: keyboard state toggles are recorded")
@@ -75,7 +75,8 @@ class TerminalPresenterKeyboardEditTest {
 
         TerminalPresenter presenter = silentPresenter(model);
 
-        // Build a tile and a speed signal through the console (default limit 3, mode max, facing E).
+        // Build a tile and a speed signal through the console (default limit 3, mode max, facing
+        // E).
         console(presenter, "go 7,0; face e; write 1;");
         console(presenter, "go 7,0; face e; new sg;");
         assertEquals("", model.getCommandError());
@@ -225,15 +226,15 @@ class TerminalPresenterKeyboardEditTest {
         TerminalPresenter presenter = silentPresenter(model);
         presenter.onChar(charKey('R')); // Record/edit mode: recording starts
 
-        // Full self-positioned edit line: must be recorded (it used to be dropped for starting 'go').
+        // Full self-positioned edit line: must be recorded (it used to be dropped for starting
+        // 'go').
         console(presenter, "go 7,0; face e; write 1;");
         assertEquals(1, model.getCommandJournal().size(),
                 "a line with navigation + an edit must be recorded");
 
         // Pure navigation must still be ignored.
         console(presenter, "go 1,1;");
-        assertEquals(1, model.getCommandJournal().size(),
-                "pure navigation must not be recorded");
+        assertEquals(1, model.getCommandJournal().size(), "pure navigation must not be recorded");
     }
 
     @Test
@@ -249,8 +250,7 @@ class TerminalPresenterKeyboardEditTest {
         presenter.onChar(charKey('R')); // Record/edit mode: recording starts
 
         console(presenter, "mark home;");
-        assertEquals(1, model.getCommandJournal().size(),
-                "setting a mark must be recorded");
+        assertEquals(1, model.getCommandJournal().size(), "setting a mark must be recorded");
         assertTrue(model.getCommandJournal().entries().get(0).endsWith("mark home;"),
                 model.getCommandJournal().entries().get(0));
 

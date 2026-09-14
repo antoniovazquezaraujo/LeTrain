@@ -14,8 +14,9 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Plain sensors and speed signals have separate id counters, so a numeric id can name both at once.
- * Direct signal commands must resolve the <b>signal</b>, never a same-id plain sensor, or the command
- * is silently dropped (this is what made an imported scenario keep the signal at its default 3).
+ * Direct signal commands must resolve the <b>signal</b>, never a same-id plain sensor, or the
+ * command is silently dropped (this is what made an imported scenario keep the signal at its
+ * default 3).
  */
 @DisplayName("Direct signal command resolves the speed signal, not a same-id plain sensor")
 class SignalLimitCommandTest {
@@ -51,8 +52,8 @@ class SignalLimitCommandTest {
         assertEquals(1, plain.getId());
         assertEquals(1, signal.getId(), "both share id 1 on purpose");
 
-        String error = PlayerCommandExecutor.execute("go 4,0; face e; signal 1 set limit 4;",
-                model, null, null, null);
+        String error = PlayerCommandExecutor.execute("go 4,0; face e; signal 1 set limit 4;", model,
+                null, null, null);
 
         assertNull(error, error);
         assertEquals(4, signal.getLimit(), "the speed signal must receive the limit");

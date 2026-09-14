@@ -11,15 +11,25 @@ public class RailTrack extends Track {
     public enum VisualType {
         NORMAL, TUNNEL, TUNNEL_GATE, BRIDGE, BRIDGE_GATE
     }
-    
+
     private VisualType visualType = VisualType.NORMAL;
     private letrain.map.Dir creationDir = letrain.map.Dir.N;
-    
-    public VisualType getVisualType() { return visualType; }
-    public void setVisualType(VisualType visualType) { this.visualType = visualType; }
-    
-    public letrain.map.Dir getCreationDir() { return creationDir; }
-    public void setCreationDir(letrain.map.Dir creationDir) { this.creationDir = creationDir; }
+
+    public VisualType getVisualType() {
+        return visualType;
+    }
+
+    public void setVisualType(VisualType visualType) {
+        this.visualType = visualType;
+    }
+
+    public letrain.map.Dir getCreationDir() {
+        return creationDir;
+    }
+
+    public void setCreationDir(letrain.map.Dir creationDir) {
+        this.creationDir = creationDir;
+    }
 
     protected Router router;
 

@@ -67,8 +67,8 @@ public class CameraController {
 
     /**
      * Re-targets this controller to a new model instance while preserving the current camera pose
-     * (used by the paused-editing undo/redo swap, where the world is frozen and visually identical).
-     * The next {@link #update} simply tracks the new model's cursor/selection.
+     * (used by the paused-editing undo/redo swap, where the world is frozen and visually
+     * identical). The next {@link #update} simply tracks the new model's cursor/selection.
      */
     public void rebind(Model model) {
         this.model = model;

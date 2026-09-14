@@ -20,15 +20,15 @@ import org.junit.jupiter.api.Test;
 /**
  * Contract tests for the track-element movement API of issue #468:
  * {@code Model.moveSensor(Sensor, Dir)}, {@code Model.moveSensorForward(Sensor)} and
- * {@code Model.moveSensorBackward(Sensor)}. {@code RailSemaphore} is a {@code Sensor} (issue
- * #470), so semaphores use the exact same API as the rest of the elements.
+ * {@code Model.moveSensorBackward(Sensor)}. {@code RailSemaphore} is a {@code Sensor} (issue #470),
+ * so semaphores use the exact same API as the rest of the elements.
  *
  * <p>
  * Movement semantics assumed by these tests: a move request advances the element along the rail
- * (like a vehicle) to the next free resting cell in the requested direction. Track cells occupied by
- * another {@link TrackComponent} are skipped, but a cell occupied by a train linker ({@link
- * Track#getLinker()}) is never skipped. A {@link ForkRailTrack} cell is a routing node that is
- * crossed (not a resting place); the exit branch is the fork's active branch (normal vs
+ * (like a vehicle) to the next free resting cell in the requested direction. Track cells occupied
+ * by another {@link TrackComponent} are skipped, but a cell occupied by a train linker
+ * ({@link Track#getLinker()}) is never skipped. A {@link ForkRailTrack} cell is a routing node that
+ * is crossed (not a resting place); the exit branch is the fork's active branch (normal vs
  * alternative).
  */
 @DisplayName("Track element movement (issue #468/#470)")
@@ -567,8 +567,7 @@ class TrackElementMoveTest {
     @DisplayName("7.1 Semaphore is a Sensor and moves forward with moveSensorForward")
     void semaphore_isASensor_andUsesOrientationAwareMove() {
         // Arrange
-        assertTrue(new RailSemaphore(1) instanceof Sensor,
-                "RailSemaphore should be a Sensor");
+        assertTrue(new RailSemaphore(1) instanceof Sensor, "RailSemaphore should be a Sensor");
         RailTrack t0 = straightAt(0, 0, Dir.E, Dir.W);
         RailTrack t1 = straightAt(1, 0, Dir.W, Dir.E);
         connect(t0, Dir.E, t1, Dir.W);

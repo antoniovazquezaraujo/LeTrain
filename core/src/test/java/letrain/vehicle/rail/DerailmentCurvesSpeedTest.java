@@ -73,9 +73,8 @@ class DerailmentCurvesSpeedTest {
 
         runTicks(30);
 
-        assertTrue(crashes.get() >= 1,
-                "train must derail when curves are separated by " + gapCells
-                        + " straight cell(s) at speed " + speed);
+        assertTrue(crashes.get() >= 1, "train must derail when curves are separated by " + gapCells
+                + " straight cell(s) at speed " + speed);
         assertTrue(loco.isDestroying(), "locomotive must be destroying after derailment");
     }
 

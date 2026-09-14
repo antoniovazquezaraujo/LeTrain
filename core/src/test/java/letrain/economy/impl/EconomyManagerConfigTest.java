@@ -37,7 +37,8 @@ class EconomyManagerConfigTest {
     void firstConfig_order(@TempDir Path tmp) throws Exception {
         Path a = java.nio.file.Files.createDirectories(tmp.resolve("a"));
         Path b = java.nio.file.Files.createDirectories(tmp.resolve("b"));
-        assertNull(EconomyManager.firstConfig(List.of(a.toFile(), b.toFile())), "no config anywhere");
+        assertNull(EconomyManager.firstConfig(List.of(a.toFile(), b.toFile())),
+                "no config anywhere");
 
         java.nio.file.Files.writeString(b.resolve("letrain.cfg"), "startingBalance=1");
         assertEquals(b.resolve("letrain.cfg").toFile(),

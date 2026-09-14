@@ -17,7 +17,9 @@ public interface GameViewListener {
 
     default void onImportScenario(File file) {}
 
-    /** Generates the current scenario text (seed + on build + on start + program) for the editor. */
+    /**
+     * Generates the current scenario text (seed + on build + on start + program) for the editor.
+     */
     default String getScenarioText() {
         return "";
     }

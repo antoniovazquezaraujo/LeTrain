@@ -12,8 +12,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * The {@code fork N set straight|curved;} DSL command is what a recorded keyboard flip replays through
- * (ADR-020): a scenario rebuilds the fork from the {@code write} recipe and then restores its route.
+ * The {@code fork N set straight|curved;} DSL command is what a recorded keyboard flip replays
+ * through (ADR-020): a scenario rebuilds the fork from the {@code write} recipe and then restores
+ * its route.
  */
 @DisplayName("Direct fork route command (fork N set straight|curved)")
 class ForkRouteCommandTest {

@@ -12,8 +12,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Menu/mode-flow regressions: the game must start with the full menu visible, finishing a train must
- * return to the editing mode, and closing the IDE must leave PROGRAM.
+ * Menu/mode-flow regressions: the game must start with the full menu visible, finishing a train
+ * must return to the editing mode, and closing the IDE must leave PROGRAM.
  */
 @DisplayName("2D terminal: menu and mode transitions")
 class TerminalPresenterModeFlowTest {

@@ -65,8 +65,7 @@ public class InfoVisitor implements Visitor {
                 }
                 break;
             case LINK:
-                infoBarText +=
-                        "Mode: COUPLE [⏶⏷/kj]: Dir [⏴⏵/hl]: Qty [Space]: Couple";
+                infoBarText += "Mode: COUPLE [⏶⏷/kj]: Dir [⏴⏵/hl]: Qty [Space]: Couple";
                 Locomotive selected = model.getSelectedLocomotive();
                 if (selected != null && selected.getTrain() != null) {
                     Train train = selected.getTrain();
@@ -172,7 +171,7 @@ public class InfoVisitor implements Visitor {
                 "[PgUp/Dn]: Scroll | [z/Z]: Camera | [a/r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit");
 
         view.setInfoBarText(richInfo.toString());
-        
+
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
             view.drawCommandLine(model.getCommandText(), model.getCommandError());
         }

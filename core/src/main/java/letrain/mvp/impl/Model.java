@@ -243,11 +243,11 @@ public class Model implements letrain.mvp.Model {
     }
 
     /**
-     * Rebuilds each track's adjacency ({@code connections}) from its router routes and the positions
-     * of the tracks in the rail map. Adjacency is not serialized (Jackson recursed through the whole
-     * graph, so a long connected line blew the document nesting limit); it is derived here after a
-     * load. Tracks created by commands already have their connections set, so this only matters for
-     * deserialized models (savegame / undo checkpoint).
+     * Rebuilds each track's adjacency ({@code connections}) from its router routes and the
+     * positions of the tracks in the rail map. Adjacency is not serialized (Jackson recursed
+     * through the whole graph, so a long connected line blew the document nesting limit); it is
+     * derived here after a load. Tracks created by commands already have their connections set, so
+     * this only matters for deserialized models (savegame / undo checkpoint).
      */
     private void rebuildTrackConnections() {
         if (map == null) {
@@ -263,8 +263,7 @@ public class Model implements letrain.mvp.Model {
                 }
                 letrain.map.Point neighbour = new letrain.map.Point(track.getPosition());
                 neighbour.move(dir, 1);
-                letrain.track.Track connected =
-                        map.getTrackAt(neighbour.getX(), neighbour.getY());
+                letrain.track.Track connected = map.getTrackAt(neighbour.getX(), neighbour.getY());
                 if (connected != null) {
                     track.connect(dir, connected);
                 }
@@ -457,14 +456,14 @@ public class Model implements letrain.mvp.Model {
     public RailTrack removeTrack(Point point) {
         RailTrack track = map.getTrackAt(point);
         if (track != null) {
-        if (track.getComponent() instanceof letrain.track.RailSemaphore) {
-            removeSemaphore((letrain.track.RailSemaphore) track.getComponent());
-        } else if (track.getComponent() instanceof Station) {
-            removeStation((Station) track.getComponent());
-        } else if (track.getComponent() instanceof letrain.track.Sensor) {
-            removeSensor((letrain.track.Sensor) track.getComponent());
-        }
-        if (track instanceof ForkRailTrack) {
+            if (track.getComponent() instanceof letrain.track.RailSemaphore) {
+                removeSemaphore((letrain.track.RailSemaphore) track.getComponent());
+            } else if (track.getComponent() instanceof Station) {
+                removeStation((Station) track.getComponent());
+            } else if (track.getComponent() instanceof letrain.track.Sensor) {
+                removeSensor((letrain.track.Sensor) track.getComponent());
+            }
+            if (track instanceof ForkRailTrack) {
                 removeFork((ForkRailTrack) track);
             }
             // Disconnect from neighbors
@@ -1043,8 +1042,7 @@ public class Model implements letrain.mvp.Model {
         }
     }
 
-    private record MoveResult(Track destination, Dir heading) {
-    }
+    private record MoveResult(Track destination, Dir heading) {}
 
     @Override
     public RailSemaphore getSemaphoreAt(Point pos) {
@@ -1456,14 +1454,13 @@ public class Model implements letrain.mvp.Model {
                 "[⏴⏵⏶⏷/hjkl]:Move [Shift]:Add rail [Ctrl]:Remove rail [Ins]:Add sensor [Home]:Add sem [Del]:Add speed [End]:Add station [#]:Steps [Space]:Reset steps",
                 () -> true, () -> (this.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
                 new GameModeMenuOption("&Add",
-                        "[n]:Station [e]:Sensor [s]:Semaphore [g]:Speed Signal",
-                        () -> true, () -> this.getMode() == GameMode.ADD, () -> GameMode.ADD),
+                        "[n]:Station [e]:Sensor [s]:Semaphore [g]:Speed Signal", () -> true,
+                        () -> this.getMode() == GameMode.ADD, () -> GameMode.ADD),
                 new GameModeMenuOption("&Drive",
                         "[⏴⏵/hl]:Select [o]:Locate [m]:Motor [⏶/k]:Accel [⏷/j]:Decel [Space]:Rev [Enter]:Load [#]:ID",
                         () -> !this.getLocomotives().isEmpty(),
                         () -> this.getMode() == GameMode.DRIVE, () -> GameMode.DRIVE),
-                new GameModeMenuOption("&Forks",
-                        "[⏴⏵/hl]:Select [o]:Locate [Space]:Toggle [#]:ID",
+                new GameModeMenuOption("&Forks", "[⏴⏵/hl]:Select [o]:Locate [Space]:Toggle [#]:ID",
                         () -> !this.getForks().isEmpty(), () -> this.getMode() == GameMode.FORKS,
                         () -> GameMode.FORKS),
                 new GameModeMenuOption("&Semaphores",
@@ -1472,7 +1469,8 @@ public class Model implements letrain.mvp.Model {
                         () -> this.getMode() == GameMode.SEMAPHORES, () -> GameMode.SEMAPHORES),
                 new GameModeMenuOption("S&ensors",
                         "[⏴⏵/hl]:Select [o]:Locate [Space]:Invert [#]:ID",
-                        () -> getSensors().stream().anyMatch(s -> s.getClass() == letrain.track.Sensor.class),
+                        () -> getSensors().stream()
+                                .anyMatch(s -> s.getClass() == letrain.track.Sensor.class),
                         () -> this.getMode() == GameMode.SENSORS, () -> GameMode.SENSORS),
                 new GameModeMenuOption("Si&gnals",
                         "[⏴⏵/hl]:Select [m]:Max/Min [⏶⏷/kj]:Limit [Space]:Invert",
@@ -1494,8 +1492,7 @@ public class Model implements letrain.mvp.Model {
                 new GameModeMenuOption("&Program",
                         "Scenario editor (Save/Load/Export/Import/Close)", () -> true,
                         () -> this.getMode() == GameMode.PROGRAM, () -> GameMode.PROGRAM),
-                new GameModeMenuOption("Statio&ns",
-                        "[⏴⏵/hl]:Select [o]:Locate [#]:ID",
+                new GameModeMenuOption("Statio&ns", "[⏴⏵/hl]:Select [o]:Locate [#]:ID",
                         () -> !this.getStations().isEmpty(),
                         () -> this.getMode() == GameMode.STATIONS, () -> GameMode.STATIONS));
     }
@@ -1879,8 +1876,11 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public boolean selectNextSensor() {
-        java.util.List<letrain.track.Sensor> pureSensors = getSensors().stream().filter(s -> s.getClass() == letrain.track.Sensor.class).collect(java.util.stream.Collectors.toList());
-        if (pureSensors.isEmpty()) return false;
+        java.util.List<letrain.track.Sensor> pureSensors =
+                getSensors().stream().filter(s -> s.getClass() == letrain.track.Sensor.class)
+                        .collect(java.util.stream.Collectors.toList());
+        if (pureSensors.isEmpty())
+            return false;
         if (selectedSensor == null) {
             selectedSensor = pureSensors.get(0);
             return true;
@@ -1896,8 +1896,11 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public boolean selectPrevSensor() {
-        java.util.List<letrain.track.Sensor> pureSensors = getSensors().stream().filter(s -> s.getClass() == letrain.track.Sensor.class).collect(java.util.stream.Collectors.toList());
-        if (pureSensors.isEmpty()) return false;
+        java.util.List<letrain.track.Sensor> pureSensors =
+                getSensors().stream().filter(s -> s.getClass() == letrain.track.Sensor.class)
+                        .collect(java.util.stream.Collectors.toList());
+        if (pureSensors.isEmpty())
+            return false;
         if (selectedSensor == null) {
             selectedSensor = pureSensors.get(pureSensors.size() - 1);
             return true;

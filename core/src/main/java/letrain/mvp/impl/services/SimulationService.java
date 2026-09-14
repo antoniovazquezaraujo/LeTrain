@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import letrain.economy.EconomyManager;
 import letrain.mvp.Model;
-import letrain.track.CargoTypes;
 import letrain.track.Station;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.impl.Locomotive;
@@ -102,8 +101,7 @@ public class SimulationService {
                 } else if (currentAmount < prevState.amount) {
                     int unitsUnloaded = prevState.amount - currentAmount;
                     int distance = calculateDistanceSinceLastStop(train);
-                    economyManager.onUnloadCargo(wagon, prevState.type, unitsUnloaded,
-                            distance);
+                    economyManager.onUnloadCargo(wagon, prevState.type, unitsUnloaded, distance);
                 }
             }
         }

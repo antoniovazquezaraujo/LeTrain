@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
  * on a fresh byte-identical copy of the same base world reproduces the exact same state.
  *
  * <p>
- * Recording is now part of the edit mode (key R); the DSL {@code record on/off} command was removed.
+ * Recording is now part of the edit mode (key R); the DSL {@code record on/off} command was
+ * removed.
  */
 @DisplayName("Command journal (recording + replay)")
 class CommandJournalTest {
@@ -50,8 +51,7 @@ class CommandJournalTest {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.addMixIn(letrain.mvp.Model.class, letrain.mvp.impl.ModelMixin.class);
         mapper.addMixIn(letrain.mvp.impl.Model.class, letrain.mvp.impl.ModelMixin.class);
-        mapper.addMixIn(letrain.vehicle.rail.impl.Train.class,
-                letrain.mvp.impl.TrainMixin.class);
+        mapper.addMixIn(letrain.vehicle.rail.impl.Train.class, letrain.mvp.impl.TrainMixin.class);
         mapper.addMixIn(letrain.itinerary.Waypoint.class, letrain.mvp.impl.WaypointMixin.class);
         mapper.addMixIn(letrain.itinerary.impl.WaypointImpl.class,
                 letrain.mvp.impl.WaypointMixin.class);
@@ -159,17 +159,10 @@ class CommandJournalTest {
         letrain.mvp.impl.Model replayed = deserialize(baseBytes);
 
         // 2. Record a representative editing session on the first copy, command by command so the
-        //    journal stores individual entries.
+        // journal stores individual entries.
         recorded.getCommandJournal().startRecording();
-        String[] session = {
-            "go 0,0; face e;",
-            "write 8;",
-            "go 2,0; face e;",
-            "new st;",
-            "go 3,0; face e;",
-            "new sn;",
-            "slide sn 1 fw 2;"
-        };
+        String[] session = {"go 0,0; face e;", "write 8;", "go 2,0; face e;", "new st;",
+                "go 3,0; face e;", "new sn;", "slide sn 1 fw 2;"};
         for (String cmd : session) {
             runOk(recorded, cmd);
         }
@@ -205,8 +198,10 @@ class CommandJournalTest {
 
         // Assert: the report shows recording OFF and both entries in order.
         String report = out.toString();
-        assertTrue(report.contains("Recording: OFF"), "report must show recording state: " + report);
-        assertTrue(report.contains("Entries (2/2)"), "report must count 2 applied entries: " + report);
+        assertTrue(report.contains("Recording: OFF"),
+                "report must show recording state: " + report);
+        assertTrue(report.contains("Entries (2/2)"),
+                "report must count 2 applied entries: " + report);
         assertTrue(report.indexOf("go 0,0; face e;") < report.indexOf("write 2;"),
                 "entries must appear in recorded order: " + report);
     }

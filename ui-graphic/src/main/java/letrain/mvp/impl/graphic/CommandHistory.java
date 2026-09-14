@@ -13,7 +13,9 @@ class CommandHistory {
     private final List<String> entries = new ArrayList<>();
     private int index = -1;
 
-    /** Records a just-executed command (deduplicating a consecutive repeat) and resets the cursor. */
+    /**
+     * Records a just-executed command (deduplicating a consecutive repeat) and resets the cursor.
+     */
     void remember(String command) {
         if (entries.isEmpty() || !entries.get(entries.size() - 1).equals(command)) {
             entries.add(command);

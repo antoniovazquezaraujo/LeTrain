@@ -75,7 +75,9 @@ public class TerminalView implements letrain.mvp.View {
     boolean endOfGame = false;
     private int helpLevel = 0;
 
-    /** Hand-edited scenario text kept between IDE openings; null means "regenerate from the world". */
+    /**
+     * Hand-edited scenario text kept between IDE openings; null means "regenerate from the world".
+     */
     private String scenarioDraft = null;
 
     @Override
@@ -156,7 +158,9 @@ public class TerminalView implements letrain.mvp.View {
             }
         } catch (IOException e) {
             log.error("Error creating terminal for TerminalView", e);
-            throw new RuntimeException("Failed to initialize Lanterna terminal. If you are running this via double-click, try running it from a command line.", e);
+            throw new RuntimeException(
+                    "Failed to initialize Lanterna terminal. If you are running this via double-click, try running it from a command line.",
+                    e);
         }
         terminalSize = screen.getTerminalSize();
         gameBox = screen.newTextGraphics();
@@ -216,14 +220,15 @@ public class TerminalView implements letrain.mvp.View {
         // Implementation for status bar updates in terminal
     }
 
-    private void putStringWithColors(com.googlecode.lanterna.graphics.TextGraphics tg, com.googlecode.lanterna.TerminalPosition pos, String text) {
+    private void putStringWithColors(com.googlecode.lanterna.graphics.TextGraphics tg,
+            com.googlecode.lanterna.TerminalPosition pos, String text) {
         int x = pos.getColumn();
         int y = pos.getRow();
         com.googlecode.lanterna.TextColor defaultColor = tg.getForegroundColor();
-        
+
         java.util.regex.Pattern p = java.util.regex.Pattern.compile("<<([A-Z_]+)>>");
         java.util.regex.Matcher m = p.matcher(text);
-        
+
         int lastEnd = 0;
         while (m.find()) {
             String plain = text.substring(lastEnd, m.start());
@@ -232,12 +237,17 @@ public class TerminalView implements letrain.mvp.View {
                 x += plain.length();
             }
             String color = m.group(1);
-            if (color.equals("GREEN")) tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.GREEN_BRIGHT);
-            else if (color.equals("RED")) tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
-            else if (color.equals("YELLOW")) tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.YELLOW);
-            else if (color.equals("WHITE")) tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE_BRIGHT);
-            else if (color.equals("RESET")) tg.setForegroundColor(defaultColor);
-            
+            if (color.equals("GREEN"))
+                tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.GREEN_BRIGHT);
+            else if (color.equals("RED"))
+                tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+            else if (color.equals("YELLOW"))
+                tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.YELLOW);
+            else if (color.equals("WHITE"))
+                tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE_BRIGHT);
+            else if (color.equals("RESET"))
+                tg.setForegroundColor(defaultColor);
+
             lastEnd = m.end();
         }
         String plain = text.substring(lastEnd);
@@ -347,7 +357,7 @@ public class TerminalView implements letrain.mvp.View {
                     }
                 }
             }
-            
+
             // REC indicator: blinking red "REC" in the top-left corner while the journal records.
             if (gameViewListener.isRecordingCommands()
                     && (System.currentTimeMillis() / 500) % 2 == 0) {
@@ -363,7 +373,8 @@ public class TerminalView implements letrain.mvp.View {
             if (overlayMessage != null) {
                 int cols = screen.getTerminalSize().getColumns();
                 int rows = screen.getTerminalSize().getRows();
-                int width = overlayMaximized ? cols - 2 : Math.min(Math.max(20, overlayWidth), cols - 2);
+                int width = overlayMaximized ? cols - 2
+                        : Math.min(Math.max(20, overlayWidth), cols - 2);
                 int height = overlayMaximized ? rows - 2 : Math.min(25, rows - 2);
                 int innerWidth = Math.max(10, width - 4);
                 int contentRows = Math.max(1, height - 4);
@@ -373,13 +384,16 @@ public class TerminalView implements letrain.mvp.View {
                 java.util.List<String> wrapped =
                         wrapLines(overlayMessage.split("\n", -1), innerWidth);
                 int maxScroll = Math.max(0, wrapped.size() - contentRows);
-                if (overlayScroll > maxScroll) overlayScroll = maxScroll;
-                if (overlayScroll < 0) overlayScroll = 0;
+                if (overlayScroll > maxScroll)
+                    overlayScroll = maxScroll;
+                if (overlayScroll < 0)
+                    overlayScroll = 0;
 
                 com.googlecode.lanterna.graphics.TextGraphics tg = screen.newTextGraphics();
                 tg.setBackgroundColor(com.googlecode.lanterna.TextColor.ANSI.BLUE);
                 tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE);
-                tg.fillRectangle(new com.googlecode.lanterna.TerminalPosition(startX, startY), new com.googlecode.lanterna.TerminalSize(width, height), ' ');
+                tg.fillRectangle(new com.googlecode.lanterna.TerminalPosition(startX, startY),
+                        new com.googlecode.lanterna.TerminalSize(width, height), ' ');
 
                 // Draw title
                 if (overlayTitle != null) {
@@ -662,9 +676,9 @@ public class TerminalView implements letrain.mvp.View {
     @Override
     public void showExportDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        File result = new FileDialogBuilder().setTitle("Export Scenario")
-                .setDescription("Choose a file:").setActionLabel(LocalizedString.Save.toString())
-                .build().showDialog(gui);
+        File result =
+                new FileDialogBuilder().setTitle("Export Scenario").setDescription("Choose a file:")
+                        .setActionLabel(LocalizedString.Save.toString()).build().showDialog(gui);
         if (result != null) {
             TerminalView.this.gameViewListener.onExportScenario(result);
         }
@@ -673,9 +687,9 @@ public class TerminalView implements letrain.mvp.View {
     @Override
     public void showImportDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        File result = new FileDialogBuilder().setTitle("Import Scenario")
-                .setDescription("Choose a file:").setActionLabel(LocalizedString.Open.toString())
-                .build().showDialog(gui);
+        File result =
+                new FileDialogBuilder().setTitle("Import Scenario").setDescription("Choose a file:")
+                        .setActionLabel(LocalizedString.Open.toString()).build().showDialog(gui);
         if (result != null) {
             TerminalView.this.gameViewListener.onImportScenario(result);
         }
@@ -698,27 +712,29 @@ public class TerminalView implements letrain.mvp.View {
         final int tabProgram = 1;
         final int tabConfig = 2;
         final int[] activeTab = {tabScenario};
-        final String[] scenarioBuffer = {
-                scenarioDraft != null ? scenarioDraft : gameViewListener.getScenarioText()};
-        final String[] programBuffer = {letrain.command.ScenarioFile
-                .programSection(gameViewListener.getProgram())};
-        final String[] configBuffer = {configSectionOrEmpty(gameViewListener.getConfigurationText())};
+        final String[] scenarioBuffer =
+                {scenarioDraft != null ? scenarioDraft : gameViewListener.getScenarioText()};
+        final String[] programBuffer =
+                {letrain.command.ScenarioFile.programSection(gameViewListener.getProgram())};
+        final String[] configBuffer =
+                {configSectionOrEmpty(gameViewListener.getConfigurationText())};
 
         Panel tabBar = new Panel(new LinearLayout(Direction.HORIZONTAL));
         mainPanel.addComponent(tabBar, BorderLayout.Location.TOP);
 
         // Editor Area (the caret position is mirrored in the status bar below).
         final Label statusLabel = new Label("");
-        final TextBox editor = new TextBox(new TerminalSize(60, 20), scenarioBuffer[0],
-                TextBox.Style.MULTI_LINE) {
-            @Override
-            public com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(
-                    com.googlecode.lanterna.input.KeyStroke ks) {
-                com.googlecode.lanterna.gui2.Interactable.Result result = super.handleKeyStroke(ks);
-                updateStatusLabel(statusLabel, this);
-                return result;
-            }
-        };
+        final TextBox editor =
+                new TextBox(new TerminalSize(60, 20), scenarioBuffer[0], TextBox.Style.MULTI_LINE) {
+                    @Override
+                    public com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(
+                            com.googlecode.lanterna.input.KeyStroke ks) {
+                        com.googlecode.lanterna.gui2.Interactable.Result result =
+                                super.handleKeyStroke(ks);
+                        updateStatusLabel(statusLabel, this);
+                        return result;
+                    }
+                };
         final Runnable refreshStatus = () -> updateStatusLabel(statusLabel, editor);
         refreshStatus.run();
         mainPanel.addComponent(editor, BorderLayout.Location.CENTER);
@@ -857,8 +873,8 @@ public class TerminalView implements letrain.mvp.View {
         final Runnable refreshAction = () -> {
             scenarioDraft = null;
             scenarioBuffer[0] = gameViewListener.getScenarioText();
-            programBuffer[0] = letrain.command.ScenarioFile
-                    .programSection(gameViewListener.getProgram());
+            programBuffer[0] =
+                    letrain.command.ScenarioFile.programSection(gameViewListener.getProgram());
             configBuffer[0] = gameViewListener.getConfigurationText();
             if (activeTab[0] == tabProgram) {
                 editor.setText(programBuffer[0]);
@@ -878,8 +894,8 @@ public class TerminalView implements letrain.mvp.View {
             }
             MultiWindowTextGUI fileGui = new MultiWindowTextGUI(screen);
             File file = new FileDialogBuilder().setTitle("Export Scenario")
-                    .setDescription("Choose a file:").setActionLabel(LocalizedString.Save.toString())
-                    .build().showDialog(fileGui);
+                    .setDescription("Choose a file:")
+                    .setActionLabel(LocalizedString.Save.toString()).build().showDialog(fileGui);
             if (file != null) {
                 gameViewListener.onExportScenarioText(file, full);
             }
@@ -887,14 +903,15 @@ public class TerminalView implements letrain.mvp.View {
         final Runnable importAction = () -> {
             MultiWindowTextGUI fileGui = new MultiWindowTextGUI(screen);
             File file = new FileDialogBuilder().setTitle("Open Scenario")
-                    .setDescription("Choose a file:").setActionLabel(LocalizedString.Open.toString())
-                    .build().showDialog(fileGui);
+                    .setDescription("Choose a file:")
+                    .setActionLabel(LocalizedString.Open.toString()).build().showDialog(fileGui);
             if (file == null) {
                 return;
             }
             try {
                 String fileText = java.nio.file.Files.readString(file.toPath());
-                letrain.command.ScenarioFile.Parts parts = letrain.command.ScenarioFile.split(fileText);
+                letrain.command.ScenarioFile.Parts parts =
+                        letrain.command.ScenarioFile.split(fileText);
                 scenarioDraft = parts.scenarioText();
                 scenarioBuffer[0] = parts.scenarioText();
                 configBuffer[0] = configSectionOrEmpty(parts.configurationText());
@@ -1157,17 +1174,16 @@ public class TerminalView implements letrain.mvp.View {
     private static boolean confirmExportAnyway(MultiWindowTextGUI gui, String diagnostics) {
         com.googlecode.lanterna.gui2.dialogs.MessageDialogButton choice =
                 new com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder()
-                        .setTitle("Scenario has errors")
-                        .setText(diagnostics + "\n\nExport anyway?")
+                        .setTitle("Scenario has errors").setText(diagnostics + "\n\nExport anyway?")
                         .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes)
                         .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.No)
-                        .build()
-                        .showDialog(gui);
+                        .build().showDialog(gui);
         return choice == com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes;
     }
 
     /** Adds a footer button whose mnemonic letter is highlighted in the IDE style. */
-    private static void addFooterButton(Panel footer, String label, char mnemonic, Runnable action) {
+    private static void addFooterButton(Panel footer, String label, char mnemonic,
+            Runnable action) {
         Button button = new Button(label, action);
         button.setRenderer(mnemonicRenderer(mnemonic));
         footer.addComponent(button);
@@ -1179,8 +1195,8 @@ public class TerminalView implements letrain.mvp.View {
         return new com.googlecode.lanterna.gui2.InteractableRenderer<Button>() {
             @Override
             public com.googlecode.lanterna.TerminalSize getPreferredSize(Button component) {
-                return new com.googlecode.lanterna.TerminalSize(
-                        component.getLabel().length() + 4, 1);
+                return new com.googlecode.lanterna.TerminalSize(component.getLabel().length() + 4,
+                        1);
             }
 
             @Override
@@ -1194,11 +1210,9 @@ public class TerminalView implements letrain.mvp.View {
                 String label = component.getLabel();
                 graphics.putString(0, 0, "< " + label + " >");
                 if (!component.isEnabled()) {
-                    graphics.setForegroundColor(
-                            com.googlecode.lanterna.TextColor.ANSI.BLACK);
+                    graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.BLACK);
                 } else {
-                    graphics.setForegroundColor(
-                            com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+                    graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
                 }
                 int at = indexOfIgnoreCase(label, mnemonic);
                 if (at >= 0) {
@@ -1207,8 +1221,7 @@ public class TerminalView implements letrain.mvp.View {
             }
 
             @Override
-            public com.googlecode.lanterna.TerminalPosition getCursorLocation(
-                    Button component) {
+            public com.googlecode.lanterna.TerminalPosition getCursorLocation(Button component) {
                 return null;
             }
         };
@@ -1228,9 +1241,11 @@ public class TerminalView implements letrain.mvp.View {
         return new com.googlecode.lanterna.graphics.DelegatingTheme(base) {
             @Override
             public com.googlecode.lanterna.graphics.ThemeDefinition getDefinition(Class<?> clazz) {
-                com.googlecode.lanterna.graphics.ThemeDefinition definition = super.getDefinition(clazz);
+                com.googlecode.lanterna.graphics.ThemeDefinition definition =
+                        super.getDefinition(clazz);
                 if (clazz == com.googlecode.lanterna.gui2.DefaultWindowDecorationRenderer.class) {
-                    return new com.googlecode.lanterna.graphics.DelegatingThemeDefinition(definition) {
+                    return new com.googlecode.lanterna.graphics.DelegatingThemeDefinition(
+                            definition) {
                         @Override
                         public boolean getBooleanProperty(String name, boolean defaultValue) {
                             return "CENTER_TITLE".equals(name)
@@ -1283,7 +1298,8 @@ public class TerminalView implements letrain.mvp.View {
 
     public void scrollOverlay(int amount) {
         overlayScroll += amount;
-        if (overlayScroll < 0) overlayScroll = 0;
+        if (overlayScroll < 0)
+            overlayScroll = 0;
         paint();
     }
 
@@ -1344,12 +1360,15 @@ public class TerminalView implements letrain.mvp.View {
             overlayScroll = 0;
             overlayMaximized = false;
             // Clear the screen right away to erase the overlay
-            try { screen.clear(); } catch (Exception e) {}
+            try {
+                screen.clear();
+            } catch (Exception e) {
+            }
             return true;
         }
         return false;
     }
-    
+
     @Override
     public void showExitDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
@@ -1426,8 +1445,8 @@ public class TerminalView implements letrain.mvp.View {
             // Ignore
         }
         try {
-            Process p = Runtime.getRuntime()
-                    .exec(new String[] {"sh", "-c", "stty sane < /dev/tty"});
+            Process p =
+                    Runtime.getRuntime().exec(new String[] {"sh", "-c", "stty sane < /dev/tty"});
             if (!p.waitFor(2, TimeUnit.SECONDS)) {
                 p.destroyForcibly();
             }
@@ -1442,25 +1461,28 @@ public class TerminalView implements letrain.mvp.View {
         this.overlayMessage = message;
         paint();
     }
-    
+
     @Override
     public void drawCommandLine(String text, String error) {
         int screenRows = screen.getTerminalSize().getRows();
         int screenCols = screen.getTerminalSize().getColumns();
-        if (screenRows < 2) return; // safety
-        
+        if (screenRows < 2)
+            return; // safety
+
         int drawY = screenRows - 1; // Last line of the absolute screen
-        
+
         TextGraphics g = screen.newTextGraphics();
         g.setBackgroundColor(TextColor.ANSI.BLACK);
         g.setForegroundColor(TextColor.ANSI.WHITE);
         g.putString(0, drawY, " ".repeat(screenCols)); // clear line
-        
+
         String prompt = ":" + text + "_";
         g.putString(0, drawY, prompt);
-        
+
         if (error != null && !error.isEmpty()) {
-            String errStr = " " + error.replace('\n', ' ').replace('\r', ' ') + " "; // Just the error, not [ERROR:]
+            String errStr = " " + error.replace('\n', ' ').replace('\r', ' ') + " "; // Just the
+                                                                                     // error, not
+                                                                                     // [ERROR:]
             int startX = prompt.length() + 2; // small gap
             if (startX < screenCols) {
                 // Truncate if it overflows

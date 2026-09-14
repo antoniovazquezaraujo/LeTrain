@@ -22,7 +22,6 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
@@ -492,8 +491,8 @@ public class Gdx3DHud {
                             String desc = option.gameModeDescription();
                             if (model.getMode() == letrain.mvp.Model.GameMode.TRAINS) {
                                 String colorName = model.getSelectedWagonType().name();
-                                String colorMarkup = "[#"
-                                        + model.getSelectedWagonType().getColor() + "]";
+                                String colorMarkup =
+                                        "[#" + model.getSelectedWagonType().getColor() + "]";
                                 desc = "Selected: " + colorMarkup + colorName + "[] | " + desc;
                             }
                             descLabel.setText(desc);
@@ -564,7 +563,8 @@ public class Gdx3DHud {
 
             // ---- State: three tabs (Scenario / Program / Config)
             final String[] scenarioBuffer = {view.getScenarioText()};
-            final String[] programBuffer = {letrain.command.ScenarioFile.programSection(view.getProgram())};
+            final String[] programBuffer =
+                    {letrain.command.ScenarioFile.programSection(view.getProgram())};
             final String[] configBuffer = {configSectionOrEmpty(view.getConfigurationText())};
             final int[] activeTab = {0};
 
@@ -590,7 +590,8 @@ public class Gdx3DHud {
             updateLineNumbers.run();
 
             float topPad = textArea.getStyle().background != null
-                    ? textArea.getStyle().background.getTopHeight() : 0;
+                    ? textArea.getStyle().background.getTopHeight()
+                    : 0;
             Table editorSubContainer = new Table();
             editorSubContainer.top().left();
             editorSubContainer.add(lineNumbersTable).top().padTop(topPad + 2.5f);
@@ -633,10 +634,10 @@ public class Gdx3DHud {
 
             final Runnable rebuildRef = () -> {
                 refTree.clearChildren();
-                letrain.command.GrammarReference.Group group = activeTab[0] == 1
-                        ? letrain.command.GrammarReference.Group.PROGRAM
-                        : activeTab[0] == 2 ? letrain.command.GrammarReference.Group.CONFIG
-                                : letrain.command.GrammarReference.Group.BUILD;
+                letrain.command.GrammarReference.Group group =
+                        activeTab[0] == 1 ? letrain.command.GrammarReference.Group.PROGRAM
+                                : activeTab[0] == 2 ? letrain.command.GrammarReference.Group.CONFIG
+                                        : letrain.command.GrammarReference.Group.BUILD;
                 class TreeBuilder {
                     Tree.Node build(letrain.command.GrammarReference.Node refNode, String indent) {
                         if (refNode.isHeading) {
@@ -689,7 +690,8 @@ public class Gdx3DHud {
                 private Tree.Node nextVisible(Tree.Node current) {
                     if (current == null) {
                         return refTree.getRootNodes().size > 0
-                                ? (Tree.Node) refTree.getRootNodes().get(0) : null;
+                                ? (Tree.Node) refTree.getRootNodes().get(0)
+                                : null;
                     }
                     if (current.isExpanded() && current.getChildren().size > 0) {
                         return (Tree.Node) current.getChildren().get(0);
@@ -711,7 +713,8 @@ public class Gdx3DHud {
                 private Tree.Node prevVisible(Tree.Node current) {
                     if (current == null) {
                         return refTree.getRootNodes().size > 0
-                                ? (Tree.Node) refTree.getRootNodes().get(0) : null;
+                                ? (Tree.Node) refTree.getRootNodes().get(0)
+                                : null;
                     }
                     Tree.Node parent = current.getParent();
                     com.badlogic.gdx.utils.Array siblings =
@@ -775,7 +778,8 @@ public class Gdx3DHud {
 
             // ---- Tab bar
             Table tabBar = new Table();
-            final TextButton scenarioTabBtn = new TextButton(" Scenario ", skin, "monospace-button");
+            final TextButton scenarioTabBtn =
+                    new TextButton(" Scenario ", skin, "monospace-button");
             final TextButton programTabBtn = new TextButton(" Program ", skin, "monospace-button");
             final TextButton configTabBtn = new TextButton(" Config ", skin, "monospace-button");
             tabBar.add(scenarioTabBtn).padRight(5);
@@ -863,8 +867,8 @@ public class Gdx3DHud {
             errorScroll.setFadeScrollBars(false);
             final Table errorTable = new Table();
             errorTable.setBackground(skin.newDrawable("white", Color.MAROON));
-            errorTable.add(new Label("ERRORS (click to jump):", skin, "monospace")).left().padLeft(5)
-                    .row();
+            errorTable.add(new Label("ERRORS (click to jump):", skin, "monospace")).left()
+                    .padLeft(5).row();
             errorTable.add(errorScroll).growX().height(120).pad(5);
             errorTable.setVisible(false);
 
@@ -885,8 +889,8 @@ public class Gdx3DHud {
                     return;
                 }
                 for (letrain.command.ScenarioCompiler.Diagnostic d : result.diagnostics()) {
-                    TextButton b = new TextButton(d.line() + ":" + d.col() + ": " + d.message(), skin,
-                            "monospace-button");
+                    TextButton b = new TextButton(d.line() + ":" + d.col() + ": " + d.message(),
+                            skin, "monospace-button");
                     b.addListener(new ChangeListener() {
                         @Override
                         public void changed(ChangeEvent event, Actor actor) {
@@ -918,7 +922,8 @@ public class Gdx3DHud {
             };
             final Runnable reprogramAction = () -> {
                 saveActive.run();
-                view.onEditCommands(letrain.command.ScenarioFile.programSectionBody(programBuffer[0]));
+                view.onEditCommands(
+                        letrain.command.ScenarioFile.programSectionBody(programBuffer[0]));
             };
             final Runnable exportAction = () -> {
                 String full = composeFull.get();
@@ -940,8 +945,8 @@ public class Gdx3DHud {
                             return;
                         }
                         try {
-                            String fileText = java.nio.file.Files
-                                    .readString(new java.io.File(path).toPath());
+                            String fileText =
+                                    java.nio.file.Files.readString(new java.io.File(path).toPath());
                             letrain.command.ScenarioFile.Parts parts =
                                     letrain.command.ScenarioFile.split(fileText);
                             scenarioBuffer[0] = parts.scenarioText();
@@ -1103,10 +1108,11 @@ public class Gdx3DHud {
                 }
             });
 
-            // Focus/hotkey highlight: the focused element stands out (cyan) and Alt tints the mnemonics.
+            // Focus/hotkey highlight: the focused element stands out (cyan) and Alt tints the
+            // mnemonics.
             final boolean[] altState = {false};
-            window.addAction(com.badlogic.gdx.scenes.scene2d.actions.Actions.forever(
-                    com.badlogic.gdx.scenes.scene2d.actions.Actions.run(() -> {
+            window.addAction(com.badlogic.gdx.scenes.scene2d.actions.Actions
+                    .forever(com.badlogic.gdx.scenes.scene2d.actions.Actions.run(() -> {
                         Actor focused = stage.getKeyboardFocus();
                         scenarioTabBtn.setColor(focused == scenarioTabBtn ? Color.CYAN
                                 : (activeTab[0] == 0 ? Color.GREEN : Color.WHITE));
@@ -1134,8 +1140,7 @@ public class Gdx3DHud {
                             refTree.getSelection().clear();
                         }
 
-                        boolean alt = Gdx.input
-                                .isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
+                        boolean alt = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_LEFT)
                                 || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.ALT_RIGHT);
                         if (alt == altState[0]) {
                             return;
@@ -1281,10 +1286,11 @@ public class Gdx3DHud {
     }
 
     /**
-     * Inserts a quick-reference snippet as its own line: moves to the end of the caret's line (never
-     * mid-line), adds the snippet on a new line and leaves the caret on the line after it.
+     * Inserts a quick-reference snippet as its own line: moves to the end of the caret's line
+     * (never mid-line), adds the snippet on a new line and leaves the caret on the line after it.
      */
-    private void insertQuickRef(com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea, String snippet) {
+    private void insertQuickRef(com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea,
+            String snippet) {
         String text = textArea.getText();
         int pos = Math.min(textArea.getCursorPosition(), text.length());
         int lineStart = text.lastIndexOf('\n', Math.max(0, pos - 1)) + 1;

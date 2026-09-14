@@ -99,9 +99,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 sensor.addSensorEventListener(new SensorEventListener() {
                     @Override
                     public void onEnterTrain(Train train, boolean isForward) {
-                        boolean senseMatch =
-                                (sense == null) || (sense.startsWith("f") && isForward)
-                                        || (sense.startsWith("b") && !isForward);
+                        boolean senseMatch = (sense == null) || (sense.startsWith("f") && isForward)
+                                || (sense.startsWith("b") && !isForward);
                         if ("enter".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
@@ -110,9 +109,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
 
                     @Override
                     public void onExitTrain(Train train, boolean isForward) {
-                        boolean senseMatch =
-                                (sense == null) || (sense.startsWith("f") && isForward)
-                                        || (sense.startsWith("b") && !isForward);
+                        boolean senseMatch = (sense == null) || (sense.startsWith("f") && isForward)
+                                || (sense.startsWith("b") && !isForward);
                         if ("exit".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
@@ -246,9 +244,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 model.addScriptTrainEventListener(new ScriptTrainEventListener() {
                     @Override
                     public void onSensorEnter(Train train, boolean isForward) {
-                        boolean senseMatch =
-                                (sense == null) || (sense.startsWith("f") && isForward)
-                                        || (sense.startsWith("b") && !isForward);
+                        boolean senseMatch = (sense == null) || (sense.startsWith("f") && isForward)
+                                || (sense.startsWith("b") && !isForward);
                         if ("enter".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
@@ -257,9 +254,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
 
                     @Override
                     public void onSensorExit(Train train, boolean isForward) {
-                        boolean senseMatch =
-                                (sense == null) || (sense.startsWith("f") && isForward)
-                                        || (sense.startsWith("b") && !isForward);
+                        boolean senseMatch = (sense == null) || (sense.startsWith("f") && isForward)
+                                || (sense.startsWith("b") && !isForward);
                         if ("exit".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
                             commands.forEach(c -> c.execute(train));
@@ -374,8 +370,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     };
                 }
             } else if (ctx.trainExtractor() != null) {
-                ScriptLogicParser.PlaceSelectorContext pCtx =
-                        ctx.trainExtractor().placeSelector();
+                ScriptLogicParser.PlaceSelectorContext pCtx = ctx.trainExtractor().placeSelector();
                 return (ExecutableCommand) (contextTrain) -> {
                     Train target = findTrainAtPlace(pCtx);
                     if (target != null) {
@@ -441,7 +436,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 t.getTrainCouplingManager().prepareUnlink(t, forward, count);
                 t.getTrainCouplingManager().divideTrain(t, () -> model.nextTrainId());
             };
-        
+
         } else if (ctx.engineAction() != null) {
             boolean turnOn = ctx.engineAction().ON() != null;
             return (t) -> {
@@ -616,8 +611,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     }
 
 
-    
-    
+
     @Override
     public Object visitDirectForkCommand(ScriptLogicParser.DirectForkCommandContext ctx) {
         int id = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
@@ -628,7 +622,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 log.info("[DSL] Direct fork toggle {}", id);
                 return null;
             }
-            
+
             String dir = ctx.forkAction().forkDirection().getText().toLowerCase();
             if ("straight".equals(dir)) {
                 fork.setNormalRoute();
@@ -666,10 +660,13 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             if (act.INVERT() != null) {
                 sem.setCreationDir(sem.getCreationDir().inverse());
                 log.info("[DSL] Direct semaphore {} inverted", id);
-            } else if (act.OPEN() != null || (act.semaphoreStatus() != null && "open".equalsIgnoreCase(act.semaphoreStatus().getText()))) {
+            } else if (act.OPEN() != null || (act.semaphoreStatus() != null
+                    && "open".equalsIgnoreCase(act.semaphoreStatus().getText()))) {
                 sem.setOpen(true);
                 log.info("[DSL] Direct semaphore {} set to open", id);
-            } else if (act.CLOSE() != null || act.CLOSED() != null || (act.semaphoreStatus() != null && ("close".equalsIgnoreCase(act.semaphoreStatus().getText()) || "closed".equalsIgnoreCase(act.semaphoreStatus().getText())))) {
+            } else if (act.CLOSE() != null || act.CLOSED() != null || (act.semaphoreStatus() != null
+                    && ("close".equalsIgnoreCase(act.semaphoreStatus().getText())
+                            || "closed".equalsIgnoreCase(act.semaphoreStatus().getText())))) {
                 sem.setOpen(false);
                 log.info("[DSL] Direct semaphore {} set to closed", id);
             }

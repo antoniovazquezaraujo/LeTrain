@@ -19,8 +19,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Importing an exported (linked) train must not play the coupling "link" sound: the replayed command
- * represents a past user action, not a live one. Same for undo/redo replays.
+ * Importing an exported (linked) train must not play the coupling "link" sound: the replayed
+ * command represents a past user action, not a live one. Same for undo/redo replays.
  */
 @DisplayName("2D terminal: train-event sounds are muted during programmatic replay")
 class TerminalPresenterEventSoundTest {
