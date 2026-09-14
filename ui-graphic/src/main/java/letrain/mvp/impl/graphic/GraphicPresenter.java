@@ -226,6 +226,15 @@ public class GraphicPresenter extends ApplicationAdapter
         multiplexer.addProcessor(hud.getStage());
         multiplexer.addProcessor(inputHandler);
         Gdx.input.setInputProcessor(multiplexer);
+
+        // The window was created hidden (LeTrainGraphic.setInitialVisible(false)) to avoid flashing
+        // at its default size; show it now, already maximized.
+        if (Gdx.graphics instanceof com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics) {
+            com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window window =
+                    ((com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics) Gdx.graphics).getWindow();
+            window.maximizeWindow();
+            window.setVisible(true);
+        }
     }
 
     private float stateTime = 0f;
