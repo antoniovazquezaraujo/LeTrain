@@ -1,108 +1,110 @@
-# Manifiesto de LeTrain: Filosofía, Estética y Leyes de Diseño
+# LeTrain Manifesto: Design Philosophy, Aesthetics, and Governing Laws
 
-> *"Un simulador logístico procedural donde la sobriedad del ASCII y la ingeniería ferroviaria se encuentran con la libertad de la automatización."*
+> **English** | [Español](PHILOSOPHY_es.md)
+
+> *"A procedural logistics simulator where the restraint of ASCII and the integrity of railway engineering meet the freedom of automation."*
 
 ---
 
-## 0. Por qué: La caja de cartón y el ingeniero niño
+## 0. Why: The Cardboard Box and the Engineer-Child
 
-LeTrain es, ante todo, un juego para **"niños ingenieros"** o para **"ingenieros niños"**.
+LeTrain is, above all, a game for **"engineer-children"** or **"child-engineers"**.
 
-> *"De pequeño tenía algunos juguetes mal diseñados con los que lo único que podías hacer era observar cómo el juguete 'jugaba solo'. Eso acababa por aburrirme y hacer que jugara con la caja de cartón que lo contenía, convirtiéndola en mi imaginación en un tráiler de 10 ejes que avanzaba pesadamente por la alfombra cargando una zapatilla-nave-espacial hacia la plataforma de despegue.*
+> *"When I was little, I had some poorly designed toys where the only thing you could do was watch the toy 'play by itself'. That ended up boring me and led me to play with the cardboard box it came in, turning it in my imagination into a 10-axle semi-truck hauling heavily across the rug carrying a sneaker-spaceship toward the launch pad.*
 >
-> *La idea de LeTrain es permitir que el usuario despliegue su imaginación e invente, que desarrolle las posibilidades infinitas de un sistema programable, que comparta sus avances, que disfrute sin sentirse abrumado por miles de opciones de cada cosa ni contrariado por mecanismos falsos que solo parece que hacen algo pero en el fondo no lo hacen.*
+> *The idea of LeTrain is to let the user unleash their imagination and invent, to develop the infinite possibilities of a programmable system, to share their breakthroughs, to enjoy without feeling overwhelmed by thousands of options for every little thing, nor frustrated by fake mechanisms that only pretend to do something but deep down do nothing at all.*
 >
-> *En LeTrain los trenes son 'reales', y hay que llevarlos a su destino. No son personajes de adorno. La dualidad 2D - 3D es precisamente lo que nos debe forzar a mantenerlo simple, conceptual, claro."*
-> — **Antonio Vázquez Araújo**, Creador de LeTrain
+> *In LeTrain, trains are 'real', and they must be brought to their destination. They are not decorative props. The 2D - 3D duality is precisely what forces us to keep it simple, conceptual, and clear."*
+> — **Antonio Vázquez Araujo**, Creator of LeTrain
 
 ---
 
-## 1. Misión y Esencia: Juguetes que no juegan solos
+## 1. Mission and Essence: Toys That Do Not Play by Themselves
 
-LeTrain nació como un homenaje y una evolución de los grandes simuladores clásicos de transporte y logística, concebido desde la óptica de la ingeniería limpia, la imaginación y la elegancia conceptual.
+LeTrain was born as an homage to and evolution of classic transport and logistics simulators, conceived through the lens of clean engineering, imagination, and conceptual elegance.
 
-* **El rechazo al juguete que juega solo:** LeTrain no es un salvapantallas interactivo, ni un juego de observación pasiva, ni un catálogo de microgestión abrumadora. El jugador es un diseñador de redes: si el sistema funciona, es porque el jugador ha tendido las vías, asegurado los cantones o programado el itinerario.
-* **Trenes reales, no atrezo:** Cada tren tiene masa, longitud, inercia, cantón reservado y mercancía real en sus vagones. No son partículas estéticas circulando en bucles pregrabados: son máquinas operativas que deben llegar a su destino físico.
-* **Mecanismos honestos frente a mecanismos falsos:** Si una aguja conmuta, si un semáforo cierra un cantón o si una estación almacena carbón, esa acción ocurre de verdad en el grafo de la simulación. En LeTrain no existen estadísticas infladas ni mecánicas de fachada que simulen una complejidad inexistente.
-* **Líneas rojas inviolables:**
-  * **Sin mecánicas predatorias:** Jamás habrá microtransacciones, compras integradas, anuncios, tiempos de espera artificiales ("espera 2 horas para construir esta vía") ni sistemas de recompensas diseñados para explotar la psicología del jugador.
-  * **Sin complejidad cosmética artificial:** Cada elemento en pantalla responde a una entidad del modelo. No se introducen elementos visuales barrocos que enturbien la legibilidad del sistema.
-  * **Código abierto y soberanía del usuario:** El jugador y la comunidad son dueños absolutos de su experiencia. Las partidas, los escenarios y las configuraciones viajan en texto plano legible, editable y verificable.
-
----
-
-## 2. La Dualidad Estética: Dos Dimensiones, Un Solo Corazón
-
-Una de las señas de identidad más singulares de LeTrain es su bicefalia visual: dos clientes completamente independientes compartiendo un único núcleo lógico invariable.
-
-> **Principio de Diseño:** *La dualidad 2D-3D es el ancla que nos obliga a mantener el juego simple, conceptual y claro.* Si una idea no puede expresarse con nitidez en una rejilla ASCII, probablemente esté sobrediseñada.
-
-### El 2D de Terminal (Lanterna)
-* **No es un modo retro ni un compromiso técnico:** Es un ciudadano de primera clase. La interfaz de terminal proporciona una inmediatez, un rendimiento y una densidad de información inigualables.
-* **La dignidad del carácter ASCII:** Cada glifo (`=`, `|`, `/`, `\`, `+`, `#`) tiene un peso espacial y un significado funcional inequívoco. Evoca la atmósfera austera y rigurosa de los paneles de Control de Tráfico Centralizado (CTC) de las grandes estaciones del siglo XX.
-
-### El 3D Dinámico (LibGDX)
-* **El glifo como escultura espacial:** El motor tridimensional no sustituye el lenguaje ASCII, sino que lo proyecta físicamente en tres dimensiones. Los caracteres son bloques y vías suspendidas en un relieve infinito generado por ruido de Perlin.
-* **Simetría funcional absoluta:** Jamás existirá una acción posible en 3D que no pueda realizarse en 2D, ni viceversa. Lo que ocurre en una dimensión es matemáticamente idéntico a lo que ocurre en la otra. Ambas vistas son meros visitantes (`Visitor pattern`) que observan el mismo modelo inmutable.
-
-### La Ergonomía del Teclado y el Guiño al «Viejo Hacker» (Vim & Consola)
-LeTrain rinde un homenaje explícito a la cultura de los viejos hackers de terminal, los editores clásicos (`vi/vim`), los *roguelikes* seminales y los sistemas Unix donde las manos jamás necesitan despegarse de la fila central (*home row*) del teclado.
-
-* **Navegación natural con `h, j, k, l`:** Desplazar el cursor por el mapa, recorrer las vías o ajustar la vista no requiere desviar la mano hacia el ratón ni hacia las flechas de dirección. La navegación se convierte en un reflejo de memoria muscular inmediato.
-* **El Modo Consola y la Velocidad del Pensamiento:** Junto con los atajos de teclado, la consola integrada permite consultar estados, conmutar agujas o gobernar trenes en un par de pulsaciones precisas, evitando la molestia de rebuscar en menús flotantes o ventanas modales abarrotadas.
-* **Inmersión y Estado de Flujo (*Flow*):** Esta decisión no es un mero adorno nostálgico; es ergonomía pura. Al eliminar la fricción del ratón, el jugador entra en un estado de concentración ininterrumpido donde la red ferroviaria se manipula a la misma velocidad a la que se piensa.
+* **Rejection of the toy that plays by itself:** LeTrain is not an interactive screensaver, a passive idle clicker, or an overwhelming checklist of micromanagement. The player is a network designer: if the system works, it is because the player laid the tracks, secured the blocks, or scripted the itinerary.
+* **Real trains, not decorative props:** Every train has mass, length, inertia, a reserved track block, and real cargo in its wagons. They are not aesthetic particles orbiting pre-baked loops: they are operational machines that must physically reach their destination.
+* **Honest mechanisms versus fake mechanisms:** If a switch flips, a semaphore closes a block, or a station stores coal, that action genuinely happens within the simulation graph. In LeTrain there are no inflated stats or cosmetic facades pretending to simulate non-existent depth.
+* **Inviolable red lines:**
+  * **Zero predatory mechanics:** There will never be microtransactions, in-app purchases, advertisements, artificial wait times ("wait 2 hours to build this track"), or engagement loops engineered to exploit player psychology.
+  * **No artificial cosmetic bloat:** Every visual element on screen maps directly to a model entity. No baroque visuals are added that obscure system readability.
+  * **Open source and user sovereignty:** The player and community fully own their experience. Save games, scenarios, and configurations live as plain text: readable, editable, and verifiable.
 
 ---
 
-## 3. Las Leyes Físicas y el Motor Mecánico
+## 2. Aesthetic Duality: Two Dimensions, One Single Core
 
-El backend de LeTrain se rige por principios de ingeniería de software que garantizan estabilidad a gran escala y fidelidad operativa.
+One of LeTrain's defining characteristics is its visual bicephaly: two completely independent frontends sharing a single, immutable logical core.
 
-* **Reactividad por Eventos vs. Polling Ciego:**
-  * *La Regla Sagrada del Bucle:* Ningún componente debe iterar ciegamente sobre todas las vías, vagones o elementos en cada tick del juego para comprobar colisiones o reservar cantones.
-  * Las decisiones nacen en los límites: cuando la cabeza de un tren pisa un sensor o entra en una aguja, se reservan los cantones; cuando la cola abandona el nodo, se liberan. Esta reactividad permite simular redes inmensas con un consumo de recursos despreciable.
-* **La Verdad del Ferrocarril (Cantones y Señales):**
-  * La seguridad de los trenes no se basa en trucos de teletransporte o "fantasmas" que atraviesan otros vehículos. El sistema de cantones y grafos topológicos (`RailwayGraph`, `BlockManager`) es la ley inquebrantable que previene desastres.
-* **Consecuencias Justas y Comprensibles:**
-  * Si un tren descarrila por exceso de velocidad en una curva o dos convoyes colisionan por una señal mal planteada, la causa debe ser transparente y rastreable. El error en LeTrain es didáctico: enseña al jugador a ser mejor ingeniero.
+> **Design Principle:** *The 2D-3D duality is the anchor that forces us to keep the game simple, conceptual, and clear.* If an idea cannot be expressed with clarity on an ASCII grid, it is almost certainly overdesigned.
 
----
+### The 2D Terminal (Lanterna)
+* **Neither a retro gimmick nor a technical compromise:** It is a first-class citizen. The terminal interface delivers immediacy, blazing performance, and unmatched information density.
+* **The dignity of the ASCII character:** Every glyph (`=`, `|`, `/`, `\`, `+`, `#`) carries spatial weight and unmistakable functional meaning. It evokes the austere, rigorous atmosphere of Centralized Traffic Control (CTC) consoles from classic railway dispatch centers.
 
-## 4. La Filosofía de la Automatización: El Jugador como Programador
+### The Dynamic 3D Engine (LibGDX)
+* **Glyphs as spatial sculpture:** The 3D engine does not replace ASCII art; it projects it physically into three dimensions. Characters become blocks and tracks suspended over an infinite landscape carved by Perlin noise.
+* **Absolute functional symmetry:** There will never be an action possible in 3D that cannot be performed in 2D, and vice versa. What happens in one dimension is mathematically identical to what happens in the other. Both views are mere visitors (`Visitor pattern`) observing the same underlying model.
 
-LeTrain eleva la logística dotando al jugador de herramientas de computación sobre las vías.
+### Keyboard Ergonomics and the Nod to "Old-School Hackers" (Vim & Console)
+LeTrain pays explicit homage to the culture of classic terminal hackers, legendary text editors (`vi/vim`), seminal roguelikes, and Unix environments where hands never need to leave the keyboard's home row.
 
-* **Un Lenguaje Propio (DSL con ANTLR):**
-  * En lugar de depender únicamente de interfaces gráficas o menús contextuales, LeTrain ofrece una consola y un lenguaje declarativo para definir rutas, itinerarios, velocidades y automatismos de autopilotaje.
-* **Determinismo y Escenarios en Texto Plano:**
-  * Una semilla (*seed*) y una receta de comandos (`.ltr`) reproducen exactamente el mismo universo ferroviario en cualquier máquina, sistema operativo o momento histórico.
-  * Los escenarios no requieren volcados binarios opacos: son textos legibles por humanos, versionables en Git y validables mediante herramientas de línea de comandos como `letrain-check`.
-* **Libertad para Experimentar sin Miedo:**
-  * El sistema de `Record / Undo / Redo` y las instantáneas (*snapshots*) en caliente existen para invitar a la audacia. El jugador debe poder probar una infraestructura arriesgada y retroceder en el tiempo si el resultado no le satisface.
+* **Natural navigation with `h, j, k, l`:** Moving the cursor across the map, following tracks, or panning the view requires neither reaching for the mouse nor hunting for arrow keys. Navigation becomes seamless muscle memory.
+* **Console mode and speed of thought:** Alongside keyboard shortcuts, the built-in console allows querying state, toggling switches, or commanding trains in a few keystrokes, avoiding clunky floating menus or modal dialogues.
+* **Immersion and Flow State:** This is not mere nostalgia; it is ergonomic discipline. By removing mouse friction, the player enters an uninterrupted state of deep concentration (*flow*), manipulating the railway network at the speed of thought.
 
 ---
 
-## 5. El Contrato de Calidad y Robustez
+## 3. Physical Laws and the Mechanical Engine
 
-Un sistema que aspira a perdurar debe estar construido con estándares profesionales innegociables.
+LeTrain's backend is governed by software engineering principles that ensure large-scale stability and operational fidelity.
 
-* **Cero Tolerancia a los Errores Fantasma:**
-  * Las colisiones, bloqueos o pérdidas de carga deben ser siempre consecuencia lógica de las reglas del juego, nunca de condiciones de carrera, errores de concurrencia o estado mutado incontrolado.
-* **Arquitectura Desacoplada (MVP):**
-  * El Modelo (`Model`) es el guardián de la verdad y desconoce por completo a los Presentadores y a las Vistas. Ningún detalle de UI o de renderizado (Lanterna, LibGDX, OpenGL) debe contaminar el motor de juego (`core`).
-* **La Red de Seguridad del Test:**
-  * Todo comportamiento clave, regla física, parser de comandos o cálculo de economía debe estar respaldado por pruebas unitarias e integrales (`JUnit 5`, `Mockito`). Si una modificación rompe la cobertura o introduce regresiones, no está lista.
+* **Event-Driven Reactivity vs. Blind Polling:**
+  * *The Sacred Loop Rule:* No component may blindly poll all tracks, cars, or elements every game tick to check collisions or reserve blocks.
+  * Decisions happen at boundaries: when the train head enters a switch or crosses a sensor, blocks are acquired; when the tail clears the node, blocks are released. This reactivity allows simulating massive networks with negligible CPU overhead.
+* **The Truth of the Railway (Blocks and Signals):**
+  * Train safety never relies on teleportation hacks or vehicles ghosting through one another. The block and topological graph system (`RailwayGraph`, `BlockManager`) is the unyielding law that prevents disaster.
+* **Fair and Comprehensible Consequences:**
+  * If a train derails from excessive curve speed or two convoys collide due to a missing signal, the cause is transparent and traceable. Failure in LeTrain is educational: it teaches the player to become a better engineer.
 
 ---
 
-## 6. Mandato para Futuros Custodios y Colaboradores
+## 4. Automation Philosophy: The Player as Programmer
 
-Si estás leyendo este documento con la intención de continuar, mantener o evolucionar LeTrain en ausencia de sus creadores originales, asume este compromiso:
+LeTrain elevates logistics by empowering the player with computational tools right on the rails.
 
-1. **La Prueba de la Caja de Cartón:** Antes de introducir una nueva mecánica, pregúntate: *¿Le estamos dando al jugador una herramienta para inventar o un juguete que juega solo? ¿Es un mecanismo honesto o de cartón piedra?*
-2. **Preserva la Identidad:** Si una función pertenece a un simulador hiperrealista barroco o a un clicker casual, no pertenece a LeTrain. Respeta la sobriedad y la dignidad del puesto de mando.
-3. **Respeta la Simetría:** Mantén la paridad estricta entre el cliente de terminal (2D) y el cliente gráfico (3D). Si una función no puede expresarse con elegancia en ambas dimensiones, replantéala.
-4. **Garantiza la Soberanía del Teclado (*Keyboard-First*):** Jamás conviertas a LeTrain en un juego dependiente del ratón. El 100% de las acciones, navegación y comandos deben poder ejecutarse fluidamente desde el teclado con teclas Vim y consola. El ratón puede ser una comodidad opcional, pero nunca un requisito.
-5. **Prioriza la Simplicidad sobre la Astucia:** Prefiere código transparente, mantenible y modular antes que optimizaciones prematuras o abstracciones vacías.
-6. **Registra las Decisiones de Arquitectura:** Todo cambio significativo debe explicarse y documentarse mediante un ADR (`docs/developer/adr/`). La arquitectura es el mapa que permite no perderse en el futuro.
-7. **Deja el Taller Limpio:** Borra las ramas tras integrarlas, no dejes volcados temporales en la raíz, mantén los índices de clases actualizados y haz que el siguiente desarrollador encuentre un repositorio en el que dé gusto trabajar.
+* **A Dedicated Domain-Specific Language (ANTLR DSL):**
+  * Rather than relying solely on graphical menus, LeTrain provides a console and a declarative scripting language to define routes, itineraries, speeds, and autopilot logic.
+* **Determinism and Plain-Text Scenarios:**
+  * A random seed plus an `.ltr` recipe reconstructs the exact same railway universe across any machine, operating system, or era.
+  * Scenarios require no opaque binary dumps: they are plain-text files, versionable in Git, and headlessly verifiable with tools like `letrain-check`.
+* **Freedom to Experiment Fearlessly:**
+  * The `Record / Undo / Redo` journaling system and live snapshots exist to encourage bold experimentation. Players can test daring track layouts and instantly rewind time if the result fails.
+
+---
+
+## 5. Quality and Robustness Contract
+
+A system intended to endure must be built to uncompromising professional standards.
+
+* **Zero Tolerance for Ghost Bugs:**
+  * Collisions, deadlocks, or cargo anomalies must always be explainable by game rules, never by race conditions, threading desyncs, or corrupted state.
+* **Decoupled Architecture (MVP):**
+  * The Model (`Model`) is the source of truth and knows nothing of Presenters or Views. No UI or rendering dependencies (Lanterna, LibGDX, OpenGL) may ever leak into the game engine (`core`).
+* **The Safety Net of Testing:**
+  * Every core mechanic, physical rule, command grammar rule, and economy calculation is verified through automated unit and integration tests (`JUnit 5`, `Mockito`). A change that breaks tests or diminishes coverage is not ready.
+
+---
+
+## 6. Custodian Mandate for Future Maintainers
+
+If you are reading this document with the intent to continue, maintain, or evolve LeTrain in the absence of its original creator, you accept this pledge:
+
+1. **The Cardboard Box Test:** Before introducing any new mechanic, ask yourself: *Are we giving the player a tool to invent, or a toy that plays by itself? Is it an honest mechanism or a cardboard facade?*
+2. **Preserve Identity:** If a feature belongs in an overly baroque simulator or a casual clicker, it does not belong in LeTrain. Respect the restraint, dignity, and clarity of the dispatch desk.
+3. **Respect Symmetry:** Maintain strict parity between the 2D terminal client and the 3D graphical client. If a feature cannot be elegantly expressed in both dimensions, rethink it.
+4. **Guarantee Keyboard Sovereignty (Keyboard-First):** Never turn LeTrain into a mouse-dependent game. 100% of actions, navigation, and commands must remain fluidly executable via keyboard with Vim keys and console. The mouse may be an optional convenience, never a requirement.
+5. **Prioritize Simplicity over Cleverness:** Favor clean, maintainable, modular code over premature optimization or hollow abstractions.
+6. **Document Architectural Decisions:** Every significant architectural choice must be recorded in an ADR (`docs/developer/adr/`). Architecture is the map that keeps future travelers from getting lost.
+7. **Leave the Workshop Cleaner than You Found It:** Delete merged branches, remove temporary dumps, keep class indexes updated, and ensure the next engineer finds a codebase they are proud to work in.

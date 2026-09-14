@@ -42,7 +42,7 @@
 
 **LeTrain** is a procedural train simulator that blends classic ASCII aesthetics with a modern 3D engine. Build vast rail networks across an infinite world, manage a complex economy, and master the art of logistical efficiency.
 
-> 📜 **[Read the LeTrain Manifesto & Philosophy](docs/PHILOSOPHY.md) / [Leer el Manifiesto](docs/PHILOSOPHY.md)**  
+> 📜 **[Read the LeTrain Manifesto & Philosophy](docs/PHILOSOPHY.md) / [Leer el Manifiesto](docs/PHILOSOPHY_es.md)**  
 > *"Un juego para niños ingenieros e ingenieros niños: sin juguetes que juegan solos, con trenes reales y la sobriedad del teclado."*
 
 ---
