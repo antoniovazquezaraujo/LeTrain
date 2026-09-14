@@ -2062,6 +2062,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (file == null) {
             return;
         }
+        file = letrain.command.FileNames.withSavegameExtension(file);
         boolean ok = gameSaveService.save(this.model, file);
         if (!ok) {
             view.showMessage("Save Error", "Could not save game to\n" + file.getAbsolutePath());
@@ -2110,6 +2111,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void writeScenario(File file, String text) {
+        file = letrain.command.FileNames.withScenarioExtension(file);
         try {
             java.nio.file.Files.writeString(file.toPath(), text);
             view.setStatusBarText("Scenario saved: " + file.getName());

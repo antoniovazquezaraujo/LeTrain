@@ -743,6 +743,7 @@ public class GraphicPresenter extends ApplicationAdapter
             log.warn("Ignoring save request with null file");
             return;
         }
+        file = letrain.command.FileNames.withSavegameExtension(file);
         boolean ok = gameSaveService.save(model, file);
         if (!ok) {
             showMessage("Save Error", "Could not save game to\n" + file.getAbsolutePath());
@@ -791,6 +792,7 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     private void writeScenario(File file, String text) {
+        file = letrain.command.FileNames.withScenarioExtension(file);
         try {
             java.nio.file.Files.writeString(file.toPath(), text);
             log.info("Scenario saved to {}", file.getAbsolutePath());
