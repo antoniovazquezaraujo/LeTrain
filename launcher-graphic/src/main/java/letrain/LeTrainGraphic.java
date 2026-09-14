@@ -10,7 +10,9 @@ public class LeTrainGraphic {
         Model model = new Model();
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
         config.setTitle("LeTrain Editor " + letrain.BuildInfo.versionTag() + " (3D)");
-        config.setMaximized(true);
+        // Start in borderless fullscreen: the window appears at full size immediately, with no
+        // maximize animation (which otherwise flashes a small window first).
+        config.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
         GraphicPresenter view3D = new GraphicPresenter(model);
         new Lwjgl3Application(view3D, config);
     }

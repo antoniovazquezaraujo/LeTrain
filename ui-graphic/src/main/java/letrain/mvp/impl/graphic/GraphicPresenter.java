@@ -226,6 +226,15 @@ public class GraphicPresenter extends ApplicationAdapter
         multiplexer.addProcessor(hud.getStage());
         multiplexer.addProcessor(inputHandler);
         Gdx.input.setInputProcessor(multiplexer);
+
+        // The app starts fullscreen (no maximize animation), but switch to a normal maximized window
+        // right away so the OS/window behaviour (Esc exit menu, etc.) is the usual one.
+        com.badlogic.gdx.Graphics.DisplayMode dm = Gdx.graphics.getDisplayMode();
+        Gdx.graphics.setWindowedMode(dm.width, dm.height);
+        if (Gdx.graphics instanceof com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics) {
+            ((com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics) Gdx.graphics).getWindow()
+                    .maximizeWindow();
+        }
     }
 
     private float stateTime = 0f;
