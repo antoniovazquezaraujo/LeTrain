@@ -32,6 +32,7 @@
 - [[letrain.command.CommandMerge|CommandMerge]] (core)
 - [[letrain.command.EditCommandFilter|EditCommandFilter]] (core)
 - [[letrain.command.ExperimentSession|ExperimentSession]] (core)
+- [[letrain.command.FileNames|FileNames]] (core)
 - [[letrain.command.GrammarReference|GrammarReference]] (core)
 - [[letrain.command.PlayerCommandExecutor|PlayerCommandExecutor]] (core)
 - [[letrain.command.ScenarioCheckCli|ScenarioCheckCli]] (core)
