@@ -52,11 +52,11 @@ public class GenClassIndex {
         entries.sort(Comparator.comparing(Entry::group).thenComparing(Entry::fqcn));
 
         StringBuilder sb = new StringBuilder();
-        sb.append("# Índice de Clases de LeTrain\n\n");
+        sb.append("# LeTrain class index\n\n");
         sb.append(
-                "> **Generado automáticamente** con `java tools/GenClassIndex.java`. No editar a mano.\n");
+                "> **Generated automatically** by `java tools/GenClassIndex.java`. Do not edit by hand.\n");
         sb.append(
-                "> Formato: `[[paquete.Clase|Clase]] (módulo)`. Pensado para Obsidian y para localizar código.\n");
+                "> Format: `[[package.Class|Class]] (module)`. Useful in Obsidian and to locate code.\n");
         String last = null;
         for (Entry e : entries) {
             if (!e.group().equals(last)) {
@@ -75,12 +75,12 @@ public class GenClassIndex {
 
     private static String groupOf(String dir) {
         if (dir.equals("letrain")) {
-            return "letrain (raíz)";
+            return "letrain (root)";
         }
         if (dir.startsWith("letrain/")) {
             return "letrain." + dir.substring("letrain/".length()).split("/")[0];
         }
-        return "(otros)";
+        return "(others)";
     }
 
     private GenClassIndex() {}
