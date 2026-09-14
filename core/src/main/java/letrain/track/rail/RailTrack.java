@@ -9,7 +9,7 @@ import letrain.visitor.Visitor;
 
 public class RailTrack extends Track {
     public enum VisualType {
-        NORMAL, STATION, TUNNEL, TUNNEL_GATE, BRIDGE, BRIDGE_GATE
+        NORMAL, TUNNEL, TUNNEL_GATE, BRIDGE, BRIDGE_GATE
     }
     
     private VisualType visualType = VisualType.NORMAL;

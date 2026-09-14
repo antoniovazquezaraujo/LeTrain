@@ -27,9 +27,7 @@ import letrain.visitor.Renderable;
         @JsonSubTypes.Type(value = letrain.track.rail.TunnelRailTrack.class,
                 name = "TunnelRailTrack"),
         @JsonSubTypes.Type(value = letrain.track.rail.TunnelGateRailTrack.class,
-                name = "TunnelGateRailTrack"),
-        @JsonSubTypes.Type(value = letrain.track.rail.StationRailTrack.class,
-                name = "StationRailTrack")})
+                name = "TunnelGateRailTrack")})
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @SuppressWarnings("deprecation")

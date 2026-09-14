@@ -255,9 +255,6 @@ public class EconomyManager implements letrain.economy.EconomyManager {
                 constructedTunnelRailTracks++;
                 spend(ExpenseType.CONSTRUCTED_TUNNEL_RAIL_TRACK);
                 break;
-            case STATION_TRACK:
-                // TODO pending
-                break;
         }
     }
 
@@ -313,9 +310,6 @@ public class EconomyManager implements letrain.economy.EconomyManager {
             case TUNNEL_TRACK:
                 destroyedTunnelRailTracks++;
                 spend(ExpenseType.DESTROYED_TUNNEL_RAIL_TRACK);
-                break;
-            case STATION_TRACK:
-                // Station destruction is handled by onStationDestroyed
                 break;
         }
     }
