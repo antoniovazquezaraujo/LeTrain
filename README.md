@@ -1,6 +1,10 @@
 # LeTrain 🚂✨
 
 <p align="left">
+  🌐 <strong>English</strong> | <a href="README_es.md">Español</a>
+</p>
+
+<p align="left">
   <a href="https://github.com/antoniovazquezaraujo/LeTrain/actions/workflows/ci.yml"><img src="https://github.com/antoniovazquezaraujo/LeTrain/actions/workflows/ci.yml/badge.svg" alt="Build Status"></a>
   <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases"><img src="https://img.shields.io/github/v/release/antoniovazquezaraujo/LeTrain?include_prereleases&style=flat-square" alt="GitHub release"></a>
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square" alt="License"></a>
@@ -42,8 +46,8 @@
 
 **LeTrain** is a procedural train simulator that blends classic ASCII aesthetics with a modern 3D engine. Build vast rail networks across an infinite world, manage a complex economy, and master the art of logistical efficiency.
 
-> 📜 **[Read the LeTrain Manifesto & Philosophy](docs/PHILOSOPHY.md) / [Leer el Manifiesto](docs/PHILOSOPHY_es.md)**  
-> *"Un juego para niños ingenieros e ingenieros niños: sin juguetes que juegan solos, con trenes reales y la sobriedad del teclado."*
+> 📜 **[Read the LeTrain Manifesto & Philosophy](docs/PHILOSOPHY.md)** ([Leer en Español](docs/PHILOSOPHY_es.md))  
+> *"A game for engineer-children and child-engineers: no toys that play by themselves, honest trains, and pure keyboard flow."*
 
 ---
 
