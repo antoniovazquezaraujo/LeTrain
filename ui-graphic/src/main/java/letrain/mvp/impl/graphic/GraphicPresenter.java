@@ -227,13 +227,13 @@ public class GraphicPresenter extends ApplicationAdapter
         multiplexer.addProcessor(inputHandler);
         Gdx.input.setInputProcessor(multiplexer);
 
-        // The window was created hidden (LeTrainGraphic.setInitialVisible(false)) to avoid flashing
-        // at its default size; show it now, already maximized.
+        // The app starts fullscreen (no maximize animation), but switch to a normal maximized window
+        // right away so the OS/window behaviour (Esc exit menu, etc.) is the usual one.
+        com.badlogic.gdx.Graphics.DisplayMode dm = Gdx.graphics.getDisplayMode();
+        Gdx.graphics.setWindowedMode(dm.width, dm.height);
         if (Gdx.graphics instanceof com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics) {
-            com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window window =
-                    ((com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics) Gdx.graphics).getWindow();
-            window.maximizeWindow();
-            window.setVisible(true);
+            ((com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics) Gdx.graphics).getWindow()
+                    .maximizeWindow();
         }
     }
 
