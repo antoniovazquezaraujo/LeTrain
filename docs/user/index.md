@@ -75,6 +75,7 @@ You can run either the modern 3D version or the classic 2D version:
 - [User Manual](manual.md)
 - [Scripting and Automation Grammar](grammar.md)
 - [Scenarios (.ltr) and the editor](scenarios.md)
+- [CLI Command Cheat Sheet](cheatsheet.md)
 
 ## 🎥 Media & Tutorials
 

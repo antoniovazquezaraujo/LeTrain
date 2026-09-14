@@ -74,6 +74,7 @@ Puedes ejecutar tanto la versión moderna 3D como la clásica 2D:
 - [Manual de Usuario](manual_es.md)
 - [Gramática de Scripting y Automatización](grammar_es.md)
 - [Escenarios (.ltr) y el editor](scenarios_es.md)
+- [Chuleta rápida de comandos CLI](cheatsheet_es.md)
 
 ## 🎥 Multimedia y Tutoriales
 
