@@ -2,6 +2,8 @@
 
 ## Estado: ACEPTADO (implementado en gran parte)
 
+> 📘 **Guía didáctica de implementación:** [[ADR-020-Guia-Practica|ADR-020 en la práctica: qué hemos construido y por qué]]
+
 ### Estado de implementación (2026-09-12)
 
 **Implementado**

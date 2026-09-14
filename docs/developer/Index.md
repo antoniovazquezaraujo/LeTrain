@@ -9,6 +9,7 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 - [[adr/ADR-006-Symmetry-in-Presenters|ADR-006: Simetría en Presentadores y Vistas]]
 - [[adr/ADR-007-Collision-Visual-Interpolation|ADR-007: Interpolación visual en colisiones a baja velocidad]]
 - [[adr/ADR-015-Abstraccion-Puertos-Nodos|ADR-015: Abstracción de Puertos (0, 1, 2) y Tránsitos]]
+- [[adr/ADR-020-Command-Journal-Scenarios|ADR-020: Diario de Comandos y Escenarios]] ([[adr/ADR-020-Guia-Practica|Guía Práctica]])
 - [[systems/CommandPattern|Gestión de Automatización (ANTLR)]]
 - [[systems/ActionCatalogue|Action Catalogue — Acciones de edición vs. comandos (PoC #487)]]
 - [[architecture/ClassIndex|Índice de Clases (generado)]]
