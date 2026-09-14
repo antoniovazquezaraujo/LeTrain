@@ -814,9 +814,6 @@ public class RailTrackMaker {
     public RailTrack createTrackOfSelectedType() {
         RailTrack track = new RailTrack();
         switch (newTrackType) {
-            case STATION_TRACK:
-                track.setVisualType(letrain.track.rail.RailTrack.VisualType.STATION);
-                break;
             case TUNNEL_GATE_TRACK:
                 track.setVisualType(letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE);
                 break;
