@@ -8,10 +8,6 @@
     <version>1.0.0-beta.5-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <prerequisites>
-        <maven>3.3.1</maven>
-    </prerequisites>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <slf4j.version>2.0.4</slf4j.version>
@@ -152,6 +148,14 @@
                 <configuration>
                     <release>17</release>
                     <showDeprecation>true</showDeprecation>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <propertiesEncoding>UTF-8</propertiesEncoding>
                 </configuration>
             </plugin>
             <plugin>
