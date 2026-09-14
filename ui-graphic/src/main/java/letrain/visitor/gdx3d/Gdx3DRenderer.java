@@ -174,7 +174,8 @@ public class Gdx3DRenderer implements Visitor {
                 isXRayActive = true;
             } else {
                 RailTrack rt = model.getCursorRailTrack();
-                if (rt != null && rt.getVisualType() == letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE) {
+                if (rt != null && rt
+                        .getVisualType() == letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE) {
                     isXRayActive = true;
                 }
             }

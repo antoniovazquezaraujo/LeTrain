@@ -2,7 +2,6 @@ package letrain;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -273,7 +272,8 @@ class SerializationTest {
                 public void onClosed() {}
 
                 @Override
-                public void onEnterTrain(letrain.vehicle.rail.impl.Train train, boolean isForward) {}
+                public void onEnterTrain(letrain.vehicle.rail.impl.Train train,
+                        boolean isForward) {}
 
                 @Override
                 public void onExitTrain(letrain.vehicle.rail.impl.Train train, boolean isForward) {}
@@ -478,7 +478,8 @@ class SerializationTest {
         track.addRoute(letrain.map.Dir.W, letrain.map.Dir.E);
         track.setPosition(new letrain.map.Point(0, 0));
         model.getRailMap().addTrack(track.getPosition(), track);
-        letrain.track.SpeedSignal signal = new letrain.track.SpeedSignal(1, letrain.map.Dir.E, 3, true);
+        letrain.track.SpeedSignal signal =
+                new letrain.track.SpeedSignal(1, letrain.map.Dir.E, 3, true);
         signal.setTrack(track);
         track.setComponent(signal);
         model.addSensor(signal);
@@ -494,20 +495,16 @@ class SerializationTest {
     @DisplayName("Construction delays survive a save/load round trip")
     void constructionDelays_surviveRoundTrip() throws IOException {
         Model model = new Model();
-        assertEquals(30,
-                model.getEconomyManager()
-                        .getConstructionDelay(letrain.mvp.Presenter.TrackType.TUNNEL_TRACK));
-        assertEquals(20,
-                model.getEconomyManager()
-                        .getConstructionDelay(letrain.mvp.Presenter.TrackType.BRIDGE_TRACK));
+        assertEquals(30, model.getEconomyManager()
+                .getConstructionDelay(letrain.mvp.Presenter.TrackType.TUNNEL_TRACK));
+        assertEquals(20, model.getEconomyManager()
+                .getConstructionDelay(letrain.mvp.Presenter.TrackType.BRIDGE_TRACK));
 
         Model restored = deserialize(serialize(model), Model.class);
         assertNotNull(restored);
-        assertEquals(30,
-                restored.getEconomyManager()
-                        .getConstructionDelay(letrain.mvp.Presenter.TrackType.TUNNEL_TRACK));
-        assertEquals(20,
-                restored.getEconomyManager()
-                        .getConstructionDelay(letrain.mvp.Presenter.TrackType.BRIDGE_TRACK));
+        assertEquals(30, restored.getEconomyManager()
+                .getConstructionDelay(letrain.mvp.Presenter.TrackType.TUNNEL_TRACK));
+        assertEquals(20, restored.getEconomyManager()
+                .getConstructionDelay(letrain.mvp.Presenter.TrackType.BRIDGE_TRACK));
     }
 }

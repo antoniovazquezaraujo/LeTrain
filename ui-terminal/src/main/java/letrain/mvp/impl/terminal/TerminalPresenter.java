@@ -40,12 +40,15 @@ import org.slf4j.LoggerFactory;
 
 public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventListener {
     private InputEvent translate(com.googlecode.lanterna.input.KeyStroke ls) {
-        if (ls == null) return null;
+        if (ls == null)
+            return null;
         KeyType kt = KeyType.Unknown;
         try {
             kt = KeyType.valueOf(ls.getKeyType().name());
-        } catch (Exception e) {}
-        return new InputEvent(kt, ls.getCharacter(), ls.isCtrlDown(), ls.isAltDown(), ls.isShiftDown());
+        } catch (Exception e) {
+        }
+        return new InputEvent(kt, ls.getCharacter(), ls.isCtrlDown(), ls.isAltDown(),
+                ls.isShiftDown());
     }
 
     Logger log = LoggerFactory.getLogger(TerminalPresenter.class);
@@ -150,17 +153,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     @Override
     public letrain.command.UndoRedoHistory getUndoRedoHistory() {
         if (undoRedoHistory == null) {
-            undoRedoHistory = new letrain.command.UndoRedoHistory(new letrain.command.UndoRedoHistory.Codec() {
-                @Override
-                public byte[] toBytes(letrain.mvp.Model m) {
-                    return gameSaveService.toBytes(m);
-                }
+            undoRedoHistory = new letrain.command.UndoRedoHistory(
+                    new letrain.command.UndoRedoHistory.Codec() {
+                        @Override
+                        public byte[] toBytes(letrain.mvp.Model m) {
+                            return gameSaveService.toBytes(m);
+                        }
 
-                @Override
-                public letrain.mvp.Model fromBytes(byte[] data) {
-                    return gameSaveService.fromBytes(data);
-                }
-            });
+                        @Override
+                        public letrain.mvp.Model fromBytes(byte[] data) {
+                            return gameSaveService.fromBytes(data);
+                        }
+                    });
         }
         return undoRedoHistory;
     }
@@ -168,8 +172,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     /** Experiment-mode session (ADR-020 item 5), created lazily with the same in-memory codec. */
     public letrain.command.ExperimentSession getExperimentSession() {
         if (experimentSession == null) {
-            experimentSession =
-                    new letrain.command.ExperimentSession(new letrain.command.ExperimentSession.Codec() {
+            experimentSession = new letrain.command.ExperimentSession(
+                    new letrain.command.ExperimentSession.Codec() {
                         @Override
                         public byte[] toBytes(letrain.mvp.Model m) {
                             return gameSaveService.toBytes(m);
@@ -214,7 +218,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         modeKeyHandlers.put(DRIVE, keyEvent -> trainDriverOnChar(keyEvent));
         modeKeyHandlers.put(FORKS, keyEvent -> handleForksModeKey(keyEvent));
         modeKeyHandlers.put(SEMAPHORES, keyEvent -> handleSemaphoresModeKey(keyEvent));
-        modeKeyHandlers.put(letrain.mvp.Model.GameMode.SENSORS, keyEvent -> handleSensorsModeKey(keyEvent));
+        modeKeyHandlers.put(letrain.mvp.Model.GameMode.SENSORS,
+                keyEvent -> handleSensorsModeKey(keyEvent));
         modeKeyHandlers.put(letrain.mvp.Model.GameMode.SPEED_SIGNALS,
                 keyEvent -> handleSpeedSignalsModeKey(keyEvent));
         modeKeyHandlers.put(TRAINS, keyEvent -> {
@@ -228,16 +233,17 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         modeKeyHandlers.put(UNLINK, keyEvent -> handleUnlinkModeKey(keyEvent));
         modeKeyHandlers.put(STATIONS, keyEvent -> handleStationsModeKey(keyEvent));
         modeKeyHandlers.put(PROGRAM, keyEvent -> handleProgramModeKey(keyEvent));
-                modeKeyHandlers.put(MENU, keyEvent -> {
+        modeKeyHandlers.put(MENU, keyEvent -> {
             // Allow cursor movement in NORMAL/MENU mode
-            if (keyEvent.getKeyType() == KeyType.ArrowUp ||
-                keyEvent.getKeyType() == KeyType.ArrowDown ||
-                keyEvent.getKeyType() == KeyType.ArrowLeft ||
-                keyEvent.getKeyType() == KeyType.ArrowRight) {
+            if (keyEvent.getKeyType() == KeyType.ArrowUp
+                    || keyEvent.getKeyType() == KeyType.ArrowDown
+                    || keyEvent.getKeyType() == KeyType.ArrowLeft
+                    || keyEvent.getKeyType() == KeyType.ArrowRight) {
                 railTrackMaker.onChar(keyEvent);
             } else if (keyEvent.getKeyType() == KeyType.Character) {
                 Character c = keyEvent.getCharacter();
-                if (c != null && (c == 'h' || c == 'j' || c == 'k' || c == 'l' || c == 'H' || c == 'J' || c == 'K' || c == 'L')) {
+                if (c != null && (c == 'h' || c == 'j' || c == 'k' || c == 'l' || c == 'H'
+                        || c == 'J' || c == 'K' || c == 'L')) {
                     railTrackMaker.onChar(keyEvent);
                 }
             }
@@ -291,10 +297,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         } else {
             this.audioController.retarget(this.model);
         }
-        // CRITICAL for deterministic undo/redo replay: RailTrackMaker keeps per-model internal state
+        // CRITICAL for deterministic undo/redo replay: RailTrackMaker keeps per-model internal
+        // state
         // (oldTrack, oldGroundType, dir, makingTracks...). If we reused the instance built against
         // the outgoing model, the replay of a recorded command could "continue" from a stale rail
-        // tile of the discarded world and redraw the figure misplaced / truncated. Recreate it bound
+        // tile of the discarded world and redraw the figure misplaced / truncated. Recreate it
+        // bound
         // to the restored model, exactly as GraphicPresenter.applyLoadedModel does on a load.
         this.railTrackMaker = new RailTrackMaker(this);
         this.simulationController =
@@ -324,7 +332,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         stopped = true;
         running = false;
         // Hand the terminal back FIRST: it must never be skipped by a later failure (e.g. audio),
-        // or the shell would be left in raw mode. Each step is isolated so one cannot block another.
+        // or the shell would be left in raw mode. Each step is isolated so one cannot block
+        // another.
         if (view != null) {
             try {
                 view.stop();
@@ -365,13 +374,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 simulationController.tick();
                 if (audioController != null) {
-                    Point listenerPos = model.getMode() == DRIVE
-                            && model.getSelectedLocomotive() != null
+                    Point listenerPos =
+                            model.getMode() == DRIVE && model.getSelectedLocomotive() != null
                                     ? model.getSelectedLocomotive().getPosition()
                                     : model.getCursor().getPosition();
                     int ambientCells = view.getCols() * view.getRows();
-                    float ambientZoom = Math.max(0f, Math.min(1f,
-                            (ambientCells - AMBIENT_BASE_CELLS)
+                    float ambientZoom =
+                            Math.max(0f, Math.min(1f, (ambientCells - AMBIENT_BASE_CELLS)
                                     / (float) (AMBIENT_FULL_CELLS - AMBIENT_BASE_CELLS)));
                     audioController.setListenerPosition((float) listenerPos.getX(),
                             (float) listenerPos.getY(), 0f, 0);
@@ -440,11 +449,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 file -> onSaveGame(file), file -> onLoadGame(file),
                 new letrain.command.TurtleBuilder(model, railTrackMaker),
                 (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
-                steps -> undo(steps), steps -> redo(steps),
-                file -> saveScenario(file), file -> playScenario(file), false);
+                steps -> undo(steps), steps -> redo(steps), file -> saveScenario(file),
+                file -> playScenario(file), false);
 
         if (error != null) {
-            // Short form for the one-line command bar; the full message goes to the scrollable panel.
+            // Short form for the one-line command bar; the full message goes to the scrollable
+            // panel.
             model.setCommandError(letrain.command.SyntaxMessages.shorten(error));
             if (error.contains("\n") || error.length() > 60) {
                 view.showMessage("Command error", error);
@@ -455,7 +465,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         // exported scenario replays at the right place. Only editing commands, and only while the
         // world is frozen in edit mode (same gate as undo, so both stay 1:1).
         letrain.command.CommandJournal journal = model.getCommandJournal();
-        if (model.isSimulationPaused() && journal.isRecording() && !letrain.command.EditCommandFilter.isNonRecordable(cmd)) {
+        if (model.isSimulationPaused() && journal.isRecording()
+                && !letrain.command.EditCommandFilter.isNonRecordable(cmd)) {
             journal.record(prefix + cmd);
         }
         // Auto-capture in pause (ADR-020 item 3): while pause-editing freezes the world, every
@@ -467,7 +478,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         model.setMode(letrain.mvp.Model.GameMode.RAILS);
         model.setCommandText("");
         model.setCommandError("");
-        view.centerOn(model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY());
+        view.centerOn(model.getCursor().getPosition().getX(),
+                model.getCursor().getPosition().getY());
     }
 
     /** Absolute cursor prefix: {@code "go x,y; face d; "} from the current cursor state. */
@@ -478,9 +490,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
-     * Records a keyboard state toggle (signal invert/mode/limit) as a canonical, self-positioned DSL
-     * command into the journal and the undo history, exactly like the console funnel. Only while the
-     * world is frozen in edit mode, so undo and the exported scenario stay 1:1 with the edits.
+     * Records a keyboard state toggle (signal invert/mode/limit) as a canonical, self-positioned
+     * DSL command into the journal and the undo history, exactly like the console funnel. Only
+     * while the world is frozen in edit mode, so undo and the exported scenario stay 1:1 with the
+     * edits.
      */
     private void recordKeyboardEdit(String action) {
         if (!model.isSimulationPaused()) {
@@ -543,10 +556,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     /**
      * Applies an undo/redo plan: restore the checkpoint base (undo) via {@link #applyModel}, then
-     * re-execute the recorded command slice on the restored world through the same console path.
-     * On a replay error the applied counter is only advanced to the last command that actually
-     * succeeded, so the history never claims commands were applied when they were not (a desync here
-     * makes the next redo incomplete).
+     * re-execute the recorded command slice on the restored world through the same console path. On
+     * a replay error the applied counter is only advanced to the last command that actually
+     * succeeded, so the history never claims commands were applied when they were not (a desync
+     * here makes the next redo incomplete).
      */
     private void applyPlan(letrain.command.UndoRedoHistory history,
             letrain.command.UndoRedoHistory.UndoPlan plan, boolean restoring) {
@@ -581,16 +594,19 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                         file -> onSaveGame(file), file -> onLoadGame(file),
                         new letrain.command.TurtleBuilder(model, railTrackMaker),
-                        (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
-                        null, null, false);
+                        (title, msg) -> view.showMessage(title, msg), () -> onExitGame(), null,
+                        null, false);
                 if (error != null) {
                     log.error("Undo/redo replay failed on '{}': {}", cmd, error);
                     view.setStatusBarText("Replay error: " + error);
                     break;
                 }
-                // Reproduce the terrain materialization the live session performed between edits (the
-                // render loop generates ground blocks around the cursor each frame). Replay runs with
-                // no frames, so without this, painting beyond the blocks stored in the checkpoint would
+                // Reproduce the terrain materialization the live session performed between edits
+                // (the
+                // render loop generates ground blocks around the cursor each frame). Replay runs
+                // with
+                // no frames, so without this, painting beyond the blocks stored in the checkpoint
+                // would
                 // hit void (-1) terrain and silently fail to lay rails.
                 letrain.map.Point cp = model.getCursor().getPosition();
                 int radius = model.getEconomyManager().getViewRadius();
@@ -609,7 +625,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         // Keep the export journal cursor in sync with the applied edits of this session.
         commandJournal.setApplied(commandJournal.base() + replayedTo);
         view.setStatusBarText((restoring ? "Undid" : "Redid") + " " + plan.toIndex() + " steps");
-        view.centerOn(model.getCursor().getPosition().getX(), model.getCursor().getPosition().getY());
+        view.centerOn(model.getCursor().getPosition().getX(),
+                model.getCursor().getPosition().getY());
     }
 
     @Override
@@ -646,7 +663,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             }
             return;
         }
-        
+
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
             if (keyEvent.getKeyType() == KeyType.Escape) {
                 model.setMode(letrain.mvp.Model.GameMode.RAILS);
@@ -661,11 +678,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     model.setCommandError("");
                     return;
                 }
-                if (commandHistory.isEmpty() || !commandHistory.get(commandHistory.size() - 1).equals(cmd)) {
+                if (commandHistory.isEmpty()
+                        || !commandHistory.get(commandHistory.size() - 1).equals(cmd)) {
                     commandHistory.add(cmd);
                 }
                 historyIndex = commandHistory.size();
-                
+
                 executeCommand(model.getCommandText());
                 return;
             } else if (keyEvent.getKeyType() == KeyType.Backspace) {
@@ -731,23 +749,25 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             // mirroring the Ctrl+P/Ctrl+N handling in COMMAND mode. A plain 'r' is NOT redo (it
             // switches to RAILS via the mode hotkeys below).
             // (Ctrl+Z is NOT used because in a terminal it suspends the task via SIGTSTP.)
-            boolean ctrlR = c == 18
-                    || (keyEvent.isCtrlDown() && (c == 'r' || c == 'R'));
+            boolean ctrlR = c == 18 || (keyEvent.isCtrlDown() && (c == 'r' || c == 'R'));
             if (ctrlR) {
                 redo(1);
                 return;
             }
         }
 
-        if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null && keyEvent.getCharacter() == '.') {
-            if (model.getMode() != letrain.mvp.Model.GameMode.COMMAND && !commandHistory.isEmpty()) {
+        if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null
+                && keyEvent.getCharacter() == '.') {
+            if (model.getMode() != letrain.mvp.Model.GameMode.COMMAND
+                    && !commandHistory.isEmpty()) {
                 String cmd = commandHistory.get(commandHistory.size() - 1);
                 executeCommand(cmd);
                 return;
             }
         }
 
-        if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null && keyEvent.getCharacter() == ':') {
+        if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null
+                && keyEvent.getCharacter() == ':') {
             if (model.getMode() != letrain.mvp.Model.GameMode.PROGRAM) {
                 model.setMode(letrain.mvp.Model.GameMode.COMMAND);
                 model.setCommandText("");
@@ -814,15 +834,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void togglePauseEditing() {
         if (getExperimentSession().isActive()) {
-            view.setStatusBarText(
-                    "Experiment ON: press X to leave and restore before Record mode");
+            view.setStatusBarText("Experiment ON: press X to leave and restore before Record mode");
             return;
         }
         boolean recording = !model.isPauseEditing();
         model.setPauseEditing(recording);
-        view.setStatusBarText(recording
-                ? "Record: ON (edit mode: frozen world, instant build, undo/redo)"
-                : "Record: OFF");
+        view.setStatusBarText(
+                recording ? "Record: ON (edit mode: frozen world, instant build, undo/redo)"
+                        : "Record: OFF");
         if (recording) {
             // Editing session: snapshot for undo/redo and start capturing the scenario recipe.
             getUndoRedoHistory().begin(model);
@@ -986,10 +1005,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private KeyType getEffectiveKeyType(InputEvent event) {
         if (event.getKeyType() == KeyType.Character && event.getCharacter() != null) {
             switch (Character.toLowerCase(event.getCharacter())) {
-                case 'k': return KeyType.ArrowUp;
-                case 'j': return KeyType.ArrowDown;
-                case 'h': return KeyType.ArrowLeft;
-                case 'l': return KeyType.ArrowRight;
+                case 'k':
+                    return KeyType.ArrowUp;
+                case 'j':
+                    return KeyType.ArrowDown;
+                case 'h':
+                    return KeyType.ArrowLeft;
+                case 'l':
+                    return KeyType.ArrowRight;
             }
         }
         return event.getKeyType();
@@ -1123,7 +1146,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                             train.getLogisticsManager().performIndustrialAction(selectedStation);
                         } else {
                             selectedStation.flipOrientation();
-                            journalEditingCommand("station " + selectedStation.getId() + " invert;");
+                            journalEditingCommand(
+                                    "station " + selectedStation.getId() + " invert;");
                         }
                     }
                 } else if (keyEvent.getCharacter() >= '0' && keyEvent.getCharacter() <= '9') {
@@ -1466,8 +1490,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             }
             cursorDir = wagon.getDir();
             String cargoToken = wagon.getExclusiveCargoType() == null
-                    || wagon.getExclusiveCargoType() == letrain.track.CargoTypes.NONE
-                            ? ""
+                    || wagon.getExclusiveCargoType() == letrain.track.CargoTypes.NONE ? ""
                             : " " + wagon.getExclusiveCargoType().name().toLowerCase();
             journalEditingCommand(prefix + "new wagon " + c + cargoToken + ";");
         }
@@ -1599,19 +1622,23 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             if (c != null) {
                 switch (Character.toLowerCase(c)) {
                     case 'n':
-                        railTrackMaker.onChar(new InputEvent(KeyType.End, null, false, false, false));
+                        railTrackMaker
+                                .onChar(new InputEvent(KeyType.End, null, false, false, false));
                         model.setMode(model.getPreviousMode());
                         break;
                     case 'e':
-                        railTrackMaker.onChar(new InputEvent(KeyType.Insert, null, false, false, false));
+                        railTrackMaker
+                                .onChar(new InputEvent(KeyType.Insert, null, false, false, false));
                         model.setMode(model.getPreviousMode());
                         break;
                     case 's':
-                        railTrackMaker.onChar(new InputEvent(KeyType.Home, null, false, false, false));
+                        railTrackMaker
+                                .onChar(new InputEvent(KeyType.Home, null, false, false, false));
                         model.setMode(model.getPreviousMode());
                         break;
                     case 'g':
-                        railTrackMaker.onChar(new InputEvent(KeyType.Delete, null, false, false, false));
+                        railTrackMaker
+                                .onChar(new InputEvent(KeyType.Delete, null, false, false, false));
                         model.setMode(model.getPreviousMode());
                         break;
                     default:
@@ -1841,8 +1868,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
-     * Records a canonical editing command (e.g. a coupling) into the command journal while recording
-     * and into the paused-editing undo history. Coupling commands are id-based, so no cursor prefix.
+     * Records a canonical editing command (e.g. a coupling) into the command journal while
+     * recording and into the paused-editing undo history. Coupling commands are id-based, so no
+     * cursor prefix.
      */
     private void journalEditingCommand(String command) {
         letrain.command.CommandJournal journal = model.getCommandJournal();
@@ -1987,7 +2015,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     void setPageOfPoint(Point point) {
         if (point != null) {
-            view.ensureVisible(point.getX(), point.getY(), view.getCameraDeadzone(), view.isCameraPagination());
+            view.ensureVisible(point.getX(), point.getY(), view.getCameraDeadzone(),
+                    view.isCameraPagination());
         }
     }
 
@@ -2055,7 +2084,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    /** Generates the world recipe (seed + on build + on start, no settings/program) for the editor. */
+    /**
+     * Generates the world recipe (seed + on build + on start, no settings/program) for the editor.
+     */
     @Override
     public String getScenarioText() {
         return letrain.command.ScenarioExporter.renderWorld(model, commandJournal.appliedEntries());
@@ -2088,7 +2119,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    /** Rebuilds a fresh same-seed world and replays the scenario commands on it (free constructor). */
+    /**
+     * Rebuilds a fresh same-seed world and replays the scenario commands on it (free constructor).
+     */
     private void playScenario(File file) {
         try {
             playScenarioText(java.nio.file.Files.readString(file.toPath()), file);
@@ -2157,12 +2190,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 commandJournal.record(cmd);
             }
             commandJournal.bake();
-            // Scenario = free construction mode: enter the Record/edit mode (frozen, instant, undo).
+            // Scenario = free construction mode: enter the Record/edit mode (frozen, instant,
+            // undo).
             model.setPauseEditing(true);
             commandJournal.startRecording();
             getUndoRedoHistory().begin(model);
-            view.setStatusBarText("Scenario played: "
-                    + (file != null ? file.getName() : "(editor)"));
+            view.setStatusBarText(
+                    "Scenario played: " + (file != null ? file.getName() : "(editor)"));
         } catch (Exception e) {
             log.error("Error playing scenario", e);
             view.showMessage("Scenario Error", "Could not play scenario: " + e.getMessage());
@@ -2171,14 +2205,15 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     /** Runs one scenario command through the same console path used by the UI. */
     private String executeScenarioCommand(String cmd) {
-        return letrain.command.PlayerCommandExecutor.execute(cmd, model,
-                f -> onSaveGame(f), f -> onLoadGame(f),
-                new letrain.command.TurtleBuilder(model, railTrackMaker),
-                (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
-                null, null, false);
+        return letrain.command.PlayerCommandExecutor.execute(cmd, model, f -> onSaveGame(f),
+                f -> onLoadGame(f), new letrain.command.TurtleBuilder(model, railTrackMaker),
+                (title, msg) -> view.showMessage(title, msg), () -> onExitGame(), null, null,
+                false);
     }
 
-    /** Generates the ground blocks around every rail tile so the loaded world has terrain visible. */
+    /**
+     * Generates the ground blocks around every rail tile so the loaded world has terrain visible.
+     */
     private void materializeGroundUnderTracks() {
         int r = 2;
         model.getRailMap().forEach(track -> {
@@ -2227,7 +2262,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     if (startPos != null) {
                         view.centerOn(startPos.getX(), startPos.getY());
                     }
-                    loadedModel.updateGroundMap(view.getScrollOffset(), view.getCols(), view.getRows());
+                    loadedModel.updateGroundMap(view.getScrollOffset(), view.getCols(),
+                            view.getRows());
                 } else {
                     view.showMessage("Load Error",
                             "Could not load game from\n" + file.getAbsolutePath());

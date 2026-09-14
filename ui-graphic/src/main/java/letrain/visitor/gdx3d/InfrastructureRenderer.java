@@ -240,10 +240,12 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
         // Draw the base (PIE) double width
         ModelInstance base = resourceContext.getModelInstance(resourceContext.baseModel);
-        base.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(com.badlogic.gdx.graphics.Color.LIGHT_GRAY));
+        base.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                .createDiffuse(com.badlogic.gdx.graphics.Color.LIGHT_GRAY));
         float sensorBottomHeight = 0.09f;
         // Center the pie at 1.5x offset so the pole is in the inner half
-        base.transform.setToTranslation(x + 0.5f + offsetX * 1.5f, sensorBottomHeight, y + 0.5f + offsetZ * 1.5f);
+        base.transform.setToTranslation(x + 0.5f + offsetX * 1.5f, sensorBottomHeight,
+                y + 0.5f + offsetZ * 1.5f);
         base.transform.rotate(0, 1, 0, angle - 90f);
         // Scale Z by 2.0 to make it double width
         base.transform.scale(1.0f, 1.04f, 2.0f);
@@ -253,9 +255,13 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         String idText = String.valueOf(semaphore.getId());
         float labelHeight = 0.19f;
         float rad = (float) Math.toRadians(angle);
-        com.badlogic.gdx.math.Vector3 pieLabelPos = new com.badlogic.gdx.math.Vector3(x + 0.5f + offsetX * 1.75f, labelHeight, y + 0.5f + offsetZ * 1.75f);
-        com.badlogic.gdx.math.Vector3 pieLabelUp = new com.badlogic.gdx.math.Vector3(-(float)Math.sin(rad), 0, -(float)Math.cos(rad));
-        labels.add(new Gdx3DRenderer.VehicleLabel(pieLabelPos, idText, new com.badlogic.gdx.math.Vector3(0, 1, 0), pieLabelUp, com.badlogic.gdx.graphics.Color.BLACK, 0.4f));
+        com.badlogic.gdx.math.Vector3 pieLabelPos = new com.badlogic.gdx.math.Vector3(
+                x + 0.5f + offsetX * 1.75f, labelHeight, y + 0.5f + offsetZ * 1.75f);
+        com.badlogic.gdx.math.Vector3 pieLabelUp = new com.badlogic.gdx.math.Vector3(
+                -(float) Math.sin(rad), 0, -(float) Math.cos(rad));
+        labels.add(new Gdx3DRenderer.VehicleLabel(pieLabelPos, idText,
+                new com.badlogic.gdx.math.Vector3(0, 1, 0), pieLabelUp,
+                com.badlogic.gdx.graphics.Color.BLACK, 0.4f));
     }
 
     @Override
@@ -316,7 +322,8 @@ public class InfrastructureRenderer extends BaseSubRenderer {
             mastHeight = 2.0f;
         }
 
-        Color structureColor = (cargo != null) ? Color.valueOf(cargo.getColor()) : Color.WHITE.cpy();
+        Color structureColor =
+                (cargo != null) ? Color.valueOf(cargo.getColor()) : Color.WHITE.cpy();
         structureColor.a = alpha;
 
         boolean isActionActive = false;
@@ -421,8 +428,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 idText, new Vector3(-paraX, 0, -paraZ), null, labelColor, stationLabelScale));
     }
 
-    public void renderTunnelGateTrack(
-            letrain.track.rail.RailTrack tunnelGateRailTrack) {
+    public void renderTunnelGateTrack(letrain.track.rail.RailTrack tunnelGateRailTrack) {
         ModelInstance portal = resourceContext.getModelInstance(resourceContext.tunnelPortalModel);
         if (isXRayActive) {
             portal.materials.get(0).set(
@@ -482,7 +488,7 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         } else {
             instances.add(portal);
         }
-        
+
     }
 
     @Override
@@ -516,8 +522,11 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
 
         float cursorY = 0.10f;
-        float p = cursor.getMode() == letrain.vehicle.Cursor.CursorMode.MAKING_TRACKS ? cursor.getProgress() : 0f;
-        instance.transform.setToTranslation(pos.getX() + 0.5f + dx * p, cursorY, pos.getY() + 0.5f + dz * p);
+        float p = cursor.getMode() == letrain.vehicle.Cursor.CursorMode.MAKING_TRACKS
+                ? cursor.getProgress()
+                : 0f;
+        instance.transform.setToTranslation(pos.getX() + 0.5f + dx * p, cursorY,
+                pos.getY() + 0.5f + dz * p);
         instance.transform.rotate(0, 1, 0, angle - 90f);
         instance.transform.scale(1.6f, 1f, 0.6f);
         instances.add(instance);
@@ -611,10 +620,12 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
         // Draw the base (PIE) double width
         ModelInstance base = resourceContext.getModelInstance(resourceContext.baseModel);
-        base.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(Color.LIGHT_GRAY));
+        base.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+                .createDiffuse(Color.LIGHT_GRAY));
         float sensorBottomHeight = 0.09f;
         // Center the pie at 1.5x offset so the pole is in the inner half
-        base.transform.setToTranslation(x + 0.5f + offsetX * 1.5f, sensorBottomHeight, y + 0.5f + offsetZ * 1.5f);
+        base.transform.setToTranslation(x + 0.5f + offsetX * 1.5f, sensorBottomHeight,
+                y + 0.5f + offsetZ * 1.5f);
         base.transform.rotate(0, 1, 0, angle - 90f);
         // Scale Z by 2.0 to make it double width
         base.transform.scale(1.0f, 1.04f, 2.0f);
@@ -623,8 +634,10 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         // Add label for the ID on the outer half of the base (2.0x offset)
         String idText = String.valueOf(speedSignal.getId());
         float labelHeight = 0.19f;
-        Vector3 pieLabelPos = new Vector3(x + 0.5f + offsetX * 1.75f, labelHeight, y + 0.5f + offsetZ * 1.75f);
-        Vector3 pieLabelUp = new Vector3(-(float)Math.sin(rad), 0, -(float)Math.cos(rad));
-        labels.add(new Gdx3DRenderer.VehicleLabel(pieLabelPos, idText, new Vector3(0, 1, 0), pieLabelUp, Color.BLACK, 0.4f));
+        Vector3 pieLabelPos =
+                new Vector3(x + 0.5f + offsetX * 1.75f, labelHeight, y + 0.5f + offsetZ * 1.75f);
+        Vector3 pieLabelUp = new Vector3(-(float) Math.sin(rad), 0, -(float) Math.cos(rad));
+        labels.add(new Gdx3DRenderer.VehicleLabel(pieLabelPos, idText, new Vector3(0, 1, 0),
+                pieLabelUp, Color.BLACK, 0.4f));
     }
 }

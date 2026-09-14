@@ -36,8 +36,7 @@ class UndoRedoHistoryTest {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.addMixIn(letrain.mvp.Model.class, letrain.mvp.impl.ModelMixin.class);
         mapper.addMixIn(letrain.mvp.impl.Model.class, letrain.mvp.impl.ModelMixin.class);
-        mapper.addMixIn(letrain.vehicle.rail.impl.Train.class,
-                letrain.mvp.impl.TrainMixin.class);
+        mapper.addMixIn(letrain.vehicle.rail.impl.Train.class, letrain.mvp.impl.TrainMixin.class);
         mapper.addMixIn(letrain.itinerary.Waypoint.class, letrain.mvp.impl.WaypointMixin.class);
         mapper.addMixIn(letrain.itinerary.impl.WaypointImpl.class,
                 letrain.mvp.impl.WaypointMixin.class);
@@ -117,8 +116,8 @@ class UndoRedoHistoryTest {
         if (plan == null) {
             return null;
         }
-        letrain.mvp.Model target = plan.baseBytes() == null ? history.live()
-                : deserializeFrom(plan.baseBytes());
+        letrain.mvp.Model target =
+                plan.baseBytes() == null ? history.live() : deserializeFrom(plan.baseBytes());
         for (String cmd : plan.commandsToReplay(history.entries())) {
             assertEquals(null, runScript(target, cmd), "replay failed: " + cmd);
         }
@@ -150,11 +149,8 @@ class UndoRedoHistoryTest {
         assertNull(history.planUndo(1), "nothing to undo at start");
 
         // Record a small editing session, command by command.
-        String[] session = {
-            "go 0,0; face e; write 3;",
-            "go 1,0; face e; new st;",
-            "go 2,0; face e; new sn;"
-        };
+        String[] session =
+                {"go 0,0; face e; write 3;", "go 1,0; face e; new st;", "go 2,0; face e; new sn;"};
         for (String cmd : session) {
             assertEquals(null, runScript(live, cmd), "session command failed: " + cmd);
             history.record(cmd);
@@ -186,11 +182,8 @@ class UndoRedoHistoryTest {
         UndoRedoHistory history = newHistory();
         history.begin(live);
 
-        String[] session = {
-            "go 0,0; face e; write 2;",
-            "go 4,0; face e; write 2;",
-            "go 0,0; face e; new st;"
-        };
+        String[] session =
+                {"go 0,0; face e; write 2;", "go 4,0; face e; write 2;", "go 0,0; face e; new st;"};
         for (String cmd : session) {
             assertEquals(null, runScript(live, cmd));
             history.record(cmd);
@@ -282,10 +275,7 @@ class UndoRedoHistoryTest {
         history.begin(live);
 
         // Two build commands create the track and the signal (indices 0-1).
-        String[] build = {
-            "go 0,0; face e; write 1;",
-            "go 0,0; face e; new sg;"
-        };
+        String[] build = {"go 0,0; face e; write 1;", "go 0,0; face e; new sg;"};
         for (String cmd : build) {
             assertEquals(null, runScript(live, cmd));
             history.record(cmd);
@@ -305,9 +295,8 @@ class UndoRedoHistoryTest {
         assertEquals(10, history.applied());
 
         // Two more tweaks coalesce into index 9, invalidating the stale checkpoint at 10.
-        for (String limit : new String[] {
-            "go 0,0; face e; signal " + signalId + " set limit 6;",
-            "go 0,0; face e; signal " + signalId + " set limit 7;"}) {
+        for (String limit : new String[] {"go 0,0; face e; signal " + signalId + " set limit 6;",
+                "go 0,0; face e; signal " + signalId + " set limit 7;"}) {
             assertEquals(null, runScript(live, limit));
             history.recordCoalescing(limit);
         }
@@ -327,8 +316,7 @@ class UndoRedoHistoryTest {
         for (int i = 1; i <= 7; i++) {
             assertEquals(null, runScript(ref, "go " + (i * 2) + ",0; face e; write 1;"));
         }
-        assertEquals(null,
-                runScript(ref, "go 0,0; face e; signal " + signalId + " set limit 7;"));
+        assertEquals(null, runScript(ref, "go 0,0; face e; signal " + signalId + " set limit 7;"));
         byte[] expected = serialize(ref);
 
         // Undo to the boundary must reproduce the coalesced final limit, not the stale snapshot.

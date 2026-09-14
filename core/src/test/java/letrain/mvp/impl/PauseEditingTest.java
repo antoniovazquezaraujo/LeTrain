@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Tests for paused editing (ADR-020 roadmap item 1): while pause-editing is on and the game is in
- * an editing mode, the world simulation (trains) is frozen and track construction is
- * instantaneous; play/view modes keep simulating.
+ * an editing mode, the world simulation (trains) is frozen and track construction is instantaneous;
+ * play/view modes keep simulating.
  */
 @DisplayName("Paused editing in RAILS (ADR-020)")
 class PauseEditingTest {
@@ -105,19 +105,17 @@ class PauseEditingTest {
         model.setPauseEditing(true);
 
         // Edit modes pause the world.
-        for (GameMode editMode : new GameMode[] {
-                GameMode.RAILS, GameMode.ADD, GameMode.STATIONS, GameMode.SENSORS,
-                GameMode.SEMAPHORES, GameMode.SPEED_SIGNALS, GameMode.FORKS, GameMode.TRAINS,
-                GameMode.COMMAND, GameMode.PROGRAM}) {
+        for (GameMode editMode : new GameMode[] {GameMode.RAILS, GameMode.ADD, GameMode.STATIONS,
+                GameMode.SENSORS, GameMode.SEMAPHORES, GameMode.SPEED_SIGNALS, GameMode.FORKS,
+                GameMode.TRAINS, GameMode.COMMAND, GameMode.PROGRAM}) {
             model.setMode(editMode);
             assertTrue(model.isSimulationPaused(),
                     "edit mode " + editMode + " must be paused when pause-editing is enabled");
         }
 
         // Play / view modes keep simulating.
-        for (GameMode playMode : new GameMode[] {
-                GameMode.DRIVE, GameMode.MENU, GameMode.LINK, GameMode.UNLINK,
-                GameMode.LOAD_TRAINS}) {
+        for (GameMode playMode : new GameMode[] {GameMode.DRIVE, GameMode.MENU, GameMode.LINK,
+                GameMode.UNLINK, GameMode.LOAD_TRAINS}) {
             model.setMode(playMode);
             assertFalse(model.isSimulationPaused(),
                     "play mode " + playMode + " must keep simulating even when enabled");

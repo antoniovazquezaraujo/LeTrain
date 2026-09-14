@@ -3,8 +3,8 @@ package letrain.mvp.input;
 import java.util.Objects;
 
 /**
- * Neutral input abstraction carrying character / arrow key / key type info.
- * Replaces the tight coupling to lanterna's KeyStroke in the shared core.
+ * Neutral input abstraction carrying character / arrow key / key type info. Replaces the tight
+ * coupling to lanterna's KeyStroke in the shared core.
  */
 public class InputEvent {
     private final KeyType keyType;
@@ -25,7 +25,8 @@ public class InputEvent {
         this(KeyType.Character, character, ctrlDown, altDown, false);
     }
 
-    public InputEvent(KeyType keyType, Character character, boolean ctrlDown, boolean altDown, boolean shiftDown) {
+    public InputEvent(KeyType keyType, Character character, boolean ctrlDown, boolean altDown,
+            boolean shiftDown) {
         this.keyType = Objects.requireNonNull(keyType, "keyType must not be null");
         this.character = character;
         this.ctrlDown = ctrlDown;

@@ -28,8 +28,7 @@ class ScenarioCheckCliTest {
     @DisplayName("a scenario with a syntax error returns 1")
     void run_bad_returnsOne() throws Exception {
         Path file = Files.createTempFile("bad", ".ltr");
-        Files.writeString(file,
-                "# LeTrain scenario v1\nseed 1\non build {\nfrobnicate;\n}\n");
+        Files.writeString(file, "# LeTrain scenario v1\nseed 1\non build {\nfrobnicate;\n}\n");
         try {
             assertEquals(1, ScenarioCheckCli.run(new String[] {file.toString()}));
         } finally {

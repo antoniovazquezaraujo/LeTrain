@@ -35,15 +35,15 @@ import java.util.regex.Pattern;
  * {@code configuration} holds the game settings (the effective {@code letrain.cfg}) so the scenario
  * reproduces the same terrain and rules; it wins over the local file. {@code on build} holds the
  * canonical editing commands (the command journal) and is replayed first; {@code on start} holds
- * optional initial conditions applied right after the build; {@code program} holds the
- * automation script installed after that (may nest braces). All sections are optional: a flat file
- * with just a seed and commands (no braces) is valid and its lines are treated as build commands, so
- * older scenarios keep working.
+ * optional initial conditions applied right after the build; {@code program} holds the automation
+ * script installed after that (may nest braces). All sections are optional: a flat file with just a
+ * seed and commands (no braces) is valid and its lines are treated as build commands, so older
+ * scenarios keep working.
  *
  * <p>
  * This class only parses/renders the text; it never touches a model or the filesystem. The caller
- * reads/writes the file and replays the commands through its own command machinery (the same one the
- * console and undo use), on a fresh {@code Model(seed)}. Blank lines and {@code #} comments are
+ * reads/writes the file and replays the commands through its own command machinery (the same one
+ * the console and undo use), on a fresh {@code Model(seed)}. Blank lines and {@code #} comments are
  * ignored, so users can annotate scenarios by hand (external editor friendly).
  */
 public final class ScenarioFile {
@@ -60,8 +60,8 @@ public final class ScenarioFile {
      * Parsed scenario: seed + the game settings + the ordered build/start command sections + the
      * automation program (stored at base column 0), which may be empty.
      */
-    public record Scenario(int seed, Map<String, String> configuration,
-            List<String> buildCommands, List<String> startCommands, String program) {}
+    public record Scenario(int seed, Map<String, String> configuration, List<String> buildCommands,
+            List<String> startCommands, String program) {}
 
     private ScenarioFile() {}
 
@@ -115,8 +115,8 @@ public final class ScenarioFile {
 
     /**
      * Parses the terrain seed and the {@code on build}/{@code on start}/{@code program} sections.
-     * Flat files without sections put all commands in {@code on build}. Section bodies are read with
-     * a brace-depth counter, so the {@code program} section may contain nested blocks
+     * Flat files without sections put all commands in {@code on build}. Section bodies are read
+     * with a brace-depth counter, so the {@code program} section may contain nested blocks
      * ({@code trigger ... { ... }}); the program keeps its comments and relative indentation (the
      * wrapper's base indent is stripped) so it stays editable by hand.
      *
@@ -233,7 +233,9 @@ public final class ScenarioFile {
         return sb.toString().stripTrailing();
     }
 
-    /** Parses {@code key=value} settings lines (java.util.Properties syntax) into an ordered map. */
+    /**
+     * Parses {@code key=value} settings lines (java.util.Properties syntax) into an ordered map.
+     */
     private static Map<String, String> parseConfig(List<String> lines) {
         Map<String, String> config = new LinkedHashMap<>();
         if (lines == null || lines.isEmpty()) {
@@ -266,8 +268,8 @@ public final class ScenarioFile {
 
     /**
      * Re-indents a section body with two spaces per brace nesting level, starting at {@code base}
-     * (1 for a top-level section, so its contents sit two spaces in). Original leading whitespace is
-     * discarded and recomputed from the braces, so nested blocks line up. Comments and inline
+     * (1 for a top-level section, so its contents sit two spaces in). Original leading whitespace
+     * is discarded and recomputed from the braces, so nested blocks line up. Comments and inline
      * {@code { ... }} blocks are preserved.
      */
     private static String indentBody(String body, int base) {
@@ -286,7 +288,10 @@ public final class ScenarioFile {
         return sb.toString();
     }
 
-    /** Number of leading {@code }} before any other character (a line that closes one or more blocks). */
+    /**
+     * Number of leading {@code }} before any other character (a line that closes one or more
+     * blocks).
+     */
     private static int leadingCloses(String line) {
         int closes = 0;
         while (closes < line.length() && line.charAt(closes) == '}') {
@@ -296,10 +301,11 @@ public final class ScenarioFile {
     }
 
     /**
-     * Compacts the command list for a scenario (readability, per ADR-020): consecutive pure straight
-     * builds in the same direction are merged into a single {@code write N}. This only touches the
-     * exported text; the undo history keeps its per-tile granularity. Any non-straight command, a
-     * turn, or a non-contiguous start breaks the run, so the replayed result is unchanged.
+     * Compacts the command list for a scenario (readability, per ADR-020): consecutive pure
+     * straight builds in the same direction are merged into a single {@code write N}. This only
+     * touches the exported text; the undo history keeps its per-tile granularity. Any non-straight
+     * command, a turn, or a non-contiguous start breaks the run, so the replayed result is
+     * unchanged.
      */
     public static List<String> optimize(List<String> commands) {
         List<String> out = new ArrayList<>();
@@ -395,7 +401,9 @@ public final class ScenarioFile {
         throw new IllegalArgumentException("Scenario has no '" + SEED_PREFIX.trim() + "' line");
     }
 
-    /** The build commands (backward-compatible shortcut for {@code parse(text).buildCommands()}). */
+    /**
+     * The build commands (backward-compatible shortcut for {@code parse(text).buildCommands()}).
+     */
     public static List<String> commandLines(String text) {
         return parse(text).buildCommands();
     }
@@ -438,9 +446,8 @@ public final class ScenarioFile {
             return "";
         }
         StringBuilder body = new StringBuilder();
-        configuration.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(e -> body.append(e.getKey()).append('=').append(e.getValue()).append('\n'));
+        configuration.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(
+                e -> body.append(e.getKey()).append('=').append(e.getValue()).append('\n'));
         return "configuration {\n" + indentBody(body.toString(), 1) + "}\n";
     }
 
@@ -466,41 +473,42 @@ public final class ScenarioFile {
 
     /**
      * A scenario split into its three editor parts: the world recipe (seed + on build + on start,
-     * no settings or program), the {@code configuration { ... }} section and the
-     * {@code program { ... }} section. Either section may be empty.
+     * no settings or program), the {@code configuration { ... }} section and the {@code program {
+     * ... }} section. Either section may be empty.
      */
-    public record Parts(int seed, String scenarioText, String configurationText, String programText) {}
+    public record Parts(int seed, String scenarioText, String configurationText,
+            String programText) {}
 
     /** Splits a full scenario text into the three editor parts (see {@link Parts}). */
     public static Parts split(String fullText) {
         Scenario s = parse(fullText);
         return new Parts(s.seed(),
                 render(s.seed(), null, s.buildCommands(), s.startCommands(), null),
-                configurationSection(s.configuration()),
-                programSection(s.program()));
+                configurationSection(s.configuration()), programSection(s.program()));
     }
 
     /**
-     * Builds a full scenario text from the three editor parts. Sections are re-rendered in canonical
-     * order (seed + settings + on build + on start + program), so callers can concatenate the parts
-     * in any order.
+     * Builds a full scenario text from the three editor parts. Sections are re-rendered in
+     * canonical order (seed + settings + on build + on start + program), so callers can concatenate
+     * the parts in any order.
      */
-    public static String compose(String scenarioText, String configurationText, String programText) {
+    public static String compose(String scenarioText, String configurationText,
+            String programText) {
         Scenario base = parse(scenarioText);
         return render(base.seed(), configurationSectionBody(configurationText),
                 base.buildCommands(), base.startCommands(), programSectionBody(programText));
     }
 
     /**
-     * Editor tab a composed-scenario line belongs to: {@code 0} = Scenario (seed + on build +
-     * on start), {@code 1} = Program, {@code 2} = Config.
+     * Editor tab a composed-scenario line belongs to: {@code 0} = Scenario (seed + on build + on
+     * start), {@code 1} = Program, {@code 2} = Config.
      */
     public record LineTarget(int tab, int line) {}
 
     /**
-     * Maps a 1-based line of a composed scenario to the editor tab that owns it and the 1-based local
-     * line inside that tab. The Scenario tab omits the {@code configuration} section, so lines after
-     * it shift up. Shared by the 2D and 3D editors.
+     * Maps a 1-based line of a composed scenario to the editor tab that owns it and the 1-based
+     * local line inside that tab. The Scenario tab omits the {@code configuration} section, so
+     * lines after it shift up. Shared by the 2D and 3D editors.
      */
     public static LineTarget locateLine(String fullText, int line) {
         String[] lines = fullText.split("\n", -1);

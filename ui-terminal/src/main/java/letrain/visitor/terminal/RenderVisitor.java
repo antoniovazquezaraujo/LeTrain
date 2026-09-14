@@ -246,7 +246,7 @@ public class RenderVisitor implements Visitor {
         }
 
         view.set(renderPos.getX(), renderPos.getY(), aspect);
-        
+
         if (this.mode == GameMode.STATIONS) {
             if (station == selectedStation) {
                 view.setUnderline(true);
@@ -272,7 +272,9 @@ public class RenderVisitor implements Visitor {
         view.set(renderPos.getX(), renderPos.getY(), SENSOR_ASPECT);
 
         if (this.mode == GameMode.SENSORS) {
-            if (sensor.getId() == (model.getSelectedSensor() != null ? model.getSelectedSensor().getId() : -1)) {
+            if (sensor.getId() == (model.getSelectedSensor() != null
+                    ? model.getSelectedSensor().getId()
+                    : -1)) {
                 view.setUnderline(true);
                 view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
             } else {
@@ -289,14 +291,14 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitSemaphore(RailSemaphore semaphore) {
         Point renderPos = getRightSide(semaphore.getPosition(), semaphore.getCreationDir());
-        
+
         if (semaphore.isOpen()) {
             view.setFgColor(SEMAPHORE_OPEN_COLOR);
         } else {
             view.setFgColor(SEMAPHORE_CLOSED_COLOR);
         }
         view.set(renderPos.getX(), renderPos.getY(), SEMAPHORE_ASPECT);
-        
+
         if (mode == GameMode.SEMAPHORES) {
             if (semaphore == selectedSemaphore) {
                 view.setUnderline(true);
@@ -314,8 +316,9 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {
-        letrain.map.Point renderPos = getRightSide(speedSignal.getPosition(), speedSignal.getCreationDir());
-        
+        letrain.map.Point renderPos =
+                getRightSide(speedSignal.getPosition(), speedSignal.getCreationDir());
+
         if (speedSignal.isMax()) {
             view.setFgColor(TextColor.ANSI.RED);
         } else {
@@ -331,7 +334,7 @@ public class RenderVisitor implements Visitor {
         }
 
         view.set(renderPos.getX(), renderPos.getY(), String.valueOf(icon));
-        
+
         if (mode == GameMode.SPEED_SIGNALS) {
             if (speedSignal == selectedSpeedSignal) {
                 view.setUnderline(true);
@@ -380,10 +383,10 @@ public class RenderVisitor implements Visitor {
         } else {
             view.setFgColor(FORK_COLOR);
         }
-        
+
         view.set(track.getPosition().getX(), track.getPosition().getY(),
                 dirGraphicAspect(track.getFirstOpenDir()));
-                
+
         if (this.mode == GameMode.FORKS) {
             if (track == selectedFork) {
                 view.setUnderline(true);
@@ -427,7 +430,9 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        if (locomotive.getTrack() instanceof RailTrack && (((RailTrack)locomotive.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL)
+        if (locomotive.getTrack() instanceof RailTrack
+                && (((RailTrack) locomotive.getTrack())
+                        .getVisualType() == RailTrack.VisualType.TUNNEL)
                 && this.mode != GameMode.RAILS) {
             return;
         }
@@ -459,7 +464,8 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitWagon(Wagon wagon) {
-        if (wagon.getTrack() instanceof RailTrack && (((RailTrack)wagon.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL)
+        if (wagon.getTrack() instanceof RailTrack
+                && (((RailTrack) wagon.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL)
                 && this.mode != GameMode.RAILS) {
             return;
         }
@@ -529,7 +535,8 @@ public class RenderVisitor implements Visitor {
     ////////////////////////////////////////////////////////////////////////////////
     private String getTrackAspect(Track track) {
         if (track instanceof letrain.track.rail.RailTrack) {
-            letrain.track.rail.RailTrack.VisualType vt = ((letrain.track.rail.RailTrack) track).getVisualType();
+            letrain.track.rail.RailTrack.VisualType vt =
+                    ((letrain.track.rail.RailTrack) track).getVisualType();
             if (vt == letrain.track.rail.RailTrack.VisualType.TUNNEL) {
                 return TUNNEL_RAILTRACK_ASPECT;
             } else if (vt == letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE) {
@@ -704,6 +711,7 @@ public class RenderVisitor implements Visitor {
                 return TextColor.ANSI.WHITE;
         }
     }
+
     private TextColor getTrackBlockedColor(RailTrack track) {
 
         if (model == null || track == null) {

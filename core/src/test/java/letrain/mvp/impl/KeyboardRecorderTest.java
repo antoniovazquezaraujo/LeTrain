@@ -39,8 +39,7 @@ class KeyboardRecorderTest {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.addMixIn(letrain.mvp.Model.class, letrain.mvp.impl.ModelMixin.class);
         mapper.addMixIn(letrain.mvp.impl.Model.class, letrain.mvp.impl.ModelMixin.class);
-        mapper.addMixIn(letrain.vehicle.rail.impl.Train.class,
-                letrain.mvp.impl.TrainMixin.class);
+        mapper.addMixIn(letrain.vehicle.rail.impl.Train.class, letrain.mvp.impl.TrainMixin.class);
         mapper.addMixIn(letrain.itinerary.Waypoint.class, letrain.mvp.impl.WaypointMixin.class);
         mapper.addMixIn(letrain.itinerary.impl.WaypointImpl.class,
                 letrain.mvp.impl.WaypointMixin.class);
@@ -60,8 +59,7 @@ class KeyboardRecorderTest {
     }
 
     private static letrain.mvp.impl.Model deserialize(byte[] data) throws Exception {
-        letrain.mvp.impl.Model model =
-                newMapper().readValue(data, letrain.mvp.impl.Model.class);
+        letrain.mvp.impl.Model model = newMapper().readValue(data, letrain.mvp.impl.Model.class);
         model.postLoadInit();
         return model;
     }
@@ -71,8 +69,7 @@ class KeyboardRecorderTest {
     // ------------------------------------------------------------------
 
     /** A presenter bound to {@code model} whose undo history is a real, recording session. */
-    private static RailTrackMaker makerFor(letrain.mvp.impl.Model model,
-            UndoRedoHistory history) {
+    private static RailTrackMaker makerFor(letrain.mvp.impl.Model model, UndoRedoHistory history) {
         Presenter presenter = org.mockito.Mockito.mock(Presenter.class);
         org.mockito.Mockito.when(presenter.getModel()).thenReturn(model);
         org.mockito.Mockito.when(presenter.getView())
@@ -191,7 +188,8 @@ class KeyboardRecorderTest {
         assertTrue(journal.get(0).startsWith("go 0,0; face e; write 1;"),
                 "write must be self-positioned: " + journal.get(0));
         assertTrue(journal.get(journal.size() - 1).startsWith("go 5,0; face e; del 1;"),
-                "erase must be journaled as self-positioned del: " + journal.get(journal.size() - 1));
+                "erase must be journaled as self-positioned del: "
+                        + journal.get(journal.size() - 1));
 
         // The undo/redo guarantee: replaying the SAME journal on two fresh copies of the same base
         // must be byte-identical (redo always reconstructs the same state deterministically).

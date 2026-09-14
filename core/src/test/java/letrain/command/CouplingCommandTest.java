@@ -49,11 +49,8 @@ class CouplingCommandTest {
     @Test
     @DisplayName("optimized straight writes replay identically to the per-tile commands")
     void optimize_replayEquivalent() {
-        java.util.List<String> original = java.util.List.of(
-                "go 0,0; face e; write 1;",
-                "go 1,0; face e; write 1;",
-                "go 2,0; face e; write 1;",
-                "go 3,0; face e; write 1;");
+        java.util.List<String> original = java.util.List.of("go 0,0; face e; write 1;",
+                "go 1,0; face e; write 1;", "go 2,0; face e; write 1;", "go 3,0; face e; write 1;");
         java.util.List<String> optimized = ScenarioFile.optimize(original);
 
         letrain.mvp.impl.Model a = freshWorld();
@@ -81,7 +78,8 @@ class CouplingCommandTest {
 
     private static String semanticKey(letrain.mvp.impl.Model m) {
         java.util.TreeSet<String> tiles = new java.util.TreeSet<>();
-        m.getRailMap().forEach(t -> tiles.add(t.getPosition().getX() + "," + t.getPosition().getY()));
+        m.getRailMap()
+                .forEach(t -> tiles.add(t.getPosition().getX() + "," + t.getPosition().getY()));
         return m.getCursor().getPosition() + " " + m.getCursor().getDir() + " " + tiles;
     }
 

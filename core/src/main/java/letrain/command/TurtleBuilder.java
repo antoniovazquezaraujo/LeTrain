@@ -32,8 +32,8 @@ import letrain.utils.ValidationUtils;
  * ({@code RailTrackMaker.detectTrackType}): GROUND→NORMAL, WATER→BRIDGE (+ gates at the edges),
  * ROCK→TUNNEL (+ gates at the edges), mirroring manual construction.</li>
  * <li><b>Fork/divergence:</b> when the cursor stands on an existing piece and the next piece exits
- * through a third direction, {@code RailTrackMaker} promotes that tile to a
- * {@code ForkRailTrack}, same as the UI.</li>
+ * through a third direction, {@code RailTrackMaker} promotes that tile to a {@code ForkRailTrack},
+ * same as the UI.</li>
  * <li><b>Curves:</b> {@code turnLeft/turnRight} rotate the cursor facing. The 45-degree rule is
  * enforced by the maker ({@code Math.abs(oldDir.inverse().angularDistance(dir)) > 1} aborts).</li>
  * </ul>
@@ -50,11 +50,11 @@ public class TurtleBuilder implements TurtleDelegate {
     private final RailTrackMaker trackMaker;
 
     /**
-     * @param model      the model being edited (also exposed via {@link #getModel()} so a headless
-     *                   executor can inspect cursor/state after a sequence)
+     * @param model the model being edited (also exposed via {@link #getModel()} so a headless
+     *        executor can inspect cursor/state after a sequence)
      * @param trackMaker the track maker wired to the {@code model}; for headless execution the
-     *                   caller provides a maker backed by a stub/mock presenter whose {@code view}
-     *                   is a no-op (see tests).
+     *        caller provides a maker backed by a stub/mock presenter whose {@code view} is a no-op
+     *        (see tests).
      */
     public TurtleBuilder(Model model, RailTrackMaker trackMaker) {
         this.model = ValidationUtils.requireNonNull(model, "model");

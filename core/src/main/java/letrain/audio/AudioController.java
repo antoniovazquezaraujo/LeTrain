@@ -99,7 +99,8 @@ public class AudioController {
         }
     }
 
-    public void setJackhammerActive(boolean active, float x, float y) {        if (!enabled) {
+    public void setJackhammerActive(boolean active, float x, float y) {
+        if (!enabled) {
             return;
         }
         if (active) {
@@ -393,12 +394,13 @@ public class AudioController {
 
     /**
      * Re-points this controller to a new live model without reloading samples or restarting the
-     * mixer (used by paused-editing undo swaps, ADR-020). During an undo the world is frozen and the
-     * restored model is deterministic, so existing locomotive synthesizers are <b>kept alive</b>:
-     * their internal sound state (throttle, motion, position) is unchanged while muted, and on the
-     * next {@link #update()} they are reconciled against the new model — synthesizers whose
-     * locomotive no longer exists are removed (step 1), the rest resume seamlessly. This preserves
-     * the "engine keeps running" feel across an undo/unpause instead of restarting from idle.
+     * mixer (used by paused-editing undo swaps, ADR-020). During an undo the world is frozen and
+     * the restored model is deterministic, so existing locomotive synthesizers are <b>kept
+     * alive</b>: their internal sound state (throttle, motion, position) is unchanged while muted,
+     * and on the next {@link #update()} they are reconciled against the new model — synthesizers
+     * whose locomotive no longer exists are removed (step 1), the rest resume seamlessly. This
+     * preserves the "engine keeps running" feel across an undo/unpause instead of restarting from
+     * idle.
      */
     public void retarget(Model newModel) {
         if (newModel == null || newModel == this.model) {

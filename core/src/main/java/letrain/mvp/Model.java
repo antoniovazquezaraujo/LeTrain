@@ -44,8 +44,11 @@ public interface Model {
     public int peekNextLocomotiveId();
 
     public int nextSensorId();
+
     public int nextSpeedSignalId();
+
     public letrain.track.SpeedSignal getSpeedSignal(int id);
+
     public letrain.track.SpeedSignal findSpeedSignalByName(String name);
 
 
@@ -160,9 +163,13 @@ public interface Model {
     boolean selectPrevSemaphore();
 
     boolean selectNextSensor();
+
     boolean selectPrevSensor();
+
     boolean selectSensor(int id);
+
     letrain.track.Sensor getSelectedSensor();
+
     void setSelectedSensor(letrain.track.Sensor selectedSensor);
 
 
@@ -281,12 +288,15 @@ public interface Model {
     boolean selectPrevLocomotive();
 
     enum GameMode {
-        MENU("Menu mode"), RAILS("Navigate map, create and delete tracks"), ADD("Add entities"), DRIVE(
-                "Manage locomotives"), FORKS("Manage forks"), SEMAPHORES(
+        MENU("Menu mode"), RAILS("Navigate map, create and delete tracks"), ADD(
+                "Add entities"), DRIVE("Manage locomotives"), FORKS("Manage forks"), SEMAPHORES(
                         "Manage semaphores"), SPEED_SIGNALS("Manage speed signals"), TRAINS(
                                 "Create trains"), LINK("Link trains"), UNLINK(
-                                        "Divide trains"), SENSORS("Manage sensors"), STATIONS("Stations"), LOAD_TRAINS(
-                                                "Use load Stations"), PROGRAM("Program"), COMMAND("Command Line Interface");
+                                        "Divide trains"), SENSORS("Manage sensors"), STATIONS(
+                                                "Stations"), LOAD_TRAINS(
+                                                        "Use load Stations"), PROGRAM(
+                                                                "Program"), COMMAND(
+                                                                        "Command Line Interface");
 
         private String name;
 
@@ -311,9 +321,11 @@ public interface Model {
 
 
     void setMark(String name, letrain.map.Point pos);
+
     letrain.map.Point getMark(String name);
+
     java.util.Map<String, letrain.map.Point> getMarks();
-    
+
     public RailTrack getCursorRailTrack();
 
     public record GameModeMenuOption(
@@ -366,9 +378,13 @@ public interface Model {
     String getGameObjectsReport();
 
     String getRailwayGraphReport();
+
     String getCommandText();
+
     void setCommandText(String text);
+
     String getCommandError();
+
     void setCommandError(String error);
 
     CargoTypes getSelectedWagonType();

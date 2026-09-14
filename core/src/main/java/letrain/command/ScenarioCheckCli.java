@@ -5,10 +5,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Headless scenario check CLI (ADR-020 item 4 tooling), used by the {@code letrain-check} executable:
- * {@code letrain-check file.ltr} (a leading {@code --check}/{@code -c} is accepted). Prints
- * compiler-style diagnostics ({@code path:line:col: error: message}) and returns an exit code, so
- * editors (e.g. vim's {@code :make}) can validate a scenario without starting the game.
+ * Headless scenario check CLI (ADR-020 item 4 tooling), used by the {@code letrain-check}
+ * executable: {@code letrain-check file.ltr} (a leading {@code --check}/{@code -c} is accepted).
+ * Prints compiler-style diagnostics ({@code path:line:col: error: message}) and returns an exit
+ * code, so editors (e.g. vim's {@code :make}) can validate a scenario without starting the game.
  *
  * <p>
  * Exit codes: {@code 0} ok, {@code 1} diagnostics, {@code 2} usage/IO error.
@@ -34,7 +34,8 @@ public final class ScenarioCheckCli {
             String text = Files.readString(Path.of(path));
             ScenarioCompiler.Result result = ScenarioCompiler.compile(text);
             for (ScenarioCompiler.Diagnostic d : result.diagnostics()) {
-                System.out.println(path + ":" + d.line() + ":" + d.col() + ": error: " + d.message());
+                System.out
+                        .println(path + ":" + d.line() + ":" + d.col() + ": error: " + d.message());
             }
             if (result.ok()) {
                 System.out.println(path + ": ok");

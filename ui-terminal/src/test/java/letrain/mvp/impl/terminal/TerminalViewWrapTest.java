@@ -26,12 +26,14 @@ class TerminalViewWrapTest {
     @Test
     @DisplayName("hard-breaks words that do not fit")
     void hardBreaksLongWords() {
-        assertEquals(List.of("abcdefgh", "ij"), TerminalView.wrapLines(new String[] {"abcdefghij"}, 8));
+        assertEquals(List.of("abcdefgh", "ij"),
+                TerminalView.wrapLines(new String[] {"abcdefghij"}, 8));
     }
 
     @Test
     @DisplayName("keeps empty lines")
     void keepsEmptyLines() {
-        assertEquals(List.of("a", "", "b"), TerminalView.wrapLines(new String[] {"a", "", "b"}, 10));
+        assertEquals(List.of("a", "", "b"),
+                TerminalView.wrapLines(new String[] {"a", "", "b"}, 10));
     }
 }

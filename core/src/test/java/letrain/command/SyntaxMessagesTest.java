@@ -13,8 +13,8 @@ class SyntaxMessagesTest {
     @Test
     @DisplayName("drops the long expected-token set")
     void dropsExpectedTokenSet() {
-        assertEquals("mismatched input '<EOF>'",
-                SyntaxMessages.shorten("mismatched input '<EOF>' expecting {TRAIN, 'create', 'assign'}"));
+        assertEquals("mismatched input '<EOF>'", SyntaxMessages
+                .shorten("mismatched input '<EOF>' expecting {TRAIN, 'create', 'assign'}"));
     }
 
     @Test

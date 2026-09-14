@@ -149,7 +149,8 @@ class Gdx3DInputHandlerConsoleTest {
     void keyboardSignalToggles_areJournaled() {
         model.setPauseEditing(true);
         model.getCommandJournal().startRecording();
-        // Build a tile and a speed signal through the console (default limit 3, mode max, facing E).
+        // Build a tile and a speed signal through the console (default limit 3, mode max, facing
+        // E).
         executeInConsole("go 7,0; face e; write 1;");
         executeInConsole("go 7,0; face e; new sg;");
         assertEquals("", model.getCommandError());
@@ -262,8 +263,7 @@ class Gdx3DInputHandlerConsoleTest {
                 "a line with navigation + an edit must be recorded");
 
         executeInConsole("go 1,1;");
-        assertEquals(1, model.getCommandJournal().size(),
-                "pure navigation must not be recorded");
+        assertEquals(1, model.getCommandJournal().size(), "pure navigation must not be recorded");
     }
 
     @Test
@@ -280,7 +280,8 @@ class Gdx3DInputHandlerConsoleTest {
         handler.onChar(charKey('.'));
         assertEquals(Model.GameMode.RAILS, model.getMode());
         assertEquals(1, model.getSensors().size());
-        assertEquals("Cannot place sensor: Track already has a component.", model.getCommandError());
+        assertEquals("Cannot place sensor: Track already has a component.",
+                model.getCommandError());
     }
 
     @Test

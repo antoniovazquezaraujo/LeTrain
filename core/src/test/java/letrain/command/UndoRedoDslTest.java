@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Tests for the {@code undo;}/{@code redo;} DSL commands (ADR-020 item 3): they must parse (with an
- * optional step count), invoke the wired undo/redo handler with the right number of steps, and never
- * be auto-recorded into the command journal (they are control commands, not edits).
+ * optional step count), invoke the wired undo/redo handler with the right number of steps, and
+ * never be auto-recorded into the command journal (they are control commands, not edits).
  */
 @DisplayName("DSL undo/redo commands")
 class UndoRedoDslTest {
@@ -33,9 +33,7 @@ class UndoRedoDslTest {
         int[] undoSteps = {0};
         int[] redoSteps = {0};
         String error = PlayerCommandExecutor.execute("undo 3; redo 2; undo;", model, null, null,
-                null, null, null,
-                steps -> undoSteps[0] += steps,
-                steps -> redoSteps[0] += steps);
+                null, null, null, steps -> undoSteps[0] += steps, steps -> redoSteps[0] += steps);
         assertNull(error, "undo/redo must parse and run cleanly, error=" + error);
         assertEquals(4, undoSteps[0], "undo 3 + undo 1 must reach the handler");
         assertEquals(2, redoSteps[0], "redo 2 must reach the handler");
@@ -58,8 +56,8 @@ class UndoRedoDslTest {
         // Recording on (edit mode).
         model.getCommandJournal().startRecording();
         // undo/redo lines must not be journaled.
-        assertNull(PlayerCommandExecutor.execute("undo 2; redo;", model, null, null, null,
-                null, null, steps -> {
+        assertNull(PlayerCommandExecutor.execute("undo 2; redo;", model, null, null, null, null,
+                null, steps -> {
                 }, steps -> {
                 }));
         assertEquals(0, model.getCommandJournal().size(),

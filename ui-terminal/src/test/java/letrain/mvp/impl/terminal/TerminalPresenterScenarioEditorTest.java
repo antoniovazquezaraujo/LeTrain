@@ -77,14 +77,9 @@ class TerminalPresenterScenarioEditorTest {
     void playText_rebuildsWorld() {
         Model model = new Model(1);
         TerminalPresenter presenter = presenterWith(model);
-        String text = "# LeTrain scenario v1\n"
-                + "seed 1\n"
-                + "on build {\n"
-                + "go 0,0; face e; write 3;\n"
-                + "}\n"
-                + "program {\n"
-                + "sensor 1 on train enter { semaphore 1 open; }\n"
-                + "}\n";
+        String text = "# LeTrain scenario v1\n" + "seed 1\n" + "on build {\n"
+                + "go 0,0; face e; write 3;\n" + "}\n" + "program {\n"
+                + "sensor 1 on train enter { semaphore 1 open; }\n" + "}\n";
 
         presenter.onPlayScenarioText(text);
 
@@ -98,15 +93,9 @@ class TerminalPresenterScenarioEditorTest {
     void playText_appliesConfiguration() {
         Model model = new Model(1);
         TerminalPresenter presenter = presenterWith(model);
-        String text = "# LeTrain scenario v1\n"
-                + "seed 1\n"
-                + "configuration {\n"
-                + "threshold.WATER=99.5\n"
-                + "threshold.ROCK=199.5\n"
-                + "}\n"
-                + "on build {\n"
-                + "go 0,0; face e; write 3;\n"
-                + "}\n";
+        String text = "# LeTrain scenario v1\n" + "seed 1\n" + "configuration {\n"
+                + "threshold.WATER=99.5\n" + "threshold.ROCK=199.5\n" + "}\n" + "on build {\n"
+                + "go 0,0; face e; write 3;\n" + "}\n";
 
         presenter.onPlayScenarioText(text);
 

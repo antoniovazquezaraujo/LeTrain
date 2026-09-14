@@ -495,8 +495,8 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     /**
      * Finds {@code letrain.cfg}: the working directory first (so a local file overrides), then next
-     * to the application and its ancestors. This makes the packaged default work no matter where the
-     * launcher is started from.
+     * to the application and its ancestors. This makes the packaged default work no matter where
+     * the launcher is started from.
      */
     static File findConfigFile() {
         java.util.List<File> dirs = new java.util.ArrayList<>();
@@ -538,8 +538,9 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     }
 
     /**
-     * Applies a configuration map (from a scenario's {@code configuration} section). Stored/imported
-     * settings win over the local file: this is how a scenario carries its own rules.
+     * Applies a configuration map (from a scenario's {@code configuration} section).
+     * Stored/imported settings win over the local file: this is how a scenario carries its own
+     * rules.
      */
     @Override
     public void applyConfig(Map<String, String> config) {
@@ -587,10 +588,10 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         // Load general costs
         fuelCostPerMeter = Float.parseFloat(
                 props.getProperty("fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
-        cargoLoadingFee = Float.parseFloat(
-                props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
-        float newStartingBalance = Float.parseFloat(
-                props.getProperty("startingBalance", String.valueOf(startingBalance)));
+        cargoLoadingFee = Float
+                .parseFloat(props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
+        float newStartingBalance = Float
+                .parseFloat(props.getProperty("startingBalance", String.valueOf(startingBalance)));
 
         // Only update current balance if it's the very beginning of the game (total
         // income/expenses are zero)
@@ -600,24 +601,24 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         startingBalance = newStartingBalance;
 
         // Load thresholds
-        goldThreshold = Float.parseFloat(
-                props.getProperty("threshold.GOLD", String.valueOf(goldThreshold)));
-        coalThreshold = Float.parseFloat(
-                props.getProperty("threshold.COAL", String.valueOf(coalThreshold)));
-        rubyThreshold = Float.parseFloat(
-                props.getProperty("threshold.RUBY", String.valueOf(rubyThreshold)));
-        waterThreshold = Float.parseFloat(
-                props.getProperty("threshold.WATER", String.valueOf(waterThreshold)));
-        rockThreshold = Float.parseFloat(
-                props.getProperty("threshold.ROCK", String.valueOf(rockThreshold)));
-        viewRadius = Integer.parseInt(
-                props.getProperty("map.VIEW_RADIUS", String.valueOf(viewRadius)));
+        goldThreshold = Float
+                .parseFloat(props.getProperty("threshold.GOLD", String.valueOf(goldThreshold)));
+        coalThreshold = Float
+                .parseFloat(props.getProperty("threshold.COAL", String.valueOf(coalThreshold)));
+        rubyThreshold = Float
+                .parseFloat(props.getProperty("threshold.RUBY", String.valueOf(rubyThreshold)));
+        waterThreshold = Float
+                .parseFloat(props.getProperty("threshold.WATER", String.valueOf(waterThreshold)));
+        rockThreshold = Float
+                .parseFloat(props.getProperty("threshold.ROCK", String.valueOf(rockThreshold)));
+        viewRadius =
+                Integer.parseInt(props.getProperty("map.VIEW_RADIUS", String.valueOf(viewRadius)));
 
         // Load derailment rules (issue #350)
-        derailMinCurveInterval = Integer.parseInt(
-                props.getProperty("derail.minCurveInterval", String.valueOf(derailMinCurveInterval)));
-        derailMinSpeed = Integer.parseInt(
-                props.getProperty("derail.minSpeed", String.valueOf(derailMinSpeed)));
+        derailMinCurveInterval = Integer.parseInt(props.getProperty("derail.minCurveInterval",
+                String.valueOf(derailMinCurveInterval)));
+        derailMinSpeed = Integer
+                .parseInt(props.getProperty("derail.minSpeed", String.valueOf(derailMinSpeed)));
 
         // Load Construction Delays
         for (Presenter.TrackType type : Presenter.TrackType.values()) {

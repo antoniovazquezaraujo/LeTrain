@@ -4,9 +4,9 @@ import letrain.mvp.Model;
 import letrain.utils.ValidationUtils;
 
 /**
- * In-memory "experiment mode" session (ADR-020 roadmap, item 5). While the user experiments with the
- * live simulation (no journal, no undo), this keeps a full snapshot of the model taken on entry and
- * restores it on exit, like a time machine.
+ * In-memory "experiment mode" session (ADR-020 roadmap, item 5). While the user experiments with
+ * the live simulation (no journal, no undo), this keeps a full snapshot of the model taken on entry
+ * and restores it on exit, like a time machine.
  *
  * <p>
  * It is a small state holder, UI-free: the presenter owns it, snapshots through its own
@@ -14,9 +14,9 @@ import letrain.utils.ValidationUtils;
  * the returned model through its usual {@code applyModel}.
  *
  * <p>
- * Contract: {@link #begin(Model)} snapshots once (idempotent while active); {@link #end()} deactivates
- * and returns the restored model (or null if there was no session); {@link #abandon()} deactivates
- * without restoring (used when the model is replaced by a load/new game).
+ * Contract: {@link #begin(Model)} snapshots once (idempotent while active); {@link #end()}
+ * deactivates and returns the restored model (or null if there was no session); {@link #abandon()}
+ * deactivates without restoring (used when the model is replaced by a load/new game).
  */
 public class ExperimentSession {
 
@@ -61,7 +61,9 @@ public class ExperimentSession {
         return restored;
     }
 
-    /** Ends the session without restoring anything (e.g. the live model was replaced externally). */
+    /**
+     * Ends the session without restoring anything (e.g. the live model was replaced externally).
+     */
     public void abandon() {
         this.snapshot = null;
         this.active = false;

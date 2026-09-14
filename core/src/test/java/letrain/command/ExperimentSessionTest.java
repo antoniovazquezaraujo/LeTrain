@@ -1,7 +1,6 @@
 package letrain.command;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -25,8 +24,7 @@ class ExperimentSessionTest {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         mapper.addMixIn(letrain.mvp.Model.class, letrain.mvp.impl.ModelMixin.class);
         mapper.addMixIn(letrain.mvp.impl.Model.class, letrain.mvp.impl.ModelMixin.class);
-        mapper.addMixIn(letrain.vehicle.rail.impl.Train.class,
-                letrain.mvp.impl.TrainMixin.class);
+        mapper.addMixIn(letrain.vehicle.rail.impl.Train.class, letrain.mvp.impl.TrainMixin.class);
         mapper.addMixIn(letrain.itinerary.Waypoint.class, letrain.mvp.impl.WaypointMixin.class);
         mapper.addMixIn(letrain.itinerary.impl.WaypointImpl.class,
                 letrain.mvp.impl.WaypointMixin.class);

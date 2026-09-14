@@ -30,14 +30,9 @@ class TerminalPresenterScenarioImportTest {
 
         java.nio.file.Path file = java.nio.file.Files.createTempFile("scenario", ".ltr");
         java.nio.file.Files.writeString(file,
-                "# LeTrain scenario v1\n"
-                        + "seed 1\n"
-                        + "on build {\n"
-                        + "go 0,0; face e; write 3;\n"
-                        + "}\n"
-                        + "program {\n"
-                        + "sensor 1 on train enter { semaphore 1 open; }\n"
-                        + "}\n");
+                "# LeTrain scenario v1\n" + "seed 1\n" + "on build {\n"
+                        + "go 0,0; face e; write 3;\n" + "}\n" + "program {\n"
+                        + "sensor 1 on train enter { semaphore 1 open; }\n" + "}\n");
         try {
             presenter.onImportScenario(file.toFile());
             assertTrue(presenter.getModel().getProgram().contains("sensor 1 on train enter"),

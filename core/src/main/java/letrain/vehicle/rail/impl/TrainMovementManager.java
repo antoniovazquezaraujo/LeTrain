@@ -11,7 +11,6 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
-import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
@@ -184,7 +183,10 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                 }
             }
 
-            letrain.track.Sensor enterSensor = headNextTrack.getComponent() instanceof letrain.track.Sensor ? (letrain.track.Sensor) headNextTrack.getComponent() : null;
+            letrain.track.Sensor enterSensor =
+                    headNextTrack.getComponent() instanceof letrain.track.Sensor
+                            ? (letrain.track.Sensor) headNextTrack.getComponent()
+                            : null;
             if (enterSensor != null) {
                 enterSensor.onEnterTrain(train);
             }
@@ -303,9 +305,9 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
      * <ul>
      * <li>Curva: una pieza (recta curva o desvío, da igual) es curva si el rumbo de salida difiere
      * del rumbo con el que se entró. Un desvío en recto es una recta más; un desvío desviado es una
-     * curva normal. Al entrar en una curva, si la velocidad actual &ge; {@code derail.minSpeed} y ha
-     * pasado menos de {@code derail.minCurveInterval} ticks desde la última curva, descarrila. En
-     * cualquier caso se anota el instante de la curva como última curva.</li>
+     * curva normal. Al entrar en una curva, si la velocidad actual &ge; {@code derail.minSpeed} y
+     * ha pasado menos de {@code derail.minCurveInterval} ticks desde la última curva, descarrila.
+     * En cualquier caso se anota el instante de la curva como última curva.</li>
      * </ul>
      *
      * @param nextTrack la pieza en la que está a punto de entrar la cabeza.

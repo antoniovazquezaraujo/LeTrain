@@ -65,7 +65,9 @@ public class UndoRedoHistory {
 
     private final Codec codec;
 
-    /** Canonical edit commands in application order (the redo stack tail when {@code applied} lags). */
+    /**
+     * Canonical edit commands in application order (the redo stack tail when {@code applied} lags).
+     */
     private final List<String> commands = new ArrayList<>();
     private final List<Checkpoint> checkpoints = new ArrayList<>();
 
@@ -145,8 +147,8 @@ public class UndoRedoHistory {
     /**
      * Records a canonical edit command. If the history was rewound (undo) this discards the redo
      * tail first, exactly like a linear text-editor undo/redo. The command is expected to have
-     * already been applied to the live model. A periodic checkpoint of the live model is taken every
-     * {@value #CHECKPOINT_EVERY} commands.
+     * already been applied to the live model. A periodic checkpoint of the live model is taken
+     * every {@value #CHECKPOINT_EVERY} commands.
      */
     public void record(String canonicalCommand) {
         record(canonicalCommand, null);
@@ -155,8 +157,8 @@ public class UndoRedoHistory {
     /**
      * Records a canonical edit command, optionally with the {@code resumeFrom} origin of the rail
      * piece it chained from (see the {@link #resumeFroms} field). If the history was rewound (undo)
-     * this discards the redo tail first, exactly like a linear text-editor undo/redo. The command is
-     * expected to have already been applied to the live model. A periodic checkpoint of the live
+     * this discards the redo tail first, exactly like a linear text-editor undo/redo. The command
+     * is expected to have already been applied to the live model. A periodic checkpoint of the live
      * model is taken every {@value #CHECKPOINT_EVERY} commands.
      */
     public void record(String canonicalCommand, Point resumeFrom) {
@@ -176,8 +178,8 @@ public class UndoRedoHistory {
     }
 
     /**
-     * Records like {@link #record}, but collapses consecutive {@code signal N set limit X} tweaks for
-     * the same signal into a single entry (the last value wins). Any checkpoint at or after the
+     * Records like {@link #record}, but collapses consecutive {@code signal N set limit X} tweaks
+     * for the same signal into a single entry (the last value wins). Any checkpoint at or after the
      * replaced command is dropped, since its snapshot would no longer match the rewritten command.
      */
     public void recordCoalescing(String canonicalCommand) {
@@ -221,8 +223,8 @@ public class UndoRedoHistory {
 
     /**
      * Computes the plan to undo {@code steps} commands (at most {@link #canUndo()}), or null when
-     * there is nothing to undo. The plan restores the nearest checkpoint at or before the target and
-     * replays the commands between that checkpoint and the target. Execute it (restore
+     * there is nothing to undo. The plan restores the nearest checkpoint at or before the target
+     * and replays the commands between that checkpoint and the target. Execute it (restore
      * {@link UndoPlan#baseBytes()} as a fresh model, apply it, replay the slice) and finish with
      * {@link #commit}.
      */
@@ -260,9 +262,9 @@ public class UndoRedoHistory {
     }
 
     /**
-     * Restores the checkpoint base of {@code plan} as a fresh, fully initialized model, or null when
-     * the plan keeps the current live model (a redo). The caller is responsible for swapping the
-     * returned model into the running presenters and for {@link #bind}ing this history to it.
+     * Restores the checkpoint base of {@code plan} as a fresh, fully initialized model, or null
+     * when the plan keeps the current live model (a redo). The caller is responsible for swapping
+     * the returned model into the running presenters and for {@link #bind}ing this history to it.
      */
     public Model restore(UndoPlan plan) {
         if (plan == null || plan.baseBytes() == null) {
@@ -274,7 +276,8 @@ public class UndoRedoHistory {
     private Checkpoint checkpointAtOrBefore(int target) {
         Checkpoint best = null;
         for (Checkpoint c : checkpoints) {
-            if (c.commandIndex() <= target && (best == null || c.commandIndex() > best.commandIndex())) {
+            if (c.commandIndex() <= target
+                    && (best == null || c.commandIndex() > best.commandIndex())) {
                 best = c;
             }
         }

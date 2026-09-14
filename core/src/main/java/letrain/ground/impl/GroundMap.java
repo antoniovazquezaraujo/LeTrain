@@ -103,7 +103,8 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
             }
         }
         // Cells are only materialized in rendered blocks; any other read (e.g. track building over
-        // terrain the checkpoint did not serialize) must still return the deterministic terrain this
+        // terrain the checkpoint did not serialize) must still return the deterministic terrain
+        // this
         // generator would produce for that coordinate, so a replayed world behaves exactly like the
         // live one regardless of how much of it was materialized. Falls back to void (-1) when no
         // generator is available (model not post-load initialized yet).
@@ -154,8 +155,7 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         if (noise == null) {
             return letrain.ground.GroundMap.GROUND;
         }
-        float baseNoise =
-                noise.smoothNoise((col * 0.01F), (row * 0.02F), 0, OCTAVES);
+        float baseNoise = noise.smoothNoise((col * 0.01F), (row * 0.02F), 0, OCTAVES);
         float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
         float waterThreshold = (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
         float rockThreshold = (economyManager != null) ? economyManager.getRockThreshold() : 180f;
@@ -180,19 +180,16 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
 
     /**
      * The deterministic terrain value for a single coordinate, derived from the generator's noise
-     * and the economy thresholds. Shared by {@link #generateTerrain} (block materialization) and the
-     * {@link #getValueAt} on-demand fallback so both always agree.
+     * and the economy thresholds. Shared by {@link #generateTerrain} (block materialization) and
+     * the {@link #getValueAt} on-demand fallback so both always agree.
      */
     int computeTerrainValue(int colIndex, int rowIndex) {
         // LAYER 0: Base Terrain
-        float baseNoise =
-                noise.smoothNoise((colIndex * 0.01F), (rowIndex * 0.02F), 0, OCTAVES);
+        float baseNoise = noise.smoothNoise((colIndex * 0.01F), (rowIndex * 0.02F), 0, OCTAVES);
         float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
 
-        float waterThreshold =
-                (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
-        float rockThreshold =
-                (economyManager != null) ? economyManager.getRockThreshold() : 180f;
+        float waterThreshold = (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
+        float rockThreshold = (economyManager != null) ? economyManager.getRockThreshold() : 180f;
 
         if (scaledBase < waterThreshold) {
             return 1;
@@ -202,12 +199,9 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         // GROUND - check for industries
         int terrain = 0; // Default Ground
 
-        float goldThreshold =
-                (economyManager != null) ? economyManager.getGoldThreshold() : 0.28f;
-        float coalThreshold =
-                (economyManager != null) ? economyManager.getCoalThreshold() : 0.28f;
-        float rubyThreshold =
-                (economyManager != null) ? economyManager.getRubyThreshold() : 0.28f;
+        float goldThreshold = (economyManager != null) ? economyManager.getGoldThreshold() : 0.28f;
+        float coalThreshold = (economyManager != null) ? economyManager.getCoalThreshold() : 0.28f;
+        float rubyThreshold = (economyManager != null) ? economyManager.getRubyThreshold() : 0.28f;
 
         // LAYER 1: Gold Industry (z=1)
         float woodNoise = noise.smoothNoise((colIndex * 0.01F), (rowIndex * 0.02F), 1, OCTAVES);

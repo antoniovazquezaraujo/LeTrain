@@ -21,9 +21,9 @@ public final class ScenarioExporter {
 
     /**
      * Initial-state commands derived from the current model: semaphore open/closed, fork routes and
-     * speed-signal mode/limit. These are the element states that a rebuilt world must restore so the
-     * scenario starts exactly as it was exported (they are not always captured by the journal, e.g.
-     * when changed outside the Record mode or altered at runtime by triggers).
+     * speed-signal mode/limit. These are the element states that a rebuilt world must restore so
+     * the scenario starts exactly as it was exported (they are not always captured by the journal,
+     * e.g. when changed outside the Record mode or altered at runtime by triggers).
      */
     public static List<String> initialConditions(Model model) {
         List<String> start = new ArrayList<>();
@@ -64,10 +64,12 @@ public final class ScenarioExporter {
                 initialConditions(model), model.getProgram());
     }
 
-    /** Renders the editable world recipe (seed + on build + on start), without settings or program. */
+    /**
+     * Renders the editable world recipe (seed + on build + on start), without settings or program.
+     */
     public static String renderWorld(Model model, List<String> buildCommands) {
-        return ScenarioFile.render(model.getSeed(), null, buildCommands,
-                initialConditions(model), null);
+        return ScenarioFile.render(model.getSeed(), null, buildCommands, initialConditions(model),
+                null);
     }
 
     /** The model's effective settings (so the scenario reproduces terrain and rules), or null. */
