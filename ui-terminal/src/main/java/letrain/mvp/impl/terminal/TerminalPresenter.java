@@ -196,14 +196,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             if (restored != null) {
                 applyModel(restored);
             }
-            view.setStatusBarText("Experiment: OFF (estado restaurado)");
+            view.setStatusBarText("Experiment: OFF (state restored)");
         } else {
             if (model.isPauseEditing()) {
                 model.setPauseEditing(false);
                 getUndoRedoHistory().end();
             }
             session.begin(model);
-            view.setStatusBarText("Experiment: ON (simulación en vivo; X para descartar y restaurar)");
+            view.setStatusBarText("Experiment: ON (live simulation; X to discard and restore)");
         }
     }
 
@@ -815,7 +815,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void togglePauseEditing() {
         if (getExperimentSession().isActive()) {
             view.setStatusBarText(
-                    "Experiment ON: pulsa X para salir y restaurar antes del modo Record");
+                    "Experiment ON: press X to leave and restore before Record mode");
             return;
         }
         boolean recording = !model.isPauseEditing();
