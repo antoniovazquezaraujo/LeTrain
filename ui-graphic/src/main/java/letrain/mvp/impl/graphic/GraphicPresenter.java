@@ -1150,7 +1150,9 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void showExitDialog() {
-        showMessage("Exit", "Use ALT+F4 to exit the application.");
+        if (hud != null) {
+            hud.showExitMenu();
+        }
     }
 
     /** Exports the current editing journal as a scenario file (called by the DSL and the UI). */

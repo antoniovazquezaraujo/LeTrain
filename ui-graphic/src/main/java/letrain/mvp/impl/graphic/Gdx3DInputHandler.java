@@ -118,7 +118,11 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     @Override
     public boolean keyDown(int keycode) {
-        pressedKeys.put(keycode, System.currentTimeMillis() + INITIAL_REPEAT_DELAY_MS);
+        // Esc must never enter the auto-repeat map: it is used to open/close modal UI, its keyUp
+        // is consumed by that UI, and repeating it would keep reopening the exit dialog.
+        if (keycode != Input.Keys.ESCAPE) {
+            pressedKeys.put(keycode, System.currentTimeMillis() + INITIAL_REPEAT_DELAY_MS);
+        }
         // Ctrl+R -> redo paused editing (ADR-020 item 3). Handled on keyDown because LibGDX does
         // not deliver a typed character for Ctrl+letter combos. Not intercepted while typing in the
         // COMMAND console or the PROGRAM IDE.
@@ -513,6 +517,14 @@ public class Gdx3DInputHandler implements InputProcessor {
                         return;
                 }
             }
+        }
+
+        // Esc opens the exit menu in the normal modes (COMMAND cancels above; ADD goes back below;
+        // PROGRAM is the modal editor, which handles Esc itself).
+        if (stroke.getKeyType() == KeyType.Escape && model.getMode() != Model.GameMode.ADD
+                && model.getMode() != Model.GameMode.PROGRAM) {
+            view.showExitDialog();
+            return;
         }
 
         switch (model.getMode()) {
