@@ -1,6 +1,7 @@
 package letrain.mvp.impl.graphic;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -8,6 +9,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
@@ -31,6 +33,7 @@ import letrain.vehicle.rail.impl.Train;
 
 public class Gdx3DHud {
 
+
     private final Model model;
     private final GraphicPresenter view;
     private final Stage stage;
@@ -46,6 +49,7 @@ public class Gdx3DHud {
     private NotchLever notchLever;
     private ShapeRenderer shapeRenderer;
     private Window ideWindow;
+    private boolean exitDialogOpen;
 
     public Gdx3DHud(Model model, GraphicPresenter view) {
         this.model = model;
@@ -231,6 +235,22 @@ public class Gdx3DHud {
         windowStyle.background = windowWhite;
         windowStyle.titleFontColor = Color.WHITE;
         skin.add("default", windowStyle);
+
+        // Dialog Style - dark panel with a light border and roomier title (the plain window
+        // style makes dialogs look cramped and hides the title behind its white frame).
+        Window.WindowStyle dialogStyle = new Window.WindowStyle();
+        dialogStyle.titleFont = skin.getFont("medium-font");
+        dialogStyle.titleFontColor = new Color(1f, 0.85f, 0.4f, 1f);
+        Pixmap pixDialog = new Pixmap(32, 32, Pixmap.Format.RGBA8888);
+        pixDialog.setColor(new Color(0.05f, 0.06f, 0.08f, 0.98f));
+        pixDialog.fill();
+        pixDialog.setColor(new Color(0.29f, 0.65f, 1f, 1f));
+        pixDialog.drawRectangle(0, 0, 32, 32);
+        pixDialog.drawRectangle(1, 1, 30, 30);
+        dialogStyle.background = new com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable(
+                new com.badlogic.gdx.graphics.g2d.NinePatch(new Texture(pixDialog), 10, 10, 10,
+                        10));
+        skin.add("dialog", dialogStyle);
 
         // TextField/TextArea Style
         TextField.TextFieldStyle textFieldStyle = new TextField.TextFieldStyle();
@@ -509,6 +529,110 @@ public class Gdx3DHud {
             }
             descLabel.setText(desc);
         }
+    }
+
+    /** Exit confirmation menu (opened with Esc), mirroring the 2D exit/quit prompt. */
+    public void showExitMenu() {
+        if (exitDialogOpen) {
+            return;
+        }
+        exitDialogOpen = true;
+        Gdx.app.postRunnable(() -> {
+            final Actor blocker = new Actor();
+            blocker.setBounds(0, 0, stage.getWidth(), stage.getHeight());
+            blocker.addListener(new InputListener() {
+                @Override
+                public boolean touchDown(InputEvent event, float x, float y, int pointer,
+                        int button) {
+                    return true;
+                }
+            });
+
+            final com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
+                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog("LeTrain",
+                            skin.get("dialog", Window.WindowStyle.class)) {
+                        @Override
+                        protected void result(Object object) {
+                            exitDialogOpen = false;
+                            blocker.remove();
+                            if (Boolean.TRUE.equals(object)) {
+                                Gdx.app.exit();
+                            }
+                        }
+                    };
+
+            Label message = new Label("Exit LeTrain?", skin, "medium");
+            dialog.getContentTable().pad(10, 48, 24, 48).add(message);
+
+            TextButton exitButton = new TextButton("Exit", skin);
+            TextButton cancelButton = new TextButton("Cancel", skin);
+            dialog.getButtonTable().defaults().space(24).minWidth(140).minHeight(50);
+            dialog.button(exitButton, Boolean.TRUE);
+            dialog.button(cancelButton, Boolean.FALSE);
+
+            // Keyboard navigation: Tab/arrows move the focus between the buttons, Enter/Space
+            // activate the focused one and Esc cancels. The dialog is modal, so it swallows the
+            // rest of the keys while open.
+            final Runnable paintFocus = () -> {
+                Actor focused = stage.getKeyboardFocus();
+                exitButton.getLabel().setColor(focused == exitButton ? Color.CYAN : Color.WHITE);
+                cancelButton.getLabel()
+                        .setColor(focused == cancelButton ? Color.CYAN : Color.WHITE);
+            };
+            InputListener navigation = new InputListener() {
+                @Override
+                public boolean keyDown(InputEvent event, int keycode) {
+                    if (keycode == Input.Keys.TAB || keycode == Input.Keys.RIGHT
+                            || keycode == Input.Keys.LEFT) {
+                        Actor focused = stage.getKeyboardFocus();
+                        stage.setKeyboardFocus(focused == exitButton ? cancelButton : exitButton);
+                        paintFocus.run();
+                        return true;
+                    }
+                    if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
+                            || keycode == Input.Keys.SPACE) {
+                        activate(stage.getKeyboardFocus() == exitButton);
+                        return true;
+                    }
+                    if (keycode == Input.Keys.ESCAPE) {
+                        activate(false);
+                        return true;
+                    }
+                    return true;
+                }
+
+                @Override
+                public boolean keyTyped(InputEvent event, char character) {
+                    return true;
+                }
+
+                private void activate(boolean exit) {
+                    exitDialogOpen = false;
+                    blocker.remove();
+                    if (exit) {
+                        Gdx.app.exit();
+                    } else {
+                        dialog.hide(null);
+                    }
+                }
+            };
+            exitButton.addListener(navigation);
+            cancelButton.addListener(navigation);
+
+            // Reserve enough top padding so the title fits inside the title bar (Window sizes
+            // the title table to `padTop`).
+            dialog.padTop(46);
+            dialog.pack();
+            dialog.setWidth(Math.max(dialog.getWidth(), 460f));
+            dialog.setHeight(Math.max(dialog.getHeight(), 240f));
+            dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
+                    (stage.getHeight() - dialog.getHeight()) / 2);
+
+            stage.addActor(blocker);
+            stage.addActor(dialog);
+            stage.setKeyboardFocus(exitButton);
+            paintFocus.run();
+        });
     }
 
     public void showMessage(String title, String message) {
