@@ -23,5 +23,10 @@ jobs:
         distribution: 'temurin'
         cache: maven
         
+    - name: Check the class index is up to date
+      run: |
+        sh tools/gen-class-index.sh
+        git diff --exit-code -- docs/developer/architecture/ClassIndex.md
+
     - name: Build and run tests
       run: xvfb-run mvn test
