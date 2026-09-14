@@ -1,132 +1,207 @@
-# Índice de Clases de LeTrain
+# LeTrain class index
 
-Esta lista se genera automáticamente a partir de los archivos fuente presentes en el repositorio.
+> **Generated automatically** by `java tools/GenClassIndex.java`. Do not edit by hand.
+> Format: `[[package.Class|Class]] (module)`. Useful in Obsidian and to locate code.
+## letrain (root)
+- [[letrain.BuildInfo|BuildInfo]] (core)
+- [[letrain.LeTrainCheck|LeTrainCheck]] (launcher-check)
+- [[letrain.LeTrainGraphic|LeTrainGraphic]] (launcher-graphic)
+- [[letrain.LeTrainTerminal|LeTrainTerminal]] (launcher-terminal)
 
-## Audio y Síntesis
-- `letrain.audio.AudioController`
-- `letrain.audio.core.AudioMixer`
-- `letrain.audio.core.AudioSource`
-- `letrain.audio.core.DistanceAttenuator`
-- `letrain.audio.sources.AmbientSource`
-- `letrain.audio.sources.SequencedAmbientSource`
-- `letrain.audio.sources.WavSource`
-- `letrain.audio.synth.AudioGenerator`
-- `letrain.audio.synth.AudioSample`
-- `letrain.audio.synth.GrainEngine`
-- `letrain.audio.synth.NoiseGenerator`
-- `letrain.audio.synth.Oscillator`
-- `letrain.audio.synth.SpeedNotch`
-- `letrain.audio.synth.TrainSynth`
-- `letrain.audio.synth.TrainSynthesizer`
-- `letrain.audio.util.AudacityLabelParser`
+## letrain.audio
+- [[letrain.audio.AudioController|AudioController]] (core)
+- [[letrain.audio.core.AudioMixer|AudioMixer]] (core)
+- [[letrain.audio.core.AudioSource|AudioSource]] (core)
+- [[letrain.audio.core.DistanceAttenuator|DistanceAttenuator]] (core)
+- [[letrain.audio.sources.AmbientSource|AmbientSource]] (core)
+- [[letrain.audio.sources.SequencedAmbientSource|SequencedAmbientSource]] (core)
+- [[letrain.audio.sources.WavSource|WavSource]] (core)
+- [[letrain.audio.synth.AudioGenerator|AudioGenerator]] (core)
+- [[letrain.audio.synth.AudioSample|AudioSample]] (core)
+- [[letrain.audio.synth.GrainEngine|GrainEngine]] (core)
+- [[letrain.audio.synth.NoiseGenerator|NoiseGenerator]] (core)
+- [[letrain.audio.synth.Oscillator|Oscillator]] (core)
+- [[letrain.audio.synth.SpeedNotch|SpeedNotch]] (core)
+- [[letrain.audio.synth.TrainSynth|TrainSynth]] (core)
+- [[letrain.audio.synth.TrainSynthesizer|TrainSynthesizer]] (core)
+- [[letrain.audio.util.AudacityLabelParser|AudacityLabelParser]] (core)
 
-## Comandos y Automatización (ANTLR)
-- `letrain.command.CommandManager`
-- `letrain.mvp.impl.services.AutomationEngine`
+## letrain.command
+- [[letrain.command.CommandJournal|CommandJournal]] (core)
+- [[letrain.command.CommandManager|CommandManager]] (core)
+- [[letrain.command.CommandMerge|CommandMerge]] (core)
+- [[letrain.command.EditCommandFilter|EditCommandFilter]] (core)
+- [[letrain.command.ExperimentSession|ExperimentSession]] (core)
+- [[letrain.command.GrammarReference|GrammarReference]] (core)
+- [[letrain.command.PlayerCommandExecutor|PlayerCommandExecutor]] (core)
+- [[letrain.command.ScenarioCheckCli|ScenarioCheckCli]] (core)
+- [[letrain.command.ScenarioCompiler|ScenarioCompiler]] (core)
+- [[letrain.command.ScenarioExporter|ScenarioExporter]] (core)
+- [[letrain.command.ScenarioFile|ScenarioFile]] (core)
+- [[letrain.command.SyntaxMessages|SyntaxMessages]] (core)
+- [[letrain.command.TurtleBuilder|TurtleBuilder]] (core)
+- [[letrain.command.TurtleDelegate|TurtleDelegate]] (core)
+- [[letrain.command.UndoRedoHistory|UndoRedoHistory]] (core)
 
-## Economía
-- `letrain.economy.EconomyManager`
-- `letrain.economy.impl.EconomyManager`
+## letrain.economy
+- [[letrain.economy.EconomyManager|EconomyManager]] (core)
+- [[letrain.economy.impl.EconomyManager|EconomyManager]] (core)
 
-## Terreno y Mapa
-- `letrain.ground.Ground`
-- `letrain.ground.GroundMap`
-- `letrain.ground.NoiseGenerator`
-- `letrain.ground.PerlinNoise`
-- `letrain.ground.impl.GroundMap`
-- `letrain.ground.impl.Terrain2D`
-- `letrain.map.Dir`
-- `letrain.map.DynamicRouter`
-- `letrain.map.Mappable`
-- `letrain.map.Page`
-- `letrain.map.Point`
-- `letrain.map.RailMap`
-- `letrain.map.Reversible`
-- `letrain.map.Rotatable`
-- `letrain.map.Router`
-- `letrain.map.impl.ForkRouter`
-- `letrain.map.impl.RailMap`
-- `letrain.map.impl.SimpleRouter`
+## letrain.ground
+- [[letrain.ground.Ground|Ground]] (core)
+- [[letrain.ground.GroundMap|GroundMap]] (core)
+- [[letrain.ground.NoiseGenerator|NoiseGenerator]] (core)
+- [[letrain.ground.PerlinNoise|PerlinNoise]] (core)
+- [[letrain.ground.impl.GroundMap|GroundMap]] (core)
+- [[letrain.ground.impl.Terrain2D|Terrain2D]] (core)
 
-## MVP (Model-View-Presenter)
-- `letrain.mvp.GameViewListener`
-- `letrain.mvp.Model`
-- `letrain.mvp.Presenter`
-- `letrain.mvp.View`
-- `letrain.mvp.impl.EventLogManager`
-- `letrain.mvp.impl.GameSaveService`
-- `letrain.mvp.impl.Model`
-- `letrain.mvp.impl.ModelMixin`
-- `letrain.mvp.impl.RailTrackMaker`
-- `letrain.mvp.impl.SimulationController`
-- `letrain.mvp.impl.delegates.TrainFactory`
-- `letrain.mvp.impl.graphic.CameraController`
-- `letrain.mvp.impl.graphic.Gdx3DHud`
-- `letrain.mvp.impl.graphic.Gdx3DInputHandler`
-- `letrain.mvp.impl.graphic.GraphicPresenter`
-- `letrain.mvp.impl.services.SimulationService`
-- `letrain.mvp.impl.terminal.TerminalPresenter`
-- `letrain.mvp.impl.terminal.TerminalView`
+## letrain.itinerary
+- [[letrain.itinerary.AStarPathfinder|AStarPathfinder]] (core)
+- [[letrain.itinerary.AutoPilot|AutoPilot]] (core)
+- [[letrain.itinerary.Itinerary|Itinerary]] (core)
+- [[letrain.itinerary.SegmentPathfinder|SegmentPathfinder]] (core)
+- [[letrain.itinerary.TrainActionManager|TrainActionManager]] (core)
+- [[letrain.itinerary.Waypoint|Waypoint]] (core)
+- [[letrain.itinerary.WaypointCommand|WaypointCommand]] (core)
+- [[letrain.itinerary.impl.AutoPilotImpl|AutoPilotImpl]] (core)
+- [[letrain.itinerary.impl.ItineraryImpl|ItineraryImpl]] (core)
+- [[letrain.itinerary.impl.TrainActionManager|TrainActionManager]] (core)
+- [[letrain.itinerary.impl.WaypointImpl|WaypointImpl]] (core)
 
-## Infraestructura y Vías
-- `letrain.track.CargoTypes`
-- `letrain.track.Connectable`
-- `letrain.track.ForkEventListener`
-- `letrain.track.Gate`
-- `letrain.track.LinkerCompartment`
-- `letrain.track.LinkerCompartmentListener`
-- `letrain.track.RailSemaphore`
-- `letrain.track.SemaphoreEventListener`
-- `letrain.track.Sensor`
-- `letrain.track.SensorEventListener`
-- `letrain.track.Station`
-- `letrain.track.StationEventListener`
-- `letrain.track.Track`
-- `letrain.track.TrackDirector`
-- `letrain.track.Trackable`
-- `letrain.track.rail.BridgeGateRailTrack`
-- `letrain.track.rail.BridgeRailTrack`
-- `letrain.track.rail.ForkRailTrack`
-- `letrain.track.rail.RailTrack`
-- `letrain.track.rail.StationRailTrack`
-- `letrain.track.rail.TunnelGateRailTrack`
-- `letrain.track.rail.TunnelRailTrack`
+## letrain.map
+- [[letrain.map.Dir|Dir]] (core)
+- [[letrain.map.DynamicRouter|DynamicRouter]] (core)
+- [[letrain.map.Mappable|Mappable]] (core)
+- [[letrain.map.Page|Page]] (core)
+- [[letrain.map.Point|Point]] (core)
+- [[letrain.map.RailMap|RailMap]] (core)
+- [[letrain.map.Reversible|Reversible]] (core)
+- [[letrain.map.Rotatable|Rotatable]] (core)
+- [[letrain.map.Router|Router]] (core)
+- [[letrain.map.impl.ForkRouter|ForkRouter]] (core)
+- [[letrain.map.impl.RailMap|RailMap]] (core)
+- [[letrain.map.impl.SimpleRouter|SimpleRouter]] (core)
 
-## Vehículos
-- `letrain.vehicle.Destructible`
-- `letrain.vehicle.Linkable`
-- `letrain.vehicle.Selectable`
-- `letrain.vehicle.Transportable`
-- `letrain.vehicle.Vehicle`
-- `letrain.vehicle.Cursor`
-- `letrain.vehicle.rail.Linker`
-- `letrain.vehicle.rail.RailIterator`
-- `letrain.vehicle.Tracker`
-- `letrain.vehicle.Tractor`
-- `letrain.vehicle.rail.impl.Trip`
-- `letrain.vehicle.rail.impl.Locomotive`
-- `letrain.vehicle.rail.impl.Stop`
-- `letrain.vehicle.rail.impl.Train`
-- `letrain.vehicle.rail.TrainEventListener`
-- `letrain.vehicle.rail.impl.Wagon`
+## letrain.mvp
+- [[letrain.mvp.GameViewListener|GameViewListener]] (core)
+- [[letrain.mvp.Model|Model]] (core)
+- [[letrain.mvp.Presenter|Presenter]] (core)
+- [[letrain.mvp.View|View]] (core)
+- [[letrain.mvp.impl.AutoPilotMixin|AutoPilotMixin]] (core)
+- [[letrain.mvp.impl.EventLogManager|EventLogManager]] (core)
+- [[letrain.mvp.impl.GameSaveService|GameSaveService]] (core)
+- [[letrain.mvp.impl.ItineraryMixin|ItineraryMixin]] (core)
+- [[letrain.mvp.impl.Model|Model]] (core)
+- [[letrain.mvp.impl.ModelMixin|ModelMixin]] (core)
+- [[letrain.mvp.impl.RailTrackMaker|RailTrackMaker]] (core)
+- [[letrain.mvp.impl.SimulationController|SimulationController]] (core)
+- [[letrain.mvp.impl.TrainMixin|TrainMixin]] (core)
+- [[letrain.mvp.impl.WaypointCommandMixin|WaypointCommandMixin]] (core)
+- [[letrain.mvp.impl.WaypointMixin|WaypointMixin]] (core)
+- [[letrain.mvp.impl.delegates.TrainFactory|TrainFactory]] (core)
+- [[letrain.mvp.impl.graphic.CameraController|CameraController]] (ui-graphic)
+- [[letrain.mvp.impl.graphic.CommandHistory|CommandHistory]] (ui-graphic)
+- [[letrain.mvp.impl.graphic.Gdx3DHud|Gdx3DHud]] (ui-graphic)
+- [[letrain.mvp.impl.graphic.Gdx3DInputHandler|Gdx3DInputHandler]] (ui-graphic)
+- [[letrain.mvp.impl.graphic.GraphicPresenter|GraphicPresenter]] (ui-graphic)
+- [[letrain.mvp.impl.services.AutomationEngine|AutomationEngine]] (core)
+- [[letrain.mvp.impl.services.SimulationService|SimulationService]] (core)
+- [[letrain.mvp.impl.terminal.TerminalPresenter|TerminalPresenter]] (ui-terminal)
+- [[letrain.mvp.impl.terminal.TerminalView|TerminalView]] (ui-terminal)
+- [[letrain.mvp.input.InputEvent|InputEvent]] (core)
+- [[letrain.mvp.input.KeyType|KeyType]] (core)
 
-## Visualización (Visitor)
-- `letrain.visitor.Renderable`
-- `letrain.visitor.Visitor`
-- `letrain.visitor.gdx3d.BaseSubRenderer`
-- `letrain.visitor.gdx3d.Gdx3DRenderer`
-- `letrain.visitor.gdx3d.Gdx3DResourceContext`
-- `letrain.visitor.gdx3d.GroundRenderer`
-- `letrain.visitor.gdx3d.InfrastructureRenderer`
-- `letrain.visitor.gdx3d.TrackRenderer`
-- `letrain.visitor.gdx3d.VehicleRenderer`
-- `letrain.visitor.terminal.InfoVisitor`
-- `letrain.visitor.terminal.RenderVisitor`
+## letrain.segments
+- [[letrain.segments.BlockManager|BlockManager]] (core)
+- [[letrain.segments.Port|Port]] (core)
+- [[letrain.segments.PortType|PortType]] (core)
+- [[letrain.segments.RailNode|RailNode]] (core)
+- [[letrain.segments.RailwayGraph|RailwayGraph]] (core)
+- [[letrain.segments.Segment|Segment]] (core)
+- [[letrain.segments.TopologyService|TopologyService]] (core)
+- [[letrain.segments.TransitionType|TransitionType]] (core)
+- [[letrain.segments.impl.BlockManagerImpl|BlockManagerImpl]] (core)
+- [[letrain.segments.impl.PortImpl|PortImpl]] (core)
+- [[letrain.segments.impl.RailNodeImpl|RailNodeImpl]] (core)
+- [[letrain.segments.impl.RailwayGraphImpl|RailwayGraphImpl]] (core)
+- [[letrain.segments.impl.SegmentImpl|SegmentImpl]] (core)
+- [[letrain.segments.impl.TopologyServiceImpl|TopologyServiceImpl]] (core)
 
-## Utilidades
-- `letrain.utils.FontManager`
-- `letrain.utils.Pair`
-- `letrain.utils.PathGeometry`
-- `letrain.utils.SerializationHelper`
-- `letrain.utils.SplinePath`
-- `letrain.utils.ValidationUtils`
+## letrain.track
+- [[letrain.track.CargoTypes|CargoTypes]] (core)
+- [[letrain.track.Connectable|Connectable]] (core)
+- [[letrain.track.ForkEventListener|ForkEventListener]] (core)
+- [[letrain.track.Gate|Gate]] (core)
+- [[letrain.track.LinkerCompartment|LinkerCompartment]] (core)
+- [[letrain.track.LinkerCompartmentListener|LinkerCompartmentListener]] (core)
+- [[letrain.track.RailSemaphore|RailSemaphore]] (core)
+- [[letrain.track.SemaphoreEventListener|SemaphoreEventListener]] (core)
+- [[letrain.track.Sensor|Sensor]] (core)
+- [[letrain.track.SensorEventListener|SensorEventListener]] (core)
+- [[letrain.track.SpeedSignal|SpeedSignal]] (core)
+- [[letrain.track.Station|Station]] (core)
+- [[letrain.track.StationEventListener|StationEventListener]] (core)
+- [[letrain.track.Track|Track]] (core)
+- [[letrain.track.TrackComponent|TrackComponent]] (core)
+- [[letrain.track.TrackDirector|TrackDirector]] (core)
+- [[letrain.track.Trackable|Trackable]] (core)
+- [[letrain.track.rail.BridgeGateRailTrack|BridgeGateRailTrack]] (core)
+- [[letrain.track.rail.BridgeRailTrack|BridgeRailTrack]] (core)
+- [[letrain.track.rail.ForkRailTrack|ForkRailTrack]] (core)
+- [[letrain.track.rail.RailTrack|RailTrack]] (core)
+- [[letrain.track.rail.TunnelGateRailTrack|TunnelGateRailTrack]] (core)
+- [[letrain.track.rail.TunnelRailTrack|TunnelRailTrack]] (core)
+
+## letrain.utils
+- [[letrain.utils.FontManager|FontManager]] (ui-graphic)
+- [[letrain.utils.Pair|Pair]] (core)
+- [[letrain.utils.PathGeometry|PathGeometry]] (ui-graphic)
+- [[letrain.utils.SerializationHelper|SerializationHelper]] (core)
+- [[letrain.utils.SimulationScheduler|SimulationScheduler]] (core)
+- [[letrain.utils.SplinePath|SplinePath]] (ui-graphic)
+- [[letrain.utils.ValidationUtils|ValidationUtils]] (core)
+- [[letrain.utils.impl.SimulationScheduler|SimulationScheduler]] (core)
+
+## letrain.vehicle
+- [[letrain.vehicle.Cursor|Cursor]] (core)
+- [[letrain.vehicle.Destructible|Destructible]] (core)
+- [[letrain.vehicle.Linkable|Linkable]] (core)
+- [[letrain.vehicle.Selectable|Selectable]] (core)
+- [[letrain.vehicle.Tracker|Tracker]] (core)
+- [[letrain.vehicle.Tractor|Tractor]] (core)
+- [[letrain.vehicle.Transportable|Transportable]] (core)
+- [[letrain.vehicle.Vehicle|Vehicle]] (core)
+- [[letrain.vehicle.rail.CoreTrainEventListener|CoreTrainEventListener]] (core)
+- [[letrain.vehicle.rail.Linker|Linker]] (core)
+- [[letrain.vehicle.rail.RailIterator|RailIterator]] (core)
+- [[letrain.vehicle.rail.ScriptTrainEventListener|ScriptTrainEventListener]] (core)
+- [[letrain.vehicle.rail.TrainCouplingManager|TrainCouplingManager]] (core)
+- [[letrain.vehicle.rail.TrainEventDispatcher|TrainEventDispatcher]] (core)
+- [[letrain.vehicle.rail.TrainEventListener|TrainEventListener]] (core)
+- [[letrain.vehicle.rail.TrainLogisticsManager|TrainLogisticsManager]] (core)
+- [[letrain.vehicle.rail.TrainMovementManager|TrainMovementManager]] (core)
+- [[letrain.vehicle.rail.TrainSafetyManager|TrainSafetyManager]] (core)
+- [[letrain.vehicle.rail.Trip|Trip]] (core)
+- [[letrain.vehicle.rail.impl.Locomotive|Locomotive]] (core)
+- [[letrain.vehicle.rail.impl.Stop|Stop]] (core)
+- [[letrain.vehicle.rail.impl.Train|Train]] (core)
+- [[letrain.vehicle.rail.impl.TrainCouplingManager|TrainCouplingManager]] (core)
+- [[letrain.vehicle.rail.impl.TrainEventDispatcherImpl|TrainEventDispatcherImpl]] (core)
+- [[letrain.vehicle.rail.impl.TrainLogisticsManager|TrainLogisticsManager]] (core)
+- [[letrain.vehicle.rail.impl.TrainMovementManager|TrainMovementManager]] (core)
+- [[letrain.vehicle.rail.impl.TrainSafetyManager|TrainSafetyManager]] (core)
+- [[letrain.vehicle.rail.impl.Trip|Trip]] (core)
+- [[letrain.vehicle.rail.impl.Wagon|Wagon]] (core)
+
+## letrain.visitor
+- [[letrain.visitor.Renderable|Renderable]] (core)
+- [[letrain.visitor.Visitor|Visitor]] (core)
+- [[letrain.visitor.gdx3d.BaseSubRenderer|BaseSubRenderer]] (ui-graphic)
+- [[letrain.visitor.gdx3d.Gdx3DRenderer|Gdx3DRenderer]] (ui-graphic)
+- [[letrain.visitor.gdx3d.Gdx3DResourceContext|Gdx3DResourceContext]] (ui-graphic)
+- [[letrain.visitor.gdx3d.GroundRenderer|GroundRenderer]] (ui-graphic)
+- [[letrain.visitor.gdx3d.InfrastructureRenderer|InfrastructureRenderer]] (ui-graphic)
+- [[letrain.visitor.gdx3d.TrackRenderer|TrackRenderer]] (ui-graphic)
+- [[letrain.visitor.gdx3d.VehicleRenderer|VehicleRenderer]] (ui-graphic)
+- [[letrain.visitor.terminal.InfoVisitor|InfoVisitor]] (ui-terminal)
+- [[letrain.visitor.terminal.RenderVisitor|RenderVisitor]] (ui-terminal)
