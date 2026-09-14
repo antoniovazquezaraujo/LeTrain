@@ -1,6 +1,6 @@
 # Índice de Clases de LeTrain
 
-> **Generado automáticamente** con `tools/gen-class-index.sh`. No editar a mano.
+> **Generado automáticamente** con `java tools/GenClassIndex.java`. No editar a mano.
 > Formato: `[[paquete.Clase|Clase]] (módulo)`. Pensado para Obsidian y para localizar código.
 ## letrain (raíz)
 - [[letrain.BuildInfo|BuildInfo]] (core)

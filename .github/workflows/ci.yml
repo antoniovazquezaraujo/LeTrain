@@ -25,7 +25,7 @@ jobs:
         
     - name: Check the class index is up to date
       run: |
-        sh tools/gen-class-index.sh
+        java tools/GenClassIndex.java
         git diff --exit-code -- docs/developer/architecture/ClassIndex.md
 
     - name: Build and run tests
