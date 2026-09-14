@@ -28,6 +28,9 @@
     <img src="https://img.shields.io/badge/🐧_Get_it_on_Snap_Store-E95420?style=for-the-badge&logo=snapcraft&logoColor=white" alt="Get it on Snap Store">
   </a>
   <br><br>
+  <a href="docs/PHILOSOPHY.md">
+    <img src="https://img.shields.io/badge/📜_Manifesto_&_Philosophy-8A2BE2?style=for-the-badge&logo=markdown&logoColor=white" alt="Read the Manifesto">
+  </a>
   <a href="https://antoniovazquezaraujo.github.io/LeTrain/">
     <img src="https://img.shields.io/badge/📖_Read_the_Documentation-2EA043?style=for-the-badge&logo=markdown&logoColor=white" alt="Read the Documentation">
   </a>
@@ -38,6 +41,9 @@
 </p>
 
 **LeTrain** is a procedural train simulator that blends classic ASCII aesthetics with a modern 3D engine. Build vast rail networks across an infinite world, manage a complex economy, and master the art of logistical efficiency.
+
+> 📜 **[Read the LeTrain Manifesto & Philosophy](docs/PHILOSOPHY.md) / [Leer el Manifiesto](docs/PHILOSOPHY.md)**  
+> *"Un juego para niños ingenieros e ingenieros niños: sin juguetes que juegan solos, con trenes reales y la sobriedad del teclado."*
 
 ---
 
@@ -108,6 +114,7 @@ A default `letrain.cfg` ships next to each launcher, so you can tweak the game w
 
 ## 🤝 Contributing
 Contributions are welcome! Bug reports, feature ideas, docs and code are all appreciated.
+- 📜 **Start by reading our [Design Philosophy & Manifesto](docs/PHILOSOPHY.md)** to understand the core soul, the 2D/3D symmetry, and the non-negotiables of LeTrain.
 - Read **[CONTRIBUTING.md](CONTRIBUTING.md)** for the build/test and PR workflow.
 - [Open an issue](https://github.com/antoniovazquezaraujo/LeTrain/issues/new/choose) for a bug or a feature request.
 - For code, branch from `develop` (`feature/...` / `fix/...`), keep the PR focused, and make sure `mvn clean test` passes.

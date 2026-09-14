@@ -3,6 +3,7 @@
 Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñada para ser navegada en Obsidian, aprovechando los enlaces bidireccionales entre sistemas.
 
 ## 🏗️ Arquitectura y Diseño
+- [[../PHILOSOPHY|Manifiesto y Filosofía de Diseño]]
 - [[architecture/Overview|Visión General del Sistema (MVP & Visitor)]]
 - [[adr/ADR-001-Implementacion-MVP|ADR-001: Por qué usamos MVP]]
 - [[adr/ADR-006-Symmetry-in-Presenters|ADR-006: Simetría en Presentadores y Vistas]]
