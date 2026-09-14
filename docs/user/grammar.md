@@ -70,7 +70,7 @@ Responds to game events in real-time.
 You can type these commands directly into the CLI to manage the game state, cursor, and files.
 
 **Game State & Files:**
-- `save [filename];` / `load [filename];` - Save or load a map (a savegame: the current *state*).
+- `save [filename];` / `load [filename];` - Save or load a map (a savegame: the current *state*). If the name is a reserved word (e.g. `speed`, `train`, `station`), quote it: `save "speed";`.
 - `export [filename];` / `import [filename];` - Export or import a scenario (a `.ltr` *recipe*; see **[scenarios.md](scenarios.md)**).
 - `quit;` or `q` - Exit the game.
 

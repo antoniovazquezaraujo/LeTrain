@@ -70,7 +70,7 @@ Responde a eventos del juego en tiempo real.
 Puedes teclear estos comandos directamente en el CLI para gestionar el estado del juego, el cursor y los archivos.
 
 **Estado del Juego y Archivos:**
-- `save [archivo];` / `load [archivo];` - Guardar o cargar un mapa (partida guardada: el *estado* actual).
+- `save [archivo];` / `load [archivo];` - Guardar o cargar un mapa (partida guardada: el *estado* actual). Si el nombre es una palabra reservada (p. ej. `speed`, `train`, `station`), ponlo entre comillas: `save "speed";`.
 - `export [archivo];` / `import [archivo];` - Exportar o importar un escenario (una *receta* `.ltr`; ver **[scenarios_es.md](scenarios_es.md)**).
 - `quit;` o `q` - Salir del juego.
 
