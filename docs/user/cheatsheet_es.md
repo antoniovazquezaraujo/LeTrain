@@ -1,4 +1,6 @@
-# LeTrain CLI Cheat Sheet
+[🇬🇧 Read in English](cheatsheet.md)
+
+# LeTrain - Chuleta Rápida de Comandos CLI
 
 ---
 
@@ -81,13 +83,15 @@ Si no se incluye una distancia después de un giro, se avanza por defecto un pas
 | `del <entidad> <id>;` | Borra una entidad (estaciones, semáforos, etc) dejando la vía intacta. | `del sm 1;` |
 | `clear <entidad> <id>;` | Borra un tren o vagón por su ID. | `clear tr 1;` |
 
---
-- 
-Colores:
-`red, green, blue, yellow, black, white, orange, purple, gray, brown`
+---
 
-Tipos:
-`coal, gold, ruby`
+> **Colores disponibles**:
+> `red`, `green`, `blue`, `yellow`, `black`, `white`, `orange`, `purple`, `gray`, `brown`
+>
+> **Tipos de mercancía**:
+> `coal`, `gold`, `ruby`
+
+---
 
 ## 6. Control Directo de Infraestructura
 
