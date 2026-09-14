@@ -1123,7 +1123,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitSaveCommand(PlayerCommandsParser.SaveCommandContext ctx) {
         String filename = "quicksave.json";
         if (ctx.identifier() != null) {
-            filename = withDefaultExtension(unquote(ctx.identifier().getText()));
+            filename = FileNames.withSavegameExtension(unquote(ctx.identifier().getText()));
         }
         if (onSave != null) {
             onSave.accept(new java.io.File(filename));
@@ -1137,7 +1137,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitLoadCommand(PlayerCommandsParser.LoadCommandContext ctx) {
         String filename = "quicksave.json";
         if (ctx.identifier() != null) {
-            filename = withDefaultExtension(unquote(ctx.identifier().getText()));
+            filename = FileNames.withSavegameExtension(unquote(ctx.identifier().getText()));
         }
         if (onLoad != null) {
             onLoad.accept(new java.io.File(filename));
@@ -1156,7 +1156,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     "Cannot export: nothing recorded yet (toggle Record/edit mode with 'R' and edit).");
         }
         String filename = ctx.identifier() != null
-                ? withScenarioExtension(unquote(ctx.identifier().getText()))
+                ? FileNames.withScenarioExtension(unquote(ctx.identifier().getText()))
                 : "scenario" + ScenarioFile.EXTENSION;
         if (onExport == null) {
             throw new RuntimeException("Export not supported in this context.");
@@ -1169,37 +1169,13 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitImportCommand(PlayerCommandsParser.ImportCommandContext ctx) {
         toggledRecording = true;
         String filename = ctx.identifier() != null
-                ? withScenarioExtension(unquote(ctx.identifier().getText()))
+                ? FileNames.withScenarioExtension(unquote(ctx.identifier().getText()))
                 : "scenario" + ScenarioFile.EXTENSION;
         if (onImport == null) {
             throw new RuntimeException("Import not supported in this context.");
         }
         onImport.accept(new java.io.File(filename));
         return null;
-    }
-
-    /** Appends the scenario extension ({@code .ltr}) only when the name has none. */
-    private static String withScenarioExtension(String filename) {
-        if (filename == null || filename.isEmpty()) {
-            return "scenario" + ScenarioFile.EXTENSION;
-        }
-        int slash = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'));
-        String name = slash >= 0 ? filename.substring(slash + 1) : filename;
-        return name.contains(".") ? filename : filename + ScenarioFile.EXTENSION;
-    }
-
-    /**
-     * Appends the default savegame extension ({@code .json}) only when the name has none, so a
-     * scenario name like {@code mi-red.ltr} is respected instead of being turned into
-     * {@code mi-red.ltr.json}.
-     */
-    private static String withDefaultExtension(String filename) {
-        if (filename == null || filename.isEmpty()) {
-            return "quicksave.json";
-        }
-        int slash = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'));
-        String name = slash >= 0 ? filename.substring(slash + 1) : filename;
-        return name.contains(".") ? filename : filename + ".json";
     }
 
     private static String unquote(String text) {
