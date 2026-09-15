@@ -36,6 +36,8 @@ public class CameraController {
 
     // Estado de cámara CAB
     private final Vector2 currentCabDirection = new Vector2(0, 1);
+    private boolean cabSnapNeeded = true;
+    private Locomotive lastCabLocomotive = null;
 
     public CameraController(Model model) {
         this.model = model;
@@ -50,7 +52,7 @@ public class CameraController {
         camTarget.set(startPos.getX() + 0.5f, 0, startPos.getY() + 0.5f);
         cam.position.set(startPos.getX() + 20f, 20f, startPos.getY() + 20f);
         cam.lookAt(camTarget);
-        cam.near = 1f;
+        cam.near = 0.2f;
         cam.far = 1000f;
         cam.update();
         return cam;
@@ -63,6 +65,7 @@ public class CameraController {
     public void forceSnap() {
         this.lastCameraSnapSignal = null;
         this.lastCameraSnapSemaphore = null;
+        this.cabSnapNeeded = true;
     }
 
     /**
@@ -81,6 +84,9 @@ public class CameraController {
     }
 
     public void setMode(CameraMode mode) {
+        if (this.cameraMode != mode) {
+            this.cabSnapNeeded = true;
+        }
         this.cameraMode = mode;
     }
 
@@ -92,6 +98,7 @@ public class CameraController {
         } else {
             cameraMode = CameraMode.ORBIT;
         }
+        this.cabSnapNeeded = true;
     }
 
     public void rotateOrbit(float deltaDegrees) {
@@ -243,7 +250,13 @@ public class CameraController {
             float dz = PathGeometry.getDirZ(dir);
 
             Vector2 targetDir = new Vector2(dx, dz);
-            currentCabDirection.lerp(targetDir, 0.05f).nor();
+            if (cabSnapNeeded || loco != lastCabLocomotive) {
+                currentCabDirection.set(targetDir).nor();
+                lastCabLocomotive = loco;
+                cabSnapNeeded = false;
+            } else {
+                currentCabDirection.lerp(targetDir, 0.15f).nor();
+            }
 
             float smoothDx = currentCabDirection.x;
             float smoothDz = currentCabDirection.y;

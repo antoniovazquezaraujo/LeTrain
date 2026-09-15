@@ -230,16 +230,8 @@ public class Gdx3DRenderer implements Visitor {
                 t.accept(infrastructureRenderer);
             }
         });
-        model.getWagons().forEach(t -> {
-            if (isVisible(t.getPosition())) {
-                t.accept(vehicleRenderer);
-            }
-        });
-        model.getLocomotives().forEach(t -> {
-            if (isVisible(t.getPosition())) {
-                t.accept(vehicleRenderer);
-            }
-        });
+        model.getWagons().forEach(t -> t.accept(vehicleRenderer));
+        model.getLocomotives().forEach(t -> t.accept(vehicleRenderer));
         model.getStations().forEach(t -> {
             if (isVisible(t.getPosition())) {
                 t.accept(infrastructureRenderer);
