@@ -13,6 +13,8 @@ Este proyecto usa un equipo de agentes definido en `.opencode/agents/`:
 
 **IMPORTANTE: Al iniciar cada sesión, lee TODOS los ficheros en `instructions/`.** Contienen las directrices del proyecto (coding standards, build commands, estructura, convenciones) que deben aplicarse a todo el código.
 
+**IMPORTANTE: Al iniciar cada sesión, lee `CONTRIBUTING.md`.** Define el flujo Git del proyecto: ramas `feature/...` o `fix/...` desde `develop`, **PROHIBIDO commitear directamente a `develop`** (está protegida), PRs en inglés y `mvn clean test` en verde antes de abrir o actualizar un PR.
+
 ## Estructura del Proyecto
 
 ```
@@ -72,6 +74,7 @@ Siempre usar el formato `NOMBRE: respuesta` al presentar resultados al usuario.
 ## Reglas Generales
 
 - **NUNCA** inventar respuestas técnicas que correspondan a un experto
+- **NUNCA** commitear directamente a `develop`: siempre rama `feature/...` o `fix/...` + PR
 - **SIEMPRE** leer los ficheros de agentes antes de actuar
 - **PRIORIZAR** código limpio y mantenible sobre soluciones clever
 - **EXPLICAR** el "por qué" detrás de cada decisión técnica
