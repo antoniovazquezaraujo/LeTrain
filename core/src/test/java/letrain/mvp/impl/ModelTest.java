@@ -14,6 +14,7 @@ import letrain.track.SpeedSignal;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -60,13 +61,13 @@ class ModelTest {
     @Test
     @DisplayName("should add and remove locomotives and update selection")
     void should_ManageLocomotivesAndSelection_When_AddedAndRemoved() {
-        letrain.vehicle.rail.impl.Train train1 = new letrain.vehicle.rail.impl.Train(1);
+        Train train1 = new Train(1);
         Locomotive loco1 = new Locomotive(1, 'A');
         train1.pushBack(loco1);
         train1.setDirectorLinker(loco1);
         train1.rebind();
 
-        letrain.vehicle.rail.impl.Train train2 = new letrain.vehicle.rail.impl.Train(2);
+        Train train2 = new Train(2);
         Locomotive loco2 = new Locomotive(2, 'B');
         train2.pushBack(loco2);
         train2.setDirectorLinker(loco2);
@@ -88,6 +89,19 @@ class ModelTest {
         model.removeLocomotive(loco1);
         assertEquals(1, model.getLocomotives().size());
         assertNull(model.getSelectedLocomotive());
+    }
+
+    @Test
+    @DisplayName("should return false and not hang when selecting locomotive without director linker")
+    void should_ReturnFalseAndNotHang_When_NoLocomotiveIsDirectorLinker() {
+        Locomotive unlinkedLoco1 = new Locomotive(10, 'X');
+        Locomotive unlinkedLoco2 = new Locomotive(20, 'Y');
+        // Neither locomotive has a directorLinker set (isDirectorLinker() == false)
+        model.addLocomotive(unlinkedLoco1);
+        model.addLocomotive(unlinkedLoco2);
+
+        assertFalse(model.selectNextLocomotive());
+        assertFalse(model.selectPrevLocomotive());
     }
 
     @Test

@@ -15,8 +15,8 @@ import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 
 /**
- * Service responsible for moving track elements (stations, sensors, signals) along rails
- * and computing industrial roles from ground terrain.
+ * Service responsible for moving track elements (stations, sensors, signals) along rails and
+ * computing industrial roles from ground terrain.
  */
 @JsonIgnoreType
 public final class TrackElementMovementService {
@@ -36,7 +36,8 @@ public final class TrackElementMovementService {
         }
         relocateSensor(sensor, origin, result.destination);
         if (sensor instanceof Station) {
-            applyStationRoleByIndustry(model.getGroundMap(), (Station) sensor, result.destination.getPosition());
+            applyStationRoleByIndustry(model.getGroundMap(), (Station) sensor,
+                    result.destination.getPosition());
         }
         model.setMapChanged(true);
         return true;
@@ -58,7 +59,8 @@ public final class TrackElementMovementService {
         relocateSensor(sensor, origin, result.destination);
         sensor.setCreationDir(continuationDir(result.destination, result.heading));
         if (sensor instanceof Station) {
-            applyStationRoleByIndustry(model.getGroundMap(), (Station) sensor, result.destination.getPosition());
+            applyStationRoleByIndustry(model.getGroundMap(), (Station) sensor,
+                    result.destination.getPosition());
         }
         model.setMapChanged(true);
         return true;
@@ -84,7 +86,8 @@ public final class TrackElementMovementService {
         relocateSensor(sensor, origin, result.destination);
         sensor.setCreationDir(result.heading.inverse());
         if (sensor instanceof Station) {
-            applyStationRoleByIndustry(model.getGroundMap(), (Station) sensor, result.destination.getPosition());
+            applyStationRoleByIndustry(model.getGroundMap(), (Station) sensor,
+                    result.destination.getPosition());
         }
         model.setMapChanged(true);
         return true;
@@ -96,11 +99,20 @@ public final class TrackElementMovementService {
         destination.setComponent(sensor);
     }
 
+    /**
+     * Direction the element should keep facing after landing on {@code destination} having stepped
+     * into it along {@code arrivalDir}, so it can keep moving forward along the rail (rotates
+     * through curves and forks that turn).
+     */
     public static Dir continuationDir(Track destination, Dir arrivalDir) {
         Dir exit = destination.getDir(arrivalDir.inverse());
         return exit != null ? exit : arrivalDir;
     }
 
+    /**
+     * Rail end opposite to the facing direction {@code front} on {@code track}, used to move the
+     * element backward. Returns null when the element cannot go back (no rail behind it).
+     */
     public static Dir backEndDir(Track track, Dir front) {
         List<Dir> connected = track.getConnections();
         if (connected.contains(front)) {
@@ -115,7 +127,18 @@ public final class TrackElementMovementService {
         return track.getConnected(opposite) != null ? opposite : null;
     }
 
-    public static MoveResult findMoveDestination(Track origin, Dir dir) {
+    /**
+     * Scans ahead from {@code origin} in {@code dir} looking for the first free resting cell.
+     *
+     * <p>
+     * A {@link ForkRailTrack} is a routing node: it is crossed (never a resting place) following
+     * its currently active branch. A cell occupied by another track component is jumped over, but a
+     * cell occupied by a train linker aborts the whole move. Returns {@code null} when there is no
+     * reachable resting cell. The returned {@link MoveResult} also carries the heading that was
+     * used to step into the destination, so callers can keep the element orientation aligned with
+     * the rail (important when the path turned at a curve or fork).
+     */
+    private static MoveResult findMoveDestination(Track origin, Dir dir) {
         Track cursor = origin;
         Dir heading = dir;
         Set<Track> visited = new HashSet<>();
@@ -149,7 +172,8 @@ public final class TrackElementMovementService {
         }
     }
 
-    public static void applyStationRoleByIndustry(GroundMap groundMap, Station station, Point position) {
+    public static void applyStationRoleByIndustry(GroundMap groundMap, Station station,
+            Point position) {
         if (groundMap == null) {
             return;
         }
@@ -181,7 +205,8 @@ public final class TrackElementMovementService {
         return CargoTypes.NONE;
     }
 
-    public static CargoTypes.StationRole getStationGhostRole(GroundMap groundMap, Point cursorPosition) {
+    public static CargoTypes.StationRole getStationGhostRole(GroundMap groundMap,
+            Point cursorPosition) {
         if (groundMap == null || cursorPosition == null) {
             return CargoTypes.StationRole.GENERIC;
         }

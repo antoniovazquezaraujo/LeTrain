@@ -28,10 +28,9 @@ public final class ModelReportService {
     private ModelReportService() {}
 
     public static List<GameModeMenuOption> createMenuModel(Model model) {
-        return Arrays.asList(
-                new GameModeMenuOption("&Rails",
-                        "[⏴⏵⏶⏷/hjkl]:Move [Shift]:Add rail [Ctrl]:Remove rail [Ins]:Add sensor [Home]:Add sem [Del]:Add speed [End]:Add station [#]:Steps [Space]:Reset steps",
-                        () -> true, () -> (model.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
+        return Arrays.asList(new GameModeMenuOption("&Rails",
+                "[⏴⏵⏶⏷/hjkl]:Move [Shift]:Add rail [Ctrl]:Remove rail [Ins]:Add sensor [Home]:Add sem [Del]:Add speed [End]:Add station [#]:Steps [Space]:Reset steps",
+                () -> true, () -> (model.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
                 new GameModeMenuOption("&Add",
                         "[n]:Station [e]:Sensor [s]:Semaphore [g]:Speed Signal", () -> true,
                         () -> model.getMode() == GameMode.ADD, () -> GameMode.ADD),
@@ -104,8 +103,8 @@ public final class ModelReportService {
                         .append("\n");
                 if (!train.getSafetyManager().hasPermissionToMove()
                         && train.getSafetyManager().getNextSegment() != null) {
-                    List<Train> blockers =
-                            model.getBlockManager().getOwners(train.getSafetyManager().getNextSegment());
+                    List<Train> blockers = model.getBlockManager()
+                            .getOwners(train.getSafetyManager().getNextSegment());
                     sb.append("  Permission: WAITING (Blocked by: ");
                     if (blockers.isEmpty()) {
                         sb.append("Logic/Retry Timer");
@@ -116,8 +115,8 @@ public final class ModelReportService {
                     }
                     sb.append(")\n");
                 } else {
-                    sb.append("  Permission: ")
-                            .append(train.getSafetyManager().hasPermissionToMove() ? "GRANTED" : "WAITING")
+                    sb.append("  Permission: ").append(
+                            train.getSafetyManager().hasPermissionToMove() ? "GRANTED" : "WAITING")
                             .append("\n");
                 }
 

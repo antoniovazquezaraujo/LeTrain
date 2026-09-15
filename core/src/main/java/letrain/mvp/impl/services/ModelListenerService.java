@@ -16,8 +16,8 @@ import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 
 /**
- * Encapsulates the registration and re-establishment of system event listeners
- * for sensors, forks, stations, semaphores, and trains.
+ * Encapsulates the registration and re-establishment of system event listeners for sensors, forks,
+ * stations, semaphores, and trains.
  */
 @JsonIgnoreType
 public final class ModelListenerService {
@@ -29,13 +29,14 @@ public final class ModelListenerService {
         sensor.addSystemSensorEventListener(new SensorEventListener() {
             @Override
             public void onEnterTrain(Train train, boolean isForward) {
-                model.getEventLogManager().addEntry("Train " + train.getId() + " entered Sensor " + id
-                        + (isForward ? " (forward)" : " (backward)"));
+                model.getEventLogManager().addEntry("Train " + train.getId() + " entered Sensor "
+                        + id + (isForward ? " (forward)" : " (backward)"));
             }
 
             @Override
             public void onExitTrain(Train train, boolean isForward) {
-                model.getEventLogManager().addEntry("Train " + train.getId() + " exited Sensor " + id);
+                model.getEventLogManager()
+                        .addEntry("Train " + train.getId() + " exited Sensor " + id);
             }
         });
     }
@@ -51,7 +52,8 @@ public final class ModelListenerService {
 
             @Override
             public void onDirectionChanged(boolean normal) {
-                model.getEventLogManager().addEntry("Fork " + id + " set to " + (normal ? "Normal" : "Alternative"));
+                model.getEventLogManager()
+                        .addEntry("Fork " + id + " set to " + (normal ? "Normal" : "Alternative"));
                 if (model.getLocomotives() != null) {
                     for (Locomotive loco : model.getLocomotives()) {
                         if (loco.getTrain() != null) {
@@ -63,7 +65,8 @@ public final class ModelListenerService {
 
             @Override
             public void onExitTrain(Train train, boolean isForward) {
-                model.getEventLogManager().addEntry("Train " + train.getId() + " exited Fork " + id);
+                model.getEventLogManager()
+                        .addEntry("Train " + train.getId() + " exited Fork " + id);
             }
         });
     }
@@ -83,13 +86,14 @@ public final class ModelListenerService {
 
             @Override
             public void onEnterTrain(Train train, boolean isForward) {
-                model.getEventLogManager().addEntry("Train " + train.getId() + " entered Semaphore " + id
-                        + (isForward ? " (forward)" : " (backward)"));
+                model.getEventLogManager().addEntry("Train " + train.getId() + " entered Semaphore "
+                        + id + (isForward ? " (forward)" : " (backward)"));
             }
 
             @Override
             public void onExitTrain(Train train, boolean isForward) {
-                model.getEventLogManager().addEntry("Train " + train.getId() + " exited Semaphore " + id);
+                model.getEventLogManager()
+                        .addEntry("Train " + train.getId() + " exited Semaphore " + id);
             }
         });
     }
@@ -99,12 +103,14 @@ public final class ModelListenerService {
         station.addSystemStationEventListener(new StationEventListener() {
             @Override
             public void onEnterTrain(Train train, boolean isForward) {
-                model.getEventLogManager().addEntry("Train " + train.getId() + " entered Station " + id);
+                model.getEventLogManager()
+                        .addEntry("Train " + train.getId() + " entered Station " + id);
             }
 
             @Override
             public void onExitTrain(Train train, boolean isForward) {
-                model.getEventLogManager().addEntry("Train " + train.getId() + " exited Station " + id);
+                model.getEventLogManager()
+                        .addEntry("Train " + train.getId() + " exited Station " + id);
             }
 
             @Override
@@ -115,22 +121,26 @@ public final class ModelListenerService {
 
             @Override
             public void onStartLoad(Train train) {
-                model.getEventLogManager().addEntry("Train " + train.getId() + " starting Load at Station " + id);
+                model.getEventLogManager()
+                        .addEntry("Train " + train.getId() + " starting Load at Station " + id);
             }
 
             @Override
             public void onEndLoad(Train train) {
-                model.getEventLogManager().addEntry("Train " + train.getId() + " ended Load at Station " + id);
+                model.getEventLogManager()
+                        .addEntry("Train " + train.getId() + " ended Load at Station " + id);
             }
 
             @Override
             public void onStartUnload(Train train) {
-                model.getEventLogManager().addEntry("Train " + train.getId() + " starting Unload at Station " + id);
+                model.getEventLogManager()
+                        .addEntry("Train " + train.getId() + " starting Unload at Station " + id);
             }
 
             @Override
             public void onEndUnload(Train train) {
-                model.getEventLogManager().addEntry("Train " + train.getId() + " ended Unload at Station " + id);
+                model.getEventLogManager()
+                        .addEntry("Train " + train.getId() + " ended Unload at Station " + id);
             }
         });
     }
@@ -145,7 +155,8 @@ public final class ModelListenerService {
 
             @Override
             public void onContact(Train train, Point pos, int speed) {
-                model.getEventLogManager().addEntry("Train " + train.getId() + " contact (speed=" + speed + ")");
+                model.getEventLogManager()
+                        .addEntry("Train " + train.getId() + " contact (speed=" + speed + ")");
             }
 
             @Override

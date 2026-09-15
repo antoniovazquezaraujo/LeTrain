@@ -2,7 +2,6 @@ package letrain.mvp.impl.services;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import java.util.List;
-import java.util.stream.Collectors;
 import letrain.mvp.impl.Model;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
@@ -12,8 +11,8 @@ import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.rail.impl.Locomotive;
 
 /**
- * Handles navigation and selection state for entities in the game model
- * (locomotives, forks, stations, semaphores, speed signals, and sensors).
+ * Handles navigation and selection state for entities in the game model (locomotives, forks,
+ * stations, semaphores, speed signals, and sensors).
  */
 @JsonIgnoreType
 public final class ModelSelectionService {
@@ -213,10 +212,8 @@ public final class ModelSelectionService {
     // ── SpeedSignal Selection ────────────────────────────────────────
 
     public static List<SpeedSignal> getSpeedSignals(Model model) {
-        return model.getSensors().stream()
-                .filter(s -> s instanceof SpeedSignal)
-                .map(s -> (SpeedSignal) s)
-                .collect(Collectors.toList());
+        return model.getSensors().stream().filter(s -> s instanceof SpeedSignal)
+                .map(s -> (SpeedSignal) s).toList();
     }
 
     public static boolean selectSpeedSignal(Model model, int id) {
@@ -271,9 +268,8 @@ public final class ModelSelectionService {
     }
 
     public static boolean selectNextSensor(Model model) {
-        List<Sensor> pureSensors = model.getSensors().stream()
-                .filter(s -> s.getClass() == Sensor.class)
-                .collect(Collectors.toList());
+        List<Sensor> pureSensors =
+                model.getSensors().stream().filter(s -> s.getClass() == Sensor.class).toList();
         if (pureSensors.isEmpty()) {
             return false;
         }
@@ -292,9 +288,8 @@ public final class ModelSelectionService {
     }
 
     public static boolean selectPrevSensor(Model model) {
-        List<Sensor> pureSensors = model.getSensors().stream()
-                .filter(s -> s.getClass() == Sensor.class)
-                .collect(Collectors.toList());
+        List<Sensor> pureSensors =
+                model.getSensors().stream().filter(s -> s.getClass() == Sensor.class).toList();
         if (pureSensors.isEmpty()) {
             return false;
         }

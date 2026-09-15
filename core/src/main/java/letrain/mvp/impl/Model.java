@@ -3,10 +3,7 @@ package letrain.mvp.impl;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -25,7 +22,6 @@ import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
-import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Cursor;
@@ -1104,7 +1100,8 @@ public class Model implements letrain.mvp.Model {
     @JsonIgnore
     @Override
     public CargoTypes getStationGhostCargoType() {
-        return TrackElementMovementService.getStationGhostCargoType(groundMap, cursor.getPosition());
+        return TrackElementMovementService.getStationGhostCargoType(groundMap,
+                cursor.getPosition());
     }
 
     @JsonIgnore
