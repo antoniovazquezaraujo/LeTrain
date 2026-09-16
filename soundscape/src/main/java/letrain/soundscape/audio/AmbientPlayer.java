@@ -31,8 +31,8 @@ public class AmbientPlayer implements AutoCloseable {
     private static final float SAMPLE_RATE = 44100f;
     private static final int BUFFER_FRAMES = 1024;
     private static final float MIN_VOLUME = 0.005f;
-    /** Headroom before the soft limiter, so a busy mix does not distort. */
-    private static final float MASTER_GAIN = 0.8f;
+    /** Master gain; the soft limiter smooths any busy mix on top. */
+    private static final float MASTER_GAIN = 1.0f;
 
     private final Map<String, SoundSample> samples = new LinkedHashMap<>();
     private final List<String> missingSounds = new ArrayList<>();
@@ -145,7 +145,7 @@ public class AmbientPlayer implements AutoCloseable {
             }
             float volume = entry.getValue() == null ? 0f : entry.getValue();
             AmbientVoice voice =
-                    voices.computeIfAbsent(entry.getKey(), key -> new AmbientVoice(sample, random));
+                    voices.computeIfAbsent(entry.getKey(), key -> new AmbientVoice(sample));
             voice.setTarget(volume > MIN_VOLUME ? volume : 0f);
         }
         for (Iterator<Map.Entry<String, AmbientVoice>> it = voices.entrySet().iterator(); it

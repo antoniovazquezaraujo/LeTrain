@@ -33,9 +33,11 @@ public class SampleLoader {
             float sum = 0f;
             for (int channel = 0; channel < channels; channel++) {
                 int index = frame * frameSize + channel * 2;
-                int low = bytes[index] & 0xFF;
-                int high = bytes[index + 1] & 0xFF;
-                short value = (short) (bigEndian ? (high << 8) | low : (low << 8) | high);
+                // Little-endian PCM stores the least significant byte first; big-endian the
+                // opposite.
+                int first = bytes[index] & 0xFF;
+                int second = bytes[index + 1] & 0xFF;
+                short value = (short) (bigEndian ? (first << 8) | second : (second << 8) | first);
                 sum += value / 32768f;
             }
             mono[frame] = sum / channels;

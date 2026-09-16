@@ -40,8 +40,16 @@ class AmbientPlayerMixTest {
                 limitedPeak = Math.max(limitedPeak, Math.abs(AmbientPlayer.masterSample(value)));
             }
         }
-        assertTrue(rawPeak > 1.0f, "test should exercise a hot mix, raw peak was " + rawPeak);
+        assertTrue(rawPeak > 0.15f, "test should exercise the mix, raw peak was " + rawPeak);
         assertTrue(limitedPeak < 0.999f,
                 "the soft limiter must keep samples below full scale, was " + limitedPeak);
+    }
+
+    @Test
+    @DisplayName("the soft limiter compresses over-range samples instead of clipping")
+    void should_Compress_When_SampleExceedsFullScale() {
+        assertTrue(AmbientPlayer.masterSample(3f) < 0.999f);
+        assertTrue(AmbientPlayer.masterSample(-3f) > -0.999f);
+        assertTrue(AmbientPlayer.masterSample(0.2f) > 0.15f);
     }
 }

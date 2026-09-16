@@ -3,7 +3,6 @@ package letrain.soundscape.audio;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +33,7 @@ class AmbientVoiceTest {
     @Test
     @DisplayName("fades in and reaches the target volume")
     void should_FadeIn_When_TargetIsSet() {
-        AmbientVoice voice = new AmbientVoice(tone(44100), new Random(1));
+        AmbientVoice voice = new AmbientVoice(tone(44100));
         voice.setTarget(0.5f);
 
         float first = renderMax(voice, new float[FRAMES]);
@@ -48,9 +47,9 @@ class AmbientVoiceTest {
     }
 
     @Test
-    @DisplayName("keeps looping with bounded output past the sample end")
-    void should_LoopAndStayBounded() {
-        AmbientVoice voice = new AmbientVoice(tone(4410), new Random(2));
+    @DisplayName("loops the whole sample with bounded output")
+    void should_LoopWholeSample_When_ReachingTheEnd() {
+        AmbientVoice voice = new AmbientVoice(tone(4410));
         voice.setTarget(0.5f);
 
         for (int i = 0; i < 50; i++) {
@@ -60,21 +59,9 @@ class AmbientVoiceTest {
     }
 
     @Test
-    @DisplayName("jumps between random offsets on long samples without escaping the range")
-    void should_JumpAndStayBounded_When_SampleIsLong() {
-        AmbientVoice voice = new AmbientVoice(tone(8 * 44100), new Random(4));
-        voice.setTarget(0.5f);
-
-        for (int i = 0; i < 400; i++) {
-            float max = renderMax(voice, new float[FRAMES]);
-            assertTrue(max <= 0.51f, "crossfaded jumps must stay bounded, was " + max);
-        }
-    }
-
-    @Test
     @DisplayName("becomes finished after fading out")
     void should_Finish_When_TargetRemoved() {
-        AmbientVoice voice = new AmbientVoice(tone(44100), new Random(3));
+        AmbientVoice voice = new AmbientVoice(tone(44100));
         voice.setTarget(0.5f);
         for (int i = 0; i < 50; i++) {
             renderMax(voice, new float[FRAMES]);
