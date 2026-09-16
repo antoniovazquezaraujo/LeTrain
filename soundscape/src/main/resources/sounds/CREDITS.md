@@ -5,7 +5,7 @@ Todos los efectos de audio utilizados por el motor `soundscape` y `core` de LeTr
 | Archivo | Sonido | Fuente / Título | Autor / Licencia |
 |---|---|---|---|
 | `sea/waves-01.wav` | waves | [Sea waves](https://upload.wikimedia.org/wikipedia/commons/8/84/Sea_waves.wav) | Wikimedia Commons contributor (CC-BY-SA 3.0) |
-| `sea/seagull-01.wav` | seagull | [European Herring Gull (Larus argentatus)](https://upload.wikimedia.org/wikipedia/commons/5/5c/XC707075_-_European_Herring_Gull_-_Larus_argentatus.mp3) | Xeno-canto XC707075 (CC-BY-NC-SA 4.0 / CC-BY) |
+| `sea/seagull-01.wav` | seagull | [Ring-billed Gull (Larus delawarensis)](https://xeno-canto.org/75111) | Jonathon Jongsma, XC75111 (CC BY-SA 3.0) |
 | `field/cicada-01.wav` | cicada | [Cicada orni singing](https://upload.wikimedia.org/wikipedia/commons/a/a8/Cicada_orni.ogg) | Wikimedia Commons (CC-BY-SA 3.0) |
 | `field/cricket-01.wav` | cricket | [Field cricket (Gryllus campestris)](https://upload.wikimedia.org/wikipedia/commons/9/9c/Gryllus_campestris_-_sound.ogg) | Wikimedia Commons (CC-BY-SA 3.0) |
 | `field/dog-01.wav` | dog | [Barking of a dog](https://upload.wikimedia.org/wikipedia/commons/5/58/Barking_of_a_dog_2.ogg) | Wikimedia Commons (Public Domain / CC0) |
