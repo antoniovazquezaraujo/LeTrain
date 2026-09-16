@@ -18,6 +18,7 @@ cicadas           = field/cicada-*.wav
 crickets          = field/cricket-*.wav
 dogs              = field/dog-*.wav
 roosters          = field/rooster-*.wav
+birds             = field/birds-*.wav
 wind              = mountain/wind-*.wav
 hawks             = mountain/hawk-*.wav
 mine-machinery    = mine/extractor-*.wav
@@ -27,7 +28,7 @@ factory-machinery = factory/machine-*.wav
 # --- Zonas: solo listas de sonidos --------------------------
 [zones]
 sea          = waves, seagulls
-fields       = cicadas, crickets, dogs, roosters
+fields       = cicadas, crickets, dogs, roosters, birds
 mountain     = wind, hawks
 gold-mine    = mine-machinery, mine-thuds
 coal-mine    = mine-machinery, mine-thuds
@@ -44,6 +45,7 @@ cicadas           0.0 0.2 1.0 0.5 0.1 0.0 0.0
 crickets          0.1 0.0 0.0 0.0 0.5 0.8 0.9
 dogs              0.3 0.2 0.4 0.2 0.2 0.1 0.0
 roosters          0.9 0.2 0.0 0.0 0.0 0.0 0.1
+birds             0.9 0.7 0.4 0.5 0.7 0.0 0.2
 wind              0.4 0.3 0.3 0.4 0.5 0.5 0.4
 hawks             0.0 0.1 0.1 0.4 0.1 0.0 0.0
 mine-machinery    0.0 0.5 0.5 0.5 0.0 0.0 0.0
@@ -57,6 +59,7 @@ wind       +0.5
 waves      +0.4
 seagulls   +0.3
 dogs       +0.1
+birds      +0.1
 crickets   -0.8
 cicadas    -0.9
 
@@ -67,6 +70,7 @@ cicadas           -1.0 -0.4 -1.0
 crickets          -0.8 -0.2 -1.0
 seagulls          -0.7 +0.3 -1.0
 dogs               0.0  0.0 +0.2
+birds             -0.8 -0.3 -1.0
 waves              0.0 +0.4  0.0
 hawks             -0.5 +0.2 -1.0
 mine-machinery     0.0  0.0 -0.3
