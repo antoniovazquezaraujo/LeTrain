@@ -40,9 +40,20 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.5.0</version>
-                <configuration>
-                    <mainClass>letrain.soundscape.cli.SoundscapeCli</mainClass>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>cli</id>
+                        <configuration>
+                            <mainClass>letrain.soundscape.cli.SoundscapeCli</mainClass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>gui</id>
+                        <configuration>
+                            <mainClass>letrain.soundscape.gui.SoundscapePlayer</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

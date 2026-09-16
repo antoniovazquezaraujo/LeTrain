@@ -17,11 +17,11 @@ audio todavía** (cuando existan sonidos, el reproductor los podrá hacer sonar)
 mvn -pl soundscape test
 
 # Mezcla en un momento dado
-mvn -pl soundscape exec:java \
+mvn -pl soundscape exec:java@cli \
   -Dexec.args="--time 23:30 --zones sea=0.5,fields=0.7 --height 0.2 --weather drizzle"
 
 # Recorrido de un día completo
-mvn -pl soundscape exec:java \
+mvn -pl soundscape exec:java@cli \
   -Dexec.args="--day --zones gold-mine=0.7,fields=0.4 --weather clear"
 ```
 
@@ -34,11 +34,10 @@ Opciones: `--file`, `--time HH:mm`, `--zones zona=peso,...`, `--height 0..1`, `-
 sonido en vivo, botón de día completo y carga de estilos (`*.sound`).
 
 ```bash
-mvn -pl soundscape exec:java -Dexec.mainClass=letrain.soundscape.gui.SoundscapePlayer
+mvn -pl soundscape exec:java@gui
 
 # con un estilo concreto
-mvn -pl soundscape exec:java \
-  -Dexec.mainClass=letrain.soundscape.gui.SoundscapePlayer -Dexec.args="mi-estilo.sound"
+mvn -pl soundscape exec:java@gui -Dexec.args="mi-estilo.sound"
 ```
 
 ## Formato del estilo
