@@ -38,19 +38,16 @@ public class AudioController {
     }
 
     /**
-     * Apaga el motor reproduciendo primero el segmento 'stop' del WAV. Una vez finalizado el
-     * sonido, retira el sintetizador del mixer.
+     * Apaga el motor reproduciendo primero el segmento 'stop' del WAV. El sintetizador se retira
+     * del mixer desde {@link #update()} cuando termina el sonido de parada y no queda ninguna carga
+     * o descarga sonando; mientras haya una, sigue sonando solo el bucle de carga (issue #360).
      */
     public void stopEngineWithSound(int id, Locomotive loco) {
-        TrainSynthesizer synth = synthesizers.get(id);
-        if (synth == null) {
-            return;
-        }
         loco.setEngineOn(false); // <--- Inmediatamente apagamos el estado para evitar recreaciones
-        synthesizers.remove(id); // ya no recibe actualizaciones de throttle
-        synth.playStopSound(() -> {
-            mixer.removeSource(synth);
-        });
+        TrainSynthesizer synth = synthesizers.get(id);
+        if (synth != null && synth.isEngineRunning()) {
+            synth.playStopSound();
+        }
     }
 
     /** Enciende el motor de una locomotora (crea su sintetizador si no existe). */
@@ -60,13 +57,23 @@ public class AudioController {
     }
 
     public AudioController(Model model) {
-        this.model = model;
-        this.mixer = new AudioMixer();
+        this(model, new AudioMixer());
         loadSamples();
         // TrainSynthesizer handles its own resources now
         if (enabled) {
             mixer.start();
         }
+    }
+
+    /** Test seam: injects a mixer without starting the audio thread or loading samples. */
+    AudioController(Model model, AudioMixer mixer) {
+        this.model = model;
+        this.mixer = mixer;
+    }
+
+    /** Visible for tests: the synthesizer currently attached to a locomotive, or null. */
+    TrainSynthesizer getSynthesizer(int id) {
+        return synthesizers.get(id);
     }
 
     private void loadSamples() {
@@ -195,11 +202,22 @@ public class AudioController {
             }
 
             TrainSynthesizer synth = synthesizers.get(loco.getId());
+
+            // Paused editing (ADR-020): silence the whole synthesizer (loco, wagons, brakes, load)
+            // via its master gain and keep its internal state frozen so it resumes seamlessly.
+            if (synth != null) {
+                synth.setMasterVolume(worldPaused ? 0f : 1f);
+            }
+            if (worldPaused) {
+                continue;
+            }
+
+            if (!loco.isEngineOn()) {
+                updateEngineOffSynth(loco.getId(), loco, synth);
+                continue;
+            }
+
             if (synth == null) {
-                // Solo crear el synth si el motor está encendido (y el mundo no está pausado)
-                if (!loco.isEngineOn() || worldPaused) {
-                    continue;
-                }
                 synth = new TrainSynthesizer();
 
                 synth.addListener(new TrainSynthesizer.SynthesizerListener() {
@@ -225,13 +243,10 @@ public class AudioController {
                 // Add to mixer
                 mixer.addSource(synth);
                 synthesizers.put(loco.getId(), synth);
-            }
-
-            // Paused editing (ADR-020): silence the whole synthesizer (loco, wagons, brakes, load)
-            // via its master gain and keep its internal state frozen so it resumes seamlessly.
-            synth.setMasterVolume(worldPaused ? 0f : 1f);
-            if (worldPaused) {
-                continue;
+            } else {
+                // Engine switched back on: restart the engine voice if it was stopped or muted.
+                // A running load/unload loop is left untouched (issue #360).
+                synth.startAudio();
             }
 
             synth.update();
@@ -286,6 +301,32 @@ public class AudioController {
                 synth.setLoading(loco.getTrain().getLogisticsManager().isLoading());
             }
         }
+    }
+
+    /**
+     * Handles the synthesizer of a locomotive whose engine is off: plays the stop sound and keeps
+     * the synth alive while a load/unload process is still sounding, retiring it once there is
+     * nothing left to play (issue #360).
+     */
+    private void updateEngineOffSynth(int id, Locomotive loco, TrainSynthesizer synth) {
+        if (synth == null) {
+            return;
+        }
+        boolean loading =
+                loco.getTrain() != null && loco.getTrain().getLogisticsManager().isLoading();
+        synth.setLoading(loading);
+
+        if (synth.isEngineRunning()) {
+            // Engine turned off outside the 'm' key (e.g. a script): play the stop sound now.
+            synth.playStopSound();
+        }
+
+        if (synth.isStopping() || loading || synth.isLoadSoundActive()) {
+            synth.update();
+            return;
+        }
+        mixer.removeSource(synth);
+        synthesizers.remove(id);
     }
 
     /**

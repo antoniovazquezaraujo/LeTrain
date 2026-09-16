@@ -36,13 +36,12 @@ public class TrainSynthesizer implements AudioSource {
     private int targetNotchIndex = 0;
 
     private enum State {
-        OFF, STARTING, IDLE, CRUISING, TRANSITIONING_UP, TRANSITIONING_DOWN, STOPPING
+        OFF, STARTING, IDLE, CRUISING, TRANSITIONING_UP, TRANSITIONING_DOWN, STOPPING, LOAD_ONLY
     }
 
     private State state = State.OFF;
     private float stateTimer = 0.0f;
     private long lastUpdateTime = 0;
-    private Runnable onStopFinished;
     private float rampStartSpeed;
     private float rampTargetSpeed;
     private float rampDuration;
@@ -355,11 +354,13 @@ public class TrainSynthesizer implements AudioSource {
         if (!audioRunning) {
             return false;
         }
-        updateBrakeVolume();
-        locoEngine.read(buffer);
-        coachEngine.read(buffer);
-        if (brakeEngine != null) {
-            brakeEngine.read(buffer);
+        if (state != State.LOAD_ONLY) {
+            updateBrakeVolume();
+            locoEngine.read(buffer);
+            coachEngine.read(buffer);
+            if (brakeEngine != null) {
+                brakeEngine.read(buffer);
+            }
         }
         updateLoadVolume();
         if (loadEngine != null) {
@@ -415,10 +416,14 @@ public class TrainSynthesizer implements AudioSource {
     // =====================================================================
 
     public void startAudio() {
-        if (state != State.OFF) {
+        if (state != State.OFF && state != State.LOAD_ONLY && state != State.STOPPING) {
             return;
         }
+        // From STOPPING (engine restarted before the stop sound ended) or LOAD_ONLY (load still
+        // running): restart the engine voice while leaving the load loop untouched.
+        isStopping = false;
         audioRunning = true;
+        lastUpdateTime = 0;
 
         if (startSegEnd > startSegStart && sharedSample != null) {
             log.info("Starting engine engine: sequence [{}, {}]", startSegStart, startSegEnd);
@@ -449,24 +454,21 @@ public class TrainSynthesizer implements AudioSource {
         coachEngine.setVolume(0f);
     }
 
-    /** Reproduce el segmento STOP una vez y luego llama a onFinished. */
-    public void playStopSound(Runnable onFinished) {
+    /** Reproduce el segmento STOP una vez; el controller retira el synth cuando termina. */
+    public void playStopSound() {
         if (state == State.STOPPING) {
             return;
         }
         if (stopSegEnd <= stopSegStart || sharedSample == null) {
             audioRunning = false;
             state = State.OFF;
-            if (onFinished != null) {
-                onFinished.run();
-            }
             return;
         }
 
         isStopping = true;
         state = State.STOPPING;
         stateTimer = (float) (stopSegEnd - stopSegStart);
-        this.onStopFinished = onFinished;
+        lastUpdateTime = 0;
 
         log.info("Stopping engine: segment [{}, {}]", stopSegStart, stopSegEnd);
 
@@ -598,6 +600,27 @@ public class TrainSynthesizer implements AudioSource {
         return engineStarting;
     }
 
+    /** True while the engine stop sound is playing, before the synth reaches {@code OFF}. */
+    public boolean isStopping() {
+        return isStopping;
+    }
+
+    /** True while only the load/unload loop is sounding (engine off, load still running). */
+    public boolean isLoadOnly() {
+        return state == State.LOAD_ONLY;
+    }
+
+    /** True while the engine voice is running, starting or transitioning. */
+    public boolean isEngineRunning() {
+        return state == State.STARTING || state == State.IDLE || state == State.CRUISING
+                || state == State.TRANSITIONING_UP || state == State.TRANSITIONING_DOWN;
+    }
+
+    /** True while the load loop is audible (volume above zero). */
+    public boolean isLoadSoundActive() {
+        return loadEngine != null && loadEngine.getVolume() > 0f;
+    }
+
     public boolean isTransitioning() {
         return state == State.TRANSITIONING_UP || state == State.TRANSITIONING_DOWN;
     }
@@ -611,7 +634,7 @@ public class TrainSynthesizer implements AudioSource {
      * usa cuando un tren choca o llega a un fin de vía.
      */
     public synchronized void forceIdle() {
-        if (state == State.OFF || state == State.STOPPING) {
+        if (state == State.OFF || state == State.STOPPING || state == State.LOAD_ONLY) {
             return;
         }
 
@@ -628,7 +651,7 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     public synchronized void setThrottle(int index) {
-        if (state == State.STOPPING || state == State.STARTING) {
+        if (state == State.STOPPING || state == State.STARTING || state == State.LOAD_ONLY) {
             return;
         }
         if (index < 0 || index >= notches.length) {
@@ -682,6 +705,22 @@ public class TrainSynthesizer implements AudioSource {
         float deltaTime = (now - lastUpdateTime) / 1_000_000_000.0f;
         lastUpdateTime = now;
 
+        updateState(deltaTime, now);
+    }
+
+    /**
+     * Advances the state machine by a fixed delta. Used by deterministic tests and fixed-step
+     * callers; production drives {@link #update()} with wall-clock time.
+     */
+    public void update(float deltaSeconds) {
+        if (state == State.OFF) {
+            return;
+        }
+        lastUpdateTime = System.nanoTime();
+        updateState(deltaSeconds, lastUpdateTime);
+    }
+
+    private void updateState(float deltaTime, long now) {
         switch (state) {
             case STARTING:
                 stateTimer -= deltaTime;
@@ -701,12 +740,21 @@ public class TrainSynthesizer implements AudioSource {
             case STOPPING:
                 stateTimer -= deltaTime;
                 if (stateTimer <= 0) {
-                    audioRunning = false;
                     isStopping = false;
-                    state = State.OFF;
-                    if (onStopFinished != null) {
-                        onStopFinished.run();
-                        onStopFinished = null;
+                    if (loading) {
+                        // The load/unload process is still running: mute the engine voices and
+                        // keep the synth alive so the load loop keeps playing (issue #360).
+                        locoEngine.setVolume(0f);
+                        coachEngine.setVolume(0f);
+                        if (brakeEngine != null) {
+                            brakeEngine.setVolume(0f);
+                        }
+                        state = State.LOAD_ONLY;
+                    } else {
+                        loadEngine.setVolume(0f);
+                        targetLoadVolume = 0f;
+                        audioRunning = false;
+                        state = State.OFF;
                     }
                 }
                 break;
