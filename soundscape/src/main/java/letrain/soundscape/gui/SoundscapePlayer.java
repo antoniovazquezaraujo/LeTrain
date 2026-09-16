@@ -140,9 +140,9 @@ public final class SoundscapePlayer {
             updateComposition();
         });
         controls.add(weatherCombo);
-        controls.add(weatherSlider("rain"));
-        controls.add(weatherSlider("wind"));
-        controls.add(weatherSlider("storm"));
+        controls.add(weatherSliderRow("rain"));
+        controls.add(weatherSliderRow("wind"));
+        controls.add(weatherSliderRow("storm"));
 
         controls.add(section("Zonas"));
         zonesPanel = new JPanel();
@@ -183,10 +183,15 @@ public final class SoundscapePlayer {
         return slider;
     }
 
-    private JSlider weatherSlider(String key) {
+    private JPanel weatherSliderRow(String key) {
         JSlider slider = slider(100, 0);
         weatherSliders.put(key, slider);
-        return slider;
+        JLabel label = new JLabel(key);
+        label.setPreferredSize(new Dimension(60, 18));
+        JPanel row = new JPanel(new BorderLayout(8, 0));
+        row.add(label, BorderLayout.WEST);
+        row.add(slider, BorderLayout.CENTER);
+        return row;
     }
 
     private void onSliderChanged(JSlider source) {
