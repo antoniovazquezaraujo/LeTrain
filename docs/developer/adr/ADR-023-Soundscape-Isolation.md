@@ -17,10 +17,12 @@
 ## Decisión (propuesta)
 
 1. **El decorado sonoro es una pieza aparte**, con dependencia unidireccional: el juego la alimenta,
-   ella no conoce el juego. No sabe de trenes, vías, horarios ni entidades.
-2. **Frontera por situación y franja horaria**: el juego describe **dónde** está el punto de escucha
-   (distancia/peso a tipos de zona) y **cuándo** (franja del día) más el preset de velocidad. La lib
-   responde con audio ambiental.
+   ella no conoce el juego. No sabe de trenes, vías, horarios ni entidades. Tampoco se suscribe a
+   nada: **el juego la actualiza en cada tick** con el estado de ambiente. Es un mezclador pasivo y
+   determinista (mismas entradas, mismo sonido), probable sin arrancar el juego.
+2. **Frontera por situación, franja y escucha**: el juego describe **dónde** está el punto de escucha
+   (distancia/peso a tipos de zona), **cuándo** (franja del día) y **cómo se escucha** (zoom/altura),
+   más el preset de velocidad. La lib responde con audio ambiental.
    - Zonas de cualquier tipo, todas de la misma naturaleza: geografía (mar, montaña, río, bosque,
      llanura) y actividad (mina, fábrica, pueblo, estación).
    - Peso continuo 0.0–1.0 por zona según cercanía; varias zonas activas a la vez.
@@ -30,10 +32,13 @@
      saltando aleatoriamente entre tramos de la grabación para que no se detecte la repetición.
    - **Discontinuo**: material de eventos (ladridos, gallos, gaviotas). Se eligen tomas de la
      grabación y se disparan con pausas aleatorias entre ellas.
-4. **Composición = situación × franja**: cada zona declara, para cada sonido, su **presencia en cada
-   franja del día** (amanecer, mañana, mediodía, tarde, anochecer, noche, madrugada). En un punto, el
-   resultado es la **suma ponderada de las zonas cercanas**, y entre franjas se interpola para que no
-   haya saltos.
+4. **Composición = situación × franja × escucha**: cada zona declara, para cada sonido, su
+   **presencia en cada franja del día** (amanecer, mañana, mediodía, tarde, anochecer, noche,
+   madrugada). En un punto, el resultado es la **suma ponderada de las zonas cercanas**, y entre
+   franjas se interpola para que no haya saltos.
+   - La **escucha (zoom/altura)** amplía o reduce el radio de influencia de las zonas y modula la
+     **perspectiva** de cada sonido: desde arriba dominan halcones y viento de valle; a ras de suelo,
+     cigarras y micro-fauna. Con suavizado en tiempo real para que el zoom no produzca bombeo.
    - Esto permite lo que buscamos: en una misma zona, por la mañana grillos, a mediodía perros y por
      la tarde halcones, sin duplicar nada.
    - **Overrides por escenario**: un mapa o una época pueden ajustar la tabla de una zona ("aquí, por
@@ -59,6 +64,7 @@
 | Franja del día | anochecer |
 | Velocidad | LENTA / NORMAL / RÁPIDA (60 / 40 / 20 min de día, a validar de oído) |
 | Situación: zonas con peso 0.0–1.0 | `mar 0.8`, `llanura 0.3`, `mina 0.5` |
+| Escucha: zoom/altura 0.0–1.0 | 0.2 (a ras de suelo) · 0.9 (vista amplia) |
 | Clima global (fase posterior) | `lluvia 0.4` |
 
 - **Zonas iniciales propuestas**: mar, llanura, bosque, montaña, río, mina, fábrica, pueblo,
@@ -67,9 +73,10 @@
   - **material**: una o varias tomas/segmentos;
   - **modo**: *bucle con salto* (continuos) o *discontinuo* (eventos);
   - **presencia por franja** (una tabla; las franjas sin valor se interpolan o quedan a cero);
+  - **perspectiva**: suelo, área o altura (cómo se escucha según el zoom);
   - **parámetros**: presencia base, cercanía, densidad (en discontinuos) y variación.
 - **Volumen final** de un sonido ≈ peso de su zona × presencia en la franja (interpolada) ×
-  parámetros propios. Se suman todas las zonas activas.
+  perspectiva de escucha × parámetros propios. Se suman todas las zonas activas.
 - Ejemplo de tabla de la zona **llanura**:
 
 | Sonido | Amanecer | Mañana | Mediodía | Tarde | Anochecer | Noche | Madrugada |
@@ -84,8 +91,8 @@
   sí.
 - **Clima**: global (estado + intensidad), determinista desde la semilla, compuesto con la franja
   (la lluvia enmascara grillos, por ejemplo).
-- **Reproductor de pruebas**: franja (con modo "día completo"), zonas con peso, preset de velocidad
-  y recarga de catálogo/zonas sin reiniciar.
+- **Reproductor de pruebas**: franja (con modo "día completo"), zonas con peso, zoom/escucha, preset
+  de velocidad y recarga de catálogo/zonas sin reiniciar.
 
 Ejemplo de composición:
 
@@ -125,6 +132,7 @@ anochecer junto a la costa
 
 - ¿Las 7 franjas son fijas o configurables por escenario? (propuesta: fijas, con interpolación
   entre ellas).
+- Mapeo del zoom a la escucha y cuántas perspectivas de sonido (suelo/área/altura) hacen falta.
 - Lista definitiva de zonas y límite de sonidos simultáneos (6–8 como punto de partida).
 - Presets de velocidad definitivos (se deciden oyendo en el reproductor).
 - Catálogo y licencias de sonido; ¿assets en el repo o descarga aparte?
