@@ -81,9 +81,9 @@
   estación.
 - Cada **zona** es un conjunto de **sonidos componentes**; cada sonido declara:
   - **material**: una o varias tomas/segmentos;
-  - **modo**: *bucle con salto* (continuos) o *discontinuo* (eventos);
+  - **familia**: fondo o evento;
   - **presencia por franjas** como puntos de control de una curva (las franjas sin valor se interpolan o quedan a cero);
-  - **parámetros**: presencia base, cercanía, densidad (en discontinuos) y variación.
+  - **parámetros**: presencia base, cercanía, densidad (en eventos) y variación.
 - **Volumen final** de un sonido ≈ peso de su zona × presencia en la franja (interpolada) ×
   parámetros propios. Se suman todas las zonas activas.
 - Ejemplo de tabla de la zona **llanura**:
