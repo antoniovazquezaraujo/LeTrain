@@ -174,17 +174,17 @@ Ejemplo de composición con ese fichero:
 
 Cómo se calcula un sonido (ejemplo: crickets), paso a paso:
   peso de zona       fields 0.7
-  × presencia (hora) night 0.8                                  → 0.56
-  × clima            1 - 0.8×0.3 (rain) - 0.2×0.1 (wind) = 0.74 → 0.41
-  × altura           1 - 0.8×0.2 = 0.84                         → 0.35
-  = crickets 0.35
+  × presencia (hora) 23:30 está entre night (0.8) y predawn (0.9): 0.82 → 0.58
+  × clima            1 - 0.8×0.3 (rain) - 0.2×0.1 (wind) = 0.74       → 0.43
+  × altura           1 - 0.8×0.2 = 0.84                              → 0.36
+  = crickets 0.36
 
-Resultado de la mezcla:
-  rain (del preset) 0.30 · crickets 0.35 · waves 0.34 · dogs 0.07 · seagulls 0.04
-  cicadas 0.00 · mine-machinery 0.00 (fuera de turno)
+Resultado de la mezcla (salida real del módulo `soundscape`):
+  crickets 0.36 · waves 0.32 · weather-rain 0.30 · weather-wind 0.10 · dogs 0.06
+  seagulls 0.03 · roosters 0.02 · cicadas 0.00 · mine-machinery 0.00 (fuera de turno)
 
 13:10 · NORMAL · gold-mine 0.7 · fields 0.4 · height 0.2 · clear
-→ mine-machinery 0.35 · cicadas 0.31 · mine-thuds 0.28 · dogs 0.16
+→ mine-machinery 0.35 · cicadas 0.31 · mine-thuds 0.28 · dogs 0.16 · weather-wind 0.10
 
 ```
 
