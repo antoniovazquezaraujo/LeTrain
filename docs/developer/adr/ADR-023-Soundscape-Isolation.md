@@ -9,8 +9,8 @@
 - ADR-022 introduce el tiempo de juego (reloj, día/noche, horarios). Sin una frontera clara, el
   audio ambiental, el clima y la simulación acabarían enredados: el tiempo sabría de sonidos y el
   audio sabría de trenes y de reglas de juego.
-- Los sonidos ambientales requieren un tratamiento distinto al del tren: escenas, capas,
-  aleatoriedad, licencias, catálogo. Es un problema propio.
+- Los sonidos ambientales requieren un tratamiento distinto al del tren: catálogo, modos de
+  reproducción, aleatoriedad y licencias. Es un problema propio.
 - El proyecto valora el bajo acoplamiento (MVP) y ya es multi-módulo (core, clientes, launchers),
   por lo que existe un sitio natural para separar esta pieza.
 
@@ -18,24 +18,28 @@
 
 1. **El decorado sonoro es una pieza aparte**, con dependencia unidireccional: el juego la alimenta,
    ella no conoce el juego. No sabe de trenes, vías, horarios ni entidades.
-2. **Frontera por etiquetas**: el juego traduce su mundo a etiquetas de entorno con peso
-   (terreno + actividad humana) y aporta la hora y el preset de velocidad. La lib responde con
-   audio ambiental.
-   - Terreno: mar, llanura, bosque, montaña, río.
-   - Actividad humana: mina, fábrica, pueblo, estación.
-   - Peso continuo 0.0–1.0; varias etiquetas activas a la vez.
-3. **Escenas por capas** (base + acentos), no escenas completas por cada combinación del mundo.
-   Tipos: colchón continuo, cuasi-continuo, eventos discretos y textura cercana.
+2. **Frontera por sitios**: el juego traduce su mundo a **sitios** con peso (mar, montaña, llanura,
+   mina, pueblo…) y aporta la hora y el preset de velocidad. La lib responde con audio ambiental.
+   - Peso continuo 0.0–1.0; varios sitios activos a la vez según la cercanía.
+   - Todos los sitios son de la misma naturaleza: un conjunto de sonidos. No hay trato especial
+     para lo "natural" frente a lo "humano".
+3. **Modelo único de sonido componente**: cada sonido ambiental = **material** (una o varias tomas)
+   + **modo de reproducción** + parámetros (presencia, cercanía, variación).
+   - **Bucle con salto**: material continuo (mar, viento, maquinaria). Se reproduce en bucle
+     saltando aleatoriamente entre tramos de la grabación para que no se detecte la repetición.
+   - **Discontinuo**: material de eventos (ladridos, gallos, gaviotas). Se eligen tomas de la
+     grabación y se disparan con pausas aleatorias entre ellas.
+   Un sitio es, precisamente, un conjunto de sonidos componentes.
 4. **Sin ducking**: el tren se suma al decorado; no lo silencia. Un limitador maestro evita
    saturación. Los sonidos de tren siguen siendo responsabilidad del juego.
 5. **Clima global** (estado + intensidad), determinista desde la semilla, compuesto con la hora. Sin
    clima posicional.
-6. **Velocidad LENTA / NORMAL / RÁPIDA** con duraciones configurables (definidas en ADR-022). Las
-   fases de escena siguen al reloj de juego, pero la **textura se ancla al tiempo real**: densidad
+6. **Velocidad LENTA / NORMAL / RÁPIDA** con duraciones configurables (definidas en ADR-022). Los
+   sitios siguen al reloj de juego, pero la **textura se ancla al tiempo real**: densidad
    de eventos y fundidos (con suelo en segundos reales y techo como fracción de la fase).
-7. **Todo es data**: catálogo de sonidos, reglas de composición, escenas y presets viven en
-   ficheros de texto legibles y recargables.
-8. **Primero el reproductor de pruebas**: se valida el paisaje sonoro en aislamiento (hora, etiquetas
+7. **Todo es data**: catálogo de sonidos, sitios y presets viven en ficheros de texto legibles y
+   recargables.
+8. **Primero el reproductor de pruebas**: se valida el paisaje sonoro en aislamiento (hora, sitios
    con peso, velocidad) antes de integrarlo en los clientes.
 
 ## Detalle de composición (resumen)
@@ -46,32 +50,35 @@
 |---|---|
 | Hora del día | 22:30 → noche |
 | Velocidad | LENTA / NORMAL / RÁPIDA (60 / 40 / 20 min de día, a validar de oído) |
-| Etiquetas de terreno (peso 0.0–1.0) | `mar 0.8`, `bosque 0.2` |
-| Etiquetas de actividad humana | `mina 0.5`, `pueblo 0.3`, `estación 0.2` |
+| Sitios con peso 0.0–1.0 | `mar 0.8`, `llanura 0.3`, `mina 0.5` |
 | Clima global (fase posterior) | `lluvia 0.4` |
 
-- Terreno inicial: **mar, llanura, bosque, montaña, río**. Actividad humana: **mina, fábrica,
-  pueblo, estación**.
-- Capas: **colchón continuo** (viento, lluvia), **cuasi-continuo** (grillos, cigarras), **eventos
-  discretos** (perro, gallo, avispas) y **textura cercana**. Parámetros: presencia, densidad,
-  distancia/cercanía y variación.
-- Composición **base + acentos**: la base la pone el terreno y la hora; los acentos, la actividad
-  humana. El peso de cada etiqueta se traduce en presencia y cercanía.
-- **Anti-repetición**: pools de sonidos, intervalos aleatorios, silencio como material, variación de
-  tono/volumen y modulación lenta; capas desfasadas entre sí.
-- **Tiempo**: la escena sigue al reloj, pero densidad de eventos y fundidos se miden en tiempo real
-  (suelo de ~20–30 s por fundido, techo como fracción de la fase). A más velocidad, menos escenas.
+- **Sitios iniciales propuestos**: mar, llanura, bosque, montaña, río, mina, fábrica, pueblo,
+  estación. Todos de la misma naturaleza.
+- Cada **sitio** es un conjunto de **sonidos componentes**; cada sonido declara:
+  - **material**: una o varias tomas/segmentos;
+  - **modo**: *bucle con salto* (continuos: mar, viento, maquinaria) o *discontinuo* (eventos:
+    ladridos, gallos, gaviotas);
+  - **parámetros**: presencia, cercanía, densidad (en discontinuos) y variación.
+- Un **punto del mapa** se compone de los sitios que lo rodean, ponderados por cercanía; la hora
+  modula qué suena y con qué presencia (de noche entran los grillos y los perros se alejan).
+- **Anti-repetición**: saltos aleatorios entre tramos con micro-fundido para evitar clics, pools de
+  tomas, pausas aleatorias, variación de tono/volumen y modulación lenta; sonidos desfasados entre
+  sí.
+- **Tiempo**: los sitios siguen al reloj, pero densidad de eventos y fundidos se miden en tiempo
+  real (suelo de ~20–30 s por fundido, techo como fracción de la fase). A más velocidad, menos
+  variedad de sitios activos.
 - **Clima**: global (estado + intensidad), determinista desde la semilla, compuesto con la hora.
-- **Reproductor de pruebas**: hora, etiquetas con peso, preset de velocidad, modo "día completo" y
-  recarga de reglas/escenas sin reiniciar.
+- **Reproductor de pruebas**: hora, sitios con peso, preset de velocidad, modo "día completo" y
+  recarga de catálogo/sitios sin reiniciar.
 
-Ejemplo de escena:
+Ejemplo de composición:
 
 ```
 noche-de-lluvia-en-la-costa
-  hora: 21:00–05:00 · clima: lluvia 0.5
-  capas: lluvia-suave 0.5 (colchón) · olas 0.6 (colchón, modulación lenta)
-         grillos 0.2 (enmascarados por la lluvia) · perro-lejano (eventos, densidad muy baja)
+  hora: 21:00–05:00 · clima: lluvia 0.5 · sitios: mar 0.8 · pueblo 0.2
+  sonidos: olas (bucle con salto, 0.6) · lluvia-suave (bucle, 0.5)
+           gaviotas (discontinuo, 0.1) · perro-lejano (discontinuo, 0.15, lejano)
 ```
 
 ## Consecuencias
@@ -89,8 +96,9 @@ noche-de-lluvia-en-la-costa
 
 - **Meter el decorado dentro del core**: descartado; contamina la simulación con catálogo, mezcla y
   reglas de audio.
-- **Una escena completa por cada combinación de hora/terreno/industria**: descartado por
-  combinatoria y mantenimiento; se compone por capas (base + acentos).
+- **Una escena completa por cada combinación de hora/sitio**: descartado por combinatoria y
+  mantenimiento; los sitios se componen de sonidos reutilizables y un punto combina los sitios
+  que lo rodean.
 - **Ducking del ambiente al pasar el tren**: descartado; no es sonido realista (el tren se suma y
   enmascara) y añade dependencia de los trenes dentro de la lib.
 - **Clima posicional por zonas**: aplazado; encarece mucho (mapa, bordes, transiciones al moverse)
@@ -101,6 +109,6 @@ noche-de-lluvia-en-la-costa
 ## Preguntas abiertas
 
 - ¿Módulo propio del repo o paquete aislado promovible? (se decide al empezar la implementación).
-- Presets de velocidad definitivos, set de etiquetas y límite de capas simultáneas.
+- Presets de velocidad definitivos, lista de sitios y límite de sonidos simultáneos.
 - Catálogo y licencias de sonido; ¿assets en el repo o descarga aparte?
 - Herramienta del reproductor de pruebas.
