@@ -184,3 +184,7 @@ Ejemplo de composición con ese fichero:
 - Presets de velocidad definitivos (se deciden oyendo en el reproductor).
 - Catálogo y licencias de sonido; ¿assets en el repo o descarga aparte?
 - ¿Módulo propio del repo o paquete aislado promovible?
+- **Módulo de audio a futuro**: el motor de síntesis del tren (loops, mezcla, muestras) ya es
+  autocontenido y podría compartirse con el decorado, incluido el bucle con salto. Si algún día se
+  unifica, el juego conservaría solo los adaptadores de estado/eventos y habría un único
+  mezclador/salida (y un único volumen maestro para el jugador).
