@@ -60,6 +60,18 @@ class AmbientVoiceTest {
     }
 
     @Test
+    @DisplayName("jumps between random offsets on long samples without escaping the range")
+    void should_JumpAndStayBounded_When_SampleIsLong() {
+        AmbientVoice voice = new AmbientVoice(tone(8 * 44100), new Random(4));
+        voice.setTarget(0.5f);
+
+        for (int i = 0; i < 400; i++) {
+            float max = renderMax(voice, new float[FRAMES]);
+            assertTrue(max <= 0.51f, "crossfaded jumps must stay bounded, was " + max);
+        }
+    }
+
+    @Test
     @DisplayName("becomes finished after fading out")
     void should_Finish_When_TargetRemoved() {
         AmbientVoice voice = new AmbientVoice(tone(44100), new Random(3));

@@ -31,6 +31,8 @@ public class AmbientPlayer implements AutoCloseable {
     private static final float SAMPLE_RATE = 44100f;
     private static final int BUFFER_FRAMES = 1024;
     private static final float MIN_VOLUME = 0.005f;
+    /** Headroom before the soft limiter, so a busy mix does not distort. */
+    private static final float MASTER_GAIN = 0.8f;
 
     private final Map<String, SoundSample> samples = new LinkedHashMap<>();
     private final List<String> missingSounds = new ArrayList<>();
@@ -77,6 +79,13 @@ public class AmbientPlayer implements AutoCloseable {
     /** Sets the target volumes of the current composition. */
     public void updateTargets(Composition composition) {
         targets = composition == null ? Map.of() : composition.volumes();
+    }
+
+    /**
+     * Mixes one mono buffer without touching the audio device; used by tests and offline rendering.
+     */
+    public void renderBuffer(float[] mono) {
+        mixBuffer(mono);
     }
 
     @Override
@@ -154,12 +163,16 @@ public class AmbientPlayer implements AutoCloseable {
 
     private void toStereo16(float[] mono, byte[] output) {
         for (int i = 0; i < mono.length; i++) {
-            float value = Math.max(-1f, Math.min(1f, mono[i]));
-            short sample = (short) Math.round(value * 32767f);
+            short sample = (short) Math.round(masterSample(mono[i]) * 32767f);
             output[i * 4] = (byte) (sample & 0xFF);
             output[i * 4 + 1] = (byte) ((sample >> 8) & 0xFF);
             output[i * 4 + 2] = output[i * 4];
             output[i * 4 + 3] = output[i * 4 + 1];
         }
+    }
+
+    /** Master gain plus soft limiter: never clips, even with several loud layers. */
+    static float masterSample(float value) {
+        return (float) Math.tanh(value * MASTER_GAIN);
     }
 }

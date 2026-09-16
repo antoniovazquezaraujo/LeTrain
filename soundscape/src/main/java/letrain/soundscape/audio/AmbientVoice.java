@@ -9,8 +9,10 @@ import java.util.Random;
  */
 public class AmbientVoice {
 
-    /** Crossfade window at the loop jump (10 ms at 44.1 kHz). */
-    private static final int FADE_FRAMES = 441;
+    /** Crossfade window at the loop jump (50 ms at 44.1 kHz). */
+    private static final int FADE_FRAMES = 2205;
+    /** Only long materials (beds) jump randomly; short event takes wrap cleanly. */
+    private static final float RANDOM_JUMP_MIN_SECONDS = 6f;
     /** Ease time constant for gain changes, in seconds. */
     private static final float GAIN_FADE_SECONDS = 0.8f;
     private static final float SILENT = 0.001f;
@@ -55,7 +57,7 @@ public class AmbientVoice {
 
     private float nextSample() {
         int length = sample.length();
-        if (length <= 2 * FADE_FRAMES) {
+        if (length < (int) (RANDOM_JUMP_MIN_SECONDS * sample.sampleRate())) {
             float value = sample.frame(position);
             position = (position + 1) % length;
             return value;
