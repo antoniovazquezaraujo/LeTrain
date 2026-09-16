@@ -22,6 +22,6 @@ A pesar del bloqueo lógico, se mantiene una capa de seguridad física en `Train
 - **Consecuencias**: Velocidad alta resulta en **Choque (`crash`)**, velocidad baja en **Parada Inmediata**.
 
 ## Símbolos Clave
-- `letrain.core.segments.BlockManager`: Gestor central de la propiedad de los segmentos.
+- `letrain.segments.BlockManager`: Gestor central de la propiedad de los segmentos.
 - `letrain.vehicle.rail.RailIterator`: Herramienta de exploración para la lógica de bloques.
-- `letrain.core.segments.RailwayGraph`: Representación topológica de la red en segmentos.
+- `letrain.segments.RailwayGraph`: Representación topológica de la red en segmentos.

@@ -1,4 +1,4 @@
-[ [Índice] ] [[docs/Index|⬅️ Volver al Índice]]
+[ [Índice] ] [[Index|⬅️ Volver al Índice]]
 
 # Sistema de Eventos de Tren
 
@@ -47,8 +47,8 @@ Esto evita errores en runtime: `addCoreTrainEventListener()` solo acepta `CoreTr
 
 ## TrainEventDispatcher
 
-**Interfaz**: `src/main/java/letrain/vehicle/rail/TrainEventDispatcher.java`
-**Implementación**: `src/main/java/letrain/vehicle/rail/impl/TrainEventDispatcherImpl.java`
+**Interfaz**: `core/src/main/java/letrain/vehicle/rail/TrainEventDispatcher.java`
+**Implementación**: `core/src/main/java/letrain/vehicle/rail/impl/TrainEventDispatcherImpl.java`
 
 El `TrainEventDispatcher` es el núcleo de la gestión de eventos de cada tren. Centraliza el registro y la notificación de eventos, separando los listeners en dos categorías mediante tipos diferenciados.
 

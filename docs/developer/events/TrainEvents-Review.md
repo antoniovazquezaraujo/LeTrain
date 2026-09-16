@@ -1,4 +1,4 @@
-[ [Índice] ] [[docs/events/TrainEvents|⬅️ Sistema de Eventos]] · [[docs/Index|⬅️ Volver al Índice]]
+[ [Índice] ] [[events/TrainEvents|⬅️ Sistema de Eventos]] · [[Index|⬅️ Volver al Índice]]
 
 # Revisión: Sistema de Eventos de Tren (COMPLETADA ✅)
 

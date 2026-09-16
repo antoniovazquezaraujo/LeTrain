@@ -20,20 +20,24 @@ Dado que `jpackage` (la herramienta de empaquetado de Java) solo puede crear bin
 
 ### Pasos para sacar una nueva versión:
 
-Cuando el juego esté estable y quieras publicar una nueva actualización (por ejemplo, la `v1.0.0`), abre tu terminal y ejecuta estos **3 únicos pasos**:
+Cuando el juego esté estable en `develop` y quieras publicar una nueva versión oficial (por ejemplo, la `v1.0.0`), sigue estos pasos:
 
-**Paso 1: Asegúrate de que tu código está subido**
+**Paso 1: Integra los cambios de `develop` en `main`**
+Crea un PR de `develop` a `main` (la rama sagrada de release) y fusiónalo tras validar que los tests pasan.
+
+**Paso 2: Actualiza tu rama `main` local**
 ```bash
-git push origin develop
+git checkout main
+git pull origin main
 ```
 
-**Paso 2: Crea la etiqueta (tag) con el número de versión**
+**Paso 3: Crea la etiqueta (tag) con el número de versión**
 *(OJO: Es obligatorio que el nombre empiece por una `v` minúscula para que funcione)*
 ```bash
 git tag v1.0.0
 ```
 
-**Paso 3: Sube la etiqueta a GitHub para despertar a los robots**
+**Paso 4: Sube la etiqueta a GitHub para despertar a los robots**
 ```bash
 git push origin v1.0.0
 ```

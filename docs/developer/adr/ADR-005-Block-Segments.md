@@ -1,4 +1,4 @@
-[ [Índice] ] [[docs/Index|⬅️ Volver al Índice]]
+[ [Índice] ] [[Index|⬅️ Volver al Índice]]
 
 # ADR-005: Sistema de Seguridad y Ciclo de Vida de la Red
 

@@ -12,7 +12,7 @@ Unlike periodic physics systems that poll the entire world, the LeTrain autopilo
 
 ```mermaid
 graph TD
-    Train["Train Core Engine"] -->|ticks| AutoPilot["AutoPilot"]
+    Train["Train Core Engine"] -->|events (onSegmentEntered)| AutoPilot["AutoPilot"]
     AutoPilot -->|1. Calculate Route| Pathfinder["AStarPathfinder"]
     AutoPilot -->|2. Align Switches| RailNode["RailNode / Fork Track"]
     AutoPilot -->|3. Delegate Actions| ActionManager["TrainActionManager"]
@@ -23,7 +23,7 @@ graph TD
 
 ## 2. Interface Contracts & Operational Modes
 
-The [AutoPilot](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/AutoPilot.java) interface defines the contract, and [AutoPilotImpl](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java) implements it.
+The `AutoPilot` interface (`core/src/main/java/letrain/itinerary/AutoPilot.java`) defines the contract, and `AutoPilotImpl` implements it.
 
 ### Public API Methods
 *   `setItinerary(Itinerary)`: Assigns an itinerary and resets index and route.
@@ -101,7 +101,7 @@ sequenceDiagram
 The autopilot operates at the intersection of several crucial subsystems:
 
 ### A. Pathfinder (`SegmentPathfinder`)
-The `AutoPilot` utilizes [AStarPathfinder](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/AStarPathfinder.java) to find segment paths. The search is heavily constrained:
+The `AutoPilot` utilizes `AStarPathfinder` (`core/src/main/java/letrain/itinerary/AStarPathfinder.java`) to find segment paths. The search is heavily constrained:
 *   **Physical Track Cost**: Pathfinding does not just minimize segment count; it queries the graph for track count (`getTrackCount(Segment)`) to prefer shorter physical paths.
 *   **Directional Constraints**: It respects the waypoint's `entryDir` (if defined), ensuring the train arrives in the correct orientation.
 
@@ -111,7 +111,7 @@ The safety manager operates reactively during movement:
 *   The autopilot assists by aligning forks beforehand using `ensureForkRoute`, ensuring the train safety manager's look-ahead calculations correspond to the path the train will actually take.
 
 ### C. Action Engine (`TrainActionManager`)
-The [TrainActionManager](file:///home/antonio/dev/LeTrain/src/main/java/letrain/itinerary/impl/TrainActionManager.java) handles waypoint arrival and command execution:
+The `TrainActionManager` (`core/src/main/java/letrain/itinerary/impl/TrainActionManager.java`) handles waypoint arrival and command execution:
 1.  **Arrival Check**: In every tick, it checks if the train is at the target waypoint.
 2.  **Commands**: Upon arrival, it pulls the commands defined in the waypoint:
     *   `LOAD`/`UNLOAD`: Triggers station cargo transfer.
@@ -123,7 +123,7 @@ The [TrainActionManager](file:///home/antonio/dev/LeTrain/src/main/java/letrain/
 
 ## 6. Serialization & State Persistence
 
-To support game saving and loading, the autopilot state is serialized using a Jackson mix-in class named [AutoPilotMixin](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/AutoPilotMixin.java).
+To support game saving and loading, the autopilot state is serialized using a Jackson mix-in class named `AutoPilotMixin` (`core/src/main/java/letrain/mvp/impl/AutoPilotMixin.java`).
 
 *   **Serialized Fields**:
     *   `itinerary`: The complete itinerary definition.

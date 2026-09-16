@@ -62,7 +62,7 @@ The technical documentation is organized as an interconnected Obsidian wiki. Sta
 * **[Automation & Scripting (`systems/`)](systems/CommandPattern.md):**
   * ANTLR4 command executor, action catalogue, and editor implementation.
 * **[Architectural Decision Records (`adr/`)](adr/ADR-000-Design-decisions.md):**
-  * Chronological records of all foundational decisions (from ADR-000 to ADR-020).
+  * Chronological records of all foundational decisions (from ADR-000 to ADR-021).
 * **[Release & Distribution (`release/`)](release/Release_Process.md):**
   * Automated CI/CD deployment, GitHub releases, and store metadata (Itch.io).
 
@@ -74,11 +74,11 @@ The technical documentation is organized as an interconnected Obsidian wiki. Sta
 # Build standalone packages for all modules (3D, 2D, letrain-check)
 mvn clean package -DskipTests
 
-# Run the test suite
-mvn test
+# Run the full test suite
+mvn clean test
 
-# Run a specific unit test
-mvn test -Dtest=RailTrackMakerTest
+# Run a specific unit test in a module
+mvn -pl core test -Dtest=RailTrackMakerTest
 ```
 
 For guidelines on coding style, Git branching, and Pull Requests, see **[CONTRIBUTING.md](../../CONTRIBUTING.md)** and **[PHILOSOPHY.md](../PHILOSOPHY.md)**.
