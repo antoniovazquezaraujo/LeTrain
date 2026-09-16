@@ -1,6 +1,6 @@
 # ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)
 
-## Estado: PROPUESTO (borrador para revisión conjunta con el equipo `agy`)
+## Estado: PROPUESTO — convergencia con el equipo `agy` incorporada (pendiente confirmar arranque y dueños)
 
 ## Contexto
 
@@ -18,28 +18,48 @@
 - ADR-021 y la serialización Jackson exigen que los campos nuevos de `Model` no invaliden las
   partidas existentes.
 
+## Convergencia con la propuesta del equipo `agy`
+
+Ambas propuestas coinciden en arquitectura y fases. Se adopta lo mejor de cada una:
+
+| Tema | Open | agy | Convergencia propuesta |
+|---|---|---|---|
+| Origen del tiempo | Ticks lógicos | Ticks lógicos (se congela en pausa) | Ticks lógicos; la pausa de edición (ADR-020) congela el reloj |
+| Servicio | `GameClock` (interfaz + impl) | `SimulationClock` | `GameClock` en `letrain.time`, avanza desde `SimulationController.tick()` |
+| Escala | `time.scale` (s de juego/tick), default 1 | `time.dayDurationSeconds` (segundos reales por día de juego), default 1440 (día = 24 min reales) | Adoptar `time.dayDurationSeconds = 1440` (más legible); equivale a 3 s de juego/tick |
+| Hora inicial | 06:00 | 08:00, Día 1 | 08:00, Día 1 (arranque de jornada) |
+| Interpolación visual | `isNight()` | `isNight()` + `getDayNightRatio()` (0..1) | Ambas: `isNight()` para lógica y `getDayNightRatio()` para luces/cielo |
+| Eventos | Listeners de hora/día + `SimulationScheduler` | Uso directo desde servicios/presenters | Listeners + scheduler; nada de polling en `tick()` |
+| Persistencia | `elapsedTicks` (long) | campo `gameTime` opcional en `Model` | Long simple (`elapsedTicks`) y `GameTime` derivado; saves viejos → 08:00 Día 1 |
+| `WAIT n` | Sigue en segundos de simulación | No lo redefine | Se mantiene por compatibilidad; horarios con `DEPART`/`UNTIL` |
+| DSL horarios | `DEPART hh:mm`, `UNTIL hh:mm`, `on time` | `DEPART AT hh:mm`, `WAIT UNTIL hh:mm`, `AT "07:00" DO`, `EVERY 30m` | Sintaxis final en el PR de gramática; se adopta `EVERY` como aportación |
+| Día/noche | Visual en fase 1 | Sol/luna/cielo, faros, farolas, tinte 2D | Igual: visual primero, `isNight()` disponible para gameplay futuro |
+| Economía | Tarifas, multas, mantenimiento nocturno | Mantenimiento diario, turnos de producción, bonus por puntualidad | Se adopta el detalle de agy en la fase 4 |
+| Operación | Puntualidad (delta entre visitas) | Rol de regulador, cruces en vía única | Ambos: cruces y apartaderos como juego emergente de los horarios |
+
 ## Decisión (propuesta)
 
 1. **El tiempo de juego se deriva de ticks lógicos**, nunca del reloj de pared. Debe ser
    determinista, reproducible en el replay del diario de comandos (ADR-020) y testeable headless.
+   La pausa de edición congela el reloj.
 2. Nuevo servicio **`GameClock`** (interfaz + implementación) en `letrain.time`:
-   - convierte ticks ↔ hora de juego;
-   - expone `isNight()` para las vistas;
+   - convierte ticks ↔ hora de juego y expone `GameTime` (día, hora, minuto);
+   - expone `isNight()` y `getDayNightRatio()` (0.0–1.0) para las vistas;
    - notifica cambios de hora/día mediante listeners (event-driven, sin polling en `tick()`).
-3. **Escala configurable** en `letrain.cfg`, en segundos de juego por tick. Referencia: un día de
-   24 h (86.400 s de juego) tarda 72 min reales con escala 1, 36 min con escala 2 y 72 s con
-   escala 60. Valor inicial propuesto: **1**.
-4. **Hora inicial fija** (propuesta: 06:00), día de 24 h. Sin fechas ni estaciones del año en esta
-   fase; el modelo queda preparado para añadirlas.
-5. **Serialización**: contador `elapsedTicks` (long) en `Model`. Los guardados antiguos cargan con
-   el valor por defecto sin romperse.
+3. **Escala configurable** en `letrain.cfg` como `time.dayDurationSeconds` (segundos reales que
+   dura un día de juego). Valor inicial: **1440** (un día cada 24 minutos reales), equivalente a
+   3 segundos de juego por tick.
+4. **Hora inicial**: 08:00 del Día 1, día de 24 h. Sin fechas ni estaciones del año en esta fase;
+   el modelo queda preparado para añadirlas.
+5. **Serialización**: contador `elapsedTicks` (long) en `Model`; `GameTime` se deriva. Los guardados
+   antiguos cargan con el valor por defecto (08:00, Día 1) sin romperse.
 6. Los **eventos de tiempo** (cambio de hora, día/noche, horarios) se despachan vía
    `SimulationScheduler`; nada de lógica nueva en bucles periódicos.
 7. **`WAIT n` se mantiene en segundos de simulación** para no romper escenarios existentes. Los
-   horarios se expresan en tiempo de juego: `DEPART hh:mm`, `UNTIL hh:mm` y disparadores
-   `on time hh:mm`.
-8. **Día/noche es visual** en esta fase (paleta del terminal y luz/faros en 3D); `isNight()` queda
-   disponible para un futuro efecto sobre el gameplay (visibilidad, faros obligatorios, etc.).
+   horarios se expresan en tiempo de juego: `DEPART hh:mm`, `WAIT UNTIL hh:mm` y disparadores
+   temporales (`at "HH:mm"` / `every 30m`) en la gramática de scripts.
+8. **Día/noche es visual** en esta fase (paleta del terminal y luz/faros en 3D); `isNight()` y
+   `getDayNightRatio()` quedan disponibles para un futuro efecto sobre el gameplay.
 
 ### Contrato preliminar (a congelar antes de paralelizar)
 
@@ -53,7 +73,9 @@ public interface GameClock {
 
     boolean isNight();
 
-    void setScale(int gameSecondsPerTick);
+    float getDayNightRatio(); // 0.0 = pleno día, 1.0 = noche cerrada
+
+    void setDayDurationSeconds(int seconds);
 
     void addListener(GameClockListener listener);
 }
@@ -63,25 +85,17 @@ public interface GameClock {
 
 | Fase | Alcance | Entregable |
 |---|---|---|
-| 0 | Reloj de juego: `GameClock`, escala en config, serialización, HUD y comando `time set` | Sin efecto en gameplay; tests deterministas |
-| 1 | Día/noche: paleta 2D y luz/faros 3D usando `isNight()` | Visual; coordinar con #480 |
-| 2 | Horarios: `DEPART hh:mm` en itinerarios y puntualidad básica | El autopilot espera; se mide el delta |
-| 3 | Eventos por hora (`on time`), demanda por franjas e integración con trenes de pasajeros | Engancha con `PassengerTrains_Design.md` |
-| 4 | Economía horaria: tarifas por franja, multas por retraso, mantenimiento nocturno | Reglas de negocio |
+| 0 | Reloj de juego: `GameClock`, `time.dayDurationSeconds`, serialización, reloj en HUD 2D/3D y comando `time set` | Sin efecto en gameplay; tests deterministas |
+| 1 | Día/noche: paleta 2D, sol/luna/cielo, luz ambiental, faros y farolas en 3D usando `isNight()`/`getDayNightRatio()` | Visual; coordinar con #480 |
+| 2 | Horarios: `DEPART hh:mm` / `WAIT UNTIL hh:mm` en itinerarios y puntualidad básica; cruces en vía única y apartaderos | El autopilot espera; se mide el delta |
+| 3 | Triggers temporales (`at`/`every`) y demanda por franjas; integración con trenes de pasajeros | Engancha con `PassengerTrains_Design.md` |
+| 4 | Economía horaria: mantenimiento diario, turnos de producción, tarifas por franja y bonus/multa por puntualidad | Reglas de negocio |
 
-## Decisiones abiertas (a resolver conjuntamente)
+## Decisiones pendientes de confirmar con `agy`
 
-| Decisión | Propuesta de este equipo | Propuesta equipo `agy` |
-|---|---|---|
-| Origen del tiempo | Ticks lógicos (determinista) | *(pendiente)* |
-| Escala por defecto | `time.scale = 1` configurable | *(pendiente)* |
-| Hora inicial / modelo | 06:00, día de 24 h, sin fechas | *(pendiente)* |
-| Semántica de `WAIT n` | Segundos de simulación (compatibilidad) | *(pendiente)* |
-| DSL de horarios | `DEPART hh:mm`, `UNTIL hh:mm`, `on time` | *(pendiente)* |
-| Día/noche | Visual en fase 1; `isNight()` para gameplay futuro | *(pendiente)* |
-| Eventos | `SimulationScheduler` en tiempo de juego | *(pendiente)* |
-| Serialización | `elapsedTicks` con default compatible | *(pendiente)* |
-| Puntualidad | Delta entre visitas a la misma estación | *(pendiente)* |
+- Nombre final del servicio (`GameClock` vs `SimulationClock`).
+- Sintaxis exacta de la gramática (`DEPART hh:mm` vs `DEPART AT hh:mm`; `at "HH:mm"` vs `AT "HH:mm" DO`).
+- Reparto de fases y dueño por rama tras congelar el contrato.
 
 ## Alternativas consideradas
 
