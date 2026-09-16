@@ -40,9 +40,9 @@
    de las zonas cercanas**.
    - La mezcla **persigue** ese objetivo suavizada en tiempo real (fundido con suelo), así que pasar
      de noche a mañana nunca es un salto: los perros bajan y las cigarras suben gradualmente.
-   - La **escucha (zoom/altura)** entra con una regla provisional: ensancha o estrecha el radio con
-     el que cuentan las zonas (desde arriba cuentan zonas más lejanas; a ras de suelo, solo las
-     cercanas), sin reglas por sonido. Se valida en el reproductor.
+   - La **escucha (altura/zoom)** entra como una **tabla más**, igual que el clima: cada sonido
+     declara su sensibilidad a la altura (los halcones ganan, las cigarras y las ranas pierden).
+     Multiplicador: `1 + sensibilidad × altura`, recortado a cero por abajo.
    - Esto permite lo que buscamos: en una misma zona, por la mañana grillos, a mediodía perros y por
      la tarde halcones, sin duplicar nada.
    - **Overrides por escenario**: un mapa o una época pueden ajustar la tabla de una zona ("aquí, por
@@ -75,7 +75,7 @@
 | Hora exacta + velocidad | 03:40, `slow` |
 | Velocidad | `slow` / `normal` / `fast` (60 / 40 / 20 min de día, a validar de oído) |
 | Situación: zonas con peso 0.0–1.0 | `sea 0.8`, `mountain 0.2`, `fields 0.4` |
-| Escucha: zoom/altura 0.0–1.0 | `listening` 0.2 (a ras de suelo) · 0.9 (vista amplia) |
+| Escucha: altura/zoom 0.0–1.0 | `height` 0.2 (a ras de suelo) · 0.9 (vista amplia) |
 | Clima global (fase posterior) | `rain 0.4` |
 
 - **Zonas iniciales**: `sea`, `mountain`, `fields` + `gold-mine`, `gold-factory`, `ruby-mine`,
@@ -143,6 +143,17 @@ mine-machinery  0.0     0.5   0.5       0.5   0.0    0.0      0.0
 mine-thuds      0.0     0.4   0.4       0.4   0.0    0.0      0.0
 factory-machinery 0.1   0.6   0.6       0.5   0.1    0.0      0.0
 
+# --- Cómo le afecta la altura (0 = igual) -------------------
+#               height
+[height-by-sound]
+hawks             +0.8
+wind              +0.5
+waves             +0.4
+seagulls          +0.3
+dogs              +0.1
+crickets          -0.8
+cicadas           -0.9
+
 # --- Clima por sonido (0 = igual) ---------------------------
 #             rain  wind  storm
 [climate-by-sound]
@@ -159,11 +170,11 @@ factory-machinery 0.0 0.0   -0.3
 Ejemplo de composición con ese fichero:
 
 ```
-23:30 · NORMAL · sea 0.5 · fields 0.7 · listening 0.2 · drizzle
+23:30 · NORMAL · sea 0.5 · fields 0.7 · height 0.2 · drizzle
 → rain (del preset) 0.30 · crickets 0.41 · waves 0.31 · dogs 0.07 · seagulls 0.04
   cicadas 0.00 · mine-machinery 0.00 (fuera de turno)
 
-13:10 · NORMAL · gold-mine 0.7 · fields 0.4 · listening 0.2 · clear
+13:10 · NORMAL · gold-mine 0.7 · fields 0.4 · height 0.2 · clear
 → mine-machinery 0.35 · cicadas 0.40 · mine-thuds 0.28 · dogs 0.16
 ```
 
@@ -188,8 +199,8 @@ Ejemplo de composición con ese fichero:
   enmascara) y añade dependencia de los trenes dentro de la lib.
 - **Clima posicional por zonas**: aplazado; encarece mucho (mapa, bordes, transiciones al moverse)
   para el beneficio actual.
-- **"Alcance" por sonido (perspectiva suelo/área/altura)**: descartado por ser una taxonomía de
-  más; el zoom/altura sigue en la composición, pendiente de definir su efecto.
+- **"Alcance" por sonido con categorías (suelo/área/altura)**: descartado por taxonomía; en su
+  lugar hay una tabla de sensibilidad a la altura por sonido, como la del clima.
 - **Librería externa con versionado/paquete publicado**: descartado por ahora; el repo ya es
   multi-módulo y un módulo interno da la misma frontera sin coste de publicación.
 
@@ -202,7 +213,6 @@ Ejemplo de composición con ese fichero:
 
 ## Preguntas abiertas
 
-- **Escucha (zoom/altura)**: regla provisional de radio de zonas; se valida en el reproductor.
 - Límite de sonidos simultáneos: arranque en 6–8, a validar en el reproductor.
 - Duración definitiva de los presets de velocidad: se fija oyendo en el reproductor.
 - Licencias del catálogo: deben permitir distribuir el juego (assets en el repo, como hasta ahora).
