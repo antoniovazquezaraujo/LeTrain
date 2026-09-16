@@ -20,10 +20,10 @@
    ella no conoce el juego. No sabe de trenes, vías, horarios ni entidades. Tampoco se suscribe a
    nada: **el juego la actualiza en cada tick** con el estado de ambiente. Es un mezclador pasivo y
    determinista (mismas entradas, mismo sonido), probable sin arrancar el juego.
-2. **Frontera por situación y tiempo**: el juego describe **dónde** está el punto de escucha
-   (distancia/peso a tipos de zona) y **cuándo** (hora exacta del día, p. ej. 03:40), más el preset
-   de velocidad. La lib responde con audio ambiental. Nunca se le manda "noche" o "mañana": las
-   franjas son solo etiquetas de autoría.
+2. **Frontera por situación, tiempo y escucha**: el juego describe **dónde** está el punto de
+   escucha (distancia/peso a tipos de zona), **cuándo** (hora exacta del día, p. ej. 03:40) y **cómo
+   se escucha** (zoom/altura), más el preset de velocidad. La lib responde con audio ambiental.
+   Nunca se le manda "noche" o "mañana": las franjas son solo etiquetas de autoría.
    - Zonas de cualquier tipo, todas de la misma naturaleza: geografía (mar, montaña, río, bosque,
      llanura) y actividad (mina, fábrica, pueblo, estación).
    - Peso continuo 0.0–1.0 por zona según cercanía; varias zonas activas a la vez.
@@ -33,13 +33,16 @@
      saltando aleatoriamente entre tramos de la grabación para que no se detecte la repetición.
    - **Discontinuo**: material de eventos (ladridos, gallos, gaviotas). Se eligen tomas de la
      grabación y se disparan con pausas aleatorias entre ellas.
-4. **Composición = situación × tiempo**: cada sonido declara una **curva de presencia**
+4. **Composición = situación × tiempo × escucha**: cada sonido declara una **curva de presencia**
    anclada en las franjas del día (amanecer, mañana, mediodía, tarde, anochecer, noche, madrugada),
    y en ejecución se evalúa con la **hora exacta**: a las 03:40 el motor mira dónde cae esa hora entre
    noche y madrugada y mezcla los valores de ambas. En un punto, el resultado es la **suma ponderada
    de las zonas cercanas**.
    - La mezcla **persigue** ese objetivo suavizada en tiempo real (fundido con suelo), así que pasar
      de noche a mañana nunca es un salto: los perros bajan y las cigarras suben gradualmente.
+   - La **escucha (zoom/altura)** entra en la mezcla: desde lo alto y a ras de suelo no se percibe lo
+     mismo. Se descartó el "alcance" por sonido (una etiqueta más que mantener); **cómo se refleja el
+     zoom queda como pregunta abierta**.
    - Esto permite lo que buscamos: en una misma zona, por la mañana grillos, a mediodía perros y por
      la tarde halcones, sin duplicar nada.
    - **Overrides por escenario**: un mapa o una época pueden ajustar la tabla de una zona ("aquí, por
@@ -55,8 +58,8 @@
 8. **Todo es data**: catálogo de sonidos, zonas, tablas de presencia y presets viven en ficheros de
    texto legibles y recargables.
 9. **Primero el reproductor de pruebas**: se valida el paisaje sonoro en aislamiento (hora, zonas
-   con peso, velocidad) antes de integrarlo en los clientes.
-10. **Determinismo y carga**: el paisaje es función determinista de (hora, situación, clima,
+   con peso, zoom/escucha, velocidad) antes de integrarlo en los clientes.
+10. **Determinismo y carga**: el paisaje es función determinista de (hora, situación, escucha, clima,
     semilla del mundo). Al cargar una partida a las 04:39 se recalcula el objetivo de esa hora y se
     arranca ahí, sin arrastrar estado oculto de la sesión anterior. El azar de los eventos se deriva
     de la semilla (misma semilla + misma hora = misma programación), así que no hace falta guardar
@@ -71,6 +74,7 @@
 | Hora exacta + velocidad | 03:40, LENTA |
 | Velocidad | LENTA / NORMAL / RÁPIDA (60 / 40 / 20 min de día, a validar de oído) |
 | Situación: zonas con peso 0.0–1.0 | `mar 0.8`, `llanura 0.3`, `mina 0.5` |
+| Escucha: zoom/altura 0.0–1.0 | 0.2 (a ras de suelo) · 0.9 (vista amplia) |
 | Clima global (fase posterior) | `lluvia 0.4` |
 
 - **Zonas iniciales propuestas**: mar, llanura, bosque, montaña, río, mina, fábrica, pueblo,
@@ -96,8 +100,8 @@
   sí.
 - **Clima**: global (estado + intensidad), determinista desde la semilla, compuesto con la franja
   (la lluvia enmascara grillos, por ejemplo).
-- **Reproductor de pruebas**: hora exacta (con modo "día completo"), zonas con peso, preset de
-  velocidad y recarga de catálogo/zonas sin reiniciar.
+- **Reproductor de pruebas**: hora exacta (con modo "día completo"), zonas con peso, zoom/escucha,
+  preset de velocidad y recarga de catálogo/zonas sin reiniciar.
 
 Ejemplo de composición:
 
@@ -130,8 +134,8 @@ anochecer junto a la costa
   enmascara) y añade dependencia de los trenes dentro de la lib.
 - **Clima posicional por zonas**: aplazado; encarece mucho (mapa, bordes, transiciones al moverse)
   para el beneficio actual.
-- **Zoom/altura de escucha (perspectiva por sonido)**: aplazado; se simplificó la primera versión a
-  situación × tiempo.
+- **"Alcance" por sonido (perspectiva suelo/área/altura)**: descartado por ser una taxonomía de
+  más; el zoom/altura sigue en la composición, pendiente de definir su efecto.
 - **Librería externa con versionado/paquete publicado**: descartado por ahora; el repo ya es
   multi-módulo y un módulo interno da la misma frontera sin coste de publicación.
 
@@ -139,6 +143,7 @@ anochecer junto a la costa
 
 - ¿Las 7 franjas son fijas o configurables por escenario? (propuesta: fijas, como puntos de control
   de las curvas de presencia).
+- Cómo se refleja la escucha (zoom/altura) en la mezcla, sin "alcance" por sonido.
 - Lista definitiva de zonas y límite de sonidos simultáneos (6–8 como punto de partida).
 - Presets de velocidad definitivos (se deciden oyendo en el reproductor).
 - Catálogo y licencias de sonido; ¿assets en el repo o descarga aparte?
