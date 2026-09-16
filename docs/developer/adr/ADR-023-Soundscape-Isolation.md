@@ -24,8 +24,9 @@
    escucha (distancia/peso a tipos de zona), **cuándo** (hora exacta del día, p. ej. 03:40) y **cómo
    se escucha** (zoom/altura), más el preset de velocidad. La lib responde con audio ambiental.
    Nunca se le manda "noche" o "mañana": las franjas son solo etiquetas de autoría.
-   - Zonas iniciales: `sea`, `mountain`, `fields`; todas de la misma naturaleza (las zonas humanas
-     y otras quedan aparcadas).
+   - Zonas iniciales: naturales (`sea`, `mountain`, `fields`) e industriales por carga (`gold-mine`,
+     `gold-factory`, `ruby-mine`, `ruby-factory`, `coal-mine`, `coal-factory`); todas de la misma
+     naturaleza.
    - Peso continuo 0.0–1.0 por zona según cercanía; varias zonas activas a la vez.
 3. **Un solo mecanismo: bucle con saltos.** Cada sonido es un **bucle de material** (una o varias
    tomas) que salta aleatoriamente entre tramos para que no se detecte la repetición. La diferencia
@@ -77,7 +78,8 @@
 | Escucha: zoom/altura 0.0–1.0 | `listening` 0.2 (a ras de suelo) · 0.9 (vista amplia) |
 | Clima global (fase posterior) | `rain 0.4` |
 
-- **Zonas iniciales**: `sea`, `mountain`, `fields` (las zonas humanas quedan aparcadas).
+- **Zonas iniciales**: `sea`, `mountain`, `fields` + `gold-mine`, `gold-factory`, `ruby-mine`,
+  `ruby-factory`, `coal-mine`, `coal-factory`.
 - Cada **zona** es un conjunto de **sonidos componentes**; cada sonido declara:
   - **material**: una o varias tomas/segmentos;
   - **presencia por franjas** (`dawn`, `morning`, `noon`, `afternoon`, `dusk`, `night`, `predawn`)
@@ -102,20 +104,29 @@ storm   = rain 0.8  wind 0.6  storm 0.9
 # --- Sonidos: bucles con saltos indetectables ---------------
 #  (gallos, perros…: tomas de 10-20 s que ya incluyen silencios)
 [sounds]
-waves      = sea/waves-*.wav
-seagulls   = sea/seagull-*.wav
-cicadas    = field/cicada-*.wav
-crickets   = field/cricket-*.wav
-dogs       = field/dog-*.wav
-roosters   = field/rooster-*.wav
-wind       = mountain/wind-*.wav
-hawks      = mountain/hawk-*.wav
+waves            = sea/waves-*.wav
+seagulls         = sea/seagull-*.wav
+wind             = mountain/wind-*.wav
+hawks            = mountain/hawk-*.wav
+cicadas          = field/cicada-*.wav
+crickets         = field/cricket-*.wav
+dogs             = field/dog-*.wav
+roosters         = field/rooster-*.wav
+mine-machinery   = mine/extractor-*.wav
+mine-thuds       = mine/thud-*.wav
+factory-machinery = factory/machine-*.wav
 
 # --- Zonas: solo listas de sonidos --------------------------
 [zones]
-sea      = waves, seagulls
-fields   = cicadas, crickets, dogs, roosters
-mountain = wind, hawks
+sea           = waves, seagulls
+mountain      = wind, hawks
+fields        = cicadas, crickets, dogs, roosters
+gold-mine     = mine-machinery, mine-thuds
+coal-mine     = mine-machinery, mine-thuds
+ruby-mine     = mine-machinery, mine-thuds
+gold-factory  = factory-machinery
+coal-factory  = factory-machinery
+ruby-factory  = factory-machinery
 
 # --- Presencia por franja -----------------------------------
 #               dawn  morning  noon  afternoon  dusk  night  predawn
@@ -128,6 +139,9 @@ dogs            0.3     0.2   0.4       0.2   0.2    0.1      0.0
 roosters        0.9     0.2   0.0       0.0   0.0    0.0      0.1
 wind            0.4     0.3   0.3       0.4   0.5    0.5      0.4
 hawks           0.0     0.1   0.1       0.4   0.1    0.0      0.0
+mine-machinery  0.0     0.5   0.5       0.5   0.0    0.0      0.0
+mine-thuds      0.0     0.4   0.4       0.4   0.0    0.0      0.0
+factory-machinery 0.1   0.6   0.6       0.5   0.1    0.0      0.0
 
 # --- Clima por sonido (0 = igual) ---------------------------
 #             rain  wind  storm
@@ -138,6 +152,8 @@ seagulls     -0.7  +0.3   -1.0
 dogs          0.0   0.0   +0.2
 waves         0.0  +0.4    0.0
 hawks        -0.5  +0.2   -1.0
+mine-machinery  0.0   0.0   -0.3
+factory-machinery 0.0 0.0   -0.3
 ```
 
 Ejemplo de composición con ese fichero:
@@ -145,7 +161,10 @@ Ejemplo de composición con ese fichero:
 ```
 23:30 · NORMAL · sea 0.5 · fields 0.7 · listening 0.2 · drizzle
 → rain (del preset) 0.30 · crickets 0.41 · waves 0.31 · dogs 0.07 · seagulls 0.04
-  cicadas 0.00
+  cicadas 0.00 · mine-machinery 0.00 (fuera de turno)
+
+13:10 · NORMAL · gold-mine 0.7 · fields 0.4 · listening 0.2 · clear
+→ mine-machinery 0.35 · cicadas 0.40 · mine-thuds 0.28 · dogs 0.16
 ```
 
 ## Consecuencias
