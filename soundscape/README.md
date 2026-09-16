@@ -26,13 +26,16 @@ mvn -pl soundscape exec:java@cli \
 ```
 
 Opciones: `--file`, `--time HH:mm`, `--zones zona=peso,...`, `--height 0..1`, `--weather preset`,
-`--rain/--wind/--storm 0..1`, `--day`, `--help`.
+`--rain/--wind/--storm 0..1`, `--day`, `--check-assets`, `--help`.
+
+`--check-assets` resuelve los materiales del estilo bajo `sounds/` y avisa de los que falten.
 
 ## Interfaz gráfica de pruebas
 
 `SoundscapePlayer` es un taller Swing: sliders de hora, altura, clima y zonas, selector de velocidad
 (lenta/normal/rápida, día de 60/40/20 min) con multiplicador de vista previa (x1/x10/x60), barras de
-volumen por sonido en vivo, botón de día completo y carga de estilos (`*.sound`).
+volumen por sonido en vivo, botón de día completo, **botón 🔊 Escuchar** (reproduce la mezcla con
+loops y saltos aleatorios) y carga de estilos (`*.sound`).
 
 ```bash
 mvn -pl soundscape exec:java@gui

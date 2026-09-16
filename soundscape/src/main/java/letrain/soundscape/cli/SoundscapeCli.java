@@ -2,6 +2,7 @@ package letrain.soundscape.cli;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URL;
 import java.nio.file.Path;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
@@ -16,6 +17,7 @@ import letrain.soundscape.CompositionInput;
 import letrain.soundscape.SoundscapeEngine;
 import letrain.soundscape.SoundscapeStyle;
 import letrain.soundscape.StyleLoader;
+import letrain.soundscape.audio.SampleResolver;
 import letrain.soundscape.impl.SoundscapeEngineImpl;
 import letrain.soundscape.impl.TextStyleLoader;
 
@@ -62,6 +64,7 @@ public final class SoundscapeCli {
         Float wind = null;
         Float storm = null;
         boolean day = false;
+        boolean checkAssets = false;
 
         try {
             for (int i = 0; i < args.length; i++) {
@@ -80,6 +83,7 @@ public final class SoundscapeCli {
                     case "--wind" -> wind = Float.parseFloat(required(args, ++i, arg));
                     case "--storm" -> storm = Float.parseFloat(required(args, ++i, arg));
                     case "--day" -> day = true;
+                    case "--check-assets" -> checkAssets = true;
                     default -> throw new IllegalArgumentException("unknown option: " + arg);
                 }
             }
@@ -108,6 +112,9 @@ public final class SoundscapeCli {
 
         String styleName =
                 file != null ? Path.of(file).getFileName().toString() : "valle-norte.sound";
+        if (checkAssets) {
+            return checkAssets(style, styleName, out);
+        }
         out.println(header(styleName, time, zones, height, weatherPreset, rainIntensity,
                 windIntensity, stormIntensity));
 
@@ -131,6 +138,49 @@ public final class SoundscapeCli {
                     + style.climatePresets().keySet());
         }
         return preset;
+    }
+
+    private int checkAssets(SoundscapeStyle style, String styleName, PrintStream out) {
+        SampleResolver resolver = new SampleResolver();
+        out.println("assets for " + styleName + ":");
+        int missing = 0;
+        for (Map.Entry<String, letrain.soundscape.SoundDef> entry : style.sounds().entrySet()) {
+            missing += printAsset(out, resolver, entry.getKey(), entry.getValue().material());
+        }
+        for (Map.Entry<String, letrain.soundscape.SoundDef> entry : style.weatherSounds()
+                .entrySet()) {
+            missing += printAsset(out, resolver, "weather-" + entry.getKey(),
+                    entry.getValue().material());
+        }
+        out.println(missing == 0 ? "all assets resolved" : missing + " sound(s) without assets");
+        return missing == 0 ? 0 : 3;
+    }
+
+    private int printAsset(PrintStream out, SampleResolver resolver, String name,
+            List<String> materials) {
+        List<URL> urls = new ArrayList<>();
+        for (String material : materials) {
+            urls.addAll(resolver.resolve(material));
+        }
+        if (urls.isEmpty()) {
+            out.printf("  %-18s MISSING (%s)%n", name, materials);
+            return 1;
+        }
+        StringBuilder files = new StringBuilder();
+        for (URL url : urls) {
+            if (files.length() > 0) {
+                files.append(", ");
+            }
+            files.append(fileName(url));
+        }
+        out.printf("  %-18s %d file(s): %s%n", name, urls.size(), files);
+        return 0;
+    }
+
+    private String fileName(URL url) {
+        String path = url.getPath();
+        int slash = path.lastIndexOf('/');
+        return slash >= 0 ? path.substring(slash + 1) : path;
     }
 
     private void printDay(PrintStream out, SoundscapeStyle style, Map<String, Float> zones,
@@ -238,6 +288,7 @@ public final class SoundscapeCli {
                   --wind <0..1>       wind intensity override
                   --storm <0..1>      storm intensity override
                   --day               print a full-day timeline every 30 game minutes
+                  --check-assets      resolve style materials and report missing files
                   --help              this help""");
     }
 }

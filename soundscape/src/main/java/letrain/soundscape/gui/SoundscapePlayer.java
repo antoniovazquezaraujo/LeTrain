@@ -21,6 +21,7 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
+import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -29,6 +30,7 @@ import letrain.soundscape.SoundscapeEngine;
 import letrain.soundscape.SoundscapeStyle;
 import letrain.soundscape.SpeedPreset;
 import letrain.soundscape.StyleLoader;
+import letrain.soundscape.audio.AmbientPlayer;
 import letrain.soundscape.impl.SoundscapeEngineImpl;
 import letrain.soundscape.impl.TextStyleLoader;
 
@@ -67,6 +69,8 @@ public final class SoundscapePlayer {
 
     private boolean updating;
     private Timer playTimer;
+    private JToggleButton listenButton;
+    private AmbientPlayer ambientPlayer;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new SoundscapePlayer().show(args));
@@ -125,6 +129,9 @@ public final class SoundscapePlayer {
         JButton playButton = new JButton("▶ Día completo");
         playButton.addActionListener(e -> togglePlay(playButton));
         controls.add(playButton);
+        listenButton = new JToggleButton("🔊 Escuchar");
+        listenButton.addActionListener(e -> toggleAudio());
+        controls.add(listenButton);
 
         controls.add(section("Altura (zoom)"));
         heightSlider = slider(100, 0);
@@ -275,6 +282,10 @@ public final class SoundscapePlayer {
     }
 
     private void chooseStyle() {
+        stopAudio();
+        if (listenButton != null) {
+            listenButton.setSelected(false);
+        }
         JFileChooser chooser = new JFileChooser();
         chooser.setFileFilter(new FileNameExtensionFilter("Soundscape style (*.sound)", "sound"));
         if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION) {
@@ -335,8 +346,46 @@ public final class SoundscapePlayer {
         updating = false;
     }
 
+    private void toggleAudio() {
+        if (!listenButton.isSelected()) {
+            stopAudio();
+            return;
+        }
+        stopAudio();
+        AmbientPlayer player = new AmbientPlayer(style, 1);
+        if (player.sampleCount() == 0) {
+            JOptionPane.showMessageDialog(frame,
+                    "No se ha podido cargar ningún sonido. Revisa los materiales del estilo.",
+                    "soundscape", JOptionPane.WARNING_MESSAGE);
+            listenButton.setSelected(false);
+            return;
+        }
+        try {
+            player.start();
+            ambientPlayer = player;
+            if (!player.missingSounds().isEmpty()) {
+                statusLabel.setText("faltan sonidos: " + player.missingSounds());
+            }
+        } catch (javax.sound.sampled.LineUnavailableException e) {
+            JOptionPane.showMessageDialog(frame, "Sin dispositivo de audio: " + e.getMessage(),
+                    "soundscape", JOptionPane.ERROR_MESSAGE);
+            listenButton.setSelected(false);
+        }
+        updateComposition();
+    }
+
+    private void stopAudio() {
+        if (ambientPlayer != null) {
+            ambientPlayer.close();
+            ambientPlayer = null;
+        }
+    }
+
     private void updateComposition() {
         Composition composition = engine.compose(style, state.toInput());
+        if (ambientPlayer != null) {
+            ambientPlayer.updateTargets(composition);
+        }
         timeLabel.setText(String.format(Locale.ROOT, "%02d:%02d", state.time().getHour(),
                 state.time().getMinute()));
         statusLabel.setText(String.format(Locale.ROOT,
