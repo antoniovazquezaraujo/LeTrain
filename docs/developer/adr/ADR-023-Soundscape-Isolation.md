@@ -56,8 +56,13 @@
    y fundidos (con suelo en segundos reales y techo como fracción de la franja).
 8. **Todo es data**: catálogo de sonidos, zonas, tablas de presencia y presets viven en ficheros de
    texto legibles y recargables.
-9. **Primero el reproductor de pruebas**: se valida el paisaje sonoro en aislamiento (franja, zonas
-   con peso, velocidad) antes de integrarlo en los clientes.
+9. **Primero el reproductor de pruebas**: se valida el paisaje sonoro en aislamiento (hora, zonas
+   con peso, zoom/escucha, velocidad) antes de integrarlo en los clientes.
+10. **Determinismo y carga**: el paisaje es función determinista de (hora, situación, escucha, clima,
+    semilla del mundo). Al cargar una partida a las 04:39 se recalcula el objetivo de esa hora y se
+    arranca ahí, sin arrastrar estado oculto de la sesión anterior. El azar de los eventos se deriva
+    de la semilla (misma semilla + misma hora = misma programación), así que no hace falta guardar
+    estado interno del azar.
 
 ## Detalle de composición (resumen)
 
