@@ -64,7 +64,7 @@ El elemento sigue la vía y atraviesa los desvíos (usando su rama activa), salt
 ### Trenes y Conducción (Modo Drive / Trains)
 - **Modo Trains**: Letras minúsculas crean vagones (teclas 1, 2, 3 para tipo de mercancía). Letras mayúsculas crean locomotoras (teclas 0-9 para color). Pulsa **Intro** para terminar.
 - **Modo Drive**: Flechas Izquierda/Derecha seleccionan tren. Arriba/Abajo aceleran/frenan. **Espacio** invierte la marcha (solo en parado).
-- **Modo Link / Unlink**: Arriba/Abajo selecciona el extremo del tren. Izquierda/Derecha selecciona la cantidad de vagones. **Espacio** ejecuta el enganche.
+- **Modo Link / Unlink**: Arriba/Abajo selecciona el extremo del tren. Izquierda/Derecha selecciona la cantidad de vagones. **Espacio** ejecuta el enganche/desenganche.
 
 
 ### Modo Consola (CLI)

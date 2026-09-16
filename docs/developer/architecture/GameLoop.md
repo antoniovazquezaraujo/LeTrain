@@ -1,19 +1,19 @@
-[ [Índice] ] [[docs/architecture/Overview|⬅️ Arquitectura]] · [[docs/Index|⬅️ Volver al Índice]]
+[ [Índice] ] [[architecture/Overview|⬅️ Arquitectura]] · [[Index|⬅️ Volver al Índice]]
 
 # Bucle Principal del Juego (Game Loop)
 
 ## Visión General
 
-LeTrain tiene dos modos de ejecución — **Terminal 2D** y **LibGDX 3D** — pero comparten el mismo motor de simulación. La diferencia principal es cómo se orquesta el bucle y cómo se renderiza.
+LeTrain tiene dos modos de ejecución principales — **Terminal 2D** (`LeTrainTerminal`) y **LibGDX 3D** (`LeTrainGraphic`) — además del validador headless (`LeTrainCheck`). Todos comparten el mismo motor de simulación en `core`. La diferencia principal es cómo se orquesta el bucle y cómo se renderiza.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         main() (LeTrain.java)                           │
+│                      Lanzadores (launcher-*)                            │
 │                                                                         │
 │  Model model = new Model()                                              │
 │                                                                         │
-│  ┌── ¿--3d? ────────────────────────────────────────────────────────┐   │
-│  │  NO                                       SÍ                     │   │
+│  ┌── Lanzador seleccionado ─────────────────────────────────────────┐   │
+│  │  LeTrainTerminal                          LeTrainGraphic         │   │
 │  │  ▼                                        ▼                      │   │
 │  │  TerminalPresenter(model)                 GraphicPresenter(model)│   │
 │  │  presenter.start()                        Lwjgl3Application(p)   │   │
@@ -40,28 +40,28 @@ LeTrain tiene dos modos de ejecución — **Terminal 2D** y **LibGDX 3D** — pe
 
 ## 1. Los Dos Bucles de la Capa de Presentación
 
-La actualización lógica del juego y el dibujado en pantalla siguen estrategias diferenciadas según el modo de ejecución seleccionado.
+La actualización lógica del juego y el dibujado en pantalla siguen estrategias diferenciadas según el lanzador ejecutado.
 
 ```mermaid
 graph TD
-    A[LeTrain.java] -->|--3d| B[Lwjgl3Application]
-    A -->|2D default| C[Thread principal de TerminalPresenter]
+    A[LeTrainGraphic] --> B[Lwjgl3Application]
+    C[LeTrainTerminal] --> D[Thread principal de TerminalPresenter]
     
-    B -->|Cada Frame ~60 FPS| D[GraphicPresenter.render]
-    D -->|Acumula Delta Time| E{¿Delta > 0.05s?}
-    E -->|Sí| F[Logic Tick 20 TPS]
-    E -->|No| G[Renderizado 3D con interpolación alpha]
+    B -->|Cada Frame ~60 FPS| E[GraphicPresenter.render]
+    E -->|Acumula Delta Time| F{¿Delta > 0.05s?}
+    F -->|Sí| G[Logic Tick 20 TPS]
+    F -->|No| H[Renderizado 3D con interpolación alpha]
     
-    C -->|Bucle while| H[Leer tecla no bloqueante]
-    H --> I[SimulationController.tick 20 TPS]
-    I --> J[Actualizar Audio y Render 2D]
-    J --> K[Thread.sleep 50ms]
-    K --> H
+    D -->|Bucle while| I[Leer tecla no bloqueante]
+    I --> J[SimulationController.tick 20 TPS]
+    J --> K[Actualizar Audio y Render 2D]
+    K --> L[Thread.sleep 50ms]
+    L --> I
 ```
 
 ### A. Bucle 2D (TerminalPresenter)
 
-En el presentador de la terminal ([TerminalPresenter.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/terminal/TerminalPresenter.java)), el bucle se ejecuta de manera síncrona en el hilo principal dentro del método `start()`:
+En el presentador de la terminal (`TerminalPresenter.java` en `ui-terminal`), el bucle se ejecuta de manera síncrona en el hilo principal dentro del método `start()`:
 *   **Frecuencia**: Se limita a aproximadamente **20 Ticks por segundo (TPS)** mediante una llamada a `Thread.sleep(50)` al final de cada iteración.
 *   **Lectura de Entrada**: Realiza polling de teclado no bloqueante usando Lanterna. Consume y vacía el búfer de entrada en cada ciclo para evitar retardos (*input lag*).
 *   **Actualización Lógica**: Invoca a `SimulationController.tick()`.
@@ -104,7 +104,7 @@ LibGDX llama a `render()` cada vez que el monitor refresca (~60 FPS). El bucle s
 
 ## 2. El Bucle de Simulación Lógica (Simulation Tick)
 
-Ambos modos llaman exactamente al mismo método en [SimulationController.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/SimulationController.java) para actualizar el estado del mundo de forma determinista:
+Ambos modos llaman exactamente al mismo método en `SimulationController.java` (`core/src/main/java/letrain/mvp/impl/SimulationController.java`) para actualizar el estado del mundo de forma determinista:
 
 ```mermaid
 flowchart TD
@@ -142,7 +142,7 @@ Las locomotoras gestionan su velocidad física de forma escalonada.
     *   En cada tick lúdico, se consume un turno. Al llegar a cero, se intenta dar un paso físico en las vías.
 
 ### B. Algoritmo de Avance en Dos Fases
-El desplazamiento físico es coordinado por [TrainMovementManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/TrainMovementManager.java) siguiendo un patrón de transacción segura:
+El desplazamiento físico es coordinado por `TrainMovementManager.java` (`core/src/main/java/letrain/vehicle/rail/impl/TrainMovementManager.java`) siguiendo un patrón de transacción segura:
 
 1.  **Fase 1: Validación**:
     - Se evalúa únicamente la cabeza física del convoy. Se localiza la vía destino según la orientación actual y el desvío seleccionado.
@@ -160,7 +160,7 @@ El desplazamiento físico es coordinado por [TrainMovementManager.java](file:///
 
 ## 4. El Sistema de Seguridad de Cantones (Seguridad Ferroviaria)
 
-Para evitar colisiones entre trenes que circulan en piloto automático (modo `AUTO`), LeTrain cuenta con un gestor de cantones y bloqueo de secciones denominado [TrainSafetyManager.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/TrainSafetyManager.java).
+Para evitar colisiones entre trenes que circulan en piloto automático (modo `AUTO`), LeTrain cuenta con un gestor de cantones y bloqueo de secciones denominado `TrainSafetyManager.java` (`core/src/main/java/letrain/vehicle/rail/impl/TrainSafetyManager.java`).
 
 Siguiendo las pautas del proyecto, este sistema es **100% guiado por eventos (reactivo)**, evitando sobrecargar el bucle lúdico principal con chequeos periódicos de todas las vías del juego.
 
@@ -239,21 +239,23 @@ Si el renderizado se atrasa (ej: escena 3D muy compleja), el acumulador evita qu
 
 | Componente | Ruta |
 |---|---|
-| Launcher Principal | `src/main/java/letrain/LeTrain.java` |
-| Presenter interface | `src/main/java/letrain/mvp/Presenter.java` |
-| View interface | `src/main/java/letrain/mvp/View.java` |
-| Model interface | `src/main/java/letrain/mvp/Model.java` |
-| Model impl | `src/main/java/letrain/mvp/impl/Model.java` |
-| Orquestador de Simulación | `src/main/java/letrain/mvp/impl/SimulationController.java` |
-| Servicio de Física y Simulación | `src/main/java/letrain/mvp/impl/services/SimulationService.java` |
-| Planificador de Tareas síncronas | `src/main/java/letrain/utils/impl/SimulationScheduler.java` |
-| Presentador del modo Terminal 2D | `src/main/java/letrain/mvp/impl/terminal/TerminalPresenter.java` |
-| Presentador del modo Gráfico 3D | `src/main/java/letrain/mvp/impl/graphic/GraphicPresenter.java` |
-| Vista del modo Terminal 2D | `src/main/java/letrain/mvp/impl/terminal/TerminalView.java` |
-| Entrada y Teclado 3D | `src/main/java/letrain/mvp/impl/graphic/Gdx3DInputHandler.java` |
-| Controlador de la Cámara 3D | `src/main/java/letrain/mvp/impl/graphic/CameraController.java` |
-| HUD y Menús LibGDX | `src/main/java/letrain/mvp/impl/graphic/Gdx3DHud.java` |
-| Renderizador del Mundo 3D | `src/main/java/letrain/visitor/gdx3d/Gdx3DRenderer.java` |
-| Renderizador del Mundo 2D | `src/main/java/letrain/visitor/terminal/RenderVisitor.java` |
-| Generador de Vías | `src/main/java/letrain/mvp/impl/RailTrackMaker.java` |
-| Motor de Automatización | `src/main/java/letrain/mvp/impl/services/AutomationEngine.java` |
+| Launcher 3D | `launcher-graphic/src/main/java/letrain/LeTrainGraphic.java` |
+| Launcher 2D Terminal | `launcher-terminal/src/main/java/letrain/LeTrainTerminal.java` |
+| Launcher Headless Validator | `launcher-check/src/main/java/letrain/LeTrainCheck.java` |
+| Presenter interface | `core/src/main/java/letrain/mvp/Presenter.java` |
+| View interface | `core/src/main/java/letrain/mvp/View.java` |
+| Model interface | `core/src/main/java/letrain/mvp/Model.java` |
+| Model impl | `core/src/main/java/letrain/mvp/impl/Model.java` |
+| Orquestador de Simulación | `core/src/main/java/letrain/mvp/impl/SimulationController.java` |
+| Servicio de Física y Simulación | `core/src/main/java/letrain/mvp/impl/services/SimulationService.java` |
+| Planificador de Tareas síncronas | `core/src/main/java/letrain/utils/impl/SimulationScheduler.java` |
+| Presentador del modo Terminal 2D | `ui-terminal/src/main/java/letrain/mvp/impl/terminal/TerminalPresenter.java` |
+| Presentador del modo Gráfico 3D | `ui-graphic/src/main/java/letrain/mvp/impl/graphic/GraphicPresenter.java` |
+| Vista del modo Terminal 2D | `ui-terminal/src/main/java/letrain/mvp/impl/terminal/TerminalView.java` |
+| Entrada y Teclado 3D | `ui-graphic/src/main/java/letrain/mvp/impl/graphic/Gdx3DInputHandler.java` |
+| Controlador de la Cámara 3D | `ui-graphic/src/main/java/letrain/mvp/impl/graphic/CameraController.java` |
+| HUD y Menús LibGDX | `ui-graphic/src/main/java/letrain/mvp/impl/graphic/Gdx3DHud.java` |
+| Renderizador del Mundo 3D | `ui-graphic/src/main/java/letrain/visitor/gdx3d/Gdx3DRenderer.java` |
+| Renderizador del Mundo 2D | `ui-terminal/src/main/java/letrain/visitor/terminal/RenderVisitor.java` |
+| Generador de Vías | `core/src/main/java/letrain/mvp/impl/RailTrackMaker.java` |
+| Motor de Automatización | `core/src/main/java/letrain/mvp/impl/services/AutomationEngine.java` |

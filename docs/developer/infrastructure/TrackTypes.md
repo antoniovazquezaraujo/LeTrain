@@ -8,7 +8,7 @@ El sistema de infraestructura de LeTrain se basa en una jerarquía de clases que
         - **`letrain.track.rail.ForkRailTrack`**: Representa un desvío (fork). Implementa `DynamicRouter` para gestionar cambios de aguja.
         - **`letrain.track.rail.BridgeRailTrack`**: Extensión para tramos de puente.
         - **`letrain.track.rail.TunnelRailTrack`**: Extensión para tramos de túnel.
-        - **`letrain.track.rail.StationRailTrack`**: Vía que contiene una estación.
+*(Nota: Las estaciones, semáforos y sensores ya no son subclases de `RailTrack`; se modelan como componentes desacoplados `TrackComponent` alojados sobre cualquier `Track`, según ADR-017).*
 
 ## Mecanismos de Navegación
 La navegación dentro de una pieza de vía no es directa, sino que se delega en componentes especializados:
