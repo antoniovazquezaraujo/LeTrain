@@ -50,7 +50,8 @@
 5. **Sin ducking**: el tren se suma al decorado; no lo silencia. Un limitador maestro evita
    saturación. Los sonidos de tren siguen siendo responsabilidad del juego.
 6. **Clima global** (estado + intensidad), determinista desde la semilla, compuesto con la hora. Sin
-   clima posicional.
+   clima posicional. Alcance inicial: **lluvia, viento y tormenta eléctrica** (la niebla queda fuera
+   por ahora).
 7. **Velocidad LENTA / NORMAL / RÁPIDA** con duraciones configurables (definidas en ADR-022). Las
    franjas siguen al reloj de juego, pero la **textura se ancla al tiempo real**: densidad de eventos
    y fundidos (con suelo en segundos reales y techo como fracción de la franja).
