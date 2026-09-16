@@ -71,44 +71,82 @@
 
 | Entrada | Ejemplo |
 |---|---|
-| Hora exacta + velocidad | 03:40, LENTA |
-| Velocidad | LENTA / NORMAL / RÁPIDA (60 / 40 / 20 min de día, a validar de oído) |
-| Situación: zonas con peso 0.0–1.0 | `mar 0.8`, `llanura 0.3`, `mina 0.5` |
-| Escucha: zoom/altura 0.0–1.0 | 0.2 (a ras de suelo) · 0.9 (vista amplia) |
-| Clima global (fase posterior) | `lluvia 0.4` |
+| Hora exacta + velocidad | 03:40, `slow` |
+| Velocidad | `slow` / `normal` / `fast` (60 / 40 / 20 min de día, a validar de oído) |
+| Situación: zonas con peso 0.0–1.0 | `sea 0.8`, `plains 0.3`, `mine 0.5` |
+| Escucha: zoom/altura 0.0–1.0 | `listening` 0.2 (a ras de suelo) · 0.9 (vista amplia) |
+| Clima global (fase posterior) | `rain 0.4` |
 
-- **Zonas iniciales propuestas**: mar, llanura, bosque, montaña, río, mina, fábrica, pueblo,
-  estación.
+- **Zonas iniciales propuestas**: `sea`, `plains`, `forest`, `mountain`, `river`, `mine`,
+  `factory`, `town`, `station`.
 - Cada **zona** es un conjunto de **sonidos componentes**; cada sonido declara:
   - **material**: una o varias tomas/segmentos;
-  - **presencia por franjas** como puntos de control de una curva (las franjas sin valor se interpolan o quedan a cero);
+  - **presencia por franjas** (`dawn`, `morning`, `noon`, `afternoon`, `dusk`, `night`, `predawn`)
+    como puntos de control de una curva; las franjas sin valor se interpolan o quedan a cero;
   - **parámetros**: presencia base, cercanía y variación.
 - **Volumen final** de un sonido ≈ peso de su zona × presencia en la franja (interpolada) ×
   parámetros propios. Se suman todas las zonas activas.
-- Ejemplo de tabla de la zona **llanura**:
-
-| Sonido | Amanecer | Mañana | Mediodía | Tarde | Anochecer | Noche | Madrugada |
-|---|---|---|---|---|---|---|---|
-| gallos | 0.8 | 0.2 | 0 | 0 | 0 | 0 | 0.1 |
-| perros | 0.3 | 0.2 | 0.5 | 0.2 | 0.2 | 0.1 | 0 |
-| grillos | 0.1 | 0 | 0 | 0 | 0.4 | 0.7 | 0.8 |
-| halcones | 0 | 0.1 | 0.1 | 0.4 | 0.1 | 0 | 0 |
-
-- **Anti-repetición**: saltos aleatorios entre tramos con micro-fundido para evitar clics, pools de
-  tomas largas, variación de tono/volumen y modulación lenta; sonidos desfasados entre sí.
-- **Clima**: global (estado + intensidad), determinista desde la semilla, compuesto con la franja
-  (la lluvia enmascara grillos, por ejemplo).
-- **Reproductor de pruebas**: hora exacta (con modo "día completo"), zonas con peso, zoom/escucha,
-  preset de velocidad y recarga de catálogo/zonas sin reiniciar.
-
-Ejemplo de composición:
+- Ejemplo de formato (claves en inglés, como el resto del código; comentarios en español):
 
 ```
-anochecer junto a la costa
-  hora: 20:45 · clima: lluvia 0.4 · situación: mar 0.8 · pueblo 0.2
-  resultado: olas (bucle con salto, 0.6) · lluvia-suave (bucle, 0.4)
-             gaviotas (discontinuo, 0.1) · perro-lejano (discontinuo, 0.15, lejano)
-             grillos de pueblo (0.2, enmascarados por la lluvia)
+# ============================================================
+#  Estilo sonoro — Valle del Norte
+#  Texto plano, comentarios con #, recarga en caliente.
+# ============================================================
+
+# --- Presets de clima (intensidades 0.0–1.0) ----------------
+[climate]
+clear   = rain 0.0  wind 0.1  storm 0.0
+drizzle = rain 0.3  wind 0.1  storm 0.0
+storm   = rain 0.8  wind 0.6  storm 0.9
+
+# --- Sonidos: bucles con saltos indetectables ---------------
+#  (gallos, perros…: tomas de 10-20 s que ya incluyen silencios)
+[sounds]
+waves      = sea/waves-*.wav
+cicadas    = bugs/cicada-*.wav
+seagulls   = sea/seagull-*.wav
+crickets   = bugs/cricket-*.wav
+dogs       = town/dog-*.wav
+roosters   = farm/rooster-*.wav
+machinery  = mine/machine-*.wav
+thuds      = mine/thud-*.wav
+
+# --- Zonas: solo listas de sonidos --------------------------
+[zones]
+sea     = waves, seagulls
+plains  = cicadas, crickets, dogs, roosters
+mine    = machinery, thuds
+
+# --- Presencia por franja -----------------------------------
+#               dawn  morning  noon  afternoon  dusk  night  predawn
+[presence]
+waves           0.5     0.5   0.5       0.5   0.6    0.6      0.5
+cicadas         0.0     0.2   1.0       0.5   0.1    0.0      0.0
+seagulls        0.1     0.3   0.2       0.4   0.3    0.1      0.0
+crickets        0.1     0.0   0.0       0.0   0.5    0.8      0.9
+dogs            0.3     0.2   0.4       0.2   0.2    0.1      0.0
+roosters        0.9     0.2   0.0       0.0   0.0    0.0      0.1
+machinery       0.0     0.5   0.5       0.5   0.0    0.0      0.0
+thuds           0.0     0.4   0.4       0.4   0.0    0.0      0.0
+
+# --- Clima por sonido (0 = igual) ---------------------------
+#             rain  wind  storm
+[climate-by-sound]
+cicadas      -1.0  -0.4   -1.0
+crickets     -0.8  -0.2   -1.0
+seagulls     -0.7  +0.3   -1.0
+dogs          0.0   0.0   +0.2
+waves         0.0  +0.4    0.0
+machinery     0.0   0.0   -0.3
+```
+
+Ejemplo de composición con ese fichero:
+
+```
+23:30 · NORMAL · sea 0.5 · plains 0.7 · listening 0.2 · drizzle
+→ rain (del preset) 0.30 · crickets 0.41 · waves 0.31 · dogs 0.07 · seagulls 0.04
+  cicadas 0.00 · machinery 0.00
 ```
 
 ## Consecuencias
