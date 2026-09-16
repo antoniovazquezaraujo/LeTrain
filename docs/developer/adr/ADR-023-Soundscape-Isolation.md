@@ -170,12 +170,22 @@ factory-machinery 0.0 0.0   -0.3
 Ejemplo de composición con ese fichero:
 
 ```
-23:30 · NORMAL · sea 0.5 · fields 0.7 · height 0.2 · drizzle
-→ rain (del preset) 0.30 · crickets 0.41 · waves 0.31 · dogs 0.07 · seagulls 0.04
+23:30 · NORMAL · sea 0.5 · fields 0.7 · height 0.2 · drizzle (rain 0.3 · wind 0.1)
+
+Cómo se calcula un sonido (ejemplo: crickets), paso a paso:
+  peso de zona       fields 0.7
+  × presencia (hora) night 0.8                                  → 0.56
+  × clima            1 - 0.8×0.3 (rain) - 0.2×0.1 (wind) = 0.74 → 0.41
+  × altura           1 - 0.8×0.2 = 0.84                         → 0.35
+  = crickets 0.35
+
+Resultado de la mezcla:
+  rain (del preset) 0.30 · crickets 0.35 · waves 0.34 · dogs 0.07 · seagulls 0.04
   cicadas 0.00 · mine-machinery 0.00 (fuera de turno)
 
 13:10 · NORMAL · gold-mine 0.7 · fields 0.4 · height 0.2 · clear
-→ mine-machinery 0.35 · cicadas 0.40 · mine-thuds 0.28 · dogs 0.16
+→ mine-machinery 0.35 · cicadas 0.31 · mine-thuds 0.28 · dogs 0.16
+
 ```
 
 ## Consecuencias
