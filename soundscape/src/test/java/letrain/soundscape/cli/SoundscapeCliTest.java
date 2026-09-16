@@ -62,6 +62,15 @@ class SoundscapeCliTest {
     }
 
     @Test
+    @DisplayName("explains silence when no zones are given")
+    void should_ExplainSilence_When_NoZones() {
+        int code = run();
+
+        assertEquals(0, code);
+        assertTrue(output().contains("silencio"));
+    }
+
+    @Test
     @DisplayName("prints usage with --help")
     void should_PrintUsage_When_HelpRequested() {
         assertEquals(0, run("--help"));

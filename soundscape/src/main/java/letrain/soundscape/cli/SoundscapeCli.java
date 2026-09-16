@@ -147,12 +147,17 @@ public final class SoundscapeCli {
 
     private void printComposition(PrintStream out, Composition composition) {
         out.println();
-        composition.volumes().entrySet().stream()
+        List<Map.Entry<String, Float>> audible = composition.volumes().entrySet().stream()
                 .filter(entry -> entry.getValue() > PRINT_THRESHOLD)
                 .sorted(Map.Entry.<String, Float>comparingByValue().reversed()
                         .thenComparing(Map.Entry.comparingByKey()))
-                .forEach(entry -> out.println(String.format(Locale.ROOT, "  %.2f  %s",
-                        entry.getValue(), entry.getKey())));
+                .toList();
+        if (audible.isEmpty()) {
+            out.println("  (silencio: define zonas con --zones y clima con --weather)");
+            return;
+        }
+        audible.forEach(entry -> out.println(
+                String.format(Locale.ROOT, "  %.2f  %s", entry.getValue(), entry.getKey())));
     }
 
     private String formatActive(Composition composition) {
