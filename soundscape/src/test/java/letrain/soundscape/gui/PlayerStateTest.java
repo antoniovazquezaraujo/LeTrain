@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.IOException;
 import java.time.LocalTime;
 import letrain.soundscape.SoundscapeStyle;
+import letrain.soundscape.SpeedPreset;
 import letrain.soundscape.impl.TextStyleLoader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -51,6 +52,16 @@ class PlayerStateTest {
         assertEquals(1f, state.rain(), 1e-6);
         assertEquals(0f, state.wind(), 1e-6);
         assertEquals(0.4f, state.storm(), 1e-6);
+    }
+
+    @Test
+    @DisplayName("defaults to NORMAL speed and rejects null")
+    void should_DefaultToNormalSpeed() {
+        assertEquals(SpeedPreset.NORMAL, state.speed());
+        state.setSpeed(null);
+        assertEquals(SpeedPreset.NORMAL, state.speed());
+        state.setSpeed(SpeedPreset.FAST);
+        assertEquals(SpeedPreset.FAST, state.speed());
     }
 
     @Test

@@ -6,6 +6,7 @@ import java.util.Map;
 import letrain.soundscape.ClimatePreset;
 import letrain.soundscape.CompositionInput;
 import letrain.soundscape.SoundscapeStyle;
+import letrain.soundscape.SpeedPreset;
 
 /**
  * Editable ambient state behind the test GUI: time, zone weights, height and weather. Pure data and
@@ -22,6 +23,7 @@ public class PlayerState {
     private float rain;
     private float wind;
     private float storm;
+    private SpeedPreset speed = SpeedPreset.NORMAL;
 
     public PlayerState(SoundscapeStyle style) {
         this.style = style;
@@ -96,6 +98,14 @@ public class PlayerState {
 
     public void applyPreset(ClimatePreset preset) {
         setWeather(preset.rain(), preset.wind(), preset.storm());
+    }
+
+    public SpeedPreset speed() {
+        return speed;
+    }
+
+    public void setSpeed(SpeedPreset speed) {
+        this.speed = speed == null ? SpeedPreset.NORMAL : speed;
     }
 
     public CompositionInput toInput() {

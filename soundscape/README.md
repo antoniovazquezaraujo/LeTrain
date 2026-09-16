@@ -30,8 +30,9 @@ Opciones: `--file`, `--time HH:mm`, `--zones zona=peso,...`, `--height 0..1`, `-
 
 ## Interfaz gráfica de pruebas
 
-`SoundscapePlayer` es un taller Swing: sliders de hora, altura, clima y zonas, barras de volumen por
-sonido en vivo, botón de día completo y carga de estilos (`*.sound`).
+`SoundscapePlayer` es un taller Swing: sliders de hora, altura, clima y zonas, selector de velocidad
+(lenta/normal/rápida, día de 60/40/20 min) con multiplicador de vista previa (x1/x10/x60), barras de
+volumen por sonido en vivo, botón de día completo y carga de estilos (`*.sound`).
 
 ```bash
 mvn -pl soundscape exec:java@gui

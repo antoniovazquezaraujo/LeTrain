@@ -27,6 +27,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import letrain.soundscape.Composition;
 import letrain.soundscape.SoundscapeEngine;
 import letrain.soundscape.SoundscapeStyle;
+import letrain.soundscape.SpeedPreset;
 import letrain.soundscape.StyleLoader;
 import letrain.soundscape.impl.SoundscapeEngineImpl;
 import letrain.soundscape.impl.TextStyleLoader;
@@ -56,6 +57,10 @@ public final class SoundscapePlayer {
     private JSlider heightSlider;
     private final Map<String, JSlider> weatherSliders = new LinkedHashMap<>();
     private JComboBox<String> weatherCombo;
+    private JComboBox<SpeedPreset> speedCombo;
+    private JComboBox<String> previewCombo;
+    private int previewMultiplier = 1;
+    private double minutesAccumulator;
     private JPanel zonesPanel;
     private JPanel resultsPanel;
     private final Map<String, JSlider> zoneSliders = new LinkedHashMap<>();
@@ -124,6 +129,29 @@ public final class SoundscapePlayer {
         controls.add(section("Altura (zoom)"));
         heightSlider = slider(100, 0);
         controls.add(heightSlider);
+
+        controls.add(section("Velocidad"));
+        speedCombo = new JComboBox<>(SpeedPreset.values());
+        speedCombo.setSelectedItem(state.speed());
+        speedCombo.addActionListener(e -> {
+            if (!updating) {
+                state.setSpeed((SpeedPreset) speedCombo.getSelectedItem());
+                updateComposition();
+            }
+        });
+        controls.add(speedCombo);
+        JPanel previewRow = new JPanel(new BorderLayout(8, 0));
+        JLabel previewLabel = new JLabel("vista previa");
+        previewLabel.setPreferredSize(new Dimension(90, 18));
+        previewRow.add(previewLabel, BorderLayout.WEST);
+        previewCombo = new JComboBox<>(new String[] {"x1", "x10", "x60"});
+        previewCombo.addActionListener(e -> {
+            String selected = (String) previewCombo.getSelectedItem();
+            previewMultiplier = selected == null ? 1 : Integer.parseInt(selected.substring(1));
+            updateComposition();
+        });
+        previewRow.add(previewCombo, BorderLayout.CENTER);
+        controls.add(previewRow);
 
         controls.add(section("Clima"));
         weatherCombo = new JComboBox<>();
@@ -230,8 +258,16 @@ public final class SoundscapePlayer {
             return;
         }
         button.setText("⏸ Pausa");
+        minutesAccumulator = 0;
         playTimer = new Timer(50, e -> {
-            state.advance(5);
+            double perSecond = state.speed().gameMinutesPerRealSecond() * previewMultiplier;
+            minutesAccumulator += perSecond * 0.05;
+            int advance = (int) minutesAccumulator;
+            if (advance <= 0) {
+                return;
+            }
+            minutesAccumulator -= advance;
+            state.advance(advance);
             syncTimeSlider();
             updateComposition();
         });
@@ -303,9 +339,9 @@ public final class SoundscapePlayer {
         Composition composition = engine.compose(style, state.toInput());
         timeLabel.setText(String.format(Locale.ROOT, "%02d:%02d", state.time().getHour(),
                 state.time().getMinute()));
-        statusLabel.setText(
-                String.format(Locale.ROOT, "rain %.2f · wind %.2f · storm %.2f · height %.2f",
-                        state.rain(), state.wind(), state.storm(), state.height()));
+        statusLabel.setText(String.format(Locale.ROOT,
+                "rain %.2f · wind %.2f · storm %.2f · height %.2f · %s · vista x%d", state.rain(),
+                state.wind(), state.storm(), state.height(), state.speed(), previewMultiplier));
         renderResults(composition);
     }
 
