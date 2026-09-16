@@ -81,9 +81,8 @@
   estación.
 - Cada **zona** es un conjunto de **sonidos componentes**; cada sonido declara:
   - **material**: una o varias tomas/segmentos;
-  - **familia**: fondo o evento;
   - **presencia por franjas** como puntos de control de una curva (las franjas sin valor se interpolan o quedan a cero);
-  - **parámetros**: presencia base, cercanía, densidad (en eventos) y variación.
+  - **parámetros**: presencia base, cercanía y variación.
 - **Volumen final** de un sonido ≈ peso de su zona × presencia en la franja (interpolada) ×
   parámetros propios. Se suman todas las zonas activas.
 - Ejemplo de tabla de la zona **llanura**:
@@ -96,8 +95,7 @@
 | halcones | 0 | 0.1 | 0.1 | 0.4 | 0.1 | 0 | 0 |
 
 - **Anti-repetición**: saltos aleatorios entre tramos con micro-fundido para evitar clics, pools de
-  tomas, pausas aleatorias, variación de tono/volumen y modulación lenta; sonidos desfasados entre
-  sí.
+  tomas largas, variación de tono/volumen y modulación lenta; sonidos desfasados entre sí.
 - **Clima**: global (estado + intensidad), determinista desde la semilla, compuesto con la franja
   (la lluvia enmascara grillos, por ejemplo).
 - **Reproductor de pruebas**: hora exacta (con modo "día completo"), zonas con peso, zoom/escucha,
