@@ -19,7 +19,7 @@
     *   **Core:** Procedural generation (Perlin noise), economy management, and rail logistics.
     *   **3D Engine:** LibGDX.
     *   **UI:** Lanterna for terminal interfaces.
-    *   **Automation:** ANTLR4 is used for a custom rail automation language (Grammar: `src/main/antlr4/letrain/command/LeTrainProgram.g4`).
+    *   **Automation:** ANTLR4 is used for a custom rail automation language (Grammars: `core/src/main/antlr4/letrain/command/LeTrainLexer.g4`, `PlayerCommandsParser.g4`, and `ScriptLogicParser.g4`).
     *   **Serialization:** Uses Jackson (`jackson-databind`) for JSON serialization/deserialization.
 *   **Project Structure (Multi-module):**
     *   `core/`: Core engine, game model, economy, audio, and all business logic.
@@ -27,6 +27,7 @@
     *   `ui-graphic/`: 3D UI implementation using LibGDX.
     *   `launcher-terminal/`: Entrypoint and fat JAR generator for the terminal version.
     *   `launcher-graphic/`: Entrypoint and fat JAR generator for the 3D version.
+    *   `launcher-check/`: Entrypoint and standalone headless scenario (`.ltr`) validator.
     *   `letrain.cfg`: Central configuration file for game settings (economy, terrain, delays...).
 *   **Git Workflow & Merging:**
     *   **CRITICAL RULE (ABSOLUTE PROHIBITION):** You are STRICTLY FORBIDDEN from merging any branch into `develop` or `main` on your own initiative.

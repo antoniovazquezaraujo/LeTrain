@@ -30,12 +30,12 @@ Este proyecto usa un equipo de agentes definido en `.opencode/agents/`:
 
 ## Comandos de Build/Lint/Test
 
-Este proyecto no tiene código fuente tradicional — es una configuración de agentes para OpenCode. Sin embargo, para proyectos derivados:
+LeTrain es un simulador ferroviario en Java 17 modularizado con Maven (`core`, `ui-terminal`, `ui-graphic`, `launcher-terminal`, `launcher-graphic`, `launcher-check`):
 
-- **Java/Maven**: `mvn clean compile`, `mvn clean test`, `mvn clean test -Dtest=ClassName`
-- **Java/Gradle**: `./gradlew build`, `./gradlew test --tests ClassName`
-- **Lint Java**: `mvn checkstyle:check` o `./gradlew checkstyleMain`
-- **Tests unitarios**: Ejecutar tests específicos con `-Dtest=ClassName#methodName` (Maven) o `--tests "ClassName.methodName"` (Gradle)
+- **Compilación**: `mvn clean compile` (obligatorio siempre `clean`)
+- **Tests unitarios**: `mvn clean test` o tests específicos con `mvn -pl <modulo> test -Dtest=ClassName#methodName`
+- **Empaquetado**: `mvn clean package -DskipTests` (genera las aplicaciones en `output/`)
+- **Formato Java**: 4 espacios, llaves K&R (ver `eclipse-java-google-style.xml`)
 
 ## Convenciones de Código
 

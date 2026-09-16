@@ -50,6 +50,7 @@ if (use3D) {
     TerminalPresenter presenter = new TerminalPresenter(model);
 }
 ```
+*(Nota posterior: en la fase de modularización multimodular, `LeTrain.java` se dividió definitivamente en lanzadores independientes: `LeTrainTerminal` en `launcher-terminal` y `LeTrainGraphic` en `launcher-graphic`).*
 
 ### 4. Separación de Responsabilidades en GraphicPresenter
 A largo plazo, deberíamos intentar que `GraphicPresenter` no sea un `ApplicationAdapter` directamente, sino que delegue la vista LibGDX a otra clase, igual que hace el presentador de Terminal. Sin embargo, por ahora, el cambio de nombre a `GraphicPresenter` ya clarifica que esa clase **contiene la lógica de presentación**.

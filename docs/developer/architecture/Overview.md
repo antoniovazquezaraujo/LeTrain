@@ -1,4 +1,4 @@
-[ [Índice] ] [[docs/Index|⬅️ Volver al Índice]]
+[ [Índice] ] [[Index|⬅️ Volver al Índice]]
 
 # Arquitectura General (MVP & Visitor)
 

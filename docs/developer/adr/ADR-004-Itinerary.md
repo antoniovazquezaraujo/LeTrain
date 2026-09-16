@@ -1,4 +1,4 @@
-[ [Índice] ] [[docs/Index|⬅️ Volver al Índice]]
+[ [Índice] ] [[Index|⬅️ Volver al Índice]]
 
 # ADR-004: Gestión de Itinerarios y Control Automático (Propuesta)
 

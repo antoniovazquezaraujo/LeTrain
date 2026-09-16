@@ -6,27 +6,27 @@ LeTrain utiliza un sistema de programas de automatización para gestionar la ló
 
 ## Flujo de Automatización
 1. **Entrada de Programa**: El usuario escribe un script de automatización en la interfaz de "Programación".
-2. **Procesamiento (ANTLR4)**: La clase `letrain.mvp.impl.services.AutomationEngine` utiliza una gramática formal (`LeTrainProgram.g4`) para parsear el script.
+2. **Procesamiento (ANTLR4)**: La clase `letrain.mvp.impl.services.AutomationEngine` utiliza gramáticas formales ANTLR4 (`ScriptLogicParser.g4`, `PlayerCommandsParser.g4` y `LeTrainLexer.g4` en `core/src/main/antlr4/letrain/command/`) para parsear los programas y comandos del usuario.
 3. **Instalación de Listeners**: El `CommandManager` recorre el árbol sintáctico y añade `EventListeners` a los objetos del mapa (sensores, estaciones, desvíos).
 4. **Ejecución**: Cuando un tren dispara un evento (e.g., entra en un sensor), se ejecutan los comandos asociados al bloque correspondiente.
 
 ## Ejemplo de Script
-```antlr
-sensor 1 on enter {
+```letrain
+sensor 1 on train enter {
     semaphore 5 set closed;
     fork 3 set curved;
 }
 
-station 10 on link {
+station 10 on train couple {
     train accelerate;
 }
 ```
 
 ## Tipos de Acciones
-- **Semáforos**: `set open | closed`.
+- **Semáforos**: `set open | closed | invert`.
 - **Desvíos (Forks)**: `set straight | curved | flip`.
-- **Trenes**: `accelerate | decelerate | stop | invert | load | unload`.
-- **Enganches**: `link | unlink`.
+- **Trenes**: `accelerate | decelerate | set speed <n> | invert | load | unload | set engine on/off`.
+- **Enganches**: `couple | uncouple`.
 
 ## Símbolos Clave
 - `letrain.mvp.impl.services.AutomationEngine`: Punto de entrada para el parseo de programas.
