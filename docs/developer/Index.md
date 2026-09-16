@@ -33,6 +33,7 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 - [[systems/CommandPattern|Gestión de Automatización (ANTLR4)]]
 - [[systems/ActionCatalogue|Action Catalogue — Acciones de edición vs. comandos]]
 - [[systems/PassengerTrains_Design|Diseño de Trenes de Pasajeros (Propuesta)]]
+- [[systems/Soundscape_Design|Diseño del Decorado Sonoro (Propuesta)]]
 
 ## 🎨 Interfaz y Visualización
 - [[ui/RenderingDeepDive|Profundización en el Motor de Renderizado (Visitor 2D y 3D)]]
