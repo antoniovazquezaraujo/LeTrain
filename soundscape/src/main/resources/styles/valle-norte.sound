@@ -1,0 +1,79 @@
+# ============================================================
+#  Estilo sonoro — Valle del Norte (ejemplo)
+#  Texto plano, comentarios con #. Claves en inglés.
+# ============================================================
+
+# --- Presets de clima (intensidades 0.0–1.0) ----------------
+[climate]
+clear   = rain 0.0 wind 0.1 storm 0.0
+drizzle = rain 0.3 wind 0.1 storm 0.0
+storm   = rain 0.8 wind 0.6 storm 0.9
+
+# --- Sonidos: bucles con saltos indetectables ---------------
+#  (gallos, perros…: tomas de 10-20 s que ya incluyen silencios)
+[sounds]
+waves             = sea/waves-*.wav
+seagulls          = sea/seagull-*.wav
+cicadas           = field/cicada-*.wav
+crickets          = field/cricket-*.wav
+dogs              = field/dog-*.wav
+roosters          = field/rooster-*.wav
+wind              = mountain/wind-*.wav
+hawks             = mountain/hawk-*.wav
+mine-machinery    = mine/extractor-*.wav
+mine-thuds        = mine/thud-*.wav
+factory-machinery = factory/machine-*.wav
+
+# --- Zonas: solo listas de sonidos --------------------------
+[zones]
+sea          = waves, seagulls
+fields       = cicadas, crickets, dogs, roosters
+mountain     = wind, hawks
+gold-mine    = mine-machinery, mine-thuds
+coal-mine    = mine-machinery, mine-thuds
+ruby-mine    = mine-machinery, mine-thuds
+gold-factory = factory-machinery
+coal-factory = factory-machinery
+ruby-factory = factory-machinery
+
+# --- Presencia por franja: dawn morning noon afternoon dusk night predawn
+[presence]
+waves             0.5 0.5 0.5 0.5 0.6 0.6 0.5
+seagulls          0.1 0.3 0.2 0.4 0.3 0.1 0.0
+cicadas           0.0 0.2 1.0 0.5 0.1 0.0 0.0
+crickets          0.1 0.0 0.0 0.0 0.5 0.8 0.9
+dogs              0.3 0.2 0.4 0.2 0.2 0.1 0.0
+roosters          0.9 0.2 0.0 0.0 0.0 0.0 0.1
+wind              0.4 0.3 0.3 0.4 0.5 0.5 0.4
+hawks             0.0 0.1 0.1 0.4 0.1 0.0 0.0
+mine-machinery    0.0 0.5 0.5 0.5 0.0 0.0 0.0
+mine-thuds        0.0 0.4 0.4 0.4 0.0 0.0 0.0
+factory-machinery 0.1 0.6 0.6 0.5 0.1 0.0 0.0
+
+# --- Sensibilidad a la altura (0 = igual) -------------------
+[height-by-sound]
+hawks      +0.8
+wind       +0.5
+waves      +0.4
+seagulls   +0.3
+dogs       +0.1
+crickets   -0.8
+cicadas    -0.9
+
+# --- Sensibilidad al clima (0 = igual) ----------------------
+#  orden: lluvia, viento, tormenta
+[climate-by-sound]
+cicadas           -1.0 -0.4 -1.0
+crickets          -0.8 -0.2 -1.0
+seagulls          -0.7 +0.3 -1.0
+dogs               0.0  0.0 +0.2
+waves              0.0 +0.4  0.0
+hawks             -0.5 +0.2 -1.0
+mine-machinery     0.0  0.0 -0.3
+factory-machinery  0.0  0.0 -0.3
+
+# --- Sonidos del propio clima (volumen = intensidad) --------
+[weather]
+rain  = weather/rain-*.wav
+wind  = weather/wind-*.wav
+storm = weather/thunder-*.wav

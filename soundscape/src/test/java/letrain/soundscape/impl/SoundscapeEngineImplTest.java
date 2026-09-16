@@ -1,0 +1,119 @@
+package letrain.soundscape.impl;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Map;
+import letrain.soundscape.Composition;
+import letrain.soundscape.CompositionInput;
+import letrain.soundscape.SoundscapeStyle;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+@DisplayName("Soundscape composition engine")
+class SoundscapeEngineImplTest {
+
+    private final TextStyleLoader loader = new TextStyleLoader();
+    private final SoundscapeEngineImpl engine = new SoundscapeEngineImpl();
+    private SoundscapeStyle style;
+
+    @BeforeEach
+    void setUp() throws IOException {
+        style = loader.loadResource("/styles/valle-norte.sound");
+    }
+
+    @Test
+    @DisplayName("composes a sound as zone x presence x climate x height")
+    void should_ComposeSound_When_AllFactorsApply() {
+        CompositionInput input = new CompositionInput(LocalTime.of(23, 30), Map.of("fields", 0.7f),
+                0.2f, 0.3f, 0.1f, 0f);
+
+        Composition composition = engine.compose(style, input);
+
+        // 0.7 * (0.8 + 0.1*60/270) * (1 - 0.8*0.3 - 0.2*0.1) * (1 - 0.8*0.2)
+        assertEquals(0.35777f, composition.volumeOf("crickets"), 1e-4);
+    }
+
+    @Test
+    @DisplayName("adds the weather's own sounds at their intensity")
+    void should_AddWeatherSounds_When_WeatherHasIntensity() {
+        CompositionInput input = new CompositionInput(LocalTime.NOON, Map.of(), 0f, 0.3f, 0.1f, 0f);
+
+        Composition composition = engine.compose(style, input);
+
+        assertEquals(0.3f, composition.volumeOf("weather-rain"), 1e-6);
+        assertEquals(0.1f, composition.volumeOf("weather-wind"), 1e-6);
+        assertFalse(composition.volumes().containsKey("weather-storm"));
+    }
+
+    @Test
+    @DisplayName("a zone with zero weight contributes nothing")
+    void should_IgnoreZone_When_WeightIsZero() {
+        CompositionInput input =
+                new CompositionInput(LocalTime.NOON, Map.of("fields", 0f), 0f, 0f, 0f, 0f);
+
+        Composition composition = engine.compose(style, input);
+
+        assertFalse(composition.volumes().containsKey("crickets"));
+    }
+
+    @Test
+    @DisplayName("unknown zones are ignored")
+    void should_IgnoreUnknownZone() {
+        CompositionInput input =
+                new CompositionInput(LocalTime.NOON, Map.of("atlantis", 1f), 0f, 0f, 0f, 0f);
+
+        Composition composition = engine.compose(style, input);
+
+        assertTrue(composition.volumes().isEmpty());
+    }
+
+    @Test
+    @DisplayName("heavy rain silences rain-sensitive sounds")
+    void should_ClampClimateFactor_When_RainIsHeavy() {
+        CompositionInput input =
+                new CompositionInput(LocalTime.NOON, Map.of("fields", 1f), 0f, 1f, 0f, 0f);
+
+        Composition composition = engine.compose(style, input);
+
+        assertEquals(0f, composition.volumeOf("cicadas"), 1e-6);
+    }
+
+    @Test
+    @DisplayName("height boosts high-perspective sounds")
+    void should_BoostHawks_When_HeightIsHigh() {
+        CompositionInput input =
+                new CompositionInput(LocalTime.of(16, 30), Map.of("mountain", 1f), 1f, 0f, 0f, 0f);
+
+        Composition composition = engine.compose(style, input);
+
+        assertEquals(0.72f, composition.volumeOf("hawks"), 1e-4);
+    }
+
+    @Test
+    @DisplayName("a sound shared by two zones accumulates their weights")
+    void should_SumSound_When_SharedByTwoZones() throws IOException {
+        SoundscapeStyle shared = loader
+                .parse(List.of("[sounds]", "waves = sea/waves-*.wav", "[zones]", "north = waves",
+                        "south = waves", "[presence]", "waves = 0.5 0.5 0.5 0.5 0.5 0.5 0.5"));
+
+        Composition composition = engine.compose(shared, new CompositionInput(LocalTime.NOON,
+                Map.of("north", 0.2f, "south", 0.3f), 0f, 0f, 0f, 0f));
+
+        assertEquals(0.25f, composition.volumeOf("waves"), 1e-6);
+    }
+
+    @Test
+    @DisplayName("same inputs give the same composition")
+    void should_BeDeterministic() {
+        CompositionInput input = new CompositionInput(LocalTime.of(13, 10),
+                Map.of("gold-mine", 0.7f), 0.2f, 0f, 0.1f, 0f);
+
+        assertEquals(engine.compose(style, input), engine.compose(style, input));
+    }
+}
