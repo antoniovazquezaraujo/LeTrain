@@ -60,6 +60,7 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 - [[adr/ADR-019-Derailment-Curves-Speed|ADR-019: Descarrilamiento por Velocidad en Curvas]]
 - [[adr/ADR-020-Command-Journal-Scenarios|ADR-020: Diario de Comandos y Escenarios]] ([[adr/ADR-020-Guia-Practica|Guía Práctica]])
 - [[adr/ADR-021-Model-Decomposition-Strategy|ADR-021: Estrategia de Descomposición de Model.java]]
+- [[adr/ADR-022-Game-Time|ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)]]
 
 ## 📦 Release y Distribución
 - [[release/Release_Process|Proceso de Release y Despliegue]]
