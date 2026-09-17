@@ -33,6 +33,7 @@ class TextStyleLoaderTest {
         assertEquals(-0.8f, style.heightSensitivityOf("crickets"), 1e-6);
         assertEquals(3, style.climateSensitivityOf("dogs").size());
         assertNotNull(style.weatherSounds().get("rain"));
+        assertNotNull(style.heightSounds().get("wind"));
     }
 
     @Test

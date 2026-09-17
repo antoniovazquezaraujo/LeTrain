@@ -57,6 +57,7 @@ public class TextStyleLoader implements StyleLoader {
         Map<String, Float> height = new LinkedHashMap<>();
         Map<String, List<Float>> climate = new LinkedHashMap<>();
         Map<String, SoundDef> weather = new LinkedHashMap<>();
+        Map<String, SoundDef> heightSounds = new LinkedHashMap<>();
 
         String section = null;
         int lineNumber = 0;
@@ -96,6 +97,7 @@ public class TextStyleLoader implements StyleLoader {
                     presence.put(key, floats(value, Band.values().length, lineNumber));
                 case "height-by-sound" -> height.put(key, singleFloat(value, lineNumber));
                 case "climate-by-sound" -> climate.put(key, floats(value, 3, lineNumber));
+                case "height" -> heightSounds.put(key, new SoundDef(key, tokens(value)));
                 case "weather" -> {
                     if (!key.equals("rain") && !key.equals("wind") && !key.equals("storm")) {
                         throw error(lineNumber, "weather sound must be rain, wind or storm");
@@ -106,7 +108,8 @@ public class TextStyleLoader implements StyleLoader {
             }
         }
         validate(zones, sounds, presence);
-        return new SoundscapeStyle(presets, sounds, zones, presence, height, climate, weather);
+        return new SoundscapeStyle(presets, sounds, zones, presence, height, climate, weather,
+                heightSounds);
     }
 
     private void validate(Map<String, List<String>> zones, Map<String, SoundDef> sounds,

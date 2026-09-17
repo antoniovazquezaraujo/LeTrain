@@ -87,87 +87,13 @@
   - **parámetros**: presencia base, cercanía y variación.
 - **Volumen final** de un sonido ≈ peso de su zona × presencia en la franja (interpolada) ×
   parámetros propios. Se suman todas las zonas activas.
-- Ejemplo de formato (claves en inglés, como el resto del código; comentarios en español):
+- **Sonidos por eje**: además de las zonas, un estilo puede declarar sonidos que aporta un eje:
+  `[weather]` (volumen = intensidad del clima) y `[height]` (volumen = altura de escucha). Así el
+  viento del clima y el viento de altura son sonidos distintos.
+- El ejemplo completo y actualizado del formato vive en
+  `soundscape/src/main/resources/styles/valle-norte.sound`, el fichero que carga el módulo.
 
-```
-# ============================================================
-#  Estilo sonoro — Valle del Norte
-#  Texto plano, comentarios con #, recarga en caliente.
-# ============================================================
-
-# --- Presets de clima (intensidades 0.0–1.0) ----------------
-[climate]
-clear   = rain 0.0  wind 0.1  storm 0.0
-drizzle = rain 0.3  wind 0.1  storm 0.0
-storm   = rain 0.8  wind 0.6  storm 0.9
-
-# --- Sonidos: bucles con saltos indetectables ---------------
-#  (gallos, perros…: tomas de 10-20 s que ya incluyen silencios)
-[sounds]
-waves            = sea/waves-*.wav
-seagulls         = sea/seagull-*.wav
-wind             = mountain/wind-*.wav
-hawks            = mountain/hawk-*.wav
-cicadas          = field/cicada-*.wav
-crickets         = field/cricket-*.wav
-dogs             = field/dog-*.wav
-roosters         = field/rooster-*.wav
-mine-machinery   = mine/extractor-*.wav
-mine-thuds       = mine/thud-*.wav
-factory-machinery = factory/machine-*.wav
-
-# --- Zonas: solo listas de sonidos --------------------------
-[zones]
-sea           = waves, seagulls
-mountain      = wind, hawks
-fields        = cicadas, crickets, dogs, roosters
-gold-mine     = mine-machinery, mine-thuds
-coal-mine     = mine-machinery, mine-thuds
-ruby-mine     = mine-machinery, mine-thuds
-gold-factory  = factory-machinery
-coal-factory  = factory-machinery
-ruby-factory  = factory-machinery
-
-# --- Presencia por franja -----------------------------------
-#               dawn  morning  noon  afternoon  dusk  night  predawn
-[presence]
-waves           0.5     0.5   0.5       0.5   0.6    0.6      0.5
-seagulls        0.1     0.3   0.2       0.4   0.3    0.1      0.0
-cicadas         0.0     0.2   1.0       0.5   0.1    0.0      0.0
-crickets        0.1     0.0   0.0       0.0   0.5    0.8      0.9
-dogs            0.3     0.2   0.4       0.2   0.2    0.1      0.0
-roosters        0.9     0.2   0.0       0.0   0.0    0.0      0.1
-wind            0.4     0.3   0.3       0.4   0.5    0.5      0.4
-hawks           0.0     0.1   0.1       0.4   0.1    0.0      0.0
-mine-machinery  0.0     0.5   0.5       0.5   0.0    0.0      0.0
-mine-thuds      0.0     0.4   0.4       0.4   0.0    0.0      0.0
-factory-machinery 0.1   0.6   0.6       0.5   0.1    0.0      0.0
-
-# --- Cómo le afecta la altura (0 = igual) -------------------
-#               height
-[height-by-sound]
-hawks             +0.8
-wind              +0.5
-waves             +0.4
-seagulls          +0.3
-dogs              +0.1
-crickets          -0.8
-cicadas           -0.9
-
-# --- Clima por sonido (0 = igual) ---------------------------
-#             rain  wind  storm
-[climate-by-sound]
-cicadas      -1.0  -0.4   -1.0
-crickets     -0.8  -0.2   -1.0
-seagulls     -0.7  +0.3   -1.0
-dogs          0.0   0.0   +0.2
-waves         0.0  +0.4    0.0
-hawks        -0.5  +0.2   -1.0
-mine-machinery  0.0   0.0   -0.3
-factory-machinery 0.0 0.0   -0.3
-```
-
-Ejemplo de composición con ese fichero:
+Ejemplo de composición (con el estilo del módulo):
 
 ```
 23:30 · NORMAL · sea 0.5 · fields 0.7 · height 0.2 · drizzle (rain 0.3 · wind 0.1)

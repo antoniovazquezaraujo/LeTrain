@@ -8,7 +8,7 @@ Design and decisions: `docs/developer/adr/ADR-023-Soundscape-Isolation.md`.
 
 ## Status
 
-Working module: style format, composition engine, a catalog of 12 normalized ambient assets and
+Working module: style format, composition engine, a catalog of 13 normalized ambient assets and
 **live playback** (each material loops as a whole; random-jump crossfades are parked until the
 materials are cut to loop cleanly). CLI test player and Swing playground included. Mines and
 factories have no audio yet.
@@ -60,6 +60,7 @@ Plain text with sections and `key = value` lines; comments start with `#`. The f
 | `[height-by-sound]` | sensitivity to height (hawks +, cicadas −) |
 | `[climate-by-sound]` | sensitivity to rain, wind and storm |
 | `[weather]` | sounds contributed by the weather itself (volume = intensity) |
+| `[height]` | sounds contributed by the listening height (volume = height; the altitude wind) |
 
 Every sound is composed as `zone weight x presence (exact time) x climate x height`; weather sounds
 are summed separately at their intensity. Everything is deterministic: same inputs, same mix.

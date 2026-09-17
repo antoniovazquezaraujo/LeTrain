@@ -34,6 +34,12 @@ public class SoundscapeEngineImpl implements SoundscapeEngine {
                 volumes.merge(sound, value, Float::sum);
             }
         }
+        for (String name : style.heightSounds().keySet()) {
+            if (input.height() > 0f) {
+                // Prefixed so a zone sound can never collide with a height-provided sound.
+                volumes.merge("height-" + name, input.height(), Float::sum);
+            }
+        }
         addWeatherSound(volumes, style, "rain", input.rain());
         addWeatherSound(volumes, style, "wind", input.wind());
         addWeatherSound(volumes, style, "storm", input.storm());
