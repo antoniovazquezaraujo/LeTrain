@@ -3,6 +3,9 @@ package letrain.soundscape.gui;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
@@ -11,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -104,89 +108,7 @@ public final class SoundscapePlayer {
         frame = new JFrame("Soundscape test player");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout(8, 8));
-
-        ScrollablePanel controls = new ScrollablePanel();
-        controls.setLayout(new BoxLayout(controls, BoxLayout.Y_AXIS));
-        controls.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-
-        JPanel header = new JPanel(new BorderLayout());
-        styleLabel = new JLabel();
-        header.add(styleLabel, BorderLayout.WEST);
-        JButton loadButton = new JButton("Load style…");
-        loadButton.addActionListener(e -> chooseStyle());
-        header.add(loadButton, BorderLayout.EAST);
-        controls.add(header);
-
-        controls.add(section("Time"));
-        timeLabel = new JLabel();
-        controls.add(timeLabel);
-        timeSlider = new JSlider(0, 24 * 60 - 1, state.minuteOfDay());
-        timeSlider.addChangeListener(e -> {
-            if (!updating) {
-                state.setMinuteOfDay(timeSlider.getValue());
-                updateComposition();
-            }
-        });
-        controls.add(timeSlider);
-        JButton playButton = new JButton("▶ Full day");
-        playButton.addActionListener(e -> togglePlay(playButton));
-        controls.add(playButton);
-        listenButton = new JToggleButton("🔊 Listen");
-        listenButton.addActionListener(e -> toggleAudio());
-        controls.add(listenButton);
-
-        controls.add(section("Height (zoom)"));
-        heightSlider = slider(100, 0);
-        controls.add(heightSlider);
-
-        controls.add(section("Speed"));
-        speedCombo = new JComboBox<>(SpeedPreset.values());
-        speedCombo.setSelectedItem(state.speed());
-        speedCombo.addActionListener(e -> {
-            if (!updating) {
-                state.setSpeed((SpeedPreset) speedCombo.getSelectedItem());
-                updateComposition();
-            }
-        });
-        controls.add(speedCombo);
-        previewCombo = new JComboBox<>(new String[] {"x1", "x10", "x60"});
-        previewCombo.addActionListener(e -> {
-            String selected = (String) previewCombo.getSelectedItem();
-            previewMultiplier = selected == null ? 1 : Integer.parseInt(selected.substring(1));
-            updateComposition();
-        });
-        controls.add(labelRow("preview", 80, previewCombo));
-
-        controls.add(section("Weather"));
-        weatherCombo = new JComboBox<>();
-        weatherCombo.addActionListener(e -> {
-            if (updating) {
-                return;
-            }
-            String name = (String) weatherCombo.getSelectedItem();
-            if (name == null || CUSTOM.equals(name)) {
-                return;
-            }
-            state.applyPreset(style.climatePresets().get(name));
-            syncWeatherSliders();
-            updateComposition();
-        });
-        controls.add(weatherCombo);
-        controls.add(weatherSliderRow("rain"));
-        controls.add(weatherSliderRow("wind"));
-        controls.add(weatherSliderRow("storm"));
-
-        controls.add(section("Zones"));
-        zonesPanel = new JPanel();
-        zonesPanel.setLayout(new BoxLayout(zonesPanel, BoxLayout.Y_AXIS));
-        zonesPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        zonesPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
-        controls.add(zonesPanel);
-
-        JScrollPane scroll = new JScrollPane(controls);
-        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.setPreferredSize(new Dimension(360, 600));
-        frame.add(scroll, BorderLayout.WEST);
+        frame.add(buildControlsScroll(), BorderLayout.WEST);
 
         resultsPanel = new JPanel();
         resultsPanel.setLayout(new BoxLayout(resultsPanel, BoxLayout.Y_AXIS));
@@ -200,6 +122,115 @@ public final class SoundscapePlayer {
 
         frame.setSize(900, 640);
         frame.setLocationRelativeTo(null);
+    }
+
+    /** Loads a style and prepares the state without opening a window (layout tests). */
+    void initStyle(SoundscapeStyle style, String name) {
+        this.style = style;
+        this.styleName = name;
+        this.state = new PlayerState(style);
+    }
+
+    /** Builds the controls column; package-private so tests can lay it out without a window. */
+    JScrollPane buildControlsScroll() {
+        ScrollablePanel controls = new ScrollablePanel();
+        controls.setLayout(new GridBagLayout());
+        controls.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+
+        JPanel header = new JPanel(new BorderLayout());
+        styleLabel = new JLabel();
+        header.add(styleLabel, BorderLayout.WEST);
+        JButton loadButton = new JButton("Load style…");
+        loadButton.addActionListener(e -> chooseStyle());
+        header.add(loadButton, BorderLayout.EAST);
+        addRow(controls, header, true);
+
+        addRow(controls, section("Time"), true);
+        timeLabel = new JLabel();
+        addRow(controls, timeLabel, true);
+        timeSlider = new JSlider(0, 24 * 60 - 1, state.minuteOfDay());
+        timeSlider.addChangeListener(e -> {
+            if (!updating) {
+                state.setMinuteOfDay(timeSlider.getValue());
+                updateComposition();
+            }
+        });
+        addRow(controls, timeSlider, true);
+        JButton playButton = new JButton("▶ Full day");
+        playButton.addActionListener(e -> togglePlay(playButton));
+        addRow(controls, playButton, false);
+        listenButton = new JToggleButton("🔊 Listen");
+        listenButton.addActionListener(e -> toggleAudio());
+        addRow(controls, listenButton, false);
+
+        addRow(controls, section("Height (zoom)"), true);
+        heightSlider = slider(100, 0);
+        addRow(controls, heightSlider, true);
+
+        addRow(controls, section("Speed"), true);
+        speedCombo = new JComboBox<>(SpeedPreset.values());
+        speedCombo.setSelectedItem(state.speed());
+        speedCombo.addActionListener(e -> {
+            if (!updating) {
+                state.setSpeed((SpeedPreset) speedCombo.getSelectedItem());
+                updateComposition();
+            }
+        });
+        addRow(controls, speedCombo, true);
+        previewCombo = new JComboBox<>(new String[] {"x1", "x10", "x60"});
+        previewCombo.addActionListener(e -> {
+            String selected = (String) previewCombo.getSelectedItem();
+            previewMultiplier = selected == null ? 1 : Integer.parseInt(selected.substring(1));
+            updateComposition();
+        });
+        addRow(controls, labelRow("preview", 80, previewCombo), true);
+
+        addRow(controls, section("Weather"), true);
+        weatherCombo = new JComboBox<>();
+        weatherCombo.addActionListener(e -> {
+            if (updating) {
+                return;
+            }
+            String name = (String) weatherCombo.getSelectedItem();
+            if (name == null || CUSTOM.equals(name)) {
+                return;
+            }
+            state.applyPreset(style.climatePresets().get(name));
+            syncWeatherSliders();
+            updateComposition();
+        });
+        addRow(controls, weatherCombo, true);
+        addRow(controls, weatherSliderRow("rain"), true);
+        addRow(controls, weatherSliderRow("wind"), true);
+        addRow(controls, weatherSliderRow("storm"), true);
+
+        addRow(controls, section("Zones"), true);
+        zonesPanel = new JPanel(new GridBagLayout());
+        addRow(controls, zonesPanel, true);
+
+        GridBagConstraints filler = new GridBagConstraints();
+        filler.gridx = 0;
+        filler.gridy = controls.getComponentCount();
+        filler.weighty = 1;
+        filler.fill = GridBagConstraints.VERTICAL;
+        controls.add(Box.createGlue(), filler);
+
+        JScrollPane scroll = new JScrollPane(controls);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setPreferredSize(new Dimension(360, 600));
+        return scroll;
+    }
+
+    /** Adds a row to a GridBagLayout panel; stretch=false keeps natural size at the west. */
+    private void addRow(JPanel panel, Component component, boolean stretch) {
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.gridy = panel.getComponentCount();
+        constraints.weightx = 1;
+        constraints.fill = stretch ? GridBagConstraints.HORIZONTAL : GridBagConstraints.NONE;
+        constraints.anchor = GridBagConstraints.WEST;
+        constraints.insets = new Insets(2, 0, 2, 0);
+        panel.add(component, constraints);
     }
 
     private JLabel section(String title) {
@@ -237,6 +268,11 @@ public final class SoundscapePlayer {
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
         return row;
+    }
+
+    /** Visible for layout tests: the zone sliders by zone name. */
+    Map<String, JSlider> zoneSliders() {
+        return zoneSliders;
     }
 
     private void onSliderChanged(JSlider source) {
@@ -314,7 +350,7 @@ public final class SoundscapePlayer {
         }
     }
 
-    private void rebuildForStyle() {
+    void rebuildForStyle() {
         updating = true;
         styleLabel.setText(styleName);
         zoneSliders.clear();
@@ -328,7 +364,7 @@ public final class SoundscapePlayer {
             JSlider slider =
                     slider(100, Math.round(state.zoneWeights().getOrDefault(zone, 0f) * 100));
             zoneSliders.put(zone, slider);
-            zonesPanel.add(labelRow(zone, zoneLabelWidth, slider));
+            addRow(zonesPanel, labelRow(zone, zoneLabelWidth, slider), true);
         }
         weatherCombo.removeAllItems();
         for (String preset : style.climatePresets().keySet()) {
@@ -340,8 +376,10 @@ public final class SoundscapePlayer {
         syncWeatherSliders();
         syncTimeSlider();
         updating = false;
-        frame.revalidate();
-        frame.repaint();
+        if (frame != null) {
+            frame.revalidate();
+            frame.repaint();
+        }
     }
 
     private void syncTimeSlider() {
