@@ -87,7 +87,7 @@ public final class SoundscapePlayer {
                 styleName = "valle-norte.sound";
             }
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(null, "No se pudo cargar el estilo: " + e.getMessage(),
+            JOptionPane.showMessageDialog(null, "Could not load style: " + e.getMessage(),
                     "soundscape", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -110,12 +110,12 @@ public final class SoundscapePlayer {
         JPanel header = new JPanel(new BorderLayout());
         styleLabel = new JLabel();
         header.add(styleLabel, BorderLayout.WEST);
-        JButton loadButton = new JButton("Cargar estilo…");
+        JButton loadButton = new JButton("Load style…");
         loadButton.addActionListener(e -> chooseStyle());
         header.add(loadButton, BorderLayout.EAST);
         controls.add(header);
 
-        controls.add(section("Tiempo"));
+        controls.add(section("Time"));
         timeLabel = new JLabel();
         controls.add(timeLabel);
         timeSlider = new JSlider(0, 24 * 60 - 1, state.minuteOfDay());
@@ -126,18 +126,18 @@ public final class SoundscapePlayer {
             }
         });
         controls.add(timeSlider);
-        JButton playButton = new JButton("▶ Día completo");
+        JButton playButton = new JButton("▶ Full day");
         playButton.addActionListener(e -> togglePlay(playButton));
         controls.add(playButton);
-        listenButton = new JToggleButton("🔊 Escuchar");
+        listenButton = new JToggleButton("🔊 Listen");
         listenButton.addActionListener(e -> toggleAudio());
         controls.add(listenButton);
 
-        controls.add(section("Altura (zoom)"));
+        controls.add(section("Height (zoom)"));
         heightSlider = slider(100, 0);
         controls.add(heightSlider);
 
-        controls.add(section("Velocidad"));
+        controls.add(section("Speed"));
         speedCombo = new JComboBox<>(SpeedPreset.values());
         speedCombo.setSelectedItem(state.speed());
         speedCombo.addActionListener(e -> {
@@ -148,7 +148,7 @@ public final class SoundscapePlayer {
         });
         controls.add(speedCombo);
         JPanel previewRow = new JPanel(new BorderLayout(8, 0));
-        JLabel previewLabel = new JLabel("vista previa");
+        JLabel previewLabel = new JLabel("preview");
         previewLabel.setPreferredSize(new Dimension(90, 18));
         previewRow.add(previewLabel, BorderLayout.WEST);
         previewCombo = new JComboBox<>(new String[] {"x1", "x10", "x60"});
@@ -160,7 +160,7 @@ public final class SoundscapePlayer {
         previewRow.add(previewCombo, BorderLayout.CENTER);
         controls.add(previewRow);
 
-        controls.add(section("Clima"));
+        controls.add(section("Weather"));
         weatherCombo = new JComboBox<>();
         weatherCombo.addActionListener(e -> {
             if (updating) {
@@ -179,7 +179,7 @@ public final class SoundscapePlayer {
         controls.add(weatherSliderRow("wind"));
         controls.add(weatherSliderRow("storm"));
 
-        controls.add(section("Zonas"));
+        controls.add(section("Zones"));
         zonesPanel = new JPanel();
         zonesPanel.setLayout(new BoxLayout(zonesPanel, BoxLayout.Y_AXIS));
         controls.add(zonesPanel);
@@ -261,10 +261,10 @@ public final class SoundscapePlayer {
     private void togglePlay(JButton button) {
         if (playTimer != null && playTimer.isRunning()) {
             playTimer.stop();
-            button.setText("▶ Día completo");
+            button.setText("▶ Full day");
             return;
         }
-        button.setText("⏸ Pausa");
+        button.setText("⏸ Pause");
         minutesAccumulator = 0;
         playTimer = new Timer(50, e -> {
             double perSecond = state.speed().gameMinutesPerRealSecond() * previewMultiplier;
@@ -299,8 +299,8 @@ public final class SoundscapePlayer {
             rebuildForStyle();
             updateComposition();
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(frame, "No se pudo cargar: " + e.getMessage(),
-                    "soundscape", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(frame, "Could not load: " + e.getMessage(), "soundscape",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -355,8 +355,8 @@ public final class SoundscapePlayer {
         AmbientPlayer player = new AmbientPlayer(style, 1);
         if (player.sampleCount() == 0) {
             JOptionPane.showMessageDialog(frame,
-                    "No se ha podido cargar ningún sonido. Revisa los materiales del estilo.",
-                    "soundscape", JOptionPane.WARNING_MESSAGE);
+                    "No sound could be loaded. Check the style materials.", "soundscape",
+                    JOptionPane.WARNING_MESSAGE);
             listenButton.setSelected(false);
             return;
         }
@@ -364,11 +364,11 @@ public final class SoundscapePlayer {
             player.start();
             ambientPlayer = player;
             if (!player.missingSounds().isEmpty()) {
-                statusLabel.setText("faltan sonidos: " + player.missingSounds());
+                statusLabel.setText("missing sounds: " + player.missingSounds());
             }
         } catch (javax.sound.sampled.LineUnavailableException e) {
-            JOptionPane.showMessageDialog(frame, "Sin dispositivo de audio: " + e.getMessage(),
-                    "soundscape", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(frame, "No audio device: " + e.getMessage(), "soundscape",
+                    JOptionPane.ERROR_MESSAGE);
             listenButton.setSelected(false);
         }
         updateComposition();
@@ -389,7 +389,7 @@ public final class SoundscapePlayer {
         timeLabel.setText(String.format(Locale.ROOT, "%02d:%02d", state.time().getHour(),
                 state.time().getMinute()));
         statusLabel.setText(String.format(Locale.ROOT,
-                "rain %.2f · wind %.2f · storm %.2f · height %.2f · %s · vista x%d", state.rain(),
+                "rain %.2f · wind %.2f · storm %.2f · height %.2f · %s · preview x%d", state.rain(),
                 state.wind(), state.storm(), state.height(), state.speed(), previewMultiplier));
         renderResults(composition);
     }
@@ -401,7 +401,7 @@ public final class SoundscapePlayer {
                         .thenComparing(Map.Entry.comparingByKey()))
                 .forEach(entry -> resultsPanel.add(resultRow(entry.getKey(), entry.getValue())));
         if (resultsPanel.getComponentCount() == 0) {
-            resultsPanel.add(new JLabel("(silencio)"));
+            resultsPanel.add(new JLabel("(silence)"));
         }
         resultsPanel.revalidate();
         resultsPanel.repaint();

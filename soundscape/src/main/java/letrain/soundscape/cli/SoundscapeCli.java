@@ -203,7 +203,7 @@ public final class SoundscapeCli {
                         .thenComparing(Map.Entry.comparingByKey()))
                 .toList();
         if (audible.isEmpty()) {
-            out.println("  (silencio: define zonas con --zones y clima con --weather)");
+            out.println("  (silence: set zones with --zones and weather with --weather)");
             return;
         }
         audible.forEach(entry -> out.println(
@@ -216,7 +216,7 @@ public final class SoundscapeCli {
         active.sort(Map.Entry.<String, Float>comparingByValue().reversed()
                 .thenComparing(Map.Entry.comparingByKey()));
         if (active.isEmpty()) {
-            return "silencio";
+            return "silence";
         }
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<String, Float> entry : active) {

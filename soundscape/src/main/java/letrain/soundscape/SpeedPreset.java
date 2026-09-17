@@ -5,7 +5,7 @@ package letrain.soundscape;
  * tuned by ear: they decide how long a full day takes in real minutes.
  */
 public enum SpeedPreset {
-    SLOW("lenta", 60), NORMAL("normal", 40), FAST("rápida", 20);
+    SLOW("slow", 60), NORMAL("normal", 40), FAST("fast", 20);
 
     private static final int GAME_MINUTES_PER_DAY = 24 * 60;
 
@@ -35,6 +35,6 @@ public enum SpeedPreset {
 
     @Override
     public String toString() {
-        return label + " (día " + dayDurationMinutes + " min)";
+        return label + " (day " + dayDurationMinutes + " min)";
     }
 }

@@ -67,7 +67,7 @@ class SoundscapeCliTest {
         int code = run();
 
         assertEquals(0, code);
-        assertTrue(output().contains("silencio"));
+        assertTrue(output().contains("silence"));
     }
 
     @Test
