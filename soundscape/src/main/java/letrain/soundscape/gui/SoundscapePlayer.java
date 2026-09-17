@@ -3,6 +3,7 @@ package letrain.soundscape.gui;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -21,6 +22,7 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
+import javax.swing.Scrollable;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -103,7 +105,7 @@ public final class SoundscapePlayer {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout(8, 8));
 
-        JPanel controls = new JPanel();
+        ScrollablePanel controls = new ScrollablePanel();
         controls.setLayout(new BoxLayout(controls, BoxLayout.Y_AXIS));
         controls.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
@@ -177,10 +179,13 @@ public final class SoundscapePlayer {
         controls.add(section("Zones"));
         zonesPanel = new JPanel();
         zonesPanel.setLayout(new BoxLayout(zonesPanel, BoxLayout.Y_AXIS));
+        zonesPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        zonesPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         controls.add(zonesPanel);
 
         JScrollPane scroll = new JScrollPane(controls);
-        scroll.setPreferredSize(new Dimension(340, 600));
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setPreferredSize(new Dimension(360, 600));
         frame.add(scroll, BorderLayout.WEST);
 
         resultsPanel = new JPanel();
@@ -222,7 +227,10 @@ public final class SoundscapePlayer {
     /** One control row with a fixed label width, so every slider starts at the same x. */
     private JPanel labelRow(String text, int labelWidth, Component component) {
         JLabel label = new JLabel(text);
-        label.setPreferredSize(new Dimension(labelWidth, 18));
+        Dimension size = new Dimension(labelWidth, 18);
+        label.setPreferredSize(size);
+        label.setMinimumSize(size);
+        label.setMaximumSize(size);
         JPanel row = new JPanel(new BorderLayout(8, 0));
         row.add(label, BorderLayout.WEST);
         row.add(component, BorderLayout.CENTER);
@@ -311,11 +319,16 @@ public final class SoundscapePlayer {
         styleLabel.setText(styleName);
         zoneSliders.clear();
         zonesPanel.removeAll();
+        int zoneLabelWidth = 0;
+        for (String zone : style.zones().keySet()) {
+            zoneLabelWidth = Math.max(zoneLabelWidth, new JLabel(zone).getPreferredSize().width);
+        }
+        zoneLabelWidth += 6;
         for (String zone : style.zones().keySet()) {
             JSlider slider =
                     slider(100, Math.round(state.zoneWeights().getOrDefault(zone, 0f) * 100));
             zoneSliders.put(zone, slider);
-            zonesPanel.add(labelRow(zone, 110, slider));
+            zonesPanel.add(labelRow(zone, zoneLabelWidth, slider));
         }
         weatherCombo.removeAllItems();
         for (String preset : style.climatePresets().keySet()) {
@@ -404,6 +417,36 @@ public final class SoundscapePlayer {
         }
         resultsPanel.revalidate();
         resultsPanel.repaint();
+    }
+
+    /** Scroll view that always matches the viewport width, so rows never overflow horizontally. */
+    private static final class ScrollablePanel extends JPanel implements Scrollable {
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation,
+                int direction) {
+            return 16;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation,
+                int direction) {
+            return 64;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
     }
 
     private JPanel resultRow(String sound, float volume) {
