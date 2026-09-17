@@ -20,11 +20,13 @@ public final class SoundscapeStyle {
     private final Map<String, List<Float>> climateSensitivity;
     private final Map<String, SoundDef> weatherSounds;
     private final Map<String, SoundDef> heightSounds;
+    private final Map<String, Float> gains;
 
     public SoundscapeStyle(Map<String, ClimatePreset> climatePresets, Map<String, SoundDef> sounds,
             Map<String, List<String>> zones, Map<String, List<Float>> presence,
             Map<String, Float> heightSensitivity, Map<String, List<Float>> climateSensitivity,
-            Map<String, SoundDef> weatherSounds, Map<String, SoundDef> heightSounds) {
+            Map<String, SoundDef> weatherSounds, Map<String, SoundDef> heightSounds,
+            Map<String, Float> gains) {
         this.climatePresets = Collections.unmodifiableMap(new LinkedHashMap<>(climatePresets));
         this.sounds = Collections.unmodifiableMap(new LinkedHashMap<>(sounds));
         this.zones = immutableListValues(zones);
@@ -34,6 +36,7 @@ public final class SoundscapeStyle {
         this.climateSensitivity = immutableListValues(climateSensitivity);
         this.weatherSounds = Collections.unmodifiableMap(new LinkedHashMap<>(weatherSounds));
         this.heightSounds = Collections.unmodifiableMap(new LinkedHashMap<>(heightSounds));
+        this.gains = Collections.unmodifiableMap(new LinkedHashMap<>(gains));
     }
 
     public Map<String, ClimatePreset> climatePresets() {
@@ -66,6 +69,22 @@ public final class SoundscapeStyle {
 
     public Map<String, SoundDef> heightSounds() {
         return heightSounds;
+    }
+
+    /** Per-sound loudness multipliers; a sound with no entry sounds unchanged (1.0). */
+    public Map<String, Float> gains() {
+        return gains;
+    }
+
+    /** Global loudness multiplier of a sound; 1 when the style declares none. */
+    public float gainOf(String sound) {
+        return gains.getOrDefault(sound, 1f);
+    }
+
+    /** A copy of this style with a different gain table (used by the GUI calibration). */
+    public SoundscapeStyle withGains(Map<String, Float> gains) {
+        return new SoundscapeStyle(climatePresets, sounds, zones, presence, heightSensitivity,
+                climateSensitivity, weatherSounds, heightSounds, gains);
     }
 
     /** Sounds of a zone, or an empty list when the zone is unknown. */

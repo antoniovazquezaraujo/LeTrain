@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import letrain.soundscape.SoundscapeStyle;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,20 @@ class TextStyleLoaderTest {
         assertEquals(3, style.climateSensitivityOf("dogs").size());
         assertNotNull(style.weatherSounds().get("rain"));
         assertNotNull(style.heightSounds().get("wind"));
+        assertTrue(style.gains().isEmpty());
+        assertEquals(1f, style.gainOf("cicadas"), 1e-6);
+    }
+
+    @Test
+    @DisplayName("parses the optional [gains] section and defaults to 1.0")
+    void should_ParseGains_When_SectionIsPresent() throws IOException {
+        SoundscapeStyle style = loader.parse(List.of("[sounds]", "waves = sea/waves-*.wav",
+                "[zones]", "sea = waves", "[presence]", "waves = 0.5 0.5 0.5 0.5 0.5 0.5 0.5",
+                "[gains]", "waves = 0.4"));
+
+        assertEquals(0.4f, style.gainOf("waves"), 1e-6);
+        assertEquals(1f, style.gainOf("seagulls"), 1e-6);
+        assertEquals(Map.of("waves", 0.4f), style.gains());
     }
 
     @Test

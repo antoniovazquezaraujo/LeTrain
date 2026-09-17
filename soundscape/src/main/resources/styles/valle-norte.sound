@@ -86,3 +86,9 @@ storm = weather/thunder-*.wav
 #  The wind you hear when zoomed out, not the weather wind.
 [height]
 wind = sky/wind-altitude-*.wav
+
+# --- Optional per-sound gains (1.0 = unchanged) -------------
+#  Calibrate in the GUI and use "Export style…" to write them.
+# [gains]
+#   cicadas      = 0.6
+#   weather-rain = 0.8
