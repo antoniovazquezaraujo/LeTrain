@@ -81,3 +81,8 @@ factory-machinery  0.0  0.0 -0.3
 rain  = weather/rain-*.wav
 wind  = weather/wind-*.wav
 storm = weather/thunder-*.wav
+
+# --- Height-provided sounds (volume = listening height) -----
+#  The wind you hear when zoomed out, not the weather wind.
+[height]
+wind = sky/wind-altitude-*.wav

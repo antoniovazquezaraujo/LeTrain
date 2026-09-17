@@ -29,6 +29,7 @@ class SampleResolverTest {
     @DisplayName("accepts materials that already include the sounds/ prefix")
     void should_ResolvePrefixedMaterial() {
         assertEquals(1, resolver.resolve("sounds/sea/waves-*.wav").size());
+        assertEquals(1, resolver.resolve("sky/wind-altitude-*.wav").size());
     }
 
     @Test

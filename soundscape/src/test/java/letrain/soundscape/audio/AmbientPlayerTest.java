@@ -20,7 +20,7 @@ class AmbientPlayerTest {
 
         AmbientPlayer player = new AmbientPlayer(style, 1);
 
-        assertEquals(12, player.sampleCount());
+        assertEquals(13, player.sampleCount());
         List<String> missing = player.missingSounds();
         assertTrue(missing.contains("mine-machinery"));
         assertTrue(missing.contains("mine-thuds"));

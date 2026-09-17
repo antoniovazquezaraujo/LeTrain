@@ -96,6 +96,19 @@ class SoundscapeEngineImplTest {
     }
 
     @Test
+    @DisplayName("height-provided sounds follow the listening height")
+    void should_AddHeightSound_When_HeightIsSet() {
+        CompositionInput input = new CompositionInput(LocalTime.NOON, Map.of(), 0.5f, 0f, 0f, 0f);
+
+        Composition composition = engine.compose(style, input);
+
+        assertEquals(0.5f, composition.volumeOf("height-wind"), 1e-6);
+        assertFalse(engine
+                .compose(style, new CompositionInput(LocalTime.NOON, Map.of(), 0f, 0f, 0f, 0f))
+                .volumes().containsKey("height-wind"));
+    }
+
+    @Test
     @DisplayName("a sound shared by two zones accumulates their weights")
     void should_SumSound_When_SharedByTwoZones() throws IOException {
         SoundscapeStyle shared = loader

@@ -152,6 +152,11 @@ public final class SoundscapeCli {
             missing += printAsset(out, resolver, "weather-" + entry.getKey(),
                     entry.getValue().material());
         }
+        for (Map.Entry<String, letrain.soundscape.SoundDef> entry : style.heightSounds()
+                .entrySet()) {
+            missing += printAsset(out, resolver, "height-" + entry.getKey(),
+                    entry.getValue().material());
+        }
         out.println(missing == 0 ? "all assets resolved" : missing + " sound(s) without assets");
         return missing == 0 ? 0 : 3;
     }
