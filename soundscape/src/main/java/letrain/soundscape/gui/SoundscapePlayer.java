@@ -18,7 +18,6 @@ import java.util.Locale;
 import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
@@ -52,7 +51,6 @@ public final class SoundscapePlayer {
 
     private static final String DEFAULT_STYLE = "/styles/valle-norte.sound";
     private static final String CUSTOM = "(custom)";
-    private static final float MIN_VOLUME = 0.005f;
 
     private final TextStyleLoader loader = new TextStyleLoader();
     private final TextStyleWriter writer = new TextStyleWriter();
@@ -76,10 +74,11 @@ public final class SoundscapePlayer {
     private int previewMultiplier = 1;
     private double minutesAccumulator;
     private JPanel zonesPanel;
-    private JPanel gainsPanel;
     private JPanel resultsPanel;
     private final Map<String, JSlider> zoneSliders = new LinkedHashMap<>();
     private final Map<String, JSlider> gainSliders = new LinkedHashMap<>();
+    private final Map<String, JProgressBar> volumeBars = new LinkedHashMap<>();
+    private final Map<String, JLabel> volumeLabels = new LinkedHashMap<>();
 
     private boolean updating;
     private Timer playTimer;
@@ -119,12 +118,7 @@ public final class SoundscapePlayer {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout(8, 8));
         frame.add(buildControlsScroll(), BorderLayout.WEST);
-
-        resultsPanel = new JPanel();
-        resultsPanel.setLayout(new BoxLayout(resultsPanel, BoxLayout.Y_AXIS));
-        resultsPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        JScrollPane resultsScroll = new JScrollPane(resultsPanel);
-        frame.add(resultsScroll, BorderLayout.CENTER);
+        frame.add(new JScrollPane(buildResultsPanel()), BorderLayout.CENTER);
 
         statusLabel = new JLabel(" ");
         statusLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 6, 8));
@@ -132,6 +126,13 @@ public final class SoundscapePlayer {
 
         frame.setSize(900, 640);
         frame.setLocationRelativeTo(null);
+    }
+
+    /** Right panel: every sound with its gain slider and a live VU meter. */
+    JPanel buildResultsPanel() {
+        resultsPanel = new JPanel(new GridBagLayout());
+        resultsPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        return resultsPanel;
     }
 
     /** Loads a style and prepares the state without opening a window (layout tests). */
@@ -232,10 +233,6 @@ public final class SoundscapePlayer {
         zonesPanel = new JPanel(new GridBagLayout());
         addRow(controls, zonesPanel, true);
 
-        addRow(controls, section("Gains"), true);
-        gainsPanel = new JPanel(new GridBagLayout());
-        addRow(controls, gainsPanel, true);
-
         GridBagConstraints filler = new GridBagConstraints();
         filler.gridx = 0;
         filler.gridy = controls.getComponentCount();
@@ -306,6 +303,16 @@ public final class SoundscapePlayer {
     /** Visible for calibration tests: the gain sliders by sound key. */
     Map<String, JSlider> gainSliders() {
         return gainSliders;
+    }
+
+    /** Visible for calibration tests: the VU meters by sound key. */
+    Map<String, JProgressBar> volumeBars() {
+        return volumeBars;
+    }
+
+    /** Visible for calibration tests: the right calibration panel. */
+    JPanel resultsPanel() {
+        return resultsPanel;
     }
 
     private void onSliderChanged(JSlider source) {
@@ -401,16 +408,22 @@ public final class SoundscapePlayer {
             zoneSliders.put(zone, slider);
             addRow(zonesPanel, labelRow(zone, zoneLabelWidth, slider), true);
         }
-        gainSliders.clear();
-        gainsPanel.removeAll();
-        List<String> gainKeys = gainKeys();
-        int gainLabelWidth = 0;
-        for (String key : gainKeys) {
-            gainLabelWidth = Math.max(gainLabelWidth, new JLabel(key).getPreferredSize().width);
-        }
-        gainLabelWidth += 6;
-        for (String key : gainKeys) {
-            addRow(gainsPanel, gainRow(key, gainLabelWidth), true);
+        if (resultsPanel != null) {
+            gainSliders.clear();
+            volumeBars.clear();
+            volumeLabels.clear();
+            resultsPanel.removeAll();
+            List<String> gainKeys = gainKeys();
+            int nameWidth = 0;
+            for (String key : gainKeys) {
+                nameWidth = Math.max(nameWidth, new JLabel(key).getPreferredSize().width);
+            }
+            nameWidth += 6;
+            addResultsHeader(nameWidth);
+            int row = 1;
+            for (String key : gainKeys) {
+                addResultsRow(key, nameWidth, row++);
+            }
         }
         weatherCombo.removeAllItems();
         for (String preset : style.climatePresets().keySet()) {
@@ -440,21 +453,55 @@ public final class SoundscapePlayer {
         return keys;
     }
 
-    /** One gain row: sound key, 0-200% slider and its current percentage. */
-    private JPanel gainRow(String key, int labelWidth) {
+    private void addResultsHeader(int nameWidth) {
+        JLabel sound = new JLabel("sound");
+        sound.setPreferredSize(new Dimension(nameWidth, 18));
+        addCell(resultsPanel, sound, 0, 0, 0, GridBagConstraints.NONE);
+        addCell(resultsPanel, new JLabel("gain"), 1, 0, 0, GridBagConstraints.NONE);
+        addCell(resultsPanel, new JLabel("level"), 3, 0, 1, GridBagConstraints.HORIZONTAL);
+    }
+
+    /** One calibration row: sound, 0-200% gain slider, its percentage and a live VU meter. */
+    private void addResultsRow(String key, int nameWidth, int row) {
+        JLabel name = new JLabel(key);
+        name.setPreferredSize(new Dimension(nameWidth, 18));
+        addCell(resultsPanel, name, 0, row, 0, GridBagConstraints.NONE);
+
         JSlider slider = new JSlider(0, 200, Math.round(style.gainOf(key) * 100));
-        JLabel value = new JLabel(slider.getValue() + "%");
-        value.setPreferredSize(new Dimension(48, 18));
-        value.setHorizontalAlignment(SwingConstants.RIGHT);
+        slider.setPreferredSize(new Dimension(130, 16));
+        JLabel percent = new JLabel(slider.getValue() + "%");
+        percent.setPreferredSize(new Dimension(42, 18));
+        percent.setHorizontalAlignment(SwingConstants.RIGHT);
         slider.addChangeListener(e -> {
-            value.setText(slider.getValue() + "%");
+            percent.setText(slider.getValue() + "%");
             applyGain(key, slider.getValue() / 100f);
         });
         gainSliders.put(key, slider);
-        JPanel holder = new JPanel(new BorderLayout(6, 0));
-        holder.add(slider, BorderLayout.CENTER);
-        holder.add(value, BorderLayout.EAST);
-        return labelRow(key, labelWidth, holder);
+        addCell(resultsPanel, slider, 1, row, 0, GridBagConstraints.HORIZONTAL);
+        addCell(resultsPanel, percent, 2, row, 0, GridBagConstraints.NONE);
+
+        JProgressBar bar = new JProgressBar(0, 100);
+        bar.setPreferredSize(new Dimension(120, 16));
+        volumeBars.put(key, bar);
+        addCell(resultsPanel, bar, 3, row, 1, GridBagConstraints.HORIZONTAL);
+
+        JLabel volume = new JLabel("0.00");
+        volume.setPreferredSize(new Dimension(42, 18));
+        volume.setHorizontalAlignment(SwingConstants.RIGHT);
+        volumeLabels.put(key, volume);
+        addCell(resultsPanel, volume, 4, row, 0, GridBagConstraints.NONE);
+    }
+
+    private void addCell(JPanel panel, Component component, int x, int y, double weightx,
+            int fill) {
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = x;
+        constraints.gridy = y;
+        constraints.weightx = weightx;
+        constraints.fill = fill;
+        constraints.anchor = GridBagConstraints.WEST;
+        constraints.insets = new Insets(2, 3, 2, 3);
+        panel.add(component, constraints);
     }
 
     private void applyGain(String key, float gain) {
@@ -560,21 +607,20 @@ public final class SoundscapePlayer {
                     previewMultiplier));
         }
         if (resultsPanel != null) {
-            renderResults(composition);
+            updateMeters(composition);
         }
     }
 
-    private void renderResults(Composition composition) {
-        resultsPanel.removeAll();
-        composition.volumes().entrySet().stream().filter(entry -> entry.getValue() > MIN_VOLUME)
-                .sorted(Map.Entry.<String, Float>comparingByValue().reversed()
-                        .thenComparing(Map.Entry.comparingByKey()))
-                .forEach(entry -> resultsPanel.add(resultRow(entry.getKey(), entry.getValue())));
-        if (resultsPanel.getComponentCount() == 0) {
-            resultsPanel.add(new JLabel("(silence)"));
+    /** Moves every VU meter to the sound's current composed volume. */
+    private void updateMeters(Composition composition) {
+        for (Map.Entry<String, JProgressBar> meter : volumeBars.entrySet()) {
+            float volume = composition.volumeOf(meter.getKey());
+            meter.getValue().setValue(Math.round(Math.min(1f, volume) * 100));
+            JLabel label = volumeLabels.get(meter.getKey());
+            if (label != null) {
+                label.setText(String.format(Locale.ROOT, "%.2f", volume));
+            }
         }
-        resultsPanel.revalidate();
-        resultsPanel.repaint();
     }
 
     /** Scroll view that always matches the viewport width, so rows never overflow horizontally. */
@@ -607,18 +653,4 @@ public final class SoundscapePlayer {
         }
     }
 
-    private JPanel resultRow(String sound, float volume) {
-        JPanel row = new JPanel(new BorderLayout(8, 2));
-        JLabel name = new JLabel(sound);
-        name.setPreferredSize(new Dimension(170, 20));
-        row.add(name, BorderLayout.WEST);
-        JProgressBar bar = new JProgressBar(0, 100);
-        bar.setValue(Math.round(Math.min(1f, volume) * 100));
-        bar.setStringPainted(false);
-        row.add(bar, BorderLayout.CENTER);
-        row.add(new JLabel(String.format(Locale.ROOT, "%.2f", volume)), BorderLayout.EAST);
-        row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
-        return row;
-    }
 }

@@ -39,7 +39,6 @@ class SoundscapeLayoutTest {
         renderForInspection(scroll);
 
         assertAligned(player.zoneSliders());
-        assertAligned(player.gainSliders());
     }
 
     private void assertAligned(Map<String, JSlider> sliders) {
