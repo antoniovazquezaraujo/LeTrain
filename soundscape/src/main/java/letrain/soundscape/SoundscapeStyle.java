@@ -21,12 +21,13 @@ public final class SoundscapeStyle {
     private final Map<String, SoundDef> weatherSounds;
     private final Map<String, SoundDef> heightSounds;
     private final Map<String, Float> gains;
+    private final Map<String, Float> airSensitivity;
 
     public SoundscapeStyle(Map<String, ClimatePreset> climatePresets, Map<String, SoundDef> sounds,
             Map<String, List<String>> zones, Map<String, List<Float>> presence,
             Map<String, Float> heightSensitivity, Map<String, List<Float>> climateSensitivity,
             Map<String, SoundDef> weatherSounds, Map<String, SoundDef> heightSounds,
-            Map<String, Float> gains) {
+            Map<String, Float> gains, Map<String, Float> airSensitivity) {
         this.climatePresets = Collections.unmodifiableMap(new LinkedHashMap<>(climatePresets));
         this.sounds = Collections.unmodifiableMap(new LinkedHashMap<>(sounds));
         this.zones = immutableListValues(zones);
@@ -37,6 +38,7 @@ public final class SoundscapeStyle {
         this.weatherSounds = Collections.unmodifiableMap(new LinkedHashMap<>(weatherSounds));
         this.heightSounds = Collections.unmodifiableMap(new LinkedHashMap<>(heightSounds));
         this.gains = Collections.unmodifiableMap(new LinkedHashMap<>(gains));
+        this.airSensitivity = Collections.unmodifiableMap(new LinkedHashMap<>(airSensitivity));
     }
 
     public Map<String, ClimatePreset> climatePresets() {
@@ -84,7 +86,20 @@ public final class SoundscapeStyle {
     /** A copy of this style with a different gain table (used by the GUI calibration). */
     public SoundscapeStyle withGains(Map<String, Float> gains) {
         return new SoundscapeStyle(climatePresets, sounds, zones, presence, heightSensitivity,
-                climateSensitivity, weatherSounds, heightSounds, gains);
+                climateSensitivity, weatherSounds, heightSounds, gains, airSensitivity);
+    }
+
+    /** Per-sound air sensitivity: 0 stays next to the listener, 1 recedes fully with the zoom. */
+    public Map<String, Float> airSensitivity() {
+        return airSensitivity;
+    }
+
+    /**
+     * Air sensitivity of a sound; defaults to 1 (the sound is produced away from the listener).
+     * Height-provided sounds default to 0 in the engine unless they declare one here.
+     */
+    public float airSensitivityOf(String sound) {
+        return airSensitivity.getOrDefault(sound, 1f);
     }
 
     /** Sounds of a zone, or an empty list when the zone is unknown. */

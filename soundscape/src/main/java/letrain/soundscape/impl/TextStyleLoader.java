@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
  * [climate-by-sound]    dogs  = 0.0 0.0 +0.2                  (rain, wind, storm)
  * [weather]             rain  = weather/rain-*.wav
  * [gains]               cicadas = 0.6                         (1.0 = unchanged)
+ * [air-by-sound]        hawks = 0.3                           (0 = at the listener)
  * </pre>
  */
 public class TextStyleLoader implements StyleLoader {
@@ -70,6 +71,7 @@ public class TextStyleLoader implements StyleLoader {
         Map<String, SoundDef> weather = new LinkedHashMap<>();
         Map<String, SoundDef> heightSounds = new LinkedHashMap<>();
         Map<String, Float> gains = new LinkedHashMap<>();
+        Map<String, Float> air = new LinkedHashMap<>();
 
         String section = null;
         int lineNumber = 0;
@@ -117,13 +119,15 @@ public class TextStyleLoader implements StyleLoader {
                     weather.put(key, new SoundDef(key, tokens(value)));
                 }
                 case "gains" -> gains.put(key, singleFloat(value, lineNumber));
+                case "air-by-sound" -> air.put(key, singleFloat(value, lineNumber));
                 default -> throw error(lineNumber, "unknown section: " + section);
             }
         }
         validate(zones, sounds, presence);
         validateGains(gains, sounds, weather, heightSounds);
+        validateGains(air, sounds, weather, heightSounds);
         return new SoundscapeStyle(presets, sounds, zones, presence, height, climate, weather,
-                heightSounds, gains);
+                heightSounds, gains, air);
     }
 
     /**

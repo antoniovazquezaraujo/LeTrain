@@ -62,14 +62,17 @@ Plain text with sections and `key = value` lines; comments start with `#`. The f
 | `[weather]` | sounds contributed by the weather itself (volume = intensity) |
 | `[height]` | sounds contributed by the listening height (volume = height; the altitude wind) |
 | `[gains]` | optional per-sound loudness multiplier (1.0 = unchanged); keys are catalog sounds or `weather-*` / `height-*` |
+| `[air-by-sound]` | optional distance sensitivity (0 = at the listener, 1 = full); same keys as `[gains]` |
 
 Every sound is composed as `zone weight x presence (exact time) x climate x height x gain`; weather
 sounds are summed separately at their intensity. Everything is deterministic: same inputs, same mix.
 
-Zone sounds also carry **air absorption** from the listening height: the player low-passes them
-from 20 kHz (listener on the ground) down to 1.2 kHz (zoomed out), so the ground world recedes
-while the height-provided sounds (altitude wind) stay next to the listener. Weather sounds are not
-muffled: they happen around the listener.
+Sounds produced away from the listener (zone and weather sounds) carry **air absorption** from the
+listening height: the engine attenuates them up to -8 dB and the player low-passes them from 20 kHz
+(listener on the ground) down to 1.2 kHz (zoomed out). The ground world — rain hitting the ground,
+wind in the trees — recedes, while the height-provided sounds (altitude wind) stay next to the
+listener. `[air-by-sound]` overrides the sensitivity per sound (0 keeps it next to the listener,
+1 recedes fully), e.g. `hawks = 0.3`.
 
 ## Calibration
 

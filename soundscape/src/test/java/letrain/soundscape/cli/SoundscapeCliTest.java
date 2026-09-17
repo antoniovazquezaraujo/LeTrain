@@ -37,9 +37,10 @@ class SoundscapeCliTest {
 
         assertEquals(0, code);
         assertTrue(output().contains("crickets"));
-        assertTrue(output().contains("0.36"), () -> output());
+        // height 0.2 attenuates the world by (1 - 0.6 * 0.2)
+        assertTrue(output().contains("0.31"), () -> output());
         assertTrue(output().contains("weather-rain"));
-        assertTrue(output().contains("0.30"));
+        assertTrue(output().contains("0.26"));
     }
 
     @Test
