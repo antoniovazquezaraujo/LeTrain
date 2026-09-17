@@ -147,18 +147,13 @@ public final class SoundscapePlayer {
             }
         });
         controls.add(speedCombo);
-        JPanel previewRow = new JPanel(new BorderLayout(8, 0));
-        JLabel previewLabel = new JLabel("preview");
-        previewLabel.setPreferredSize(new Dimension(90, 18));
-        previewRow.add(previewLabel, BorderLayout.WEST);
         previewCombo = new JComboBox<>(new String[] {"x1", "x10", "x60"});
         previewCombo.addActionListener(e -> {
             String selected = (String) previewCombo.getSelectedItem();
             previewMultiplier = selected == null ? 1 : Integer.parseInt(selected.substring(1));
             updateComposition();
         });
-        previewRow.add(previewCombo, BorderLayout.CENTER);
-        controls.add(previewRow);
+        controls.add(labelRow("preview", 80, previewCombo));
 
         controls.add(section("Weather"));
         weatherCombo = new JComboBox<>();
@@ -221,11 +216,18 @@ public final class SoundscapePlayer {
     private JPanel weatherSliderRow(String key) {
         JSlider slider = slider(100, 0);
         weatherSliders.put(key, slider);
-        JLabel label = new JLabel(key);
-        label.setPreferredSize(new Dimension(60, 18));
+        return labelRow(key, 80, slider);
+    }
+
+    /** One control row with a fixed label width, so every slider starts at the same x. */
+    private JPanel labelRow(String text, int labelWidth, Component component) {
+        JLabel label = new JLabel(text);
+        label.setPreferredSize(new Dimension(labelWidth, 18));
         JPanel row = new JPanel(new BorderLayout(8, 0));
         row.add(label, BorderLayout.WEST);
-        row.add(slider, BorderLayout.CENTER);
+        row.add(component, BorderLayout.CENTER);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
         return row;
     }
 
@@ -310,13 +312,10 @@ public final class SoundscapePlayer {
         zoneSliders.clear();
         zonesPanel.removeAll();
         for (String zone : style.zones().keySet()) {
-            JPanel row = new JPanel(new BorderLayout(6, 0));
-            row.add(new JLabel(zone), BorderLayout.WEST);
             JSlider slider =
                     slider(100, Math.round(state.zoneWeights().getOrDefault(zone, 0f) * 100));
             zoneSliders.put(zone, slider);
-            row.add(slider, BorderLayout.CENTER);
-            zonesPanel.add(row);
+            zonesPanel.add(labelRow(zone, 110, slider));
         }
         weatherCombo.removeAllItems();
         for (String preset : style.climatePresets().keySet()) {
