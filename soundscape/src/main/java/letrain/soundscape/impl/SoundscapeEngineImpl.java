@@ -8,6 +8,7 @@ import letrain.soundscape.Band;
 import letrain.soundscape.Composition;
 import letrain.soundscape.CompositionInput;
 import letrain.soundscape.SoundscapeEngine;
+import letrain.soundscape.SoundGate;
 import letrain.soundscape.SoundscapeStyle;
 
 /**
@@ -17,6 +18,8 @@ import letrain.soundscape.SoundscapeStyle;
  * {@code distance = 1 - 0.6 x height x airSensitivity}, and the air part is handed to the player as
  * a low-pass, so zooming out muffles and lowers the world produced away from the listener.
  * Height-provided sounds stay next to the listener unless they declare an air sensitivity.
+ * Behaviour gates ({@code [silence-when]}) silence a sound when rain, wind or storm cross their
+ * threshold: crickets stop singing in the rain instead of fading out.
  *
  * <p>
  * A sound that belongs to several close zones accumulates; a sound whose zone weight is zero is
@@ -26,6 +29,8 @@ public class SoundscapeEngineImpl implements SoundscapeEngine {
 
     /** Volume attenuation at full air distance (1.0 = -infinity, 0.0 = no attenuation). */
     private static final float AIR_ATTENUATION = 0.6f;
+    /** Width of the fade band around a gate threshold, in state units. */
+    private static final float GATE_FEATHER = 0.05f;
 
     @Override
     public Composition compose(SoundscapeStyle style, CompositionInput input) {
@@ -41,7 +46,8 @@ public class SoundscapeEngineImpl implements SoundscapeEngine {
                 float presence = Band.interpolate(style.presenceOf(sound), input.time());
                 float distance = distanceFactor(style, sound, height);
                 float value = weight * presence * climateFactor(style, sound, input)
-                        * heightFactor(style, sound, input) * distance;
+                        * heightFactor(style, sound, input) * distance
+                        * gateFactor(style, sound, input);
                 volumes.merge(sound, value, Float::sum);
                 air.merge(sound, soundAir(style, sound, height), Math::max);
             }
@@ -84,6 +90,19 @@ public class SoundscapeEngineImpl implements SoundscapeEngine {
             volumes.merge(sound, intensity * distanceFactor(style, sound, height), Float::sum);
             air.merge(sound, soundAir(style, sound, height), Math::max);
         }
+    }
+
+    private float gateFactor(SoundscapeStyle style, String sound, CompositionInput input) {
+        float factor = 1f;
+        for (SoundGate gate : style.gatesOf(sound)) {
+            float value = switch (gate.variable()) {
+                case "rain" -> input.rain();
+                case "wind" -> input.wind();
+                default -> input.storm();
+            };
+            factor *= Math.max(0f, Math.min(1f, (gate.threshold() - value) / GATE_FEATHER));
+        }
+        return factor;
     }
 
     private float soundAir(SoundscapeStyle style, String sound, float height) {

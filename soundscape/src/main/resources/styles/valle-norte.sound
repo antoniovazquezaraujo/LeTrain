@@ -76,6 +76,14 @@ hawks             -0.5 +0.2 -1.0
 mine-machinery     0.0  0.0 -0.3
 factory-machinery  0.0  0.0 -0.3
 
+# --- Behaviour gates: the sound stops when the condition holds
+#  Crickets and cicadas stop singing in the rain; cicadas also in strong wind.
+[silence-when]
+crickets = rain > 0.25
+cicadas  = rain > 0.20
+cicadas  = wind > 0.60
+birds    = rain > 0.50
+
 # --- Weather-provided sounds (volume = intensity) -----------
 [weather]
 rain  = weather/rain-*.wav

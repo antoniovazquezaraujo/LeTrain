@@ -63,6 +63,7 @@ Plain text with sections and `key = value` lines; comments start with `#`. The f
 | `[height]` | sounds contributed by the listening height (volume = height; the altitude wind) |
 | `[gains]` | optional per-sound loudness multiplier (1.0 = unchanged); keys are catalog sounds or `weather-*` / `height-*` |
 | `[air-by-sound]` | optional distance sensitivity (0 = at the listener, 1 = full); same keys as `[gains]` |
+| `[silence-when]` | behaviour gates: `crickets = rain > 0.25`; one condition per line, repeatable |
 
 Every sound is composed as `zone weight x presence (exact time) x climate x height x gain`; weather
 sounds are summed separately at their intensity. Everything is deterministic: same inputs, same mix.
@@ -73,6 +74,10 @@ listening height: the engine attenuates them up to -8 dB and the player low-pass
 wind in the trees — recedes, while the height-provided sounds (altitude wind) stay next to the
 listener. `[air-by-sound]` overrides the sensitivity per sound (0 keeps it next to the listener,
 1 recedes fully), e.g. `hawks = 0.3`.
+
+Behaviour gates are not fades: `[silence-when]` stops a sound when rain, wind or storm go above a
+threshold, easing the change over a tiny band (0.05) so there is no click. Crickets and cicadas do
+not sing in the rain, they simply stop.
 
 ## Calibration
 

@@ -31,12 +31,12 @@ class SoundscapeEngineImplTest {
     @DisplayName("composes a sound as zone x presence x climate x height")
     void should_ComposeSound_When_AllFactorsApply() {
         CompositionInput input = new CompositionInput(LocalTime.of(23, 30), Map.of("fields", 0.7f),
-                0.2f, 0.3f, 0.1f, 0f);
+                0.2f, 0.1f, 0.1f, 0f);
 
         Composition composition = engine.compose(style, input);
 
-        // 0.7 * (0.8 + 0.1*60/270) * (1 - 0.8*0.3 - 0.2*0.1) * (1 - 0.8*0.2) * (1 - 0.6*0.2)
-        assertEquals(0.31483f, composition.volumeOf("crickets"), 1e-4);
+        // 0.7 * (0.8 + 0.1*60/270) * (1 - 0.8*0.1 - 0.2*0.1) * (1 - 0.8*0.2) * (1 - 0.6*0.2)
+        assertEquals(0.38291f, composition.volumeOf("crickets"), 1e-4);
     }
 
     @Test
@@ -197,6 +197,21 @@ class SoundscapeEngineImplTest {
         assertEquals(1f, engine.compose(clear, input).volumeOf("waves"), 1e-6);
         assertEquals(0.5f, engine.compose(receding, input).airOf("waves"), 1e-6);
         assertEquals(0.7f, engine.compose(receding, input).volumeOf("waves"), 1e-6);
+    }
+
+    @Test
+    @DisplayName("gates silence crickets and cicadas when the condition holds")
+    void should_SilenceGatedSounds_When_ConditionsHold() {
+        Composition dry = engine.compose(style,
+                new CompositionInput(LocalTime.of(23, 30), Map.of("fields", 1f), 0f, 0.1f, 0f, 0f));
+        Composition wet = engine.compose(style,
+                new CompositionInput(LocalTime.of(23, 30), Map.of("fields", 1f), 0f, 0.4f, 0f, 0f));
+        Composition windy = engine.compose(style,
+                new CompositionInput(LocalTime.NOON, Map.of("fields", 1f), 0f, 0f, 0.7f, 0f));
+
+        assertTrue(dry.volumeOf("crickets") > 0.3f);
+        assertEquals(0f, wet.volumeOf("crickets"), 1e-6);
+        assertEquals(0f, windy.volumeOf("cicadas"), 1e-6);
     }
 
     @Test
