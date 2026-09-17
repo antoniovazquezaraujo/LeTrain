@@ -88,6 +88,12 @@ public final class SoundscapeStyle {
 
     /** A copy of this style with a different gain table (used by the GUI calibration). */
     public SoundscapeStyle withGains(Map<String, Float> gains) {
+        return withCalibration(gains, airSensitivity, gates);
+    }
+
+    /** A copy of this style with different gains, air sensitivities and behaviour gates. */
+    public SoundscapeStyle withCalibration(Map<String, Float> gains,
+            Map<String, Float> airSensitivity, Map<String, List<SoundGate>> gates) {
         return new SoundscapeStyle(climatePresets, sounds, zones, presence, heightSensitivity,
                 climateSensitivity, weatherSounds, heightSounds, gains, airSensitivity, gates);
     }

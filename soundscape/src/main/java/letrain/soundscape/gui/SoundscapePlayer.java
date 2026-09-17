@@ -28,6 +28,7 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
+import javax.swing.JTabbedPane;
 import javax.swing.JToggleButton;
 import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
@@ -36,6 +37,7 @@ import javax.swing.Timer;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import letrain.soundscape.Composition;
 import letrain.soundscape.SoundscapeEngine;
+import letrain.soundscape.SoundGate;
 import letrain.soundscape.SoundscapeStyle;
 import letrain.soundscape.SpeedPreset;
 import letrain.soundscape.audio.AmbientPlayer;
@@ -75,8 +77,12 @@ public final class SoundscapePlayer {
     private double minutesAccumulator;
     private JPanel zonesPanel;
     private JPanel resultsPanel;
+    private JPanel mixPanel;
+    private JPanel responsesPanel;
     private final Map<String, JSlider> zoneSliders = new LinkedHashMap<>();
     private final Map<String, JSlider> gainSliders = new LinkedHashMap<>();
+    private final Map<String, JSlider> airSliders = new LinkedHashMap<>();
+    private final Map<String, Map<String, JSlider>> gateSliders = new LinkedHashMap<>();
     private final Map<String, JProgressBar> volumeBars = new LinkedHashMap<>();
     private final Map<String, JLabel> volumeLabels = new LinkedHashMap<>();
 
@@ -124,14 +130,21 @@ public final class SoundscapePlayer {
         statusLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 6, 8));
         frame.add(statusLabel, BorderLayout.SOUTH);
 
-        frame.setSize(900, 640);
+        frame.setSize(1020, 680);
         frame.setLocationRelativeTo(null);
     }
 
-    /** Right panel: every sound with its gain slider and a live VU meter. */
+    /** Right panel: mix faders with VU meters, plus the per-sound responses. */
     JPanel buildResultsPanel() {
-        resultsPanel = new JPanel(new GridBagLayout());
-        resultsPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        mixPanel = new JPanel(new GridBagLayout());
+        mixPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        responsesPanel = new JPanel(new GridBagLayout());
+        responsesPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.addTab("Mix", mixPanel);
+        tabs.addTab("Responses", responsesPanel);
+        resultsPanel = new JPanel(new BorderLayout());
+        resultsPanel.add(tabs, BorderLayout.CENTER);
         return resultsPanel;
     }
 
@@ -305,6 +318,16 @@ public final class SoundscapePlayer {
         return gainSliders;
     }
 
+    /** Visible for calibration tests: the air distance sliders by sound key. */
+    Map<String, JSlider> airSliders() {
+        return airSliders;
+    }
+
+    /** Visible for calibration tests: the silence gate sliders by sound key and variable. */
+    Map<String, Map<String, JSlider>> gateSliders() {
+        return gateSliders;
+    }
+
     /** Visible for calibration tests: the VU meters by sound key. */
     Map<String, JProgressBar> volumeBars() {
         return volumeBars;
@@ -410,19 +433,25 @@ public final class SoundscapePlayer {
         }
         if (resultsPanel != null) {
             gainSliders.clear();
+            airSliders.clear();
+            gateSliders.clear();
             volumeBars.clear();
             volumeLabels.clear();
-            resultsPanel.removeAll();
+            mixPanel.removeAll();
+            responsesPanel.removeAll();
             List<String> gainKeys = gainKeys();
             int nameWidth = 0;
             for (String key : gainKeys) {
                 nameWidth = Math.max(nameWidth, new JLabel(key).getPreferredSize().width);
             }
             nameWidth += 6;
-            addResultsHeader(nameWidth);
+            addMixHeader(nameWidth);
+            addResponsesHeader(nameWidth);
             int row = 1;
             for (String key : gainKeys) {
-                addResultsRow(key, nameWidth, row++);
+                addMixRow(key, nameWidth, row);
+                addResponsesRow(key, nameWidth, row);
+                row++;
             }
         }
         weatherCombo.removeAllItems();
@@ -453,19 +482,19 @@ public final class SoundscapePlayer {
         return keys;
     }
 
-    private void addResultsHeader(int nameWidth) {
+    private void addMixHeader(int nameWidth) {
         JLabel sound = new JLabel("sound");
         sound.setPreferredSize(new Dimension(nameWidth, 18));
-        addCell(resultsPanel, sound, 0, 0, 0, GridBagConstraints.NONE);
-        addCell(resultsPanel, new JLabel("gain"), 1, 0, 0, GridBagConstraints.NONE);
-        addCell(resultsPanel, new JLabel("level"), 3, 0, 1, GridBagConstraints.HORIZONTAL);
+        addCell(mixPanel, sound, 0, 0, 0, GridBagConstraints.NONE);
+        addCell(mixPanel, new JLabel("gain"), 1, 0, 0, GridBagConstraints.NONE);
+        addCell(mixPanel, new JLabel("level"), 3, 0, 1, GridBagConstraints.HORIZONTAL);
     }
 
-    /** One calibration row: sound, 0-200% gain slider, its percentage and a live VU meter. */
-    private void addResultsRow(String key, int nameWidth, int row) {
+    /** One mix row: sound, 0-200% gain slider, its percentage and a live VU meter. */
+    private void addMixRow(String key, int nameWidth, int row) {
         JLabel name = new JLabel(key);
         name.setPreferredSize(new Dimension(nameWidth, 18));
-        addCell(resultsPanel, name, 0, row, 0, GridBagConstraints.NONE);
+        addCell(mixPanel, name, 0, row, 0, GridBagConstraints.NONE);
 
         JSlider slider = new JSlider(0, 200, Math.round(style.gainOf(key) * 100));
         slider.setPreferredSize(new Dimension(130, 16));
@@ -477,19 +506,88 @@ public final class SoundscapePlayer {
             applyGain(key, slider.getValue() / 100f);
         });
         gainSliders.put(key, slider);
-        addCell(resultsPanel, slider, 1, row, 0, GridBagConstraints.HORIZONTAL);
-        addCell(resultsPanel, percent, 2, row, 0, GridBagConstraints.NONE);
+        addCell(mixPanel, slider, 1, row, 0, GridBagConstraints.HORIZONTAL);
+        addCell(mixPanel, percent, 2, row, 0, GridBagConstraints.NONE);
 
         JProgressBar bar = new JProgressBar(0, 100);
         bar.setPreferredSize(new Dimension(120, 16));
         volumeBars.put(key, bar);
-        addCell(resultsPanel, bar, 3, row, 1, GridBagConstraints.HORIZONTAL);
+        addCell(mixPanel, bar, 3, row, 1, GridBagConstraints.HORIZONTAL);
 
         JLabel volume = new JLabel("0.00");
         volume.setPreferredSize(new Dimension(42, 18));
         volume.setHorizontalAlignment(SwingConstants.RIGHT);
         volumeLabels.put(key, volume);
-        addCell(resultsPanel, volume, 4, row, 0, GridBagConstraints.NONE);
+        addCell(mixPanel, volume, 4, row, 0, GridBagConstraints.NONE);
+    }
+
+    private void addResponsesHeader(int nameWidth) {
+        JLabel sound = new JLabel("sound");
+        sound.setPreferredSize(new Dimension(nameWidth, 18));
+        addCell(responsesPanel, sound, 0, 0, 0, GridBagConstraints.NONE);
+        String[] labels = {"air", "rain", "wind", "storm"};
+        for (int i = 0; i < labels.length; i++) {
+            addCell(responsesPanel, new JLabel(labels[i]), 1 + i * 2, 0, 0,
+                    GridBagConstraints.NONE);
+        }
+    }
+
+    /** One responses row: air sensitivity and the rain/wind/storm silence gates. */
+    private void addResponsesRow(String key, int nameWidth, int row) {
+        JLabel name = new JLabel(key);
+        name.setPreferredSize(new Dimension(nameWidth, 18));
+        addCell(responsesPanel, name, 0, row, 0, GridBagConstraints.NONE);
+
+        JSlider air = new JSlider(0, 100, Math.round(style.airSensitivityOf(key) * 100));
+        air.setPreferredSize(new Dimension(80, 16));
+        air.setToolTipText("distance sensitivity: 0 keeps the sound close, 100 recedes fully");
+        JLabel airValue = valueLabel(air.getValue() + "%");
+        air.addChangeListener(e -> {
+            airValue.setText(air.getValue() + "%");
+            applyAir(key, air.getValue() / 100f);
+        });
+        airSliders.put(key, air);
+        addCell(responsesPanel, air, 1, row, 0, GridBagConstraints.HORIZONTAL);
+        addCell(responsesPanel, airValue, 2, row, 0, GridBagConstraints.NONE);
+
+        Map<String, JSlider> soundGates = new LinkedHashMap<>();
+        gateSliders.put(key, soundGates);
+        String[] variables = {"rain", "wind", "storm"};
+        for (int i = 0; i < variables.length; i++) {
+            String variable = variables[i];
+            JSlider gate = gateSlider(key, variable);
+            gate.setPreferredSize(new Dimension(64, 16));
+            gate.setToolTipText(variable + " gate: the sound stops above this level (100% = off)");
+            JLabel gateValue = valueLabel("");
+            updateGateLabel(gateValue, gate.getValue());
+            gate.addChangeListener(e -> {
+                updateGateLabel(gateValue, gate.getValue());
+                applyGate(key, variable, gate.getValue() >= 100 ? null : gate.getValue() / 100f);
+            });
+            soundGates.put(variable, gate);
+            addCell(responsesPanel, gate, 3 + i * 2, row, 0, GridBagConstraints.HORIZONTAL);
+            addCell(responsesPanel, gateValue, 4 + i * 2, row, 0, GridBagConstraints.NONE);
+        }
+    }
+
+    private JSlider gateSlider(String key, String variable) {
+        for (SoundGate gate : style.gatesOf(key)) {
+            if (gate.variable().equals(variable)) {
+                return new JSlider(0, 100, Math.round(gate.threshold() * 100));
+            }
+        }
+        return new JSlider(0, 100, 100);
+    }
+
+    private JLabel valueLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setPreferredSize(new Dimension(38, 18));
+        label.setHorizontalAlignment(SwingConstants.RIGHT);
+        return label;
+    }
+
+    private void updateGateLabel(JLabel label, int value) {
+        label.setText(value >= 100 ? "off" : value + "%");
     }
 
     private void addCell(JPanel panel, Component component, int x, int y, double weightx,
@@ -511,13 +609,52 @@ public final class SoundscapePlayer {
         } else {
             updated.put(key, gain);
         }
-        style = style.withGains(updated);
+        style = style.withCalibration(updated, style.airSensitivity(), style.gates());
         updateComposition();
     }
 
-    /** Exports the calibration as text, keeping the original file and replacing only [gains]. */
+    private void applyAir(String key, float sensitivity) {
+        Map<String, Float> updated = new LinkedHashMap<>(style.airSensitivity());
+        if (Math.abs(sensitivity - 1f) < 1e-3f) {
+            updated.remove(key);
+        } else {
+            updated.put(key, sensitivity);
+        }
+        style = style.withCalibration(style.gains(), updated, style.gates());
+        updateComposition();
+    }
+
+    private void applyGate(String key, String variable, Float threshold) {
+        Map<String, List<SoundGate>> updated = new LinkedHashMap<>();
+        for (Map.Entry<String, List<SoundGate>> entry : style.gates().entrySet()) {
+            updated.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        }
+        List<SoundGate> soundGates = updated.computeIfAbsent(key, sound -> new ArrayList<>());
+        soundGates.removeIf(gate -> gate.variable().equals(variable));
+        if (threshold != null) {
+            soundGates.add(new SoundGate(variable, threshold));
+            soundGates.sort(
+                    (left, right) -> gateOrder(left.variable()) - gateOrder(right.variable()));
+        }
+        if (soundGates.isEmpty()) {
+            updated.remove(key);
+        }
+        style = style.withCalibration(style.gains(), style.airSensitivity(), updated);
+        updateComposition();
+    }
+
+    private int gateOrder(String variable) {
+        return switch (variable) {
+            case "rain" -> 0;
+            case "wind" -> 1;
+            default -> 2;
+        };
+    }
+
+    /** Exports the calibration as text, keeping the original and replacing only its sections. */
     List<String> exportLines() {
-        return writer.withGains(sourceLines, style.gains());
+        return writer.withCalibration(sourceLines, style.gains(), style.airSensitivity(),
+                style.gates());
     }
 
     private void exportStyle() {
@@ -529,7 +666,7 @@ public final class SoundscapePlayer {
         }
         Path target = chooser.getSelectedFile().toPath();
         try {
-            writer.write(target, sourceLines, style.gains());
+            writer.write(target, sourceLines, style.gains(), style.airSensitivity(), style.gates());
             statusLabel.setText("exported " + target.getFileName());
         } catch (IOException e) {
             JOptionPane.showMessageDialog(frame, "Could not export: " + e.getMessage(),

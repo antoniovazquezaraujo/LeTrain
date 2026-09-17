@@ -16,6 +16,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JSlider;
+import letrain.soundscape.SoundGate;
 import letrain.soundscape.SoundscapeStyle;
 import letrain.soundscape.impl.TextStyleLoader;
 import org.junit.jupiter.api.DisplayName;
@@ -97,6 +98,33 @@ class SoundscapeCalibrationTest {
                 .anyMatch(line -> line.replaceAll("\\s+", " ").trim().equals("cicadas = 0.4")));
         assertTrue(exported
                 .contains("# ============================================================"));
+    }
+
+    @Test
+    @DisplayName("air sliders write [air-by-sound] and parse back")
+    void should_ExportAirSensitivity_When_AirSliderMoves() throws IOException {
+        SoundscapePlayer player = calibratedPlayer();
+
+        player.airSliders().get("hawks").setValue(30);
+
+        SoundscapeStyle reloaded = loader.parse(player.exportLines());
+        assertEquals(0.3f, reloaded.airSensitivityOf("hawks"), 1e-6);
+        assertEquals(1f, reloaded.airSensitivityOf("cicadas"), 1e-6);
+    }
+
+    @Test
+    @DisplayName("gate sliders write [silence-when] and can switch a gate off")
+    void should_ExportSilenceGates_When_GateSlidersMove() throws IOException {
+        SoundscapePlayer player = calibratedPlayer();
+
+        JSlider rainGate = player.gateSliders().get("crickets").get("rain");
+        assertEquals(25, rainGate.getValue(), "bundled style declares crickets rain > 0.25");
+        rainGate.setValue(40);
+        assertEquals(List.of(new SoundGate("rain", 0.4f)),
+                loader.parse(player.exportLines()).gatesOf("crickets"));
+
+        rainGate.setValue(100);
+        assertTrue(loader.parse(player.exportLines()).gatesOf("crickets").isEmpty());
     }
 
     @Test

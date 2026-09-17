@@ -81,8 +81,13 @@ not sing in the rain, they simply stop.
 
 ## Calibration
 
-The right panel of the GUI lists every sound (weather and height sounds included) with its 0–200%
-gain slider, its percentage and a live VU meter, so each fader can be set while watching the level.
+The right panel has two tabs:
+
+- **Mix**: every sound (weather and height sounds included) with its 0–200% gain slider, its
+  percentage and a live VU meter, so each fader is set while watching the level.
+- **Responses**: air distance sensitivity and the rain/wind/storm silence gates of every sound
+  (100% = gate off).
+
 *Export style…* writes the current calibration to a new `*.sound` file: the original text is
-preserved and only the `[gains]` section is replaced, so comments and layout stay intact. Gains
-left at 100% are omitted from the exported file.
+preserved and only the `[gains]`, `[air-by-sound]` and `[silence-when]` sections are replaced, so
+comments and layout stay intact. Values equal to the defaults are omitted.
