@@ -50,6 +50,7 @@ public class AmbientPlayer implements AutoCloseable {
         SampleLoader loader = new SampleLoader();
         style.sounds().forEach((name, def) -> load(name, def, resolver, loader));
         style.weatherSounds().forEach((key, def) -> load("weather-" + key, def, resolver, loader));
+        style.heightSounds().forEach((key, def) -> load("height-" + key, def, resolver, loader));
     }
 
     /** Number of sounds that could be loaded. */

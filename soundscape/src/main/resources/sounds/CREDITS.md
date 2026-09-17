@@ -11,9 +11,10 @@ royalty-free field recordings.
 | `field/cricket-01.wav` | cricket | [Field cricket (Gryllus campestris)](https://upload.wikimedia.org/wikipedia/commons/9/9c/Gryllus_campestris_-_sound.ogg) | Wikimedia Commons (CC-BY-SA 3.0) |
 | `field/dog-01.wav` | dog | [Barking of a dog](https://upload.wikimedia.org/wikipedia/commons/5/58/Barking_of_a_dog_2.ogg) | Wikimedia Commons (Public Domain / CC0) |
 | `field/rooster-01.wav` | rooster | [Rooster crowing](https://upload.wikimedia.org/wikipedia/commons/c/c5/Rooster_crowing.ogg) | Filo gèn' (CC-BY-SA 4.0) |
-| `field/birds-01.wav` | birds | [Blackbird song (Turdus merula)](https://upload.wikimedia.org/wikipedia/commons/7/7c/Turdus_merula_2.ogg) | Wikimedia Commons (CC-BY-SA 3.0) |
+| `field/birds-01.wav` | birds | Migrated from LeTrain core assets (30 s) | LeTrain project (license to confirm) |
 | `mountain/hawk-01.wav` | hawk | [Red-shouldered Hawk call (Buteo lineatus)](https://upload.wikimedia.org/wikipedia/commons/5/5a/Buteo_lineatus.ogg) | Wikimedia Commons (Public Domain) |
 | `mountain/wind-01.wav` | wind_mountain | [Wind in Swedish pine forest](https://upload.wikimedia.org/wikipedia/commons/f/f3/Wind_in_Swedish_pine_forest_at_25_mps.ogg) | Wikimedia Commons (CC-BY-SA 4.0) |
 | `weather/rain-01.wav` | rain | [Falling Rain Sound Effect](https://upload.wikimedia.org/wikipedia/commons/4/4f/Falling_Rain_SFX_1_2016-11-19.oga) | Wikimedia Commons (CC0 Public Domain) |
 | `weather/wind-01.wav` | wind_weather | [Night wind and snow at Abisko](https://upload.wikimedia.org/wikipedia/commons/1/11/20221229_-_Abisko_Turiststation_at_night_-_Wind_and_snow.wav) | Wikimedia Commons (CC-BY-SA 4.0) |
 | `weather/thunder-01.wav` | thunder | [Summer thunderstorm in the woods](https://upload.wikimedia.org/wikipedia/commons/c/ce/Summer_thunderstorm_in_the_woods.ogg) | Wikimedia Commons (CC-BY-SA 3.0) |
+| `sky/wind-altitude-01.wav` | altitude wind | Migrated from LeTrain core assets (30 s) | LeTrain project (license to confirm) |
