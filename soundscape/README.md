@@ -8,8 +8,10 @@ Diseño y decisiones: `docs/developer/adr/ADR-023-Soundscape-Isolation.md`.
 
 ## Estado
 
-Primera pieza: motor de composición + reproductor de pruebas por línea de comandos, **sin salida de
-audio todavía** (cuando existan sonidos, el reproductor los podrá hacer sonar).
+Módulo funcional: formato de estilo, motor de composición, catálogo con 12 sonidos ambientales
+normalizados, **reproducción en vivo** (cada material suena entero en bucle; los saltos aleatorios
+con crossfade están aparcados hasta cortar los sonidos), reproductor CLI y taller Swing. Las minas y
+fábricas aún no tienen material.
 
 ## Uso
 
@@ -34,8 +36,8 @@ Opciones: `--file`, `--time HH:mm`, `--zones zona=peso,...`, `--height 0..1`, `-
 
 `SoundscapePlayer` es un taller Swing: sliders de hora, altura, clima y zonas, selector de velocidad
 (lenta/normal/rápida, día de 60/40/20 min) con multiplicador de vista previa (x1/x10/x60), barras de
-volumen por sonido en vivo, botón de día completo, **botón 🔊 Escuchar** (reproduce la mezcla con
-loops y saltos aleatorios) y carga de estilos (`*.sound`).
+volumen por sonido en vivo, botón de día completo, **botón 🔊 Escuchar** (reproduce la mezcla en
+vivo; ganancia maestra con limitador suave) y carga de estilos (`*.sound`).
 
 ```bash
 mvn -pl soundscape exec:java@gui
