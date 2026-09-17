@@ -11,7 +11,8 @@
   con `tools/audit_samples.py` muestra que un mismo fenómeno —"viento"— tiene caracteres muy
   distintos: con hojas de bosque (banda alta), costero (grave constante), tormenta (ráfagas
   marcadas), gélido, lejano (solo graves), encerrado (`underground`), inquietante (`cemetery`,
-  `scary`)…
+  `scary`)… El resultado, con medidas, tags sugeridos y columnas de curación, queda versionado en
+  `docs/developer/soundscape/catalog.csv`.
 - Con un único fichero por sonido: 9 de cada 10 tomas no suenan nunca, el bucle fijo se nota, y no
   hay forma de describir ni mezclar carácter, intensidad o distancia.
 - La propia auditoría destapa problemas prácticos recurrentes: tomas de 128–401 s (inservibles
