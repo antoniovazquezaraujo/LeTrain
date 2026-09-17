@@ -12,6 +12,7 @@ import java.util.Map;
 import letrain.soundscape.Band;
 import letrain.soundscape.ClimatePreset;
 import letrain.soundscape.SoundDef;
+import letrain.soundscape.SoundGate;
 import letrain.soundscape.SoundscapeStyle;
 import letrain.soundscape.StyleLoader;
 import org.slf4j.Logger;
@@ -29,6 +30,8 @@ import org.slf4j.LoggerFactory;
  * [climate-by-sound]    dogs  = 0.0 0.0 +0.2                  (rain, wind, storm)
  * [weather]             rain  = weather/rain-*.wav
  * [gains]               cicadas = 0.6                         (1.0 = unchanged)
+ * [distance-by-sound]        hawks = 0.3                           (0 = at the listener)
+ * [silence-when]        crickets = rain > 0.25                 (behaviour gates)
  * </pre>
  */
 public class TextStyleLoader implements StyleLoader {
@@ -70,6 +73,8 @@ public class TextStyleLoader implements StyleLoader {
         Map<String, SoundDef> weather = new LinkedHashMap<>();
         Map<String, SoundDef> heightSounds = new LinkedHashMap<>();
         Map<String, Float> gains = new LinkedHashMap<>();
+        Map<String, Float> distance = new LinkedHashMap<>();
+        Map<String, List<SoundGate>> gates = new LinkedHashMap<>();
 
         String section = null;
         int lineNumber = 0;
@@ -117,13 +122,38 @@ public class TextStyleLoader implements StyleLoader {
                     weather.put(key, new SoundDef(key, tokens(value)));
                 }
                 case "gains" -> gains.put(key, singleFloat(value, lineNumber));
+                case "distance-by-sound" -> distance.put(key, singleFloat(value, lineNumber));
+                case "silence-when" -> gates.computeIfAbsent(key, sound -> new ArrayList<>())
+                        .add(parseGate(value, lineNumber));
                 default -> throw error(lineNumber, "unknown section: " + section);
             }
         }
         validate(zones, sounds, presence);
         validateGains(gains, sounds, weather, heightSounds);
+        validateGains(distance, sounds, weather, heightSounds);
+        validateGates(gates, sounds);
         return new SoundscapeStyle(presets, sounds, zones, presence, height, climate, weather,
-                heightSounds, gains);
+                heightSounds, gains, distance, gates);
+    }
+
+    private SoundGate parseGate(String value, int lineNumber) throws IOException {
+        String[] parts = value.split(">", 2);
+        if (parts.length != 2) {
+            throw error(lineNumber, "silence gate expects 'rain > 0.25'");
+        }
+        String variable = parts[0].trim().toLowerCase();
+        if (!variable.equals("rain") && !variable.equals("wind") && !variable.equals("storm")) {
+            throw error(lineNumber, "unknown gate variable: " + parts[0].trim());
+        }
+        return new SoundGate(variable, singleFloat(parts[1], lineNumber));
+    }
+
+    private void validateGates(Map<String, List<SoundGate>> gates, Map<String, SoundDef> sounds) {
+        for (String sound : gates.keySet()) {
+            if (!sounds.containsKey(sound)) {
+                log.warn("silence gate for unknown sound '{}' is ignored", sound);
+            }
+        }
     }
 
     /**

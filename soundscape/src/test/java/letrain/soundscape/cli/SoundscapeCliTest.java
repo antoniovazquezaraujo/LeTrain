@@ -1,6 +1,7 @@
 package letrain.soundscape.cli;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -36,10 +37,20 @@ class SoundscapeCliTest {
                 "--weather", "drizzle");
 
         assertEquals(0, code);
-        assertTrue(output().contains("crickets"));
-        assertTrue(output().contains("0.36"), () -> output());
         assertTrue(output().contains("weather-rain"));
-        assertTrue(output().contains("0.30"));
+        assertTrue(output().contains("0.26"));
+        assertTrue(output().contains("waves"));
+        // drizzle (rain 0.3) crosses the cricket gate: they do not sing at all
+        assertFalse(output().contains("crickets"), () -> output());
+    }
+
+    @Test
+    @DisplayName("crickets sing again when the rain gate is clear")
+    void should_SingCrickets_When_Dry() {
+        int code = run("--time", "23:30", "--zones", "fields=0.7", "--weather", "clear");
+
+        assertEquals(0, code);
+        assertTrue(output().contains("crickets"), () -> output());
     }
 
     @Test

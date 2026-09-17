@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import letrain.soundscape.SoundGate;
 import letrain.soundscape.SoundscapeStyle;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,28 @@ class TextStyleLoaderTest {
         assertNotNull(style.heightSounds().get("wind"));
         assertTrue(style.gains().isEmpty());
         assertEquals(1f, style.gainOf("cicadas"), 1e-6);
+        assertEquals(2, style.gatesOf("cicadas").size());
+        assertEquals(new SoundGate("rain", 0.25f), style.gatesOf("crickets").get(0));
+    }
+
+    @Test
+    @DisplayName("parses silence gates, one condition per line")
+    void should_ParseSilenceGates_When_SectionIsPresent() throws IOException {
+        SoundscapeStyle style = loader.parse(List.of("[sounds]", "waves = sea/waves-*.wav",
+                "[zones]", "sea = waves", "[presence]", "waves = 1 1 1 1 1 1 1", "[silence-when]",
+                "waves = rain > 0.25", "waves = wind > 0.6"));
+
+        assertEquals(List.of(new SoundGate("rain", 0.25f), new SoundGate("wind", 0.6f)),
+                style.gatesOf("waves"));
+        assertTrue(style.gatesOf("seagulls").isEmpty());
+    }
+
+    @Test
+    @DisplayName("fails on an unknown gate variable")
+    void should_Throw_When_GateVariableIsUnknown() {
+        List<String> lines = List.of("[sounds]", "waves = sea/waves-*.wav", "[silence-when]",
+                "waves = snow > 0.5");
+        assertThrows(IOException.class, () -> loader.parse(lines));
     }
 
     @Test
