@@ -150,6 +150,24 @@ class SoundscapeEngineImplTest {
     }
 
     @Test
+    @DisplayName("listening height sets the air distance of zone sounds only")
+    void should_SetAirDistance_When_HeightIsSet() {
+        CompositionInput input =
+                new CompositionInput(LocalTime.NOON, Map.of("fields", 1f), 0.7f, 0.4f, 0f, 0f);
+
+        Composition composition = engine.compose(style, input);
+
+        assertEquals(0.7f, composition.airOf("cicadas"), 1e-6);
+        assertEquals(0f, composition.airOf("weather-rain"), 1e-6);
+        assertEquals(0f, composition.airOf("height-wind"), 1e-6);
+        assertEquals(0f,
+                engine.compose(style,
+                        new CompositionInput(LocalTime.NOON, Map.of("fields", 1f), 0f, 0f, 0f, 0f))
+                        .airOf("cicadas"),
+                1e-6);
+    }
+
+    @Test
     @DisplayName("same inputs give the same composition")
     void should_BeDeterministic() {
         CompositionInput input = new CompositionInput(LocalTime.of(13, 10),

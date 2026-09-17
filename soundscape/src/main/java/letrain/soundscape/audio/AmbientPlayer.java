@@ -39,7 +39,7 @@ public class AmbientPlayer implements AutoCloseable {
     private final Map<String, AmbientVoice> voices = new HashMap<>();
     private final Random random;
 
-    private volatile Map<String, Float> targets = Map.of();
+    private volatile Composition targets = new Composition(Map.of());
     private volatile boolean running;
     private SourceDataLine line;
     private Thread thread;
@@ -77,9 +77,9 @@ public class AmbientPlayer implements AutoCloseable {
         thread.start();
     }
 
-    /** Sets the target volumes of the current composition. */
+    /** Sets the target volumes and air absorption of the current composition. */
     public void updateTargets(Composition composition) {
-        targets = composition == null ? Map.of() : composition.volumes();
+        targets = composition == null ? new Composition(Map.of()) : composition;
     }
 
     /**
@@ -138,8 +138,8 @@ public class AmbientPlayer implements AutoCloseable {
 
     private void mixBuffer(float[] mono) {
         java.util.Arrays.fill(mono, 0f);
-        Map<String, Float> current = targets;
-        for (Map.Entry<String, Float> entry : current.entrySet()) {
+        Composition current = targets;
+        for (Map.Entry<String, Float> entry : current.volumes().entrySet()) {
             SoundSample sample = samples.get(entry.getKey());
             if (sample == null) {
                 continue;
@@ -148,11 +148,12 @@ public class AmbientPlayer implements AutoCloseable {
             AmbientVoice voice =
                     voices.computeIfAbsent(entry.getKey(), key -> new AmbientVoice(sample));
             voice.setTarget(volume > MIN_VOLUME ? volume : 0f);
+            voice.setAir(current.airOf(entry.getKey()));
         }
         for (Iterator<Map.Entry<String, AmbientVoice>> it = voices.entrySet().iterator(); it
                 .hasNext();) {
             Map.Entry<String, AmbientVoice> entry = it.next();
-            if (!current.containsKey(entry.getKey())) {
+            if (!current.volumes().containsKey(entry.getKey())) {
                 entry.getValue().setTarget(0f);
             }
             entry.getValue().render(mono, mono.length);

@@ -66,6 +66,11 @@ Plain text with sections and `key = value` lines; comments start with `#`. The f
 Every sound is composed as `zone weight x presence (exact time) x climate x height x gain`; weather
 sounds are summed separately at their intensity. Everything is deterministic: same inputs, same mix.
 
+Zone sounds also carry **air absorption** from the listening height: the player low-passes them
+from 20 kHz (listener on the ground) down to 1.2 kHz (zoomed out), so the ground world recedes
+while the height-provided sounds (altitude wind) stay next to the listener. Weather sounds are not
+muffled: they happen around the listener.
+
 ## Calibration
 
 The right panel of the GUI lists every sound (weather and height sounds included) with its 0–200%
