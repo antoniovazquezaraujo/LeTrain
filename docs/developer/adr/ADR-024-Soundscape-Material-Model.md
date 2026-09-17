@@ -11,8 +11,9 @@
   con `tools/audit_samples.py` muestra que un mismo fenómeno —"viento"— tiene caracteres muy
   distintos: con hojas de bosque (banda alta), costero (grave constante), tormenta (ráfagas
   marcadas), gélido, lejano (solo graves), encerrado (`underground`), inquietante (`cemetery`,
-  `scary`)… El resultado, con medidas, tags sugeridos y columnas de curación, queda versionado en
-  `docs/developer/soundscape/catalog.csv`.
+  `scary`)… El resultado, con medidas, tags sugeridos, columnas de curación
+  (`character`/`intensity`/`distance`/`tone`/`modulation`), estado (`candidate`/`review`/
+  `reference`) y notas, queda versionado en `docs/developer/soundscape/catalog.csv`.
 - Con un único fichero por sonido: 9 de cada 10 tomas no suenan nunca, el bucle fijo se nota, y no
   hay forma de describir ni mezclar carácter, intensidad o distancia.
 - La propia auditoría destapa problemas prácticos recurrentes: tomas de 128–401 s (inservibles
@@ -26,12 +27,17 @@
    del grupo seleccionado con un **crossfade corto** (~0.5–1 s) en el empalme. La semilla se
    mantiene: mismas entradas, mismo resultado.
 3. **Ejes de material** (etiquetas discretas de autoría, no curvas):
-   - `character`: `leaves`, `water`, `rain`, `howl`, `rumble`, `enclosed`, `eerie`, `urban`…
+   - `character`: `leaves`, `water`, `rain`, `howl`, `rumble`, `enclosed`, `eerie`, `snow` /
+     `blizzard`, `storm`, `thunder`, `birds`, `urban`…
    - `intensity`: `soft`, `medium`, `strong`
-   - `distance`: `near`, `far`
-   - `tone`: `bright`, `dark`
+   - `distance`: `near`, `medium`, `far`
+   - `tone`: `bright`, `dark`, `harsh`
+   - `modulation`: `steady` (continuo, sin cambios), `gusty` (rachas), `varied`; la primera
+     curación del catálogo la mostró como eje propio ("rachas" frente a "continuo").
    El estado (clima, altura, zona, hora) selecciona 1–2 tomas por familia y las crossfadea. Las
    curvas (`presence`, sensibilidades) siguen viviendo en la familia, no en la toma.
+   Nota de medida: el `LRA` de la auditoría sirve de proxy de modulación, pero **no ve** las ráfagas
+   que cambian el espectro sin cambiar el nivel (p. ej. `moutain`: LRA 1.3 con muchas ráfagas).
 4. **Capas**: una capa es un sonido del estilo (ya funciona: `wind` + `rain` + `birds` suman). Un
    mismo fenómeno puede declarar capas de detalle independientes (`wind` base y `wind.leaves`) con
    su propia presencia; no se añade jerarquía dura al motor.

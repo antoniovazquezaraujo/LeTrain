@@ -9,7 +9,7 @@ For every audio file it:
 3. Writes a spectrogram PNG (the reviewer can read structure without listening).
 4. Fingerprints the audio (Chromaprint, when ``fpcalc`` is available) to spot duplicates.
 5. Appends a row to ``catalog.csv`` with suggested tags and empty columns for the final
-   human curation (character / intensity / distance / notes).
+   human curation (character / intensity / distance / tone / modulation / status / notes).
 
 Usage:
     tools/audit_samples.py <input-dir> [output-dir]
@@ -78,6 +78,9 @@ CSV_FIELDS = [
     "character",
     "intensity",
     "distance",
+    "tone",
+    "modulation",
+    "status",
     "notes",
 ]
 
@@ -154,6 +157,10 @@ def suggested_tags(name: str, metrics: dict[str, float]) -> str:
     high = metrics.get("high_db")
     if mid is not None and high is not None:
         tags.add("bright" if high > mid - 6 else "dark")
+    lra = metrics.get("lra_lu")
+    if lra not in (None, ""):
+        spread = float(lra)
+        tags.add("gusty" if spread > 6 else "steady" if spread < 3 else "varied")
     return ";".join(sorted(tags))
 
 
@@ -192,6 +199,9 @@ def audit(path: Path, output: Path) -> dict:
         "character": "",
         "intensity": "",
         "distance": "",
+        "tone": "",
+        "modulation": "",
+        "status": "",
         "notes": "",
     }
     row["suggested_tags"] = suggested_tags(path.name, row)
