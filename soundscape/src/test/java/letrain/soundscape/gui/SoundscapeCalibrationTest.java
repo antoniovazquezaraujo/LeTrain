@@ -101,15 +101,15 @@ class SoundscapeCalibrationTest {
     }
 
     @Test
-    @DisplayName("air sliders write [air-by-sound] and parse back")
-    void should_ExportAirSensitivity_When_AirSliderMoves() throws IOException {
+    @DisplayName("distance sliders write [distance-by-sound] and parse back")
+    void should_ExportDistanceSensitivity_When_SliderMoves() throws IOException {
         SoundscapePlayer player = calibratedPlayer();
 
-        player.airSliders().get("hawks").setValue(30);
+        player.distanceSliders().get("hawks").setValue(30);
 
         SoundscapeStyle reloaded = loader.parse(player.exportLines());
-        assertEquals(0.3f, reloaded.airSensitivityOf("hawks"), 1e-6);
-        assertEquals(1f, reloaded.airSensitivityOf("cicadas"), 1e-6);
+        assertEquals(0.3f, reloaded.distanceSensitivityOf("hawks"), 1e-6);
+        assertEquals(1f, reloaded.distanceSensitivityOf("cicadas"), 1e-6);
     }
 
     @Test

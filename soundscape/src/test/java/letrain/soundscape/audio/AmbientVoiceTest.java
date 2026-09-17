@@ -78,13 +78,13 @@ class AmbientVoiceTest {
     }
 
     @Test
-    @DisplayName("air distance muffles the high frequencies")
-    void should_MuffleHighs_When_AirIsSet() {
+    @DisplayName("distance distance muffles the high frequencies")
+    void should_MuffleHighs_When_DistanceIsSet() {
         AmbientVoice near = new AmbientVoice(highs());
         near.setTarget(0.5f);
         AmbientVoice far = new AmbientVoice(highs());
         far.setTarget(0.5f);
-        far.setAir(1f);
+        far.setDistance(1f);
 
         float[] mono = new float[FRAMES];
         for (int i = 0; i < 200; i++) {
@@ -95,7 +95,7 @@ class AmbientVoiceTest {
         float farBrightness = brightness(far, mono);
 
         assertTrue(farBrightness < nearBrightness * 0.25f,
-                "air should muffle highs: near=" + nearBrightness + " far=" + farBrightness);
+                "distance should muffle highs: near=" + nearBrightness + " far=" + farBrightness);
     }
 
     @Test

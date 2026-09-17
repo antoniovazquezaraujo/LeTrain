@@ -12,9 +12,9 @@ import letrain.soundscape.SoundGate;
 
 /**
  * Writes a style back as text without touching the rest of the file: only the calibration sections
- * ({@code [gains]}, {@code [air-by-sound]}, {@code [silence-when]}) are replaced, so comments and
- * formatting of the original survive the export. Values equal to the defaults are left out, and an
- * empty calibration removes its section entirely.
+ * ({@code [gains]}, {@code [distance-by-sound]}, {@code [silence-when]}) are replaced, so comments
+ * and formatting of the original survive the export. Values equal to the defaults are left out, and
+ * an empty calibration removes its section entirely.
  */
 public class TextStyleWriter {
 
@@ -28,13 +28,13 @@ public class TextStyleWriter {
 
     /** Source lines with the three calibration sections replaced by the given values. */
     public List<String> withCalibration(List<String> sourceLines, Map<String, Float> gains,
-            Map<String, Float> air, Map<String, List<SoundGate>> gates) {
+            Map<String, Float> distance, Map<String, List<SoundGate>> gates) {
         List<String> lines = new ArrayList<>(sourceLines);
-        for (String section : List.of("gains", "air-by-sound", "silence-when")) {
+        for (String section : List.of("gains", "distance-by-sound", "silence-when")) {
             lines = stripSection(lines, section);
         }
         lines = appendValues(lines, "gains", calibrated(gains));
-        lines = appendValues(lines, "air-by-sound", calibrated(air));
+        lines = appendValues(lines, "distance-by-sound", calibrated(distance));
         lines = appendGates(lines, gates);
         return lines;
     }
@@ -45,8 +45,9 @@ public class TextStyleWriter {
     }
 
     public void write(Path path, List<String> sourceLines, Map<String, Float> gains,
-            Map<String, Float> air, Map<String, List<SoundGate>> gates) throws IOException {
-        Files.write(path, withCalibration(sourceLines, gains, air, gates), StandardCharsets.UTF_8);
+            Map<String, Float> distance, Map<String, List<SoundGate>> gates) throws IOException {
+        Files.write(path, withCalibration(sourceLines, gains, distance, gates),
+                StandardCharsets.UTF_8);
     }
 
     private List<Map.Entry<String, Float>> calibrated(Map<String, Float> values) {

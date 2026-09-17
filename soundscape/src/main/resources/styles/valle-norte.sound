@@ -101,8 +101,8 @@ wind = sky/wind-altitude-*.wav
 #   cicadas      = 0.6
 #   weather-rain = 0.8
 
-# --- Optional air sensitivity (0 = at the listener, 1 = full) -
+# --- Optional distance sensitivity (0 = at the listener, 1 = full) -
 #  Ground sounds recede with the zoom; declare overrides here.
-# [air-by-sound]
+# [distance-by-sound]
 #   hawks        = 0.3
 #   weather-rain = 0.8

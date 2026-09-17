@@ -77,7 +77,7 @@ public class AmbientPlayer implements AutoCloseable {
         thread.start();
     }
 
-    /** Sets the target volumes and air absorption of the current composition. */
+    /** Sets the target volumes and distance absorption of the current composition. */
     public void updateTargets(Composition composition) {
         targets = composition == null ? new Composition(Map.of()) : composition;
     }
@@ -148,7 +148,7 @@ public class AmbientPlayer implements AutoCloseable {
             AmbientVoice voice =
                     voices.computeIfAbsent(entry.getKey(), key -> new AmbientVoice(sample));
             voice.setTarget(volume > MIN_VOLUME ? volume : 0f);
-            voice.setAir(current.airOf(entry.getKey()));
+            voice.setDistance(current.distanceOf(entry.getKey()));
         }
         for (Iterator<Map.Entry<String, AmbientVoice>> it = voices.entrySet().iterator(); it
                 .hasNext();) {
