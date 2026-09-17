@@ -1,66 +1,65 @@
 # soundscape
 
-Decorado sonoro de LeTrain, como **módulo independiente**: no depende de `core` ni sabe de trenes,
-vías ni horarios. Recibe el estado del ambiente (hora exacta, peso de las zonas, altura, clima) y
-devuelve la mezcla objetivo de cada sonido.
+Ambient audio for LeTrain as a **standalone module**: it does not depend on `core` and knows nothing
+about trains, tracks or timetables. It receives the ambient state (exact time, zone weights, height,
+weather) and returns and plays the target mix of every sound.
 
-Diseño y decisiones: `docs/developer/adr/ADR-023-Soundscape-Isolation.md`.
+Design and decisions: `docs/developer/adr/ADR-023-Soundscape-Isolation.md`.
 
-## Estado
+## Status
 
-Módulo funcional: formato de estilo, motor de composición, catálogo con 12 sonidos ambientales
-normalizados, **reproducción en vivo** (cada material suena entero en bucle; los saltos aleatorios
-con crossfade están aparcados hasta cortar los sonidos), reproductor CLI y taller Swing. Las minas y
-fábricas aún no tienen material.
+Working module: style format, composition engine, a catalog of 12 normalized ambient assets and
+**live playback** (each material loops as a whole; random-jump crossfades are parked until the
+materials are cut to loop cleanly). CLI test player and Swing playground included. Mines and
+factories have no audio yet.
 
-## Uso
+## Usage
 
 ```bash
 mvn -pl soundscape test
 
-# Mezcla en un momento dado
+# Mix at a given moment
 mvn -pl soundscape exec:java@cli \
   -Dexec.args="--time 23:30 --zones sea=0.5,fields=0.7 --height 0.2 --weather drizzle"
 
-# Recorrido de un día completo
+# Full-day timeline
 mvn -pl soundscape exec:java@cli \
   -Dexec.args="--day --zones gold-mine=0.7,fields=0.4 --weather clear"
 ```
 
-Opciones: `--file`, `--time HH:mm`, `--zones zona=peso,...`, `--height 0..1`, `--weather preset`,
+Options: `--file`, `--time HH:mm`, `--zones zone=weight,...`, `--height 0..1`, `--weather preset`,
 `--rain/--wind/--storm 0..1`, `--day`, `--check-assets`, `--help`.
 
-`--check-assets` resuelve los materiales del estilo bajo `sounds/` y avisa de los que falten.
+`--check-assets` resolves the style materials under `sounds/` and reports the missing ones.
 
-## Interfaz gráfica de pruebas
+## Testing GUI
 
-`SoundscapePlayer` es un taller Swing: sliders de hora, altura, clima y zonas, selector de velocidad
-(lenta/normal/rápida, día de 60/40/20 min) con multiplicador de vista previa (x1/x10/x60), barras de
-volumen por sonido en vivo, botón de día completo, **botón 🔊 Escuchar** (reproduce la mezcla en
-vivo; ganancia maestra con limitador suave) y carga de estilos (`*.sound`).
+`SoundscapePlayer` is a Swing workshop: sliders for time, height, weather and zones, speed presets
+(slow/normal/fast, 60/40/20-minute days) with a preview multiplier (x1/x10/x60), live volume bars
+per sound, a full-day button, a **🔊 Listen** button (plays the live mix; master gain with a soft
+limiter) and style loading (`*.sound`).
 
 ```bash
 mvn -pl soundscape exec:java@gui
 
-# con un estilo concreto
-mvn -pl soundscape exec:java@gui -Dexec.args="mi-estilo.sound"
+# with a specific style
+mvn -pl soundscape exec:java@gui -Dexec.args="my-style.sound"
 ```
 
-## Formato del estilo
+## Style format
 
-Texto plano con secciones y `clave = valor`; los comentarios empiezan por `#`. El ejemplo completo
-está en `src/main/resources/styles/valle-norte.sound`:
+Plain text with sections and `key = value` lines; comments start with `#`. The full example lives in
+`src/main/resources/styles/valle-norte.sound`:
 
-| Sección | Contenido |
+| Section | Content |
 |---|---|
-| `[climate]` | presets de clima: `rain`, `wind`, `storm` (0.0–1.0) |
-| `[sounds]` | catálogo: `nombre = material(es)` (se admiten comodines) |
-| `[zones]` | `zona = sonido, sonido…` |
-| `[presence]` | 7 valores por sonido: dawn, morning, noon, afternoon, dusk, night, predawn |
-| `[height-by-sound]` | sensibilidad a la altura (halcones +, cigarras −) |
-| `[climate-by-sound]` | sensibilidad a lluvia, viento y tormenta |
-| `[weather]` | sonidos que aporta el propio clima (volumen = intensidad) |
+| `[climate]` | weather presets: `rain`, `wind`, `storm` (0.0–1.0) |
+| `[sounds]` | catalog: `name = material(s)` (wildcards allowed) |
+| `[zones]` | `zone = sound, sound…` |
+| `[presence]` | 7 values per sound: dawn, morning, noon, afternoon, dusk, night, predawn |
+| `[height-by-sound]` | sensitivity to height (hawks +, cicadas −) |
+| `[climate-by-sound]` | sensitivity to rain, wind and storm |
+| `[weather]` | sounds contributed by the weather itself (volume = intensity) |
 
-La composición de cada sonido es `peso de zona × presencia (hora exacta) × clima × altura`; los
-sonidos del clima se suman aparte con su intensidad. Todo es determinista: mismas entradas, misma
-mezcla.
+Every sound is composed as `zone weight x presence (exact time) x climate x height`; weather sounds
+are summed separately at their intensity. Everything is deterministic: same inputs, same mix.

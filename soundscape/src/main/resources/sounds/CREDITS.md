@@ -1,8 +1,9 @@
-# Catálogo de Créditos de Audio y Efectos Ambientales
+# Audio Credits Catalog
 
-Todos los efectos de audio utilizados por el motor `soundscape` y `core` de LeTrain proceden de fuentes abiertas y grabaciones de campo libres de derechos.
+All audio effects used by LeTrain's `soundscape` and `core` engines come from open sources and
+royalty-free field recordings.
 
-| Archivo | Sonido | Fuente / Título | Autor / Licencia |
+| File | Sound | Source / Title | Author / License |
 |---|---|---|---|
 | `sea/waves-01.wav` | waves | [Sea waves](https://upload.wikimedia.org/wikipedia/commons/8/84/Sea_waves.wav) | Wikimedia Commons contributor (CC-BY-SA 3.0) |
 | `sea/seagull-01.wav` | seagull | [Ring-billed Gull (Larus delawarensis)](https://xeno-canto.org/75111) | Jonathon Jongsma, XC75111 (CC BY-SA 3.0) |
