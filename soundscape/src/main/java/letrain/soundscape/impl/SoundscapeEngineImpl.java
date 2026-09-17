@@ -10,8 +10,8 @@ import letrain.soundscape.SoundscapeEngine;
 import letrain.soundscape.SoundscapeStyle;
 
 /**
- * Composes the target mix as {@code zone weight x presence x climate x height} for every sound of
- * every audible zone, plus the weather sounds (volume = intensity).
+ * Composes the target mix as {@code zone weight x presence x climate x height x gain} for every
+ * sound of every audible zone, plus the weather sounds (volume = intensity x gain).
  *
  * <p>
  * A sound that belongs to several close zones accumulates; a sound whose zone weight is zero is
@@ -43,7 +43,7 @@ public class SoundscapeEngineImpl implements SoundscapeEngine {
         addWeatherSound(volumes, style, "rain", input.rain());
         addWeatherSound(volumes, style, "wind", input.wind());
         addWeatherSound(volumes, style, "storm", input.storm());
-        volumes.replaceAll((sound, volume) -> Math.max(0f, volume));
+        volumes.replaceAll((sound, volume) -> Math.max(0f, volume * style.gainOf(sound)));
         return new Composition(volumes);
     }
 

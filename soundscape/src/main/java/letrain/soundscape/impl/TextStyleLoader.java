@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
  * [height-by-sound]     hawks = +0.8
  * [climate-by-sound]    dogs  = 0.0 0.0 +0.2                  (rain, wind, storm)
  * [weather]             rain  = weather/rain-*.wav
+ * [gains]               cicadas = 0.6                         (1.0 = unchanged)
  * </pre>
  */
 public class TextStyleLoader implements StyleLoader {
@@ -36,20 +37,30 @@ public class TextStyleLoader implements StyleLoader {
 
     @Override
     public SoundscapeStyle load(Path path) throws IOException {
-        return parse(Files.readAllLines(path, StandardCharsets.UTF_8));
+        return parse(readLines(path));
     }
 
     @Override
     public SoundscapeStyle loadResource(String resource) throws IOException {
+        return parse(readResourceLines(resource));
+    }
+
+    /** Raw text of a style file, kept for exports that must preserve comments and layout. */
+    public List<String> readLines(Path path) throws IOException {
+        return Files.readAllLines(path, StandardCharsets.UTF_8);
+    }
+
+    /** Raw text of a bundled style, kept for exports that must preserve comments and layout. */
+    public List<String> readResourceLines(String resource) throws IOException {
         try (InputStream is = TextStyleLoader.class.getResourceAsStream(resource)) {
             if (is == null) {
                 throw new IOException("resource not found: " + resource);
             }
-            return parse(new String(is.readAllBytes(), StandardCharsets.UTF_8).lines().toList());
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8).lines().toList();
         }
     }
 
-    SoundscapeStyle parse(List<String> lines) throws IOException {
+    public SoundscapeStyle parse(List<String> lines) throws IOException {
         Map<String, ClimatePreset> presets = new LinkedHashMap<>();
         Map<String, SoundDef> sounds = new LinkedHashMap<>();
         Map<String, List<String>> zones = new LinkedHashMap<>();
@@ -58,6 +69,7 @@ public class TextStyleLoader implements StyleLoader {
         Map<String, List<Float>> climate = new LinkedHashMap<>();
         Map<String, SoundDef> weather = new LinkedHashMap<>();
         Map<String, SoundDef> heightSounds = new LinkedHashMap<>();
+        Map<String, Float> gains = new LinkedHashMap<>();
 
         String section = null;
         int lineNumber = 0;
@@ -104,12 +116,31 @@ public class TextStyleLoader implements StyleLoader {
                     }
                     weather.put(key, new SoundDef(key, tokens(value)));
                 }
+                case "gains" -> gains.put(key, singleFloat(value, lineNumber));
                 default -> throw error(lineNumber, "unknown section: " + section);
             }
         }
         validate(zones, sounds, presence);
+        validateGains(gains, sounds, weather, heightSounds);
         return new SoundscapeStyle(presets, sounds, zones, presence, height, climate, weather,
-                heightSounds);
+                heightSounds, gains);
+    }
+
+    /**
+     * Gain keys may name a catalog sound or a provided one ({@code weather-*}, {@code height-*}).
+     */
+    private void validateGains(Map<String, Float> gains, Map<String, SoundDef> sounds,
+            Map<String, SoundDef> weather, Map<String, SoundDef> heightSounds) {
+        for (String sound : gains.keySet()) {
+            boolean known = sounds.containsKey(sound)
+                    || (sound.startsWith("weather-")
+                            && weather.containsKey(sound.substring("weather-".length())))
+                    || (sound.startsWith("height-")
+                            && heightSounds.containsKey(sound.substring("height-".length())));
+            if (!known) {
+                log.warn("gain for unknown sound '{}' is ignored", sound);
+            }
+        }
     }
 
     private void validate(Map<String, List<String>> zones, Map<String, SoundDef> sounds,

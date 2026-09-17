@@ -10,6 +10,7 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.Map;
 import javax.imageio.ImageIO;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
@@ -37,10 +38,15 @@ class SoundscapeLayoutTest {
         layoutScroll(scroll);
         renderForInspection(scroll);
 
-        assertFalse(player.zoneSliders().isEmpty());
+        assertAligned(player.zoneSliders());
+        assertAligned(player.gainSliders());
+    }
+
+    private void assertAligned(Map<String, JSlider> sliders) {
+        assertFalse(sliders.isEmpty());
         int x = -1;
         int width = -1;
-        for (JSlider slider : player.zoneSliders().values()) {
+        for (JSlider slider : sliders.values()) {
             if (x < 0) {
                 x = slider.getX();
                 width = slider.getWidth();
@@ -77,15 +83,17 @@ class SoundscapeLayoutTest {
         }
     }
 
-    /** Writes a PNG for manual inspection when -Dsoundscape.renderLayout=true. */
+    /** Writes a PNG of the whole controls column when -Dsoundscape.renderLayout=true. */
     private void renderForInspection(JScrollPane scroll) throws Exception {
         if (!Boolean.getBoolean("soundscape.renderLayout")) {
             return;
         }
-        BufferedImage image = new BufferedImage(SCROLL_WIDTH + 40, SCROLL_HEIGHT + 60,
-                BufferedImage.TYPE_INT_RGB);
+        Component view = scroll.getViewport().getView();
+        Dimension size = view.getSize();
+        BufferedImage image =
+                new BufferedImage(size.width + 20, size.height + 20, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = image.createGraphics();
-        scroll.printAll(graphics);
+        view.printAll(graphics);
         graphics.dispose();
         ImageIO.write(image, "png", new File("/tmp/opencode/gui-controls.png"));
     }

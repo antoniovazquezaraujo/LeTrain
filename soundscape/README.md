@@ -61,6 +61,14 @@ Plain text with sections and `key = value` lines; comments start with `#`. The f
 | `[climate-by-sound]` | sensitivity to rain, wind and storm |
 | `[weather]` | sounds contributed by the weather itself (volume = intensity) |
 | `[height]` | sounds contributed by the listening height (volume = height; the altitude wind) |
+| `[gains]` | optional per-sound loudness multiplier (1.0 = unchanged); keys are catalog sounds or `weather-*` / `height-*` |
 
-Every sound is composed as `zone weight x presence (exact time) x climate x height`; weather sounds
-are summed separately at their intensity. Everything is deterministic: same inputs, same mix.
+Every sound is composed as `zone weight x presence (exact time) x climate x height x gain`; weather
+sounds are summed separately at their intensity. Everything is deterministic: same inputs, same mix.
+
+## Calibration
+
+The GUI has a **Gains** section with one 0–200% slider per sound (weather and height sounds
+included). *Export style…* writes the current calibration to a new `*.sound` file: the original
+text is preserved and only the `[gains]` section is replaced, so comments and layout stay intact.
+Gains left at 100% are omitted from the exported file.

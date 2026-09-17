@@ -122,6 +122,34 @@ class SoundscapeEngineImplTest {
     }
 
     @Test
+    @DisplayName("a [gains] entry scales the composed volume")
+    void should_ApplyGain_When_StyleDeclaresOne() throws IOException {
+        SoundscapeStyle gained = loader
+                .parse(List.of("[sounds]", "waves = sea/waves-*.wav", "[zones]", "sea = waves",
+                        "[presence]", "waves = 1 1 1 1 1 1 1", "[gains]", "waves = 0.5"));
+
+        Composition composition = engine.compose(gained,
+                new CompositionInput(LocalTime.NOON, Map.of("sea", 0.8f), 0f, 0f, 0f, 0f));
+
+        assertEquals(0.4f, composition.volumeOf("waves"), 1e-6);
+    }
+
+    @Test
+    @DisplayName("gains also apply to weather and height sounds")
+    void should_ApplyGain_When_ProvidedSoundHasOne() throws IOException {
+        SoundscapeStyle gained = loader.parse(List.of("[sounds]", "waves = sea/waves-*.wav",
+                "[zones]", "sea = waves", "[presence]", "waves = 1 1 1 1 1 1 1", "[weather]",
+                "rain = weather/rain-*.wav", "[height]", "wind = sky/wind-altitude-*.wav",
+                "[gains]", "weather-rain = 0.25", "height-wind = 0.5"));
+
+        Composition composition = engine.compose(gained,
+                new CompositionInput(LocalTime.NOON, Map.of("sea", 1f), 1f, 0.8f, 0f, 0f));
+
+        assertEquals(0.2f, composition.volumeOf("weather-rain"), 1e-6);
+        assertEquals(0.5f, composition.volumeOf("height-wind"), 1e-6);
+    }
+
+    @Test
     @DisplayName("same inputs give the same composition")
     void should_BeDeterministic() {
         CompositionInput input = new CompositionInput(LocalTime.of(13, 10),
