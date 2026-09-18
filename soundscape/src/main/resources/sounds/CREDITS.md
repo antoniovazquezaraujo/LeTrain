@@ -17,12 +17,12 @@ royalty-free field recordings.
 | `field/birds-01.wav` | birds | Migrated from LeTrain core assets (30 s) | LeTrain project (license to confirm) |
 | `field/birds-02.wav` | birds | [Two ravens outside window](https://freesound.org/people/SoundsLikeYukon/sounds/864005/) | SoundsLikeYukon (CC0) |
 | `mountain/hawk-01.wav` | hawk | Mix of takes: [Red-shouldered Hawk call](https://upload.wikimedia.org/wikipedia/commons/5/5a/Buteo_lineatus.ogg), [Red-tailed hawk](https://freesound.org/people/craigsmith/sounds/479610/) | Wikimedia Commons (Public Domain); craigsmith (CC0). Mixed and loop-seam crossfaded by the LeTrain project |
-| `mountain/wind-01.wav` | wind_mountain | [Wind in Swedish pine forest](https://upload.wikimedia.org/wikipedia/commons/f/f3/Wind_in_Swedish_pine_forest_at_25_mps.ogg) | Wikimedia Commons (CC-BY-SA 4.0) |
+| `mountain/wind-01.wav` | wind_mountain | [Foreboding wind](https://freesound.org/people/squashy555/sounds/397947/) | squashy555 (CC0). Trimmed and loop-seam crossfaded by the LeTrain project |
 | `weather/rain-01.wav` | rain | [Falling Rain Sound Effect](https://upload.wikimedia.org/wikipedia/commons/4/4f/Falling_Rain_SFX_1_2016-11-19.oga) | Wikimedia Commons (CC0 Public Domain) |
 | `weather/rain-02.wav` | rain | [Summer rain](https://freesound.org/people/walkingwithmicrophones/sounds/743679/) | walkingwithmicrophones (CC0) |
 | `weather/rain-03.wav` | rain | [Raining in Bangkok](https://freesound.org/people/kijjaz/sounds/856405/) | kijjaz (CC0) |
 | `weather/rain-04.wav` | rain | [Rain storm from a window in Bukit Batok](https://freesound.org/people/madamdata/sounds/712903/) | madamdata (CC0) |
-| `weather/wind-01.wav` | wind_weather | [Night wind and snow at Abisko](https://upload.wikimedia.org/wikipedia/commons/1/11/20221229_-_Abisko_Turiststation_at_night_-_Wind_and_snow.wav) | Wikimedia Commons (CC-BY-SA 4.0) |
+| `weather/wind-01.wav` | wind_weather | [Wind](https://freesound.org/people/vcbxd/sounds/379735/) | vcbxd (CC0). Trimmed and loop-seam crossfaded by the LeTrain project |
 | `weather/thunder-01.wav` | thunder | [Summer thunderstorm in the woods](https://upload.wikimedia.org/wikipedia/commons/c/ce/Summer_thunderstorm_in_the_woods.ogg) | Wikimedia Commons (CC-BY-SA 3.0) |
 | `weather/thunder-06.wav` | thunder | [Thunder, close](https://freesound.org/people/Fission9/sounds/505113/) | Fission9 (CC0) |
 | `weather/thunder-07.wav` | thunder | [Thunder, long rumbling, no rain](https://freesound.org/people/BlueDelta/sounds/367702/) | BlueDelta (CC0) |
