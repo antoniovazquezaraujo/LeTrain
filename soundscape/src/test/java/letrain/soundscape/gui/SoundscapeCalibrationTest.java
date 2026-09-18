@@ -47,7 +47,7 @@ class SoundscapeCalibrationTest {
         assertTrue(player.gainSliders().containsKey("cicadas"));
         assertTrue(player.gainSliders().containsKey("weather-rain"));
         assertTrue(player.gainSliders().containsKey("height-wind"));
-        assertEquals(16, player.gainSliders().size());
+        assertEquals(15, player.gainSliders().size());
         assertEquals(player.gainSliders().keySet(), player.volumeBars().keySet());
     }
 

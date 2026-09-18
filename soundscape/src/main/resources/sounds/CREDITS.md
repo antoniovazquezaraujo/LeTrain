@@ -17,12 +17,12 @@ royalty-free field recordings.
 | `field/birds-01.wav` | birds | Migrated from LeTrain core assets (30 s) | LeTrain project (license to confirm) |
 | `field/birds-02.wav` | birds | [Two ravens outside window](https://freesound.org/people/SoundsLikeYukon/sounds/864005/) | SoundsLikeYukon (CC0) |
 | `mountain/hawk-01.wav` | hawk | Mix of takes: [Red-shouldered Hawk call](https://upload.wikimedia.org/wikipedia/commons/5/5a/Buteo_lineatus.ogg), [Red-tailed hawk](https://freesound.org/people/craigsmith/sounds/479610/) | Wikimedia Commons (Public Domain); craigsmith (CC0). Mixed and loop-seam crossfaded by the LeTrain project |
-| `mountain/wind-01.wav` | wind_mountain | [Wind in Swedish pine forest](https://upload.wikimedia.org/wikipedia/commons/f/f3/Wind_in_Swedish_pine_forest_at_25_mps.ogg) | Wikimedia Commons (CC-BY-SA 4.0) |
+| `mountain/wind-01.wav` | wind_mountain | [Foreboding wind](https://freesound.org/people/squashy555/sounds/397947/) | squashy555 (CC0). Trimmed and loop-seam crossfaded by the LeTrain project |
 | `weather/rain-01.wav` | rain | [Falling Rain Sound Effect](https://upload.wikimedia.org/wikipedia/commons/4/4f/Falling_Rain_SFX_1_2016-11-19.oga) | Wikimedia Commons (CC0 Public Domain) |
 | `weather/rain-02.wav` | rain | [Summer rain](https://freesound.org/people/walkingwithmicrophones/sounds/743679/) | walkingwithmicrophones (CC0) |
 | `weather/rain-03.wav` | rain | [Raining in Bangkok](https://freesound.org/people/kijjaz/sounds/856405/) | kijjaz (CC0) |
 | `weather/rain-04.wav` | rain | [Rain storm from a window in Bukit Batok](https://freesound.org/people/madamdata/sounds/712903/) | madamdata (CC0) |
-| `weather/wind-01.wav` | wind_weather | [Night wind and snow at Abisko](https://upload.wikimedia.org/wikipedia/commons/1/11/20221229_-_Abisko_Turiststation_at_night_-_Wind_and_snow.wav) | Wikimedia Commons (CC-BY-SA 4.0) |
+| `weather/wind-01.wav` | wind_weather | [Wind](https://freesound.org/people/vcbxd/sounds/379735/) | vcbxd (CC0). Trimmed and loop-seam crossfaded by the LeTrain project |
 | `weather/thunder-01.wav` | thunder | [Summer thunderstorm in the woods](https://upload.wikimedia.org/wikipedia/commons/c/ce/Summer_thunderstorm_in_the_woods.ogg) | Wikimedia Commons (CC-BY-SA 3.0) |
 | `weather/thunder-06.wav` | thunder | [Thunder, close](https://freesound.org/people/Fission9/sounds/505113/) | Fission9 (CC0) |
 | `weather/thunder-07.wav` | thunder | [Thunder, long rumbling, no rain](https://freesound.org/people/BlueDelta/sounds/367702/) | BlueDelta (CC0) |
@@ -39,3 +39,24 @@ royalty-free field recordings.
 | `synth/rain-far-01.wav` | rain (synth) | Procedural synthesis: no drops, low mass | LeTrain project (Apache-2.0) |
 | `synth/waves-calm-01.wav` | waves (synth) | Procedural synthesis: continuous sea + short swell | LeTrain project (Apache-2.0) |
 | `synth/waves-surf-01.wav` | waves (synth) | Procedural synthesis: continuous sea + breaking surf | LeTrain project (Apache-2.0) |
+| `industrial/producer-zone-01.wav` | industrial zone | Mix of 16 CC0 Freesound takes (sources listed below) | LeTrain project mix; sources CC0 |
+| `industrial/consumer-zone-01.wav` | industrial zone | Mix of 16 CC0 Freesound takes (sources listed below) | LeTrain project mix; sources CC0 |
+
+### Industrial mix sources (all CC0, Freesound)
+
+- [INT Factory budimka, pozega](https://freesound.org/people/deleted_user_2104797/sounds/164744/) — deleted_user_2104797
+- [AMB_EXT_CONSTRUCTION_MEDIUM_RATE_LOOP](https://freesound.org/people/Olichite/sounds/244732/) — Olichite
+- [Coal pit mine, machinery, grabber, short distance, beeping](https://freesound.org/people/be_a_hero_not_a_patriot/sounds/332533/) — be_a_hero_not_a_patriot
+- [Coal pit mine, machinery, grabber, short distance](https://freesound.org/people/be_a_hero_not_a_patriot/sounds/332535/) — be_a_hero_not_a_patriot
+- [Industrial factory working 02](https://freesound.org/people/dersinnsspace/sounds/439402/) — dersinnsspace
+- [Mining ventilator](https://freesound.org/people/blaukreuz/sounds/440123/) — blaukreuz
+- [Noisy industrial factory ambience2](https://freesound.org/people/kyles/sounds/455816/) — kyles
+- [Factory](https://freesound.org/people/vasifer/sounds/529470/) — vasifer
+- [Steel factory industrial noisy6 with welding](https://freesound.org/people/kyles/sounds/637828/) — kyles
+- [Wind vibration, electric pole, power plant and factory motor](https://freesound.org/people/felix.blume/sounds/666250/) — felix.blume
+- [Dump truck backing up](https://freesound.org/people/itinerantmonk108/sounds/733089/) — itinerantmonk108
+- [Cement mixer in operation](https://freesound.org/people/itinerantmonk108/sounds/733109/) — itinerantmonk108
+- [JM_AMB_INT_Factory 01 - Modern Machines](https://freesound.org/people/Julien_Matthey/sounds/751276/) — Julien_Matthey
+- [Construction site with jackhammer and screeching](https://freesound.org/people/felix.blume/sounds/779889/) — felix.blume
+- [Residential area, roadside, outside factory](https://freesound.org/people/JW_Audio/sounds/803789/) — JW_Audio
+- [Idling truck](https://freesound.org/people/itinerantmonk108/sounds/864821/) — itinerantmonk108
