@@ -24,13 +24,8 @@ royalty-free field recordings.
 | `weather/rain-04.wav` | rain | [Rain storm from a window in Bukit Batok](https://freesound.org/people/madamdata/sounds/712903/) | madamdata (CC0) |
 | `weather/wind-01.wav` | wind_weather | [Night wind and snow at Abisko](https://upload.wikimedia.org/wikipedia/commons/1/11/20221229_-_Abisko_Turiststation_at_night_-_Wind_and_snow.wav) | Wikimedia Commons (CC-BY-SA 4.0) |
 | `weather/thunder-01.wav` | thunder | [Summer thunderstorm in the woods](https://upload.wikimedia.org/wikipedia/commons/c/ce/Summer_thunderstorm_in_the_woods.ogg) | Wikimedia Commons (CC-BY-SA 3.0) |
-| `weather/thunder-02.wav` | thunder | [Rain and thunder in the forest](https://freesound.org/people/pulswelle/sounds/280214/) | pulswelle (CC0) |
-| `weather/thunder-03.wav` | thunder | [Thunder, big crack, heavy rain](https://freesound.org/people/trp/sounds/574415/) | trp (CC0) |
-| `weather/thunder-04.wav` | thunder | [Squall with thunder](https://freesound.org/people/brentsimpson/sounds/737720/) | brentsimpson (CC0) |
-| `weather/thunder-05.wav` | thunder | [Thunder clap](https://freesound.org/people/Dave%20Welsh/sounds/194364/) | Dave Welsh (CC0) |
 | `weather/thunder-06.wav` | thunder | [Thunder, close](https://freesound.org/people/Fission9/sounds/505113/) | Fission9 (CC0) |
 | `weather/thunder-07.wav` | thunder | [Thunder, long rumbling, no rain](https://freesound.org/people/BlueDelta/sounds/367702/) | BlueDelta (CC0) |
-| `weather/thunder-08.wav` | thunder | [Rumblings of thunder](https://freesound.org/people/Techienanna/sounds/400987/) | Techienanna (CC0) |
 | `sky/wind-altitude-01.wav` | altitude wind | Migrated from LeTrain core assets (30 s) | LeTrain project (license to confirm) |
 | `synth/wind-breeze-01.wav` | wind (synth) | Procedural synthesis: filtered noise + slow AM | LeTrain project (Apache-2.0) |
 | `synth/wind-medium-01.wav` | wind (synth) | Procedural synthesis: layered grave + mid noise | LeTrain project (Apache-2.0) |
