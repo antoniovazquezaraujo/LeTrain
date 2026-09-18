@@ -10,6 +10,7 @@ royalty-free field recordings.
 | `sea/waves-03.wav` | waves | [Big waves hit land](https://freesound.org/people/straget/sounds/412308/) | straget (CC0) |
 | `sea/waves-04.wav` | waves | [Storm waves on sandy beach, Bournemouth](https://freesound.org/people/chris_dagorne/sounds/426076/) | chris_dagorne (CC0) |
 | `sea/seagull-01.wav` | seagull | [Ring-billed Gull (Larus delawarensis)](https://xeno-canto.org/75111) | Jonathon Jongsma, XC75111 (CC BY-SA 3.0) |
+| `sea/seagull-02.wav` | seagull | [Morning birds, seagulls](https://freesound.org/people/Filmscore/sounds/516045/) | Filmscore (CC0) |
 | `field/cicada-01.wav` | cicada | [Cicada orni singing](https://upload.wikimedia.org/wikipedia/commons/a/a8/Cicada_orni.ogg) | Wikimedia Commons (CC-BY-SA 3.0) |
 | `field/cricket-01.wav` | cricket | [Field cricket (Gryllus campestris)](https://upload.wikimedia.org/wikipedia/commons/9/9c/Gryllus_campestris_-_sound.ogg) | Wikimedia Commons (CC-BY-SA 3.0) |
 | `field/dog-01.wav` | dog | [Barking of a dog](https://upload.wikimedia.org/wikipedia/commons/5/58/Barking_of_a_dog_2.ogg) | Wikimedia Commons (Public Domain / CC0) |
@@ -24,7 +25,9 @@ royalty-free field recordings.
 | `field/rooster-02.wav` | rooster | [Cock rooster cockerel scream](https://freesound.org/people/featherstar/sounds/411424/) | featherstar (CC0) |
 | `field/rooster-03.wav` | rooster | [Hans' roosters and chicks in barnyard](https://freesound.org/people/CHallSmith/sounds/870505/) | CHallSmith (CC0) |
 | `field/birds-01.wav` | birds | Migrated from LeTrain core assets (30 s) | LeTrain project (license to confirm) |
+| `field/birds-02.wav` | birds | [Two ravens outside window](https://freesound.org/people/SoundsLikeYukon/sounds/864005/) | SoundsLikeYukon (CC0) |
 | `mountain/hawk-01.wav` | hawk | [Red-shouldered Hawk call (Buteo lineatus)](https://upload.wikimedia.org/wikipedia/commons/5/5a/Buteo_lineatus.ogg) | Wikimedia Commons (Public Domain) |
+| `mountain/hawk-02.wav` | hawk | [Red-tailed hawk](https://freesound.org/people/craigsmith/sounds/479610/) | craigsmith (CC0) |
 | `mountain/wind-01.wav` | wind_mountain | [Wind in Swedish pine forest](https://upload.wikimedia.org/wikipedia/commons/f/f3/Wind_in_Swedish_pine_forest_at_25_mps.ogg) | Wikimedia Commons (CC-BY-SA 4.0) |
 | `weather/rain-01.wav` | rain | [Falling Rain Sound Effect](https://upload.wikimedia.org/wikipedia/commons/4/4f/Falling_Rain_SFX_1_2016-11-19.oga) | Wikimedia Commons (CC0 Public Domain) |
 | `weather/rain-02.wav` | rain | [Summer rain](https://freesound.org/people/walkingwithmicrophones/sounds/743679/) | walkingwithmicrophones (CC0) |
