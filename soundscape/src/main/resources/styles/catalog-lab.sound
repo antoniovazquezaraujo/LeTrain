@@ -11,7 +11,6 @@ storm   = rain 0.0 wind 0.0 storm 0.0
 
 [sounds]
 sea-seagull-01 = sea/seagull-01.wav
-sea-seagull-02 = sea/seagull-02.wav
 sea-waves-01 = sea/waves-01.wav
 sea-waves-02 = sea/waves-02.wav
 sea-waves-03 = sea/waves-03.wav
@@ -53,12 +52,11 @@ weather-thunder-08 = weather/thunder-08.wav
 weather-wind-01 = weather/wind-01.wav
 
 [zones]
-sea = sea-seagull-01, sea-seagull-02, sea-waves-01, sea-waves-02, sea-waves-03, sea-waves-04
+sea = sea-seagull-01, sea-waves-01, sea-waves-02, sea-waves-03, sea-waves-04
 fields = field-birds-01, field-birds-02, field-cicada-01, field-cricket-01, field-dog-01, field-rooster-01, mountain-hawk-01, mountain-hawk-02, mountain-wind-01, sky-wind-altitude-01, synth-rain-far-01, synth-rain-glass-01, synth-rain-heavy-01, synth-rain-light-01, synth-rain-medium-01, synth-rain-near-01, synth-waves-calm-01, synth-waves-surf-01, synth-wind-breeze-01, synth-wind-gale-01, synth-wind-gusts-01, synth-wind-medium-01, weather-rain-01, weather-rain-02, weather-rain-03, weather-rain-04, weather-thunder-01, weather-thunder-02, weather-thunder-03, weather-thunder-04, weather-thunder-05, weather-thunder-06, weather-thunder-07, weather-thunder-08, weather-wind-01
 
 [presence]
 sea-seagull-01 1.0 1.0 1.0 1.0 1.0 1.0 1.0
-sea-seagull-02 1.0 1.0 1.0 1.0 1.0 1.0 1.0
 sea-waves-01 1.0 1.0 1.0 1.0 1.0 1.0 1.0
 sea-waves-02 1.0 1.0 1.0 1.0 1.0 1.0 1.0
 sea-waves-03 1.0 1.0 1.0 1.0 1.0 1.0 1.0
@@ -101,7 +99,6 @@ weather-wind-01 1.0 1.0 1.0 1.0 1.0 1.0 1.0
 
 [gains]
 sea-seagull-01 = 0.0
-sea-seagull-02 = 0.0
 sea-waves-01 = 0.0
 sea-waves-02 = 0.0
 sea-waves-03 = 0.0

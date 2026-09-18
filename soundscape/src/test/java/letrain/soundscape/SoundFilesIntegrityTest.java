@@ -19,8 +19,7 @@ class SoundFilesIntegrityTest {
 
     private static final List<String> SOUND_PATHS = List.of("/sounds/sea/waves-01.wav",
             "/sounds/sea/waves-02.wav", "/sounds/sea/waves-03.wav", "/sounds/sea/waves-04.wav",
-            "/sounds/sea/seagull-01.wav", "/sounds/sea/seagull-02.wav",
-            "/sounds/field/cicada-01.wav",
+            "/sounds/sea/seagull-01.wav", "/sounds/field/cicada-01.wav",
             "/sounds/field/cricket-01.wav", "/sounds/field/dog-01.wav",
             "/sounds/field/rooster-01.wav",
             "/sounds/field/birds-01.wav", "/sounds/field/birds-02.wav",
