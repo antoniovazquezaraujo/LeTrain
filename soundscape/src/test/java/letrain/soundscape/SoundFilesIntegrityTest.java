@@ -18,12 +18,16 @@ import org.junit.jupiter.api.Test;
 class SoundFilesIntegrityTest {
 
     private static final List<String> SOUND_PATHS = List.of("/sounds/sea/waves-01.wav",
+            "/sounds/sea/waves-02.wav", "/sounds/sea/waves-03.wav", "/sounds/sea/waves-04.wav",
             "/sounds/sea/seagull-01.wav", "/sounds/field/cicada-01.wav",
             "/sounds/field/cricket-01.wav", "/sounds/field/dog-01.wav",
             "/sounds/field/rooster-01.wav", "/sounds/field/birds-01.wav",
             "/sounds/mountain/wind-01.wav", "/sounds/mountain/hawk-01.wav",
-            "/sounds/weather/rain-01.wav", "/sounds/weather/wind-01.wav",
-            "/sounds/weather/thunder-01.wav", "/sounds/sky/wind-altitude-01.wav");
+            "/sounds/weather/rain-01.wav", "/sounds/weather/rain-02.wav",
+            "/sounds/weather/rain-03.wav", "/sounds/weather/rain-04.wav",
+            "/sounds/weather/wind-01.wav", "/sounds/weather/thunder-01.wav",
+            "/sounds/weather/thunder-02.wav", "/sounds/weather/thunder-03.wav",
+            "/sounds/weather/thunder-04.wav", "/sounds/sky/wind-altitude-01.wav");
 
     @Test
     @DisplayName("every sound asset exists and is a valid PCM 16-bit 44.1kHz mono WAV")
