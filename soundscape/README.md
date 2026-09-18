@@ -8,11 +8,12 @@ Design and decisions: `docs/developer/adr/ADR-023-Soundscape-Isolation.md`.
 
 ## Status
 
-Working module: style format, composition engine, a catalog of 26 normalized ambient assets and
+Working module: style format, composition engine, a catalog of 38 normalized ambient assets and
 **live playback** (each material loops as a whole; random-jump crossfades are parked until the
 materials are cut to loop cleanly). Rain, thunder and waves have several variants per pattern
 (`weather/rain-0*.wav`, `weather/thunder-0*.wav`, `sea/waves-0*.wav`); one is picked at random
-each time a style is loaded. CLI test player and Swing playground included. Mines and
+each time a style is loaded. The `synth/` folder holds procedurally generated variants of wind,
+rain and waves, audited with `styles/synth-lab.sound`. CLI test player and Swing playground included. Mines and
 factories have no audio yet.
 
 ## Usage

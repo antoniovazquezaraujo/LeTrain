@@ -31,3 +31,15 @@ royalty-free field recordings.
 | `weather/thunder-07.wav` | thunder | [Thunder, long rumbling, no rain](https://freesound.org/people/BlueDelta/sounds/367702/) | BlueDelta (CC0) |
 | `weather/thunder-08.wav` | thunder | [Rumblings of thunder](https://freesound.org/people/Techienanna/sounds/400987/) | Techienanna (CC0) |
 | `sky/wind-altitude-01.wav` | altitude wind | Migrated from LeTrain core assets (30 s) | LeTrain project (license to confirm) |
+| `synth/wind-breeze-01.wav` | wind (synth) | Procedural synthesis: filtered noise + slow AM | LeTrain project (Apache-2.0) |
+| `synth/wind-medium-01.wav` | wind (synth) | Procedural synthesis: layered grave + mid noise | LeTrain project (Apache-2.0) |
+| `synth/wind-gale-01.wav` | wind (synth) | Procedural synthesis: rumble + narrow-band howl | LeTrain project (Apache-2.0) |
+| `synth/wind-gusts-01.wav` | wind (synth) | Procedural synthesis: irregular gust envelopes | LeTrain project (Apache-2.0) |
+| `synth/rain-light-01.wav` | rain (synth) | Procedural synthesis: hiss + sparse droplets | LeTrain project (Apache-2.0) |
+| `synth/rain-medium-01.wav` | rain (synth) | Procedural synthesis: medium density + body | LeTrain project (Apache-2.0) |
+| `synth/rain-heavy-01.wav` | rain (synth) | Procedural synthesis: dense curtain + sizzle | LeTrain project (Apache-2.0) |
+| `synth/rain-glass-01.wav` | rain (synth) | Procedural synthesis: resonant droplets | LeTrain project (Apache-2.0) |
+| `synth/rain-near-01.wav` | rain (synth) | Procedural synthesis: near drops, bright hiss | LeTrain project (Apache-2.0) |
+| `synth/rain-far-01.wav` | rain (synth) | Procedural synthesis: no drops, low mass | LeTrain project (Apache-2.0) |
+| `synth/waves-calm-01.wav` | waves (synth) | Procedural synthesis: continuous sea + short swell | LeTrain project (Apache-2.0) |
+| `synth/waves-surf-01.wav` | waves (synth) | Procedural synthesis: continuous sea + breaking surf | LeTrain project (Apache-2.0) |

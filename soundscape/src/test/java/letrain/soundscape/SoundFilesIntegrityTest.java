@@ -29,7 +29,13 @@ class SoundFilesIntegrityTest {
             "/sounds/weather/thunder-02.wav", "/sounds/weather/thunder-03.wav",
             "/sounds/weather/thunder-04.wav", "/sounds/weather/thunder-05.wav",
             "/sounds/weather/thunder-06.wav", "/sounds/weather/thunder-07.wav",
-            "/sounds/weather/thunder-08.wav", "/sounds/sky/wind-altitude-01.wav");
+            "/sounds/weather/thunder-08.wav", "/sounds/sky/wind-altitude-01.wav",
+            "/sounds/synth/wind-breeze-01.wav", "/sounds/synth/wind-medium-01.wav",
+            "/sounds/synth/wind-gale-01.wav", "/sounds/synth/wind-gusts-01.wav",
+            "/sounds/synth/rain-light-01.wav", "/sounds/synth/rain-medium-01.wav",
+            "/sounds/synth/rain-heavy-01.wav", "/sounds/synth/rain-glass-01.wav",
+            "/sounds/synth/rain-near-01.wav", "/sounds/synth/rain-far-01.wav",
+            "/sounds/synth/waves-calm-01.wav", "/sounds/synth/waves-surf-01.wav");
 
     @Test
     @DisplayName("every sound asset exists and is a valid PCM 16-bit 44.1kHz mono WAV")
