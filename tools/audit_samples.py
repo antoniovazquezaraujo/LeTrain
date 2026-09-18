@@ -59,6 +59,7 @@ NAME_TAGS = {
 
 CSV_FIELDS = [
     "file",
+    "license",
     "duration_s",
     "rate_hz",
     "channels",
@@ -164,8 +165,8 @@ def suggested_tags(name: str, metrics: dict[str, float]) -> str:
     return ";".join(sorted(tags))
 
 
-def audit(path: Path, output: Path) -> dict:
-    stem = path.stem
+def audit(path: Path, rel: str, output: Path) -> dict:
+    stem = rel.replace("/", "__")
     wav = output / "wav" / f"{stem}.wav"
     converted = output / "spectrograms" / f"{stem}.png"
     convert(path, wav)
@@ -180,7 +181,8 @@ def audit(path: Path, output: Path) -> dict:
     lufs, lra = loudness(wav)
 
     row = {
-        "file": path.name,
+        "file": rel,
+        "license": "",
         "duration_s": f"{float(info['format']['duration']):.1f}",
         "rate_hz": stream.get("sample_rate", ""),
         "channels": stream.get("channels", ""),
@@ -214,8 +216,8 @@ def main() -> int:
     parser.add_argument("output", type=Path, nargs="?", default=Path("audit-output"))
     args = parser.parse_args()
 
-    files = sorted(path for path in args.input.iterdir()
-                   if path.suffix.lower() in AUDIO_SUFFIXES)
+    files = sorted(path for path in args.input.rglob("*")
+                   if path.is_file() and path.suffix.lower() in AUDIO_SUFFIXES)
     if not files:
         print(f"no audio files in {args.input}", file=sys.stderr)
         return 1
@@ -225,8 +227,9 @@ def main() -> int:
 
     rows = []
     for index, path in enumerate(files, start=1):
-        print(f"[{index}/{len(files)}] {path.name}")
-        rows.append(audit(path, args.output))
+        rel = path.relative_to(args.input).as_posix()
+        print(f"[{index}/{len(files)}] {rel}")
+        rows.append(audit(path, rel, args.output))
 
     with (args.output / "catalog.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=CSV_FIELDS)

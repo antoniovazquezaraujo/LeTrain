@@ -8,12 +8,17 @@
   **bucle con saltos** que todavía no está implementado: hoy `AmbientVoice` reproduce una toma en
   bucle fijo y `AmbientPlayer` elige **un** material al azar por sonido y sesión.
 - El catálogo empieza a crecer con material real. La primera auditoría (20 descargas de Pixabay)
-  con `tools/audit_samples.py` muestra que un mismo fenómeno —"viento"— tiene caracteres muy
+  con `tools/audit_samples.py` mostró que un mismo fenómeno —"viento"— tiene caracteres muy
   distintos: con hojas de bosque (banda alta), costero (grave constante), tormenta (ráfagas
   marcadas), gélido, lejano (solo graves), encerrado (`underground`), inquietante (`cemetery`,
-  `scary`)… El resultado, con medidas, tags sugeridos, columnas de curación
-  (`character`/`intensity`/`distance`/`tone`/`modulation`), estado (`candidate`/`review`/
-  `reference`) y notas, queda versionado en `docs/developer/soundscape/catalog.csv`.
+  `scary`)… Ese barrido de candidatos se conserva en
+  `docs/developer/soundscape/catalog-downloads-2026-09.csv`.
+- El primer set curado ya está integrado (PR #577): 34 assets en
+  `soundscape/src/main/resources/sounds/`, auditados con licencia y estado en
+  `docs/developer/soundscape/catalog.csv` (columna `license` rellenada desde `CREDITS.md`).
+- **Regla de licencia**: solo material CC0, CC BY, CC BY-SA, dominio público o generado por el
+  proyecto entra en `sounds/`. Los candidatos de Pixabay o con cláusula NonCommercial quedan
+  únicamente como referencia local y no se distribuyen.
 - Con un único fichero por sonido: 9 de cada 10 tomas no suenan nunca, el bucle fijo se nota, y no
   hay forma de describir ni mezclar carácter, intensidad o distancia.
 - La propia auditoría destapa problemas prácticos recurrentes: tomas de 128–401 s (inservibles
