@@ -1,0 +1,47 @@
+# ============================================================
+#  Sound style — Synth lab (auditioning generated variants)
+#  Every procedural material is its own sound with flat presence,
+#  so the player Mix tab can mute/solo and compare them.
+# ============================================================
+
+# --- Weather presets (no weather sounds in this lab) --------
+[climate]
+clear   = rain 0.0 wind 0.0 storm 0.0
+drizzle = rain 0.0 wind 0.0 storm 0.0
+storm   = rain 0.0 wind 0.0 storm 0.0
+
+# --- Sounds: generated materials ----------------------------
+[sounds]
+wind-breeze = synth/wind-breeze-*.wav
+wind-medium = synth/wind-medium-*.wav
+wind-gale   = synth/wind-gale-*.wav
+wind-gusts  = synth/wind-gusts-*.wav
+rain-light  = synth/rain-light-*.wav
+rain-medium = synth/rain-medium-*.wav
+rain-heavy  = synth/rain-heavy-*.wav
+rain-glass  = synth/rain-glass-*.wav
+rain-near   = synth/rain-near-*.wav
+rain-far    = synth/rain-far-*.wav
+waves-calm  = synth/waves-calm-*.wav
+waves-surf  = synth/waves-surf-*.wav
+
+# --- Zones: everything in two groups so it can be mixed -----
+[zones]
+sea    = waves-calm, waves-surf
+fields = wind-breeze, wind-medium, wind-gale, wind-gusts, rain-light, rain-medium,
+         rain-heavy, rain-glass, rain-near, rain-far
+
+# --- Presence per band: dawn morning noon afternoon dusk night predawn
+[presence]
+wind-breeze 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+wind-medium 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+wind-gale   1.0 1.0 1.0 1.0 1.0 1.0 1.0
+wind-gusts  1.0 1.0 1.0 1.0 1.0 1.0 1.0
+rain-light  1.0 1.0 1.0 1.0 1.0 1.0 1.0
+rain-medium 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+rain-heavy  1.0 1.0 1.0 1.0 1.0 1.0 1.0
+rain-glass  1.0 1.0 1.0 1.0 1.0 1.0 1.0
+rain-near   1.0 1.0 1.0 1.0 1.0 1.0 1.0
+rain-far    1.0 1.0 1.0 1.0 1.0 1.0 1.0
+waves-calm  1.0 1.0 1.0 1.0 1.0 1.0 1.0
+waves-surf  1.0 1.0 1.0 1.0 1.0 1.0 1.0

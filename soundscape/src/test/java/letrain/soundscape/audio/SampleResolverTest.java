@@ -21,14 +21,15 @@ class SampleResolverTest {
     void should_ResolveWildcard() {
         List<URL> urls = resolver.resolve("sea/waves-*.wav");
 
-        assertEquals(1, urls.size());
+        assertEquals(4, urls.size());
         assertTrue(urls.get(0).getPath().endsWith("sounds/sea/waves-01.wav"));
+        assertTrue(urls.get(3).getPath().endsWith("sounds/sea/waves-04.wav"));
     }
 
     @Test
     @DisplayName("accepts materials that already include the sounds/ prefix")
     void should_ResolvePrefixedMaterial() {
-        assertEquals(1, resolver.resolve("sounds/sea/waves-*.wav").size());
+        assertEquals(4, resolver.resolve("sounds/sea/waves-*.wav").size());
         assertEquals(1, resolver.resolve("sky/wind-altitude-*.wav").size());
     }
 
