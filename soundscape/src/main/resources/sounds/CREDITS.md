@@ -21,6 +21,8 @@ royalty-free field recordings.
 | `field/dog-07.wav` | dog | [Dogs bark at dawn](https://freesound.org/people/jose.viana/sounds/665941/) | jose.viana (CC BY 4.0) |
 | `field/dog-08.wav` | dog | [Dog barking](https://freesound.org/people/ptrflr/sounds/402017/) | ptrflr (CC BY 4.0) |
 | `field/rooster-01.wav` | rooster | [Rooster crowing](https://upload.wikimedia.org/wikipedia/commons/c/c5/Rooster_crowing.ogg) | Filo gèn' (CC-BY-SA 4.0) |
+| `field/rooster-02.wav` | rooster | [Cock rooster cockerel scream](https://freesound.org/people/featherstar/sounds/411424/) | featherstar (CC0) |
+| `field/rooster-03.wav` | rooster | [Hans' roosters and chicks in barnyard](https://freesound.org/people/CHallSmith/sounds/870505/) | CHallSmith (CC0) |
 | `field/birds-01.wav` | birds | Migrated from LeTrain core assets (30 s) | LeTrain project (license to confirm) |
 | `mountain/hawk-01.wav` | hawk | [Red-shouldered Hawk call (Buteo lineatus)](https://upload.wikimedia.org/wikipedia/commons/5/5a/Buteo_lineatus.ogg) | Wikimedia Commons (Public Domain) |
 | `mountain/wind-01.wav` | wind_mountain | [Wind in Swedish pine forest](https://upload.wikimedia.org/wikipedia/commons/f/f3/Wind_in_Swedish_pine_forest_at_25_mps.ogg) | Wikimedia Commons (CC-BY-SA 4.0) |
