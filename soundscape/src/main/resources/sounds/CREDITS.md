@@ -16,8 +16,7 @@ royalty-free field recordings.
 | `field/rooster-01.wav` | rooster | Mix of takes: [Rooster crowing](https://upload.wikimedia.org/wikipedia/commons/c/c5/Rooster_crowing.ogg), [Cock rooster cockerel scream](https://freesound.org/people/featherstar/sounds/411424/), [Hans' roosters and chicks in barnyard](https://freesound.org/people/CHallSmith/sounds/870505/) | Filo gèn' (CC-BY-SA 4.0); featherstar and CHallSmith (CC0). Mixed by the LeTrain project; adaptation distributed under CC-BY-SA 4.0 |
 | `field/birds-01.wav` | birds | Migrated from LeTrain core assets (30 s) | LeTrain project (license to confirm) |
 | `field/birds-02.wav` | birds | [Two ravens outside window](https://freesound.org/people/SoundsLikeYukon/sounds/864005/) | SoundsLikeYukon (CC0) |
-| `mountain/hawk-01.wav` | hawk | [Red-shouldered Hawk call (Buteo lineatus)](https://upload.wikimedia.org/wikipedia/commons/5/5a/Buteo_lineatus.ogg) | Wikimedia Commons (Public Domain) |
-| `mountain/hawk-02.wav` | hawk | [Red-tailed hawk](https://freesound.org/people/craigsmith/sounds/479610/) | craigsmith (CC0) |
+| `mountain/hawk-01.wav` | hawk | Mix of takes: [Red-shouldered Hawk call](https://upload.wikimedia.org/wikipedia/commons/5/5a/Buteo_lineatus.ogg), [Red-tailed hawk](https://freesound.org/people/craigsmith/sounds/479610/) | Wikimedia Commons (Public Domain); craigsmith (CC0). Mixed and loop-seam crossfaded by the LeTrain project |
 | `mountain/wind-01.wav` | wind_mountain | [Wind in Swedish pine forest](https://upload.wikimedia.org/wikipedia/commons/f/f3/Wind_in_Swedish_pine_forest_at_25_mps.ogg) | Wikimedia Commons (CC-BY-SA 4.0) |
 | `weather/rain-01.wav` | rain | [Falling Rain Sound Effect](https://upload.wikimedia.org/wikipedia/commons/4/4f/Falling_Rain_SFX_1_2016-11-19.oga) | Wikimedia Commons (CC0 Public Domain) |
 | `weather/rain-02.wav` | rain | [Summer rain](https://freesound.org/people/walkingwithmicrophones/sounds/743679/) | walkingwithmicrophones (CC0) |
