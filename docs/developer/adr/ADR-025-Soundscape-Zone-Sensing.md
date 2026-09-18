@@ -26,8 +26,10 @@
 ## Decisión (propuesta)
 
 1. **Un sensor de zonas fuera del módulo `soundscape`** (en `core` o en un bridge dedicado) que
-   traduce una posición (tren o cámara, a decidir) a pesos 0.0–1.0 por zona y construye el
-   `CompositionInput`. El `soundscape` sigue sin conocer el mapa (aislamiento ADR-023).
+   traduce una posición a pesos 0.0–1.0 por zona y construye el `CompositionInput`. La referencia
+   es **el tren** (no la cámara): si el tren entra en un túnel, el decorado suena a túnel aunque la
+   cámara esté por encima de la montaña. La cámara solo aporta altura/zoom (atenuación + LP de
+   aire, ya existente). El `soundscape` sigue sin conocer el mapa (aislamiento ADR-023).
 2. **Zonas naturales por densidad en un radio**: muestrear una rejilla gruesa alrededor de la
    posición y calcular la fracción de tiles `WATER` / `ROCK` / `GROUND`; el peso cae con la
    distancia (p. ej. `w = clamp((1 - d/R) * densidad)`). Varias zonas activas a la vez.
@@ -40,6 +42,13 @@
    no disparar el número de sonidos simultáneos.
 6. **Determinismo**: misma posición + mismo mapa ⇒ mismos pesos; el suavizado depende solo del
    tiempo simulado, no del reloj real.
+7. **Espacio acústico (túnel/estación)**: el estado ambiental gana un eje `enclosure` (0 = cielo
+   abierto, 1 = dentro). La señal de túnel ya existe en el modelo (`TunnelGateRailTrack`,
+   `VisualType.TUNNEL`). Al entrar: bajar/duckear las zonas exteriores (montaña, campo) y activar
+   una reverb corta sobre el mix (y sobre los sonidos del tren) — el eco cobra sentido aquí. Al
+   salir, se invierte con el mismo suavizado. Opcional: capa propia de túnel (retumbo, viento
+   canalizado). El render de CAB dentro del túnel (ver algo de vía y la salida al fondo) es una
+   tarea de la capa gráfica, no del audio.
 
 ## Consecuencias
 
@@ -69,7 +78,8 @@
 
 ## Preguntas abiertas
 
-- ¿El sensor sigue al **tren** (posición del jugador) o a la **cámara** (zoom/altura)?
+- ¿La reverb de túnel se implementa en el player (FDN) o se pre-renderiza en las tomas?
+- Dentro de un túnel, ¿duck completo de zonas exteriores o solo atenuación + LP?
 - Radio de muestreo y curva de caída por zona: ¿fijos por zona o por terreno?
 - ¿Normalizamos los pesos o dejamos que sumen?
 - ¿Dónde vive el sensor: `core`, un módulo bridge nuevo, o el launcher que ya conoce ambos?
