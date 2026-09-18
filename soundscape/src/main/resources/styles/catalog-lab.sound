@@ -21,6 +21,8 @@ field-cicada-01 = field/cicada-01.wav
 field-cricket-01 = field/cricket-01.wav
 field-dog-01 = field/dog-01.wav
 field-rooster-01 = field/rooster-01.wav
+industrial-consumer-zone = industrial/consumer-zone.wav
+industrial-producer-zone = industrial/producer-zone.wav
 mountain-hawk-01 = mountain/hawk-01.wav
 mountain-wind-01 = mountain/wind-01.wav
 sky-wind-altitude-01 = sky/wind-altitude-01.wav
@@ -47,7 +49,7 @@ weather-wind-01 = weather/wind-01.wav
 
 [zones]
 sea = sea-seagull-01, sea-waves-01, sea-waves-02, sea-waves-03, sea-waves-04
-fields = field-birds-01, field-birds-02, field-cicada-01, field-cricket-01, field-dog-01, field-rooster-01, mountain-hawk-01, mountain-wind-01, sky-wind-altitude-01, synth-rain-far-01, synth-rain-glass-01, synth-rain-heavy-01, synth-rain-light-01, synth-rain-medium-01, synth-rain-near-01, synth-waves-calm-01, synth-waves-surf-01, synth-wind-breeze-01, synth-wind-gale-01, synth-wind-gusts-01, synth-wind-medium-01, weather-rain-01, weather-rain-02, weather-rain-03, weather-rain-04, weather-thunder-01, weather-thunder-06, weather-thunder-07, weather-wind-01
+fields = field-birds-01, field-birds-02, field-cicada-01, field-cricket-01, field-dog-01, field-rooster-01, industrial-consumer-zone, industrial-producer-zone, mountain-hawk-01, mountain-wind-01, sky-wind-altitude-01, synth-rain-far-01, synth-rain-glass-01, synth-rain-heavy-01, synth-rain-light-01, synth-rain-medium-01, synth-rain-near-01, synth-waves-calm-01, synth-waves-surf-01, synth-wind-breeze-01, synth-wind-gale-01, synth-wind-gusts-01, synth-wind-medium-01, weather-rain-01, weather-rain-02, weather-rain-03, weather-rain-04, weather-thunder-01, weather-thunder-06, weather-thunder-07, weather-wind-01
 
 [presence]
 sea-seagull-01 1.0 1.0 1.0 1.0 1.0 1.0 1.0
@@ -61,6 +63,8 @@ field-cicada-01 1.0 1.0 1.0 1.0 1.0 1.0 1.0
 field-cricket-01 1.0 1.0 1.0 1.0 1.0 1.0 1.0
 field-dog-01 1.0 1.0 1.0 1.0 1.0 1.0 1.0
 field-rooster-01 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+industrial-consumer-zone 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+industrial-producer-zone 1.0 1.0 1.0 1.0 1.0 1.0 1.0
 mountain-hawk-01 1.0 1.0 1.0 1.0 1.0 1.0 1.0
 mountain-wind-01 1.0 1.0 1.0 1.0 1.0 1.0 1.0
 sky-wind-altitude-01 1.0 1.0 1.0 1.0 1.0 1.0 1.0
@@ -97,6 +101,8 @@ field-cicada-01 = 0.0
 field-cricket-01 = 0.0
 field-dog-01 = 0.0
 field-rooster-01 = 0.0
+industrial-consumer-zone = 0.0
+industrial-producer-zone = 0.0
 mountain-hawk-01 = 0.0
 mountain-wind-01 = 0.0
 sky-wind-altitude-01 = 0.0

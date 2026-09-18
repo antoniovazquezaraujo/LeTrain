@@ -34,7 +34,8 @@ class SoundFilesIntegrityTest {
             "/sounds/synth/rain-light-01.wav", "/sounds/synth/rain-medium-01.wav",
             "/sounds/synth/rain-heavy-01.wav", "/sounds/synth/rain-glass-01.wav",
             "/sounds/synth/rain-near-01.wav", "/sounds/synth/rain-far-01.wav",
-            "/sounds/synth/waves-calm-01.wav", "/sounds/synth/waves-surf-01.wav");
+            "/sounds/synth/waves-calm-01.wav", "/sounds/synth/waves-surf-01.wav",
+            "/sounds/industrial/producer-zone.wav", "/sounds/industrial/consumer-zone.wav");
 
     @Test
     @DisplayName("every sound asset exists and is a valid PCM 16-bit 44.1kHz mono WAV")
