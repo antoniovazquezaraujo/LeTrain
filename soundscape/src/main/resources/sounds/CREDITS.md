@@ -13,6 +13,13 @@ royalty-free field recordings.
 | `field/cicada-01.wav` | cicada | [Cicada orni singing](https://upload.wikimedia.org/wikipedia/commons/a/a8/Cicada_orni.ogg) | Wikimedia Commons (CC-BY-SA 3.0) |
 | `field/cricket-01.wav` | cricket | [Field cricket (Gryllus campestris)](https://upload.wikimedia.org/wikipedia/commons/9/9c/Gryllus_campestris_-_sound.ogg) | Wikimedia Commons (CC-BY-SA 3.0) |
 | `field/dog-01.wav` | dog | [Barking of a dog](https://upload.wikimedia.org/wikipedia/commons/5/58/Barking_of_a_dog_2.ogg) | Wikimedia Commons (Public Domain / CC0) |
+| `field/dog-02.wav` | dog | [Dog barking](https://freesound.org/people/nick121087/sounds/274471/) | nick121087 (CC0) |
+| `field/dog-03.wav` | dog | [Dogs barking](https://freesound.org/people/m_marek/sounds/515094/) | m_marek (CC0) |
+| `field/dog-04.wav` | dog | [Barking dog](https://freesound.org/people/Soojay/sounds/555351/) | Soojay (CC0) |
+| `field/dog-05.wav` | dog | [Dog barking in the distance](https://freesound.org/people/fleurescence/sounds/573146/) | fleurescence (CC0) |
+| `field/dog-06.wav` | dog | [Dogs barking at night](https://freesound.org/people/bruno.auzet/sounds/810906/) | bruno.auzet (CC0) |
+| `field/dog-07.wav` | dog | [Dogs bark at dawn](https://freesound.org/people/jose.viana/sounds/665941/) | jose.viana (CC BY 4.0) |
+| `field/dog-08.wav` | dog | [Dog barking](https://freesound.org/people/ptrflr/sounds/402017/) | ptrflr (CC BY 4.0) |
 | `field/rooster-01.wav` | rooster | [Rooster crowing](https://upload.wikimedia.org/wikipedia/commons/c/c5/Rooster_crowing.ogg) | Filo gèn' (CC-BY-SA 4.0) |
 | `field/birds-01.wav` | birds | Migrated from LeTrain core assets (30 s) | LeTrain project (license to confirm) |
 | `mountain/hawk-01.wav` | hawk | [Red-shouldered Hawk call (Buteo lineatus)](https://upload.wikimedia.org/wikipedia/commons/5/5a/Buteo_lineatus.ogg) | Wikimedia Commons (Public Domain) |

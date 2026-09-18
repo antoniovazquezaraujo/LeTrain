@@ -8,7 +8,7 @@ Design and decisions: `docs/developer/adr/ADR-023-Soundscape-Isolation.md`.
 
 ## Status
 
-Working module: style format, composition engine, a catalog of 38 normalized ambient assets and
+Working module: style format, composition engine, a catalog of 45 normalized ambient assets and
 **live playback** (each material loops as a whole; random-jump crossfades are parked until the
 materials are cut to loop cleanly). Rain, thunder and waves have several variants per pattern
 (`weather/rain-0*.wav`, `weather/thunder-0*.wav`, `sea/waves-0*.wav`); one is picked at random
