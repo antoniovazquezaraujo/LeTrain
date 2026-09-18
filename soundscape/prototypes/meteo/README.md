@@ -20,8 +20,9 @@ Formato: WAV 48 kHz, 16 bits, estéreo, normalizado a pico -3 dBFS.
 | `waves/` | `olas-suaves-v2.wav` | mar de fondo continuo + oleaje corto |
 | `waves/` | `olas-fuertes-v2.wav` | mar de fondo continuo + rompiente |
 
-El trueno sintético se descartó (no convencía). Para trueno se usarán grabaciones CC0 de
-Freesound, pendientes de selección.
+El trueno sintético se descartó (no convencía). Los truenos definitivos son grabaciones CC0 de
+Freesound, ya integradas como `weather/thunder-0{2..8}.wav` con su entrada en el catálogo de
+créditos.
 
 ## Siguiente paso
 
