@@ -39,3 +39,24 @@ royalty-free field recordings.
 | `synth/rain-far-01.wav` | rain (synth) | Procedural synthesis: no drops, low mass | LeTrain project (Apache-2.0) |
 | `synth/waves-calm-01.wav` | waves (synth) | Procedural synthesis: continuous sea + short swell | LeTrain project (Apache-2.0) |
 | `synth/waves-surf-01.wav` | waves (synth) | Procedural synthesis: continuous sea + breaking surf | LeTrain project (Apache-2.0) |
+| `industrial/producer-zone-01.wav` | industrial zone | Mix of 16 CC0 Freesound takes (sources listed below) | LeTrain project mix; sources CC0 |
+| `industrial/consumer-zone-01.wav` | industrial zone | Mix of 16 CC0 Freesound takes (sources listed below) | LeTrain project mix; sources CC0 |
+
+### Industrial mix sources (all CC0, Freesound)
+
+- [INT Factory budimka, pozega](https://freesound.org/people/deleted_user_2104797/sounds/164744/) — deleted_user_2104797
+- [AMB_EXT_CONSTRUCTION_MEDIUM_RATE_LOOP](https://freesound.org/people/Olichite/sounds/244732/) — Olichite
+- [Coal pit mine, machinery, grabber, short distance, beeping](https://freesound.org/people/be_a_hero_not_a_patriot/sounds/332533/) — be_a_hero_not_a_patriot
+- [Coal pit mine, machinery, grabber, short distance](https://freesound.org/people/be_a_hero_not_a_patriot/sounds/332535/) — be_a_hero_not_a_patriot
+- [Industrial factory working 02](https://freesound.org/people/dersinnsspace/sounds/439402/) — dersinnsspace
+- [Mining ventilator](https://freesound.org/people/blaukreuz/sounds/440123/) — blaukreuz
+- [Noisy industrial factory ambience2](https://freesound.org/people/kyles/sounds/455816/) — kyles
+- [Factory](https://freesound.org/people/vasifer/sounds/529470/) — vasifer
+- [Steel factory industrial noisy6 with welding](https://freesound.org/people/kyles/sounds/637828/) — kyles
+- [Wind vibration, electric pole, power plant and factory motor](https://freesound.org/people/felix.blume/sounds/666250/) — felix.blume
+- [Dump truck backing up](https://freesound.org/people/itinerantmonk108/sounds/733089/) — itinerantmonk108
+- [Cement mixer in operation](https://freesound.org/people/itinerantmonk108/sounds/733109/) — itinerantmonk108
+- [JM_AMB_INT_Factory 01 - Modern Machines](https://freesound.org/people/Julien_Matthey/sounds/751276/) — Julien_Matthey
+- [Construction site with jackhammer and screeching](https://freesound.org/people/felix.blume/sounds/779889/) — felix.blume
+- [Residential area, roadside, outside factory](https://freesound.org/people/JW_Audio/sounds/803789/) — JW_Audio
+- [Idling truck](https://freesound.org/people/itinerantmonk108/sounds/864821/) — itinerantmonk108
