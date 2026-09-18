@@ -55,13 +55,7 @@ class SampleResolverTest {
             List<URL> urls = new java.util.ArrayList<>();
             entry.getValue().material()
                     .forEach(material -> urls.addAll(resolver.resolve(material)));
-            boolean industrial =
-                    entry.getKey().contains("machinery") || entry.getKey().contains("thuds");
-            if (industrial) {
-                assertTrue(urls.isEmpty(), entry.getKey() + " should not have assets yet");
-            } else {
-                assertTrue(!urls.isEmpty(), entry.getKey() + " should resolve to a file");
-            }
+            assertTrue(!urls.isEmpty(), entry.getKey() + " should resolve to a file");
         }
     }
 }

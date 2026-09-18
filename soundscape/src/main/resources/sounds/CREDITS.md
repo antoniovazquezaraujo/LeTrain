@@ -39,8 +39,8 @@ royalty-free field recordings.
 | `synth/rain-far-01.wav` | rain (synth) | Procedural synthesis: no drops, low mass | LeTrain project (Apache-2.0) |
 | `synth/waves-calm-01.wav` | waves (synth) | Procedural synthesis: continuous sea + short swell | LeTrain project (Apache-2.0) |
 | `synth/waves-surf-01.wav` | waves (synth) | Procedural synthesis: continuous sea + breaking surf | LeTrain project (Apache-2.0) |
-| `industrial/producer-zone.wav` | industrial zone | Mix of 16 CC0 Freesound takes (sources listed below) | LeTrain project mix; sources CC0 |
-| `industrial/consumer-zone.wav` | industrial zone | Mix of 16 CC0 Freesound takes (sources listed below) | LeTrain project mix; sources CC0 |
+| `industrial/producer-zone-01.wav` | industrial zone | Mix of 16 CC0 Freesound takes (sources listed below) | LeTrain project mix; sources CC0 |
+| `industrial/consumer-zone-01.wav` | industrial zone | Mix of 16 CC0 Freesound takes (sources listed below) | LeTrain project mix; sources CC0 |
 
 ### Industrial mix sources (all CC0, Freesound)
 

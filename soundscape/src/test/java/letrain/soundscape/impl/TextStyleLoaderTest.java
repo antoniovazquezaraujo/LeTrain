@@ -30,7 +30,7 @@ class TextStyleLoaderTest {
         assertEquals(3, style.climatePresets().size());
         assertEquals(0.3f, style.climatePresets().get("drizzle").rain(), 1e-6);
         assertTrue(style.zoneSounds("fields").contains("crickets"));
-        assertTrue(style.zoneSounds("gold-mine").contains("mine-machinery"));
+        assertTrue(style.zoneSounds("gold-mine").contains("producer-zone"));
         assertEquals(7, style.presenceOf("crickets").size());
         assertEquals(-0.8f, style.heightSensitivityOf("crickets"), 1e-6);
         assertEquals(3, style.climateSensitivityOf("dogs").size());

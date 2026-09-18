@@ -21,21 +21,20 @@ roosters          = field/rooster-*.wav
 birds             = field/birds-*.wav
 wind              = mountain/wind-*.wav
 hawks             = mountain/hawk-*.wav
-mine-machinery    = mine/extractor-*.wav
-mine-thuds        = mine/thud-*.wav
-factory-machinery = factory/machine-*.wav
+producer-zone     = industrial/producer-zone-*.wav
+consumer-zone     = industrial/consumer-zone-*.wav
 
 # --- Zones: sound lists -------------------------------------
 [zones]
 sea          = waves, seagulls
 fields       = cicadas, crickets, dogs, roosters, birds
 mountain     = wind, hawks
-gold-mine    = mine-machinery, mine-thuds
-coal-mine    = mine-machinery, mine-thuds
-ruby-mine    = mine-machinery, mine-thuds
-gold-factory = factory-machinery
-coal-factory = factory-machinery
-ruby-factory = factory-machinery
+gold-mine    = producer-zone
+coal-mine    = producer-zone
+ruby-mine    = producer-zone
+gold-factory = consumer-zone
+coal-factory = consumer-zone
+ruby-factory = consumer-zone
 
 # --- Presence per band: dawn morning noon afternoon dusk night predawn
 [presence]
@@ -48,9 +47,8 @@ roosters          0.9 0.2 0.0 0.0 0.0 0.0 0.1
 birds             0.9 0.7 0.4 0.5 0.7 0.0 0.2
 wind              0.4 0.3 0.3 0.4 0.5 0.5 0.4
 hawks             0.0 0.1 0.1 0.4 0.1 0.0 0.0
-mine-machinery    0.0 0.5 0.5 0.5 0.0 0.0 0.0
-mine-thuds        0.0 0.4 0.4 0.4 0.0 0.0 0.0
-factory-machinery 0.1 0.6 0.6 0.5 0.1 0.0 0.0
+producer-zone     0.0 0.5 0.5 0.5 0.0 0.0 0.0
+consumer-zone     0.1 0.6 0.6 0.5 0.1 0.0 0.0
 
 # --- Height sensitivity (0 = no change) ---------------------
 [height-by-sound]
@@ -73,8 +71,8 @@ dogs               0.0  0.0 +0.2
 birds             -0.8 -0.3 -1.0
 waves              0.0 +0.4  0.0
 hawks             -0.5 +0.2 -1.0
-mine-machinery     0.0  0.0 -0.3
-factory-machinery  0.0  0.0 -0.3
+producer-zone      0.0  0.0 -0.3
+consumer-zone      0.0  0.0 -0.3
 
 # --- Behaviour gates: the sound stops when the condition holds
 #  Crickets and cicadas stop singing in the rain; cicadas also in strong wind.
