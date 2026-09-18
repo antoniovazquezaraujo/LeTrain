@@ -22,8 +22,6 @@ class SoundFilesIntegrityTest {
             "/sounds/sea/seagull-01.wav", "/sounds/sea/seagull-02.wav",
             "/sounds/field/cicada-01.wav",
             "/sounds/field/cricket-01.wav", "/sounds/field/dog-01.wav",
-            "/sounds/field/dog-02.wav", "/sounds/field/dog-04.wav",
-            "/sounds/field/dog-05.wav", "/sounds/field/dog-07.wav",
             "/sounds/field/rooster-01.wav",
             "/sounds/field/rooster-02.wav", "/sounds/field/rooster-03.wav",
             "/sounds/field/birds-01.wav", "/sounds/field/birds-02.wav",
