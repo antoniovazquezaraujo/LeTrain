@@ -19,6 +19,25 @@ class AmbientVoiceTest {
         return new SoundSample("tone.wav", data, 44100f);
     }
 
+    private SoundSample highs() {
+        float[] data = new float[44100];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = i % 2 == 0 ? 0.5f : -0.5f;
+        }
+        return new SoundSample("highs.wav", data, 44100f);
+    }
+
+    /** Mean sample-to-sample change: a proxy of how much high frequency the voice carries. */
+    private float brightness(AmbientVoice voice, float[] mono) {
+        java.util.Arrays.fill(mono, 0f);
+        voice.render(mono, mono.length);
+        float sum = 0f;
+        for (int i = 1; i < mono.length; i++) {
+            sum += Math.abs(mono[i] - mono[i - 1]);
+        }
+        return sum / (mono.length - 1);
+    }
+
     private float renderMax(AmbientVoice voice, float[] mono) {
         java.util.Arrays.fill(mono, 0f);
         voice.render(mono, mono.length);
@@ -56,6 +75,27 @@ class AmbientVoiceTest {
             float max = renderMax(voice, new float[FRAMES]);
             assertTrue(max <= 0.51f, "looping mix must stay bounded, was " + max);
         }
+    }
+
+    @Test
+    @DisplayName("distance distance muffles the high frequencies")
+    void should_MuffleHighs_When_DistanceIsSet() {
+        AmbientVoice near = new AmbientVoice(highs());
+        near.setTarget(0.5f);
+        AmbientVoice far = new AmbientVoice(highs());
+        far.setTarget(0.5f);
+        far.setDistance(1f);
+
+        float[] mono = new float[FRAMES];
+        for (int i = 0; i < 200; i++) {
+            renderMax(near, mono);
+            renderMax(far, mono);
+        }
+        float nearBrightness = brightness(near, mono);
+        float farBrightness = brightness(far, mono);
+
+        assertTrue(farBrightness < nearBrightness * 0.25f,
+                "distance should muffle highs: near=" + nearBrightness + " far=" + farBrightness);
     }
 
     @Test

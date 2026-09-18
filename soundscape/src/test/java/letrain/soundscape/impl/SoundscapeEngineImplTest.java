@@ -31,12 +31,12 @@ class SoundscapeEngineImplTest {
     @DisplayName("composes a sound as zone x presence x climate x height")
     void should_ComposeSound_When_AllFactorsApply() {
         CompositionInput input = new CompositionInput(LocalTime.of(23, 30), Map.of("fields", 0.7f),
-                0.2f, 0.3f, 0.1f, 0f);
+                0.2f, 0.1f, 0.1f, 0f);
 
         Composition composition = engine.compose(style, input);
 
-        // 0.7 * (0.8 + 0.1*60/270) * (1 - 0.8*0.3 - 0.2*0.1) * (1 - 0.8*0.2)
-        assertEquals(0.35777f, composition.volumeOf("crickets"), 1e-4);
+        // 0.7 * (0.8 + 0.1*60/270) * (1 - 0.8*0.1 - 0.2*0.1) * (1 - 0.8*0.2) * (1 - 0.6*0.2)
+        assertEquals(0.38291f, composition.volumeOf("crickets"), 1e-4);
     }
 
     @Test
@@ -92,7 +92,8 @@ class SoundscapeEngineImplTest {
 
         Composition composition = engine.compose(style, input);
 
-        assertEquals(0.72f, composition.volumeOf("hawks"), 1e-4);
+        // 0.9 presence * (1 + 0.8) height, then distance (1 - 0.6) at full distance
+        assertEquals(0.288f, composition.volumeOf("hawks"), 1e-4);
     }
 
     @Test
@@ -145,8 +146,72 @@ class SoundscapeEngineImplTest {
         Composition composition = engine.compose(gained,
                 new CompositionInput(LocalTime.NOON, Map.of("sea", 1f), 1f, 0.8f, 0f, 0f));
 
-        assertEquals(0.2f, composition.volumeOf("weather-rain"), 1e-6);
+        // 0.8 intensity x 0.25 gain, then distance (1 - 0.6) at full distance
+        assertEquals(0.08f, composition.volumeOf("weather-rain"), 1e-6);
+        // height-provided sounds stay next to the listener: only the gain applies
         assertEquals(0.5f, composition.volumeOf("height-wind"), 1e-6);
+    }
+
+    @Test
+    @DisplayName("listening height sets the distance distance of zone sounds only")
+    void should_SetDistance_When_HeightIsSet() {
+        CompositionInput input =
+                new CompositionInput(LocalTime.NOON, Map.of("fields", 1f), 0.7f, 0.4f, 0f, 0f);
+
+        Composition composition = engine.compose(style, input);
+
+        assertEquals(0.7f, composition.distanceOf("cicadas"), 1e-6);
+        assertEquals(0.7f, composition.distanceOf("weather-rain"), 1e-6);
+        assertEquals(0f, composition.distanceOf("height-wind"), 1e-6);
+        assertEquals(0f,
+                engine.compose(style,
+                        new CompositionInput(LocalTime.NOON, Map.of("fields", 1f), 0f, 0f, 0f, 0f))
+                        .distanceOf("cicadas"),
+                1e-6);
+    }
+
+    @Test
+    @DisplayName("weather sounds also recede with the listening height")
+    void should_AttenuateWeather_When_HeightIsSet() {
+        CompositionInput input = new CompositionInput(LocalTime.NOON, Map.of(), 1f, 0.8f, 0f, 0f);
+
+        Composition composition = engine.compose(style, input);
+
+        assertEquals(1f, composition.distanceOf("weather-rain"), 1e-6);
+        assertEquals(0.32f, composition.volumeOf("weather-rain"), 1e-6);
+    }
+
+    @Test
+    @DisplayName("[distance-by-sound] overrides the distance of a sound")
+    void should_UseDistanceSensitivity_When_Declared() throws IOException {
+        SoundscapeStyle clear = loader
+                .parse(List.of("[sounds]", "waves = sea/waves-*.wav", "[zones]", "sea = waves",
+                        "[presence]", "waves = 1 1 1 1 1 1 1", "[distance-by-sound]", "waves = 0"));
+        SoundscapeStyle receding = loader.parse(List.of("[sounds]", "waves = sea/waves-*.wav",
+                "[zones]", "sea = waves", "[presence]", "waves = 1 1 1 1 1 1 1",
+                "[distance-by-sound]", "waves = 0.5"));
+        CompositionInput input =
+                new CompositionInput(LocalTime.NOON, Map.of("sea", 1f), 1f, 0f, 0f, 0f);
+
+        assertEquals(0f, engine.compose(clear, input).distanceOf("waves"), 1e-6);
+        assertEquals(1f, engine.compose(clear, input).volumeOf("waves"), 1e-6);
+        assertEquals(0.5f, engine.compose(receding, input).distanceOf("waves"), 1e-6);
+        assertEquals(0.7f, engine.compose(receding, input).volumeOf("waves"), 1e-6);
+    }
+
+    @Test
+    @DisplayName("gates silence crickets and cicadas when the condition holds")
+    void should_SilenceGatedSounds_When_ConditionsHold() {
+        Composition dry = engine.compose(style,
+                new CompositionInput(LocalTime.of(23, 30), Map.of("fields", 1f), 0f, 0.1f, 0f, 0f));
+        Composition wet = engine.compose(style,
+                new CompositionInput(LocalTime.of(23, 30), Map.of("fields", 1f), 0f, 0.4f, 0f, 0f));
+        Composition windy = engine.compose(style,
+                new CompositionInput(LocalTime.NOON, Map.of("fields", 1f), 0f, 0f, 0.7f, 0f));
+
+        assertTrue(dry.volumeOf("crickets") > 0.3f);
+        assertEquals(0f, wet.volumeOf("crickets"), 1e-6);
+        assertEquals(0f, windy.volumeOf("cicadas"), 1e-6);
     }
 
     @Test

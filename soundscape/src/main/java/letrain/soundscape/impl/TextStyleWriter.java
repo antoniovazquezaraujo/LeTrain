@@ -8,51 +8,99 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import letrain.soundscape.SoundGate;
 
 /**
- * Writes a style back as text without touching the rest of the file: only the {@code [gains]}
- * section is replaced, so comments and formatting of the original survive the export. Gains equal
- * to 1.0 are left out, and an empty calibration removes the section entirely.
+ * Writes a style back as text without touching the rest of the file: only the calibration sections
+ * ({@code [gains]}, {@code [distance-by-sound]}, {@code [silence-when]}) are replaced, so comments
+ * and formatting of the original survive the export. Values equal to the defaults are left out, and
+ * an empty calibration removes its section entirely.
  */
 public class TextStyleWriter {
 
-    private static final String SECTION = "[gains]";
-    private static final float DEFAULT_GAIN = 1f;
+    private static final float DEFAULT_VALUE = 1f;
     private static final float EPSILON = 1e-3f;
 
-    /** Source lines with the {@code [gains]} section replaced by the given multipliers. */
+    /** Source lines with the [gains] section replaced by the given multipliers. */
     public List<String> withGains(List<String> sourceLines, Map<String, Float> gains) {
-        List<String> lines = new ArrayList<>(stripGainsSection(sourceLines));
-        List<Map.Entry<String, Float>> entries = calibrated(gains);
-        if (entries.isEmpty()) {
-            return lines;
+        return withCalibration(sourceLines, gains, Map.of(), Map.of());
+    }
+
+    /** Source lines with the three calibration sections replaced by the given values. */
+    public List<String> withCalibration(List<String> sourceLines, Map<String, Float> gains,
+            Map<String, Float> distance, Map<String, List<SoundGate>> gates) {
+        List<String> lines = new ArrayList<>(sourceLines);
+        for (String section : List.of("gains", "distance-by-sound", "silence-when")) {
+            lines = stripSection(lines, section);
         }
-        if (!lines.isEmpty() && !lines.get(lines.size() - 1).isBlank()) {
-            lines.add("");
-        }
-        lines.add(SECTION);
-        int width = entries.stream().mapToInt(entry -> entry.getKey().length()).max().orElse(0);
-        for (Map.Entry<String, Float> entry : entries) {
-            lines.add(String.format(Locale.ROOT, "%-" + width + "s = %s", entry.getKey(),
-                    format(entry.getValue())));
-        }
+        lines = appendValues(lines, "gains", calibrated(gains));
+        lines = appendValues(lines, "distance-by-sound", calibrated(distance));
+        lines = appendGates(lines, gates);
         return lines;
     }
 
     public void write(Path path, List<String> sourceLines, Map<String, Float> gains)
             throws IOException {
-        Files.write(path, withGains(sourceLines, gains), StandardCharsets.UTF_8);
+        write(path, sourceLines, gains, Map.of(), Map.of());
     }
 
-    private List<Map.Entry<String, Float>> calibrated(Map<String, Float> gains) {
-        return gains.entrySet().stream().filter(entry -> entry.getValue() != null
-                && Math.abs(entry.getValue() - DEFAULT_GAIN) > EPSILON).toList();
+    public void write(Path path, List<String> sourceLines, Map<String, Float> gains,
+            Map<String, Float> distance, Map<String, List<SoundGate>> gates) throws IOException {
+        Files.write(path, withCalibration(sourceLines, gains, distance, gates),
+                StandardCharsets.UTF_8);
     }
 
-    private List<String> stripGainsSection(List<String> sourceLines) {
+    private List<Map.Entry<String, Float>> calibrated(Map<String, Float> values) {
+        return values.entrySet().stream().filter(entry -> entry.getValue() != null
+                && Math.abs(entry.getValue() - DEFAULT_VALUE) > EPSILON).toList();
+    }
+
+    private List<String> appendValues(List<String> lines, String section,
+            List<Map.Entry<String, Float>> entries) {
+        if (entries.isEmpty()) {
+            return lines;
+        }
+        List<String> result = new ArrayList<>(lines);
+        openSection(result, section);
+        int width = entries.stream().mapToInt(entry -> entry.getKey().length()).max().orElse(0);
+        for (Map.Entry<String, Float> entry : entries) {
+            result.add(String.format(Locale.ROOT, "%-" + width + "s = %s", entry.getKey(),
+                    format(entry.getValue())));
+        }
+        return result;
+    }
+
+    private List<String> appendGates(List<String> lines, Map<String, List<SoundGate>> gates) {
+        List<String> entries = new ArrayList<>();
+        for (Map.Entry<String, List<SoundGate>> entry : gates.entrySet()) {
+            for (SoundGate gate : entry.getValue()) {
+                entries.add(String.format(Locale.ROOT, "%s = %s > %s", entry.getKey(),
+                        gate.variable(), format(gate.threshold())));
+            }
+        }
+        if (entries.isEmpty()) {
+            return lines;
+        }
+        List<String> result = new ArrayList<>(lines);
+        openSection(result, "silence-when");
+        result.addAll(entries);
+        return result;
+    }
+
+    private void openSection(List<String> lines, String section) {
+        while (!lines.isEmpty() && lines.get(lines.size() - 1).isBlank()) {
+            lines.remove(lines.size() - 1);
+        }
+        if (!lines.isEmpty()) {
+            lines.add("");
+        }
+        lines.add("[" + section + "]");
+    }
+
+    private List<String> stripSection(List<String> sourceLines, String name) {
         List<String> lines = new ArrayList<>();
         for (int i = 0; i < sourceLines.size(); i++) {
-            if (!isSection(sourceLines.get(i), "gains")) {
+            if (!isSection(sourceLines.get(i), name)) {
                 lines.add(sourceLines.get(i));
                 continue;
             }
