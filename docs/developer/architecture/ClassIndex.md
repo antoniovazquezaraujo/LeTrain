@@ -10,6 +10,7 @@
 
 ## letrain.audio
 - [[letrain.audio.AudioController|AudioController]] (core)
+- [[letrain.audio.ZoneAmbience|ZoneAmbience]] (core)
 - [[letrain.audio.core.AudioMixer|AudioMixer]] (core)
 - [[letrain.audio.core.AudioSource|AudioSource]] (core)
 - [[letrain.audio.core.DistanceAttenuator|DistanceAttenuator]] (core)
