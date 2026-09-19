@@ -58,7 +58,7 @@ public class ZoneSensorLab {
     private double viewCenterX;
     private double viewCenterY;
     private int tile = 2;
-    private ZoneSensor sensor = new ZoneSensor(12, 1);
+    private ZoneSensor sensor = new ZoneSensor(8, 1);
     private boolean useCache;
     private int cursorX;
     private int cursorY;
