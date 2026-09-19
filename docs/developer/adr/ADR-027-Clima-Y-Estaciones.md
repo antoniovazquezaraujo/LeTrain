@@ -18,22 +18,24 @@
 
 1. **Fecha de juego**: `GameTime` expone el **día del año** (numérico), que viaja al `soundscape`
    junto a la hora. No se imponen estaciones fijas.
-2. **Calendario climático configurable (`[seasons]`)**: el usuario define **los tramos de días que
-   quiera** (no estaciones estándar) y les asigna la probabilidad/intensidad de cada fenómeno, para
-   que cada país o escenario tenga su calendario. Ejemplo:
+2. **Calendario climático configurable (`[seasons]`), en el estilo**: el usuario define **los
+   tramos de días que quiera** (no estaciones estándar) y les asigna la probabilidad/intensidad de
+   cada fenómeno, para que cada país o escenario tenga su calendario. Ejemplo:
    `1/1–21/3  rain=0.8 wind=0.5`, `21/6–21/9 rain=0.1 wind=0.2`, etc.
 3. **Generador de clima determinista por horas**: cada **hora de juego** se evalúan las
    probabilidades del tramo para decidir si cada fenómeno (`rain`, `wind`, `storm`) arranca o se
    detiene,
-   con **histéresis y duración mínima** (evita el parpadeo) y rampas suaves de entrada/salida.
+   con **histéresis y una duración mínima de una hora de juego** (evita el parpadeo) y rampas
+   suaves de entrada/salida.
    Semilla por partida: misma semilla ⇒ misma secuencia (replay de ADR-020). El estado generado es
    el que consumen motor de audio y vistas. **El generador vive en `core`**, que es quien tiene el
    reloj, el guardado y el replay; el `soundscape` y las vistas solo lo consumen.
 4. **Nieve**: queda **fuera de la fase 1** (se añadirá más adelante, p. ej. con contenido navideño).
    La variable existirá en el modelo para entonces.
-5. **Persistencia y configuración**: el calendario y los overrides pueden vivir en la
-   **configuración del escenario (`.ltr`)**, y el estado de clima generado se guarda con la
-   partida.
+5. **Persistencia y configuración**: el calendario climático vive en el **estilo** (`[seasons]`,
+   es configuración de decorado reutilizable); el escenario **`.ltr` puede sobrescribirlo** para
+   una situación concreta (fecha inicial, clima forzado); la **semilla y el estado generado** se
+   guardan con la partida.
 6. **Fauna estacional**: overrides de `[presence]` por tramo del calendario o sección `[seasonal]`
    por sonido; la elección de especies (p. ej. cuervos en invierno, estorninos en verano) usa las
    familias y tomas de ADR-024, no ficheros sueltos elegidos a mano.
@@ -62,5 +64,4 @@
 
 ## Preguntas abiertas
 
-- ¿Qué parte del calendario y la semilla va en el `.ltr` y qué parte en el estilo?
-- Con histéresis y duración mínima por hora, ¿cuánto debe durar como mínimo un fenómeno?
+- Formato exacto de `[seasons]`: ¿día/mes (`1/1–21/3`) o día del año (`1–80`)?
