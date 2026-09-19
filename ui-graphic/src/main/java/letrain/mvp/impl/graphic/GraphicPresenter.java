@@ -130,9 +130,15 @@ public class GraphicPresenter extends ApplicationAdapter
 
     private CameraController cameraController;
     private Gdx3DInputHandler inputHandler;
+    private final SoundscapeAmbience ambience;
 
     public GraphicPresenter(letrain.mvp.Model model) {
+        this(model, null);
+    }
+
+    public GraphicPresenter(letrain.mvp.Model model, SoundscapeAmbience ambience) {
         this.model = ValidationUtils.requireNonNull(model, "model");
+        this.ambience = ambience;
         this.resourceContext = new letrain.visitor.gdx3d.Gdx3DResourceContext();
         this.renderer = new Gdx3DRenderer(resourceContext);
         this.trackMaker = new RailTrackMaker(this);
@@ -283,8 +289,14 @@ public class GraphicPresenter extends ApplicationAdapter
         audioController.setListenerPosition(cam.position.x, cam.position.z, cam.position.y,
                 camAngle);
         audioController.update();
-        audioController.updateAmbient(cameraController.getMode() == CameraController.CameraMode.MAP,
-                cameraController.getZoomFactor(), cam.position.x, cam.position.z, cam.position.y);
+        if (ambience != null) {
+            ambience.update(model, cameraController.getZoomFactor());
+        } else {
+            audioController.updateAmbient(
+                    cameraController.getMode() == CameraController.CameraMode.MAP,
+                    cameraController.getZoomFactor(), cam.position.x, cam.position.z,
+                    cam.position.y);
+        }
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);

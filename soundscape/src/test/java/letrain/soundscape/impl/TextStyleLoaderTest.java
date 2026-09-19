@@ -36,8 +36,12 @@ class TextStyleLoaderTest {
         assertEquals(3, style.climateSensitivityOf("dogs").size());
         assertNotNull(style.weatherSounds().get("rain"));
         assertNotNull(style.heightSounds().get("wind"));
-        assertTrue(style.gains().isEmpty());
-        assertEquals(1f, style.gainOf("cicadas"), 1e-6);
+        assertEquals(0.5f, style.gainOf("cicadas"), 1e-6);
+        assertEquals(1f, style.gainOf("waves"), 1e-6);
+        assertEquals(0.7f, style.minDistanceOf("cicadas"), 1e-6);
+        assertEquals(0f, style.minDistanceOf("waves"), 1e-6);
+        assertEquals(0.35f, style.zoneGainOf("fields"), 1e-6);
+        assertEquals(1f, style.zoneGainOf("sea"), 1e-6);
         assertEquals(2, style.gatesOf("cicadas").size());
         assertEquals(new SoundGate("rain", 0.25f), style.gatesOf("crickets").get(0));
     }

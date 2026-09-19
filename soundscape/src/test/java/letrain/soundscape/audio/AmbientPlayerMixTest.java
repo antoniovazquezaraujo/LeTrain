@@ -24,8 +24,10 @@ class AmbientPlayerMixTest {
         SoundscapeStyle style = new TextStyleLoader().loadResource("/styles/valle-norte.sound");
         AmbientPlayer player = new AmbientPlayer(style, 1);
         SoundscapeEngine engine = new SoundscapeEngineImpl();
-        Composition composition = engine.compose(style, new CompositionInput(LocalTime.NOON,
-                Map.of("fields", 0.7f, "sea", 0.5f), 0f, 0f, 0.1f, 0f));
+        Composition composition = engine.compose(style,
+                new CompositionInput(LocalTime.NOON,
+                        Map.of("fields", 1f, "sea", 1f, "gold-mine", 1f, "gold-factory", 1f), 0f,
+                        0f, 0.1f, 0f));
         player.updateTargets(composition);
 
         float[] mono = new float[1024];

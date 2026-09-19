@@ -40,6 +40,7 @@ public class AmbientPlayer implements AutoCloseable {
     private final Random random;
 
     private volatile Composition targets = new Composition(Map.of());
+    private volatile boolean cutOnNextPass;
     private volatile boolean running;
     private SourceDataLine line;
     private Thread thread;
@@ -79,7 +80,17 @@ public class AmbientPlayer implements AutoCloseable {
 
     /** Sets the target volumes and distance absorption of the current composition. */
     public void updateTargets(Composition composition) {
+        updateTargets(composition, false);
+    }
+
+    /**
+     * Applies the new targets; {@code cut} uses a short anti-click ramp (focus change, ADR-025).
+     */
+    public void updateTargets(Composition composition, boolean cut) {
         targets = composition == null ? new Composition(Map.of()) : composition;
+        if (cut) {
+            cutOnNextPass = true;
+        }
     }
 
     /**
@@ -147,9 +158,14 @@ public class AmbientPlayer implements AutoCloseable {
             float volume = entry.getValue() == null ? 0f : entry.getValue();
             AmbientVoice voice =
                     voices.computeIfAbsent(entry.getKey(), key -> new AmbientVoice(sample));
-            voice.setTarget(volume > MIN_VOLUME ? volume : 0f);
+            if (cutOnNextPass) {
+                voice.cutTo(volume > MIN_VOLUME ? volume : 0f);
+            } else {
+                voice.setTarget(volume > MIN_VOLUME ? volume : 0f);
+            }
             voice.setDistance(current.distanceOf(entry.getKey()));
         }
+        cutOnNextPass = false;
         for (Iterator<Map.Entry<String, AmbientVoice>> it = voices.entrySet().iterator(); it
                 .hasNext();) {
             Map.Entry<String, AmbientVoice> entry = it.next();

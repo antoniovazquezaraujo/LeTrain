@@ -10,6 +10,7 @@
 
 ## letrain.audio
 - [[letrain.audio.AudioController|AudioController]] (core)
+- [[letrain.audio.ZoneAmbience|ZoneAmbience]] (core)
 - [[letrain.audio.core.AudioMixer|AudioMixer]] (core)
 - [[letrain.audio.core.AudioSource|AudioSource]] (core)
 - [[letrain.audio.core.DistanceAttenuator|DistanceAttenuator]] (core)
@@ -109,6 +110,7 @@
 - [[letrain.mvp.impl.graphic.Gdx3DHud|Gdx3DHud]] (ui-graphic)
 - [[letrain.mvp.impl.graphic.Gdx3DInputHandler|Gdx3DInputHandler]] (ui-graphic)
 - [[letrain.mvp.impl.graphic.GraphicPresenter|GraphicPresenter]] (ui-graphic)
+- [[letrain.mvp.impl.graphic.SoundscapeAmbience|SoundscapeAmbience]] (ui-graphic)
 - [[letrain.mvp.impl.services.AutomationEngine|AutomationEngine]] (core)
 - [[letrain.mvp.impl.services.ModelListenerService|ModelListenerService]] (core)
 - [[letrain.mvp.impl.services.ModelReportService|ModelReportService]] (core)

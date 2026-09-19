@@ -50,6 +50,27 @@ class AmbientVoiceTest {
     }
 
     @Test
+    @DisplayName("a cut reaches the target much faster than the normal ease")
+    void should_Cut_Quickly() {
+        AmbientVoice normal = new AmbientVoice(tone(44100));
+        normal.setTarget(1f);
+        renderMax(normal, new float[FRAMES]);
+        normal.setTarget(0f);
+        renderMax(normal, new float[FRAMES]);
+        float afterNormal = renderMax(normal, new float[FRAMES]);
+
+        AmbientVoice cut = new AmbientVoice(tone(44100));
+        cut.setTarget(1f);
+        renderMax(cut, new float[FRAMES]);
+        cut.cutTo(0f);
+        renderMax(cut, new float[FRAMES]);
+        float afterCut = renderMax(cut, new float[FRAMES]);
+
+        assertTrue(afterCut < afterNormal * 0.5f,
+                "cut " + afterCut + " should fall much faster than ease " + afterNormal);
+    }
+
+    @Test
     @DisplayName("fades in and reaches the target volume")
     void should_FadeIn_When_TargetIsSet() {
         AmbientVoice voice = new AmbientVoice(tone(44100));

@@ -18,6 +18,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.progmatic</groupId>
+            <artifactId>JLeTrain-soundscape</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.kotcrab.vis</groupId>
             <artifactId>vis-ui</artifactId>
         </dependency>
