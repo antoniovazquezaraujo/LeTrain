@@ -60,7 +60,8 @@ class ZoneSensorTest {
         assertEquals("sea", result.weights().keySet().stream()
                 .filter(zone -> !zone.equals("fields")).findFirst().orElse(null));
         float seaWeight = result.weightOf("sea");
-        assertTrue(seaWeight > 0f && seaWeight < ZoneSensor.SECONDARY_MAX);
+        assertTrue(seaWeight > 0.5f && seaWeight <= ZoneSensor.SECONDARY_MAX + 1e-4f);
+        assertTrue(result.weightOf("fields") < 0.5f);
         assertTrue(result.influence().get("sea") > 0.3f);
     }
 
@@ -94,6 +95,48 @@ class ZoneSensorTest {
 
         assertEquals("gold-mine", mine.primary());
         assertEquals("gold-factory", factory.primary());
+    }
+
+    @Test
+    @DisplayName("a sparse feature (a single factory tile) is heard by proximity")
+    void should_HearSparseFeature() {
+        int[][] cells = filled(64, 64, GroundMap.GROUND);
+        cells[32][34] = GroundMap.JEWELRY_STORE;
+        ZoneSensor sensor = new ZoneSensor(8, 1);
+
+        ZoneSensor.Result result = sensor.sense(grid(cells), 32, 32);
+
+        assertEquals("fields", result.primary());
+        assertTrue(result.weightOf("gold-factory") > 0.5f);
+        assertTrue(result.weightOf("fields") < 0.5f);
+    }
+
+    @Test
+    @DisplayName("a feature four tiles away is still audible")
+    void should_HearFeature_AtFourTiles() {
+        int[][] cells = filled(64, 64, GroundMap.GROUND);
+        cells[32][36] = GroundMap.JEWELRY_STORE;
+        ZoneSensor sensor = new ZoneSensor(8, 1);
+
+        ZoneSensor.Result result = sensor.sense(grid(cells), 32, 32);
+
+        assertTrue(result.weightOf("gold-factory") > 0.8f,
+                "weight " + result.weightOf("gold-factory"));
+        assertTrue(result.weightOf("fields") < 0.2f);
+    }
+
+    @Test
+    @DisplayName("ties keep the first zone found in scan order")
+    void should_BreakTies_ByScanOrder() {
+        int[][] cells = filled(64, 64, GroundMap.GROUND);
+        cells[32][30] = GroundMap.WATER;
+        cells[32][34] = GroundMap.JEWELRY_STORE;
+        ZoneSensor sensor = new ZoneSensor(8, 1);
+
+        ZoneSensor.Result result = sensor.sense(grid(cells), 32, 32);
+
+        assertEquals("sea", result.weights().keySet().stream()
+                .filter(zone -> !zone.equals("fields")).findFirst().orElse(null));
     }
 
     @Test

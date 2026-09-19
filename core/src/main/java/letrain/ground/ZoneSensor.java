@@ -12,13 +12,17 @@ import java.util.function.IntBinaryOperator;
  */
 public class ZoneSensor {
 
-    public static final float SECONDARY_MAX = 0.45f;
+    public static final float SECONDARY_MAX = 0.85f;
+
+    /** Within this distance the secondary zone is at full weight; it fades out towards R. */
+    private static final float FULL_WEIGHT_DISTANCE = 4f;
 
     public record Result(String primary, Map<String, Float> influence,
-            Map<String, Float> weights) {
+            Map<String, Float> proximity, Map<String, Float> weights) {
 
         public Result {
             influence = Map.copyOf(influence);
+            proximity = Map.copyOf(proximity);
             weights = Map.copyOf(weights);
         }
 
@@ -52,9 +56,10 @@ public class ZoneSensor {
     public Result sense(IntBinaryOperator terrainAt, int x, int y) {
         String primary = zoneOf(terrainAt.applyAsInt(x, y));
         if (primary == null) {
-            return new Result(null, Map.of(), Map.of());
+            return new Result(null, Map.of(), Map.of(), Map.of());
         }
         Map<String, Float> summed = new LinkedHashMap<>();
+        Map<String, Float> proximity = new LinkedHashMap<>();
         float total = 0f;
         for (int dy = -radius; dy <= radius; dy += stride) {
             for (int dx = -radius; dx <= radius; dx += stride) {
@@ -68,6 +73,7 @@ public class ZoneSensor {
                 }
                 float falloff = 1f - distance / radius;
                 summed.merge(zone, falloff, Float::sum);
+                proximity.merge(zone, falloff, Math::max);
                 total += falloff;
             }
         }
@@ -76,19 +82,31 @@ public class ZoneSensor {
             influence.put(entry.getKey(), total > 0f ? entry.getValue() / total : 0f);
         }
         String secondary = null;
-        float best = 0f;
-        for (Map.Entry<String, Float> entry : influence.entrySet()) {
-            if (!entry.getKey().equals(primary) && entry.getValue() > best) {
-                best = entry.getValue();
+        float bestProximity = 0f;
+        float bestInfluence = 0f;
+        for (Map.Entry<String, Float> entry : proximity.entrySet()) {
+            if (entry.getKey().equals(primary)) {
+                continue;
+            }
+            float zoneInfluence = influence.getOrDefault(entry.getKey(), 0f);
+            if (entry.getValue() > bestProximity
+                    || (entry.getValue() == bestProximity && zoneInfluence > bestInfluence)) {
+                bestProximity = entry.getValue();
+                bestInfluence = zoneInfluence;
                 secondary = entry.getKey();
             }
         }
         Map<String, Float> weights = new LinkedHashMap<>();
-        weights.put(primary, 1f);
-        if (secondary != null) {
-            weights.put(secondary, Math.min(SECONDARY_MAX, SECONDARY_MAX * best));
+        if (secondary == null) {
+            weights.put(primary, 1f);
+            return new Result(primary, influence, proximity, weights);
         }
-        return new Result(primary, influence, weights);
+        float full = Math.max(0.05f, 1f - Math.min(FULL_WEIGHT_DISTANCE, radius) / radius);
+        float curve = Math.min(1f, bestProximity / full);
+        float secondaryWeight = SECONDARY_MAX * curve;
+        weights.put(primary, 1f - secondaryWeight);
+        weights.put(secondary, secondaryWeight);
+        return new Result(primary, influence, proximity, weights);
     }
 
     public static String zoneOf(int terrain) {

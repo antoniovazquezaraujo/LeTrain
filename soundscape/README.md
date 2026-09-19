@@ -49,6 +49,19 @@ mvn -pl soundscape exec:java@gui
 mvn -pl soundscape exec:java@gui -Dexec.args="my-style.sound"
 ```
 
+## Tour lab
+
+Zone crossings can be auditioned automatically with a `*.tour` file (one line per waypoint:
+`<seconds> zone=weight … [enclosure=0..1] [rain= wind= storm=] [weather=preset]`). The GUI
+interpolates and loops the tour, and while `enclosure > 0` it ducks the zone mix and raises the
+style's `tunnel` sound (a stand-in until the real space stage exists).
+
+```bash
+mvn -pl soundscape exec:java@gui -Dexec.args="soundscape/src/main/resources/styles/tour-lab.sound --tour soundscape/src/main/resources/tours/costa-mina.tour"
+```
+
+Press **🔊 Listen**, then **▶ Tour**: field → coast → bridge → mine → tunnel → factory.
+
 ## Style format
 
 Plain text with sections and `key = value` lines; comments start with `#`. The full example lives in
@@ -65,8 +78,10 @@ Plain text with sections and `key = value` lines; comments start with `#`. The f
 | `[climate-by-sound]` | sensitivity to rain, wind and storm |
 | `[weather]` | sounds contributed by the weather itself (volume = intensity) |
 | `[height]` | sounds contributed by the listening height (volume = height; the altitude wind) |
+| `[zone-gains]` | optional per-zone level (1.0 = unchanged); keeps the field bed low while the sea or industry stand out |
 | `[gains]` | optional per-sound loudness multiplier (1.0 = unchanged); keys are catalog sounds or `weather-*` / `height-*` |
 | `[distance-by-sound]` | optional distance sensitivity (0 = at the listener, 1 = full); same keys as `[gains]` |
+| `[min-distance]` | optional per-sound minimum distance (0 = can be next to the listener); fauna such as cicadas uses it to always sound away |
 | `[silence-when]` | behaviour gates: `crickets = rain > 0.25`; one condition per line, repeatable |
 
 Every sound is composed as `zone weight x presence (exact time) x climate x height x gain`; weather

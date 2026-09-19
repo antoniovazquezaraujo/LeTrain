@@ -75,8 +75,10 @@ public class TextStyleLoader implements StyleLoader {
         Map<String, List<Float>> climate = new LinkedHashMap<>();
         Map<String, SoundDef> weather = new LinkedHashMap<>();
         Map<String, SoundDef> heightSounds = new LinkedHashMap<>();
+        Map<String, Float> zoneGains = new LinkedHashMap<>();
         Map<String, Float> gains = new LinkedHashMap<>();
         Map<String, Float> distance = new LinkedHashMap<>();
+        Map<String, Float> minDistance = new LinkedHashMap<>();
         Map<String, List<SoundGate>> gates = new LinkedHashMap<>();
 
         String section = null;
@@ -131,8 +133,10 @@ public class TextStyleLoader implements StyleLoader {
                     }
                     weather.put(key, new SoundDef(key, tokens(value)));
                 }
+                case "zone-gains" -> zoneGains.put(key, singleFloat(value, lineNumber));
                 case "gains" -> gains.put(key, singleFloat(value, lineNumber));
                 case "distance-by-sound" -> distance.put(key, singleFloat(value, lineNumber));
+                case "min-distance" -> minDistance.put(key, singleFloat(value, lineNumber));
                 case "silence-when" -> gates.computeIfAbsent(key, sound -> new ArrayList<>())
                         .add(parseGate(value, lineNumber));
                 default -> throw error(lineNumber, "unknown section: " + section);
@@ -140,13 +144,14 @@ public class TextStyleLoader implements StyleLoader {
         }
         validate(zones, sounds, presence);
         validateSeasons(seasons);
+        validateZoneGains(zoneGains, zones);
         validateGains(gains, sounds, weather, heightSounds);
         validateGains(distance, sounds, weather, heightSounds);
+        validateGains(minDistance, sounds, weather, heightSounds);
         validateGates(gates, sounds);
-        return new SoundscapeStyle(presets, seasons, seasonDefaults, sounds, zones, presence,
-                height, climate, weather, heightSounds, gains, distance, gates);
+        return buildStyle(presets, seasons, seasonDefaults, sounds, zones, presence, height,
+                climate, weather, heightSounds, zoneGains, gains, distance, minDistance, gates);
     }
-
 
     private static final String[] MONTHS = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug",
             "sep", "oct", "nov", "dec"};
@@ -253,6 +258,19 @@ public class TextStyleLoader implements StyleLoader {
         return range.startDay() + ".." + range.endDay();
     }
 
+    private SoundscapeStyle buildStyle(Map<String, ClimatePreset> presets,
+            List<SeasonRange> seasons, Map<String, Float> seasonDefaults,
+            Map<String, SoundDef> sounds, Map<String, List<String>> zones,
+            Map<String, List<Float>> presence, Map<String, Float> height,
+            Map<String, List<Float>> climate, Map<String, SoundDef> weather,
+            Map<String, SoundDef> heightSounds, Map<String, Float> zoneGains,
+            Map<String, Float> gains, Map<String, Float> distance,
+            Map<String, Float> minDistance, Map<String, List<SoundGate>> gates) {
+        return new SoundscapeStyle(presets, seasons, seasonDefaults, sounds, zones, presence,
+                height, climate, weather, heightSounds, zoneGains, gains, distance, minDistance,
+                gates);
+    }
+
     private SoundGate parseGate(String value, int lineNumber) throws IOException {
         String[] parts = value.split(">", 2);
         if (parts.length != 2) {
@@ -276,6 +294,14 @@ public class TextStyleLoader implements StyleLoader {
     /**
      * Gain keys may name a catalog sound or a provided one ({@code weather-*}, {@code height-*}).
      */
+    private void validateZoneGains(Map<String, Float> zoneGains, Map<String, List<String>> zones) {
+        for (String zone : zoneGains.keySet()) {
+            if (!zones.containsKey(zone)) {
+                log.warn("zone gain for unknown zone '{}' is ignored", zone);
+            }
+        }
+    }
+
     private void validateGains(Map<String, Float> gains, Map<String, SoundDef> sounds,
             Map<String, SoundDef> weather, Map<String, SoundDef> heightSounds) {
         for (String sound : gains.keySet()) {
