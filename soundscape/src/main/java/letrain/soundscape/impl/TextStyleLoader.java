@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import letrain.soundscape.Band;
 import letrain.soundscape.ClimatePreset;
+import letrain.soundscape.SeasonRange;
 import letrain.soundscape.SoundDef;
 import letrain.soundscape.SoundGate;
 import letrain.soundscape.SoundscapeStyle;
@@ -65,6 +66,8 @@ public class TextStyleLoader implements StyleLoader {
 
     public SoundscapeStyle parse(List<String> lines) throws IOException {
         Map<String, ClimatePreset> presets = new LinkedHashMap<>();
+        List<SeasonRange> seasons = new ArrayList<>();
+        Map<String, Float> seasonDefaults = new LinkedHashMap<>();
         Map<String, SoundDef> sounds = new LinkedHashMap<>();
         Map<String, List<String>> zones = new LinkedHashMap<>();
         Map<String, List<Float>> presence = new LinkedHashMap<>();
@@ -92,6 +95,13 @@ public class TextStyleLoader implements StyleLoader {
             }
             if (section == null) {
                 throw error(lineNumber, "line outside a section");
+            }
+            if ("seasons".equals(section)) {
+                SeasonRange range = parseSeason(line, lineNumber, seasonDefaults);
+                if (range != null) {
+                    seasons.add(range);
+                }
+                continue;
             }
             String key;
             String value;
@@ -133,13 +143,133 @@ public class TextStyleLoader implements StyleLoader {
             }
         }
         validate(zones, sounds, presence);
+        validateSeasons(seasons);
         validateZoneGains(zoneGains, zones);
         validateGains(gains, sounds, weather, heightSounds);
         validateGains(distance, sounds, weather, heightSounds);
         validateGains(minDistance, sounds, weather, heightSounds);
         validateGates(gates, sounds);
-        return new SoundscapeStyle(presets, sounds, zones, presence, height, climate, weather,
-                heightSounds, zoneGains, gains, distance, minDistance, gates);
+        return buildStyle(presets, seasons, seasonDefaults, sounds, zones, presence, height,
+                climate, weather, heightSounds, zoneGains, gains, distance, minDistance, gates);
+    }
+
+    private static final String[] MONTHS =
+            {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
+    private static final int[] MONTH_START =
+            {0, 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335};
+    private static final int[] MONTH_DAYS = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+    private SeasonRange parseSeason(String line, int number, Map<String, Float> defaults)
+            throws IOException {
+        String clean = line.trim();
+        if (clean.toLowerCase().startsWith("default")) {
+            defaults.putAll(parseSeasonValues(clean.substring("default".length()), number));
+            return null;
+        }
+        String[] sides = clean.split("\\s+to\\s+", 2);
+        if (sides.length != 2) {
+            throw error(number,
+                    "expected '<Month>[-<day>] to <Month>[-<day>] rain=… wind=… storm=…'");
+        }
+        String[] right = sides[1].trim().split("\\s+");
+        int start = parseMonthDay(sides[0].trim(), number, true);
+        int end = parseMonthDay(right[0], number, false);
+        String values = sides[1].trim().substring(right[0].length());
+        return new SeasonRange(start, end, parseSeasonValues(values, number));
+    }
+
+    private Map<String, Float> parseSeasonValues(String text, int number) throws IOException {
+        Map<String, Float> probabilities = new LinkedHashMap<>();
+        for (String token : text.trim().split("\\s+")) {
+            if (token.isEmpty()) {
+                continue;
+            }
+            int equals = token.indexOf('=');
+            if (equals <= 0) {
+                throw error(number, "expected phenomenon=value, got '" + token + "'");
+            }
+            String name = token.substring(0, equals).trim().toLowerCase();
+            if (!name.equals("rain") && !name.equals("wind") && !name.equals("storm")) {
+                throw error(number, "unknown phenomenon '" + name + "'");
+            }
+            probabilities.put(name, singleFloat(token.substring(equals + 1), number));
+        }
+        return probabilities;
+    }
+
+    private int parseMonthDay(String token, int number, boolean start) throws IOException {
+        String clean = token.trim().toLowerCase();
+        int dash = clean.indexOf('-');
+        String monthName = dash < 0 ? clean : clean.substring(0, dash);
+        int month = -1;
+        for (int i = 0; i < MONTHS.length; i++) {
+            if (MONTHS[i].equals(monthName)) {
+                month = i + 1;
+                break;
+            }
+        }
+        if (month < 0) {
+            throw error(number, "unknown month '" + monthName + "'");
+        }
+        int day = MONTH_DAYS[month];
+        if (dash >= 0) {
+            try {
+                day = Integer.parseInt(clean.substring(dash + 1));
+            } catch (NumberFormatException e) {
+                throw error(number, "bad day in '" + token + "'");
+            }
+            if (day < 1 || day > MONTH_DAYS[month]) {
+                throw error(number, "day out of range in '" + token + "'");
+            }
+        } else if (start) {
+            day = 1;
+        }
+        return MONTH_START[month] + day - 1;
+    }
+
+    private void validateSeasons(List<SeasonRange> seasons) throws IOException {
+        for (int i = 0; i < seasons.size(); i++) {
+            for (int j = i + 1; j < seasons.size(); j++) {
+                if (overlaps(seasons.get(i), seasons.get(j))) {
+                    throw error(0, "season ranges overlap: " + range(seasons.get(i)) + " and "
+                            + range(seasons.get(j)));
+                }
+            }
+        }
+    }
+
+    private boolean overlaps(SeasonRange left, SeasonRange right) {
+        for (int day = 1; day <= 366; day++) {
+            if (contains(left, day) && contains(right, day)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean contains(SeasonRange range, int dayOfYear) {
+        int day = ((dayOfYear - 1) % 366 + 366) % 366 + 1;
+        if (range.startDay() <= range.endDay()) {
+            return day >= range.startDay() && day <= range.endDay();
+        }
+        return day >= range.startDay() || day <= range.endDay();
+    }
+
+    private String range(SeasonRange range) {
+        return range.startDay() + ".." + range.endDay();
+    }
+
+    private SoundscapeStyle buildStyle(Map<String, ClimatePreset> presets,
+            List<SeasonRange> seasons, Map<String, Float> seasonDefaults,
+            Map<String, SoundDef> sounds, Map<String, List<String>> zones,
+            Map<String, List<Float>> presence, Map<String, Float> height,
+            Map<String, List<Float>> climate, Map<String, SoundDef> weather,
+            Map<String, SoundDef> heightSounds, Map<String, Float> zoneGains,
+            Map<String, Float> gains, Map<String, Float> distance, Map<String, Float> minDistance,
+            Map<String, List<SoundGate>> gates) {
+        return new SoundscapeStyle(presets, seasons, seasonDefaults, sounds, zones, presence,
+                height, climate, weather, heightSounds, zoneGains, gains, distance, minDistance,
+                gates);
     }
 
     private SoundGate parseGate(String value, int lineNumber) throws IOException {

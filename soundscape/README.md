@@ -69,6 +69,7 @@ Plain text with sections and `key = value` lines; comments start with `#`. The f
 
 | Section | Content |
 |---|---|
+| `[seasons]` | climate calendar (ADR-027): `Jan-01 to Mar-21 rain=0.6 wind=0.5 storm=0.2`; text months, no years, ranges may wrap; optional `default` |
 | `[climate]` | weather presets: `rain`, `wind`, `storm` (0.0–1.0) |
 | `[sounds]` | catalog: `name = material(s)` (wildcards allowed) |
 | `[zones]` | `zone = sound, sound…` |

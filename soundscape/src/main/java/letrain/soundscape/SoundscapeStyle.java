@@ -13,6 +13,8 @@ import java.util.Map;
 public final class SoundscapeStyle {
 
     private final Map<String, ClimatePreset> climatePresets;
+    private final List<SeasonRange> seasons;
+    private final Map<String, Float> seasonDefaults;
     private final Map<String, SoundDef> sounds;
     private final Map<String, List<String>> zones;
     private final Map<String, List<Float>> presence;
@@ -26,7 +28,8 @@ public final class SoundscapeStyle {
     private final Map<String, Float> minDistance;
     private final Map<String, List<SoundGate>> gates;
 
-    public SoundscapeStyle(Map<String, ClimatePreset> climatePresets, Map<String, SoundDef> sounds,
+    public SoundscapeStyle(Map<String, ClimatePreset> climatePresets, List<SeasonRange> seasons,
+            Map<String, Float> seasonDefaults, Map<String, SoundDef> sounds,
             Map<String, List<String>> zones, Map<String, List<Float>> presence,
             Map<String, Float> heightSensitivity, Map<String, List<Float>> climateSensitivity,
             Map<String, SoundDef> weatherSounds, Map<String, SoundDef> heightSounds,
@@ -34,6 +37,8 @@ public final class SoundscapeStyle {
             Map<String, Float> distanceSensitivity, Map<String, Float> minDistance,
             Map<String, List<SoundGate>> gates) {
         this.climatePresets = Collections.unmodifiableMap(new LinkedHashMap<>(climatePresets));
+        this.seasons = List.copyOf(seasons);
+        this.seasonDefaults = Collections.unmodifiableMap(new LinkedHashMap<>(seasonDefaults));
         this.sounds = Collections.unmodifiableMap(new LinkedHashMap<>(sounds));
         this.zones = immutableListValues(zones);
         this.presence = immutableListValues(presence);
@@ -52,6 +57,18 @@ public final class SoundscapeStyle {
 
     public Map<String, ClimatePreset> climatePresets() {
         return climatePresets;
+    }
+
+    /** Climate calendar ranges (ADR-027), user-defined and possibly wrapping the year. */
+    public List<SeasonRange> seasons() {
+        return seasons;
+    }
+
+    /**
+     * Probabilities for days not covered by any range; empty when the style declares no default.
+     */
+    public Map<String, Float> seasonDefaults() {
+        return seasonDefaults;
     }
 
     public Map<String, SoundDef> sounds() {
@@ -112,9 +129,9 @@ public final class SoundscapeStyle {
     /** A copy of this style with different gains, distance sensitivities and behaviour gates. */
     public SoundscapeStyle withCalibration(Map<String, Float> gains,
             Map<String, Float> distanceSensitivity, Map<String, List<SoundGate>> gates) {
-        return new SoundscapeStyle(climatePresets, sounds, zones, presence, heightSensitivity,
-                climateSensitivity, weatherSounds, heightSounds, zoneGains, gains,
-                distanceSensitivity, minDistance, gates);
+        return new SoundscapeStyle(climatePresets, seasons, seasonDefaults, sounds, zones, presence,
+                heightSensitivity, climateSensitivity, weatherSounds, heightSounds, zoneGains,
+                gains, distanceSensitivity, minDistance, gates);
     }
 
     /** Behaviour gates by sound: the sound stops when any condition holds. */
