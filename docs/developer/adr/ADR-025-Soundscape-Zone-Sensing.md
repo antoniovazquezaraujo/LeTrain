@@ -27,9 +27,14 @@
 
 1. **Un sensor de zonas fuera del módulo `soundscape`** (en `core` o en un bridge dedicado) que
    traduce una posición a pesos 0.0–1.0 por zona y construye el `CompositionInput`. La referencia
-   es **el tren** (no la cámara): si el tren entra en un túnel, el decorado suena a túnel aunque la
-   cámara esté por encima de la montaña. La cámara solo aporta altura/zoom (atenuación + LP de
-   aire, ya existente). El `soundscape` sigue sin conocer el mapa (aislamiento ADR-023).
+   es el **punto de foco activo**, no la cámara:
+   - en conducción/seguimiento, **el tren** (si el tren entra en un túnel, el decorado suena a
+     túnel aunque la cámara esté por encima de la montaña);
+   - al editar vías (modo `rails`), **el cursor**: se oye la zona por donde se está construyendo;
+   - en vista MAP, el centro de la vista (o el cursor, a decidir).
+   La cámara solo aporta altura/zoom (atenuación + LP de aire, ya existente). El cambio de foco
+   entre modos lo cubre el suavizado temporal (punto 4). El `soundscape` sigue sin conocer el mapa
+   (aislamiento ADR-023).
 2. **Zonas naturales por densidad en un radio**: muestrear una rejilla gruesa alrededor de la
    posición y calcular la fracción de tiles `WATER` / `ROCK` / `GROUND`; el peso cae con la
    distancia (p. ej. `w = clamp((1 - d/R) * densidad)`). Varias zonas activas a la vez.
@@ -78,6 +83,7 @@
 
 ## Preguntas abiertas
 
+- En MAP, ¿el foco de escucha es el centro de la vista o el cursor?
 - ¿La reverb de túnel se implementa en el player (FDN) o se pre-renderiza en las tomas?
 - Dentro de un túnel, ¿duck completo de zonas exteriores o solo atenuación + LP?
 - Radio de muestreo y curva de caída por zona: ¿fijos por zona o por terreno?
