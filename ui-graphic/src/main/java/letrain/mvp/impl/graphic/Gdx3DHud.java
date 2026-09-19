@@ -51,6 +51,10 @@ public class Gdx3DHud {
     private Window ideWindow;
     private boolean exitDialogOpen;
 
+    private Window messageWindow;
+    private ScrollPane messageScroll;
+    private Label messageLabel;
+
     public Gdx3DHud(Model model, GraphicPresenter view) {
         this.model = model;
         this.view = view;
@@ -635,22 +639,79 @@ public class Gdx3DHud {
         });
     }
 
+    /**
+     * Shows a message (console help/info, listings, errors) in the right-side panel. It is
+     * deliberately **not** a dialog: the panel never takes the keyboard focus, so the console and
+     * the game stay usable while it is open.
+     */
     public void showMessage(String title, String message) {
         Gdx.app.postRunnable(() -> {
-            com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
-                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(title, skin) {
-                        @Override
-                        protected void result(Object object) {
-                            this.remove();
-                        }
-                    };
-            dialog.text(message);
-            dialog.button("OK");
-            dialog.pack();
-            dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
-                    (stage.getHeight() - dialog.getHeight()) / 2);
-            stage.addActor(dialog);
+            if (messageWindow == null) {
+                buildMessageWindow();
+            }
+            messageWindow.getTitleLabel().setText(title == null ? "" : title);
+            messageLabel.setText(message == null ? "" : message);
+            float width = Math.min(760f, Math.max(360f, stage.getWidth() * 0.42f));
+            float height = Math.min(700f, Math.max(240f, stage.getHeight() * 0.7f));
+            messageWindow.setSize(width, height);
+            messageWindow.setPosition(stage.getWidth() - width - 16f,
+                    Math.max(16f, stage.getHeight() - height - 80f));
+            messageLabel.setWidth(width - 56f);
+            messageWindow.setVisible(true);
+            messageWindow.toFront();
+            messageScroll.layout();
+            messageScroll.setScrollPercentY(0f);
         });
+    }
+
+    private void buildMessageWindow() {
+        messageWindow = new Window("", skin.get("dialog", Window.WindowStyle.class));
+        messageWindow.setModal(false);
+        messageWindow.setMovable(true);
+        messageWindow.setResizable(false);
+        messageWindow.padTop(40);
+        messageWindow.defaults().space(6);
+
+        messageLabel = new Label("", skin, "small");
+        messageLabel.setWrap(true);
+        messageLabel.setAlignment(com.badlogic.gdx.utils.Align.topLeft);
+        messageScroll = new ScrollPane(messageLabel, skin);
+        messageScroll.setFadeScrollBars(false);
+        messageScroll.setScrollingDisabled(true, false);
+        messageWindow.add(messageScroll).grow().padLeft(12).padRight(12);
+
+        messageWindow.row();
+        TextButton close = new TextButton("Cerrar", skin);
+        close.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                hideMessage();
+            }
+        });
+        messageWindow.add(close).width(140).height(38).padBottom(12);
+
+        // Wheel scrolls the panel only while the pointer is over it.
+        messageWindow.addListener(new InputListener() {
+            @Override
+            public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
+                stage.setScrollFocus(messageScroll);
+            }
+
+            @Override
+            public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
+                stage.setScrollFocus(null);
+            }
+        });
+
+        messageWindow.setVisible(false);
+        stage.addActor(messageWindow);
+    }
+
+    private void hideMessage() {
+        if (messageWindow != null) {
+            messageWindow.setVisible(false);
+        }
+        stage.setScrollFocus(null);
     }
 
     public void showIDE() {
