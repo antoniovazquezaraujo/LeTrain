@@ -76,9 +76,11 @@
    **Cámara y espacio**: el `enclosure` es del oyente (el foco), pero la cámara decide desde
    dónde se escucha. En **MAP** el oyente conceptual está por encima del mundo, así que
    `enclosure_efectivo = enclosure_foco × (cámara == MAP ? 0 : 1)`: en MAP vuelven las zonas
-   exteriores (montaña, campo) y no se duckea. Refinamiento futuro: que cada fuente lleve su
-   propio espacio (el tren dentro del túnel resonaría aunque se escuche desde arriba, atenuado
-   por la distancia/altura).
+   exteriores (montaña, campo) y no se duckea. La misma regla cubre al **cursor**: perforando
+   túnel en modo `rails` con cámara CAB/ORBIT el martillo lleva eco; con cámara en MAP el espacio
+   efectivo es 0 y se oye la montaña. Sin casos especiales. Refinamiento futuro: que cada fuente
+   lleve su propio espacio (el tren o el martillo dentro de la roca resonarían aunque se escuche
+   desde arriba, atenuados por la distancia/altura).
 
 ## Algoritmo propuesto (zona primaria + secundaria)
 
