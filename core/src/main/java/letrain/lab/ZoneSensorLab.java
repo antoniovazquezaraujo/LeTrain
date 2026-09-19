@@ -294,7 +294,7 @@ public class ZoneSensorLab {
 
     private void updateZonePanel(ZoneSensor.Result result) {
         zonePanel.removeAll();
-        for (Map.Entry<String, Float> entry : result.influence().entrySet()) {
+        for (Map.Entry<String, Float> entry : result.proximity().entrySet()) {
             JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
             JLabel name = new JLabel(String.format("%-14s", entry.getKey()));
             JProgressBar bar = new JProgressBar(0, 100);

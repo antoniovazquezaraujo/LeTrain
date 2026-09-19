@@ -18,6 +18,9 @@ public class AmbientVoice {
 
     /** Ease time constant for gain changes, in seconds. */
     private static final float GAIN_FADE_SECONDS = 0.8f;
+    /** Very short anti-click ramp used on a focus cut (ADR-025). */
+    private static final float CUT_FADE_SECONDS = 0.012f;
+    private static final float CUT_EPSILON = 0.01f;
     private static final float DISTANCE_FADE_SECONDS = 0.4f;
     private static final float BYPASS_CUTOFF = 20000f;
     private static final float FAR_CUTOFF = 1200f;
@@ -26,6 +29,7 @@ public class AmbientVoice {
     private final SoundSample sample;
     private float gain;
     private float target;
+    private boolean cutting;
     private boolean started;
     private int position;
     private float distance;
@@ -40,6 +44,12 @@ public class AmbientVoice {
         this.target = Math.max(0f, target);
     }
 
+    /** Focus cut: reach the target with a very short anti-click ramp instead of the slow ease. */
+    public void cutTo(float target) {
+        this.target = Math.max(0f, target);
+        this.cutting = true;
+    }
+
     /** Distance absorption: 0 = next to the listener, 1 = far away (muffled highs). */
     public void setDistance(float distance) {
         this.distance = Math.max(0f, Math.min(1f, distance));
@@ -51,8 +61,12 @@ public class AmbientVoice {
 
     /** Adds this voice to a mono mix buffer. */
     public void render(float[] mono, int frames) {
-        float alpha = 1f - (float) Math.exp(-frames / (sample.sampleRate() * GAIN_FADE_SECONDS));
+        float fadeSeconds = cutting ? CUT_FADE_SECONDS : GAIN_FADE_SECONDS;
+        float alpha = 1f - (float) Math.exp(-frames / (sample.sampleRate() * fadeSeconds));
         gain += (target - gain) * alpha;
+        if (cutting && Math.abs(target - gain) < CUT_EPSILON) {
+            cutting = false;
+        }
         if (gain <= SILENT && target <= 0f) {
             return;
         }
