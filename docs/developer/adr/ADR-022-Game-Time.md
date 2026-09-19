@@ -63,9 +63,10 @@ elegida en cada punto:
 8. **Día/noche es visual** en esta fase (paleta del terminal y luz/faros en 3D); `isNight()` y
    `getDayNightRatio()` quedan disponibles para un futuro efecto sobre el gameplay.
 9. **Comando de consola del reloj**: `time;` muestra la hora actual (`Día 1 08:00`);
-   `time set HH:MM;` fija la hora del día actual. El salto es determinista y se journaliza, así
-   que el replay reproduce la misma hora. Los instantes anteriores al origen (Día 1, 08:00) ruedan
-   al día siguiente; no se toca la duración del día (esa escala se fija al crear la partida).
+   `time set HH:MM;` fija la hora del día actual **sin diálogo de confirmación** (el cambio ya se
+   ve en el reloj del HUD). El salto es determinista y se journaliza, así que el replay reproduce
+   la misma hora. Los instantes anteriores al origen (Día 1, 08:00) ruedan al día siguiente; no se
+   toca la duración del día (esa escala se fija al crear la partida).
 
 ### Escala temporal: qué cambia y qué no (aclaración)
 

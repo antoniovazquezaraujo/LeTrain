@@ -246,12 +246,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         int minute = Integer.parseInt(ctx.NUMBER(1).getText());
         letrain.time.GameTime target = new letrain.time.GameTime(clock.now().day(), hour, minute);
         clock.setTime(target);
-        String text = "Hora fijada: " + clock.now();
         log.info("[time] set to {}", clock.now());
-        if (onMessage == null) {
-            return text;
-        }
-        onMessage.accept("Time", text);
+        // No confirmation dialog: the change is already visible in the HUD clock.
         return null;
     }
 

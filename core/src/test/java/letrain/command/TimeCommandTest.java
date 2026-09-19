@@ -32,8 +32,8 @@ class TimeCommandTest {
     }
 
     @Test
-    @DisplayName("time set HH:MM; moves the clock and reports the new time")
-    void timeSet_movesTheClock() {
+    @DisplayName("time set HH:MM; moves the clock silently (no confirmation dialog)")
+    void timeSet_movesTheClockSilently() {
         Model model = new Model(1);
 
         String text = run(model, "time set 18:45;");
@@ -41,7 +41,7 @@ class TimeCommandTest {
         assertEquals(1, model.getGameClock().now().day());
         assertEquals(18, model.getGameClock().now().hour());
         assertEquals(45, model.getGameClock().now().minute());
-        assertTrue(text.contains("18:45"), text);
+        assertNull(text, text);
     }
 
     @Test
