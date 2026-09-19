@@ -16,28 +16,33 @@
 
 ## Decisión (propuesta)
 
-1. **Fecha de juego**: `GameTime` expone `dayOfYear` (día 1 = 1 de enero) o una estación derivada,
-   que viaja al `soundscape` junto a la hora.
-2. **Sección `[seasons]` en el estilo**: tramos por día del año (o por estación) con las
-   intensidades base y su variabilidad por variable: `rain`, `wind`, `storm` y **`snow`** (nueva),
-   más una `temperature` opcional. Ejemplo:
-   `1/1–21/3  rain=0.8 snow=0.4 wind=0.5`.
-3. **Generador de clima determinista**: semilla por partida y día de juego; el clima evoluciona en
-   **frentes suaves** a lo largo del día (no ruido por tick), se puede guardar en la partida y
-   produce el estado que consumen motor de audio y vistas (lluvia/nieve en pantalla).
-4. **Nieve**: nueva variable en el estado, en los presets del estilo y en el motor; assets
-   sintetizables (viento + ambiente apagado) y su parte visual.
-5. **Fauna estacional**: overrides de `[presence]` por estación o sección `[seasonal]` por sonido;
-   la elección de especies (p. ej. cuervos en invierno, estorninos en verano) usa las familias y
-   tomas de ADR-024, no ficheros sueltos elegidos a mano.
+1. **Fecha de juego**: `GameTime` expone el **día del año** (numérico), que viaja al `soundscape`
+   junto a la hora. No se imponen estaciones fijas.
+2. **Calendario climático configurable (`[seasons]`)**: el usuario define **los tramos de días que
+   quiera** (no estaciones estándar) y les asigna la probabilidad/intensidad de cada fenómeno, para
+   que cada país o escenario tenga su calendario. Ejemplo:
+   `1/1–21/3  rain=0.8 wind=0.5`, `21/6–21/9 rain=0.1 wind=0.2`, etc.
+3. **Generador de clima determinista por horas**: cada **hora de juego** se evalúan las
+   probabilidades del tramo para decidir si cada fenómeno (`rain`, `wind`, `storm`) arranca o se
+   detiene,
+   con **histéresis y duración mínima** (evita el parpadeo) y rampas suaves de entrada/salida.
+   Semilla por partida: misma semilla ⇒ misma secuencia (replay de ADR-020). El estado generado es
+   el que consumen motor de audio y vistas.
+4. **Nieve**: queda **fuera de la fase 1** (se añadirá más adelante, p. ej. con contenido navideño).
+   La variable existirá en el modelo para entonces.
+5. **Persistencia y configuración**: el calendario y los overrides pueden vivir en la
+   **configuración del escenario (`.ltr`)**, y el estado de clima generado se guarda con la
+   partida.
+6. **Fauna estacional**: overrides de `[presence]` por tramo del calendario o sección `[seasonal]`
+   por sonido; la elección de especies (p. ej. cuervos en invierno, estorninos en verano) usa las
+   familias y tomas de ADR-024, no ficheros sueltos elegidos a mano.
 
 ## Consecuencias
 
 - Positivas: coherencia clima-audio-visual; estaciones con carácter propio; replay reproducible;
   los escenarios pueden forzar clima sin romper el modelo.
-- Costes y riesgos: fecha en el reloj, tabla y generador nuevos; `snow` (audio y visual) desde
-  cero; decidir granularidad (¿un valor por día o evolución por franjas?), transiciones entre
-  tramos estacionales y persistencia del clima en el guardado.
+- Costes y riesgos: fecha en el reloj, tabla y generador nuevos; transiciones entre tramos del
+  calendario y persistencia del clima en el guardado. La nieve queda fuera de la fase 1.
 - Dependencias: ADR-022 (reloj), ADR-024 (tomas), ADR-025 (entrada de estado), ADR-026 (dominios).
 
 ## Alternativas consideradas
@@ -48,15 +53,14 @@
 
 ## Plan por fases
 
-1. `dayOfYear` + `[seasons]` + generador determinista con **demo en el GUI/tour** para oírlo antes
-   de tocar el juego.
-2. Conectar el clima al juego y a las vistas (lluvia/nieve, cielo).
+1. `dayOfYear` + calendario `[seasons]` configurable + generador horario determinista, con
+   **demo en el GUI/tour** para oírlo antes de tocar el juego.
+2. Conectar el clima al juego y a las vistas (lluvia, cielo).
 3. Fauna estacional y selección de especies sobre ADR-024.
+4. Nieve (modelo, audio y visual), más adelante.
 
 ## Preguntas abiertas
 
-- ¿`dayOfYear` real (1 de enero) o estaciones genéricas (primavera/verano/otoño/invierno)?
-- Granularidad: ¿un valor de clima por día, o evolución por franjas horarias?
 - ¿Dónde vive el generador: `core` (conoce el reloj) o el `soundscape` (aislado)?
-- ¿La nieve afecta a física/economía en fase 1 o es solo ambiental?
-- ¿Cómo se guarda el clima en la partida y cómo interactúa con los overrides de escenario?
+- ¿Qué parte del calendario y la semilla va en el `.ltr` y qué parte en el estilo?
+- Con histéresis y duración mínima por hora, ¿cuánto debe durar como mínimo un fenómeno?
