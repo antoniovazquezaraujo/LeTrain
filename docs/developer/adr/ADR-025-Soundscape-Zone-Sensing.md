@@ -92,7 +92,9 @@
 2. **Detección de la secundaria por influencia** dentro de un radio fijo `R` (rejilla con paso,
    p. ej. 1 tile de cada 2). Para cada muestra se suma a su zona `(1 - d/R)`, y la zona **no
    primaria con más influencia** es la secundaria. Esto captura a la vez cercanía y extensión (una
-   costa ancha pesa más que un tile suelto de agua) y no tiene sesgo direccional.
+   costa ancha pesa más que un tile suelto de agua) y no tiene sesgo direccional. **Valores de
+   partida: `R = 8`, `stride = 1`** (~200 lecturas, coste despreciable con o sin caché);
+   ajustables de oído con el laboratorio `ZoneSensorLab`.
    - **Rayos descartados**: dejarían puntos justo entre dos rayos sin detectar (una costa fina
      puede caer en el hueco) y no permiten medir extensión.
    - **Alternativa barata — anillos cuadrados con salida temprana**: recorrer niveles de distancia
