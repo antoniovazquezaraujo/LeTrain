@@ -35,14 +35,17 @@ Hoy conviven **dos sistemas de audio completos y solapados**:
      carga/descarga y sonidos de UI. Disparos puntuales y posicionales; los emite el presenter.
    - **`audio-core`** (núcleo compartido, extraído de lo que ya existe): dispositivo de salida,
      mezclador, voces, carga/loop, espacialización (`DistanceAttenuator`), **secuenciador por
-     labels** (`AudacityLabelParser`) y limitador.
+     labels** (`AudacityLabelParser`), **etapa de espacio (reverb/damping)** y limitador.
 2. **Dependencias**: `audio-core` ← (`soundscape`, `train-audio`, sfx). `train-audio` depende de
    interfaces/snapshot de `core`, no de sus clases internas. `soundscape` no depende de nadie del
    juego.
 3. **El foco de escucha y los cortes de escena** (ADR-025) son responsabilidad de quien produce
    el estado (el presenter); los reproductores solo reciben objetivos.
-4. **El secuenciador por labels se comparte**: sirve al tren (ya lo usa) y a la capa de eventos
-   del decorado (truenos, fauna a intervalos).
+4. **Se comparten el secuenciador por labels y la etapa de espacio**: los labels sirven al tren
+   (ya los usa) y a la capa de eventos del decorado (truenos, fauna a intervalos). La etapa de
+   espacio, alimentada por el eje `enclosure` de ADR-025, aplica la misma reverb a **todas las
+   fuentes que estén dentro** de un túnel o recinto: ambiente (que además duckea las zonas
+   exteriores), sonidos del tren y SFX como el martillo al perforar.
 5. **Migración por fases**, una PR por paso:
    1. Inventario y clasificación de fuentes y assets legacy (ambiente / tren / SFX / UI).
    2. Extraer `audio-core` (sin mover aún a nadie).
