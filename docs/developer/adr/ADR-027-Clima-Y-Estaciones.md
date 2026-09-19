@@ -27,7 +27,8 @@
    detiene,
    con **histéresis y duración mínima** (evita el parpadeo) y rampas suaves de entrada/salida.
    Semilla por partida: misma semilla ⇒ misma secuencia (replay de ADR-020). El estado generado es
-   el que consumen motor de audio y vistas.
+   el que consumen motor de audio y vistas. **El generador vive en `core`**, que es quien tiene el
+   reloj, el guardado y el replay; el `soundscape` y las vistas solo lo consumen.
 4. **Nieve**: queda **fuera de la fase 1** (se añadirá más adelante, p. ej. con contenido navideño).
    La variable existirá en el modelo para entonces.
 5. **Persistencia y configuración**: el calendario y los overrides pueden vivir en la
@@ -61,6 +62,5 @@
 
 ## Preguntas abiertas
 
-- ¿Dónde vive el generador: `core` (conoce el reloj) o el `soundscape` (aislado)?
 - ¿Qué parte del calendario y la semilla va en el `.ltr` y qué parte en el estilo?
 - Con histéresis y duración mínima por hora, ¿cuánto debe durar como mínimo un fenómeno?
