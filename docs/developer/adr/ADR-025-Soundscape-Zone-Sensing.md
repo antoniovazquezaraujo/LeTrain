@@ -34,10 +34,11 @@
    - `stations`, `load_trains`: **la estación** seleccionada;
    - `semaphores`, `sensors`, `speed_signals`, `forks`, `add`: **el elemento que se edita**
      (cursor u objeto seleccionado);
-   - `trains`, `link`, `unlink`: el tren/locomotora implicados.
-   No existe el caso "sin herramienta": `GameMode` **siempre** tiene valor (incluidos `MENU`,
-   `COMMAND` y `PROGRAM`). La **cámara** (ORBIT/CAB/MAP) no cambia el foco de escucha: solo
-   aporta altura/zoom (atenuación + LP de aire, ya existente). El cambio de foco entre modos es un
+   - `trains`, `link`, `unlink`: el tren/locomotora implicados;
+   - `MENU`, `COMMAND`, `PROGRAM` (sin elemento espacial): **se mantiene el último foco**.
+   No existe el caso "sin herramienta": `GameMode` **siempre** tiene valor. La **cámara**
+   (ORBIT/CAB/MAP) no cambia el foco de escucha: solo aporta altura/zoom (atenuación + LP de aire,
+   ya existente). El cambio de foco entre modos es un
    **corte de escena inmediato, sin transición**: al pasar del tren al cursor, los pesos de la
    nueva posición se aplican de golpe. El `soundscape` sigue sin conocer el mapa (aislamiento
    ADR-023).
@@ -98,8 +99,6 @@
 
 ## Preguntas abiertas
 
-- En modos sin elemento espacial (`MENU`, `COMMAND`, `PROGRAM`), ¿se mantiene el último foco o
-  se usa el cursor?
 - ¿Cuántas zonas pueden sonar a la vez como máximo (recorte a las N mayores)?
 - ¿La reverb de túnel se implementa en el player (FDN) o se pre-renderiza en las tomas?
 - Dentro de un túnel, ¿duck completo de zonas exteriores o solo atenuación + LP?
