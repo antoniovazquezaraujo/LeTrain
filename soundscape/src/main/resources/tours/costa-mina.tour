@@ -1,0 +1,13 @@
+# Tour de demostración — paso de zona a zona
+# <segundos> zona=peso ... [enclosure=0..1] [rain= wind= storm=] [weather=preset]
+# El tour se repite en bucle: campo -> costa -> puente -> mina -> túnel -> fábrica -> campo
+
+0     fields=1.0
+15    fields=0.7 sea=0.3
+35    sea=1.0 fields=0.2
+55    fields=0.5 sea=0.5
+70    gold-mine=1.0 fields=0.3
+90    gold-mine=0.5 fields=0.2 enclosure=1.0 weather=storm
+115   gold-factory=1.0 fields=0.2 enclosure=0.0
+135   fields=1.0
+150   fields=1.0

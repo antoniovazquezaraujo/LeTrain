@@ -44,6 +44,9 @@ import letrain.soundscape.audio.AmbientPlayer;
 import letrain.soundscape.impl.SoundscapeEngineImpl;
 import letrain.soundscape.impl.TextStyleLoader;
 import letrain.soundscape.impl.TextStyleWriter;
+import letrain.soundscape.tour.Tour;
+import letrain.soundscape.tour.TourLoader;
+import letrain.soundscape.tour.TourState;
 
 /**
  * Simple Swing playground for a style file: move time, zone weights, height and weather and watch
@@ -91,14 +94,31 @@ public final class SoundscapePlayer {
     private JToggleButton listenButton;
     private AmbientPlayer ambientPlayer;
 
+    private final TourLoader tourLoader = new TourLoader();
+    private Tour tour;
+    private JToggleButton tourButton;
+    private Timer tourTimer;
+    private long tourStartNanos;
+    private float tourEnclosure;
+    private String tourName = "";
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new SoundscapePlayer().show(args));
     }
 
     void show(String[] args) {
+        String styleArg = null;
+        String tourArg = null;
+        for (int i = 0; i < args.length; i++) {
+            if ("--tour".equals(args[i]) && i + 1 < args.length) {
+                tourArg = args[++i];
+            } else if (styleArg == null) {
+                styleArg = args[i];
+            }
+        }
         try {
-            if (args.length > 0) {
-                Path path = Path.of(args[0]);
+            if (styleArg != null) {
+                Path path = Path.of(styleArg);
                 sourceLines = loader.readLines(path);
                 style = loader.parse(sourceLines);
                 styleName = path.getFileName().toString();
@@ -106,6 +126,9 @@ public final class SoundscapePlayer {
                 sourceLines = loader.readResourceLines(DEFAULT_STYLE);
                 style = loader.parse(sourceLines);
                 styleName = "valle-norte.sound";
+            }
+            if (tourArg != null) {
+                loadTour(Path.of(tourArg));
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(null, "Could not load style: " + e.getMessage(),
@@ -200,6 +223,16 @@ public final class SoundscapePlayer {
         listenButton = new JToggleButton("🔊 Listen");
         listenButton.addActionListener(e -> toggleAudio());
         addRow(controls, listenButton, false);
+
+        JPanel tourButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        JButton loadTourButton = new JButton("Load tour…");
+        loadTourButton.addActionListener(e -> chooseTour());
+        tourButtons.add(loadTourButton);
+        tourButton = new JToggleButton("▶ Tour");
+        tourButton.setEnabled(tour != null);
+        tourButton.addActionListener(e -> toggleTour());
+        tourButtons.add(tourButton);
+        addRow(controls, tourButtons, false);
 
         addRow(controls, section("Height (zoom)"), true);
         heightSlider = slider(100, 0);
@@ -388,6 +421,78 @@ public final class SoundscapePlayer {
             updateComposition();
         });
         playTimer.start();
+    }
+
+    private void chooseTour() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new FileNameExtensionFilter("Soundscape tour (*.tour)", "tour"));
+        if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        try {
+            loadTour(chooser.getSelectedFile().toPath());
+            statusLabel.setText("tour loaded: " + tourName);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(frame, "Could not load tour: " + e.getMessage(),
+                    "soundscape", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void loadTour(Path path) throws IOException {
+        tour = tourLoader.load(path);
+        tourName = path.getFileName().toString();
+        if (tourButton != null) {
+            tourButton.setEnabled(true);
+            tourButton.setToolTipText(tourName + " · " + Math.round(tour.duration()) + " s");
+        }
+    }
+
+    private void toggleTour() {
+        if (tourTimer != null && tourTimer.isRunning()) {
+            tourTimer.stop();
+            tourButton.setText("▶ Tour");
+            tourEnclosure = 0f;
+            updateComposition();
+            return;
+        }
+        if (tour == null) {
+            JOptionPane.showMessageDialog(frame, "Load a .tour file first", "soundscape",
+                    JOptionPane.WARNING_MESSAGE);
+            tourButton.setSelected(false);
+            return;
+        }
+        tourButton.setText("⏸ Tour");
+        tourStartNanos = System.nanoTime();
+        tourTimer = new Timer(100, e -> {
+            double seconds = (System.nanoTime() - tourStartNanos) / 1e9;
+            applyTourState(tour.stateAt(seconds), seconds);
+        });
+        tourTimer.start();
+    }
+
+    private void applyTourState(TourState tourState, double seconds) {
+        updating = true;
+        for (Map.Entry<String, JSlider> zone : zoneSliders.entrySet()) {
+            float weight = tourState.zoneWeight(zone.getKey());
+            state.setZoneWeight(zone.getKey(), weight);
+            zone.getValue().setValue(Math.round(weight * 100));
+        }
+        state.setWeather(tourState.rain(), tourState.wind(), tourState.storm());
+        syncWeatherSliders();
+        String preset = tourState.weather();
+        if (preset != null && style.climatePresets().containsKey(preset)) {
+            state.applyPreset(style.climatePresets().get(preset));
+            syncWeatherSliders();
+            weatherCombo.setSelectedItem(preset);
+        } else if (!CUSTOM.equals(weatherCombo.getSelectedItem())) {
+            weatherCombo.setSelectedItem(CUSTOM);
+        }
+        updating = false;
+        tourEnclosure = tourState.enclosure();
+        double duration = Math.max(1.0, tour.duration());
+        statusLabel.setText(String.format(Locale.ROOT, "tour %s · t %.0f/%.0f s · enclosure %.2f",
+                tourName, seconds % duration, duration, tourEnclosure));
+        updateComposition();
     }
 
     private void chooseStyle() {
@@ -733,6 +838,16 @@ public final class SoundscapePlayer {
 
     private void updateComposition() {
         Composition composition = engine.compose(style, state.toInput());
+        if (tourEnclosure > 0f) {
+            Map<String, Float> volumes = new LinkedHashMap<>();
+            for (Map.Entry<String, Float> entry : composition.volumes().entrySet()) {
+                volumes.put(entry.getKey(), entry.getValue() * (1f - tourEnclosure));
+            }
+            if (style.sounds().containsKey("tunnel")) {
+                volumes.put("tunnel", tourEnclosure);
+            }
+            composition = new Composition(volumes, composition.distance());
+        }
         if (ambientPlayer != null) {
             ambientPlayer.updateTargets(composition);
         }
