@@ -92,6 +92,23 @@ class SerializationTest {
     }
 
     @Test
+    @DisplayName("Game clock ticks survive serialization")
+    void testGameClockSerialization() throws IOException {
+        Model original = new Model();
+        for (int i = 0; i < 3 * 60 * letrain.time.GameClock.TICKS_PER_SECOND; i++) {
+            original.getGameClock().tick();
+        }
+        long ticks = original.getElapsedTicks();
+
+        byte[] serialized = serialize(original);
+        Model restored = deserialize(serialized, Model.class);
+
+        assertEquals(ticks, restored.getElapsedTicks());
+        assertEquals(11, restored.getGameClock().now().hour());
+        assertEquals(0, restored.getGameClock().now().minute());
+    }
+
+    @Test
     @DisplayName("Train listener list is reinitialized after deserialization")
     void testTrainListenersReinitialized() throws IOException {
         // Create a train with listeners

@@ -42,6 +42,9 @@ public class SimulationController {
             return;
         }
 
+        // 1b. Advance the logical clock (ADR-022); paused editing freezes it
+        model.getGameClock().tick();
+
         // 2. Move all vehicles
         simulationService.moveVehicles();
 

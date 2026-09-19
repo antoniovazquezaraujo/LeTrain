@@ -193,6 +193,8 @@ public class Model implements letrain.mvp.Model {
 
     private transient AutomationEngine automationEngine;
     private transient SimulationService internalSimService;
+    private transient letrain.time.impl.SimpleGameClock gameClock =
+            new letrain.time.impl.SimpleGameClock();
 
     private AutomationEngine getAutomationEngine() {
         if (automationEngine == null) {
@@ -234,6 +236,7 @@ public class Model implements letrain.mvp.Model {
         this.eventLogManager = new EventLogManager();
         this.economyManager = new letrain.economy.impl.EconomyManager(eventLogManager);
         this.economyManager.reloadConfig();
+        this.gameClock.setDayDurationSeconds(this.economyManager.getDayDurationSeconds());
         if (seed == 0) {
             seed = 1 + (int) (Math.random() * 255);
         }
@@ -1090,6 +1093,21 @@ public class Model implements letrain.mvp.Model {
     @Override
     public void setLastSaveTime(LocalDateTime now) {
         this.lastSaveTime = now;
+    }
+
+    @Override
+    public letrain.time.GameClock getGameClock() {
+        return gameClock;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("elapsedTicks")
+    public long getElapsedTicks() {
+        return gameClock.elapsedTicks();
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("elapsedTicks")
+    public void setElapsedTicks(long elapsedTicks) {
+        gameClock.setElapsedTicks(elapsedTicks);
     }
 
     @Override

@@ -23,6 +23,8 @@ import letrain.vehicle.rail.impl.Wagon;
 
 public interface Model {
 
+    letrain.time.GameClock getGameClock();
+
     public void addScriptTrainEventListener(ScriptTrainEventListener listener);
 
     public void addCoreTrainEventListener(CoreTrainEventListener listener);

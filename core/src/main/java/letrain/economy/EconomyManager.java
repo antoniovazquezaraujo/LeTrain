@@ -22,6 +22,9 @@ public interface EconomyManager {
 
     float getTotalExpenses();
 
+    /** Real seconds a full game day lasts (ADR-022). */
+    int getDayDurationSeconds();
+
     float getCost(ExpenseType type);
 
     void spend(ExpenseType type);
