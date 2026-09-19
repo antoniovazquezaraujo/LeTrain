@@ -52,6 +52,14 @@
 6. **Fauna estacional**: overrides de `[presence]` por tramo del calendario o sección `[seasonal]`
    por sonido; la elección de especies (p. ej. cuervos en invierno, estorninos en verano) usa las
    familias y tomas de ADR-024, no ficheros sueltos elegidos a mano.
+7. **Dónde viven los estilos y cómo se eligen**: los estilos son ficheros `*.sound`; el módulo
+   trae un **default incluido** (`styles/valle-norte.sound`). El juego elige estilo por
+   **configuración**, aprovechando el mecanismo que ya existe: `letrain.cfg` y, por tanto, la
+   sección `configuration` del escenario `.ltr` (que ya gana al fichero local), con una clave tipo
+   `soundscape.style` (nombre resuelto en una carpeta `styles/` o ruta de fichero). Los estilos de
+   usuario/comunidad se dejan en esa carpeta `styles/`, resuelta como `letrain.cfg`, y se añaden
+   sin recompilar. La semilla y la fecha inicial del clima pueden ir en la misma configuración
+   para escenarios que fuerzan una situación.
 
 ## Consecuencias
 
@@ -74,5 +82,12 @@
 2. Conectar el clima al juego y a las vistas (lluvia, cielo).
 3. Fauna estacional y selección de especies sobre ADR-024.
 4. Nieve (modelo, audio y visual), más adelante.
+
+## Preguntas abiertas
+
+- Nombre exacto de la clave de configuración (`soundscape.style`) y de la carpeta de estilos de
+  usuario (¿`styles/` junto a `letrain.cfg`?).
+- ¿El calendario se sobrescribe solo desde el `.ltr` o el estilo puede declarar un override
+  pensado para un escenario?
 
 
