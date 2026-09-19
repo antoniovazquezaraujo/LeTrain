@@ -83,6 +83,7 @@ public final class SoundscapePlayer {
     private JPanel mixPanel;
     private JPanel responsesPanel;
     private final Map<String, JSlider> zoneSliders = new LinkedHashMap<>();
+    private final Map<String, JLabel> zoneLabels = new LinkedHashMap<>();
     private final Map<String, JSlider> gainSliders = new LinkedHashMap<>();
     private final Map<String, JSlider> distanceSliders = new LinkedHashMap<>();
     private final Map<String, Map<String, JSlider>> gateSliders = new LinkedHashMap<>();
@@ -326,6 +327,12 @@ public final class SoundscapePlayer {
         return labelRow(key, 80, slider);
     }
 
+    private JPanel zoneRow(String text, int labelWidth, Component component, JLabel weight) {
+        JPanel row = labelRow(text, labelWidth, component);
+        row.add(weight, BorderLayout.EAST);
+        return row;
+    }
+
     /** One control row with a fixed label width, so every slider starts at the same x. */
     private JPanel labelRow(String text, int labelWidth, Component component) {
         JLabel label = new JLabel(text);
@@ -524,6 +531,7 @@ public final class SoundscapePlayer {
         styleLabel.setText(styleName);
         styleLabel.setToolTipText(styleName);
         zoneSliders.clear();
+        zoneLabels.clear();
         zonesPanel.removeAll();
         int zoneLabelWidth = 0;
         for (String zone : style.zones().keySet()) {
@@ -534,7 +542,11 @@ public final class SoundscapePlayer {
             JSlider slider =
                     slider(100, Math.round(state.zoneWeights().getOrDefault(zone, 0f) * 100));
             zoneSliders.put(zone, slider);
-            addRow(zonesPanel, labelRow(zone, zoneLabelWidth, slider), true);
+            JLabel weight = new JLabel("0.00");
+            weight.setPreferredSize(new Dimension(40, 18));
+            weight.setHorizontalAlignment(SwingConstants.RIGHT);
+            zoneLabels.put(zone, weight);
+            addRow(zonesPanel, zoneRow(zone, zoneLabelWidth, slider, weight), true);
         }
         if (resultsPanel != null) {
             gainSliders.clear();
@@ -853,6 +865,10 @@ public final class SoundscapePlayer {
         }
         timeLabel.setText(String.format(Locale.ROOT, "%02d:%02d", state.time().getHour(),
                 state.time().getMinute()));
+        for (Map.Entry<String, JLabel> zone : zoneLabels.entrySet()) {
+            zone.getValue().setText(String.format(Locale.ROOT, "%.2f",
+                    state.zoneWeights().getOrDefault(zone.getKey(), 0f)));
+        }
         if (statusLabel != null) {
             statusLabel.setText(String.format(Locale.ROOT,
                     "rain %.2f · wind %.2f · storm %.2f · height %.2f · %s · preview x%d",
