@@ -122,7 +122,6 @@
 
 ## Preguntas abiertas
 
-- ¿Cuántas zonas pueden sonar a la vez como máximo (recorte a las N mayores)?
 - ¿La reverb de túnel se implementa en el player (FDN) o se pre-renderiza en las tomas?
 - Dentro de un túnel, ¿duck completo de zonas exteriores o solo atenuación + LP?
 - ¿Dónde vive el sensor: `core`, un módulo bridge nuevo, o el launcher que ya conoce ambos?
