@@ -92,24 +92,24 @@
      `x-factory` según el mapeo del punto 3.
    - Ejemplos: en un puente, el tile de debajo es agua → primaria `sea`; en una mina, primaria
      `x-mine` y el campo de alrededor aparecerá como secundaria de forma natural.
-2. **Detección de la secundaria por influencia** dentro de un radio fijo `R` (rejilla con paso,
-   p. ej. 1 tile de cada 2). Para cada muestra se suma a su zona `(1 - d/R)`, y la zona **no
-   primaria con más influencia** es la secundaria. Esto captura a la vez cercanía y extensión (una
-   costa ancha pesa más que un tile suelto de agua) y no tiene sesgo direccional. **Valores de
-   partida: `R = 8`, `stride = 1`** (~200 lecturas, coste despreciable con o sin caché);
-   ajustables de oído con el laboratorio `ZoneSensorLab`.
-   - **Rayos descartados**: dejarían puntos justo entre dos rayos sin detectar (una costa fina
-     puede caer en el hueco) y no permiten medir extensión.
+2. **Detección de la secundaria por proximidad** dentro de un radio fijo `R` (rejilla con paso,
+   p. ej. 1 tile de cada 2). Para cada zona se guarda su **mayor caída** `(1 - d/R)` entre las
+   muestras; la zona **no primaria con mayor proximidad** es la secundaria. La densidad (fracción
+   de área) solo desempata. Esto es clave: la densidad favorecía al mar (media mapa) y enterraba
+   las industrias (pocos tiles), que solo se oían pisándolas.
+   - **Valores de partida: `R = 8`, `stride = 1`** (~200 lecturas, coste despreciable con o sin
+     caché); ajustables de oído con el laboratorio `ZoneSensorLab`.
+   - **Rayos descartados**: dejarían puntos justo entre dos rayos sin detectar y no miden
+     extensión.
    - **Alternativa barata — anillos cuadrados con salida temprana**: recorrer niveles de distancia
      (Chebyshev) desde el foco y parar en el primer nivel con una zona distinta; exacto y casi
-     gratis (en costa/puente la zona distinta está a 1–2 tiles). Menos informativo sobre extensión.
-3. **Máximo 2 zonas** (primaria + mejor secundaria), con pesos: primaria `1.0`; secundaria
-   `0.45 × influencia_normalizada`, siempre por debajo de la primaria. En la costa la tierra gana
-   pero se oye el mar; al alejarse, la secundaria cae a 0. Las contribuciones **se suman dentro de
-   cada zona** (densidad), pero a la salida solo viajan dos zonas. **Empates**: gana la zona que
-   se encontró primero en el barrido (orden `dy`/`dx` fijo), para que el resultado sea
-   determinista. No hacen falta `findClosestIndustry` ni `countIndustryDensity`: la industria ya
-   viene en el valor del tile.
+     gratis. Menos informativo sobre extensión.
+3. **Máximo 2 zonas** (primaria + mejor secundaria) con **crossfade**: la secundaria pesa
+   `0.45 × proximidad` y la primaria **cede** ese peso (`1 - peso_secundaria`). Así, al acercarse a
+   una fábrica el campo baja y la fábrica se oye aunque ocupe un solo tile; en la costa la tierra
+   cede un poco al mar. **Empates**: gana la zona encontrada primero en el barrido (orden
+   `dy`/`dx` fijo), para determinismo. No hacen falta `findClosestIndustry` ni
+   `countIndustryDensity`: la industria ya viene en el valor del tile.
 4. **Refresco**: al **cambiar de celda**, con un **tope de cadencia** (p. ej. 4–10 Hz) para que
    a alta velocidad no se escanee en cada frame, + inmediato al cambiar de foco. Entre refrescos,
    mezcla progresiva (ataque/release), de modo que cruzar celdas no produzca saltos.
