@@ -27,30 +27,37 @@
 
 1. **Un sensor de zonas fuera del módulo `soundscape`** (en `core` o en un bridge dedicado) que
    traduce una posición a pesos 0.0–1.0 por zona y construye el `CompositionInput`. La referencia
-   es el **punto de foco activo**, no la cámara:
-   - en conducción/seguimiento, **el tren** (si el tren entra en un túnel, el decorado suena a
-     túnel aunque la cámara esté por encima de la montaña);
-   - al editar vías (modo `rails`), **el cursor**: se oye la zona por donde se está construyendo;
-   - en vista MAP, el centro de la vista (o el cursor, a decidir).
+   es el **elemento activo del modo**, no la cámara:
+   - `drive`: **la locomotora** (si entra en un túnel, el decorado suena a túnel aunque la cámara
+     esté por encima de la montaña);
+   - `rails`: **el cursor**, se oye la zona por donde se construye;
+   - `stations`: **la estación seleccionada**;
+   - `semaphores`: **el semáforo** activo;
+   - y así el resto de modos.
+   Sigue abierto qué punto usar en la vista MAP.
    La cámara solo aporta altura/zoom (atenuación + LP de aire, ya existente). El cambio de foco
    entre modos es un **corte de escena inmediato, sin transición**: al pasar del tren al cursor,
    los pesos de la nueva posición se aplican de golpe. El `soundscape` sigue sin conocer el mapa
    (aislamiento ADR-023).
-2. **Zonas naturales por densidad en un radio**: muestrear una rejilla gruesa alrededor de la
-   posición y calcular la fracción de tiles `WATER` / `ROCK` / `GROUND`; el peso cae con la
-   distancia (p. ej. `w = clamp((1 - d/R) * densidad)`). Varias zonas activas a la vez.
+2. **Zonas naturales por densidad en un radio fijo**: muestrear una rejilla gruesa alrededor de
+   la posición y calcular la fracción de tiles `WATER` / `ROCK` / `GROUND`; el peso cae con la
+   distancia (p. ej. `w = clamp((1 - d/R) * densidad)`). El radio de muestreo es un valor **fijo**
+   global (no por zona ni por terreno). Varias zonas activas a la vez.
 3. **Zonas industriales por densidad de industria**: `countIndustryDensity` para productoras
-   (minas) y consumidoras (tiendas/central); mapear `gold/coal/ruby-factory` del estilo a las
-   consumidoras reales (`JEWELRY_STORE`, `POWER_PLANT`, `RUBY_STORE`) o renombrar en el estilo.
-4. **Suavizado temporal solo dentro del mismo foco**: ataque/release exponencial (2–5 s) por zona
-   para que el movimiento continuo (el tren avanza, el cursor se desplaza) no salte al cruzar
-   fronteras. Al **cambiar de foco** (tren ↔ cursor), el suavizado se reinicia: los pesos nuevos
-   se aplican de inmediato. El sensor muestrea a cadencia baja (p. ej. 4 Hz), no en cada tick.
-   Implicación para el player: el ease de ganancia actual (0,8 s en `AmbientVoice`) debe poder
-   saltarse en el cambio de foco; valorar un micro-fade anti-click (~10–20 ms) sin transición
-   audible de escena.
-5. **Límite de voz**: quedarse con las 2–3 zonas de mayor peso (y normalizar si hace falta) para
-   no disparar el número de sonidos simultáneos.
+   (minas) y consumidoras (tiendas/central). Nomenclatura del estilo: se conservan los nombres
+   `x-mine` / `x-factory` y el sensor mapea los terrenos:
+   `GOLD_MINE→gold-mine`, `MINE→coal-mine`, `RUBY_MINE→ruby-mine` y
+   `JEWELRY_STORE→gold-factory`, `POWER_PLANT→coal-factory`, `RUBY_STORE→ruby-factory`.
+4. **Mezcla progresiva dentro del foco, corte con micro-fade entre focos**: el movimiento continuo
+   (el tren avanza, el cursor se desplaza) mezcla las zonas progresivamente con ataque/release
+   exponencial (2–5 s) para no saltar al cruzar fronteras. Al **cambiar de foco** (tren ↔ cursor)
+   la escena cambia de inmediato, con un **micro-fade anti-click (~10–20 ms)**, sin transición
+   audible. El sensor muestrea a cadencia baja (p. ej. 4 Hz), no en cada tick. Implicación para el
+   player: el ease de ganancia actual (0,8 s en `AmbientVoice`) debe poder saltarse en el cambio
+   de foco.
+5. **Pesos proporcionales a la cercanía**: el volumen de cada zona crece con la proximidad y los
+   pesos **suman** (sin normalizar): una costa con montaña cerca suena a ambas. Queda por fijar
+   si se recortan a las N zonas mayores para no disparar el número de sonidos simultáneos.
 6. **Determinismo**: misma posición + mismo mapa ⇒ mismos pesos; el suavizado depende solo del
    tiempo simulado, no del reloj real.
 7. **Espacio acústico (túnel/estación)**: el estado ambiental gana un eje `enclosure` (0 = cielo
@@ -89,11 +96,9 @@
 
 ## Preguntas abiertas
 
-- En MAP, ¿el foco de escucha es el centro de la vista o el cursor?
-- En el corte de foco, ¿micro-fade anti-click de ~10–20 ms o corte seco?
+- En la vista MAP, ¿el foco de escucha es el centro de la vista o el cursor?
+- ¿Cuántas zonas pueden sonar a la vez como máximo (recorte a las N mayores)?
 - ¿La reverb de túnel se implementa en el player (FDN) o se pre-renderiza en las tomas?
 - Dentro de un túnel, ¿duck completo de zonas exteriores o solo atenuación + LP?
-- Radio de muestreo y curva de caída por zona: ¿fijos por zona o por terreno?
-- ¿Normalizamos los pesos o dejamos que sumen?
 - ¿Dónde vive el sensor: `core`, un módulo bridge nuevo, o el launcher que ya conoce ambos?
-- ¿Renombramos `gold/coal/ruby-factory` en el estilo o mapeamos a tiendas/central?
+- Curva de caída del peso con la distancia: ¿lineal, exponencial, por oído?
