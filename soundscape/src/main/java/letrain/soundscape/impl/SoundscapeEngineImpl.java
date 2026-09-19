@@ -42,10 +42,11 @@ public class SoundscapeEngineImpl implements SoundscapeEngine {
             if (weight <= 0f) {
                 continue;
             }
+            float zoneGain = style.zoneGainOf(zone.getKey());
             for (String sound : style.zoneSounds(zone.getKey())) {
                 float presence = Band.interpolate(style.presenceOf(sound), input.time());
                 float distanceGain = distanceFactor(style, sound, height);
-                float value = weight * presence * climateFactor(style, sound, input)
+                float value = weight * zoneGain * presence * climateFactor(style, sound, input)
                         * heightFactor(style, sound, input) * distanceGain
                         * gateFactor(style, sound, input);
                 volumes.merge(sound, value, Float::sum);

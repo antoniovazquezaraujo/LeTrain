@@ -120,9 +120,9 @@ class ZoneSensorTest {
 
         ZoneSensor.Result result = sensor.sense(grid(cells), 32, 32);
 
-        assertTrue(result.weightOf("gold-factory") > 0.35f,
+        assertTrue(result.weightOf("gold-factory") > 0.8f,
                 "weight " + result.weightOf("gold-factory"));
-        assertTrue(result.weightOf("fields") < 0.65f);
+        assertTrue(result.weightOf("fields") < 0.2f);
     }
 
     @Test

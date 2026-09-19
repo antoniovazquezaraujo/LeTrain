@@ -36,7 +36,7 @@ class SoundscapeEngineImplTest {
         Composition composition = engine.compose(style, input);
 
         // zone x presence x climate x height x gain 0.55 x distance 1 - 0.6*0.7 (min distance)
-        assertEquals(0.1388f, composition.volumeOf("crickets"), 1e-4);
+        assertEquals(0.0486f, composition.volumeOf("crickets"), 1e-4);
     }
 
     @Test
@@ -93,7 +93,7 @@ class SoundscapeEngineImplTest {
         Composition composition = engine.compose(style, input);
 
         // 0.9 presence * (1 + 0.8) height, then distance (1 - 0.6) at full distance
-        assertEquals(0.288f, composition.volumeOf("hawks"), 1e-4);
+        assertEquals(0.1728f, composition.volumeOf("hawks"), 1e-4);
     }
 
     @Test
@@ -216,6 +216,18 @@ class SoundscapeEngineImplTest {
     }
 
     @Test
+    @DisplayName("[zone-gains] scales a whole zone")
+    void should_ApplyZoneGain() throws IOException {
+        SoundscapeStyle loud = loader
+                .parse(List.of("[sounds]", "waves = sea/waves-*.wav", "[zones]", "sea = waves",
+                        "[presence]", "waves = 1 1 1 1 1 1 1", "[zone-gains]", "sea = 2"));
+        CompositionInput input =
+                new CompositionInput(LocalTime.NOON, Map.of("sea", 0.5f), 0f, 0f, 0f, 0f);
+
+        assertEquals(1f, engine.compose(loud, input).volumeOf("waves"), 1e-4);
+    }
+
+    @Test
     @DisplayName("gates silence crickets and cicadas when the condition holds")
     void should_SilenceGatedSounds_When_ConditionsHold() {
         Composition dry = engine.compose(style,
@@ -225,7 +237,7 @@ class SoundscapeEngineImplTest {
         Composition windy = engine.compose(style,
                 new CompositionInput(LocalTime.NOON, Map.of("fields", 1f), 0f, 0f, 0.7f, 0f));
 
-        assertTrue(dry.volumeOf("crickets") > 0.2f);
+        assertTrue(dry.volumeOf("crickets") > 0.05f);
         assertEquals(0f, wet.volumeOf("crickets"), 1e-6);
         assertEquals(0f, windy.volumeOf("cicadas"), 1e-6);
     }

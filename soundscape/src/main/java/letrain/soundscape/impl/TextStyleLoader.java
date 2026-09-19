@@ -72,6 +72,7 @@ public class TextStyleLoader implements StyleLoader {
         Map<String, List<Float>> climate = new LinkedHashMap<>();
         Map<String, SoundDef> weather = new LinkedHashMap<>();
         Map<String, SoundDef> heightSounds = new LinkedHashMap<>();
+        Map<String, Float> zoneGains = new LinkedHashMap<>();
         Map<String, Float> gains = new LinkedHashMap<>();
         Map<String, Float> distance = new LinkedHashMap<>();
         Map<String, Float> minDistance = new LinkedHashMap<>();
@@ -122,6 +123,7 @@ public class TextStyleLoader implements StyleLoader {
                     }
                     weather.put(key, new SoundDef(key, tokens(value)));
                 }
+                case "zone-gains" -> zoneGains.put(key, singleFloat(value, lineNumber));
                 case "gains" -> gains.put(key, singleFloat(value, lineNumber));
                 case "distance-by-sound" -> distance.put(key, singleFloat(value, lineNumber));
                 case "min-distance" -> minDistance.put(key, singleFloat(value, lineNumber));
@@ -131,12 +133,13 @@ public class TextStyleLoader implements StyleLoader {
             }
         }
         validate(zones, sounds, presence);
+        validateZoneGains(zoneGains, zones);
         validateGains(gains, sounds, weather, heightSounds);
         validateGains(distance, sounds, weather, heightSounds);
         validateGains(minDistance, sounds, weather, heightSounds);
         validateGates(gates, sounds);
         return new SoundscapeStyle(presets, sounds, zones, presence, height, climate, weather,
-                heightSounds, gains, distance, minDistance, gates);
+                heightSounds, zoneGains, gains, distance, minDistance, gates);
     }
 
     private SoundGate parseGate(String value, int lineNumber) throws IOException {
@@ -162,6 +165,14 @@ public class TextStyleLoader implements StyleLoader {
     /**
      * Gain keys may name a catalog sound or a provided one ({@code weather-*}, {@code height-*}).
      */
+    private void validateZoneGains(Map<String, Float> zoneGains, Map<String, List<String>> zones) {
+        for (String zone : zoneGains.keySet()) {
+            if (!zones.containsKey(zone)) {
+                log.warn("zone gain for unknown zone '{}' is ignored", zone);
+            }
+        }
+    }
+
     private void validateGains(Map<String, Float> gains, Map<String, SoundDef> sounds,
             Map<String, SoundDef> weather, Map<String, SoundDef> heightSounds) {
         for (String sound : gains.keySet()) {

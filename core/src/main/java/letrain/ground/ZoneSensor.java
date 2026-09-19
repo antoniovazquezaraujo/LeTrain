@@ -12,10 +12,10 @@ import java.util.function.IntBinaryOperator;
  */
 public class ZoneSensor {
 
-    public static final float SECONDARY_MAX = 0.6f;
+    public static final float SECONDARY_MAX = 0.85f;
 
     /** Within this distance the secondary zone is at full weight; it fades out towards R. */
-    private static final float FULL_WEIGHT_DISTANCE = 2f;
+    private static final float FULL_WEIGHT_DISTANCE = 4f;
 
     public record Result(String primary, Map<String, Float> influence,
             Map<String, Float> proximity, Map<String, Float> weights) {

@@ -64,6 +64,7 @@ Plain text with sections and `key = value` lines; comments start with `#`. The f
 | `[climate-by-sound]` | sensitivity to rain, wind and storm |
 | `[weather]` | sounds contributed by the weather itself (volume = intensity) |
 | `[height]` | sounds contributed by the listening height (volume = height; the altitude wind) |
+| `[zone-gains]` | optional per-zone level (1.0 = unchanged); keeps the field bed low while the sea or industry stand out |
 | `[gains]` | optional per-sound loudness multiplier (1.0 = unchanged); keys are catalog sounds or `weather-*` / `height-*` |
 | `[distance-by-sound]` | optional distance sensitivity (0 = at the listener, 1 = full); same keys as `[gains]` |
 | `[min-distance]` | optional per-sound minimum distance (0 = can be next to the listener); fauna such as cicadas uses it to always sound away |

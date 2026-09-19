@@ -20,6 +20,7 @@ public final class SoundscapeStyle {
     private final Map<String, List<Float>> climateSensitivity;
     private final Map<String, SoundDef> weatherSounds;
     private final Map<String, SoundDef> heightSounds;
+    private final Map<String, Float> zoneGains;
     private final Map<String, Float> gains;
     private final Map<String, Float> distanceSensitivity;
     private final Map<String, Float> minDistance;
@@ -29,8 +30,9 @@ public final class SoundscapeStyle {
             Map<String, List<String>> zones, Map<String, List<Float>> presence,
             Map<String, Float> heightSensitivity, Map<String, List<Float>> climateSensitivity,
             Map<String, SoundDef> weatherSounds, Map<String, SoundDef> heightSounds,
-            Map<String, Float> gains, Map<String, Float> distanceSensitivity,
-            Map<String, Float> minDistance, Map<String, List<SoundGate>> gates) {
+            Map<String, Float> zoneGains, Map<String, Float> gains,
+            Map<String, Float> distanceSensitivity, Map<String, Float> minDistance,
+            Map<String, List<SoundGate>> gates) {
         this.climatePresets = Collections.unmodifiableMap(new LinkedHashMap<>(climatePresets));
         this.sounds = Collections.unmodifiableMap(new LinkedHashMap<>(sounds));
         this.zones = immutableListValues(zones);
@@ -40,6 +42,7 @@ public final class SoundscapeStyle {
         this.climateSensitivity = immutableListValues(climateSensitivity);
         this.weatherSounds = Collections.unmodifiableMap(new LinkedHashMap<>(weatherSounds));
         this.heightSounds = Collections.unmodifiableMap(new LinkedHashMap<>(heightSounds));
+        this.zoneGains = Collections.unmodifiableMap(new LinkedHashMap<>(zoneGains));
         this.gains = Collections.unmodifiableMap(new LinkedHashMap<>(gains));
         this.distanceSensitivity =
                 Collections.unmodifiableMap(new LinkedHashMap<>(distanceSensitivity));
@@ -89,6 +92,18 @@ public final class SoundscapeStyle {
         return gains.getOrDefault(sound, 1f);
     }
 
+    /**
+     * Per-zone loudness multipliers: the field bed can be low while the sea or industry stand out.
+     */
+    public Map<String, Float> zoneGains() {
+        return zoneGains;
+    }
+
+    /** Zone gain or 1.0 when the zone does not declare one. */
+    public float zoneGainOf(String zone) {
+        return zoneGains.getOrDefault(zone, 1f);
+    }
+
     /** A copy of this style with a different gain table (used by the GUI calibration). */
     public SoundscapeStyle withGains(Map<String, Float> gains) {
         return withCalibration(gains, distanceSensitivity, gates);
@@ -98,8 +113,8 @@ public final class SoundscapeStyle {
     public SoundscapeStyle withCalibration(Map<String, Float> gains,
             Map<String, Float> distanceSensitivity, Map<String, List<SoundGate>> gates) {
         return new SoundscapeStyle(climatePresets, sounds, zones, presence, heightSensitivity,
-                climateSensitivity, weatherSounds, heightSounds, gains, distanceSensitivity,
-                minDistance, gates);
+                climateSensitivity, weatherSounds, heightSounds, zoneGains, gains,
+                distanceSensitivity, minDistance, gates);
     }
 
     /** Behaviour gates by sound: the sound stops when any condition holds. */

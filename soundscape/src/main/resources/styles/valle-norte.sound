@@ -93,6 +93,20 @@ storm = weather/thunder-*.wav
 [height]
 wind = sky/wind-altitude-*.wav
 
+# --- Per-zone levels (1.0 = unchanged) ----------------------
+#  The fields are the default bed; the sea, mountain and industry
+#  stand out as soon as they enter the mix.
+[zone-gains]
+fields       = 0.35
+sea          = 1.0
+mountain     = 0.6
+gold-mine    = 1.3
+coal-mine    = 1.3
+ruby-mine    = 1.3
+gold-factory = 1.3
+coal-factory = 1.3
+ruby-factory = 1.3
+
 # --- Per-sound gains (1.0 = unchanged) ----------------------
 #  The field fauna is the default bed: kept low so it does not
 #  drown the rest. Calibrate in the GUI and export to overwrite.
