@@ -138,6 +138,12 @@
 - [[letrain.segments.impl.SegmentImpl|SegmentImpl]] (core)
 - [[letrain.segments.impl.TopologyServiceImpl|TopologyServiceImpl]] (core)
 
+## letrain.time
+- [[letrain.time.GameClock|GameClock]] (core)
+- [[letrain.time.GameClockListener|GameClockListener]] (core)
+- [[letrain.time.GameTime|GameTime]] (core)
+- [[letrain.time.impl.SimpleGameClock|SimpleGameClock]] (core)
+
 ## letrain.track
 - [[letrain.track.CargoTypes|CargoTypes]] (core)
 - [[letrain.track.Connectable|Connectable]] (core)

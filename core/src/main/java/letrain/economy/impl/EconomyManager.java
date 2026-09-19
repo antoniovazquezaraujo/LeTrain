@@ -65,6 +65,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @com.fasterxml.jackson.annotation.JsonProperty("startingBalance")
     private float startingBalance = 0f;
+    private int dayDurationSeconds = letrain.time.GameClock.DEFAULT_DAY_DURATION_SECONDS;
 
     @com.fasterxml.jackson.annotation.JsonProperty("goldThreshold")
     private float goldThreshold = 0.30f;
@@ -472,7 +473,12 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         return totalIncome;
     }
 
+    /** Real seconds a full game day lasts (ADR-022), from {@code time.dayDurationSeconds}. */
     @Override
+    public int getDayDurationSeconds() {
+        return dayDurationSeconds;
+    }
+
     public float getTotalExpenses() {
         return totalExpenses;
     }
@@ -585,6 +591,9 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     }
 
     private void applyProperties(Properties props) {
+        dayDurationSeconds = Integer.parseInt(
+                props.getProperty("time.dayDurationSeconds", String.valueOf(dayDurationSeconds)));
+
         // Load general costs
         fuelCostPerMeter = Float.parseFloat(
                 props.getProperty("fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));

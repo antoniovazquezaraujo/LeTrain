@@ -7,6 +7,7 @@ import java.io.IOException;
 import letrain.ground.GroundMap;
 import letrain.map.Point;
 import letrain.mvp.Model;
+import letrain.time.impl.SimpleGameClock;
 import letrain.vehicle.Cursor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ class SoundscapeAmbienceTest {
         when(model.getMode()).thenReturn(Model.GameMode.RAILS);
         when(model.getCursor()).thenReturn(cursor);
         when(cursor.getPosition()).thenReturn(new Point(0, 0));
+        when(model.getGameClock()).thenReturn(new SimpleGameClock());
 
         SoundscapeAmbience ambience = new SoundscapeAmbience(model);
         ambience.update(model, 0.4f);
