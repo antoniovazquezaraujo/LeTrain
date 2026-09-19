@@ -48,7 +48,8 @@ Ambas propuestas coinciden en arquitectura y fases. Se adopta lo mejor de cada u
    - notifica cambios de hora/día mediante listeners (event-driven, sin polling en `tick()`).
 3. **Escala configurable** en `letrain.cfg` como `time.dayDurationSeconds` (segundos reales que
    dura un día de juego). Valor inicial: **1440** (un día cada 24 minutos reales), equivalente a
-   3 segundos de juego por tick.
+   3 segundos de juego por tick. La escala se fija al crear la partida y no se cambia en caliente
+   (ver *Escala temporal* más abajo).
 4. **Hora inicial**: 08:00 del Día 1, día de 24 h. Sin fechas ni estaciones del año en esta fase;
    el modelo queda preparado para añadirlas.
 5. **Serialización**: contador `elapsedTicks` (long) en `Model`; `GameTime` se deriva. Los guardados
@@ -60,6 +61,44 @@ Ambas propuestas coinciden en arquitectura y fases. Se adopta lo mejor de cada u
    temporales (`at "HH:mm"` / `every 30m`) en la gramática de scripts.
 8. **Día/noche es visual** en esta fase (paleta del terminal y luz/faros en 3D); `isNight()` y
    `getDayNightRatio()` quedan disponibles para un futuro efecto sobre el gameplay.
+
+### Escala temporal: qué cambia y qué no (aclaración)
+
+Hay **dos relojes** y no deben confundirse:
+
+- **Física (ticks):** los trenes avanzan 1 celda cada `50 / velocidad` ticks a ~20 TPS reales.
+  No depende del reloj de juego: la velocidad aparente (visual) es la misma con cualquier
+  `time.dayDurationSeconds`.
+- **Reloj de juego (derivado de ticks):** convierte ticks en hora/día. Es el único afectado por
+  `time.dayDurationSeconds`; de él cuelgan el clima (ADR-027), el día/noche y, en fases futuras,
+  horarios y puntualidad.
+
+Consecuencias de diseño:
+
+1. **`time.dayDurationSeconds` no acelera el juego**: solo cambia lo rápido que avanza el
+   calendario. Es un ajuste de **ritmo atmosférico** (que un ciclo día/noche quepa en una sesión),
+   no de velocidad de simulación; nadie "juega más rápido" por subirlo. Acelerar trenes y física
+   sería otra cosa (multiplicador de simulación) y no se adopta como opción de juego.
+2. **La escala se fija al crear la partida y no se cambia en caliente.** Si se cambiara a mitad de
+   partida, el mismo trayecto (los mismos ticks) pasaría a durar más o menos horas de juego y los
+   horarios guardados dejarían de ser válidos. `GameClock.setDayDurationSeconds` queda reservado
+   para la configuración inicial, escenarios y tests, no para menús en juego.
+3. **La puntualidad es invariante al ritmo de juego.** Pausa, máquina lenta o un futuro acelerador
+   de simulación (solo para pruebas) multiplican a la vez los ticks de física y el reloj, de modo
+   que el tiempo de viaje en horas de juego no cambia; solo cambia lo que se espera en tiempo real.
+   Los horarios y la puntualidad se calculan sobre ticks y la escala fija de la partida.
+4. **La escala física es "de maqueta":** 1 celda ≈ 20 m (largo de una locomotora). Con el día de
+   1440 s (compresión 60×), un viaje de 1 km (50 celdas) a velocidad máxima dura 12,5 min de
+   juego. En esta fase el HUD no muestra km/h "reales": los km/h de ferrocarril real y el reloj
+   comprimido no pueden ser coherentes a la vez, así que la ficción del juego es la escala maqueta.
+
+Referencia rápida (notch 10 = 5 ticks/celda):
+
+| Acción | Física/trenes | Reloj | Viaje en horas de juego |
+|---|---|---|---|
+| Pausa de edición | se congela | se congela | invariante |
+| Acelerador de simulación (futuro, pruebas) | ×N | ×N | invariante |
+| Cambiar `dayDurationSeconds` | sin efecto | nueva escala | cambia (por eso se fija por partida) |
 
 ### Contrato preliminar (a congelar antes de paralelizar)
 
