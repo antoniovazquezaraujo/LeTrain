@@ -105,10 +105,11 @@
      (Chebyshev) desde el foco y parar en el primer nivel con una zona distinta; exacto y casi
      gratis. Menos informativo sobre extensión.
 3. **Máximo 2 zonas** (primaria + mejor secundaria) con **crossfade**: la secundaria pesa
-   `0.45 × proximidad` y la primaria **cede** ese peso (`1 - peso_secundaria`). Así, al acercarse a
-   una fábrica el campo baja y la fábrica se oye aunque ocupe un solo tile; en la costa la tierra
-   cede un poco al mar. **Empates**: gana la zona encontrada primero en el barrido (orden
-   `dy`/`dx` fijo), para determinismo. No hacen falta `findClosestIndustry` ni
+   `0.6 × curva(proximidad)`, donde la curva llega a 1 dentro de **2 tiles** y cae a 0 en `R`
+   (`curva = min(1, proximidad / (1 - 2/R))`); la primaria **cede** ese peso
+   (`1 - peso_secundaria`). Así, a 4 tiles una fábrica ya pesa ~0.4 y el campo baja a ~0.6, y a
+   2 tiles la secundaria manda con 0.6. **Empates**: gana la zona encontrada primero en el barrido
+   (orden `dy`/`dx` fijo), para determinismo. No hacen falta `findClosestIndustry` ni
    `countIndustryDensity`: la industria ya viene en el valor del tile.
 4. **Refresco**: al **cambiar de celda**, con un **tope de cadencia** (p. ej. 4–10 Hz) para que
    a alta velocidad no se escanee en cada frame, + inmediato al cambiar de foco. Entre refrescos,

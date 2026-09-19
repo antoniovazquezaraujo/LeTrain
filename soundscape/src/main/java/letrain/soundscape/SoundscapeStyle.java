@@ -22,6 +22,7 @@ public final class SoundscapeStyle {
     private final Map<String, SoundDef> heightSounds;
     private final Map<String, Float> gains;
     private final Map<String, Float> distanceSensitivity;
+    private final Map<String, Float> minDistance;
     private final Map<String, List<SoundGate>> gates;
 
     public SoundscapeStyle(Map<String, ClimatePreset> climatePresets, Map<String, SoundDef> sounds,
@@ -29,7 +30,7 @@ public final class SoundscapeStyle {
             Map<String, Float> heightSensitivity, Map<String, List<Float>> climateSensitivity,
             Map<String, SoundDef> weatherSounds, Map<String, SoundDef> heightSounds,
             Map<String, Float> gains, Map<String, Float> distanceSensitivity,
-            Map<String, List<SoundGate>> gates) {
+            Map<String, Float> minDistance, Map<String, List<SoundGate>> gates) {
         this.climatePresets = Collections.unmodifiableMap(new LinkedHashMap<>(climatePresets));
         this.sounds = Collections.unmodifiableMap(new LinkedHashMap<>(sounds));
         this.zones = immutableListValues(zones);
@@ -42,6 +43,7 @@ public final class SoundscapeStyle {
         this.gains = Collections.unmodifiableMap(new LinkedHashMap<>(gains));
         this.distanceSensitivity =
                 Collections.unmodifiableMap(new LinkedHashMap<>(distanceSensitivity));
+        this.minDistance = Collections.unmodifiableMap(new LinkedHashMap<>(minDistance));
         this.gates = immutableListValues(gates);
     }
 
@@ -96,7 +98,8 @@ public final class SoundscapeStyle {
     public SoundscapeStyle withCalibration(Map<String, Float> gains,
             Map<String, Float> distanceSensitivity, Map<String, List<SoundGate>> gates) {
         return new SoundscapeStyle(climatePresets, sounds, zones, presence, heightSensitivity,
-                climateSensitivity, weatherSounds, heightSounds, gains, distanceSensitivity, gates);
+                climateSensitivity, weatherSounds, heightSounds, gains, distanceSensitivity,
+                minDistance, gates);
     }
 
     /** Behaviour gates by sound: the sound stops when any condition holds. */
@@ -122,6 +125,14 @@ public final class SoundscapeStyle {
      */
     public float distanceSensitivityOf(String sound) {
         return distanceSensitivity.getOrDefault(sound, 1f);
+    }
+
+    /**
+     * Minimum distance of a sound (0 = it can be next to the listener). Fauna such as cicadas use
+     * this to always sound away from the listener, even when the camera is at ground level.
+     */
+    public float minDistanceOf(String sound) {
+        return minDistance.getOrDefault(sound, 0f);
     }
 
     /** Sounds of a zone, or an empty list when the zone is unknown. */

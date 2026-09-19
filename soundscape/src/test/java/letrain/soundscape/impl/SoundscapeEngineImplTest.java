@@ -35,8 +35,8 @@ class SoundscapeEngineImplTest {
 
         Composition composition = engine.compose(style, input);
 
-        // 0.7 * (0.8 + 0.1*60/270) * (1 - 0.8*0.1 - 0.2*0.1) * (1 - 0.8*0.2) * (1 - 0.6*0.2)
-        assertEquals(0.38291f, composition.volumeOf("crickets"), 1e-4);
+        // zone x presence x climate x height x gain 0.55 x distance 1 - 0.6*0.7 (min distance)
+        assertEquals(0.1388f, composition.volumeOf("crickets"), 1e-4);
     }
 
     @Test
@@ -163,7 +163,8 @@ class SoundscapeEngineImplTest {
         assertEquals(0.7f, composition.distanceOf("cicadas"), 1e-6);
         assertEquals(0.7f, composition.distanceOf("weather-rain"), 1e-6);
         assertEquals(0f, composition.distanceOf("height-wind"), 1e-6);
-        assertEquals(0f,
+        // cicadas declare a minimum distance, so they stay away even at ground level
+        assertEquals(0.7f,
                 engine.compose(style,
                         new CompositionInput(LocalTime.NOON, Map.of("fields", 1f), 0f, 0f, 0f, 0f))
                         .distanceOf("cicadas"),
@@ -200,6 +201,21 @@ class SoundscapeEngineImplTest {
     }
 
     @Test
+    @DisplayName("[min-distance] keeps a sound away even at ground level")
+    void should_KeepMinimumDistance_When_Declared() throws IOException {
+        SoundscapeStyle away = loader
+                .parse(List.of("[sounds]", "waves = sea/waves-*.wav", "[zones]", "sea = waves",
+                        "[presence]", "waves = 1 1 1 1 1 1 1", "[min-distance]", "waves = 0.7"));
+        CompositionInput input =
+                new CompositionInput(LocalTime.NOON, Map.of("sea", 1f), 0f, 0f, 0f, 0f);
+
+        Composition composition = engine.compose(away, input);
+
+        assertEquals(0.7f, composition.distanceOf("waves"), 1e-6);
+        assertEquals(0.58f, composition.volumeOf("waves"), 1e-4);
+    }
+
+    @Test
     @DisplayName("gates silence crickets and cicadas when the condition holds")
     void should_SilenceGatedSounds_When_ConditionsHold() {
         Composition dry = engine.compose(style,
@@ -209,7 +225,7 @@ class SoundscapeEngineImplTest {
         Composition windy = engine.compose(style,
                 new CompositionInput(LocalTime.NOON, Map.of("fields", 1f), 0f, 0f, 0.7f, 0f));
 
-        assertTrue(dry.volumeOf("crickets") > 0.3f);
+        assertTrue(dry.volumeOf("crickets") > 0.2f);
         assertEquals(0f, wet.volumeOf("crickets"), 1e-6);
         assertEquals(0f, windy.volumeOf("cicadas"), 1e-6);
     }

@@ -93,11 +93,22 @@ storm = weather/thunder-*.wav
 [height]
 wind = sky/wind-altitude-*.wav
 
-# --- Optional per-sound gains (1.0 = unchanged) -------------
-#  Calibrate in the GUI and use "Export style…" to write them.
-# [gains]
-#   cicadas      = 0.6
-#   weather-rain = 0.8
+# --- Per-sound gains (1.0 = unchanged) ----------------------
+#  The field fauna is the default bed: kept low so it does not
+#  drown the rest. Calibrate in the GUI and export to overwrite.
+[gains]
+birds    = 0.6
+crickets = 0.55
+cicadas  = 0.5
+dogs     = 0.8
+roosters = 0.8
+
+# --- Minimum distance by sound (0 = can be next to the listener) ----
+#  Fauna sounds away from the listener even with the camera on the ground.
+[min-distance]
+birds    = 0.45
+crickets = 0.7
+cicadas  = 0.7
 
 # --- Optional distance sensitivity (0 = at the listener, 1 = full) -
 #  Ground sounds recede with the zoom; declare overrides here.

@@ -74,6 +74,7 @@ public class TextStyleLoader implements StyleLoader {
         Map<String, SoundDef> heightSounds = new LinkedHashMap<>();
         Map<String, Float> gains = new LinkedHashMap<>();
         Map<String, Float> distance = new LinkedHashMap<>();
+        Map<String, Float> minDistance = new LinkedHashMap<>();
         Map<String, List<SoundGate>> gates = new LinkedHashMap<>();
 
         String section = null;
@@ -123,6 +124,7 @@ public class TextStyleLoader implements StyleLoader {
                 }
                 case "gains" -> gains.put(key, singleFloat(value, lineNumber));
                 case "distance-by-sound" -> distance.put(key, singleFloat(value, lineNumber));
+                case "min-distance" -> minDistance.put(key, singleFloat(value, lineNumber));
                 case "silence-when" -> gates.computeIfAbsent(key, sound -> new ArrayList<>())
                         .add(parseGate(value, lineNumber));
                 default -> throw error(lineNumber, "unknown section: " + section);
@@ -131,9 +133,10 @@ public class TextStyleLoader implements StyleLoader {
         validate(zones, sounds, presence);
         validateGains(gains, sounds, weather, heightSounds);
         validateGains(distance, sounds, weather, heightSounds);
+        validateGains(minDistance, sounds, weather, heightSounds);
         validateGates(gates, sounds);
         return new SoundscapeStyle(presets, sounds, zones, presence, height, climate, weather,
-                heightSounds, gains, distance, gates);
+                heightSounds, gains, distance, minDistance, gates);
     }
 
     private SoundGate parseGate(String value, int lineNumber) throws IOException {

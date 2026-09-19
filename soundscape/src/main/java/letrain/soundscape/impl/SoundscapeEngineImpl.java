@@ -106,7 +106,9 @@ public class SoundscapeEngineImpl implements SoundscapeEngine {
     }
 
     private float soundDistance(SoundscapeStyle style, String sound, float height) {
-        return Math.max(0f, Math.min(1f, height * style.distanceSensitivityOf(sound)));
+        float sensitivity = style.distanceSensitivityOf(sound);
+        float floor = style.minDistanceOf(sound);
+        return Math.max(0f, Math.min(1f, Math.max(floor, height * sensitivity)));
     }
 
     private float distanceFactor(SoundscapeStyle style, String sound, float height) {

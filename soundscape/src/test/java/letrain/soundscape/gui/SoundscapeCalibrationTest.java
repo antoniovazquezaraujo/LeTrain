@@ -1,7 +1,6 @@
 package letrain.soundscape.gui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Component;
@@ -76,10 +75,13 @@ class SoundscapeCalibrationTest {
         int full = meter.getValue();
         assertTrue(full > 0, "cicadas should sound at noon with fields active");
 
-        player.gainSliders().get("cicadas").setValue(50);
+        JSlider gain = player.gainSliders().get("cicadas");
+        int start = gain.getValue();
+        assertTrue(start > 0, "the bundled style calibrates cicadas");
+        gain.setValue(start / 2);
         assertEquals(full / 2, meter.getValue(), 1);
 
-        player.gainSliders().get("cicadas").setValue(0);
+        gain.setValue(0);
         assertEquals(0, meter.getValue());
     }
 
@@ -93,7 +95,7 @@ class SoundscapeCalibrationTest {
         List<String> exported = player.exportLines();
         SoundscapeStyle reloaded = loader.parse(exported);
         assertEquals(0.4f, reloaded.gainOf("cicadas"), 1e-6);
-        assertEquals(1f, reloaded.gainOf("dogs"), 1e-6);
+        assertEquals(0.8f, reloaded.gainOf("dogs"), 1e-6);
         assertTrue(exported.stream()
                 .anyMatch(line -> line.replaceAll("\\s+", " ").trim().equals("cicadas = 0.4")));
         assertTrue(exported
@@ -137,7 +139,7 @@ class SoundscapeCalibrationTest {
         slider.setValue(100);
 
         assertEquals(1f, loader.parse(player.exportLines()).gainOf("cicadas"), 1e-6);
-        assertFalse(player.exportLines().contains("[gains]"));
+        assertTrue(player.exportLines().contains("[gains]"));
     }
 
     private void layoutPanel(JPanel panel) {
