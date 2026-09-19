@@ -71,6 +71,29 @@
    canalizado). El render de CAB dentro del túnel (ver algo de vía y la salida al fondo) es una
    tarea de la capa gráfica, no del audio.
 
+## Algoritmo propuesto (zona primaria + secundaria)
+
+1. **Primaria = el tile sobre el que se está** (`getValueAt(pos)`):
+   - `WATER → sea`, `ROCK → mountain`, `GROUND → fields`; industria (`10..29`) → `x-mine` /
+     `x-factory` según el mapeo del punto 3.
+   - Ejemplos: en un puente, el tile de debajo es agua → primaria `sea`; en una mina, primaria
+     `x-mine` y el campo de alrededor aparecerá como secundaria de forma natural.
+2. **Secundaria = la zona distinta más cercana** dentro de un radio fijo `R`, muestreando
+   **anillos** (8 direcciones × 3–4 radios, 24–32 lecturas), no el cuadrado completo. Peso
+   `(1 - d/R) × 0.45`, siempre por debajo de la primaria: en la costa la tierra gana pero el mar
+   se oye; al alejarse, la secundaria cae a 0.
+3. **Máximo 2 zonas** (primaria + mejor secundaria). No hacen falta `findClosestIndustry` ni
+   `countIndustryDensity`: la industria ya viene en el valor del tile y en los anillos.
+4. **Refresco**: al **cambiar de celda** + un tick lento (4 Hz) de seguridad + inmediato al
+   cambiar de foco. Entre refrescos, mezcla progresiva (ataque/release), de modo que cruzar
+   celdas no produzca saltos.
+5. **Coste**: con tiles materializados, `getValueAt` es O(1) (HashMap) y 30 lecturas son
+   microsegundos. Para tiles **no materializados**, `getValueAt` recalcula el terreno con Perlin
+   en cada lectura y **no cachea**; con anillos y 4 Hz el coste es despreciable, y si aparecen
+   picos se añade una **caché de terreno por bloque** (resultados de `computeTerrainValue`,
+   tamaño acotado) en `GroundMap`; `setValueAt` sigue mandando porque escribe celdas
+   materializadas.
+
 ## Consecuencias
 
 - Positivas: el decorado reacciona al paisaje (mar al borde de la costa, montaña al subir, mina al
