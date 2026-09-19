@@ -60,6 +60,13 @@
    usuario/comunidad se dejan en esa carpeta `styles/`, resuelta como `letrain.cfg`, y se añaden
    sin recompilar. La semilla y la fecha inicial del clima pueden ir en la misma configuración
    para escenarios que fuerzan una situación.
+8. **Materiales propios en estilos de usuario**: hoy `SampleResolver` solo resuelve dentro del
+   classpath del módulo (`sounds/`), así que un estilo de usuario no puede traer sus propios
+   audios. Se propone resolver los materiales por este orden: (1) **relativo a la carpeta del
+   estilo**, (2) **carpeta de sonidos de usuario** (configurable, p. ej. `sounds/` junto a
+   `letrain.cfg`), (3) **classpath** del módulo. Así un mod es autocontenido
+   (`mimod/mi.sound` + `mimod/sounds/*.wav`). Formato canónico documentado (WAV mono 44.1 kHz
+   16 bits) y validable con `tools/audit_samples.py`.
 
 ## Consecuencias
 
@@ -89,5 +96,7 @@
   usuario (¿`styles/` junto a `letrain.cfg`?).
 - ¿El calendario se sobrescribe solo desde el `.ltr` o el estilo puede declarar un override
   pensado para un escenario?
+- ¿La carpeta de sonidos de usuario es fija y configurable, o basta con que sea relativa al
+  estilo?
 
 
