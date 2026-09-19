@@ -33,7 +33,8 @@
    - al editar vías (modo `rails`), **el cursor**: se oye la zona por donde se está construyendo;
    - en vista MAP, el centro de la vista (o el cursor, a decidir).
    La cámara solo aporta altura/zoom (atenuación + LP de aire, ya existente). El cambio de foco
-   entre modos lo cubre el suavizado temporal (punto 4). El `soundscape` sigue sin conocer el mapa
+   entre modos es un **corte de escena inmediato, sin transición**: al pasar del tren al cursor,
+   los pesos de la nueva posición se aplican de golpe. El `soundscape` sigue sin conocer el mapa
    (aislamiento ADR-023).
 2. **Zonas naturales por densidad en un radio**: muestrear una rejilla gruesa alrededor de la
    posición y calcular la fracción de tiles `WATER` / `ROCK` / `GROUND`; el peso cae con la
@@ -41,8 +42,13 @@
 3. **Zonas industriales por densidad de industria**: `countIndustryDensity` para productoras
    (minas) y consumidoras (tiendas/central); mapear `gold/coal/ruby-factory` del estilo a las
    consumidoras reales (`JEWELRY_STORE`, `POWER_PLANT`, `RUBY_STORE`) o renombrar en el estilo.
-4. **Suavizado temporal**: ataque/release exponencial (2–5 s) por zona para que cruzar una
-   frontera no salte; el sensor muestrea a cadencia baja (p. ej. 4 Hz), no en cada tick.
+4. **Suavizado temporal solo dentro del mismo foco**: ataque/release exponencial (2–5 s) por zona
+   para que el movimiento continuo (el tren avanza, el cursor se desplaza) no salte al cruzar
+   fronteras. Al **cambiar de foco** (tren ↔ cursor), el suavizado se reinicia: los pesos nuevos
+   se aplican de inmediato. El sensor muestrea a cadencia baja (p. ej. 4 Hz), no en cada tick.
+   Implicación para el player: el ease de ganancia actual (0,8 s en `AmbientVoice`) debe poder
+   saltarse en el cambio de foco; valorar un micro-fade anti-click (~10–20 ms) sin transición
+   audible de escena.
 5. **Límite de voz**: quedarse con las 2–3 zonas de mayor peso (y normalizar si hace falta) para
    no disparar el número de sonidos simultáneos.
 6. **Determinismo**: misma posición + mismo mapa ⇒ mismos pesos; el suavizado depende solo del
@@ -84,6 +90,7 @@
 ## Preguntas abiertas
 
 - En MAP, ¿el foco de escucha es el centro de la vista o el cursor?
+- En el corte de foco, ¿micro-fade anti-click de ~10–20 ms o corte seco?
 - ¿La reverb de túnel se implementa en el player (FDN) o se pre-renderiza en las tomas?
 - Dentro de un túnel, ¿duck completo de zonas exteriores o solo atenuación + LP?
 - Radio de muestreo y curva de caída por zona: ¿fijos por zona o por terreno?
