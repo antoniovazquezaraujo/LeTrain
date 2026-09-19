@@ -30,12 +30,16 @@ import letrain.ground.ZoneSensor;
 /**
  * Swing lab for ADR-025: renders a procedurally generated map and, as the mouse moves, shows the
  * zone weights the sensor would produce (primary plus influence per zone) and the time it takes.
+ * Mouse wheel zooms; right-button drag pans.
  */
 public class ZoneSensorLab {
 
     private static final int TILES_W = 420;
     private static final int TILES_H = 300;
-    private static final int TILE = 2;
+    private static final int PANEL_W = 840;
+    private static final int PANEL_H = 600;
+    private static final int MIN_ZOOM = 1;
+    private static final int MAX_ZOOM = 10;
     private static final long COMPUTE_INTERVAL_MS = 40;
 
     private final MapPanel mapPanel = new MapPanel();
@@ -45,11 +49,15 @@ public class ZoneSensorLab {
     private final JTextField centerXField = new JTextField("0", 6);
     private final JTextField centerYField = new JTextField("0", 6);
     private final JLabel timing = new JLabel(" ");
+    private final JLabel zoomLabel = new JLabel("zoom 2 px/tile");
 
     private GroundMap map;
     private int[][] terrain;
     private int originX = -TILES_W / 2;
     private int originY = -TILES_H / 2;
+    private double viewCenterX;
+    private double viewCenterY;
+    private int tile = 2;
     private ZoneSensor sensor = new ZoneSensor(12, 1);
     private boolean useCache;
     private int cursorX;
@@ -87,8 +95,16 @@ public class ZoneSensorLab {
         generate.addActionListener(e -> generate());
         controls.add(generate);
 
+        JButton zoomOut = new JButton("−");
+        zoomOut.addActionListener(e -> zoomBy(1, PANEL_W / 2, PANEL_H / 2));
+        controls.add(zoomOut);
+        JButton zoomIn = new JButton("+");
+        zoomIn.addActionListener(e -> zoomBy(-1, PANEL_W / 2, PANEL_H / 2));
+        controls.add(zoomIn);
+        controls.add(zoomLabel);
+
         JSlider radius = new JSlider(2, 30, sensor.radius());
-        radius.setPreferredSize(new Dimension(160, 24));
+        radius.setPreferredSize(new Dimension(140, 24));
         JLabel radiusLabel = new JLabel("R " + sensor.radius());
         radius.addChangeListener(e -> {
             sensor = new ZoneSensor(radius.getValue(), sensor.stride());
@@ -99,7 +115,7 @@ public class ZoneSensorLab {
         controls.add(radius);
 
         JSlider stride = new JSlider(1, 4, sensor.stride());
-        stride.setPreferredSize(new Dimension(100, 24));
+        stride.setPreferredSize(new Dimension(90, 24));
         JLabel strideLabel = new JLabel("stride " + sensor.stride());
         stride.addChangeListener(e -> {
             sensor = new ZoneSensor(sensor.radius(), stride.getValue());
@@ -136,6 +152,9 @@ public class ZoneSensorLab {
         int centerY = parseInt(centerYField.getText(), 0);
         originX = centerX - TILES_W / 2;
         originY = centerY - TILES_H / 2;
+        viewCenterX = centerX;
+        viewCenterY = centerY;
+        clampView();
         map = new letrain.ground.impl.GroundMap(seed, null);
         status.setText("generating " + TILES_W + "x" + TILES_H + " tiles…");
         new SwingWorker<int[][], Void>() {
@@ -183,16 +202,12 @@ public class ZoneSensorLab {
     }
 
     private BufferedImage renderImage(int[][] cells) {
-        BufferedImage rendered =
-                new BufferedImage(TILES_W * TILE, TILES_H * TILE, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g = rendered.createGraphics();
+        BufferedImage rendered = new BufferedImage(TILES_W, TILES_H, BufferedImage.TYPE_INT_RGB);
         for (int y = 0; y < TILES_H; y++) {
             for (int x = 0; x < TILES_W; x++) {
-                g.setColor(colorOf(cells[y][x]));
-                g.fillRect(x * TILE, y * TILE, TILE, TILE);
+                rendered.setRGB(x, y, colorOf(cells[y][x]).getRGB());
             }
         }
-        g.dispose();
         return rendered;
     }
 
@@ -209,6 +224,36 @@ public class ZoneSensorLab {
             case GroundMap.RUBY_STORE -> new Color(239, 154, 154);
             default -> new Color(33, 33, 33);
         };
+    }
+
+    private void zoomBy(int delta, int anchorX, int anchorY) {
+        int next = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, tile - delta));
+        if (next == tile) {
+            return;
+        }
+        double worldX = viewCenterX + (anchorX - PANEL_W / 2.0) / tile;
+        double worldY = viewCenterY + (anchorY - PANEL_H / 2.0) / tile;
+        tile = next;
+        viewCenterX = worldX - (anchorX - PANEL_W / 2.0) / tile;
+        viewCenterY = worldY - (anchorY - PANEL_H / 2.0) / tile;
+        clampView();
+        zoomLabel.setText("zoom " + tile + " px/tile");
+        mapPanel.repaint();
+        compute(cursorX, cursorY, true);
+    }
+
+    private void panBy(double screenDx, double screenDy) {
+        viewCenterX -= screenDx / tile;
+        viewCenterY -= screenDy / tile;
+        clampView();
+        mapPanel.repaint();
+    }
+
+    private void clampView() {
+        double halfW = PANEL_W / (2.0 * tile);
+        double halfH = PANEL_H / (2.0 * tile);
+        viewCenterX = Math.max(originX + halfW, Math.min(originX + TILES_W - halfW, viewCenterX));
+        viewCenterY = Math.max(originY + halfH, Math.min(originY + TILES_H - halfH, viewCenterY));
     }
 
     private void compute(int tileX, int tileY, boolean force) {
@@ -278,32 +323,79 @@ public class ZoneSensorLab {
 
     private class MapPanel extends JPanel {
 
+        private int lastDragX;
+        private int lastDragY;
+        private boolean dragging;
+
         MapPanel() {
-            setPreferredSize(new Dimension(TILES_W * TILE, TILES_H * TILE));
+            setPreferredSize(new Dimension(PANEL_W, PANEL_H));
             setBackground(new Color(33, 33, 33));
             MouseAdapter mouse = new MouseAdapter() {
                 @Override
                 public void mouseMoved(MouseEvent e) {
-                    cursorX = originX + e.getX() / TILE;
-                    cursorY = originY + e.getY() / TILE;
+                    updateFocus(e);
                     mapPanel.repaint();
                     compute(cursorX, cursorY, false);
                 }
+
+                @Override
+                public void mouseDragged(MouseEvent e) {
+                    if (!dragging) {
+                        return;
+                    }
+                    panBy(e.getX() - lastDragX, e.getY() - lastDragY);
+                    lastDragX = e.getX();
+                    lastDragY = e.getY();
+                    updateFocus(e);
+                }
+
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    if (SwingUtilities.isRightMouseButton(e)) {
+                        dragging = true;
+                        lastDragX = e.getX();
+                        lastDragY = e.getY();
+                    }
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    dragging = false;
+                }
+
+                @Override
+                public void mouseWheelMoved(java.awt.event.MouseWheelEvent e) {
+                    zoomBy(e.getWheelRotation(), e.getX(), e.getY());
+                }
             };
             addMouseMotionListener(mouse);
+            addMouseListener(mouse);
+            addMouseWheelListener(mouse);
+        }
+
+        private void updateFocus(MouseEvent e) {
+            cursorX = (int) Math.floor(viewCenterX + (e.getX() - PANEL_W / 2.0) / tile);
+            cursorY = (int) Math.floor(viewCenterY + (e.getY() - PANEL_H / 2.0) / tile);
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            if (image != null) {
-                g.drawImage(image, 0, 0, null);
+            if (image == null) {
+                return;
             }
             Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                    RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            int destX = (int) Math.round(PANEL_W / 2.0 - (viewCenterX - originX) * tile);
+            int destY = (int) Math.round(PANEL_H / 2.0 - (viewCenterY - originY) * tile);
+            g2.drawImage(image, destX, destY, TILES_W * tile, TILES_H * tile, null);
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            int screenX = (cursorX - originX) * TILE;
-            int screenY = (cursorY - originY) * TILE;
-            int radiusPx = sensor.radius() * TILE;
+            int screenX =
+                    (int) Math.round(PANEL_W / 2.0 + (cursorX - viewCenterX) * tile + tile / 2.0);
+            int screenY =
+                    (int) Math.round(PANEL_H / 2.0 + (cursorY - viewCenterY) * tile + tile / 2.0);
+            int radiusPx = sensor.radius() * tile;
             g2.setColor(Color.WHITE);
             g2.drawOval(screenX - radiusPx, screenY - radiusPx, radiusPx * 2, radiusPx * 2);
             g2.drawLine(screenX - 6, screenY, screenX + 6, screenY);
