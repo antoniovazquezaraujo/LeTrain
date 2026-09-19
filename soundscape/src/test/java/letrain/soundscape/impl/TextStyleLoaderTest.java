@@ -40,6 +40,19 @@ class TextStyleLoaderTest {
         assertEquals(1f, style.gainOf("cicadas"), 1e-6);
         assertEquals(2, style.gatesOf("cicadas").size());
         assertEquals(new SoundGate("rain", 0.25f), style.gatesOf("crickets").get(0));
+        assertEquals(4, style.seasons().size());
+        assertEquals(1, style.seasons().get(0).startDay());
+        assertEquals(80, style.seasons().get(0).endDay());
+        assertEquals(0.6f, style.seasons().get(0).probabilities().get("rain"), 1e-6);
+    }
+
+    @Test
+    @DisplayName("rejects overlapping season ranges")
+    void should_RejectOverlappingSeasons() {
+        assertThrows(IOException.class, () -> loader.parse(List.of("[sounds]",
+                "waves = sea/waves-*.wav", "[zones]", "sea = waves", "[presence]",
+                "waves = 1 1 1 1 1 1 1", "[seasons]", "Jan-01 to Jun-30 rain=0.5",
+                "Jun-15 to Dec-31 rain=0.2")));
     }
 
     @Test

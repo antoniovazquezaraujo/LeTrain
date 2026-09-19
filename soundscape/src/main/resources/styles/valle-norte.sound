@@ -3,6 +3,14 @@
 #  Plain text; comments start with #. Keys in English.
 # ============================================================
 
+# --- Climate calendar (ADR-027): day ranges with daily probabilities of
+#  rain, wind and storm. No years; text months to avoid day/month mix-ups.
+[seasons]
+Jan-01 to Mar-21   rain=0.60 wind=0.50 storm=0.25
+Mar-22 to Jun-20   rain=0.40 wind=0.35 storm=0.20
+Jun-21 to Sep-21   rain=0.12 wind=0.25 storm=0.05
+Sep-22 to Dec-31   rain=0.50 wind=0.45 storm=0.20
+
 # --- Weather presets (intensities 0.0–1.0) ------------------
 [climate]
 clear   = rain 0.0 wind 0.1 storm 0.0
