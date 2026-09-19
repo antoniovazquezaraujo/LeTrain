@@ -20,8 +20,21 @@
    junto a la hora. No se imponen estaciones fijas.
 2. **Calendario climático configurable (`[seasons]`), en el estilo**: el usuario define **los
    tramos de días que quiera** (no estaciones estándar) y les asigna la probabilidad/intensidad de
-   cada fenómeno, para que cada país o escenario tenga su calendario. Ejemplo:
-   `1/1–21/3  rain=0.8 wind=0.5`, `21/6–21/9 rain=0.1 wind=0.2`, etc.
+   cada fenómeno, para que cada país o escenario tenga su calendario. **Formato en texto para
+   evitar la ambigüedad día/mes** (mes inglés de 3 letras + día numérico, sin años):
+
+   ```
+   [seasons]
+   Jan-01 to Apr-21   rain=0.8 wind=0.5
+   Apr-22 to Jun-20   rain=0.4 wind=0.3
+   Jun-21 to Sep-21   rain=0.1 wind=0.2
+   Sep-22 to Dec-31   rain=0.5 wind=0.4
+   ```
+
+   Reglas de parseo: mes `Jan`…`Dec` insensible a mayúsculas; día opcional (`Jun to Sep` = meses
+   completos); rangos que cruzan el año permitidos (`Dec-01 to Feb-28`), comparando en círculo;
+   **solapes = error de carga**; los días sin cubrir usan una línea `default` o quedan sin
+   fenómenos.
 3. **Generador de clima determinista por horas**: cada **hora de juego** se evalúan las
    probabilidades del tramo para decidir si cada fenómeno (`rain`, `wind`, `storm`) arranca o se
    detiene,
@@ -62,6 +75,4 @@
 3. Fauna estacional y selección de especies sobre ADR-024.
 4. Nieve (modelo, audio y visual), más adelante.
 
-## Preguntas abiertas
 
-- Formato exacto de `[seasons]`: ¿día/mes (`1/1–21/3`) o día del año (`1–80`)?
