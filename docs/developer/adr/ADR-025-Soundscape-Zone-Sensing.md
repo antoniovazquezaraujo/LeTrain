@@ -25,7 +25,7 @@
 
 ## Decisión (propuesta)
 
-1. **Un sensor de zonas fuera del módulo `soundscape`** (en `core` o en un bridge dedicado) que
+1. **Un sensor de zonas fuera del módulo `soundscape`** (**bridge fino en `core`**) que
    traduce una posición a pesos 0.0–1.0 por zona y construye el `CompositionInput`. La referencia
    es el **elemento activo del modo**, no la cámara:
    - `drive`: **la locomotora** (si entra en un túnel, el decorado suena a túnel aunque la cámara
@@ -103,8 +103,10 @@
 3. **Máximo 2 zonas** (primaria + mejor secundaria), con pesos: primaria `1.0`; secundaria
    `0.45 × influencia_normalizada`, siempre por debajo de la primaria. En la costa la tierra gana
    pero se oye el mar; al alejarse, la secundaria cae a 0. Las contribuciones **se suman dentro de
-   cada zona** (densidad), pero a la salida solo viajan dos zonas. No hacen falta
-   `findClosestIndustry` ni `countIndustryDensity`: la industria ya viene en el valor del tile.
+   cada zona** (densidad), pero a la salida solo viajan dos zonas. **Empates**: gana la zona que
+   se encontró primero en el barrido (orden `dy`/`dx` fijo), para que el resultado sea
+   determinista. No hacen falta `findClosestIndustry` ni `countIndustryDensity`: la industria ya
+   viene en el valor del tile.
 4. **Refresco**: al **cambiar de celda**, con un **tope de cadencia** (p. ej. 4–10 Hz) para que
    a alta velocidad no se escanee en cada frame, + inmediato al cambiar de foco. Entre refrescos,
    mezcla progresiva (ataque/release), de modo que cruzar celdas no produzca saltos.
@@ -143,7 +145,6 @@
 
 ## Preguntas abiertas
 
-- ¿La reverb de túnel se implementa en el player (FDN) o se pre-renderiza en las tomas?
-- Dentro de un túnel, ¿duck completo de zonas exteriores o solo atenuación + LP?
-- ¿Dónde vive el sensor: `core`, un módulo bridge nuevo, o el launcher que ya conoce ambos?
-- Curva de caída del peso con la distancia: ¿lineal, exponencial, por oído?
+- **Punto de integración del reproductor**: probable launcher/UI (el presenter conoce el foco y
+  los modos), a confirmar; el sensor ya queda como bridge en `core`.
+- **Curva de caída** del peso con la distancia: lineal por ahora, ajustable de oído en el lab.
