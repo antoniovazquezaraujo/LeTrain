@@ -9,10 +9,18 @@ import java.util.function.IntBinaryOperator;
  * under the focus and the secondary one is the non-primary zone with the most influence inside a
  * fixed radius. Influence sums a linear distance falloff per sampled tile, so both proximity and
  * extent count.
+ *
+ * <p>
+ * The bed zone ({@code fields}, the default terrain) may not outrank a feature under the focus:
+ * stepping on a factory, a mine or a bridge keeps that zone prominent (the surrounding field is
+ * capped at {@link #BED_SECONDARY_MAX}) instead of burying it at 0.15.
  */
 public class ZoneSensor {
 
     public static final float SECONDARY_MAX = 0.85f;
+
+    /** Top weight of the bed zone when it is the secondary and the focus is on a feature. */
+    public static final float BED_SECONDARY_MAX = 0.15f;
 
     /** Within this distance the secondary zone is at full weight; it fades out towards R. */
     private static final float FULL_WEIGHT_DISTANCE = 4f;
@@ -103,10 +111,16 @@ public class ZoneSensor {
         }
         float full = Math.max(0.05f, 1f - Math.min(FULL_WEIGHT_DISTANCE, radius) / radius);
         float curve = Math.min(1f, bestProximity / full);
-        float secondaryWeight = SECONDARY_MAX * curve;
+        float top = isBed(secondary) && !isBed(primary) ? BED_SECONDARY_MAX : SECONDARY_MAX;
+        float secondaryWeight = top * curve;
         weights.put(primary, 1f - secondaryWeight);
         weights.put(secondary, secondaryWeight);
         return new Result(primary, influence, proximity, weights);
+    }
+
+    /** The default terrain acts as the mix bed: it can be replaced by a feature, never bury one. */
+    private static boolean isBed(String zone) {
+        return "fields".equals(zone);
     }
 
     public static String zoneOf(int terrain) {

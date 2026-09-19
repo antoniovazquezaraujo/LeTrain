@@ -126,6 +126,37 @@ class ZoneSensorTest {
     }
 
     @Test
+    @DisplayName("a factory under the focus is not buried by the surrounding field")
+    void should_KeepIndustryPrimary_WhenStandingOnIt() {
+        int[][] cells = filled(64, 64, GroundMap.GROUND);
+        cells[32][32] = GroundMap.JEWELRY_STORE;
+        ZoneSensor sensor = new ZoneSensor(8, 1);
+
+        ZoneSensor.Result result = sensor.sense(grid(cells), 32, 32);
+
+        assertEquals("gold-factory", result.primary());
+        assertTrue(result.weightOf("gold-factory") >= 0.8f,
+                "weight " + result.weightOf("gold-factory"));
+        assertTrue(result.weightOf("fields") <= ZoneSensor.BED_SECONDARY_MAX + 1e-4f);
+    }
+
+    @Test
+    @DisplayName("a bridge over water keeps the sea audible under the focus")
+    void should_KeepSeaPrimary_OnBridge() {
+        int[][] cells = filled(64, 64, GroundMap.GROUND);
+        for (int y = 0; y < 64; y++) {
+            cells[y][16] = GroundMap.WATER; // a one-tile-wide river
+        }
+        ZoneSensor sensor = new ZoneSensor(8, 1);
+
+        ZoneSensor.Result result = sensor.sense(grid(cells), 16, 32);
+
+        assertEquals("sea", result.primary());
+        assertTrue(result.weightOf("sea") >= 0.8f, "weight " + result.weightOf("sea"));
+        assertTrue(result.weightOf("fields") <= ZoneSensor.BED_SECONDARY_MAX + 1e-4f);
+    }
+
+    @Test
     @DisplayName("ties keep the first zone found in scan order")
     void should_BreakTies_ByScanOrder() {
         int[][] cells = filled(64, 64, GroundMap.GROUND);
