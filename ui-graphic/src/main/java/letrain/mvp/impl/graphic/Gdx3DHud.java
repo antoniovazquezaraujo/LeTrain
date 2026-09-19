@@ -657,17 +657,18 @@ public class Gdx3DHud {
     public void showMessage(String title, String message) {
         Gdx.app.postRunnable(() -> {
             com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
-                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(title, skin);
-            // Passive info: non-modal so it can never capture the keyboard, and shown through the
-            // regular API so libgdx restores the previous focus when it closes (ADR-022 phase 0).
-            dialog.setModal(false);
+                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(title, skin) {
+                        @Override
+                        protected void result(Object object) {
+                            this.remove();
+                        }
+                    };
             dialog.text(message);
             dialog.button("OK");
             dialog.pack();
             dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
                     (stage.getHeight() - dialog.getHeight()) / 2);
-            dialog.show(stage);
-            stage.setKeyboardFocus(null);
+            stage.addActor(dialog);
         });
     }
 
