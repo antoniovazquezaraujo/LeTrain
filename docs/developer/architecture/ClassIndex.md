@@ -53,6 +53,7 @@
 - [[letrain.ground.GroundMap|GroundMap]] (core)
 - [[letrain.ground.NoiseGenerator|NoiseGenerator]] (core)
 - [[letrain.ground.PerlinNoise|PerlinNoise]] (core)
+- [[letrain.ground.ZoneSensor|ZoneSensor]] (core)
 - [[letrain.ground.impl.GroundMap|GroundMap]] (core)
 - [[letrain.ground.impl.Terrain2D|Terrain2D]] (core)
 
@@ -68,6 +69,9 @@
 - [[letrain.itinerary.impl.ItineraryImpl|ItineraryImpl]] (core)
 - [[letrain.itinerary.impl.TrainActionManager|TrainActionManager]] (core)
 - [[letrain.itinerary.impl.WaypointImpl|WaypointImpl]] (core)
+
+## letrain.lab
+- [[letrain.lab.ZoneSensorLab|ZoneSensorLab]] (core)
 
 ## letrain.map
 - [[letrain.map.Dir|Dir]] (core)
