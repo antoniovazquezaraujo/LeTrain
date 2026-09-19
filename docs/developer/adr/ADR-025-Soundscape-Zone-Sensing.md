@@ -64,12 +64,15 @@
 6. **Determinismo**: misma posición + mismo mapa ⇒ mismos pesos; el suavizado depende solo del
    tiempo simulado, no del reloj real.
 7. **Espacio acústico (túnel/estación)**: el estado ambiental gana un eje `enclosure` (0 = cielo
-   abierto, 1 = dentro). La señal de túnel ya existe en el modelo (`TunnelGateRailTrack`,
-   `VisualType.TUNNEL`). Al entrar: bajar/duckear las zonas exteriores (montaña, campo) y activar
-   una reverb corta sobre el mix (y sobre los sonidos del tren) — el eco cobra sentido aquí. Al
-   salir, se invierte con el mismo suavizado. Opcional: capa propia de túnel (retumbo, viento
-   canalizado). El render de CAB dentro del túnel (ver algo de vía y la salida al fondo) es una
-   tarea de la capa gráfica, no del audio.
+   abierto, 1 = dentro). La señal ya existe en el modelo: `RailTrackMaker` marca
+   `VisualType.TUNNEL` en la vía al cruzar `ROCK` (y `TUNNEL_GATE` en las bocas), así que basta
+   con mirar la vía bajo el tren o en el punto donde se construye. Al entrar: duckear las zonas
+   exteriores (montaña, campo) y aplicar una reverb corta **a todas las fuentes que estén dentro**
+   —el mix del decorado, los sonidos del tren y también el **martillo al perforar el túnel**—.
+   La etapa de espacio es compartida entre dominios (ADR-026, `audio-core`). Al salir, se invierte
+   con el mismo suavizado. Opcional: capa propia de túnel (retumbo, viento canalizado). El render
+   de CAB dentro del túnel (ver algo de vía y la salida al fondo) es tarea de la capa gráfica, no
+   del audio.
 
 ## Algoritmo propuesto (zona primaria + secundaria)
 
