@@ -42,6 +42,9 @@
    **corte de escena inmediato, sin transición**: al pasar del tren al cursor, los pesos de la
    nueva posición se aplican de golpe. El `soundscape` sigue sin conocer el mapa (aislamiento
    ADR-023).
+   **Integración**: el **launcher** crea y para el reproductor (ciclo de vida, sirve a las dos
+   UIs); el **presenter** le empuja el foco (conoce modos y cursor); el **bridge de `core`**
+   calcula los pesos y devuelve el `CompositionInput`.
 2. **Zonas naturales por densidad en un radio fijo**: muestrear una rejilla gruesa alrededor de
    la posición y calcular la fracción de tiles `WATER` / `ROCK` / `GROUND`; el peso cae con la
    distancia (p. ej. `w = clamp((1 - d/R) * densidad)`). El radio de muestreo es un valor **fijo**
@@ -143,8 +146,5 @@
 3. Ajuste fino de radios, curvas y cadencia oyendo en el GUI.
 4. (Futuro) espacios acústicos (túnel, estación cubierta) si el modelo de material lo permite.
 
-## Preguntas abiertas
-
-- **Punto de integración del reproductor**: probable launcher/UI (el presenter conoce el foco y
-  los modos), a confirmar; el sensor ya queda como bridge en `core`.
-- **Curva de caída** del peso con la distancia: lineal por ahora, ajustable de oído en el lab.
+Nota: la **curva de caída** es lineal de partida; se ajusta de oído en el laboratorio si hace
+falta.
