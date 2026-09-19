@@ -38,8 +38,7 @@ public final class SoundscapeStyle {
             Map<String, List<SoundGate>> gates) {
         this.climatePresets = Collections.unmodifiableMap(new LinkedHashMap<>(climatePresets));
         this.seasons = List.copyOf(seasons);
-        this.seasonDefaults =
-                Collections.unmodifiableMap(new LinkedHashMap<>(seasonDefaults));
+        this.seasonDefaults = Collections.unmodifiableMap(new LinkedHashMap<>(seasonDefaults));
         this.sounds = Collections.unmodifiableMap(new LinkedHashMap<>(sounds));
         this.zones = immutableListValues(zones);
         this.presence = immutableListValues(presence);
@@ -65,7 +64,9 @@ public final class SoundscapeStyle {
         return seasons;
     }
 
-    /** Probabilities for days not covered by any range; empty when the style declares no default. */
+    /**
+     * Probabilities for days not covered by any range; empty when the style declares no default.
+     */
     public Map<String, Float> seasonDefaults() {
         return seasonDefaults;
     }

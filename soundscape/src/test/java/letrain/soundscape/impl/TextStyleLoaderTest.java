@@ -53,10 +53,10 @@ class TextStyleLoaderTest {
     @Test
     @DisplayName("rejects overlapping season ranges")
     void should_RejectOverlappingSeasons() {
-        assertThrows(IOException.class, () -> loader.parse(List.of("[sounds]",
-                "waves = sea/waves-*.wav", "[zones]", "sea = waves", "[presence]",
-                "waves = 1 1 1 1 1 1 1", "[seasons]", "Jan-01 to Jun-30 rain=0.5",
-                "Jun-15 to Dec-31 rain=0.2")));
+        assertThrows(IOException.class,
+                () -> loader.parse(List.of("[sounds]", "waves = sea/waves-*.wav", "[zones]",
+                        "sea = waves", "[presence]", "waves = 1 1 1 1 1 1 1", "[seasons]",
+                        "Jan-01 to Jun-30 rain=0.5", "Jun-15 to Dec-31 rain=0.2")));
     }
 
     @Test

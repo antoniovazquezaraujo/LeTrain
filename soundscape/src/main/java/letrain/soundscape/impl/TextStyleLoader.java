@@ -153,10 +153,10 @@ public class TextStyleLoader implements StyleLoader {
                 climate, weather, heightSounds, zoneGains, gains, distance, minDistance, gates);
     }
 
-    private static final String[] MONTHS = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug",
-            "sep", "oct", "nov", "dec"};
-    private static final int[] MONTH_START = {0, 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305,
-            335};
+    private static final String[] MONTHS =
+            {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
+    private static final int[] MONTH_START =
+            {0, 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335};
     private static final int[] MONTH_DAYS = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
     private SeasonRange parseSeason(String line, int number, Map<String, Float> defaults)
@@ -168,7 +168,8 @@ public class TextStyleLoader implements StyleLoader {
         }
         String[] sides = clean.split("\\s+to\\s+", 2);
         if (sides.length != 2) {
-            throw error(number, "expected '<Month>[-<day>] to <Month>[-<day>] rain=… wind=… storm=…'");
+            throw error(number,
+                    "expected '<Month>[-<day>] to <Month>[-<day>] rain=… wind=… storm=…'");
         }
         String[] right = sides[1].trim().split("\\s+");
         int start = parseMonthDay(sides[0].trim(), number, true);
@@ -264,8 +265,8 @@ public class TextStyleLoader implements StyleLoader {
             Map<String, List<Float>> presence, Map<String, Float> height,
             Map<String, List<Float>> climate, Map<String, SoundDef> weather,
             Map<String, SoundDef> heightSounds, Map<String, Float> zoneGains,
-            Map<String, Float> gains, Map<String, Float> distance,
-            Map<String, Float> minDistance, Map<String, List<SoundGate>> gates) {
+            Map<String, Float> gains, Map<String, Float> distance, Map<String, Float> minDistance,
+            Map<String, List<SoundGate>> gates) {
         return new SoundscapeStyle(presets, seasons, seasonDefaults, sounds, zones, presence,
                 height, climate, weather, heightSounds, zoneGains, gains, distance, minDistance,
                 gates);
