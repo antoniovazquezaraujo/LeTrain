@@ -31,14 +31,16 @@
    - `drive`: **la locomotora** (si entra en un túnel, el decorado suena a túnel aunque la cámara
      esté por encima de la montaña);
    - `rails`: **el cursor**, se oye la zona por donde se construye;
-   - `stations`: **la estación seleccionada**;
-   - `semaphores`: **el semáforo** activo;
-   - y así el resto de modos.
-   Sigue abierto qué punto usar en la vista MAP.
-   La cámara solo aporta altura/zoom (atenuación + LP de aire, ya existente). El cambio de foco
-   entre modos es un **corte de escena inmediato, sin transición**: al pasar del tren al cursor,
-   los pesos de la nueva posición se aplican de golpe. El `soundscape` sigue sin conocer el mapa
-   (aislamiento ADR-023).
+   - `stations`, `load_trains`: **la estación** seleccionada;
+   - `semaphores`, `sensors`, `speed_signals`, `forks`, `add`: **el elemento que se edita**
+     (cursor u objeto seleccionado);
+   - `trains`, `link`, `unlink`: el tren/locomotora implicados.
+   No existe el caso "sin herramienta": `GameMode` **siempre** tiene valor (incluidos `MENU`,
+   `COMMAND` y `PROGRAM`). La **cámara** (ORBIT/CAB/MAP) no cambia el foco de escucha: solo
+   aporta altura/zoom (atenuación + LP de aire, ya existente). El cambio de foco entre modos es un
+   **corte de escena inmediato, sin transición**: al pasar del tren al cursor, los pesos de la
+   nueva posición se aplican de golpe. El `soundscape` sigue sin conocer el mapa (aislamiento
+   ADR-023).
 2. **Zonas naturales por densidad en un radio fijo**: muestrear una rejilla gruesa alrededor de
    la posición y calcular la fracción de tiles `WATER` / `ROCK` / `GROUND`; el peso cae con la
    distancia (p. ej. `w = clamp((1 - d/R) * densidad)`). El radio de muestreo es un valor **fijo**
@@ -96,7 +98,8 @@
 
 ## Preguntas abiertas
 
-- En la vista MAP, ¿el foco de escucha es el centro de la vista o el cursor?
+- En modos sin elemento espacial (`MENU`, `COMMAND`, `PROGRAM`), ¿se mantiene el último foco o
+  se usa el cursor?
 - ¿Cuántas zonas pueden sonar a la vez como máximo (recorte a las N mayores)?
 - ¿La reverb de túnel se implementa en el player (FDN) o se pre-renderiza en las tomas?
 - Dentro de un túnel, ¿duck completo de zonas exteriores o solo atenuación + LP?
