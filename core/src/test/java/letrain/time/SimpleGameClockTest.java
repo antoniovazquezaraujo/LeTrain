@@ -105,4 +105,71 @@ class SimpleGameClockTest {
         assertEquals(9, clock.now().hour());
         assertEquals(0, clock.now().minute());
     }
+
+    @Test
+    @DisplayName("setTime jumps to the requested instant of the same day")
+    void should_SetTime() {
+        SimpleGameClock clock = new SimpleGameClock();
+
+        clock.setTime(new GameTime(1, 8, 30));
+
+        assertEquals(1, clock.now().day());
+        assertEquals(8, clock.now().hour());
+        assertEquals(30, clock.now().minute());
+        assertEquals(30L * GameClock.TICKS_PER_SECOND, clock.elapsedTicks());
+    }
+
+    @Test
+    @DisplayName("setTime fires the hour, day and day-night events of the jump")
+    void should_FireEventsOnSetTime() {
+        SimpleGameClock clock = new SimpleGameClock();
+        List<String> events = new ArrayList<>();
+        clock.addListener(new GameClockListener() {
+            @Override
+            public void onHourChanged(GameTime time) {
+                events.add("hour " + time.hour());
+            }
+
+            @Override
+            public void onDayChanged(GameTime time) {
+                events.add("day " + time.day());
+            }
+
+            @Override
+            public void onDayNightChanged(GameTime time, boolean night) {
+                events.add("night " + night);
+            }
+        });
+
+        clock.setTime(new GameTime(3, 22, 0));
+
+        assertEquals(3, clock.now().day());
+        assertTrue(events.contains("hour 22"), events.toString());
+        assertTrue(events.contains("day 3"), events.toString());
+        assertTrue(events.contains("night true"), events.toString());
+    }
+
+    @Test
+    @DisplayName("setTime before the start epoch rolls over to the next day")
+    void should_RollForward_WhenSettingTimeBeforeStart() {
+        SimpleGameClock clock = new SimpleGameClock();
+
+        clock.setTime(new GameTime(1, 6, 0));
+
+        assertEquals(2, clock.now().day());
+        assertEquals(6, clock.now().hour());
+        assertEquals(0, clock.now().minute());
+    }
+
+    @Test
+    @DisplayName("setTime(null) is ignored")
+    void should_IgnoreNullTime() {
+        SimpleGameClock clock = new SimpleGameClock();
+        long before = clock.elapsedTicks();
+
+        clock.setTime(null);
+
+        assertEquals(before, clock.elapsedTicks());
+        assertEquals(8, clock.now().hour());
+    }
 }

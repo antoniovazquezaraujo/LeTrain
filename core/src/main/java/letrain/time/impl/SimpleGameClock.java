@@ -39,25 +39,23 @@ public class SimpleGameClock implements GameClock {
     @Override
     public void tick() {
         elapsedTicks++;
-        GameTime current = now();
-        if (current.hour() != last.hour()) {
-            for (GameClockListener listener : listeners) {
-                listener.onHourChanged(current);
-            }
+        notifyChanges();
+    }
+
+    @Override
+    public void setTime(GameTime time) {
+        if (time == null) {
+            return;
         }
-        if (current.day() != last.day()) {
-            for (GameClockListener listener : listeners) {
-                listener.onDayChanged(current);
-            }
+        double minutesFromStart = (time.day() - 1) * (double) MINUTES_PER_DAY + time.minuteOfDay()
+                - START_MINUTE_OF_DAY;
+        double ticksPerMinute = dayDurationSeconds * TICKS_PER_SECOND / (double) MINUTES_PER_DAY;
+        long ticks = Math.round(minutesFromStart * ticksPerMinute);
+        if (ticks < 0) {
+            ticks += Math.round(MINUTES_PER_DAY * ticksPerMinute);
         }
-        boolean night = isNight();
-        if (night != lastNight) {
-            for (GameClockListener listener : listeners) {
-                listener.onDayNightChanged(current, night);
-            }
-            lastNight = night;
-        }
-        last = current;
+        elapsedTicks = Math.max(0, ticks);
+        notifyChanges();
     }
 
     @Override
@@ -99,6 +97,28 @@ public class SimpleGameClock implements GameClock {
         if (listener != null) {
             listeners.add(listener);
         }
+    }
+
+    private void notifyChanges() {
+        GameTime current = now();
+        if (current.hour() != last.hour()) {
+            for (GameClockListener listener : listeners) {
+                listener.onHourChanged(current);
+            }
+        }
+        if (current.day() != last.day()) {
+            for (GameClockListener listener : listeners) {
+                listener.onDayChanged(current);
+            }
+        }
+        boolean night = isNight();
+        if (night != lastNight) {
+            for (GameClockListener listener : listeners) {
+                listener.onDayNightChanged(current, night);
+            }
+            lastNight = night;
+        }
+        last = current;
     }
 
     /** Restores the clock counter (used by deserialization). */

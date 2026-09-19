@@ -80,6 +80,7 @@ GN: 'gn';
 GP: 'gp';
 RAIL: 'rail' | 'rl';
 END: 'end';
+TIME: 'time';
 
 // Directions
 DIR_E: 'e';
@@ -96,6 +97,7 @@ LBRACE: '{';
 RBRACE: '}';
 SEMI: ';';
 COMMA: ',';
+COLON: ':';
 EQUALS: '=';
 
 // Data types

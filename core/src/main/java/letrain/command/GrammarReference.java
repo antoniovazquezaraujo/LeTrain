@@ -114,6 +114,11 @@ public class GrammarReference {
 
         root.add(new Node("journal", "journal;"));
         root.add(new Node("undo / redo", "undo; redo;"));
+
+        Node time = new Node("time");
+        time.add(new Node("show", "time;"));
+        time.add(new Node("set", "time set HH:MM;"));
+        root.add(time);
         root.add(new Node("record/edit mode", "R (Shift+R)"));
         root.add(new Node("save / load", "save backup; load backup;"));
         root.add(new Node("export / import", "export my-network; import my-network;"));

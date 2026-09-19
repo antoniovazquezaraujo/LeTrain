@@ -232,6 +232,30 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
     @Override
+    public Object visitTimeCommand(PlayerCommandsParser.TimeCommandContext ctx) {
+        letrain.time.GameClock clock = model.getGameClock();
+        if (ctx.SET() == null) {
+            String text = clock.now().toString();
+            if (onMessage == null) {
+                return text;
+            }
+            onMessage.accept("Time", text);
+            return null;
+        }
+        int hour = Integer.parseInt(ctx.NUMBER(0).getText());
+        int minute = Integer.parseInt(ctx.NUMBER(1).getText());
+        letrain.time.GameTime target = new letrain.time.GameTime(clock.now().day(), hour, minute);
+        clock.setTime(target);
+        String text = "Hora fijada: " + clock.now();
+        log.info("[time] set to {}", clock.now());
+        if (onMessage == null) {
+            return text;
+        }
+        onMessage.accept("Time", text);
+        return null;
+    }
+
+    @Override
     public Object visitJournalCommand(PlayerCommandsParser.JournalCommandContext ctx) {
         letrain.command.CommandJournal journal = model.getCommandJournal();
         StringBuilder sb = new StringBuilder();

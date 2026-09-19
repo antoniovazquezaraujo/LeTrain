@@ -14,6 +14,14 @@ public interface GameClock {
 
     GameTime now();
 
+    /**
+     * Jumps the clock to the given instant (console {@code time set}, scenarios and tests). The
+     * jump is deterministic and fires the pending hour/day/night listener events. Instants before
+     * the start epoch (day 1, 08:00) roll over to the next day, so the clock never goes back past
+     * its origin.
+     */
+    void setTime(GameTime time);
+
     boolean isNight();
 
     /** 0.0 = broad daylight, 1.0 = full night; used by the views for dusk and dawn fades. */

@@ -45,6 +45,11 @@ public interface GameViewListener {
         return false;
     }
 
+    /** Compact game clock for the map corner, e.g. {@code D1 08:00} (ADR-022). */
+    default String getGameTimeText() {
+        return "";
+    }
+
     void onSaveCommands(File file);
 
     void onLoadCommands(File file);

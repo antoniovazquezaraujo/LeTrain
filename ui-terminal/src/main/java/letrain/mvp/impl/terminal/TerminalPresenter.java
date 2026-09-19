@@ -2251,6 +2251,15 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     @Override
+    public String getGameTimeText() {
+        if (model == null || model.getGameClock() == null) {
+            return "";
+        }
+        letrain.time.GameTime now = model.getGameClock().now();
+        return String.format("D%d %02d:%02d", now.day(), now.hour(), now.minute());
+    }
+
+    @Override
     public void onLoadGame(File file) {
         if (file != null && file.exists()) {
             try {
