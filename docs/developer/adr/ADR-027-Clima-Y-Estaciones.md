@@ -67,6 +67,22 @@
    `letrain.cfg`), (3) **classpath** del módulo. Así un mod es autocontenido
    (`mimod/mi.sound` + `mimod/sounds/*.wav`). Formato canónico documentado (WAV mono 44.1 kHz
    16 bits) y validable con `tools/audit_samples.py`.
+9. **Paquete de mod (mapa + estilo + sonidos)**: el escenario se guarda/exporta con el editor de
+   escenarios del juego (`.ltr`); su sección `configuration` apunta al estilo (`soundscape.style`)
+   y puede fijar semilla/fecha. El paquete es una carpeta autocontenida:
+
+   ```
+   mi-mapa/
+   ├── mi-mapa.ltr          # escenario: semilla + configuration (soundscape.style=mi-estilo.sound)
+   ├── mi-estilo.sound      # estilo: zonas, presencia, [seasons], [climate]…
+   ├── sounds/              # audios propios (WAV mono 44.1 kHz 16 bits)
+   └── CREDITS.md           # autoría y licencias de los audios
+   ```
+
+   Se distribuye como ZIP y se descomprime en la carpeta de escenarios/mods; la resolución
+   relativa del punto 8 lo hace funcionar sin recompilar. Validación: `letrain-check` para el
+   `.ltr` y `tools/audit_samples.py` para el audio. Futuro: comando "Exportar escenario con
+   sonidos…" que empaquete todo.
 
 ## Consecuencias
 
