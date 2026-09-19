@@ -73,6 +73,12 @@
    con el mismo suavizado. Opcional: capa propia de túnel (retumbo, viento canalizado). El render
    de CAB dentro del túnel (ver algo de vía y la salida al fondo) es tarea de la capa gráfica, no
    del audio.
+   **Cámara y espacio**: el `enclosure` es del oyente (el foco), pero la cámara decide desde
+   dónde se escucha. En **MAP** el oyente conceptual está por encima del mundo, así que
+   `enclosure_efectivo = enclosure_foco × (cámara == MAP ? 0 : 1)`: en MAP vuelven las zonas
+   exteriores (montaña, campo) y no se duckea. Refinamiento futuro: que cada fuente lleve su
+   propio espacio (el tren dentro del túnel resonaría aunque se escuche desde arriba, atenuado
+   por la distancia/altura).
 
 ## Algoritmo propuesto (zona primaria + secundaria)
 
