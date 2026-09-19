@@ -11,8 +11,9 @@ import org.junit.jupiter.api.Test;
 class WeatherGeneratorTest {
 
     private static ClimateCalendar calendar(float rain) {
-        return new ClimateCalendar(List.of(new SeasonRange(1, 366,
-                new WeatherProbabilities(rain, rain / 2, rain / 4))),
+        return new ClimateCalendar(
+                List.of(new SeasonRange(1, 366,
+                        new WeatherProbabilities(rain, rain / 2, rain / 4))),
                 new WeatherProbabilities(0f, 0f, 0f));
     }
 

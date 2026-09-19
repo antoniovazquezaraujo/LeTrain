@@ -7,8 +7,8 @@ import java.util.Random;
 /**
  * Deterministic hourly weather (ADR-027). Every game hour it checks the season probabilities to
  * start or stop each phenomenon, keeps phenomena active for a minimum of one hour and ramps the
- * intensities instead of jumping. Same seed and same (day, hour) sequence give the same weather,
- * so command journals replay identically.
+ * intensities instead of jumping. Same seed and same (day, hour) sequence give the same weather, so
+ * command journals replay identically.
  */
 public class WeatherGenerator {
 
@@ -49,18 +49,18 @@ public class WeatherGenerator {
             }
         } else if (probability > 0f && random.nextFloat() < probability * START_RATE) {
             phenomenon.active = true;
-            phenomenon.remainingHours = 1
-                    + random.nextInt(Math.max(1, Math.round(1 + MAX_ACTIVE_HOURS * probability)));
+            phenomenon.remainingHours =
+                    1 + random.nextInt(Math.max(1, Math.round(1 + MAX_ACTIVE_HOURS * probability)));
             phenomenon.target = drawIntensity(probability);
         } else {
             phenomenon.target = 0f;
         }
         if (phenomenon.intensity < phenomenon.target) {
-            phenomenon.intensity = Math.min(phenomenon.target,
-                    phenomenon.intensity + RAMP_PER_HOUR);
+            phenomenon.intensity =
+                    Math.min(phenomenon.target, phenomenon.intensity + RAMP_PER_HOUR);
         } else {
-            phenomenon.intensity = Math.max(phenomenon.target,
-                    phenomenon.intensity - RAMP_PER_HOUR);
+            phenomenon.intensity =
+                    Math.max(phenomenon.target, phenomenon.intensity - RAMP_PER_HOUR);
         }
         return phenomenon.intensity;
     }
