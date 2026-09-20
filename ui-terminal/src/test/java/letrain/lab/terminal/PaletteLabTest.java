@@ -18,4 +18,29 @@ class PaletteLabTest {
         assertEquals(TextColor.ANSI.BLUE_BRIGHT, PaletteLab.ansi(0x4040FF));
         assertEquals(TextColor.ANSI.GREEN_BRIGHT, PaletteLab.ansi(0x00FF00));
     }
+
+    @Test
+    @DisplayName("day-night ratio follows the game clock curve")
+    void should_ComputeRatio() {
+        assertEquals(0.0, PaletteLab.ratioOf(12.0), 1e-9);
+        assertEquals(0.5, PaletteLab.ratioOf(20.0), 1e-9);
+        assertEquals(1.0, PaletteLab.ratioOf(23.0), 1e-9);
+        assertEquals(0.5, PaletteLab.ratioOf(6.0), 1e-9);
+    }
+
+    @Test
+    @DisplayName("blend returns the key palettes at 0, 0.5 and 1")
+    void should_BlendKeyPalettes() {
+        assertEquals(PaletteLab.palettes()[0][0], PaletteLab.blend(0, 0.0));
+        assertEquals(PaletteLab.palettes()[0][1], PaletteLab.blend(0, 0.5));
+        assertEquals(PaletteLab.palettes()[0][2], PaletteLab.blend(0, 1.0));
+    }
+
+    @Test
+    @DisplayName("colour interpolation is linear")
+    void should_MixColours() {
+        assertEquals(0x808080, PaletteLab.mixColor(0x000000, 0xFFFFFF, 0.5f));
+        assertEquals(0x000000, PaletteLab.mixColor(0x000000, 0xFFFFFF, 0f));
+        assertEquals(0xFFFFFF, PaletteLab.mixColor(0x000000, 0xFFFFFF, 1f));
+    }
 }

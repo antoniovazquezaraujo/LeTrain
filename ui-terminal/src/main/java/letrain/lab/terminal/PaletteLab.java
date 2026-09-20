@@ -17,9 +17,10 @@ import java.io.IOException;
  * {@code docs/developer/systems/DayNight_Colors.md}).
  *
  * <p>
- * Pinta un mapa de muestra con la familia clara u oscura en día/crepúsculo/noche para afinar los
- * valores a ojo. Teclas: {@code 1/2/3} franja, {@code f} familia, {@code c} color (RGB 24-bit vs
- * slots ANSI del tema), {@code a} auto, {@code q}/Esc salir.
+ * Pinta un mapa de muestra con la familia clara u oscura y una hora simulada, interpolando
+ * día→crepúsculo→noche con la misma curva que el reloj del juego. Teclas: {@code ←/→} mueve la
+ * hora, {@code 1/2/3} salta a día/crepúsculo/noche, {@code f} familia, {@code c} color (RGB 24-bit
+ * vs slots ANSI del tema), {@code a} auto, {@code q}/Esc salir.
  *
  * <p>
  * Para ajustar la paleta, edita los valores de {@link #palettes()} y vuelve a lanzar. Este
@@ -109,7 +110,6 @@ public class PaletteLab {
     }
 
     private static final String[] FAMILY_NAMES = {"CLARA (papel)", "OSCURA"};
-    private static final String[] PHASE_NAMES = {"DÍA", "CREPÚSCULO", "NOCHE"};
     private static final TextColor.ANSI[] ANSI_SLOTS = {TextColor.ANSI.BLACK, TextColor.ANSI.RED,
             TextColor.ANSI.GREEN, TextColor.ANSI.YELLOW, TextColor.ANSI.BLUE,
             TextColor.ANSI.MAGENTA, TextColor.ANSI.CYAN, TextColor.ANSI.WHITE,
@@ -118,7 +118,7 @@ public class PaletteLab {
             TextColor.ANSI.CYAN_BRIGHT, TextColor.ANSI.WHITE_BRIGHT};
 
     private int family;
-    private int phase;
+    private double hour = 12.0;
     private boolean rgbMode = true;
     private boolean auto;
     private long lastAuto;
@@ -153,8 +153,8 @@ public class PaletteLab {
             if (screen.doResizeIfNecessary() != null) {
                 tg = screen.newTextGraphics();
             }
-            if (auto && System.currentTimeMillis() - lastAuto > 1500) {
-                phase = (phase + 1) % PHASE_NAMES.length;
+            if (auto && System.currentTimeMillis() - lastAuto > 120) {
+                hour = (hour + 0.1) % 24.0;
                 lastAuto = System.currentTimeMillis();
             }
             draw(tg, screen);
@@ -177,13 +177,21 @@ public class PaletteLab {
         if (key.getKeyType() == KeyType.Escape) {
             return false;
         }
+        if (key.getKeyType() == KeyType.ArrowLeft) {
+            hour = (hour + 24.0 - 0.25) % 24.0;
+            return true;
+        }
+        if (key.getKeyType() == KeyType.ArrowRight) {
+            hour = (hour + 0.25) % 24.0;
+            return true;
+        }
         if (key.getKeyType() != KeyType.Character) {
             return true;
         }
         switch (Character.toLowerCase(key.getCharacter())) {
-            case '1' -> phase = 0;
-            case '2' -> phase = 1;
-            case '3' -> phase = 2;
+            case '1' -> hour = 12.0;
+            case '2' -> hour = 20.0;
+            case '3' -> hour = 23.0;
             case 'f' -> family = (family + 1) % FAMILY_NAMES.length;
             case 'c' -> rgbMode = !rgbMode;
             case 'a' -> {
@@ -200,6 +208,76 @@ public class PaletteLab {
         return true;
     }
 
+    /** Misma curva que {@code SimpleGameClock.getDayNightRatio()}: 0 de día, 1 de noche. */
+    static double ratioOf(double hour) {
+        double minute = hour * 60.0;
+        if (minute >= 7 * 60 && minute <= 19 * 60) {
+            return 0.0;
+        }
+        if (minute >= 21 * 60 || minute <= 5 * 60) {
+            return 1.0;
+        }
+        if (minute > 19 * 60) {
+            return (minute - 19 * 60) / (21 * 60 - 19 * 60);
+        }
+        return 1.0 - (minute - 5 * 60) / (7 * 60 - 5 * 60);
+    }
+
+    private static String phaseName(double ratio) {
+        if (ratio <= 0.0) {
+            return "día";
+        }
+        if (ratio >= 1.0) {
+            return "noche";
+        }
+        return ratio < 0.5 ? "atardecer" : "amanecer";
+    }
+
+    /** Interpola día→crepúsculo→noche con el ratio del reloj (transición gradual). */
+    static Pal blend(int family, double ratio) {
+        Pal[] keys = palettes()[family];
+        if (ratio <= 0.0) {
+            return keys[0];
+        }
+        if (ratio >= 1.0) {
+            return keys[2];
+        }
+        if (ratio <= 0.5) {
+            return mix(keys[0], keys[1], (float) (ratio * 2.0));
+        }
+        return mix(keys[1], keys[2], (float) ((ratio - 0.5) * 2.0));
+    }
+
+    static Pal mix(Pal a, Pal b, float t) {
+        return new Pal(mixColor(a.ground(), b.ground(), t), mixColor(a.water(), b.water(), t),
+                mixColor(a.rock(), b.rock(), t), mixColor(a.rail(), b.rail(), t),
+                mixColor(a.railInactive(), b.railInactive(), t),
+                mixColor(a.railInvalid(), b.railInvalid(), t),
+                mixColor(a.station(), b.station(), t),
+                mixColor(a.stationSelected(), b.stationSelected(), t),
+                mixColor(a.producer(), b.producer(), t), mixColor(a.consumer(), b.consumer(), t),
+                mixColor(a.sensor(), b.sensor(), t), mixColor(a.semOpen(), b.semOpen(), t),
+                mixColor(a.semClosed(), b.semClosed(), t),
+                mixColor(a.signalMax(), b.signalMax(), t),
+                mixColor(a.signalMin(), b.signalMin(), t), mixColor(a.deadEnd(), b.deadEnd(), t),
+                mixColor(a.tunnel(), b.tunnel(), t), mixColor(a.bridge(), b.bridge(), t),
+                mixColor(a.loco(), b.loco(), t), mixColor(a.wagon(), b.wagon(), t),
+                mixColor(a.cargoCoal(), b.cargoCoal(), t),
+                mixColor(a.cargoGold(), b.cargoGold(), t),
+                mixColor(a.cargoRuby(), b.cargoRuby(), t),
+                mixColor(a.cursorDrawing(), b.cursorDrawing(), t),
+                mixColor(a.cursorMoving(), b.cursorMoving(), t),
+                mixColor(a.cursorErasing(), b.cursorErasing(), t),
+                mixColor(a.highlight(), b.highlight(), t), mixColor(a.label(), b.label(), t));
+    }
+
+    static int mixColor(int a, int b, float t) {
+        int r = Math.round(((a >> 16) & 0xFF) * (1 - t) + ((b >> 16) & 0xFF) * t);
+        int g = Math.round(((a >> 8) & 0xFF) * (1 - t) + ((b >> 8) & 0xFF) * t);
+        int bl = Math.round((a & 0xFF) * (1 - t) + (b & 0xFF) * t);
+        return (r << 16) | (g << 8) | bl;
+    }
+
     private void draw(TextGraphics tg, Screen screen) {
         int cols = screen.getTerminalSize().getColumns();
         int rows = screen.getTerminalSize().getRows();
@@ -210,16 +288,16 @@ public class PaletteLab {
         tg.setBackgroundColor(chromeBg);
         tg.fill(' ');
 
+        double ratio = ratioOf(hour);
         put(tg, 1, 0, "PALETTE LAB — día/noche 2D (ADR-022 fase 1)", ansi(0xFFFFFF), chromeBg);
-        put(tg, 1, 1,
-                "familia=" + FAMILY_NAMES[family] + "  franja=" + PHASE_NAMES[phase] + "  color="
-                        + (rgbMode ? "RGB 24-bit" : "ANSI (tema del terminal)") + "  "
-                        + (auto ? "auto ON" : "auto off"),
+        put(tg, 1, 1, String.format("hora=%02d:%02d ratio=%.2f (%s)  familia=%s  color=%s  %s",
+                (int) hour, (int) (hour % 1 * 60), ratio, phaseName(ratio), FAMILY_NAMES[family],
+                rgbMode ? "RGB 24-bit" : "ANSI (tema del terminal)", auto ? "auto ON" : "auto off"),
                 ansi(0xFFC850), chromeBg);
-        put(tg, 1, 2, "[1] día  [2] crepúsculo  [3] noche  [f] familia  [c] color  [a] auto  "
-                + "[q] salir", chromeFg, chromeBg);
+        put(tg, 1, 2, "[←/→] hora  [1] día  [2] crepúsculo  [3] noche  [f] familia  [c] color  "
+                + "[a] auto  [q] salir", chromeFg, chromeBg);
 
-        Pal pal = palettes()[family][phase];
+        Pal pal = blend(family, ratio);
         int mapY = 4;
         for (int y = 0; y < MAP.length && mapY + y < rows - 10; y++) {
             String line = MAP[y];
