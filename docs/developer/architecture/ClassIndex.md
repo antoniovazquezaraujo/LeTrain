@@ -49,6 +49,9 @@
 - [[letrain.economy.EconomyManager|EconomyManager]] (core)
 - [[letrain.economy.impl.EconomyManager|EconomyManager]] (core)
 
+## letrain.game
+- [[letrain.game.audio.SoundscapeAmbience|SoundscapeAmbience]] (game-audio)
+
 ## letrain.ground
 - [[letrain.ground.Ground|Ground]] (core)
 - [[letrain.ground.GroundMap|GroundMap]] (core)
@@ -110,7 +113,6 @@
 - [[letrain.mvp.impl.graphic.Gdx3DHud|Gdx3DHud]] (ui-graphic)
 - [[letrain.mvp.impl.graphic.Gdx3DInputHandler|Gdx3DInputHandler]] (ui-graphic)
 - [[letrain.mvp.impl.graphic.GraphicPresenter|GraphicPresenter]] (ui-graphic)
-- [[letrain.mvp.impl.graphic.SoundscapeAmbience|SoundscapeAmbience]] (ui-graphic)
 - [[letrain.mvp.impl.services.AutomationEngine|AutomationEngine]] (core)
 - [[letrain.mvp.impl.services.ModelListenerService|ModelListenerService]] (core)
 - [[letrain.mvp.impl.services.ModelReportService|ModelReportService]] (core)
@@ -137,6 +139,34 @@
 - [[letrain.segments.impl.RailwayGraphImpl|RailwayGraphImpl]] (core)
 - [[letrain.segments.impl.SegmentImpl|SegmentImpl]] (core)
 - [[letrain.segments.impl.TopologyServiceImpl|TopologyServiceImpl]] (core)
+
+## letrain.soundscape
+- [[letrain.soundscape.Band|Band]] (soundscape)
+- [[letrain.soundscape.ClimatePreset|ClimatePreset]] (soundscape)
+- [[letrain.soundscape.Composition|Composition]] (soundscape)
+- [[letrain.soundscape.CompositionInput|CompositionInput]] (soundscape)
+- [[letrain.soundscape.SeasonRange|SeasonRange]] (soundscape)
+- [[letrain.soundscape.SoundDef|SoundDef]] (soundscape)
+- [[letrain.soundscape.SoundGate|SoundGate]] (soundscape)
+- [[letrain.soundscape.SoundscapeEngine|SoundscapeEngine]] (soundscape)
+- [[letrain.soundscape.SoundscapeStyle|SoundscapeStyle]] (soundscape)
+- [[letrain.soundscape.SpeedPreset|SpeedPreset]] (soundscape)
+- [[letrain.soundscape.StyleLoader|StyleLoader]] (soundscape)
+- [[letrain.soundscape.audio.AmbientPlayer|AmbientPlayer]] (soundscape)
+- [[letrain.soundscape.audio.AmbientVoice|AmbientVoice]] (soundscape)
+- [[letrain.soundscape.audio.SampleLoader|SampleLoader]] (soundscape)
+- [[letrain.soundscape.audio.SampleResolver|SampleResolver]] (soundscape)
+- [[letrain.soundscape.audio.SoundSample|SoundSample]] (soundscape)
+- [[letrain.soundscape.cli.SoundscapeCli|SoundscapeCli]] (soundscape)
+- [[letrain.soundscape.gui.PlayerState|PlayerState]] (soundscape)
+- [[letrain.soundscape.gui.SoundscapePlayer|SoundscapePlayer]] (soundscape)
+- [[letrain.soundscape.impl.SoundscapeEngineImpl|SoundscapeEngineImpl]] (soundscape)
+- [[letrain.soundscape.impl.TextStyleLoader|TextStyleLoader]] (soundscape)
+- [[letrain.soundscape.impl.TextStyleWriter|TextStyleWriter]] (soundscape)
+- [[letrain.soundscape.tour.Tour|Tour]] (soundscape)
+- [[letrain.soundscape.tour.TourLoader|TourLoader]] (soundscape)
+- [[letrain.soundscape.tour.TourPoint|TourPoint]] (soundscape)
+- [[letrain.soundscape.tour.TourState|TourState]] (soundscape)
 
 ## letrain.time
 - [[letrain.time.GameClock|GameClock]] (core)

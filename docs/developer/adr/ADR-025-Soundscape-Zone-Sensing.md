@@ -44,7 +44,9 @@
    ADR-023).
    **Integración**: el **launcher** crea y para el reproductor (ciclo de vida, sirve a las dos
    UIs); el **presenter** le empuja el foco (conoce modos y cursor); el **bridge de `core`**
-   calcula los pesos y devuelve el `CompositionInput`.
+   calcula los pesos y devuelve el `CompositionInput`. La glue (`SoundscapeAmbience`) vive en el
+   módulo **`game-audio`** (depende de `core` + `soundscape`) y la comparten los dos
+   clientes; los UIs no dependen de `soundscape` directamente.
 2. **Zonas naturales por densidad en un radio fijo**: muestrear una rejilla gruesa alrededor de
    la posición y calcular la fracción de tiles `WATER` / `ROCK` / `GROUND`; el peso cae con la
    distancia (p. ej. `w = clamp((1 - d/R) * densidad)`). El radio de muestreo es un valor **fijo**

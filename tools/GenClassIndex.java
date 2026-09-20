@@ -17,8 +17,9 @@ import java.util.stream.Stream;
  */
 public class GenClassIndex {
 
-    private static final List<String> MODULES = List.of("core", "ui-terminal", "ui-graphic",
-            "launcher-terminal", "launcher-graphic", "launcher-check");
+    private static final List<String> MODULES = List.of("core", "soundscape", "game-audio",
+            "ui-terminal", "ui-graphic", "launcher-terminal", "launcher-graphic",
+            "launcher-check");
 
     private record Entry(String group, String fqcn, String shortName, String module) {}
 

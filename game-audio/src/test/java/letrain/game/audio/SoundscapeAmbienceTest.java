@@ -1,4 +1,4 @@
-package letrain.mvp.impl.graphic;
+package letrain.game.audio;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

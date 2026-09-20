@@ -8,7 +8,7 @@
         <artifactId>JLeTrain</artifactId>
         <version>1.0.0-beta.5-SNAPSHOT</version>
     </parent>
-    <artifactId>JLeTrain-ui-graphic</artifactId>
+    <artifactId>JLeTrain-game-audio</artifactId>
     <packaging>jar</packaging>
 
     <dependencies>
@@ -19,36 +19,13 @@
         </dependency>
         <dependency>
             <groupId>com.progmatic</groupId>
-            <artifactId>JLeTrain-game-audio</artifactId>
+            <artifactId>JLeTrain-soundscape</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.kotcrab.vis</groupId>
-            <artifactId>vis-ui</artifactId>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.badlogicgames.gdx</groupId>
-            <artifactId>gdx</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.badlogicgames.gdx</groupId>
-            <artifactId>gdx-backend-lwjgl3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.badlogicgames.gdx</groupId>
-            <artifactId>gdx-platform</artifactId>
-            <classifier>natives-desktop</classifier>
-        </dependency>
-        <dependency>
-            <groupId>com.badlogicgames.gdx</groupId>
-            <artifactId>gdx-freetype</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.badlogicgames.gdx</groupId>
-            <artifactId>gdx-freetype-platform</artifactId>
-            <classifier>natives-desktop</classifier>
-        </dependency>
-
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -60,5 +37,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
 </project>

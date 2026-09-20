@@ -18,6 +18,7 @@
     <modules>
         <module>soundscape</module>
         <module>core</module>
+        <module>game-audio</module>
         <module>ui-terminal</module>
         <module>ui-graphic</module>
         <module>launcher-terminal</module>

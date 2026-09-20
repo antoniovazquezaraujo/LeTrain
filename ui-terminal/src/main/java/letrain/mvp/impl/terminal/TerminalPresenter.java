@@ -25,6 +25,7 @@ import letrain.mvp.Model;
 import letrain.mvp.impl.GameSaveService;
 import letrain.mvp.impl.RailTrackMaker;
 import letrain.mvp.impl.SimulationController;
+import letrain.game.audio.SoundscapeAmbience;
 import letrain.track.CargoTypes;
 import letrain.track.Station;
 import letrain.track.rail.RailTrack;
@@ -89,6 +90,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private final GameSaveService gameSaveService;
 
     /**
+     * Soundscape glue (styles, zones, weather), owned by the launcher; {@code null} in tests and
+     * when audio is disabled, in which case the legacy {@link letrain.audio.AudioController}
+     * ambient keeps playing.
+     */
+    private final SoundscapeAmbience ambience;
+
+    /**
      * True while a programmatic replay (scenario import, undo/redo) executes commands. Train-event
      * sounds (link/unlink) are muted then, since the player did not perform those actions.
      */
@@ -124,7 +132,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     public TerminalPresenter(Model model) {
-        this(model, null);
+        this(model, null, null);
+    }
+
+    /** Production: the launcher owns the soundscape glue and passes it in (ADR-025). */
+    public TerminalPresenter(Model model, SoundscapeAmbience ambience) {
+        this(model, null, ambience);
     }
 
     /**
@@ -133,6 +146,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      * Production always passes {@code null}.
      */
     TerminalPresenter(Model model, TerminalView view) {
+        this(model, view, null);
+    }
+
+    TerminalPresenter(Model model, TerminalView view, SoundscapeAmbience ambience) {
+        this.ambience = ambience;
         setModel(model);
         this.view = view != null ? view : new TerminalView(this);
         renderer = new RenderVisitor(this.view);
@@ -350,6 +368,33 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
+    /**
+     * Pushes the current focus to the soundscape glue (zone weights, weather) once per tick, or
+     * falls back to the legacy {@link letrain.audio.AudioController} ambient when the glue is not
+     * wired (tests, audio disabled). The zoom factor from the visible cells acts as the 2D
+     * listening height, mirroring the 3D camera zoom (ADR-025).
+     */
+    void updateAmbientAudio() {
+        Point listenerPos = model.getMode() == DRIVE && model.getSelectedLocomotive() != null
+                ? model.getSelectedLocomotive().getPosition()
+                : model.getCursor().getPosition();
+        int ambientCells = view.getCols() * view.getRows();
+        float ambientZoom = Math.max(0f, Math.min(1f, (ambientCells - AMBIENT_BASE_CELLS)
+                / (float) (AMBIENT_FULL_CELLS - AMBIENT_BASE_CELLS)));
+        if (ambience != null) {
+            ambience.update(model, ambientZoom);
+        }
+        if (audioController != null) {
+            audioController.setListenerPosition((float) listenerPos.getX(),
+                    (float) listenerPos.getY(), 0f, 0);
+            if (ambience == null) {
+                audioController.updateAmbient(true, ambientZoom, (float) listenerPos.getX(),
+                        (float) listenerPos.getY(), 0f);
+            }
+            audioController.update();
+        }
+    }
+
     public void start() {
         running = true;
         try {
@@ -373,21 +418,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     }
                 }
                 simulationController.tick();
-                if (audioController != null) {
-                    Point listenerPos =
-                            model.getMode() == DRIVE && model.getSelectedLocomotive() != null
-                                    ? model.getSelectedLocomotive().getPosition()
-                                    : model.getCursor().getPosition();
-                    int ambientCells = view.getCols() * view.getRows();
-                    float ambientZoom =
-                            Math.max(0f, Math.min(1f, (ambientCells - AMBIENT_BASE_CELLS)
-                                    / (float) (AMBIENT_FULL_CELLS - AMBIENT_BASE_CELLS)));
-                    audioController.setListenerPosition((float) listenerPos.getX(),
-                            (float) listenerPos.getY(), 0f, 0);
-                    audioController.updateAmbient(true, ambientZoom, (float) listenerPos.getX(),
-                            (float) listenerPos.getY(), 0f);
-                    audioController.update();
-                }
+                updateAmbientAudio();
                 renderer.visitModel(model);
                 informer.visitModel(model);
                 view.paint();
