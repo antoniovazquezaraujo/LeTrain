@@ -19,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>com.progmatic</groupId>
-            <artifactId>JLeTrain-soundscape</artifactId>
+            <artifactId>JLeTrain-soundscape-game</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

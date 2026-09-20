@@ -17,6 +17,11 @@
             <artifactId>JLeTrain-ui-terminal</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.progmatic</groupId>
+            <artifactId>JLeTrain-soundscape-game</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

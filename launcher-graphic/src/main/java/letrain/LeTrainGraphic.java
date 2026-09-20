@@ -2,7 +2,7 @@ package letrain;
 
 import letrain.mvp.impl.Model;
 import letrain.mvp.impl.graphic.GraphicPresenter;
-import letrain.mvp.impl.graphic.SoundscapeAmbience;
+import letrain.soundscape.game.SoundscapeAmbience;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 
