@@ -24,6 +24,11 @@ public final class SolarModel {
 
     private SolarModel() {}
 
+    /** 1-based day of year for a 1-based game day (the calendar has 366 days). */
+    public static int dayOfYear(int day) {
+        return ((day - 1) % 366) + 1;
+    }
+
     /** Solar declination (degrees) for a 1-based day of year (Cooper's equation). */
     public static double declinationDegrees(int dayOfYear) {
         return AXIAL_TILT * Math.sin(2.0 * Math.PI * (284 + dayOfYear) / 365.0);

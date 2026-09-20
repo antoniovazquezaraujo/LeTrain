@@ -160,6 +160,11 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 | 1d | 2D: variantes ANSI por franja con histéresis | Terminal con día/crepúsculo/noche |
 | 1e | Emisivos (faros/farolas) y niebla/cielo fino | Noche con guías de luz; coordinar con #480 |
 
+Estado: **1a hecha**. `VisualPalette` (core, `letrain.palette`) contiene ya `AMBIENT_LIGHT`,
+`SUN_LIGHT`, `SKY` y `TABLE_BOARD` con claves día/crepúsculo/noche e interpolación perceptual; el
+3D los aplica cada tick (luz ambiental, sol direccional según `SolarModel`, color de fondo y
+tablero). El resto de tokens entran con 1b–1d.
+
 ## Decisiones pendientes
 
 - ¿`VisualPalette` en `core` (`letrain.palette`) o módulo aparte `palette`?
