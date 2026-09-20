@@ -51,7 +51,8 @@ class PaletteLabTest {
     @Test
     @DisplayName("the light paper reaches its dusk tone at 20:00 and then fades")
     void should_ReachDuskTone_AtNightfall() {
-        assertEquals(PaletteLab.palettes()[0][1], PaletteLab.blend(0, PaletteLab.LIGHT_NIGHTFALL));
+        assertEquals(PaletteLab.ensureContrast(PaletteLab.palettes()[0][1]),
+                PaletteLab.blend(0, PaletteLab.LIGHT_NIGHTFALL));
         PaletteLab.Pal fading = PaletteLab.blend(0, PaletteLab.LIGHT_NIGHTFALL + 0.05);
         assertTrue(fading.ground() != PaletteLab.palettes()[0][1].ground(),
                 "the fade must already be visible");
@@ -64,15 +65,29 @@ class PaletteLabTest {
 
         PaletteLab.Pal faded = PaletteLab.blend(0, midFade);
 
-        assertEquals(PaletteLab.TWILIGHT, faded);
+        assertEquals(PaletteLab.TWILIGHT.ground(), faded.ground());
         assertTrue(faded.ground() != 0x000000, "the background must stay visible");
-        assertTrue(luminance(faded.rail()) - luminance(faded.ground()) > 40,
-                "the rail must keep contrast against the ground");
     }
 
-    private static int luminance(int rgb) {
-        return (int) (0.2126 * ((rgb >> 16) & 0xFF) + 0.7152 * ((rgb >> 8) & 0xFF)
-                + 0.0722 * (rgb & 0xFF));
+    @Test
+    @DisplayName("every token keeps the minimum contrast across the whole fade")
+    void should_KeepMinimumContrast_AcrossTheFade() {
+        for (int i = 0; i <= 50; i++) {
+            double ratio = PaletteLab.LIGHT_NIGHTFALL + i / 100.0;
+            PaletteLab.Pal pal = PaletteLab.blend(0, ratio);
+            double bg = luminance(pal.ground());
+            int[] tokens = {pal.rail(), pal.water(), pal.station(), pal.sensor(), pal.label(),
+                    pal.cursorDrawing()};
+            for (int token : tokens) {
+                double delta = Math.abs(luminance(token) - bg);
+                assertTrue(delta >= PaletteLab.MIN_CONTRAST - 8,
+                        "ratio=" + ratio + " delta=" + delta);
+            }
+        }
+    }
+
+    private static double luminance(int rgb) {
+        return 0.2126 * ((rgb >> 16) & 0xFF) + 0.7152 * ((rgb >> 8) & 0xFF) + 0.0722 * (rgb & 0xFF);
     }
 
     @Test

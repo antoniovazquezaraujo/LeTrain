@@ -266,12 +266,12 @@ public class PaletteLab {
             Pal paper = mix(keys[0], keys[1], (float) Math.min(1.0, ratio / LIGHT_NIGHTFALL));
             double nightfall = smoothstep((ratio - LIGHT_NIGHTFALL) / (1.0 - LIGHT_NIGHTFALL));
             if (nightfall <= 0.0) {
-                return paper;
+                return ensureContrast(paper);
             }
             if (nightfall < 0.5) {
-                return mix(paper, TWILIGHT, (float) (nightfall * 2.0));
+                return ensureContrast(mix(paper, TWILIGHT, (float) (nightfall * 2.0)));
             }
-            return mix(TWILIGHT, keys[2], (float) ((nightfall - 0.5) * 2.0));
+            return ensureContrast(mix(TWILIGHT, keys[2], (float) ((nightfall - 0.5) * 2.0)));
         }
         if (ratio <= 0.5) {
             return mix(keys[0], keys[1], (float) (ratio * 2.0));
@@ -287,6 +287,12 @@ public class PaletteLab {
 
     /** Ratio del corte seco de régimen en la familia clara (0.75 = 20:30). */
     static final double CUT_RATIO = 0.75;
+
+    /**
+     * Diferencia mínima de luminosidad entre cada token y el fondo. Si al fundir se acercan, el
+     * token se aclara u oscurece lo justo para seguir distinguiéndose (nunca hay banda confusa).
+     */
+    static final double MIN_CONTRAST = 55;
 
     /**
      * Punto medio del anochecer en la familia clara: fondo ya oscuro pero con los glifos todavía
@@ -348,6 +354,51 @@ public class PaletteLab {
     private static int toSrgb(double linear) {
         double v = linear <= 0.0031308 ? 12.92 * linear : 1.055 * Math.pow(linear, 1 / 2.4) - 0.055;
         return (int) Math.round(Math.max(0.0, Math.min(1.0, v)) * 255);
+    }
+
+    /** Fuerza que cada token mantenga {@link #MIN_CONTRAST} de luminosidad frente al fondo. */
+    static Pal ensureContrast(Pal p) {
+        double bg = luminance(p.ground());
+        return new Pal(p.ground(), contrast(p.water(), bg), contrast(p.rock(), bg),
+                contrast(p.rail(), bg), contrast(p.railInactive(), bg),
+                contrast(p.railInvalid(), bg), contrast(p.station(), bg),
+                contrast(p.stationSelected(), bg), contrast(p.producer(), bg),
+                contrast(p.consumer(), bg), contrast(p.sensor(), bg), contrast(p.semOpen(), bg),
+                contrast(p.semClosed(), bg), contrast(p.signalMax(), bg),
+                contrast(p.signalMin(), bg), contrast(p.deadEnd(), bg), contrast(p.tunnel(), bg),
+                contrast(p.bridge(), bg), contrast(p.loco(), bg), contrast(p.wagon(), bg),
+                contrast(p.cargoCoal(), bg), contrast(p.cargoGold(), bg),
+                contrast(p.cargoRuby(), bg), contrast(p.cursorDrawing(), bg),
+                contrast(p.cursorMoving(), bg), contrast(p.cursorErasing(), bg),
+                contrast(p.highlight(), bg), contrast(p.label(), bg));
+    }
+
+    private static int contrast(int rgb, double bgLuminance) {
+        return luminance(rgb) >= bgLuminance ? pushTo(rgb, bgLuminance + MIN_CONTRAST, true)
+                : pushTo(rgb, bgLuminance - MIN_CONTRAST, false);
+    }
+
+    /** Mezcla el color hacia blanco o negro lo justo para alcanzar la luminosidad objetivo. */
+    private static int pushTo(int rgb, double target, boolean towardWhite) {
+        double clamped = Math.max(0, Math.min(255, target));
+        boolean reached = towardWhite ? luminance(rgb) >= clamped : luminance(rgb) <= clamped;
+        if (reached) {
+            return rgb;
+        }
+        int other = towardWhite ? 0xFFFFFF : 0x000000;
+        int best = other;
+        for (int i = 1; i <= 100; i++) {
+            best = mixColor(rgb, other, i / 100f);
+            double l = luminance(best);
+            if (towardWhite ? l >= clamped : l <= clamped) {
+                return best;
+            }
+        }
+        return best;
+    }
+
+    static double luminance(int rgb) {
+        return 0.2126 * ((rgb >> 16) & 0xFF) + 0.7152 * ((rgb >> 8) & 0xFF) + 0.0722 * (rgb & 0xFF);
     }
 
     private void draw(TextGraphics tg, Screen screen) {
