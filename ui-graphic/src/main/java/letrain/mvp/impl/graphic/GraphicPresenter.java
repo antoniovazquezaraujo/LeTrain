@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
+import letrain.palette.VisualPalette;
 import letrain.mvp.impl.GameSaveService;
 import letrain.mvp.impl.RailTrackMaker;
 import letrain.mvp.impl.SimulationController;
@@ -71,6 +72,11 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     private Environment environment;
+    private final VisualPalette palette = new VisualPalette();
+    private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute ambientAttribute;
+    private com.badlogic.gdx.graphics.g3d.environment.DirectionalLight sunLight;
+    private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute tableDiffuse;
+    private final Color skyColor = new Color();
 
     private letrain.mvp.Model model;
     private Gdx3DRenderer renderer;
@@ -187,18 +193,20 @@ public class GraphicPresenter extends ApplicationAdapter
         renderer.init();
         modelBatch = new ModelBatch();
         environment = new Environment();
-        environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.5f, 0.5f, 0.5f, 1f));
-        environment.add(new DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f));
+        ambientAttribute = new ColorAttribute(ColorAttribute.AmbientLight, 0.5f, 0.5f, 0.5f, 1f);
+        environment.set(ambientAttribute);
+        sunLight = new DirectionalLight();
+        sunLight.set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f);
+        environment.add(sunLight);
 
         cam = cameraController.init(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         modelBuilder = new ModelBuilder();
 
         // Suelo de madera o tablero
+        tableDiffuse = ColorAttribute.createDiffuse(new Color(0.4f, 0.3f, 0.1f, 1f));
         groundModel = modelBuilder.createRect(-500f, 0, -500f, 500f, 0, -500f, 500f, 0, 500f, -500f,
-                0, 500f, 0, 1, 0,
-                new com.badlogic.gdx.graphics.g3d.Material(
-                        ColorAttribute.createDiffuse(new Color(0.4f, 0.3f, 0.1f, 1f))),
+                0, 500f, 0, 1, 0, new com.badlogic.gdx.graphics.g3d.Material(tableDiffuse),
                 Usage.Position | Usage.Normal);
 
         // Rejilla para orientación (1x1 para coincidir con las celdas)
@@ -229,6 +237,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
         hud = new Gdx3DHud(model, this);
         createCompassModel();
+        updateDayNight();
 
         InputMultiplexer multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(hud.getStage());
@@ -271,6 +280,7 @@ public class GraphicPresenter extends ApplicationAdapter
             if (hud != null) {
                 hud.updateClock();
             }
+            updateDayNight();
             inputHandler.update();
 
             stateTime -= 0.05f;
@@ -303,6 +313,7 @@ public class GraphicPresenter extends ApplicationAdapter
         }
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        Gdx.gl.glClearColor(skyColor.r, skyColor.g, skyColor.b, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
         // Actualizar instancias desde el modelo
@@ -1310,6 +1321,39 @@ public class GraphicPresenter extends ApplicationAdapter
         if (hud != null) {
             hud.updateHUD();
         }
+    }
+
+    /**
+     * Applies the day/night palette (ADR-022 phase 1) to the ambient light, the sun, the sky colour
+     * and the board; the sun direction follows {@code SolarModel} for the world latitude.
+     */
+    private void updateDayNight() {
+        if (model == null || model.getGameClock() == null) {
+            return;
+        }
+        letrain.time.GameClock clock = model.getGameClock();
+        letrain.time.GameTime now = clock.now();
+        double ratio = clock.getDayNightRatio();
+        setColor(ambientAttribute.color, palette.color(VisualPalette.Token.AMBIENT_LIGHT, ratio));
+        setColor(sunLight.color, palette.color(VisualPalette.Token.SUN_LIGHT, ratio));
+        setColor(tableDiffuse.color, palette.color(VisualPalette.Token.TABLE_BOARD, ratio));
+        setColor(skyColor, palette.color(VisualPalette.Token.SKY, ratio));
+
+        int dayOfYear = letrain.time.SolarModel.dayOfYear(now.day());
+        double hour = now.hour() + now.minute() / 60.0;
+        double latitude = clock.getLatitude();
+        double elevation =
+                Math.max(2.0, letrain.time.SolarModel.elevationDegrees(dayOfYear, hour, latitude));
+        double azimuth = letrain.time.SolarModel.azimuthDegrees(dayOfYear, hour, latitude);
+        double e = Math.toRadians(elevation);
+        double a = Math.toRadians(azimuth);
+        sunLight.direction.set((float) (-Math.cos(e) * Math.sin(a)), (float) -Math.sin(e),
+                (float) (Math.cos(e) * Math.cos(a))).nor();
+    }
+
+    private static void setColor(Color target, int rgb) {
+        target.set(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f,
+                1f);
     }
 
     @Override

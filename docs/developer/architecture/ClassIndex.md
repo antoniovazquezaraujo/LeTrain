@@ -124,6 +124,9 @@
 - [[letrain.mvp.input.InputEvent|InputEvent]] (core)
 - [[letrain.mvp.input.KeyType|KeyType]] (core)
 
+## letrain.palette
+- [[letrain.palette.VisualPalette|VisualPalette]] (core)
+
 ## letrain.segments
 - [[letrain.segments.BlockManager|BlockManager]] (core)
 - [[letrain.segments.Port|Port]] (core)

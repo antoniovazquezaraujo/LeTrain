@@ -78,7 +78,8 @@ public class SimpleGameClock implements GameClock {
     public float getDayNightRatio() {
         GameTime current = now();
         double hour = current.hour() + current.minute() / 60.0;
-        return (float) SolarModel.dayNightRatio(dayOfYear(current.day()), hour, latitude);
+        return (float) SolarModel.dayNightRatio(SolarModel.dayOfYear(current.day()), hour,
+                latitude);
     }
 
     @Override
@@ -94,10 +95,6 @@ public class SimpleGameClock implements GameClock {
     @Override
     public double getLatitude() {
         return latitude;
-    }
-
-    static int dayOfYear(int day) {
-        return ((day - 1) % 366) + 1;
     }
 
     @Override
