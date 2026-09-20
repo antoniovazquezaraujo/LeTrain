@@ -19,8 +19,8 @@ import java.io.IOException;
  * <p>
  * Pinta un mapa de muestra con la familia clara u oscura y una hora simulada, interpolando
  * día→crepúsculo→noche con la misma curva que el reloj del juego. Teclas: {@code ←/→} mueve la
- * hora, {@code 1/2/3} salta a día/crepúsculo/noche, {@code f} familia, {@code c} color (RGB 24-bit
- * vs slots ANSI del tema), {@code a} auto, {@code q}/Esc salir.
+ * hora, {@code 1/2/3} salta a día/crepúsculo/noche, {@code f} familia, {@code c} cicla el color
+ * (RGB 24-bit → 256 colores → ANSI 16 del tema), {@code a} auto, {@code q}/Esc salir.
  *
  * <p>
  * Para ajustar la paleta, edita los valores de {@link #palettes()} y vuelve a lanzar. Este
@@ -119,9 +119,12 @@ public class PaletteLab {
 
     private int family;
     private double hour = 12.0;
-    private boolean rgbMode = true;
+    private int colorMode;
     private boolean auto;
     private long lastAuto;
+
+    private static final String[] COLOR_MODE_NAMES =
+            {"RGB 24-bit", "256 colores", "ANSI 16 (tema)"};
 
     public static void main(String[] args) throws IOException {
         new PaletteLab().run();
@@ -178,11 +181,11 @@ public class PaletteLab {
             return false;
         }
         if (key.getKeyType() == KeyType.ArrowLeft) {
-            hour = (hour + 24.0 - 0.25) % 24.0;
+            hour = (hour + 24.0 - 5.0 / 60.0) % 24.0;
             return true;
         }
         if (key.getKeyType() == KeyType.ArrowRight) {
-            hour = (hour + 0.25) % 24.0;
+            hour = (hour + 5.0 / 60.0) % 24.0;
             return true;
         }
         if (key.getKeyType() != KeyType.Character) {
@@ -193,7 +196,7 @@ public class PaletteLab {
             case '2' -> hour = 20.0;
             case '3' -> hour = 23.0;
             case 'f' -> family = (family + 1) % FAMILY_NAMES.length;
-            case 'c' -> rgbMode = !rgbMode;
+            case 'c' -> colorMode = (colorMode + 1) % COLOR_MODE_NAMES.length;
             case 'a' -> {
                 auto = !auto;
                 lastAuto = System.currentTimeMillis();
@@ -264,8 +267,8 @@ public class PaletteLab {
         return mix(keys[1], keys[2], (float) ((ratio - 0.5) * 2.0));
     }
 
-    /** A partir de este ratio el papel clara se funde a oscuro antes de encender la noche. */
-    static final double LIGHT_NIGHTFALL = 0.94;
+    /** A partir de este ratio el papel claro se funde a oscuro antes de encender la noche. */
+    static final double LIGHT_NIGHTFALL = 0.90;
     static final int FADE_COLOR = 0x04050A;
 
     static Pal solid(int rgb) {
@@ -302,10 +305,24 @@ public class PaletteLab {
     }
 
     static int mixColor(int a, int b, float t) {
-        int r = Math.round(((a >> 16) & 0xFF) * (1 - t) + ((b >> 16) & 0xFF) * t);
-        int g = Math.round(((a >> 8) & 0xFF) * (1 - t) + ((b >> 8) & 0xFF) * t);
-        int bl = Math.round((a & 0xFF) * (1 - t) + (b & 0xFF) * t);
+        int r = toSrgb(lerp(toLinear((a >> 16) & 0xFF), toLinear((b >> 16) & 0xFF), t));
+        int g = toSrgb(lerp(toLinear((a >> 8) & 0xFF), toLinear((b >> 8) & 0xFF), t));
+        int bl = toSrgb(lerp(toLinear(a & 0xFF), toLinear(b & 0xFF), t));
         return (r << 16) | (g << 8) | bl;
+    }
+
+    private static double lerp(double a, double b, float t) {
+        return a + (b - a) * t;
+    }
+
+    private static double toLinear(int channel) {
+        double v = channel / 255.0;
+        return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    }
+
+    private static int toSrgb(double linear) {
+        double v = linear <= 0.0031308 ? 12.92 * linear : 1.055 * Math.pow(linear, 1 / 2.4) - 0.055;
+        return (int) Math.round(Math.max(0.0, Math.min(1.0, v)) * 255);
     }
 
     private void draw(TextGraphics tg, Screen screen) {
@@ -322,8 +339,8 @@ public class PaletteLab {
         put(tg, 1, 0, "PALETTE LAB — día/noche 2D (ADR-022 fase 1)", ansi(0xFFFFFF), chromeBg);
         put(tg, 1, 1, String.format("hora=%02d:%02d ratio=%.2f (%s)  familia=%s  color=%s  %s",
                 (int) hour, (int) (hour % 1 * 60), ratio, phaseName(ratio), FAMILY_NAMES[family],
-                rgbMode ? "RGB 24-bit" : "ANSI (tema del terminal)", auto ? "auto ON" : "auto off"),
-                ansi(0xFFC850), chromeBg);
+                COLOR_MODE_NAMES[colorMode], auto ? "auto ON" : "auto off"), ansi(0xFFC850),
+                chromeBg);
         put(tg, 1, 2, "[←/→] hora  [1] día  [2] crepúsculo  [3] noche  [f] familia  [c] color  "
                 + "[a] auto  [q] salir", chromeFg, chromeBg);
 
@@ -346,7 +363,12 @@ public class PaletteLab {
                 chromeBg);
         y = drawHexList(tg, cols, y, pal, chromeFg, chromeBg);
 
-        if (!rgbMode && y + 2 < rows) {
+        if (colorMode == 1 && y + 2 < rows) {
+            put(tg, 1, y++, "rampa de grises 256 (slots 232-255):", chromeFg, chromeBg);
+            for (int i = 232; i <= 255 && 2 + (i - 232) * 2 < cols; i++) {
+                put(tg, 2 + (i - 232) * 2, y, "  ", chromeFg, new TextColor.Indexed(i));
+            }
+        } else if (colorMode == 2 && y + 2 < rows) {
             put(tg, 1, y++, "slots ANSI de tu tema:", chromeFg, chromeBg);
             for (int i = 0; i < ANSI_SLOTS.length && 2 + i * 3 < cols; i++) {
                 put(tg, 2 + i * 3, y, "  ", chromeFg, ANSI_SLOTS[i]);
@@ -439,8 +461,14 @@ public class PaletteLab {
     }
 
     private TextColor color(int rgb) {
-        return rgbMode ? new TextColor.RGB((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF)
-                : ansi(rgb);
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        return switch (colorMode) {
+            case 1 -> TextColor.Indexed.fromRGB(r, g, b);
+            case 2 -> ansi(rgb);
+            default -> new TextColor.RGB(r, g, b);
+        };
     }
 
     private void put(TextGraphics tg, int x, int y, String text, TextColor fg, TextColor bg) {

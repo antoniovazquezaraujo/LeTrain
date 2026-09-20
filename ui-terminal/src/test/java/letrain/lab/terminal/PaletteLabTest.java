@@ -1,6 +1,7 @@
 package letrain.lab.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
 import org.junit.jupiter.api.DisplayName;
@@ -49,10 +50,11 @@ class PaletteLabTest {
     }
 
     @Test
-    @DisplayName("colour interpolation is linear")
-    void should_MixColours() {
-        assertEquals(0x808080, PaletteLab.mixColor(0x000000, 0xFFFFFF, 0.5f));
+    @DisplayName("colour interpolation is perceptual (linear light)")
+    void should_MixColoursPerceptually() {
         assertEquals(0x000000, PaletteLab.mixColor(0x000000, 0xFFFFFF, 0f));
         assertEquals(0xFFFFFF, PaletteLab.mixColor(0x000000, 0xFFFFFF, 1f));
+        int mid = PaletteLab.mixColor(0x000000, 0xFFFFFF, 0.5f);
+        assertTrue(mid > 0xAAAAAA && mid < 0xCCCCCC, "mid=" + Integer.toHexString(mid));
     }
 }
