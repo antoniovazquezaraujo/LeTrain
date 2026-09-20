@@ -59,14 +59,16 @@ class PaletteLabTest {
     }
 
     @Test
-    @DisplayName("the light family reaches a deep twilight, never a fully black frame")
-    void should_ReachTwilight_AtNightfall() {
-        double midFade = (PaletteLab.LIGHT_NIGHTFALL + 1.0) / 2.0;
-
-        PaletteLab.Pal faded = PaletteLab.blend(0, midFade);
-
-        assertEquals(PaletteLab.TWILIGHT.ground(), faded.ground());
-        assertTrue(faded.ground() != 0x000000, "the background must stay visible");
+    @DisplayName("the background darkens evenly, never a fully black frame")
+    void should_DarkenEvenly_WithoutBlackFrame() {
+        int previous = Integer.MAX_VALUE;
+        for (int i = 0; i <= 50; i++) {
+            PaletteLab.Pal pal = PaletteLab.blend(0, PaletteLab.LIGHT_NIGHTFALL + i / 100.0);
+            int ground = (int) luminance(pal.ground());
+            assertTrue(ground != 0x000000, "the background must stay visible");
+            assertTrue(ground <= previous, "the background must never brighten while darkening");
+            previous = ground;
+        }
     }
 
     @Test

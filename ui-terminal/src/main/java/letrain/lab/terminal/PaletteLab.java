@@ -241,8 +241,9 @@ public class PaletteLab {
     /**
      * Transición gradual con el ratio del reloj. En la familia clara el día y la noche tienen
      * polaridad inversa (glifos oscuros sobre papel / glifos claros sobre negro), así que la
-     * inversión pasa por {@link #TWILIGHT} (oscuro pero visible) al anochecer, repartida por la
-     * hora restante; la familia oscura interpola lineal.
+     * inversión se funde directamente de un régimen al otro a ritmo constante durante la hora
+     * restante, con un suelo de contraste que evita la banda confusa; la familia oscura interpola
+     * lineal.
      */
     static Pal blend(int family, double ratio) {
         return blend(family, ratio, false);
@@ -264,14 +265,11 @@ public class PaletteLab {
         }
         if (family == 0) {
             Pal paper = mix(keys[0], keys[1], (float) Math.min(1.0, ratio / LIGHT_NIGHTFALL));
-            double nightfall = smoothstep((ratio - LIGHT_NIGHTFALL) / (1.0 - LIGHT_NIGHTFALL));
+            double nightfall = (ratio - LIGHT_NIGHTFALL) / (1.0 - LIGHT_NIGHTFALL);
             if (nightfall <= 0.0) {
                 return ensureContrast(paper);
             }
-            if (nightfall < 0.5) {
-                return ensureContrast(mix(paper, TWILIGHT, (float) (nightfall * 2.0)));
-            }
-            return ensureContrast(mix(TWILIGHT, keys[2], (float) ((nightfall - 0.5) * 2.0)));
+            return ensureContrast(mix(paper, keys[2], (float) nightfall));
         }
         if (ratio <= 0.5) {
             return mix(keys[0], keys[1], (float) (ratio * 2.0));
@@ -293,24 +291,6 @@ public class PaletteLab {
      * token se aclara u oscurece lo justo para seguir distinguiéndose (nunca hay banda confusa).
      */
     static final double MIN_CONTRAST = 55;
-
-    /**
-     * Punto medio del anochecer en la familia clara: fondo ya oscuro pero con los glifos todavía
-     * visibles (nunca negro puro, para que el mapa no desaparezca en ningún nivel).
-     */
-    static final Pal TWILIGHT =
-            new Pal(rgb(14, 16, 24), rgb(45, 70, 120), rgb(105, 80, 80), rgb(95, 95, 105),
-                    rgb(55, 55, 62), rgb(180, 150, 50), rgb(150, 155, 175), rgb(200, 80, 80),
-                    rgb(170, 150, 40), rgb(140, 138, 125), rgb(60, 140, 150), rgb(70, 150, 90),
-                    rgb(170, 70, 70), rgb(190, 80, 80), rgb(70, 95, 175), rgb(180, 170, 60),
-                    rgb(75, 80, 100), rgb(95, 100, 120), rgb(120, 122, 135), rgb(100, 102, 112),
-                    rgb(55, 55, 62), rgb(190, 160, 20), rgb(190, 40, 70), rgb(180, 170, 40),
-                    rgb(170, 150, 40), rgb(160, 80, 80), rgb(170, 170, 60), rgb(110, 115, 130));
-
-    private static double smoothstep(double x) {
-        double t = Math.max(0.0, Math.min(1.0, x));
-        return t * t * (3 - 2 * t);
-    }
 
     static Pal mix(Pal a, Pal b, float t) {
         return new Pal(mixColor(a.ground(), b.ground(), t), mixColor(a.water(), b.water(), t),
