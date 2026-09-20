@@ -60,8 +60,8 @@ public class PaletteLab {
                         rgb(90, 90, 95), rgb(70, 70, 80), rgb(40, 40, 45), rgb(90, 90, 95),
                         rgb(20, 20, 20), rgb(150, 120, 0), rgb(180, 0, 50), rgb(0, 110, 40),
                         rgb(170, 140, 0), rgb(190, 40, 40), rgb(25, 25, 30), rgb(60, 60, 65)),
-                // Crepúsculo claro: papel cálido.
-                new Pal(rgb(238, 222, 196), rgb(45, 80, 165), rgb(160, 70, 55), rgb(60, 52, 48),
+                // Crepúsculo claro: papel gris cálido.
+                new Pal(rgb(224, 220, 213), rgb(45, 80, 165), rgb(160, 70, 55), rgb(60, 52, 48),
                         rgb(140, 130, 115), rgb(180, 140, 20), rgb(60, 40, 25), rgb(190, 50, 40),
                         rgb(160, 115, 10), rgb(95, 80, 60), rgb(20, 120, 120), rgb(20, 115, 55),
                         rgb(190, 50, 40), rgb(190, 50, 40), rgb(50, 75, 160), rgb(180, 140, 20),
