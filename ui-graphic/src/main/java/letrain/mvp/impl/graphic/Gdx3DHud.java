@@ -42,6 +42,7 @@ public class Gdx3DHud {
     private Label descLabel;
     private Label globalHelpLabel;
     private Label recDot;
+    private Label clockLabel;
     private Label balanceLabel;
     private Label incomeLabel;
     private Label expensesLabel;
@@ -315,6 +316,11 @@ public class Gdx3DHud {
         recDot.setColor(Color.RED);
         recDot.setVisible(false);
         mainTopTable.add(recDot).pad(6);
+
+        // Game clock (ADR-022): ASCII on purpose, the HUD bitmap fonts may lack accents.
+        clockLabel = new Label("", skin, "small");
+        clockLabel.setColor(Color.WHITE);
+        mainTopTable.add(clockLabel).pad(6);
         stage.addActor(mainTopTable);
 
         // Bottom UI Container
@@ -456,6 +462,18 @@ public class Gdx3DHud {
         updateUIData();
     }
 
+    /** Refreshes the game clock label; only rewrites the text when it actually changed. */
+    public void updateClock() {
+        if (clockLabel == null || model.getGameClock() == null) {
+            return;
+        }
+        letrain.time.GameTime now = model.getGameClock().now();
+        String text = String.format("D%d %02d:%02d", now.day(), now.hour(), now.minute());
+        if (!text.equals(clockLabel.getText().toString())) {
+            clockLabel.setText(text);
+        }
+    }
+
     public void updateUIData() {
         // Blinking REC indicator while the command journal records.
         if (recDot != null) {
@@ -463,6 +481,7 @@ public class Gdx3DHud {
                     && model.getCommandJournal().isRecording() && model.isSimulationPaused();
             recDot.setVisible(recording && (System.currentTimeMillis() / 500) % 2 == 0);
         }
+        updateClock();
         // Update HUD (Finances)
         if (model.getEconomyManager() != null) {
             long balance = (long) model.getEconomyManager().getBalance();

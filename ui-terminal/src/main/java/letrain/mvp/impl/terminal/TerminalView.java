@@ -370,6 +370,19 @@ public class TerminalView implements letrain.mvp.View {
                 }
             }
 
+            // Game clock (ADR-022): dim label in the top-right corner of the map.
+            String clock = gameViewListener.getGameTimeText();
+            if (clock != null && !clock.isEmpty()) {
+                int clockX = gameBoxSize.getColumns() - clock.length() - 1;
+                if (clockX > 3) { // keep clear of the REC indicator on the left
+                    for (int i = 0; i < clock.length(); i++) {
+                        gameBox.setCharacter(clockX + i, 0,
+                                TextCharacter.fromCharacter(clock.charAt(i), TextColor.ANSI.YELLOW,
+                                        TextColor.ANSI.BLACK)[0]);
+                    }
+                }
+            }
+
             if (overlayMessage != null) {
                 int cols = screen.getTerminalSize().getColumns();
                 int rows = screen.getTerminalSize().getRows();

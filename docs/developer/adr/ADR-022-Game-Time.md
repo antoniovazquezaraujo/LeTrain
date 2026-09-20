@@ -1,6 +1,6 @@
 # ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)
 
-## Estado: PROPUESTO — convergencia con el equipo `agy` incorporada (pendiente confirmar arranque y dueños)
+## Estado: PROPUESTO — fase 0 en implementación (reloj, HUD y comando `time set`)
 
 ## Contexto
 
@@ -18,11 +18,12 @@
 - ADR-021 y la serialización Jackson exigen que los campos nuevos de `Model` no invaliden las
   partidas existentes.
 
-## Convergencia con la propuesta del equipo `agy`
+## Decisiones de diseño adoptadas
 
-Ambas propuestas coinciden en arquitectura y fases. Se adopta lo mejor de cada una:
+Se compararon dos propuestas que coincidían en arquitectura y fases; la tabla resume la opción
+elegida en cada punto:
 
-| Tema | Open | agy | Convergencia propuesta |
+| Tema | Opción A | Opción B | Decisión adoptada |
 |---|---|---|---|
 | Origen del tiempo | Ticks lógicos | Ticks lógicos (se congela en pausa) | Ticks lógicos; la pausa de edición (ADR-020) congela el reloj |
 | Servicio | `GameClock` (interfaz + impl) | `SimulationClock` | `GameClock` en `letrain.time`, avanza desde `SimulationController.tick()` |
@@ -34,7 +35,7 @@ Ambas propuestas coinciden en arquitectura y fases. Se adopta lo mejor de cada u
 | `WAIT n` | Sigue en segundos de simulación | No lo redefine | Se mantiene por compatibilidad; horarios con `DEPART`/`UNTIL` |
 | DSL horarios | `DEPART hh:mm`, `UNTIL hh:mm`, `on time` | `DEPART AT hh:mm`, `WAIT UNTIL hh:mm`, `AT "07:00" DO`, `EVERY 30m` | Sintaxis final en el PR de gramática; se adopta `EVERY` como aportación |
 | Día/noche | Visual en fase 1 | Sol/luna/cielo, faros, farolas, tinte 2D | Igual: visual primero, `isNight()` disponible para gameplay futuro |
-| Economía | Tarifas, multas, mantenimiento nocturno | Mantenimiento diario, turnos de producción, bonus por puntualidad | Se adopta el detalle de agy en la fase 4 |
+| Economía | Tarifas, multas, mantenimiento nocturno | Mantenimiento diario, turnos de producción, bonus por puntualidad | Se adopta el detalle de la opción B en la fase 4 |
 | Operación | Puntualidad (delta entre visitas) | Rol de regulador, cruces en vía única | Ambos: cruces y apartaderos como juego emergente de los horarios |
 
 ## Decisión (propuesta)
@@ -61,6 +62,11 @@ Ambas propuestas coinciden en arquitectura y fases. Se adopta lo mejor de cada u
    temporales (`at "HH:mm"` / `every 30m`) en la gramática de scripts.
 8. **Día/noche es visual** en esta fase (paleta del terminal y luz/faros en 3D); `isNight()` y
    `getDayNightRatio()` quedan disponibles para un futuro efecto sobre el gameplay.
+9. **Comando de consola del reloj**: `time;` muestra la hora actual (`Día 1 08:00`);
+   `time set HH:MM;` fija la hora del día actual **sin diálogo de confirmación** (el cambio ya se
+   ve en el reloj del HUD). El salto es determinista y se journaliza, así que el replay reproduce
+   la misma hora. Los instantes anteriores al origen (Día 1, 08:00) ruedan al día siguiente; no se
+   toca la duración del día (esa escala se fija al crear la partida).
 
 ### Escala temporal: qué cambia y qué no (aclaración)
 
@@ -100,10 +106,12 @@ Referencia rápida (notch 10 = 5 ticks/celda):
 | Acelerador de simulación (futuro, pruebas) | ×N | ×N | invariante |
 | Cambiar `dayDurationSeconds` | sin efecto | nueva escala | cambia (por eso se fija por partida) |
 
-### Contrato preliminar (a congelar antes de paralelizar)
+### Contrato (implementado en la fase 0)
 
 ```java
 public interface GameClock {
+    int TICKS_PER_SECOND = 20;
+
     long elapsedTicks();
 
     void tick(); // lo avanza SimulationController en cada tick lógico
@@ -115,6 +123,8 @@ public interface GameClock {
     float getDayNightRatio(); // 0.0 = pleno día, 1.0 = noche cerrada
 
     void setDayDurationSeconds(int seconds);
+
+    void setTime(GameTime time); // salto determinista (time set, escenarios y tests)
 
     void addListener(GameClockListener listener);
 }
@@ -130,11 +140,10 @@ public interface GameClock {
 | 3 | Triggers temporales (`at`/`every`) y demanda por franjas; integración con trenes de pasajeros | Engancha con `PassengerTrains_Design.md` |
 | 4 | Economía horaria: mantenimiento diario, turnos de producción, tarifas por franja y bonus/multa por puntualidad | Reglas de negocio |
 
-## Decisiones pendientes de confirmar con `agy`
+## Decisiones pendientes
 
-- Nombre final del servicio (`GameClock` vs `SimulationClock`).
-- Sintaxis exacta de la gramática (`DEPART hh:mm` vs `DEPART AT hh:mm`; `at "HH:mm"` vs `AT "HH:mm" DO`).
-- Reparto de fases y dueño por rama tras congelar el contrato.
+- Sintaxis exacta de la gramática de horarios (`DEPART hh:mm` vs `DEPART AT hh:mm`;
+  `at "HH:mm"` vs `AT "HH:mm" DO`): se fija al abrir la fase 2.
 
 ## Alternativas consideradas
 

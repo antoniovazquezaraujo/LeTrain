@@ -267,6 +267,9 @@ public class GraphicPresenter extends ApplicationAdapter
                     radius * 2 + 1);
 
             simulationController.tick();
+            if (hud != null) {
+                hud.updateClock();
+            }
             inputHandler.update();
 
             stateTime -= 0.05f;

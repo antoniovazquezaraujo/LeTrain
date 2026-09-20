@@ -23,10 +23,13 @@ playerStatement : statement
                 | journalCommand SEMI
                 | undoCommand SEMI
                 | redoCommand SEMI
+                | timeCommand SEMI
                 | quitCommand SEMI
                 ;
 
 journalCommand : JOURNAL ;
+
+timeCommand : TIME (SET NUMBER COLON NUMBER)? ;
 
 undoCommand : UNDO (NUMBER)? ;
 

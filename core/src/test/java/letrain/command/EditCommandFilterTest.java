@@ -20,6 +20,7 @@ class EditCommandFilterTest {
         assertTrue(EditCommandFilter.isNonRecordable("undo;"));
         assertTrue(EditCommandFilter.isNonRecordable("ls;"));
         assertTrue(EditCommandFilter.isNonRecordable("save foo;"));
+        assertTrue(EditCommandFilter.isNonRecordable("time;"));
         assertTrue(EditCommandFilter.isNonRecordable(""));
         assertTrue(EditCommandFilter.isNonRecordable(null));
     }
@@ -36,6 +37,8 @@ class EditCommandFilterTest {
         assertFalse(EditCommandFilter.isNonRecordable("mark home;"));
         assertFalse(EditCommandFilter.isNonRecordable("m home;"));
         assertFalse(EditCommandFilter.isNonRecordable("go mark home; new sn;"));
+        // Setting the clock is state: replays must reproduce the same time.
+        assertFalse(EditCommandFilter.isNonRecordable("time set 08:30;"));
     }
 
     @Test
