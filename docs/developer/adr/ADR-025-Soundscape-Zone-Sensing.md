@@ -112,6 +112,11 @@
    cama baja y el mar/industria destacan). **Empates**: gana la zona encontrada primero en el
    barrido (orden `dy`/`dx` fijo), para determinismo. No hacen falta `findClosestIndustry` ni
    `countIndustryDensity`: la industria ya viene en el valor del tile.
+   **La cama no desbanca a la zona pisada**: si la secundaria es `fields` (el terreno por defecto)
+   y la primaria no lo es, su tope baja a `0.15 × curva` (`BED_SECONDARY_MAX`). Sin esta regla el
+   crossfade era simétrico y al pisar una fábrica, una mina o un puente la zona primaria caía a
+   0.15 y el campo de alrededor la enterraba; con ella la zona pisada suena a 0.85 (igual que al
+   acercarse) y el campo queda de fondo.
 4. **Refresco**: al **cambiar de celda**, con un **tope de cadencia** (p. ej. 4–10 Hz) para que
    a alta velocidad no se escanee en cada frame, + inmediato al cambiar de foco. Entre refrescos,
    mezcla progresiva (ataque/release), de modo que cruzar celdas no produzca saltos.
