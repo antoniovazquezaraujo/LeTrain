@@ -120,6 +120,7 @@ public class PaletteLab {
     private int family;
     private double hour = 12.0;
     private int colorMode;
+    private boolean cutMode;
     private boolean auto;
     private long lastAuto;
 
@@ -197,6 +198,7 @@ public class PaletteLab {
             case '3' -> hour = 23.0;
             case 'f' -> family = (family + 1) % FAMILY_NAMES.length;
             case 'c' -> colorMode = (colorMode + 1) % COLOR_MODE_NAMES.length;
+            case 't' -> cutMode = !cutMode;
             case 'a' -> {
                 auto = !auto;
                 lastAuto = System.currentTimeMillis();
@@ -243,11 +245,21 @@ public class PaletteLab {
      * hora restante; la familia oscura interpola lineal.
      */
     static Pal blend(int family, double ratio) {
+        return blend(family, ratio, false);
+    }
+
+    static Pal blend(int family, double ratio, boolean cut) {
         Pal[] keys = palettes()[family];
         if (ratio <= 0.0) {
             return keys[0];
         }
         if (ratio >= 1.0) {
+            return keys[2];
+        }
+        if (family == 0 && cut) {
+            if (ratio < CUT_RATIO) {
+                return mix(keys[0], keys[1], (float) (ratio / CUT_RATIO));
+            }
             return keys[2];
         }
         if (family == 0) {
@@ -272,6 +284,9 @@ public class PaletteLab {
      * empieza el fundido a oscuro, repartido por la hora restante para que no haya un salto.
      */
     static final double LIGHT_NIGHTFALL = 0.5;
+
+    /** Ratio del corte seco de régimen en la familia clara (0.75 = 20:30). */
+    static final double CUT_RATIO = 0.75;
 
     /**
      * Punto medio del anochecer en la familia clara: fondo ya oscuro pero con los glifos todavía
@@ -347,14 +362,17 @@ public class PaletteLab {
 
         double ratio = ratioOf(hour);
         put(tg, 1, 0, "PALETTE LAB — día/noche 2D (ADR-022 fase 1)", ansi(0xFFFFFF), chromeBg);
-        put(tg, 1, 1, String.format("hora=%02d:%02d ratio=%.2f (%s)  familia=%s  color=%s  %s",
-                (int) hour, (int) (hour % 1 * 60), ratio, phaseName(ratio), FAMILY_NAMES[family],
-                COLOR_MODE_NAMES[colorMode], auto ? "auto ON" : "auto off"), ansi(0xFFC850),
-                chromeBg);
+        put(tg, 1, 1,
+                String.format(
+                        "hora=%02d:%02d ratio=%.2f (%s)  familia=%s  color=%s  transición=%s  %s",
+                        (int) hour, (int) (hour % 1 * 60), ratio, phaseName(ratio),
+                        FAMILY_NAMES[family], COLOR_MODE_NAMES[colorMode],
+                        cutMode ? "corte" : "fundido", auto ? "auto ON" : "auto off"),
+                ansi(0xFFC850), chromeBg);
         put(tg, 1, 2, "[←/→] hora  [1] día  [2] crepúsculo  [3] noche  [f] familia  [c] color  "
-                + "[a] auto  [q] salir", chromeFg, chromeBg);
+                + "[t] transición  [a] auto  [q] salir", chromeFg, chromeBg);
 
-        Pal pal = blend(family, ratio);
+        Pal pal = blend(family, ratio, cutMode);
         int mapY = 4;
         for (int y = 0; y < MAP.length && mapY + y < rows - 10; y++) {
             String line = MAP[y];

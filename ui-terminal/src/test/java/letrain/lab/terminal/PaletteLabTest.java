@@ -38,6 +38,17 @@ class PaletteLabTest {
     }
 
     @Test
+    @DisplayName("cut mode switches regime instantly at the cut ratio")
+    void should_CutRegime() {
+        PaletteLab.Pal before = PaletteLab.blend(0, PaletteLab.CUT_RATIO - 0.01, true);
+        PaletteLab.Pal after = PaletteLab.blend(0, PaletteLab.CUT_RATIO + 0.01, true);
+
+        assertTrue(luminance(before.ground()) > luminance(after.ground()),
+                "the paper must go dark in one step");
+        assertEquals(PaletteLab.palettes()[0][2], after);
+    }
+
+    @Test
     @DisplayName("the light paper reaches its dusk tone at 20:00 and then fades")
     void should_ReachDuskTone_AtNightfall() {
         assertEquals(PaletteLab.palettes()[0][1], PaletteLab.blend(0, PaletteLab.LIGHT_NIGHTFALL));
