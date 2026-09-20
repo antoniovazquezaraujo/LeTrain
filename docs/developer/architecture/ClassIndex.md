@@ -172,6 +172,7 @@
 - [[letrain.time.GameClock|GameClock]] (core)
 - [[letrain.time.GameClockListener|GameClockListener]] (core)
 - [[letrain.time.GameTime|GameTime]] (core)
+- [[letrain.time.SolarModel|SolarModel]] (core)
 - [[letrain.time.impl.SimpleGameClock|SimpleGameClock]] (core)
 
 ## letrain.track

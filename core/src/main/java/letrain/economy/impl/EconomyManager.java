@@ -66,6 +66,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("startingBalance")
     private float startingBalance = 0f;
     private int dayDurationSeconds = letrain.time.GameClock.DEFAULT_DAY_DURATION_SECONDS;
+    private double latitude = letrain.time.SolarModel.DEFAULT_LATITUDE;
 
     @com.fasterxml.jackson.annotation.JsonProperty("goldThreshold")
     private float goldThreshold = 0.30f;
@@ -479,6 +480,12 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         return dayDurationSeconds;
     }
 
+    /** World latitude for the solar cycle (ADR-022 phase 1), from {@code world.latitude}. */
+    @Override
+    public double getLatitude() {
+        return latitude;
+    }
+
     public float getTotalExpenses() {
         return totalExpenses;
     }
@@ -593,6 +600,11 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     private void applyProperties(Properties props) {
         dayDurationSeconds = Integer.parseInt(
                 props.getProperty("time.dayDurationSeconds", String.valueOf(dayDurationSeconds)));
+        double newLatitude =
+                Double.parseDouble(props.getProperty("world.latitude", String.valueOf(latitude)));
+        if (!Double.isNaN(newLatitude)) {
+            latitude = Math.max(-90.0, Math.min(90.0, newLatitude));
+        }
 
         // Load general costs
         fuelCostPerMeter = Float.parseFloat(
