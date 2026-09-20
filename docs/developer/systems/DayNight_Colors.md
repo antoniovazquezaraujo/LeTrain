@@ -37,10 +37,16 @@ fuera (solo se revisará su legibilidad al final).
 2. **3D**: `palette.colorOf(token, dayNightRatio)` interpola entre variantes (día→crepúsculo→
    noche). Los materiales dejan de usar literales: piden el token. La luz ambiental, la
    direccional y el color de fondo/niebla también son tokens.
-3. **2D**: `palette.ansiOf(token, band)` con franjas (día/crepúsculo/noche) e histéresis ±5 min
-   de juego alrededor de cada frontera; el terminal no puede interpolar.
+3. **2D**: `palette.rgbOf(token, band)` con franjas (día/crepúsculo/noche) e histéresis ±5 min
+   de juego alrededor de cada frontera; el terminal no interpola. **Familia por defecto: clara**
+   (día tipo “mapa papel”: fondo claro y glifos oscuros; noche: fondo oscuro y glifos claros),
+   elegida tras ver la demo. El color se emite en **24-bit cuando el terminal lo soporta**
+   (`COLORTERM=truecolor|24bit`, `TERM=*-direct`) y si no se cae a los **16 slots ANSI** (nunca
+   emitir `38;2` a un terminal que lo ignora). Configuración:
+   `terminal.palette=auto|light|dark|theme` (`auto` = 24-bit si se puede + familia clara; `theme`
+   = slots del usuario, comportamiento actual). Aviso único en el log si no hay 24-bit.
 4. Los colores **de jugador** (paleta de locomotoras, carga) no se rediseñan: se atenúan con un
-   multiplicador global de la luz (3D) o con la variante ANSI más cercana (2D).
+   multiplicador global de la luz (3D) o con la variante RGB/ANSI más cercana (2D).
 
 ## Inventario (el mapa)
 
@@ -132,9 +138,9 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 ## Reglas y guardarraíles
 
 1. **Determinismo**: la paleta depende solo de `getDayNightRatio()` (ticks), nunca del reloj real.
-2. **Contraste mínimo en 2D**: ninguna variante por debajo de `BLACK_BRIGHT` sobre fondo negro;
-   preferir cambiar de color ANSI antes que oscurecer a negro. Las fronteras usan histéresis para
-   no parpadear.
+2. **Contraste mínimo en 2D**: cada variante debe contrastar con el fondo de su franja (familia
+   clara: glifos oscuros sobre papel de día y claros sobre oscuro de noche); mejor cambiar de tono
+   que acercarse al fondo. Las fronteras usan histéresis para no parpadear.
 3. **Los avisos no se apagan**: vía inválida, bloque ocupado, semáforos, señales, cursor y
    resaltados conservan color y contraste de noche (son información de juego, no decorado).
 4. **Colores de jugador**: solo atenuación global (≤ 45 % de noche); no se re-mapean a variantes.
@@ -158,5 +164,13 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 - ¿`VisualPalette` en `core` (`letrain.palette`) o módulo aparte `palette`?
 - ¿Se limpian las constantes muertas del 2D (`SEMAPHORE_COLOR`, `SELECTED_SEMAPHORE_COLOR`) en
   esta fase o en un PR aparte?
-- ¿El fondo del terminal cambia de noche (p. ej. azul muy oscuro) o se queda negro?
 - ¿Curvas de ratio propias por franja (más suaves) o las actuales 05/07/19/21?
+
+## Decisiones tomadas
+
+- **2D: familia clara por defecto** (día “mapa papel”, noche oscura), tras la demo
+  `PaletteDemo` (día/crepúsculo/noche en ambas familias). El fondo del mapa cambia con la
+  franja: es un token más (`table.board` / fondo del recuadro).
+- **2D: color 24-bit con fallback ANSI** y `terminal.palette=auto|light|dark|theme`. No se
+  autodetecta el fondo del terminal (OSC 11 no es fiable).
+- **HUD/skin fuera** de la fase 1.
