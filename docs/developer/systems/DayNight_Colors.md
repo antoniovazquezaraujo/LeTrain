@@ -17,8 +17,9 @@ fuera (solo se revisará su legibilidad al final).
 ## Cómo funciona hoy
 
 - **Reloj**: `GameClock.getDayNightRatio()` (0.0 = pleno día, 1.0 = noche cerrada) e `isNight()`
-  (ratio > 0.5). Transiciones actuales: día 07:00–19:00, crepúsculo de 19:00 a 21:00, noche
-  21:00–05:00, amanecer de 05:00 a 07:00.
+  (ratio > 0.5). El ratio sale de `SolarModel` (elevación del sol con banda de crepúsculo de 18°)
+  según el día del año y `world.latitude`; a latitudes altas hay noches blancas (el ratio no
+  llega a 1) y día/noche perpetuos en los polos.
 - **3D**: materiales con `ColorAttribute.createDiffuse(...)` fijos + `Environment` global
   (`AmbientLight` 0.5 gris y `DirectionalLight` 0.8). No hay cielo, niebla ni color de fondo
   configurable (el *clear* es el negro por defecto). Como todo el mundo es difuso y recibe la luz,
@@ -158,6 +159,11 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 | 1c | Elementos, vía y trenes | Materiales por token; avisos intactos |
 | 1d | 2D: variantes ANSI por franja con histéresis | Terminal con día/crepúsculo/noche |
 | 1e | Emisivos (faros/farolas) y niebla/cielo fino | Noche con guías de luz; coordinar con #480 |
+
+Estado: **1a hecha**. `VisualPalette` (core, `letrain.palette`) contiene ya `AMBIENT_LIGHT`,
+`SUN_LIGHT`, `SKY` y `TABLE_BOARD` con claves día/crepúsculo/noche e interpolación perceptual; el
+3D los aplica cada tick (luz ambiental, sol direccional según `SolarModel`, color de fondo y
+tablero). El resto de tokens entran con 1b–1d.
 
 ## Decisiones pendientes
 

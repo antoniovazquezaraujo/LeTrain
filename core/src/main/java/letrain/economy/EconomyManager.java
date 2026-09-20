@@ -25,6 +25,11 @@ public interface EconomyManager {
     /** Real seconds a full game day lasts (ADR-022). */
     int getDayDurationSeconds();
 
+    /**
+     * World latitude for the solar day/night cycle (ADR-022 phase 1), from {@code world.latitude}.
+     */
+    double getLatitude();
+
     float getCost(ExpenseType type);
 
     void spend(ExpenseType type);

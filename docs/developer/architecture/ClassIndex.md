@@ -125,6 +125,9 @@
 - [[letrain.mvp.input.InputEvent|InputEvent]] (core)
 - [[letrain.mvp.input.KeyType|KeyType]] (core)
 
+## letrain.palette
+- [[letrain.palette.VisualPalette|VisualPalette]] (core)
+
 ## letrain.segments
 - [[letrain.segments.BlockManager|BlockManager]] (core)
 - [[letrain.segments.Port|Port]] (core)
@@ -173,6 +176,7 @@
 - [[letrain.time.GameClock|GameClock]] (core)
 - [[letrain.time.GameClockListener|GameClockListener]] (core)
 - [[letrain.time.GameTime|GameTime]] (core)
+- [[letrain.time.SolarModel|SolarModel]] (core)
 - [[letrain.time.impl.SimpleGameClock|SimpleGameClock]] (core)
 
 ## letrain.track
