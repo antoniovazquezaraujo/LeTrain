@@ -38,6 +38,15 @@ class PaletteLabTest {
     }
 
     @Test
+    @DisplayName("the light paper reaches its dusk tone at 20:00 and then fades")
+    void should_ReachDuskTone_AtNightfall() {
+        assertEquals(PaletteLab.palettes()[0][1], PaletteLab.blend(0, PaletteLab.LIGHT_NIGHTFALL));
+        PaletteLab.Pal fading = PaletteLab.blend(0, PaletteLab.LIGHT_NIGHTFALL + 0.05);
+        assertTrue(fading.ground() != PaletteLab.palettes()[0][1].ground(),
+                "the fade must already be visible");
+    }
+
+    @Test
     @DisplayName("the light family fades to black at nightfall before inverting polarity")
     void should_FadeToBlack_AtNightfall() {
         double midFade = (PaletteLab.LIGHT_NIGHTFALL + 1.0) / 2.0;

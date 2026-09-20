@@ -251,7 +251,7 @@ public class PaletteLab {
             return keys[2];
         }
         if (family == 0) {
-            Pal paper = mix(keys[0], keys[1], (float) Math.min(1.0, ratio));
+            Pal paper = mix(keys[0], keys[1], (float) Math.min(1.0, ratio / LIGHT_NIGHTFALL));
             double nightfall = smoothstep((ratio - LIGHT_NIGHTFALL) / (1.0 - LIGHT_NIGHTFALL));
             if (nightfall <= 0.0) {
                 return paper;
@@ -267,8 +267,11 @@ public class PaletteLab {
         return mix(keys[1], keys[2], (float) ((ratio - 0.5) * 2.0));
     }
 
-    /** A partir de este ratio el papel claro se funde a oscuro antes de encender la noche. */
-    static final double LIGHT_NIGHTFALL = 0.90;
+    /**
+     * El papel claro alcanza su tono de crepúsculo en este ratio (0.5 = 20:00) y a partir de ahí
+     * empieza el fundido a oscuro, repartido por la hora restante para que no haya un salto.
+     */
+    static final double LIGHT_NIGHTFALL = 0.5;
     static final int FADE_COLOR = 0x04050A;
 
     static Pal solid(int rgb) {
