@@ -17,8 +17,9 @@ fuera (solo se revisará su legibilidad al final).
 ## Cómo funciona hoy
 
 - **Reloj**: `GameClock.getDayNightRatio()` (0.0 = pleno día, 1.0 = noche cerrada) e `isNight()`
-  (ratio > 0.5). Transiciones actuales: día 07:00–19:00, crepúsculo de 19:00 a 21:00, noche
-  21:00–05:00, amanecer de 05:00 a 07:00.
+  (ratio > 0.5). El ratio sale de `SolarModel` (elevación del sol con banda de crepúsculo de 18°)
+  según el día del año y `world.latitude`; a latitudes altas hay noches blancas (el ratio no
+  llega a 1) y día/noche perpetuos en los polos.
 - **3D**: materiales con `ColorAttribute.createDiffuse(...)` fijos + `Environment` global
   (`AmbientLight` 0.5 gris y `DirectionalLight` 0.8). No hay cielo, niebla ni color de fondo
   configurable (el *clear* es el negro por defecto). Como todo el mundo es difuso y recibe la luz,

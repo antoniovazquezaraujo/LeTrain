@@ -237,6 +237,7 @@ public class Model implements letrain.mvp.Model {
         this.economyManager = new letrain.economy.impl.EconomyManager(eventLogManager);
         this.economyManager.reloadConfig();
         this.gameClock.setDayDurationSeconds(this.economyManager.getDayDurationSeconds());
+        this.gameClock.setLatitude(this.economyManager.getLatitude());
         if (seed == 0) {
             seed = 1 + (int) (Math.random() * 255);
         }

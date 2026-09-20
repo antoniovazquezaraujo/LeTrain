@@ -5,6 +5,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import letrain.time.GameClock;
 import letrain.time.GameClockListener;
 import letrain.time.GameTime;
+import letrain.time.SolarModel;
 
 /**
  * Tick-driven clock starting at 08:00 of day 1 (ADR-022). One real second is
@@ -19,6 +20,7 @@ public class SimpleGameClock implements GameClock {
     private final List<GameClockListener> listeners = new CopyOnWriteArrayList<>();
     private long elapsedTicks;
     private int dayDurationSeconds = DEFAULT_DAY_DURATION_SECONDS;
+    private double latitude = SolarModel.DEFAULT_LATITUDE;
     private GameTime last;
     private boolean lastNight;
 
@@ -74,22 +76,28 @@ public class SimpleGameClock implements GameClock {
 
     @Override
     public float getDayNightRatio() {
-        int minute = now().minuteOfDay();
-        if (minute >= 7 * 60 && minute <= 19 * 60) {
-            return 0f;
-        }
-        if (minute >= 21 * 60 || minute <= 5 * 60) {
-            return 1f;
-        }
-        if (minute > 19 * 60) {
-            return (minute - 19 * 60) / (float) (21 * 60 - 19 * 60);
-        }
-        return 1f - (minute - 5 * 60) / (float) (7 * 60 - 5 * 60);
+        GameTime current = now();
+        double hour = current.hour() + current.minute() / 60.0;
+        return (float) SolarModel.dayNightRatio(dayOfYear(current.day()), hour, latitude);
     }
 
     @Override
     public void setDayDurationSeconds(int seconds) {
         dayDurationSeconds = Math.max(1, seconds);
+    }
+
+    @Override
+    public void setLatitude(double latitude) {
+        this.latitude = Math.max(-90.0, Math.min(90.0, latitude));
+    }
+
+    @Override
+    public double getLatitude() {
+        return latitude;
+    }
+
+    static int dayOfYear(int day) {
+        return ((day - 1) % 366) + 1;
     }
 
     @Override

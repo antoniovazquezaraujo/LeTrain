@@ -30,5 +30,10 @@ public interface GameClock {
     /** Real seconds a full game day lasts (default 1440: one day every 24 real minutes). */
     void setDayDurationSeconds(int seconds);
 
+    /** World latitude for the solar day/night cycle (ADR-022 phase 1), clamped to [-90, 90]. */
+    void setLatitude(double latitude);
+
+    double getLatitude();
+
     void addListener(GameClockListener listener);
 }

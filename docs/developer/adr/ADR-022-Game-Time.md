@@ -67,6 +67,13 @@ elegida en cada punto:
    ve en el reloj del HUD). El salto es determinista y se journaliza, así que el replay reproduce
    la misma hora. Los instantes anteriores al origen (Día 1, 08:00) ruedan al día siguiente; no se
    toca la duración del día (esa escala se fija al crear la partida).
+10. **Ciclo solar por latitud** (fase 1): `SolarModel` (core) calcula amanecer/atardecer y
+    elevación/acimut del sol a partir del día del año, la hora y la latitud. `getDayNightRatio()`
+    se deriva de la elevación con una banda de crepúsculo de 18°, y `world.latitude`
+    (`letrain.cfg`, sobreescribible en el `configuration { }` del escenario) fija la latitud del
+    mundo (40 por defecto). A latitudes altas emergen sin código extra las noches blancas (el
+    ratio no llega a 1 en verano) y el día/noche perpetuos en los polos. La luz direccional del 3D
+    sigue al sol (elevación/acimut).
 
 ### Escala temporal: qué cambia y qué no (aclaración)
 
