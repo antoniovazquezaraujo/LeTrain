@@ -47,15 +47,21 @@ class PaletteLabTest {
     }
 
     @Test
-    @DisplayName("the light family fades to black at nightfall before inverting polarity")
-    void should_FadeToBlack_AtNightfall() {
+    @DisplayName("the light family reaches a deep twilight, never a fully black frame")
+    void should_ReachTwilight_AtNightfall() {
         double midFade = (PaletteLab.LIGHT_NIGHTFALL + 1.0) / 2.0;
 
         PaletteLab.Pal faded = PaletteLab.blend(0, midFade);
 
-        assertEquals(PaletteLab.FADE_COLOR, faded.ground());
-        assertEquals(PaletteLab.FADE_COLOR, faded.rail());
-        assertEquals(PaletteLab.FADE_COLOR, faded.label());
+        assertEquals(PaletteLab.TWILIGHT, faded);
+        assertTrue(faded.ground() != 0x000000, "the background must stay visible");
+        assertTrue(luminance(faded.rail()) - luminance(faded.ground()) > 40,
+                "the rail must keep contrast against the ground");
+    }
+
+    private static int luminance(int rgb) {
+        return (int) (0.2126 * ((rgb >> 16) & 0xFF) + 0.7152 * ((rgb >> 8) & 0xFF)
+                + 0.0722 * (rgb & 0xFF));
     }
 
     @Test

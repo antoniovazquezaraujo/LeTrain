@@ -239,8 +239,8 @@ public class PaletteLab {
     /**
      * Transición gradual con el ratio del reloj. En la familia clara el día y la noche tienen
      * polaridad inversa (glifos oscuros sobre papel / glifos claros sobre negro), así que la
-     * inversión se funde a oscuro justo al anochecer (ratio {@value #LIGHT_NIGHTFALL}) en vez de
-     * interpolar a través de un punto sin contraste; la familia oscura interpola lineal.
+     * inversión pasa por {@link #TWILIGHT} (oscuro pero visible) al anochecer, repartida por la
+     * hora restante; la familia oscura interpola lineal.
      */
     static Pal blend(int family, double ratio) {
         Pal[] keys = palettes()[family];
@@ -257,9 +257,9 @@ public class PaletteLab {
                 return paper;
             }
             if (nightfall < 0.5) {
-                return mix(paper, solid(FADE_COLOR), (float) (nightfall * 2.0));
+                return mix(paper, TWILIGHT, (float) (nightfall * 2.0));
             }
-            return mix(solid(FADE_COLOR), keys[2], (float) ((nightfall - 0.5) * 2.0));
+            return mix(TWILIGHT, keys[2], (float) ((nightfall - 0.5) * 2.0));
         }
         if (ratio <= 0.5) {
             return mix(keys[0], keys[1], (float) (ratio * 2.0));
@@ -272,12 +272,19 @@ public class PaletteLab {
      * empieza el fundido a oscuro, repartido por la hora restante para que no haya un salto.
      */
     static final double LIGHT_NIGHTFALL = 0.5;
-    static final int FADE_COLOR = 0x04050A;
 
-    static Pal solid(int rgb) {
-        return new Pal(rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb,
-                rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb);
-    }
+    /**
+     * Punto medio del anochecer en la familia clara: fondo ya oscuro pero con los glifos todavía
+     * visibles (nunca negro puro, para que el mapa no desaparezca en ningún nivel).
+     */
+    static final Pal TWILIGHT =
+            new Pal(rgb(14, 16, 24), rgb(45, 70, 120), rgb(105, 80, 80), rgb(95, 95, 105),
+                    rgb(55, 55, 62), rgb(180, 150, 50), rgb(150, 155, 175), rgb(200, 80, 80),
+                    rgb(170, 150, 40), rgb(140, 138, 125), rgb(60, 140, 150), rgb(70, 150, 90),
+                    rgb(170, 70, 70), rgb(190, 80, 80), rgb(70, 95, 175), rgb(180, 170, 60),
+                    rgb(75, 80, 100), rgb(95, 100, 120), rgb(120, 122, 135), rgb(100, 102, 112),
+                    rgb(55, 55, 62), rgb(190, 160, 20), rgb(190, 40, 70), rgb(180, 170, 40),
+                    rgb(170, 150, 40), rgb(160, 80, 80), rgb(170, 170, 60), rgb(110, 115, 130));
 
     private static double smoothstep(double x) {
         double t = Math.max(0.0, Math.min(1.0, x));
