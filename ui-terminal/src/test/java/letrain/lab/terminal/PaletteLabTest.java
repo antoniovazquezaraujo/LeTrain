@@ -29,11 +29,23 @@ class PaletteLabTest {
     }
 
     @Test
-    @DisplayName("blend returns the key palettes at 0, 0.5 and 1")
+    @DisplayName("blend returns the key palettes at the ends")
     void should_BlendKeyPalettes() {
         assertEquals(PaletteLab.palettes()[0][0], PaletteLab.blend(0, 0.0));
-        assertEquals(PaletteLab.palettes()[0][1], PaletteLab.blend(0, 0.5));
         assertEquals(PaletteLab.palettes()[0][2], PaletteLab.blend(0, 1.0));
+        assertEquals(PaletteLab.palettes()[1][1], PaletteLab.blend(1, 0.5));
+    }
+
+    @Test
+    @DisplayName("the light family fades to black at nightfall before inverting polarity")
+    void should_FadeToBlack_AtNightfall() {
+        double midFade = (PaletteLab.LIGHT_NIGHTFALL + 1.0) / 2.0;
+
+        PaletteLab.Pal faded = PaletteLab.blend(0, midFade);
+
+        assertEquals(PaletteLab.FADE_COLOR, faded.ground());
+        assertEquals(PaletteLab.FADE_COLOR, faded.rail());
+        assertEquals(PaletteLab.FADE_COLOR, faded.label());
     }
 
     @Test

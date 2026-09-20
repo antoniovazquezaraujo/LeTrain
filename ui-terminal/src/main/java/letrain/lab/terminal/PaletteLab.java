@@ -233,7 +233,12 @@ public class PaletteLab {
         return ratio < 0.5 ? "atardecer" : "amanecer";
     }
 
-    /** Interpola día→crepúsculo→noche con el ratio del reloj (transición gradual). */
+    /**
+     * Transición gradual con el ratio del reloj. En la familia clara el día y la noche tienen
+     * polaridad inversa (glifos oscuros sobre papel / glifos claros sobre negro), así que la
+     * inversión se funde a oscuro justo al anochecer (ratio {@value #LIGHT_NIGHTFALL}) en vez de
+     * interpolar a través de un punto sin contraste; la familia oscura interpola lineal.
+     */
     static Pal blend(int family, double ratio) {
         Pal[] keys = palettes()[family];
         if (ratio <= 0.0) {
@@ -242,10 +247,35 @@ public class PaletteLab {
         if (ratio >= 1.0) {
             return keys[2];
         }
+        if (family == 0) {
+            Pal paper = mix(keys[0], keys[1], (float) Math.min(1.0, ratio));
+            double nightfall = smoothstep((ratio - LIGHT_NIGHTFALL) / (1.0 - LIGHT_NIGHTFALL));
+            if (nightfall <= 0.0) {
+                return paper;
+            }
+            if (nightfall < 0.5) {
+                return mix(paper, solid(FADE_COLOR), (float) (nightfall * 2.0));
+            }
+            return mix(solid(FADE_COLOR), keys[2], (float) ((nightfall - 0.5) * 2.0));
+        }
         if (ratio <= 0.5) {
             return mix(keys[0], keys[1], (float) (ratio * 2.0));
         }
         return mix(keys[1], keys[2], (float) ((ratio - 0.5) * 2.0));
+    }
+
+    /** A partir de este ratio el papel clara se funde a oscuro antes de encender la noche. */
+    static final double LIGHT_NIGHTFALL = 0.94;
+    static final int FADE_COLOR = 0x04050A;
+
+    static Pal solid(int rgb) {
+        return new Pal(rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb,
+                rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb, rgb);
+    }
+
+    private static double smoothstep(double x) {
+        double t = Math.max(0.0, Math.min(1.0, x));
+        return t * t * (3 - 2 * t);
     }
 
     static Pal mix(Pal a, Pal b, float t) {
