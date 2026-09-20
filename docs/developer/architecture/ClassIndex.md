@@ -49,6 +49,9 @@
 - [[letrain.economy.EconomyManager|EconomyManager]] (core)
 - [[letrain.economy.impl.EconomyManager|EconomyManager]] (core)
 
+## letrain.game
+- [[letrain.game.audio.SoundscapeAmbience|SoundscapeAmbience]] (game-audio)
+
 ## letrain.ground
 - [[letrain.ground.Ground|Ground]] (core)
 - [[letrain.ground.GroundMap|GroundMap]] (core)
@@ -155,7 +158,6 @@
 - [[letrain.soundscape.audio.SampleResolver|SampleResolver]] (soundscape)
 - [[letrain.soundscape.audio.SoundSample|SoundSample]] (soundscape)
 - [[letrain.soundscape.cli.SoundscapeCli|SoundscapeCli]] (soundscape)
-- [[letrain.soundscape.game.SoundscapeAmbience|SoundscapeAmbience]] (soundscape-game)
 - [[letrain.soundscape.gui.PlayerState|PlayerState]] (soundscape)
 - [[letrain.soundscape.gui.SoundscapePlayer|SoundscapePlayer]] (soundscape)
 - [[letrain.soundscape.impl.SoundscapeEngineImpl|SoundscapeEngineImpl]] (soundscape)

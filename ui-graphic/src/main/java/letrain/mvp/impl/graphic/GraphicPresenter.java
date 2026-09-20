@@ -24,7 +24,7 @@ import letrain.mvp.Model.GameModeMenuOption;
 import letrain.mvp.impl.GameSaveService;
 import letrain.mvp.impl.RailTrackMaker;
 import letrain.mvp.impl.SimulationController;
-import letrain.soundscape.game.SoundscapeAmbience;
+import letrain.game.audio.SoundscapeAmbience;
 import letrain.utils.FontManager;
 import letrain.utils.ValidationUtils;
 import letrain.vehicle.rail.CoreTrainEventListener;

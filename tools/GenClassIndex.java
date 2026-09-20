@@ -17,7 +17,7 @@ import java.util.stream.Stream;
  */
 public class GenClassIndex {
 
-    private static final List<String> MODULES = List.of("core", "soundscape", "soundscape-game",
+    private static final List<String> MODULES = List.of("core", "soundscape", "game-audio",
             "ui-terminal", "ui-graphic", "launcher-terminal", "launcher-graphic",
             "launcher-check");
 

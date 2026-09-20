@@ -2,7 +2,7 @@ package letrain;
 
 import letrain.mvp.impl.Model;
 import letrain.mvp.impl.terminal.TerminalPresenter;
-import letrain.soundscape.game.SoundscapeAmbience;
+import letrain.game.audio.SoundscapeAmbience;
 
 public class LeTrainTerminal {
     public static void main(String[] args) {

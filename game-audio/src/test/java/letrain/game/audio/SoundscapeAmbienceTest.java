@@ -1,4 +1,4 @@
-package letrain.soundscape.game;
+package letrain.game.audio;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

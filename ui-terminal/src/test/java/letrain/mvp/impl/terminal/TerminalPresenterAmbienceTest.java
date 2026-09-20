@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 
 import letrain.audio.AudioController;
 import letrain.mvp.impl.Model;
-import letrain.soundscape.game.SoundscapeAmbience;
+import letrain.game.audio.SoundscapeAmbience;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

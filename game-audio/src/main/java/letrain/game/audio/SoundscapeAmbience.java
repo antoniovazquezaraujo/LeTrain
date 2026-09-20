@@ -1,4 +1,4 @@
-package letrain.soundscape.game;
+package letrain.game.audio;
 
 import java.io.IOException;
 import java.time.LocalTime;
