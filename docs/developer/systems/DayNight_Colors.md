@@ -157,26 +157,40 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 | 1a | `VisualPalette` + ambiente 3D (luz, fondo, mesa, rejilla) | El mundo se apaga con `getDayNightRatio()`; test de paleta determinista |
 | 1b | Terreno (campos, agua, montaña, balasto, túnel, pared) | Terreno con variantes por token |
 | 1c | Elementos, vía y trenes | Materiales por token; avisos intactos |
-| 1d | 2D: variantes ANSI por franja con histéresis | Terminal con día/crepúsculo/noche |
+| 1d | 2D: paleta día/noche del terminal (familia clara) | Hecha: `TerminalPalette` + wiring del `RenderVisitor` |
 | 1e | Emisivos (faros/farolas) y niebla/cielo fino | Noche con guías de luz; coordinar con #480 |
 
-Estado: **1a hecha**. `VisualPalette` (core, `letrain.palette`) contiene ya `AMBIENT_LIGHT`,
-`SUN_LIGHT`, `SKY` y `TABLE_BOARD` con claves día/crepúsculo/noche e interpolación perceptual; el
-3D los aplica cada tick (luz ambiental, sol direccional según `SolarModel`, color de fondo y
-tablero). El resto de tokens entran con 1b–1d.
+Estado: **1a y 1d hechas** (1b/1c pendientes).
+
+- 3D (1a): `VisualPalette` (core, `letrain.palette`) con `AMBIENT_LIGHT`, `SUN_LIGHT`, `SKY` y
+  `TABLE_BOARD`; el `GraphicPresenter` los aplica cada tick (luz ambiental, sol direccional según
+  `SolarModel`, color de fondo y tablero).
+- 2D (1d): `TerminalPalette` (`ui-terminal`, `letrain.visitor.terminal`) con la **familia clara**
+  afinada en el laboratorio: día papel, crepúsculo, noche; fundido con el ratio del reloj,
+  inversión de polaridad y suelo de contraste. El `RenderVisitor` resuelve la paleta una vez por
+  frame (`model.getGameClock().getDayNightRatio()`) y pinta cada token (terreno, vía, estaciones,
+  señales, trenes, cursor, resaltados) con su color; el fondo del mapa es el token `BOARD`.
+  Traducción de color: **24-bit → 256 → 16 ANSI** según `COLORTERM`/`TERM`. El HUD (`menuBox`) y
+  el `InfoVisitor` se quedan como estaban.
 
 ## Decisiones pendientes
 
 - ¿`VisualPalette` en `core` (`letrain.palette`) o módulo aparte `palette`?
-- ¿Se limpian las constantes muertas del 2D (`SEMAPHORE_COLOR`, `SELECTED_SEMAPHORE_COLOR`) en
-  esta fase o en un PR aparte?
+- Configuración del 2D (`terminal.palette=auto|light|dark|theme`), familia oscura y comando de
+  consola en caliente: **aplazados**; de momento va siempre la familia clara.
+- Contraste de los colores de jugador (locomotoras, carga) sobre el papel: hoy se mantienen tal
+  cual (los fundidos los ajusta solo el suelo de contraste de los tokens). A revisar cuando se
+  juegue en 2D a fondo.
+- Curvas de ratio propias por franja (más suaves) o las actuales 05/07/19/21.
 - ¿Curvas de ratio propias por franja (más suaves) o las actuales 05/07/19/21?
 
 ## Decisiones tomadas
 
-- **2D: familia clara por defecto** (día “mapa papel”, noche oscura), tras la demo
-  `PaletteDemo` (día/crepúsculo/noche en ambas familias). El fondo del mapa cambia con la
-  franja: es un token más (`table.board` / fondo del recuadro).
-- **2D: color 24-bit con fallback ANSI** y `terminal.palette=auto|light|dark|theme`. No se
-  autodetecta el fondo del terminal (OSC 11 no es fiable).
+- **2D: familia clara por defecto** (día “mapa papel”, noche oscura), elegida tras la demo y
+  afinada en `PaletteLab` (tecla `p` para volcar los valores). El fondo del mapa es un token más
+  (`BOARD`).
+- **2D: color 24-bit con degradación 256 → 16 ANSI** (detección por `COLORTERM`/`TERM`, sin
+  autodetección del fondo del terminal). Las constantes muertas del 2D
+  (`SEMAPHORE_COLOR`, `SELECTED_SEMAPHORE_COLOR`, `SELECTED_FORK_COLOR`,
+  `SELECTED_STATION_COLOR`) se limpiaron en el wiring de 1d.
 - **HUD/skin fuera** de la fase 1.
