@@ -76,6 +76,7 @@
 
 ## letrain.lab
 - [[letrain.lab.ZoneSensorLab|ZoneSensorLab]] (core)
+- [[letrain.lab.terminal.PaletteLab|PaletteLab]] (ui-terminal)
 
 ## letrain.map
 - [[letrain.map.Dir|Dir]] (core)
