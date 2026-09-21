@@ -119,6 +119,9 @@ class PaletteLabTest {
         assertTrue(text.contains("crepúsculo"));
         assertTrue(text.contains("ground"));
         assertTrue(text.contains("cargoRuby"));
+        assertTrue(text.contains("board"));
+        assertTrue(text.contains("forkSelected"));
+        assertTrue(text.contains("selectionLink"));
         assertTrue(text.contains("frame actual"));
         assertTrue(text.contains("ANSI"));
     }

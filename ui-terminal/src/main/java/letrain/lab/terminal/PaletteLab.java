@@ -39,7 +39,8 @@ public class PaletteLab {
             int station, int stationSelected, int producer, int consumer, int sensor, int semOpen,
             int semClosed, int signalMax, int signalMin, int deadEnd, int tunnel, int bridge,
             int loco, int wagon, int cargoCoal, int cargoGold, int cargoRuby, int cursorDrawing,
-            int cursorMoving, int cursorErasing, int highlight, int label) {}
+            int cursorMoving, int cursorErasing, int highlight, int label, int board, int fork,
+            int forkSelected, int selectionLink, int crash) {}
 
     /** Mapa de muestra: los colores de cada token salen de la {@link Pal} activa. */
     private static final String[] MAP = {"                                        ",
@@ -65,7 +66,9 @@ public class PaletteLab {
                         rgb(200, 30, 30), rgb(200, 30, 30), rgb(40, 70, 170), rgb(200, 160, 0),
                         rgb(90, 90, 95), rgb(70, 70, 80), rgb(40, 40, 45), rgb(90, 90, 95),
                         rgb(20, 20, 20), rgb(150, 120, 0), rgb(180, 0, 50), rgb(0, 110, 40),
-                        rgb(170, 140, 0), rgb(190, 40, 40), rgb(25, 25, 30), rgb(60, 60, 65)),
+                        rgb(170, 140, 0), rgb(190, 40, 40), rgb(25, 25, 30), rgb(60, 60, 65),
+                        rgb(242, 240, 232), rgb(25, 25, 30), rgb(200, 30, 30), rgb(150, 20, 120),
+                        rgb(200, 60, 30)),
                 // Crepúsculo claro: papel gris cálido.
                 new Pal(rgb(186, 183, 178), rgb(45, 80, 165), rgb(160, 70, 55), rgb(60, 52, 48),
                         rgb(140, 130, 115), rgb(180, 140, 20), rgb(60, 40, 25), rgb(190, 50, 40),
@@ -73,7 +76,9 @@ public class PaletteLab {
                         rgb(190, 50, 40), rgb(190, 50, 40), rgb(50, 75, 160), rgb(180, 140, 20),
                         rgb(95, 85, 75), rgb(85, 75, 65), rgb(55, 45, 40), rgb(95, 85, 75),
                         rgb(35, 30, 28), rgb(160, 115, 10), rgb(175, 30, 55), rgb(20, 110, 45),
-                        rgb(160, 120, 10), rgb(180, 55, 45), rgb(70, 55, 40), rgb(80, 65, 55)),
+                        rgb(160, 120, 10), rgb(180, 55, 45), rgb(70, 55, 40), rgb(80, 65, 55),
+                        rgb(186, 183, 178), rgb(60, 40, 25), rgb(190, 50, 40), rgb(150, 40, 120),
+                        rgb(190, 70, 40)),
                 // Noche: vuelve al look oscuro.
                 new Pal(rgb(22, 25, 35), rgb(60, 95, 180), rgb(150, 100, 95), rgb(150, 150, 160),
                         rgb(70, 72, 80), rgb(200, 190, 70), rgb(225, 228, 240), rgb(235, 90, 80),
@@ -82,7 +87,8 @@ public class PaletteLab {
                         rgb(130, 135, 160), rgb(160, 165, 185), rgb(210, 212, 225),
                         rgb(190, 192, 205), rgb(45, 45, 55), rgb(230, 200, 40), rgb(235, 40, 90),
                         rgb(70, 190, 90), rgb(230, 200, 40), rgb(235, 90, 80), rgb(225, 228, 240),
-                        rgb(160, 165, 180)),};
+                        rgb(160, 165, 180), rgb(22, 25, 35), rgb(225, 228, 240), rgb(235, 90, 80),
+                        rgb(230, 120, 210), rgb(255, 120, 60)),};
         Pal[] dark = {
                 // Día oscuro: la actual con el campo como fondo negro.
                 new Pal(rgb(12, 12, 14), rgb(90, 150, 255), rgb(230, 120, 120), rgb(90, 90, 95),
@@ -92,7 +98,8 @@ public class PaletteLab {
                         rgb(120, 120, 120), rgb(160, 160, 170), rgb(153, 153, 153),
                         rgb(128, 128, 128), rgb(25, 25, 25), rgb(255, 216, 0), rgb(255, 0, 76),
                         rgb(60, 220, 60), rgb(255, 220, 0), rgb(255, 70, 70), rgb(255, 255, 0),
-                        rgb(150, 150, 150)),
+                        rgb(150, 150, 150), rgb(12, 12, 14), rgb(255, 255, 255), rgb(255, 80, 80),
+                        rgb(255, 0, 255), rgb(255, 120, 30)),
                 // Crepúsculo oscuro.
                 new Pal(rgb(16, 12, 12), rgb(70, 110, 190), rgb(195, 110, 95), rgb(80, 72, 68),
                         rgb(28, 25, 24), rgb(220, 200, 60), rgb(235, 200, 160), rgb(230, 80, 70),
@@ -101,7 +108,8 @@ public class PaletteLab {
                         rgb(110, 100, 90), rgb(145, 130, 120), rgb(140, 120, 110),
                         rgb(120, 110, 100), rgb(24, 22, 21), rgb(230, 190, 40), rgb(230, 60, 90),
                         rgb(60, 180, 60), rgb(230, 190, 40), rgb(230, 80, 70), rgb(235, 200, 160),
-                        rgb(200, 160, 120)),
+                        rgb(200, 160, 120), rgb(16, 12, 12), rgb(235, 200, 160), rgb(230, 80, 70),
+                        rgb(230, 60, 200), rgb(255, 90, 30)),
                 // Noche oscura.
                 new Pal(rgb(4, 6, 12), rgb(35, 55, 110), rgb(110, 80, 80), rgb(45, 45, 55),
                         rgb(16, 16, 20), rgb(180, 170, 60), rgb(140, 145, 165), rgb(200, 70, 70),
@@ -109,8 +117,9 @@ public class PaletteLab {
                         rgb(190, 70, 70), rgb(200, 70, 70), rgb(55, 80, 170), rgb(180, 170, 60),
                         rgb(60, 65, 85), rgb(80, 85, 105), rgb(85, 88, 100), rgb(70, 72, 80),
                         rgb(22, 23, 28), rgb(190, 160, 20), rgb(190, 20, 60), rgb(35, 130, 45),
-                        rgb(190, 170, 20), rgb(190, 70, 70), rgb(140, 145, 165),
-                        rgb(95, 100, 115)),};
+                        rgb(190, 170, 20), rgb(190, 70, 70), rgb(140, 145, 165), rgb(95, 100, 115),
+                        rgb(4, 6, 12), rgb(140, 145, 165), rgb(200, 70, 70), rgb(200, 90, 180),
+                        rgb(255, 140, 60)),};
         return new Pal[][] {light, dark};
     }
 
@@ -337,7 +346,11 @@ public class PaletteLab {
                 mixColor(a.cursorDrawing(), b.cursorDrawing(), t),
                 mixColor(a.cursorMoving(), b.cursorMoving(), t),
                 mixColor(a.cursorErasing(), b.cursorErasing(), t),
-                mixColor(a.highlight(), b.highlight(), t), mixColor(a.label(), b.label(), t));
+                mixColor(a.highlight(), b.highlight(), t), mixColor(a.label(), b.label(), t),
+                mixColor(a.board(), b.board(), t), mixColor(a.fork(), b.fork(), t),
+                mixColor(a.forkSelected(), b.forkSelected(), t),
+                mixColor(a.selectionLink(), b.selectionLink(), t),
+                mixColor(a.crash(), b.crash(), t));
     }
 
     static int mixColor(int a, int b, float t) {
@@ -375,7 +388,9 @@ public class PaletteLab {
                 contrast(p.cargoCoal(), bg), contrast(p.cargoGold(), bg),
                 contrast(p.cargoRuby(), bg), contrast(p.cursorDrawing(), bg),
                 contrast(p.cursorMoving(), bg), contrast(p.cursorErasing(), bg),
-                contrast(p.highlight(), bg), contrast(p.label(), bg));
+                contrast(p.highlight(), bg), contrast(p.label(), bg), contrast(p.board(), bg),
+                contrast(p.fork(), bg), contrast(p.forkSelected(), bg),
+                contrast(p.selectionLink(), bg), contrast(p.crash(), bg));
     }
 
     private static int contrast(int rgb, double bgLuminance) {
@@ -514,8 +529,9 @@ public class PaletteLab {
                 {"via.muerta", p.deadEnd()}, {"tunel", p.tunnel()}, {"puente", p.bridge()},
                 {"loco", p.loco()}, {"vagon", p.wagon()}, {"carga.carbon", p.cargoCoal()},
                 {"carga.oro", p.cargoGold()}, {"carga.rubi", p.cargoRuby()},
-                {"cursor", p.cursorDrawing()}, {"resalte", p.highlight()},
-                {"etiqueta", p.label()},};
+                {"cursor", p.cursorDrawing()}, {"resalte", p.highlight()}, {"etiqueta", p.label()},
+                {"fondo", p.board()}, {"desvio", p.fork()}, {"desvio.sel", p.forkSelected()},
+                {"enlace", p.selectionLink()}, {"accidente", p.crash()},};
     }
 
     private static int tokenColor(Pal p, char ch) {
