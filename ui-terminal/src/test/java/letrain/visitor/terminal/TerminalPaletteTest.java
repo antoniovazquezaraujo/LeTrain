@@ -67,4 +67,26 @@ class TerminalPaletteTest {
 
         assertTrue(palette.resolve(0f).color(Token.WATER) instanceof TextColor.RGB);
     }
+
+    @Test
+    @DisplayName("the ratio is stepped with hysteresis instead of drifting every minute")
+    void should_StepRatio_When_BeyondTheBand() {
+        float band = TerminalPalette.band(0.30f, -1f);
+        assertEquals(0.25f, band, 1e-6);
+
+        // dentro del escalón y del margen: no cambia
+        assertEquals(band, TerminalPalette.band(0.32f, band), 1e-6);
+        assertEquals(band, TerminalPalette.band(0.28f, band), 1e-6);
+
+        // más allá de medio escalón + margen: salta al siguiente
+        assertEquals(0.50f, TerminalPalette.band(0.44f, band), 1e-6);
+
+        // la histéresis aguanta el escalón al bajar hasta cruzar el margen
+        assertEquals(band, TerminalPalette.band(0.10f, band), 1e-6);
+        assertEquals(0.00f, TerminalPalette.band(0.05f, band), 1e-6);
+
+        // extremos deterministas
+        assertEquals(0f, TerminalPalette.band(-1f, -1f), 1e-6);
+        assertEquals(1f, TerminalPalette.band(2f, -1f), 1e-6);
+    }
 }

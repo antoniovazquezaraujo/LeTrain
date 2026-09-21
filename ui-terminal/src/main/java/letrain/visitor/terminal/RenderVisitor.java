@@ -36,6 +36,7 @@ public class RenderVisitor implements Visitor {
     private Model model;
     private final TerminalPalette palette;
     private TerminalPalette.Resolved paletteColors;
+    private float paletteBand = -1f;
 
     public static final char[] CRASH_ASPECTS =
             {'⁖', '⁘', '⁙', '⁚', '⁛', '⁝', '⁞', '․', '‥', '…', '⋯', '⋰', '⋱'};
@@ -120,7 +121,11 @@ public class RenderVisitor implements Visitor {
         }
         float dayNightRatio =
                 model.getGameClock() == null ? 0f : model.getGameClock().getDayNightRatio();
-        this.paletteColors = palette.resolve(dayNightRatio);
+        float band = TerminalPalette.band(dayNightRatio, paletteBand);
+        if (band != paletteBand) {
+            paletteBand = band;
+            paletteColors = palette.resolve(band);
+        }
         this.showId = model.isShowId();
         this.mode = model.getMode();
         selectedLocomotive = model.getSelectedLocomotive();

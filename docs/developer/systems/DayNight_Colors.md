@@ -172,6 +172,10 @@ Estado: **1a y 1d hechas** (1b/1c pendientes).
   señales, trenes, cursor, resaltados) con su color; el fondo del mapa es el token `BOARD`.
   Traducción de color: **24-bit → 256 → 16 ANSI** según `COLORTERM`/`TERM`. El HUD (`menuBox`) y
   el `InfoVisitor` se quedan como estaban.
+  **Escalonado**: el ratio solar es continuo y, interpolado, obligaba al terminal a repintar el
+  mapa entero cada minuto de juego (parpadeo de 1 Hz en pantalla clara). El cliente cuantiza el
+  ratio en **4 escalones** (0, 0.25, 0.5, 0.75, 1) con histéresis de 0.06: la paleta se resuelve
+  solo al cambiar de escalón. El laboratorio sí interpola, que es para lo que está.
 
 ## Decisiones pendientes
 

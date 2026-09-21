@@ -197,4 +197,24 @@ class RenderVisitorTest {
 
         verify(view, atLeastOnce()).setFgColor(new TextColor.RGB(150, 150, 160));
     }
+
+    @Test
+    @DisplayName("the visitor resolves the banded palette, not the drifting clock ratio")
+    void visitModel_shouldUseBandedPalette() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(0.30f);
+        visitor.visitModel(model);
+
+        // 0.30 belongs to the 0.25 band
+        TextColor expected =
+                palette.colorOf(TerminalPalette.rgbFor(0.25f).get(TerminalPalette.Token.RAIL));
+        visitor.visitRailTrack(new RailTrack());
+        verify(view, atLeastOnce()).setFgColor(expected);
+    }
 }

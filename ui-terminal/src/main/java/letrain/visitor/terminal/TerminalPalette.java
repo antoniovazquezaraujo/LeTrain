@@ -32,6 +32,16 @@ public final class TerminalPalette {
     /** Diferencia mínima de luminosidad entre un token y el fondo. */
     public static final double MIN_CONTRAST = 55;
 
+    /**
+     * Escalones de ratio de la paleta 2D. A diferencia del laboratorio (que interpola para afinar),
+     * el cliente cuantiza: cada cambio de paleta obliga al terminal a repintar el mapa entero, y
+     * interpolar cada minuto de juego producía un parpadeo por segundo en pantalla clara.
+     */
+    public static final int BANDS = 4;
+
+    /** Margen de histéresis alrededor del escalón actual, en unidades de ratio. */
+    public static final float BAND_MARGIN = 0.06f;
+
     // Claves día / crepúsculo / noche, en el orden de Token.
     private static final int[] DAY = {rgb(242, 240, 232), rgb(40, 90, 190), rgb(170, 60, 60),
             rgb(50, 50, 55), rgb(150, 150, 150), rgb(200, 160, 0), rgb(25, 25, 30),
@@ -81,6 +91,23 @@ public final class TerminalPalette {
             return new TerminalPalette(Depth.ANSI_16);
         }
         return new TerminalPalette(Depth.INDEXED_256);
+    }
+
+    /**
+     * Escalón de ratio para el actual, con histéresis: se queda en el escalón vigente hasta que el
+     * ratio se aleja más de medio escalón (más margen), así no baila en las fronteras.
+     */
+    public static float band(float ratio, float currentBand) {
+        float clamped = Math.max(0f, Math.min(1f, ratio));
+        if (currentBand < 0f) {
+            return Math.round(clamped * BANDS) / (float) BANDS;
+        }
+        float half = 0.5f / BANDS;
+        if (clamped > currentBand + half + BAND_MARGIN
+                || clamped < currentBand - half - BAND_MARGIN) {
+            return Math.round(clamped * BANDS) / (float) BANDS;
+        }
+        return currentBand;
     }
 
     /** Tokens resueltos para el ratio día/noche del reloj (0 = día, 1 = noche). */
