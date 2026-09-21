@@ -65,6 +65,6 @@ class TerminalPaletteTest {
     void should_ReturnRgb_When_Truecolor() {
         TerminalPalette palette = new TerminalPalette(Depth.TRUECOLOR);
 
-        assertTrue(palette.resolveFor(0f).get(Token.WATER) instanceof TextColor.RGB);
+        assertTrue(palette.resolve(0f).color(Token.WATER) instanceof TextColor.RGB);
     }
 }

@@ -83,12 +83,24 @@ public final class TerminalPalette {
         return new TerminalPalette(Depth.INDEXED_256);
     }
 
-    /** Colores listos para pintar con el ratio día/noche del reloj (0 = día, 1 = noche). */
-    public Map<Token, TextColor> resolveFor(float ratio) {
+    /** Tokens resueltos para el ratio día/noche del reloj (0 = día, 1 = noche). */
+    public record Resolved(Map<Token, Integer> rgb, Map<Token, TextColor> colors) {
+
+        public int rgb(Token token) {
+            return rgb.get(token);
+        }
+
+        public TextColor color(Token token) {
+            return colors.get(token);
+        }
+    }
+
+    /** Resuelve RGB y colores de terminal para un ratio. */
+    public Resolved resolve(float ratio) {
         Map<Token, Integer> rgb = rgbFor(ratio);
         Map<Token, TextColor> colors = new EnumMap<>(Token.class);
-        rgb.forEach((token, value) -> colors.put(token, translate(value)));
-        return colors;
+        rgb.forEach((token, value) -> colors.put(token, colorOf(value)));
+        return new Resolved(rgb, colors);
     }
 
     /** RGB por token para un ratio; puro y determinista. */
@@ -181,7 +193,8 @@ public final class TerminalPalette {
         return (int) Math.round(Math.max(0.0, Math.min(1.0, value)) * 255);
     }
 
-    private TextColor translate(int rgb) {
+    /** Traduce un RGB al modo de color del terminal. */
+    public TextColor colorOf(int rgb) {
         int r = (rgb >> 16) & 0xFF;
         int g = (rgb >> 8) & 0xFF;
         int b = rgb & 0xFF;
