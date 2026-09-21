@@ -4,8 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 @DisplayName("Palette lab: ANSI fallback")
 class PaletteLabTest {
@@ -99,5 +103,23 @@ class PaletteLabTest {
         assertEquals(0xFFFFFF, PaletteLab.mixColor(0x000000, 0xFFFFFF, 1f));
         int mid = PaletteLab.mixColor(0x000000, 0xFFFFFF, 0.5f);
         assertTrue(mid > 0xAAAAAA && mid < 0xCCCCCC, "mid=" + Integer.toHexString(mid));
+    }
+
+    @Test
+    @DisplayName("dump writes every token of both families and the current frame")
+    void should_DumpPalette(@TempDir Path dir) throws IOException {
+        Path file = dir.resolve("dump.txt");
+
+        String path = new PaletteLab().dump(file);
+
+        assertEquals(file.toString(), path);
+        String text = Files.readString(file);
+        assertTrue(text.contains("familia CLARA"));
+        assertTrue(text.contains("familia OSCURA"));
+        assertTrue(text.contains("crepúsculo"));
+        assertTrue(text.contains("ground"));
+        assertTrue(text.contains("cargoRuby"));
+        assertTrue(text.contains("frame actual"));
+        assertTrue(text.contains("ANSI"));
     }
 }

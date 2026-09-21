@@ -11,6 +11,11 @@ import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
 import com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal;
 import java.io.IOException;
+import java.lang.reflect.RecordComponent;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Locale;
 
 /**
  * Laboratorio de la paleta día/noche del cliente 2D (fase 1 de ADR-022, ver
@@ -126,9 +131,22 @@ public class PaletteLab {
 
     private static final String[] COLOR_MODE_NAMES =
             {"RGB 24-bit", "256 colores", "ANSI 16 (tema)"};
+    private static final String[] PHASE_NAMES = {"día", "crepúsculo", "noche"};
+    private String status = "";
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
+        for (int i = 0; i < args.length; i++) {
+            if ("--dump".equals(args[i])) {
+                Path target = i + 1 < args.length ? Path.of(args[i + 1]) : defaultDumpPath();
+                System.out.println(new PaletteLab().dump(target));
+                return;
+            }
+        }
         new PaletteLab().run();
+    }
+
+    private static Path defaultDumpPath() {
+        return Path.of(System.getProperty("java.io.tmpdir"), "palette-lab-dump.txt");
     }
 
     private void run() throws IOException {
@@ -202,6 +220,13 @@ public class PaletteLab {
             case 'a' -> {
                 auto = !auto;
                 lastAuto = System.currentTimeMillis();
+            }
+            case 'p' -> {
+                try {
+                    status = "volcado -> " + dump(defaultDumpPath());
+                } catch (IOException e) {
+                    status = "error al volcar: " + e.getMessage();
+                }
             }
             case 'q' -> {
                 return false;
@@ -401,7 +426,10 @@ public class PaletteLab {
                         cutMode ? "corte" : "fundido", auto ? "auto ON" : "auto off"),
                 ansi(0xFFC850), chromeBg);
         put(tg, 1, 2, "[←/→] hora  [1] día  [2] crepúsculo  [3] noche  [f] familia  [c] color  "
-                + "[t] transición  [a] auto  [q] salir", chromeFg, chromeBg);
+                + "[t] transición  [a] auto  [p] volcar  [q] salir", chromeFg, chromeBg);
+        if (!status.isEmpty()) {
+            put(tg, 1, 3, status, ansi(0x77AAFF), chromeBg);
+        }
 
         Pal pal = blend(family, ratio, cutMode);
         int mapY = 4;
@@ -538,6 +566,50 @@ public class PaletteLab {
 
     private void put(TextGraphics tg, int x, int y, char ch, TextColor fg, TextColor bg) {
         tg.setCharacter(x, y, TextCharacter.fromCharacter(ch, fg, bg)[0]);
+    }
+
+    /**
+     * Vuelca a un fichero pegable las claves de las dos familias (día/crepúsculo/noche) y el frame
+     * resuelto con la hora y el modo actuales, con el slot ANSI más cercano de cada token.
+     */
+    String dump(Path target) throws IOException {
+        StringBuilder out = new StringBuilder();
+        out.append("# Paleta 2D — volcado de PaletteLab (ADR-022 fase 1)\n");
+        out.append(String.format(Locale.ROOT,
+                "# LIGHT_NIGHTFALL=%.2f CUT_RATIO=%.2f MIN_CONTRAST=%.0f%n", LIGHT_NIGHTFALL,
+                CUT_RATIO, MIN_CONTRAST));
+        out.append("# tokens en el orden del record Pal; rgb(r, g, b) y slot ANSI de fallback\n\n");
+        Pal[][] keys = palettes();
+        for (int fam = 0; fam < FAMILY_NAMES.length; fam++) {
+            for (int phase = 0; phase < PHASE_NAMES.length; phase++) {
+                out.append("# familia ").append(FAMILY_NAMES[fam]).append(" · ")
+                        .append(PHASE_NAMES[phase]).append('\n');
+                appendPal(out, keys[fam][phase]);
+                out.append('\n');
+            }
+        }
+        double ratio = ratioOf(hour);
+        out.append(String.format(Locale.ROOT,
+                "# frame actual: familia=%s hora=%02d:%02d ratio=%.3f (%s) color=%s "
+                        + "transición=%s%n",
+                FAMILY_NAMES[family], (int) hour, (int) (hour % 1 * 60), ratio, phaseName(ratio),
+                COLOR_MODE_NAMES[colorMode], cutMode ? "corte" : "fundido"));
+        appendPal(out, blend(family, ratio, cutMode));
+        Files.writeString(target, out.toString(), StandardCharsets.UTF_8);
+        return target.toString();
+    }
+
+    private static void appendPal(StringBuilder out, Pal pal) throws IOException {
+        try {
+            for (RecordComponent component : Pal.class.getRecordComponents()) {
+                int value = (int) component.getAccessor().invoke(pal);
+                out.append(String.format(Locale.ROOT, "%-18s = rgb(%3d, %3d, %3d)   # ANSI %s%n",
+                        component.getName(), (value >> 16) & 0xFF, (value >> 8) & 0xFF,
+                        value & 0xFF, ((TextColor.ANSI) ansi(value)).name()));
+            }
+        } catch (ReflectiveOperationException e) {
+            throw new IOException("no se pudo volcar la paleta", e);
+        }
     }
 
     /** Fallback a 16 colores: el slot ANSI mas cercano al RGB pedido. */
