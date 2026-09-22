@@ -50,7 +50,7 @@ public final class TerminalPalette {
      * menor que medio paso: si no, un cambio de escalón exige avanzar más de un paso entero y se
      * saltan niveles (las teclas de debug pasaban de dos en dos).
      */
-    public static final float BAND_MARGIN = 0.15f / BANDS;
+    public static final float BAND_MARGIN = 0.1f;
 
     // Claves día / crepúsculo / noche, en el orden de Token.
     private static final int[] DAY = {rgb(242, 240, 232), rgb(40, 90, 190), rgb(170, 60, 60),
@@ -176,27 +176,15 @@ public final class TerminalPalette {
         if (currentBand < 0f) {
             return level(clamped);
         }
-        float half = Math.abs(level(clamped) - currentBand) < 1e-6f ? 0f : halfGap(currentBand);
-        if (clamped > currentBand + half + BAND_MARGIN
-                || clamped < currentBand - half - BAND_MARGIN) {
+        int index = levelIndex(currentBand);
+        float gapRight =
+                index < LEVEL_RATIOS.length - 1 ? LEVEL_RATIOS[index + 1] - currentBand : 0f;
+        float gapLeft = index > 0 ? currentBand - LEVEL_RATIOS[index - 1] : 0f;
+        if (clamped > currentBand + gapRight / 2f + gapRight * BAND_MARGIN
+                || clamped < currentBand - gapLeft / 2f - gapLeft * BAND_MARGIN) {
             return level(clamped);
         }
         return currentBand;
-    }
-
-    /** Medio hueco alrededor del escalón actual, hacia sus vecinos. */
-    private static float halfGap(float currentBand) {
-        int index = 0;
-        for (int level = 1; level < LEVEL_RATIOS.length; level++) {
-            if (Math.abs(LEVEL_RATIOS[level] - currentBand) < Math
-                    .abs(LEVEL_RATIOS[index] - currentBand)) {
-                index = level;
-            }
-        }
-        float left = index > 0 ? (currentBand - LEVEL_RATIOS[index - 1]) / 2f : 0f;
-        float right =
-                index < LEVEL_RATIOS.length - 1 ? (LEVEL_RATIOS[index + 1] - currentBand) / 2f : 0f;
-        return Math.max(left, right);
     }
 
     /** Tokens resueltos para el ratio día/noche del reloj (0 = día, 1 = noche). */

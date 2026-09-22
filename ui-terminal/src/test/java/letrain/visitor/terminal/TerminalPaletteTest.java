@@ -90,6 +90,19 @@ class TerminalPaletteTest {
     }
 
     @Test
+    @DisplayName("every level advances when the ratio is set to it, even the closest ones")
+    void should_AdvanceThroughAllLevels() {
+        float ratio = 0f;
+        for (int step = 1; step <= TerminalPalette.BANDS; step++) {
+            float next = TerminalPalette.shiftLevel(ratio, 1);
+            assertEquals(next, TerminalPalette.band(next, ratio), 1e-6,
+                    "level " + step + " must switch from " + ratio);
+            ratio = next;
+        }
+        assertEquals(1f, ratio, 1e-6);
+    }
+
+    @Test
     @DisplayName("levels are spaced by perceived lightness, not by raw ratio")
     void should_SpaceLevelsPerceptually() {
         java.util.List<Double> steps = new java.util.ArrayList<>();
