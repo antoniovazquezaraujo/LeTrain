@@ -13,7 +13,9 @@ public final class VisualPalette {
 
     /** Colour tokens wired so far; the rest of the map joins as the phases land. */
     public enum Token {
-        AMBIENT_LIGHT, SUN_LIGHT, SKY, TABLE_BOARD
+        AMBIENT_LIGHT, SUN_LIGHT, SKY, TABLE_BOARD,
+        // Terrain (phase 1b)
+        TERRAIN_FIELDS, TERRAIN_WATER, TERRAIN_MOUNTAIN, TERRAIN_BALLAST, STRUCTURE_BRIDGE_PILLAR, STRUCTURE_TUNNEL_PORTAL, STRUCTURE_TERRAIN_WALL, TABLE_GRID, DECOR_BOX, VOID
     }
 
     private static final int DAY = 0;
@@ -26,10 +28,30 @@ public final class VisualPalette {
             {0x8C8C85, 0x594738, 0x1F2438},
             // SUN_LIGHT
             {0xCCCCCC, 0xB3804D, 0x404D66},
-            // SKY (clear colour)
-            {0x000000, 0x402E1F, 0x05080F},
+            // SKY (clear colour): day sky blue, warm dusk, dark night
+            {0x87CEEB, 0x6B4632, 0x05080F},
             // TABLE_BOARD
-            {0x664D1A, 0x473314, 0x1A140D},};
+            {0x664D1A, 0x473314, 0x1A140D},
+            // TERRAIN_FIELDS (phase 1b)
+            {0x66994C, 0x526B38, 0x1F2E24},
+            // TERRAIN_WATER
+            {0x3366CC, 0x26478C, 0x0F1F4D},
+            // TERRAIN_MOUNTAIN
+            {0x80664D, 0x614D38, 0x29241F},
+            // TERRAIN_BALLAST
+            {0x808080, 0x5C574D, 0x242426},
+            // STRUCTURE_BRIDGE_PILLAR
+            {0x808080, 0x5C574D, 0x242426},
+            // STRUCTURE_TUNNEL_PORTAL
+            {0x808080, 0x666666, 0x262626},
+            // STRUCTURE_TERRAIN_WALL
+            {0x808080, 0x666666, 0x262626},
+            // TABLE_GRID
+            {0xBFBFBF, 0x808080, 0x2E2E33},
+            // DECOR_BOX
+            {0x218C21, 0x336626, 0x142914},
+            // VOID (below the horizon)
+            {0x000000, 0x000000, 0x000000},};
 
     /** Interpolated 0xRRGGBB for a token at a day/night ratio (0 = day, 1 = night). */
     public int color(Token token, double dayNightRatio) {

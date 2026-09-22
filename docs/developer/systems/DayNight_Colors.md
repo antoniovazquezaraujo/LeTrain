@@ -133,7 +133,7 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 |---|---|---|---|---|
 | `light.ambient` | `AmbientLight (0.5, 0.5, 0.5)` (:190) | `(0.55, 0.55, 0.52)` | `(0.35, 0.28, 0.22)` | `(0.12, 0.14, 0.22)` |
 | `light.sun` | `DirectionalLight (0.8, 0.8, 0.8)` dir `(-1, -0.8, -0.2)` (:191) | actual | `(0.7, 0.5, 0.3)` | `(0.25, 0.3, 0.4)` |
-| `sky.background` | sin definir (clear negro) | negro actual | `(0.25, 0.18, 0.12)` | `(0.02, 0.03, 0.06)` |
+| `sky.background` | sin definir (clear negro) | azul cielo `#87CEEB` | `(0.42, 0.27, 0.20)` | `(0.02, 0.03, 0.06)` |
 | `sky.fog` | no existe | sin niebla | niebla suave | niebla tenue azulada |
 
 ## Reglas y guardarraíles
@@ -155,16 +155,25 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 | Fase | Alcance | Entregable |
 |---|---|---|
 | 1a | `VisualPalette` + ambiente 3D (luz, fondo, mesa, rejilla) | El mundo se apaga con `getDayNightRatio()`; test de paleta determinista |
-| 1b | Terreno (campos, agua, montaña, balasto, túnel, pared) | Terreno con variantes por token |
+| 1b | Terreno (campos, agua, montaña, balasto, túnel, pared) | Hecha: tokens de terreno en `VisualPalette` y materiales del `Gdx3DResourceContext`/`GroundRenderer` |
 | 1c | Elementos, vía y trenes | Materiales por token; avisos intactos |
 | 1d | 2D: paleta día/noche del terminal (familia clara) | Hecha: `TerminalPalette` + wiring del `RenderVisitor` |
 | 1e | Emisivos (faros/farolas) y niebla/cielo fino | Noche con guías de luz; coordinar con #480 |
 
-Estado: **1a y 1d hechas** (1b/1c pendientes).
+Estado: **1a, 1b y 1d hechas** (1c pendiente).
 
 - 3D (1a): `VisualPalette` (core, `letrain.palette`) con `AMBIENT_LIGHT`, `SUN_LIGHT`, `SKY` y
   `TABLE_BOARD`; el `GraphicPresenter` los aplica cada tick (luz ambiental, sol direccional según
   `SolarModel`, color de fondo y tablero).
+- Horizonte 3D: el fondo se reparte con `glScissor` según la línea de horizonte real (pitch de la
+  cámara y FOV): **cielo** por encima y token `VOID` (negro) por debajo, para lo inexplorado. La
+  geometría se dibuja encima de ambos, así que la línea solo se ve donde no hay mundo.
+- Terreno 3D (1b): `VisualPalette` gana `TERRAIN_FIELDS`, `TERRAIN_WATER`, `TERRAIN_MOUNTAIN`,
+  `TERRAIN_BALLAST`, `STRUCTURE_BRIDGE_PILLAR`, `STRUCTURE_TUNNEL_PORTAL`, `STRUCTURE_TERRAIN_WALL`,
+  `TABLE_GRID` y `DECOR_BOX` con sus claves día/crepúsculo/noche; `Gdx3DResourceContext.applyTerrainPalette`
+  actualiza los materiales (solo cuando el color cambia), el portal de túnel por id de material y las
+  paredes de agua del `GroundRenderer` usan el color resuelto del terreno. La rejilla y las cajas de
+  decorado del `GraphicPresenter` también siguen su token.
 - 2D (1d): `TerminalPalette` (`ui-terminal`, `letrain.visitor.terminal`) con la **familia clara**
   afinada en el laboratorio: día papel, crepúsculo, noche; fundido con el ratio del reloj,
   inversión de polaridad y suelo de contraste. El `RenderVisitor` resuelve la paleta una vez por
