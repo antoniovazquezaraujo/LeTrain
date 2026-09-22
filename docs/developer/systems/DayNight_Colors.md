@@ -133,7 +133,7 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 |---|---|---|---|---|
 | `light.ambient` | `AmbientLight (0.5, 0.5, 0.5)` (:190) | `(0.55, 0.55, 0.52)` | `(0.35, 0.28, 0.22)` | `(0.12, 0.14, 0.22)` |
 | `light.sun` | `DirectionalLight (0.8, 0.8, 0.8)` dir `(-1, -0.8, -0.2)` (:191) | actual | `(0.7, 0.5, 0.3)` | `(0.25, 0.3, 0.4)` |
-| `sky.background` | sin definir (clear negro) | negro actual | `(0.25, 0.18, 0.12)` | `(0.02, 0.03, 0.06)` |
+| `sky.background` | sin definir (clear negro) | azul cielo `#87CEEB` | `(0.42, 0.27, 0.20)` | `(0.02, 0.03, 0.06)` |
 | `sky.fog` | no existe | sin niebla | niebla suave | niebla tenue azulada |
 
 ## Reglas y guardarraíles

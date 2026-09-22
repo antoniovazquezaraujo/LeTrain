@@ -28,8 +28,8 @@ public final class VisualPalette {
             {0x8C8C85, 0x594738, 0x1F2438},
             // SUN_LIGHT
             {0xCCCCCC, 0xB3804D, 0x404D66},
-            // SKY (clear colour)
-            {0x000000, 0x402E1F, 0x05080F},
+            // SKY (clear colour): day sky blue, warm dusk, dark night
+            {0x87CEEB, 0x6B4632, 0x05080F},
             // TABLE_BOARD
             {0x664D1A, 0x473314, 0x1A140D},
             // TERRAIN_FIELDS (phase 1b)
