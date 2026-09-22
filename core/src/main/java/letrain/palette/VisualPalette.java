@@ -15,7 +15,7 @@ public final class VisualPalette {
     public enum Token {
         AMBIENT_LIGHT, SUN_LIGHT, SKY, TABLE_BOARD,
         // Terrain (phase 1b)
-        TERRAIN_FIELDS, TERRAIN_WATER, TERRAIN_MOUNTAIN, TERRAIN_BALLAST, STRUCTURE_BRIDGE_PILLAR, STRUCTURE_TUNNEL_PORTAL, STRUCTURE_TERRAIN_WALL, TABLE_GRID, DECOR_BOX
+        TERRAIN_FIELDS, TERRAIN_WATER, TERRAIN_MOUNTAIN, TERRAIN_BALLAST, STRUCTURE_BRIDGE_PILLAR, STRUCTURE_TUNNEL_PORTAL, STRUCTURE_TERRAIN_WALL, TABLE_GRID, DECOR_BOX, VOID
     }
 
     private static final int DAY = 0;
@@ -49,7 +49,9 @@ public final class VisualPalette {
             // TABLE_GRID
             {0xBFBFBF, 0x808080, 0x2E2E33},
             // DECOR_BOX
-            {0x218C21, 0x336626, 0x142914},};
+            {0x218C21, 0x336626, 0x142914},
+            // VOID (below the horizon)
+            {0x000000, 0x000000, 0x000000},};
 
     /** Interpolated 0xRRGGBB for a token at a day/night ratio (0 = day, 1 = night). */
     public int color(Token token, double dayNightRatio) {

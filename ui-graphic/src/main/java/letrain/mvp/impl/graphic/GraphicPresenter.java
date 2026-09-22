@@ -79,6 +79,7 @@ public class GraphicPresenter extends ApplicationAdapter
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute gridDiffuse;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute boxDiffuse;
     private final Color skyColor = new Color();
+    private final Color voidColor = new Color();
 
     private letrain.mvp.Model model;
     private Gdx3DRenderer renderer;
@@ -315,8 +316,19 @@ public class GraphicPresenter extends ApplicationAdapter
         }
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        Gdx.gl.glClearColor(skyColor.r, skyColor.g, skyColor.b, 1f);
+        // Horizon split: sky above, unexplored void below; the world is drawn on top of both.
+        Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
+        Gdx.gl.glClearColor(voidColor.r, voidColor.g, voidColor.b, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+        int horizon = horizonScreenY();
+        if (horizon > 0) {
+            Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
+            Gdx.gl.glScissor(0, horizon, Gdx.graphics.getWidth(),
+                    Gdx.graphics.getHeight() - horizon);
+            Gdx.gl.glClearColor(skyColor.r, skyColor.g, skyColor.b, 1f);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+            Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
+        }
 
         // Actualizar instancias desde el modelo
         renderer.clear();
@@ -1340,6 +1352,7 @@ public class GraphicPresenter extends ApplicationAdapter
         setColor(sunLight.color, palette.color(VisualPalette.Token.SUN_LIGHT, ratio));
         setColor(tableDiffuse.color, palette.color(VisualPalette.Token.TABLE_BOARD, ratio));
         setColor(skyColor, palette.color(VisualPalette.Token.SKY, ratio));
+        setColor(voidColor, palette.color(VisualPalette.Token.VOID, ratio));
         setColor(gridDiffuse.color, palette.color(VisualPalette.Token.TABLE_GRID, ratio));
         setColor(boxDiffuse.color, palette.color(VisualPalette.Token.DECOR_BOX, ratio));
         resourceContext.applyTerrainPalette(palette, ratio);
@@ -1354,6 +1367,18 @@ public class GraphicPresenter extends ApplicationAdapter
         double a = Math.toRadians(azimuth);
         sunLight.direction.set((float) (-Math.cos(e) * Math.sin(a)), (float) -Math.sin(e),
                 (float) (Math.cos(e) * Math.cos(a))).nor();
+    }
+
+    /**
+     * Screen Y (from the bottom, like glScissor) of the horizon: the camera pitch projected with
+     * the vertical FOV. Looking down, the horizon sits above the centre; looking up, below.
+     */
+    private int horizonScreenY() {
+        double halfFov = Math.toRadians(cam.fieldOfView / 2.0);
+        double pitch = Math.asin(Math.max(-1.0, Math.min(1.0, -cam.direction.y)));
+        double ndc = Math.tan(pitch) / Math.tan(halfFov);
+        int height = Gdx.graphics.getHeight();
+        return (int) Math.max(0, Math.min(height, Math.round(height * (1 + ndc) / 2.0)));
     }
 
     private static void setColor(Color target, int rgb) {

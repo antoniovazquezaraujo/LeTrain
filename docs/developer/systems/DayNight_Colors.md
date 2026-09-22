@@ -165,6 +165,9 @@ Estado: **1a, 1b y 1d hechas** (1c pendiente).
 - 3D (1a): `VisualPalette` (core, `letrain.palette`) con `AMBIENT_LIGHT`, `SUN_LIGHT`, `SKY` y
   `TABLE_BOARD`; el `GraphicPresenter` los aplica cada tick (luz ambiental, sol direccional según
   `SolarModel`, color de fondo y tablero).
+- Horizonte 3D: el fondo se reparte con `glScissor` según la línea de horizonte real (pitch de la
+  cámara y FOV): **cielo** por encima y token `VOID` (negro) por debajo, para lo inexplorado. La
+  geometría se dibuja encima de ambos, así que la línea solo se ve donde no hay mundo.
 - Terreno 3D (1b): `VisualPalette` gana `TERRAIN_FIELDS`, `TERRAIN_WATER`, `TERRAIN_MOUNTAIN`,
   `TERRAIN_BALLAST`, `STRUCTURE_BRIDGE_PILLAR`, `STRUCTURE_TUNNEL_PORTAL`, `STRUCTURE_TERRAIN_WALL`,
   `TABLE_GRID` y `DECOR_BOX` con sus claves día/crepúsculo/noche; `Gdx3DResourceContext.applyTerrainPalette`
