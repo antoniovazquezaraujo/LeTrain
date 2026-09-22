@@ -143,8 +143,8 @@ public final class TerminalPalette {
         return 0.2126 * ((rgb >> 16) & 0xFF) + 0.7152 * ((rgb >> 8) & 0xFF) + 0.0722 * (rgb & 0xFF);
     }
 
-    /** Ratio del escalón más cercano al ratio dado. */
-    public static float level(float ratio) {
+    /** Índice del escalón más cercano al ratio dado (0..BANDS). */
+    public static int levelIndex(float ratio) {
         float clamped = Math.max(0f, Math.min(1f, ratio));
         int nearest = 0;
         for (int level = 1; level < LEVEL_RATIOS.length; level++) {
@@ -153,20 +153,17 @@ public final class TerminalPalette {
                 nearest = level;
             }
         }
-        return LEVEL_RATIOS[nearest];
+        return nearest;
+    }
+
+    /** Ratio del escalón más cercano al ratio dado. */
+    public static float level(float ratio) {
+        return LEVEL_RATIOS[levelIndex(ratio)];
     }
 
     /** Escalón contiguo (o el mismo, en los extremos): para las teclas de debug. */
     public static float shiftLevel(float ratio, int direction) {
-        float clamped = Math.max(0f, Math.min(1f, ratio));
-        int nearest = 0;
-        for (int level = 1; level < LEVEL_RATIOS.length; level++) {
-            if (Math.abs(LEVEL_RATIOS[level] - clamped) < Math
-                    .abs(LEVEL_RATIOS[nearest] - clamped)) {
-                nearest = level;
-            }
-        }
-        int target = Math.max(0, Math.min(LEVEL_RATIOS.length - 1, nearest + direction));
+        int target = Math.max(0, Math.min(LEVEL_RATIOS.length - 1, levelIndex(ratio) + direction));
         return LEVEL_RATIOS[target];
     }
 
