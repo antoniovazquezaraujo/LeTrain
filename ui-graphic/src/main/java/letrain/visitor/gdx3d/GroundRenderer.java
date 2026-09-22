@@ -128,10 +128,9 @@ public class GroundRenderer extends BaseSubRenderer {
                     && modelRef.getGroundMap() != null) {
                 int gx = ground.getPosition().getX();
                 int gy = ground.getPosition().getY();
-                if (backgroundType == letrain.ground.GroundMap.ROCK)
-                    tempColor.set(0.5f, 0.4f, 0.3f, 1f);
-                else
-                    tempColor.set(0.4f, 0.6f, 0.3f, 1f);
+                resourceContext.paletteColor(backgroundType == letrain.ground.GroundMap.ROCK
+                        ? letrain.palette.VisualPalette.Token.TERRAIN_MOUNTAIN
+                        : letrain.palette.VisualPalette.Token.TERRAIN_FIELDS, tempColor);
 
                 checkAndAddWall(gx, gy - 1, x, -1.05f, z - 0.5f, 0, tempColor);
                 checkAndAddWall(gx, gy + 1, x, -1.05f, z + 0.5f, 0, tempColor);

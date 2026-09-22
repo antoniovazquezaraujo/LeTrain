@@ -76,6 +76,8 @@ public class GraphicPresenter extends ApplicationAdapter
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute ambientAttribute;
     private com.badlogic.gdx.graphics.g3d.environment.DirectionalLight sunLight;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute tableDiffuse;
+    private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute gridDiffuse;
+    private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute boxDiffuse;
     private final Color skyColor = new Color();
 
     private letrain.mvp.Model model;
@@ -211,10 +213,11 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Rejilla para orientación (1x1 para coincidir con las celdas)
         modelBuilder.begin();
+        gridDiffuse = ColorAttribute.createDiffuse(Color.LIGHT_GRAY);
         com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpb =
                 modelBuilder.part("grid", GL20.GL_LINES, Usage.Position | Usage.ColorUnpacked,
-                        new com.badlogic.gdx.graphics.g3d.Material());
-        mpb.setColor(Color.LIGHT_GRAY);
+                        new com.badlogic.gdx.graphics.g3d.Material(gridDiffuse));
+        mpb.setColor(Color.WHITE);
         for (int i = -100; i <= 100; i += 1) {
             mpb.line(i, 0.01f, -100, i, 0.01f, 100);
             mpb.line(-100, 0.01f, i, 100, 0.01f, i);
@@ -224,11 +227,10 @@ public class GraphicPresenter extends ApplicationAdapter
         cameraGroupStrategy = new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam);
         decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(cameraGroupStrategy);
 
-        boxModel =
-                modelBuilder.createBox(0.8f, 0.8f, 0.8f,
-                        new com.badlogic.gdx.graphics.g3d.Material(
-                                ColorAttribute.createDiffuse(Color.FOREST)),
-                        Usage.Position | Usage.Normal);
+        boxDiffuse = ColorAttribute.createDiffuse(Color.FOREST);
+        boxModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
+                new com.badlogic.gdx.graphics.g3d.Material(boxDiffuse),
+                Usage.Position | Usage.Normal);
 
         spriteBatch = new SpriteBatch();
         font = FontManager.loadMonospaceFont(128); // High resolution for 3D Decal
@@ -1338,6 +1340,9 @@ public class GraphicPresenter extends ApplicationAdapter
         setColor(sunLight.color, palette.color(VisualPalette.Token.SUN_LIGHT, ratio));
         setColor(tableDiffuse.color, palette.color(VisualPalette.Token.TABLE_BOARD, ratio));
         setColor(skyColor, palette.color(VisualPalette.Token.SKY, ratio));
+        setColor(gridDiffuse.color, palette.color(VisualPalette.Token.TABLE_GRID, ratio));
+        setColor(boxDiffuse.color, palette.color(VisualPalette.Token.DECOR_BOX, ratio));
+        resourceContext.applyTerrainPalette(palette, ratio);
 
         int dayOfYear = letrain.time.SolarModel.dayOfYear(now.day());
         double hour = now.hour() + now.minute() / 60.0;

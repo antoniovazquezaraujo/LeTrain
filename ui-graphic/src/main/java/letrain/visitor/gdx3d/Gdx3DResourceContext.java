@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import letrain.palette.VisualPalette;
 import letrain.track.CargoTypes;
 
 /**
@@ -30,6 +31,8 @@ import letrain.track.CargoTypes;
  */
 public class Gdx3DResourceContext implements Disposable {
     private final List<Model> models = new ArrayList<>();
+    private VisualPalette palette = new VisualPalette();
+    private double dayNightRatio;
     private ModelBuilder modelBuilder;
 
     private static final Color HIGHLIGHT_TRANSLUCENT_YELLOW = new Color(1f, 1f, 0f, 0.75f);
@@ -337,6 +340,61 @@ public class Gdx3DResourceContext implements Disposable {
         return model;
     }
 
+    /** Applies the day/night palette to the terrain materials (ADR-022 phase 1b). */
+    public void applyTerrainPalette(VisualPalette palette, double dayNightRatio) {
+        this.palette = palette;
+        this.dayNightRatio = dayNightRatio;
+        setDiffuse(groundModel, palette.color(VisualPalette.Token.TERRAIN_FIELDS, dayNightRatio));
+        setDiffuse(waterModel, palette.color(VisualPalette.Token.TERRAIN_WATER, dayNightRatio));
+        setDiffuse(mountainModel,
+                palette.color(VisualPalette.Token.TERRAIN_MOUNTAIN, dayNightRatio));
+        setDiffuse(ballastModel, palette.color(VisualPalette.Token.TERRAIN_BALLAST, dayNightRatio));
+        setDiffuse(bridgePillarModel,
+                palette.color(VisualPalette.Token.STRUCTURE_BRIDGE_PILLAR, dayNightRatio));
+        setDiffuse(terrainWallModel,
+                palette.color(VisualPalette.Token.STRUCTURE_TERRAIN_WALL, dayNightRatio));
+        setPortalStone(palette.color(VisualPalette.Token.STRUCTURE_TUNNEL_PORTAL, dayNightRatio));
+    }
+
+    /** Last resolved colour of a token; the ground renderer uses it for walls and edges. */
+    public void paletteColor(VisualPalette.Token token, Color target) {
+        int rgb = palette.color(token, dayNightRatio);
+        target.set(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f,
+                1f);
+    }
+
+    private static void setDiffuse(Model model, int rgb) {
+        if (model == null) {
+            return;
+        }
+        for (Material material : model.materials) {
+            ColorAttribute diffuse = (ColorAttribute) material.get(ColorAttribute.Diffuse);
+            if (diffuse != null) {
+                setIfChanged(diffuse.color, rgb);
+            }
+        }
+    }
+
+    private void setPortalStone(int rgb) {
+        if (tunnelPortalModel == null) {
+            return;
+        }
+        for (Material material : tunnelPortalModel.materials) {
+            if ("stone".equals(material.id)) {
+                setIfChanged(((ColorAttribute) material.get(ColorAttribute.Diffuse)).color, rgb);
+            }
+        }
+    }
+
+    static void setIfChanged(Color color, int rgb) {
+        float r = ((rgb >> 16) & 0xFF) / 255f;
+        float g = ((rgb >> 8) & 0xFF) / 255f;
+        float b = (rgb & 0xFF) / 255f;
+        if (color.r != r || color.g != g || color.b != b) {
+            color.set(r, g, b, 1f);
+        }
+    }
+
     private Model createSpeedSignalModel(boolean isMax) {
         ModelBuilder mb = new ModelBuilder();
         mb.begin();
@@ -533,6 +591,7 @@ public class Gdx3DResourceContext implements Disposable {
         mb.begin();
         MeshPartBuilder mpb;
         Material stoneMat = new Material(ColorAttribute.createDiffuse(Color.GRAY));
+        stoneMat.id = "stone";
         Material darkMat =
                 new Material(ColorAttribute.createDiffuse(new Color(0.05f, 0.05f, 0.05f, 1f)));
 
