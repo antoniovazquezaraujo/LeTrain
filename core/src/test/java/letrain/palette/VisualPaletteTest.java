@@ -75,6 +75,30 @@ class VisualPaletteTest {
     }
 
     @Test
+    @DisplayName("track and train tokens (phase 1c)")
+    void should_ReturnTrackAndTrainKeys() {
+        assertEquals(0xCCCCD9, palette.color(VisualPalette.Token.TRACK_RAIL, 0.0));
+        assertEquals(0x9999AD, palette.color(VisualPalette.Token.TRACK_RAIL, 0.5));
+        assertEquals(0x474A59, palette.color(VisualPalette.Token.TRACK_RAIL, 1.0));
+        assertEquals(0x1A1A1F, palette.color(VisualPalette.Token.TRACK_RAIL_INACTIVE, 0.0));
+        assertEquals(0x999999, palette.color(VisualPalette.Token.TRAIN_LOCOMOTIVE, 0.0));
+        assertEquals(0x545454, palette.color(VisualPalette.Token.TRAIN_LOCOMOTIVE, 1.0));
+        assertEquals(0x808080, palette.color(VisualPalette.Token.TRAIN_WAGON, 0.0));
+        assertEquals(0x464646, palette.color(VisualPalette.Token.TRAIN_WAGON, 1.0));
+    }
+
+    @Test
+    @DisplayName("player colours are attenuated but never remapped")
+    void should_AttenuatePlayerColours() {
+        assertEquals(1.0f, VisualPalette.playerColorFactor(0.0), 1e-6);
+        assertEquals(0.8f, VisualPalette.playerColorFactor(0.5), 1e-6);
+        assertEquals(0.55f, VisualPalette.playerColorFactor(1.0), 1e-6);
+        assertEquals(1.0f, VisualPalette.playerColorFactor(-3.0), 1e-6);
+        assertEquals(0.55f, VisualPalette.playerColorFactor(9.0), 1e-6);
+        assertTrue(VisualPalette.playerColorFactor(0.75) < VisualPalette.playerColorFactor(0.25));
+    }
+
+    @Test
     @DisplayName("interpolation is perceptual (linear light)")
     void should_MixPerceptually() {
         assertEquals(0x000000, VisualPalette.mix(0x000000, 0xFFFFFF, 0f));

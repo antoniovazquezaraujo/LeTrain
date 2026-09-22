@@ -15,7 +15,9 @@ public final class VisualPalette {
     public enum Token {
         AMBIENT_LIGHT, SUN_LIGHT, SKY, TABLE_BOARD,
         // Terrain (phase 1b)
-        TERRAIN_FIELDS, TERRAIN_WATER, TERRAIN_MOUNTAIN, TERRAIN_BALLAST, STRUCTURE_BRIDGE_PILLAR, STRUCTURE_TUNNEL_PORTAL, STRUCTURE_TERRAIN_WALL, TABLE_GRID, DECOR_BOX, VOID
+        TERRAIN_FIELDS, TERRAIN_WATER, TERRAIN_MOUNTAIN, TERRAIN_BALLAST, STRUCTURE_BRIDGE_PILLAR, STRUCTURE_TUNNEL_PORTAL, STRUCTURE_TERRAIN_WALL, TABLE_GRID, DECOR_BOX, VOID,
+        // Track and trains (phase 1c)
+        TRACK_RAIL, TRACK_RAIL_INACTIVE, TRAIN_LOCOMOTIVE, TRAIN_WAGON
     }
 
     private static final int DAY = 0;
@@ -51,7 +53,15 @@ public final class VisualPalette {
             // DECOR_BOX
             {0x218C21, 0x336626, 0x142914},
             // VOID (below the horizon)
-            {0x000000, 0x000000, 0x000000},};
+            {0x000000, 0x000000, 0x000000},
+            // TRACK_RAIL
+            {0xCCCCD9, 0x9999AD, 0x474A59},
+            // TRACK_RAIL_INACTIVE
+            {0x1A1A1F, 0x131317, 0x0D0D12},
+            // TRAIN_LOCOMOTIVE (default, without a player colour; dusk/night already attenuated)
+            {0x999999, 0x7A7A7A, 0x545454},
+            // TRAIN_WAGON (default, without cargo colour)
+            {0x808080, 0x666666, 0x464646},};
 
     /** Interpolated 0xRRGGBB for a token at a day/night ratio (0 = day, 1 = night). */
     public int color(Token token, double dayNightRatio) {
@@ -61,6 +71,18 @@ public final class VisualPalette {
             return mix(keys[DAY], keys[DUSK], (float) (ratio * 2.0));
         }
         return mix(keys[DUSK], keys[NIGHT], (float) ((ratio - 0.5) * 2.0));
+    }
+
+    /**
+     * Atenuación de los colores de jugador (librea de locomotoras, vagones, vías bloqueadas): 1.0
+     * de día, 0.8 al crepúsculo y 0.55 de noche. No se re-mapean a tokens, solo se atenúan.
+     */
+    public static float playerColorFactor(double dayNightRatio) {
+        double ratio = Math.max(0.0, Math.min(1.0, dayNightRatio));
+        if (ratio <= 0.5) {
+            return (float) (1.0 - 0.4 * ratio);
+        }
+        return (float) (0.8 - 0.5 * (ratio - 0.5));
     }
 
     /** Perceptual (linear light) interpolation between two 0xRRGGBB colours. */

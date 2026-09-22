@@ -354,6 +354,26 @@ public class Gdx3DResourceContext implements Disposable {
         setDiffuse(terrainWallModel,
                 palette.color(VisualPalette.Token.STRUCTURE_TERRAIN_WALL, dayNightRatio));
         setPortalStone(palette.color(VisualPalette.Token.STRUCTURE_TUNNEL_PORTAL, dayNightRatio));
+        // Phase 1c: track and train base materials
+        setDiffuse(railModel, palette.color(VisualPalette.Token.TRACK_RAIL, dayNightRatio));
+        setDiffuse(inactiveRailModel,
+                palette.color(VisualPalette.Token.TRACK_RAIL_INACTIVE, dayNightRatio));
+        setDiffuse(locomotiveModel,
+                palette.color(VisualPalette.Token.TRAIN_LOCOMOTIVE, dayNightRatio));
+        setDiffuse(wagonModel, palette.color(VisualPalette.Token.TRAIN_WAGON, dayNightRatio));
+    }
+
+    /**
+     * Atenúa un color de jugador (librea, vagón, vía bloqueada) según el ratio día/noche; los
+     * avisos y resaltados no pasan por aquí.
+     */
+    public Color attenuatePlayerColor(Color color) {
+        if (color == null) {
+            return null;
+        }
+        float factor = VisualPalette.playerColorFactor(dayNightRatio);
+        color.mul(factor, factor, factor, 1f);
+        return color;
     }
 
     /** Last resolved colour of a token; the ground renderer uses it for walls and edges. */

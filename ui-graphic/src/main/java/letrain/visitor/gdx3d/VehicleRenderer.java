@@ -146,7 +146,8 @@ public class VehicleRenderer extends BaseSubRenderer {
 
         ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
         if (locomotive.getColor() != null && !instance.materials.isEmpty()) {
-            Color locoColor = getLibGdxColor(locomotive.getColor());
+            Color locoColor =
+                    resourceContext.attenuatePlayerColor(getLibGdxColor(locomotive.getColor()));
             if (locoColor != null) {
                 instance.materials.get(0)
                         .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -297,7 +298,7 @@ public class VehicleRenderer extends BaseSubRenderer {
 
         ModelInstance instance = resourceContext.getModelInstance(chassisModel);
         instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                .createDiffuse(chassisColor));
+                .createDiffuse(resourceContext.attenuatePlayerColor(chassisColor)));
 
         float renderX = wagon.getPosition().getX() + 0.5f;
         float renderY = wagon.getPosition().getY() + 0.5f;
