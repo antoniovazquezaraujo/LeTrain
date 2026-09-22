@@ -56,7 +56,8 @@ class RenderVisitorTest {
     @DisplayName("visitRailTrack should paint rail with standard color when segment is not locked")
     void visitRailTrack_shouldPaintWithStandardColor_whenSegmentIsNotLocked() {
         TerminalView view = mock(TerminalView.class);
-        RenderVisitor visitor = new RenderVisitor(view);
+        RenderVisitor visitor =
+                new RenderVisitor(view, new TerminalPalette(TerminalPalette.Depth.TRUECOLOR));
 
         Model model = mock(Model.class);
         RailwayGraph graph = mock(RailwayGraph.class);
@@ -74,7 +75,8 @@ class RenderVisitorTest {
         visitor.visitModel(model);
         visitor.visitRailTrack(track);
 
-        verify(view, atLeastOnce()).setFgColor(TextColor.ANSI.BLACK_BRIGHT);
+        // day rail token of the light family
+        verify(view, atLeastOnce()).setFgColor(new TextColor.RGB(50, 50, 55));
     }
 
     @Test
@@ -165,5 +167,55 @@ class RenderVisitorTest {
         visitor.visitRailTrack(track);
 
         verify(view, atLeastOnce()).set(eq(3), eq(3), anyString());
+    }
+
+    @Test
+    @DisplayName("the rail token follows the clock into the night palette")
+    void visitRailTrack_shouldUseNightColor_whenClockIsNight() {
+        TerminalView view = mock(TerminalView.class);
+        RenderVisitor visitor =
+                new RenderVisitor(view, new TerminalPalette(TerminalPalette.Depth.TRUECOLOR));
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        RailwayGraph graph = mock(RailwayGraph.class);
+        BlockManager blockManager = mock(BlockManager.class);
+        Segment segment = mock(Segment.class);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(5, 5));
+
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(1f);
+        when(model.getRailwayGraph()).thenReturn(graph);
+        when(model.getBlockManager()).thenReturn(blockManager);
+        when(graph.getSegment(track)).thenReturn(segment);
+        when(blockManager.getOwners(segment)).thenReturn(List.of());
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        verify(view, atLeastOnce()).setFgColor(new TextColor.RGB(150, 150, 160));
+    }
+
+    @Test
+    @DisplayName("the visitor resolves the banded palette, not the drifting clock ratio")
+    void visitModel_shouldUseBandedPalette() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(0.30f);
+        visitor.visitModel(model);
+
+        // 0.30 belongs to the band the stepper picks
+        float band = TerminalPalette.band(0.30f, -1f);
+        TextColor expected =
+                palette.colorOf(TerminalPalette.rgbFor(band).get(TerminalPalette.Token.RAIL));
+        visitor.visitRailTrack(new RailTrack());
+        verify(view, atLeastOnce()).setFgColor(expected);
     }
 }
