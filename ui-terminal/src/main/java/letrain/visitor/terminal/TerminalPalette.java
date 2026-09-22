@@ -3,6 +3,8 @@ package letrain.visitor.terminal;
 import com.googlecode.lanterna.TextColor;
 import java.util.EnumMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Paleta día/noche del cliente 2D (ADR-022 fase 1d, ver
@@ -16,6 +18,8 @@ import java.util.Map;
  * paleta ({@code letrain.lab.terminal.PaletteLab}).
  */
 public final class TerminalPalette {
+
+    private static final Logger log = LoggerFactory.getLogger(TerminalPalette.class);
 
     public enum Token {
         GROUND, WATER, ROCK, RAIL, RAIL_INACTIVE, RAIL_INVALID, STATION, STATION_SELECTED, PRODUCER, CONSUMER, SENSOR, SEMAPHORE_OPEN, SEMAPHORE_CLOSED, SIGNAL_MAX, SIGNAL_MIN, DEAD_END, TUNNEL, BRIDGE, LOCO, WAGON, CARGO_COAL, CARGO_GOLD, CARGO_RUBY, CURSOR_DRAWING, CURSOR_MOVING, CURSOR_ERASING, HIGHLIGHT, LABEL, BOARD, FORK, FORK_SELECTED, SELECTION_LINK, CRASH
@@ -37,10 +41,10 @@ public final class TerminalPalette {
      * el cliente cuantiza: cada cambio de paleta obliga al terminal a repintar el mapa entero, y
      * interpolar cada minuto de juego producía un parpadeo por segundo en pantalla clara.
      */
-    public static final int BANDS = 4;
+    public static final int BANDS = 8;
 
     /** Margen de histéresis alrededor del escalón actual, en unidades de ratio. */
-    public static final float BAND_MARGIN = 0.06f;
+    public static final float BAND_MARGIN = 0.03f;
 
     // Claves día / crepúsculo / noche, en el orden de Token.
     private static final int[] DAY = {rgb(242, 240, 232), rgb(40, 90, 190), rgb(170, 60, 60),
@@ -85,12 +89,13 @@ public final class TerminalPalette {
             return new TerminalPalette(Depth.TRUECOLOR);
         }
         if (term != null && term.contains("direct")) {
+            log.info("terminal palette: TRUECOLOR (COLORTERM={}, TERM={})", colorterm, term);
             return new TerminalPalette(Depth.TRUECOLOR);
         }
-        if (term == null || term.isBlank() || term.contains("dumb")) {
-            return new TerminalPalette(Depth.ANSI_16);
-        }
-        return new TerminalPalette(Depth.INDEXED_256);
+        Depth depth = term == null || term.isBlank() || term.contains("dumb") ? Depth.ANSI_16
+                : Depth.INDEXED_256;
+        log.info("terminal palette: {} (COLORTERM={}, TERM={})", depth, colorterm, term);
+        return new TerminalPalette(depth);
     }
 
     /**

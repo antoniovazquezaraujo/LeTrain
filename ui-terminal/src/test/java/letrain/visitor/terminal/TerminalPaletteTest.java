@@ -82,7 +82,8 @@ class TerminalPaletteTest {
         assertEquals(0.50f, TerminalPalette.band(0.44f, band), 1e-6);
 
         // la histéresis aguanta el escalón al bajar hasta cruzar el margen
-        assertEquals(band, TerminalPalette.band(0.10f, band), 1e-6);
+        assertEquals(band, TerminalPalette.band(0.20f, band), 1e-6);
+        assertEquals(0.125f, TerminalPalette.band(0.10f, band), 1e-6);
         assertEquals(0.00f, TerminalPalette.band(0.05f, band), 1e-6);
 
         // extremos deterministas
