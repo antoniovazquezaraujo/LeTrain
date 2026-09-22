@@ -39,9 +39,11 @@ public final class TerminalPalette {
     /**
      * Escalones de ratio de la paleta 2D. A diferencia del laboratorio (que interpola para afinar),
      * el cliente cuantiza: cada cambio de paleta obliga al terminal a repintar el mapa entero, y
-     * interpolar cada minuto de juego producía un parpadeo por segundo en pantalla clara.
+     * interpolar cada minuto de juego producía un parpadeo por segundo en pantalla clara. Con 19
+     * escalones (20 niveles) la transición es casi continua; el repintado de cada cambio es el
+     * precio asumido.
      */
-    public static final int BANDS = 8;
+    public static final int BANDS = 19;
 
     /** Margen de histéresis alrededor del escalón actual, en unidades de ratio. */
     public static final float BAND_MARGIN = 0.03f;

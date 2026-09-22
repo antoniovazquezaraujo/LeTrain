@@ -211,9 +211,10 @@ class RenderVisitorTest {
         when(clock.getDayNightRatio()).thenReturn(0.30f);
         visitor.visitModel(model);
 
-        // 0.30 belongs to the 0.25 band
+        // 0.30 belongs to the band the stepper picks
+        float band = TerminalPalette.band(0.30f, -1f);
         TextColor expected =
-                palette.colorOf(TerminalPalette.rgbFor(0.25f).get(TerminalPalette.Token.RAIL));
+                palette.colorOf(TerminalPalette.rgbFor(band).get(TerminalPalette.Token.RAIL));
         visitor.visitRailTrack(new RailTrack());
         verify(view, atLeastOnce()).setFgColor(expected);
     }
