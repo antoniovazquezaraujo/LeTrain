@@ -30,6 +30,13 @@ public class CameraController {
     private float targetCameraAngle = 45f;
     private float targetCameraDistance = 8.5f;
     private float mapCameraHeight = 15f;
+    /** Rango de distancia de la cámara ORBIT (zoom). */
+    private static final float MIN_ORBIT_DISTANCE = 3f;
+    private static final float MAX_ORBIT_DISTANCE = 40f;
+    /** Ángulo de la cámara ORBIT lejos del suelo (grados por debajo de la horizontal). */
+    private static final float ORBIT_PITCH_FAR_DEG = 35f;
+    /** Por debajo de esta fracción de zoom la cámara se endereza hasta mirar al frente. */
+    private static final float ORBIT_FLATTEN_ZOOM = 0.35f;
     private letrain.track.SpeedSignal lastCameraSnapSignal;
     private letrain.track.RailSemaphore lastCameraSnapSemaphore;
     private letrain.mvp.Model.GameMode lastMode = null;
@@ -109,7 +116,8 @@ public class CameraController {
         if (cameraMode == CameraMode.MAP) {
             mapCameraHeight = MathUtils.clamp(mapCameraHeight + delta * 2f, 3f, 100f);
         } else if (cameraMode == CameraMode.ORBIT) {
-            targetCameraDistance = MathUtils.clamp(targetCameraDistance + delta, 3f, 40f);
+            targetCameraDistance = MathUtils.clamp(targetCameraDistance + delta, MIN_ORBIT_DISTANCE,
+                    MAX_ORBIT_DISTANCE);
         }
     }
 
@@ -117,7 +125,8 @@ public class CameraController {
         if (cameraMode == CameraMode.MAP) {
             mapCameraHeight = MathUtils.clamp(mapCameraHeight + deltaStep, 3f, 100f);
         } else {
-            targetCameraDistance = MathUtils.clamp(targetCameraDistance + deltaStep, 3f, 40f);
+            targetCameraDistance = MathUtils.clamp(targetCameraDistance + deltaStep,
+                    MIN_ORBIT_DISTANCE, MAX_ORBIT_DISTANCE);
         }
     }
 
@@ -133,7 +142,8 @@ public class CameraController {
         if (cameraMode == CameraMode.MAP) {
             return (mapCameraHeight - 3f) / (100f - 3f);
         }
-        return (targetCameraDistance - 3f) / (40f - 3f);
+        return (targetCameraDistance - MIN_ORBIT_DISTANCE)
+                / (MAX_ORBIT_DISTANCE - MIN_ORBIT_DISTANCE);
     }
 
     public void resize(int width, int height) {
@@ -283,7 +293,25 @@ public class CameraController {
         float camY = Math.max(2.0f, cameraDistance * 0.7f);
 
         cam.position.set(camX, camY, camZ);
-        cam.lookAt(camTarget);
+
+        // Cerca del suelo la cámara se endereza: al mínimo zoom mira al frente (y se ve el cielo),
+        // recuperando el ángulo de siempre a partir de ORBIT_FLATTEN_ZOOM.
+        float zoom = MathUtils.clamp(
+                (cameraDistance - MIN_ORBIT_DISTANCE) / (MAX_ORBIT_DISTANCE - MIN_ORBIT_DISTANCE),
+                0f, 1f);
+        float t = MathUtils.clamp(zoom / ORBIT_FLATTEN_ZOOM, 0f, 1f);
+        float eased = t * t * (3f - 2f * t);
+        double pitch = Math.toRadians(ORBIT_PITCH_FAR_DEG * eased);
+        float horizX = camTarget.x - camX;
+        float horizZ = camTarget.z - camZ;
+        float length = (float) Math.sqrt(horizX * horizX + horizZ * horizZ);
+        if (length < 1e-4f) {
+            horizX = 0f;
+            horizZ = -1f;
+            length = 1f;
+        }
+        cam.direction.set((float) (horizX / length * Math.cos(pitch)), (float) -Math.sin(pitch),
+                (float) (horizZ / length * Math.cos(pitch))).nor();
         cam.up.set(0, 1, 0);
     }
 

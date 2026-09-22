@@ -154,4 +154,25 @@ class CameraControllerTest {
         assertEquals(0.0f, cam.direction.z, 0.05f,
                 "Camera should not have Z component when facing West");
     }
+
+    @Test
+    @DisplayName("orbit zoom: the camera looks ahead when zoomed all the way to the ground")
+    void should_LookAhead_When_ZoomedToTheGround() {
+        PerspectiveCamera cam = cameraController.init(800, 600);
+        cameraController.setMode(CameraController.CameraMode.ORBIT);
+
+        // zoom all the way in: horizontal view (sky above the horizon)
+        cameraController.zoomStep(-1000f);
+        for (int i = 0; i < 300; i++) {
+            cameraController.update(1f);
+        }
+        assertEquals(0f, cam.direction.y, 0.02f, "should look straight ahead at the ground");
+
+        // zoom all the way out: classic pitch
+        cameraController.zoomStep(1000f);
+        for (int i = 0; i < 600; i++) {
+            cameraController.update(1f);
+        }
+        assertEquals(-Math.sin(Math.toRadians(35.0)), cam.direction.y, 0.01f);
+    }
 }
