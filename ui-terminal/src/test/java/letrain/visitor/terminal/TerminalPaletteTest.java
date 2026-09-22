@@ -1,7 +1,6 @@
 package letrain.visitor.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
@@ -70,24 +69,49 @@ class TerminalPaletteTest {
     }
 
     @Test
-    @DisplayName("the ratio is stepped with hysteresis instead of drifting every minute")
+    @DisplayName("the ratio snaps to perceptual levels, with hysteresis beyond them")
     void should_StepRatio_When_BeyondTheBand() {
-        float step = 1f / TerminalPalette.BANDS;
-        float band = TerminalPalette.band(0.30f, -1f);
-        assertEquals(Math.round(0.30f * TerminalPalette.BANDS) / (float) TerminalPalette.BANDS,
-                band, 1e-6);
+        float level = TerminalPalette.level(0.30f);
+        assertEquals(level, TerminalPalette.band(0.30f, -1f), 1e-6);
+        assertEquals(level, TerminalPalette.band(level, level), 1e-6);
 
-        // dentro del escalón y del margen: no cambia
-        assertEquals(band, TerminalPalette.band(band + step / 4, band), 1e-6);
-        assertEquals(band, TerminalPalette.band(band - step / 4, band), 1e-6);
-
-        // más allá de medio escalón + margen: salta a otro escalón
-        float beyond = band + step / 2 + TerminalPalette.BAND_MARGIN + step / 4;
-        assertNotEquals(band, TerminalPalette.band(beyond, band), 1e-6);
+        // las teclas recorren escalones contiguos
+        float next = TerminalPalette.shiftLevel(level, 1);
+        float previous = TerminalPalette.shiftLevel(level, -1);
+        assertTrue(next > level);
+        assertTrue(previous < level);
+        assertEquals(level, TerminalPalette.shiftLevel(next, -1), 1e-6);
+        assertEquals(next, TerminalPalette.band(next, level), 1e-6);
+        assertEquals(previous, TerminalPalette.band(previous, level), 1e-6);
 
         // extremos deterministas
         assertEquals(0f, TerminalPalette.band(-1f, -1f), 1e-6);
         assertEquals(1f, TerminalPalette.band(2f, -1f), 1e-6);
+    }
+
+    @Test
+    @DisplayName("levels are spaced by perceived lightness, not by raw ratio")
+    void should_SpaceLevelsPerceptually() {
+        java.util.List<Double> steps = new java.util.ArrayList<>();
+        float ratio = 0f;
+        double previous = perceived(TerminalPalette.rgbFor(ratio).get(TerminalPalette.Token.BOARD));
+        for (int level = 0; level < TerminalPalette.BANDS; level++) {
+            float next = TerminalPalette.shiftLevel(ratio, 1);
+            assertTrue(next > ratio, "levels must advance: " + ratio + " -> " + next);
+            ratio = next;
+            double current =
+                    perceived(TerminalPalette.rgbFor(ratio).get(TerminalPalette.Token.BOARD));
+            steps.add(previous - current);
+            previous = current;
+        }
+        double min = steps.stream().mapToDouble(Double::doubleValue).min().orElse(0);
+        double max = steps.stream().mapToDouble(Double::doubleValue).max().orElse(0);
+        assertTrue(min > 5, "even the smallest step should be visible, was " + min);
+        assertTrue(max / min < 1.6, "steps should be even, min=" + min + " max=" + max);
+    }
+
+    private static double perceived(int rgb) {
+        return 0.2126 * ((rgb >> 16) & 0xFF) + 0.7152 * ((rgb >> 8) & 0xFF) + 0.0722 * (rgb & 0xFF);
     }
 
     @Test

@@ -105,20 +105,101 @@ public final class TerminalPalette {
     }
 
     /**
+     * Ratios de los escalones, elegidos para que el tablero cambie en pasos **perceptuales
+     * iguales** (luminosidad codificada, no ratio). Repartir el ratio a partes iguales dejaba los
+     * primeros pasos en ~5/255 (invisibles) y los últimos en ~47/255 (bruscos).
+     */
+    private static final float[] LEVEL_RATIOS = buildLevelRatios();
+
+    private static float[] buildLevelRatios() {
+        float[] ratios = new float[BANDS + 1];
+        double day = perceived(blendKey(Token.BOARD, 0f));
+        double night = perceived(blendKey(Token.BOARD, 1f));
+        ratios[0] = 0f;
+        ratios[BANDS] = 1f;
+        for (int level = 1; level < BANDS; level++) {
+            double target = day + (night - day) * level / (double) BANDS;
+            ratios[level] = ratioFor(target);
+        }
+        return ratios;
+    }
+
+    private static float ratioFor(double targetPerceived) {
+        float low = 0f;
+        float high = 1f;
+        for (int i = 0; i < 40; i++) {
+            float mid = (low + high) / 2f;
+            if (perceived(blendKey(Token.BOARD, mid)) > targetPerceived) {
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+        return (low + high) / 2f;
+    }
+
+    /** Luminosidad codificada (sRGB): proxy perceptual de "cuánto se ve" el color. */
+    private static double perceived(int rgb) {
+        return 0.2126 * ((rgb >> 16) & 0xFF) + 0.7152 * ((rgb >> 8) & 0xFF) + 0.0722 * (rgb & 0xFF);
+    }
+
+    /** Ratio del escalón más cercano al ratio dado. */
+    public static float level(float ratio) {
+        float clamped = Math.max(0f, Math.min(1f, ratio));
+        int nearest = 0;
+        for (int level = 1; level < LEVEL_RATIOS.length; level++) {
+            if (Math.abs(LEVEL_RATIOS[level] - clamped) < Math
+                    .abs(LEVEL_RATIOS[nearest] - clamped)) {
+                nearest = level;
+            }
+        }
+        return LEVEL_RATIOS[nearest];
+    }
+
+    /** Escalón contiguo (o el mismo, en los extremos): para las teclas de debug. */
+    public static float shiftLevel(float ratio, int direction) {
+        float clamped = Math.max(0f, Math.min(1f, ratio));
+        int nearest = 0;
+        for (int level = 1; level < LEVEL_RATIOS.length; level++) {
+            if (Math.abs(LEVEL_RATIOS[level] - clamped) < Math
+                    .abs(LEVEL_RATIOS[nearest] - clamped)) {
+                nearest = level;
+            }
+        }
+        int target = Math.max(0, Math.min(LEVEL_RATIOS.length - 1, nearest + direction));
+        return LEVEL_RATIOS[target];
+    }
+
+    /**
      * Escalón de ratio para el actual, con histéresis: se queda en el escalón vigente hasta que el
-     * ratio se aleja más de medio escalón (más margen), así no baila en las fronteras.
+     * ratio se aleja del centro más de medio hueco (más margen), así no baila en las fronteras.
      */
     public static float band(float ratio, float currentBand) {
         float clamped = Math.max(0f, Math.min(1f, ratio));
         if (currentBand < 0f) {
-            return Math.round(clamped * BANDS) / (float) BANDS;
+            return level(clamped);
         }
-        float half = 0.5f / BANDS;
+        float half = Math.abs(level(clamped) - currentBand) < 1e-6f ? 0f : halfGap(currentBand);
         if (clamped > currentBand + half + BAND_MARGIN
                 || clamped < currentBand - half - BAND_MARGIN) {
-            return Math.round(clamped * BANDS) / (float) BANDS;
+            return level(clamped);
         }
         return currentBand;
+    }
+
+    /** Medio hueco alrededor del escalón actual, hacia sus vecinos. */
+    private static float halfGap(float currentBand) {
+        int index = 0;
+        for (int level = 1; level < LEVEL_RATIOS.length; level++) {
+            if (Math.abs(LEVEL_RATIOS[level] - currentBand) < Math
+                    .abs(LEVEL_RATIOS[index] - currentBand)) {
+                index = level;
+            }
+        }
+        float left = index > 0 ? (currentBand - LEVEL_RATIOS[index - 1]) / 2f : 0f;
+        float right =
+                index < LEVEL_RATIOS.length - 1 ? (LEVEL_RATIOS[index + 1] - currentBand) / 2f : 0f;
+        return Math.max(left, right);
     }
 
     /** Tokens resueltos para el ratio día/noche del reloj (0 = día, 1 = noche). */
