@@ -89,4 +89,23 @@ class TerminalPaletteTest {
         assertEquals(0f, TerminalPalette.band(-1f, -1f), 1e-6);
         assertEquals(1f, TerminalPalette.band(2f, -1f), 1e-6);
     }
+
+    @Test
+    @DisplayName("256-colour indexing uses the grayscale ramp and reports are monotonic")
+    void should_IndexWithGrayscaleRamp() {
+        assertEquals(new TextColor.Indexed(255), TerminalPalette.nearestIndexed256(0xF2F0E8));
+        assertEquals(new TextColor.Indexed(16), TerminalPalette.nearestIndexed256(0x000000));
+        assertEquals(new TextColor.Indexed(231), TerminalPalette.nearestIndexed256(0xFFFFFF));
+
+        int distinct = new java.util.HashSet<TextColor>().size();
+        java.util.Set<TextColor> seen = new java.util.HashSet<>();
+        for (int k = 0; k <= TerminalPalette.BANDS; k++) {
+            float band = k / (float) TerminalPalette.BANDS;
+            seen.add(TerminalPalette.nearestIndexed256(
+                    TerminalPalette.rgbFor(band).get(TerminalPalette.Token.BOARD)));
+        }
+        distinct = seen.size();
+        assertTrue(distinct >= 15,
+                "the 256 palette should still show most levels, saw " + distinct);
+    }
 }

@@ -234,9 +234,52 @@ public final class TerminalPalette {
         int b = rgb & 0xFF;
         return switch (depth) {
             case TRUECOLOR -> new TextColor.RGB(r, g, b);
-            case INDEXED_256 -> TextColor.Indexed.fromRGB(r, g, b);
+            case INDEXED_256 -> nearestIndexed256(rgb);
             case ANSI_16 -> nearestAnsi(rgb);
         };
+    }
+
+    /** Niveles por canal del cubo 6x6x6 de la paleta xterm de 256 colores. */
+    private static final int[] CUBE = {0, 95, 135, 175, 215, 255};
+
+    /**
+     * El color de la paleta de 256 más cercano al RGB pedido, buscando también en la rampa de
+     * grises (índices 232-255). Lanterna solo mira el cubo 6x6x6, que se come esa rampa y colapsa
+     * los tonos neutros (el papel día/noche pasaba de 20 niveles a 13, con saltos raros).
+     */
+    static TextColor nearestIndexed256(int rgb) {
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        int bestIndex = 16;
+        long bestDistance = Long.MAX_VALUE;
+        for (int cr = 0; cr < CUBE.length; cr++) {
+            for (int cg = 0; cg < CUBE.length; cg++) {
+                for (int cb = 0; cb < CUBE.length; cb++) {
+                    long distance = distance(r, g, b, CUBE[cr], CUBE[cg], CUBE[cb]);
+                    if (distance < bestDistance) {
+                        bestDistance = distance;
+                        bestIndex = 16 + 36 * cr + 6 * cg + cb;
+                    }
+                }
+            }
+        }
+        for (int index = 232; index <= 255; index++) {
+            int value = 8 + (index - 232) * 10;
+            long distance = distance(r, g, b, value, value, value);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestIndex = index;
+            }
+        }
+        return new TextColor.Indexed(bestIndex);
+    }
+
+    private static long distance(int r, int g, int b, int cr, int cg, int cb) {
+        long dr = r - cr;
+        long dg = g - cg;
+        long db = b - cb;
+        return dr * dr + dg * dg + db * db;
     }
 
     /** El slot ANSI de 16 colores más cercano al RGB pedido. */
