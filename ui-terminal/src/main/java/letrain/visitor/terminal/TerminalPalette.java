@@ -50,7 +50,7 @@ public final class TerminalPalette {
      * menor que medio paso: si no, un cambio de escalón exige avanzar más de un paso entero y se
      * saltan niveles (las teclas de debug pasaban de dos en dos).
      */
-    public static final float BAND_MARGIN = 0.2f / BANDS;
+    public static final float BAND_MARGIN = 0.15f / BANDS;
 
     // Claves día / crepúsculo / noche, en el orden de Token.
     private static final int[] DAY = {rgb(242, 240, 232), rgb(40, 90, 190), rgb(170, 60, 60),
