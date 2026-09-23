@@ -1,5 +1,6 @@
 package letrain.vehicle.rail.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,5 +31,19 @@ class LocomotiveHeadRoleTest {
         assertTrue(head.isHeadLocomotive());
         assertFalse(second.isHeadLocomotive());
         assertFalse(third.isHeadLocomotive());
+    }
+
+    @Test
+    @DisplayName("the train lists its locomotives in composition order, skipping the wagons")
+    void should_ListTrainLocomotives() {
+        Train train = new Train(1);
+        Locomotive first = new Locomotive(1, "A");
+        Wagon wagon = new Wagon("w");
+        Locomotive second = new Locomotive(2, "B");
+        train.pushBack(first);
+        train.pushBack(wagon);
+        train.pushBack(second);
+
+        assertEquals(java.util.List.of(first, second), train.getLocomotives());
     }
 }

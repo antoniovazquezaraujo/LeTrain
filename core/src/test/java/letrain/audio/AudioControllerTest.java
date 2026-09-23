@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -146,8 +147,43 @@ class AudioControllerTest {
         when(loco.getId()).thenReturn(1);
         when(loco.isEngineOn()).thenReturn(true);
         when(loco.getTrain()).thenReturn(train);
+        when(train.getLocomotives()).thenReturn(List.of(loco));
         when(train.getLogisticsManager()).thenReturn(logistics);
         when(train.getDirectorLinker()).thenReturn(loco);
         when(logistics.isLoading()).thenReturn(loading);
+    }
+
+    @Test
+    @DisplayName("turning the engine on/off reaches every locomotive of the train (#613)")
+    void should_ToggleEveryLocomotiveOfTheTrain() {
+        Locomotive second = mock(Locomotive.class);
+        when(loco.getId()).thenReturn(1);
+        when(loco.getTrain()).thenReturn(train);
+        when(train.getLocomotives()).thenReturn(List.of(loco, second));
+
+        controller.startEngine(loco);
+
+        verify(loco).setEngineOn(true);
+        verify(second).setEngineOn(true);
+
+        controller.stopEngineWithSound(1, loco);
+
+        verify(loco).setEngineOn(false);
+        verify(second).setEngineOn(false);
+    }
+
+    @Test
+    @DisplayName("a lone locomotive toggles only itself (#613)")
+    void should_ToggleLoneLocomotiveOnly() {
+        when(loco.getId()).thenReturn(1);
+        when(loco.getTrain()).thenReturn(null);
+
+        controller.startEngine(loco);
+
+        verify(loco).setEngineOn(true);
+
+        controller.stopEngineWithSound(1, loco);
+
+        verify(loco).setEngineOn(false);
     }
 }
