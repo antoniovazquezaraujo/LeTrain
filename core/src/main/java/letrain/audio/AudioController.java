@@ -3,6 +3,7 @@ package letrain.audio;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import letrain.audio.core.AudioMixer;
 import letrain.audio.sources.WavSource;
@@ -38,22 +39,38 @@ public class AudioController {
     }
 
     /**
-     * Apaga el motor reproduciendo primero el segmento 'stop' del WAV. El sintetizador se retira
-     * del mixer desde {@link #update()} cuando termina el sonido de parada y no queda ninguna carga
-     * o descarga sonando; mientras haya una, sigue sonando solo el bucle de carga (issue #360).
+     * Apaga el motor de **toda la composición** reproduciendo primero el segmento 'stop' del WAV de
+     * la locomotora seleccionada. El motor es un mando del tren: apagar la cabeza para el resto de
+     * locomotoras (y sus bucles). Los sintetizadores se retiran del mixer desde {@link #update()}
+     * cuando termina su sonido de parada y no queda ninguna carga o descarga sonando; mientras haya
+     * una, sigue sonando solo el bucle de carga (issue #360).
      */
     public void stopEngineWithSound(int id, Locomotive loco) {
-        loco.setEngineOn(false); // <--- Inmediatamente apagamos el estado para evitar recreaciones
+        for (Locomotive member : trainLocomotives(loco)) {
+            member.setEngineOn(false); // Apagado inmediato del estado para evitar recreaciones
+        }
         TrainSynthesizer synth = synthesizers.get(id);
         if (synth != null && synth.isEngineRunning()) {
             synth.playStopSound();
         }
     }
 
-    /** Enciende el motor de una locomotora (crea su sintetizador si no existe). */
+    /**
+     * Enciende el motor de **toda la composición** (el motor es un mando del tren). Los
+     * sintetizadores se crearán en el próximo ciclo de {@link #update()}.
+     */
     public void startEngine(Locomotive loco) {
-        loco.setEngineOn(true);
-        // El synth se creará en el próximo ciclo de update()
+        for (Locomotive member : trainLocomotives(loco)) {
+            member.setEngineOn(true);
+        }
+    }
+
+    /** Las locomotoras de la composición de {@code loco}, o solo ella si va suelta. */
+    private static List<Locomotive> trainLocomotives(Locomotive loco) {
+        if (loco.getTrain() == null) {
+            return List.of(loco);
+        }
+        return loco.getTrain().getLocomotives();
     }
 
     public AudioController(Model model) {

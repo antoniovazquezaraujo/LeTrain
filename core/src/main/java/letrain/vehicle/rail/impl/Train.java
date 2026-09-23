@@ -661,6 +661,12 @@ public class Train implements Renderable {
         return linkers.stream().filter(Tractor.class::isInstance).map(Tractor.class::cast).toList();
     }
 
+    /** The locomotives of this train (its tractors that are locomotives), in composition order. */
+    public List<Locomotive> getLocomotives() {
+        return getTractors().stream().filter(Locomotive.class::isInstance)
+                .map(Locomotive.class::cast).toList();
+    }
+
     /**
      * Sets target speed to 0 on the director linker (gradual stop). Saves the current target speed
      * so it can be restored later.
