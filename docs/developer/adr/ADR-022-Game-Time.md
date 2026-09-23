@@ -178,13 +178,15 @@ assign itinerary "cercanías diario" to train 1;
   tren así no se mueve con una orden de velocidad.
 - **`park` (nuevo) frente a `stop` (actual)**: `stop` frena y **desactiva el autopilot** (fin de
   servicio, paso a manual), así que no sirve para una jornada que se repite; `park` frena y apaga
-  el motor **manteniendo el autopilot** a la espera de la próxima salida programada.
+  el motor **manteniendo el autopilot** a la espera de la próxima salida programada. **Decidido**:
+  `park` se añade como acción nueva y `stop` conserva su significado actual.
+- **El bucle es el comportamiento por defecto**: el autopilot vuelve siempre al primer waypoint
+  (no se añade un atributo `loop` ni `once` por ahora).
 
 Puntos abiertos (seguimos pensando): dónde mostrar los desfases (¿HUD o solo `info`?), el uso de
 estos horarios para los **cruces en vía única** (fase 2c), si más adelante `arrival` también
-limitará la velocidad para no llegar antes de hora, el `park` frente al `stop` actual, la
-existencia de itinerarios **de un solo uso** (hoy todos se repiten) y si hacen falta bloques
-`repeat` para no escribir cuatro veces las mismas paradas.
+limitará la velocidad para no llegar antes de hora, y si hará falta azúcar `repeat` para no
+escribir cuatro veces las mismas paradas.
 
 ### Contrato (implementado en la fase 0)
 
