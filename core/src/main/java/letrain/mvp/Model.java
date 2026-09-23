@@ -197,6 +197,13 @@ public interface Model {
 
     GameMode getPreviousMode();
 
+    /**
+     * The mode the player is effectively in: the console ({@link GameMode#COMMAND}) is a temporary
+     * overlay, so the focus-dependent systems (camera, ambience, menu highlight) keep behaving as
+     * the mode it was opened from. Input routing still uses {@link #getMode()}.
+     */
+    GameMode getEffectiveMode();
+
     void setMode(GameMode mode);
 
     /**

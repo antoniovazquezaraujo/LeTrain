@@ -375,9 +375,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      * listening height, mirroring the 3D camera zoom (ADR-025).
      */
     void updateAmbientAudio() {
-        Point listenerPos = model.getMode() == DRIVE && model.getSelectedLocomotive() != null
-                ? model.getSelectedLocomotive().getPosition()
-                : model.getCursor().getPosition();
+        Point listenerPos =
+                model.getEffectiveMode() == DRIVE && model.getSelectedLocomotive() != null
+                        ? model.getSelectedLocomotive().getPosition()
+                        : model.getCursor().getPosition();
         int ambientCells = view.getCols() * view.getRows();
         float ambientZoom = Math.max(0f, Math.min(1f, (ambientCells - AMBIENT_BASE_CELLS)
                 / (float) (AMBIENT_FULL_CELLS - AMBIENT_BASE_CELLS)));
@@ -399,30 +400,32 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         running = true;
         try {
 
-            InputEvent stroke = null;
             model.setMode(RAILS);
             letrain.map.Point startPos = model.getCursor().getPosition();
             view.centerOn(startPos.getX(), startPos.getY());
             model.updateGroundMap(view.getScrollOffset(), view.getCols(), view.getRows());
             while (running) {
-                stroke = null;
                 com.googlecode.lanterna.input.KeyStroke rawStroke = view.readKey();
-                if (view.isEndOfGame(rawStroke)) {
-                    break;
-                }
-                stroke = translate(rawStroke);
-                if (null != stroke) {
-                    onChar(stroke);
-                    while (rawStroke != null) {
-                        rawStroke = view.readKey();
+                boolean endOfGame = view.isEndOfGame(rawStroke);
+                // Handles the whole queued burst: the old code discarded every key after the first
+                // one of the frame, so fast typing (commands) and quick taps got lost.
+                while (rawStroke != null) {
+                    InputEvent stroke = translate(rawStroke);
+                    if (stroke != null) {
+                        onChar(stroke);
                     }
+                    rawStroke = view.readKey();
+                    endOfGame = endOfGame || view.isEndOfGame(rawStroke);
+                }
+                if (endOfGame) {
+                    break;
                 }
                 simulationController.tick();
                 updateAmbientAudio();
                 renderer.visitModel(model);
                 informer.visitModel(model);
                 view.paint();
-                if (model.getMode() == DRIVE) {
+                if (model.getEffectiveMode() == DRIVE) {
                     Locomotive selectedLocomotive = model.getSelectedLocomotive();
                     if (selectedLocomotive != null) {
                         view.ensureVisible(selectedLocomotive.getPosition().getX(),
@@ -473,6 +476,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void executeCommand(String cmd) {
         log.info("Execute command: " + cmd);
+        boolean fromConsole = model.getMode() == letrain.mvp.Model.GameMode.COMMAND;
+        letrain.mvp.Model.GameMode returnMode = model.getPreviousMode();
         // Capture the cursor BEFORE executing so the journaled copy is self-positioned and the
         // replay (undo) is deterministic regardless of any (unrecorded) keyboard navigation.
         String prefix = cursorPrefix();
@@ -506,11 +511,30 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (model.isSimulationPaused() && !letrain.command.EditCommandFilter.isNonRecordable(cmd)) {
             history.record(prefix + cmd);
         }
-        model.setMode(letrain.mvp.Model.GameMode.RAILS);
+        if (fromConsole && model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
+            // Back from the console: return to the mode the player was in.
+            model.setMode(returnMode);
+        } else if (!fromConsole) {
+            // The '.' repeat path keeps the old behaviour of landing in RAILS.
+            model.setMode(letrain.mvp.Model.GameMode.RAILS);
+        }
         model.setCommandText("");
         model.setCommandError("");
-        view.centerOn(model.getCursor().getPosition().getX(),
-                model.getCursor().getPosition().getY());
+        // In DRIVE the view keeps following the locomotive; centring on the cursor would yank it.
+        if (model.getEffectiveMode() != letrain.mvp.Model.GameMode.DRIVE) {
+            view.centerOn(model.getCursor().getPosition().getX(),
+                    model.getCursor().getPosition().getY());
+        }
+    }
+
+    /**
+     * Leaving the console (Esc or an empty Enter) returns to the mode the player was in before
+     * opening it, instead of always landing in RAILS.
+     */
+    private void leaveCommandMode() {
+        model.setMode(model.getPreviousMode());
+        model.setCommandText("");
+        model.setCommandError("");
     }
 
     /** Absolute cursor prefix: {@code "go x,y; face d; "} from the current cursor state. */
@@ -697,16 +721,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
             if (keyEvent.getKeyType() == KeyType.Escape) {
-                model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                model.setCommandText("");
-                model.setCommandError("");
+                leaveCommandMode();
                 return;
             } else if (keyEvent.getKeyType() == KeyType.Enter) {
                 String cmd = model.getCommandText().trim();
                 if (cmd.isEmpty()) {
-                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                    model.setCommandText("");
-                    model.setCommandError("");
+                    leaveCommandMode();
                     return;
                 }
                 if (commandHistory.isEmpty()

@@ -156,6 +156,54 @@ class CameraControllerTest {
     }
 
     @Test
+    @DisplayName("opening the console over DRIVE does not move the camera and keeps it on the loco")
+    void should_KeepFollowingLocomotive_When_ConsoleOpensOverDrive() {
+        // Arrange: a locomotive selected in DRIVE.
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(10, 10));
+        track.getRouter().addRoute(Dir.W, Dir.E);
+        model.getRailMap().addTrack(new Point(10, 10), track);
+
+        Locomotive loco = new Locomotive(1, "A");
+        loco.setPosition(new Point(10, 10));
+        loco.setDir(Dir.E);
+        loco.setTrack(track);
+        model.addLocomotive(loco);
+        model.setSelectedLocomotive(loco);
+        model.setMode(Model.GameMode.DRIVE);
+
+        PerspectiveCamera cam = cameraController.init(800, 600);
+        settle();
+        float beforeX = cam.position.x;
+        float beforeZ = cam.position.z;
+
+        // Act: open the console while the cursor sits on another screen.
+        model.getCursor().setPosition(new Point(60, 60));
+        model.setMode(Model.GameMode.COMMAND);
+        cameraController.update(1.0f);
+
+        // Assert: the transition does not move the camera...
+        assertEquals(beforeX, cam.position.x, 0.2f);
+        assertEquals(beforeZ, cam.position.z, 0.2f);
+        // ...and it keeps tracking the locomotive instead of drifting to the cursor.
+        settle();
+        float toLoco = distance(cam.position.x, cam.position.z, 10.5f, 10.5f);
+        float toCursor = distance(cam.position.x, cam.position.z, 60.5f, 60.5f);
+        assertTrue(toLoco < toCursor,
+                "camera=" + cam.position + " toLoco=" + toLoco + " toCursor=" + toCursor);
+    }
+
+    private void settle() {
+        for (int i = 0; i < 200; i++) {
+            cameraController.update(1.0f);
+        }
+    }
+
+    private static float distance(float x1, float z1, float x2, float z2) {
+        return (float) Math.hypot(x1 - x2, z1 - z2);
+    }
+
+    @Test
     @DisplayName("orbit zoom: the camera looks ahead when zoomed all the way to the ground")
     void should_LookAhead_When_ZoomedToTheGround() {
         PerspectiveCamera cam = cameraController.init(800, 600);

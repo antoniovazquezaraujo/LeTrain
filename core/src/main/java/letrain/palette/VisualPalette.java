@@ -17,12 +17,21 @@ public final class VisualPalette {
         // Terrain (phase 1b)
         TERRAIN_FIELDS, TERRAIN_WATER, TERRAIN_MOUNTAIN, TERRAIN_BALLAST, STRUCTURE_BRIDGE_PILLAR, STRUCTURE_TUNNEL_PORTAL, STRUCTURE_TERRAIN_WALL, TABLE_GRID, DECOR_BOX, VOID,
         // Track and trains (phase 1c)
-        TRACK_RAIL, TRACK_RAIL_INACTIVE, TRAIN_LOCOMOTIVE, TRAIN_WAGON
+        TRACK_RAIL, TRACK_RAIL_INACTIVE, TRAIN_LOCOMOTIVE, TRAIN_WAGON,
+        // Emissive (phase 1e): lights, constant so they never dim at night
+        EMISSIVE_HEADLIGHT
     }
 
     private static final int DAY = 0;
     private static final int DUSK = 1;
     private static final int NIGHT = 2;
+
+    /**
+     * Day/night ratio at which the emissive lights come on. Emissive tokens never dim, but they
+     * should not glow in broad daylight either; one shared threshold keeps the lamp and its glow
+     * switching on together in both clients.
+     */
+    public static final double LIGHTS_ON_RATIO = 0.1;
 
     /** Keys are {@code [token][phase]} as 0xRRGGBB. */
     private static final int[][] KEYS = {
@@ -61,7 +70,9 @@ public final class VisualPalette {
             // TRAIN_LOCOMOTIVE (default, without a player colour; dusk/night already attenuated)
             {0x999999, 0x7A7A7A, 0x545454},
             // TRAIN_WAGON (default, without cargo colour)
-            {0x808080, 0x666666, 0x464646},};
+            {0x808080, 0x666666, 0x464646},
+            // EMISSIVE_HEADLIGHT (phase 1e): warm white, identical at every hour
+            {0xFFF2C8, 0xFFF2C8, 0xFFF2C8},};
 
     /** Interpolated 0xRRGGBB for a token at a day/night ratio (0 = day, 1 = night). */
     public int color(Token token, double dayNightRatio) {
@@ -83,6 +94,18 @@ public final class VisualPalette {
             return (float) (1.0 - 0.4 * ratio);
         }
         return (float) (0.8 - 0.5 * (ratio - 0.5));
+    }
+
+    /**
+     * How strongly the emissive lights burn at a ratio: 0 below {@link #LIGHTS_ON_RATIO} (day), 1
+     * at night.
+     */
+    public static float lightsOnFactor(double dayNightRatio) {
+        double ratio = Math.max(0.0, Math.min(1.0, dayNightRatio));
+        if (ratio <= LIGHTS_ON_RATIO) {
+            return 0f;
+        }
+        return (float) ((ratio - LIGHTS_ON_RATIO) / (1.0 - LIGHTS_ON_RATIO));
     }
 
     /** Perceptual (linear light) interpolation between two 0xRRGGBB colours. */

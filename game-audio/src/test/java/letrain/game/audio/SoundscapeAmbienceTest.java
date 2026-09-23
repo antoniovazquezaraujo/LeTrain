@@ -23,6 +23,7 @@ class SoundscapeAmbienceTest {
         Cursor cursor = mock(Cursor.class);
         when(model.getGroundMap()).thenReturn(groundMap);
         when(model.getMode()).thenReturn(Model.GameMode.RAILS);
+        when(model.getEffectiveMode()).thenReturn(Model.GameMode.RAILS);
         when(model.getCursor()).thenReturn(cursor);
         when(cursor.getPosition()).thenReturn(new Point(0, 0));
         when(model.getGameClock()).thenReturn(new SimpleGameClock());

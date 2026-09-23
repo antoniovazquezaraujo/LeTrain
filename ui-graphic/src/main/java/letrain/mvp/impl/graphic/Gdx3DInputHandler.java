@@ -316,16 +316,12 @@ public class Gdx3DInputHandler implements InputProcessor {
     public void onChar(InputEvent stroke) {
         if (model.getMode() == Model.GameMode.COMMAND) {
             if (stroke.getKeyType() == KeyType.Escape) {
-                model.setMode(Model.GameMode.RAILS);
-                model.setCommandText("");
-                model.setCommandError("");
+                leaveCommandMode();
                 return;
             } else if (stroke.getKeyType() == KeyType.Enter) {
                 String cmd = model.getCommandText().trim();
                 if (cmd.isEmpty()) {
-                    model.setMode(Model.GameMode.RAILS);
-                    model.setCommandText("");
-                    model.setCommandError("");
+                    leaveCommandMode();
                     return;
                 }
                 view.getCommandHistory().remember(cmd);
@@ -604,6 +600,8 @@ public class Gdx3DInputHandler implements InputProcessor {
      */
     private void executeConsoleCommand(String cmd) {
         log.info("Execute command: " + cmd);
+        boolean fromConsole = model.getMode() == Model.GameMode.COMMAND;
+        Model.GameMode returnMode = model.getPreviousMode();
         String prefix = cursorPrefix();
         String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
                 file -> view.onSaveGame(file), file -> view.onLoadGame(file),
@@ -634,12 +632,28 @@ public class Gdx3DInputHandler implements InputProcessor {
                 && !letrain.command.EditCommandFilter.isNonRecordable(cmd)) {
             history.record(prefix + cmd);
         }
-        current.setMode(Model.GameMode.RAILS);
+        if (fromConsole && current.getMode() == Model.GameMode.COMMAND) {
+            // Back from the console: return to the mode the player was in.
+            current.setMode(returnMode);
+        } else if (!fromConsole) {
+            // The '.' repeat path keeps the old behaviour of landing in RAILS.
+            current.setMode(Model.GameMode.RAILS);
+        }
         current.setCommandText("");
         current.setCommandError("");
         if (view.getCameraController() != null) {
             view.getCameraController().forceSnap();
         }
+    }
+
+    /**
+     * Leaving the console (Esc or an empty Enter) returns to the mode the player was in before
+     * opening it, instead of always landing in RAILS.
+     */
+    private void leaveCommandMode() {
+        model.setMode(model.getPreviousMode());
+        model.setCommandText("");
+        model.setCommandError("");
     }
 
     /** Absolute cursor prefix: {@code "go x,y; face d; "} from the current cursor state. */

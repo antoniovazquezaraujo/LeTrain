@@ -149,6 +149,13 @@ public class Gdx3DResourceContext implements Disposable {
     public Model yellowSphereModel2;
     public Model yellowSphereModel3;
     public Model autoModeDotModel;
+    /** Emissive lamp dot of the locomotive headlights (phase 1e). */
+    public Model headlightModel;
+    /** The same lamp unlit: shown by day and with the engine stopped. */
+    public Model headlightOffModel;
+
+    /** Unlit lamp colour: neutral warm grey, readable against most liveries. */
+    static final int LAMP_OFF_RGB = 0xB8B2A6;
 
     public final com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute blackDiffuseAttribute =
             com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -324,6 +331,12 @@ public class Gdx3DResourceContext implements Disposable {
             yellowSphereModel1 = register(createSphereModel(0.25f, new Color(1f, 0.5f, 0f, 1f)));
             yellowSphereModel2 = register(createSphereModel(0.25f, Color.ORANGE));
             yellowSphereModel3 = register(createSphereModel(0.25f, Color.YELLOW));
+
+            // Headlight lamp (phase 1e): emissive, so it never dims with the palette
+            headlightModel = register(createHeadlightModel(
+                    palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, dayNightRatio), true));
+            // Same lamp unlit (day, or engine stopped): plain diffuse, always visible
+            headlightOffModel = register(createHeadlightModel(LAMP_OFF_RGB, false));
 
             // Consumer Models
             goldConsumerModel = register(createConsumerModel(
@@ -552,6 +565,27 @@ public class Gdx3DResourceContext implements Disposable {
         return mb.createSphere(size, size, size, 12, 12,
                 new Material(ColorAttribute.createDiffuse(color)),
                 (long) (VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+    }
+
+    /** Small emissive lamp: diffuse so it has shape, emissive so no light can dim it. */
+    private Model createHeadlightModel(int rgb, boolean lit) {
+        Color color = new Color();
+        setIfChanged(color, rgb);
+        ModelBuilder mb = new ModelBuilder();
+        if (!lit) {
+            return mb.createSphere(0.16f, 0.16f, 0.16f, 10, 10,
+                    new Material(ColorAttribute.createDiffuse(color)),
+                    (long) (VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+        }
+        return mb.createSphere(0.16f, 0.16f, 0.16f, 10, 10,
+                new Material(ColorAttribute.createDiffuse(color),
+                        ColorAttribute.createEmissive(color)),
+                (long) (VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+    }
+
+    /** Day/night ratio last applied to the palette (0 = day, 1 = night). */
+    public double getDayNightRatio() {
+        return dayNightRatio;
     }
 
     private Model createPyramidModel(float w, float h, float d, Color color) {

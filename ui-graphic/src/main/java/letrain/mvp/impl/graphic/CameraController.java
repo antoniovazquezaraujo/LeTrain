@@ -159,7 +159,7 @@ public class CameraController {
         if (cam == null) {
             return;
         }
-        letrain.mvp.Model.GameMode currentMode = model.getMode();
+        letrain.mvp.Model.GameMode currentMode = model.getEffectiveMode();
         if (currentMode != lastMode) {
             forceSnap();
             lastMode = currentMode;
@@ -167,20 +167,20 @@ public class CameraController {
         float targetX;
         float targetZ;
 
-        if ((model.getMode() == letrain.mvp.Model.GameMode.DRIVE
-                || model.getMode() == letrain.mvp.Model.GameMode.LINK
-                || model.getMode() == letrain.mvp.Model.GameMode.UNLINK)
+        if ((currentMode == letrain.mvp.Model.GameMode.DRIVE
+                || currentMode == letrain.mvp.Model.GameMode.LINK
+                || currentMode == letrain.mvp.Model.GameMode.UNLINK)
                 && model.getSelectedLocomotive() != null) {
             Locomotive selected = model.getSelectedLocomotive();
             Vector2 interpPos = getInterpolatedPosition(selected, alpha);
             targetX = interpPos.x + 0.5f;
             targetZ = interpPos.y + 0.5f;
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS
+        } else if (currentMode == letrain.mvp.Model.GameMode.FORKS
                 && model.getSelectedFork() != null) {
             letrain.track.rail.ForkRailTrack selected = model.getSelectedFork();
             targetX = selected.getPosition().getX() + 0.5f;
             targetZ = selected.getPosition().getY() + 0.5f;
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES
+        } else if (currentMode == letrain.mvp.Model.GameMode.SEMAPHORES
                 && model.getSelectedSemaphore() != null) {
             letrain.track.RailSemaphore selected = model.getSelectedSemaphore();
             targetX = selected.getPosition().getX() + 0.5f;
@@ -194,7 +194,7 @@ public class CameraController {
                             * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
                 }
             }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SENSORS
+        } else if (currentMode == letrain.mvp.Model.GameMode.SENSORS
                 && model.getSelectedSensor() != null) {
             letrain.track.Sensor selected = model.getSelectedSensor();
             if (selected.getPosition() != null) {
@@ -204,7 +204,7 @@ public class CameraController {
                 targetX = cam.position.x;
                 targetZ = cam.position.z;
             }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SPEED_SIGNALS
+        } else if (currentMode == letrain.mvp.Model.GameMode.SPEED_SIGNALS
                 && model.getSelectedSpeedSignal() != null) {
             letrain.track.SpeedSignal selected = model.getSelectedSpeedSignal();
             targetX = selected.getPosition().getX() + 0.5f;
@@ -218,7 +218,7 @@ public class CameraController {
                             * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
                 }
             }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS
+        } else if (currentMode == letrain.mvp.Model.GameMode.STATIONS
                 && model.getSelectedStation() != null) {
             letrain.track.Station selected = model.getSelectedStation();
             targetX = selected.getPosition().getX() + 0.5f;
