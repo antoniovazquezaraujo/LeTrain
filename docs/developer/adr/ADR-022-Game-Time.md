@@ -33,7 +33,7 @@ elegida en cada punto:
 | Eventos | Listeners de hora/día + `SimulationScheduler` | Uso directo desde servicios/presenters | Listeners + scheduler; nada de polling en `tick()` |
 | Persistencia | `elapsedTicks` (long) | campo `gameTime` opcional en `Model` | Long simple (`elapsedTicks`) y `GameTime` derivado; saves viejos → 08:00 Día 1 |
 | `WAIT n` | Sigue en segundos de simulación | No lo redefine | Se mantiene por compatibilidad; horarios con `DEPART`/`UNTIL` |
-| DSL horarios | `DEPART hh:mm`, `UNTIL hh:mm`, `on time` | `DEPART AT hh:mm`, `WAIT UNTIL hh:mm`, `AT "07:00" DO`, `EVERY 30m` | Sintaxis final en el PR de gramática; se adopta `EVERY` como aportación |
+| DSL horarios | `DEPART hh:mm`, `UNTIL hh:mm`, `on time` | `DEPART AT hh:mm`, `WAIT UNTIL hh:mm`, `AT "07:00" DO`, `EVERY 30m` | **Horas por parada**: `arrival HH:MM` (medida) / `departure HH:MM` (retención) como atributos del waypoint (ver *Horarios*); `EVERY` entra en la fase 3 |
 | Día/noche | Visual en fase 1 | Sol/luna/cielo, faros, farolas, tinte 2D | Igual: visual primero, `isNight()` disponible para gameplay futuro |
 | Economía | Tarifas, multas, mantenimiento nocturno | Mantenimiento diario, turnos de producción, bonus por puntualidad | Se adopta el detalle de la opción B en la fase 4 |
 | Operación | Puntualidad (delta entre visitas) | Rol de regulador, cruces en vía única | Ambos: cruces y apartaderos como juego emergente de los horarios |
@@ -58,8 +58,9 @@ elegida en cada punto:
 6. Los **eventos de tiempo** (cambio de hora, día/noche, horarios) se despachan vía
    `SimulationScheduler`; nada de lógica nueva en bucles periódicos.
 7. **`WAIT n` se mantiene en segundos de simulación** para no romper escenarios existentes. Los
-   horarios se expresan en tiempo de juego: `DEPART hh:mm`, `WAIT UNTIL hh:mm` y disparadores
-   temporales (`at "HH:mm"` / `every 30m`) en la gramática de scripts.
+   horarios se expresan en tiempo de juego como atributos del waypoint (`arrival HH:MM` /
+   `departure HH:MM`, ver *Horarios*); los disparadores temporales (`at "HH:mm"` / `every 30m`)
+   llegan en la fase 3.
 8. **Día/noche es visual** en esta fase (paleta del terminal y luz/faros en 3D); `isNight()` y
    `getDayNightRatio()` quedan disponibles para un futuro efecto sobre el gameplay.
 9. **Comando de consola del reloj**: `time;` muestra la hora actual (`Día 1 08:00`);
@@ -113,6 +114,48 @@ Referencia rápida (notch 10 = 5 ticks/celda):
 | Acelerador de simulación (futuro, pruebas) | ×N | ×N | invariante |
 | Cambiar `dayDurationSeconds` | sin efecto | nueva escala | cambia (por eso se fija por partida) |
 
+### Horarios (fase 2): horas por parada
+
+Cada **waypoint** del itinerario puede llevar la hora de **llegada** y/o de **salida** como
+atributos, en formato de 24 h (`H:MM` o `HH:MM`). Las comas son separadores opcionales:
+
+```letrain
+create itinerary "cercanías" {
+  add station 1 load, departure 9:20;
+  add station 2 arrival 10:23, unload, departure 10:30;
+  add sensor 5 arrival 10:37
+}
+```
+
+Semántica:
+
+- **`arrival HH:MM` es medida**: el autopilot apunta la hora real de llegada al waypoint y su
+  desfase (puede ser negativo = adelantado). **No retiene**.
+- **`departure HH:MM` es retención**: al llegar se ejecutan las acciones del waypoint (`load`,
+  `unload`, `wait n`…); si terminan antes de la hora, el tren **espera**; si terminan después,
+  **sale tarde** y el desfase de salida queda registrado. La estancia (`dwell`) es, por tanto,
+  `departure − arrival` en **tiempo de juego**, invariante al ritmo (`time.dayDurationSeconds`).
+- Sin `departure`, el tren sale cuando acaban sus acciones; sin `arrival`, no hay medida de
+  llegada. Sin ninguna hora, el waypoint se comporta como hasta ahora.
+- En **sensores** la hora es un control de paso: solo mide, nunca retiene.
+- Las horas se leen **en secuencia**: si una es menor que la anterior, pertenece al día siguiente
+  (`arrival 23:50 departure 00:10`). Un tren con retraso no espera 24 h: si llega después de su
+  hora, sale de inmediato y se mide el desfase.
+- Los atributos son **declarativos** (no pasos secuenciales): da igual escribirlos antes o después
+  de `load`; la retención se aplica justo antes de salir.
+
+Métrica (fase 2, solo medir; la economía horaria es la fase 4):
+
+- Por parada: `arrivalDelta` y `departureDelta` en **minutos de juego**.
+- Por tren: retraso actual (última salida), medio y máximo, visibles en `info train N` y/o HUD.
+
+Compatibilidad: los itinerarios sin horas siguen funcionando igual y `WAIT n` conserva su semántica
+(segundos de simulación).
+
+Puntos abiertos (seguimos pensando): dónde mostrar los desfases (¿HUD o solo `info`?), el uso de
+estos horarios para los **cruces en vía única** (fase 2c) y si más adelante `arrival` también
+limitará la velocidad para no llegar antes de hora.
+
 ### Contrato (implementado en la fase 0)
 
 ```java
@@ -143,14 +186,14 @@ public interface GameClock {
 |---|---|---|
 | 0 | Reloj de juego: `GameClock`, `time.dayDurationSeconds`, serialización, reloj en HUD 2D/3D y comando `time set` | Sin efecto en gameplay; tests deterministas |
 | 1 | Día/noche: paleta 2D, sol/luna/cielo, luz ambiental, faros y farolas en 3D usando `isNight()`/`getDayNightRatio()` | Visual; coordinar con #480 |
-| 2 | Horarios: `DEPART hh:mm` / `WAIT UNTIL hh:mm` en itinerarios y puntualidad básica; cruces en vía única y apartaderos | El autopilot espera; se mide el delta |
+| 2 | Horarios: `arrival` / `departure` por parada en los itinerarios y puntualidad básica; cruces en vía única y apartaderos | El autopilot retiene hasta la salida programada; se mide el delta |
 | 3 | Triggers temporales (`at`/`every`) y demanda por franjas; integración con trenes de pasajeros | Engancha con `PassengerTrains_Design.md` |
 | 4 | Economía horaria: mantenimiento diario, turnos de producción, tarifas por franja y bonus/multa por puntualidad | Reglas de negocio |
 
 ## Decisiones pendientes
 
-- Sintaxis exacta de la gramática de horarios (`DEPART hh:mm` vs `DEPART AT hh:mm`;
-  `at "HH:mm"` vs `AT "HH:mm" DO`): se fija al abrir la fase 2.
+- Fase 2 en diseño (ver *Horarios*): quedan por decidir dónde mostrar los desfases, el uso de los
+  horarios en los cruces de vía única y si `arrival` limitará la velocidad más adelante.
 
 ## Alternativas consideradas
 
