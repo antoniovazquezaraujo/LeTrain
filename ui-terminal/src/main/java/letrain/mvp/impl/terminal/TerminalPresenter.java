@@ -399,23 +399,25 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         running = true;
         try {
 
-            InputEvent stroke = null;
             model.setMode(RAILS);
             letrain.map.Point startPos = model.getCursor().getPosition();
             view.centerOn(startPos.getX(), startPos.getY());
             model.updateGroundMap(view.getScrollOffset(), view.getCols(), view.getRows());
             while (running) {
-                stroke = null;
                 com.googlecode.lanterna.input.KeyStroke rawStroke = view.readKey();
-                if (view.isEndOfGame(rawStroke)) {
-                    break;
-                }
-                stroke = translate(rawStroke);
-                if (null != stroke) {
-                    onChar(stroke);
-                    while (rawStroke != null) {
-                        rawStroke = view.readKey();
+                boolean endOfGame = view.isEndOfGame(rawStroke);
+                // Handles the whole queued burst: the old code discarded every key after the first
+                // one of the frame, so fast typing (commands) and quick taps got lost.
+                while (rawStroke != null) {
+                    InputEvent stroke = translate(rawStroke);
+                    if (stroke != null) {
+                        onChar(stroke);
                     }
+                    rawStroke = view.readKey();
+                    endOfGame = endOfGame || view.isEndOfGame(rawStroke);
+                }
+                if (endOfGame) {
+                    break;
                 }
                 simulationController.tick();
                 updateAmbientAudio();
