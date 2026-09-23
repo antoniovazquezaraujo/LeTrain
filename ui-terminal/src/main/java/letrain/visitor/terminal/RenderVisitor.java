@@ -124,7 +124,7 @@ public class RenderVisitor implements Visitor {
 
     private void addHeadlight(Locomotive locomotive) {
         if (locomotive.getDir() == null || !locomotive.isEngineOn()
-                || isHiddenInTunnel(locomotive)) {
+                || !locomotive.isHeadLocomotive() || isHiddenInTunnel(locomotive)) {
             return;
         }
         int cx = locomotive.getPosition().getX();

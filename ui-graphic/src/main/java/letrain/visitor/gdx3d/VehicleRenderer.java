@@ -151,6 +151,7 @@ public class VehicleRenderer extends BaseSubRenderer {
         Model locoModelToUse = resourceContext.locomotiveModel;
 
         boolean headlightsOn = !locomotive.isDestroying() && locomotive.isEngineOn()
+                && locomotive.isHeadLocomotive()
                 && VisualPalette.lightsOnFactor(resourceContext.getDayNightRatio()) > 0f;
 
         // Headlight source at the rendered (interpolated) position, so the real light glides with
