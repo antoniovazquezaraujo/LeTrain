@@ -191,8 +191,8 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     @Override
     public boolean keyTyped(char character) {
-        // 1. Toggle de cámara
-        if (character == 'z' || character == 'Z') {
+        // 1. Toggle de cámara (en TRAINS la 'z' es una letra de aspecto, como en 2D)
+        if ((character == 'z' || character == 'Z') && model.getMode() != Model.GameMode.TRAINS) {
             cameraController.cycleMode(!model.getLocomotives().isEmpty());
             return true;
         }
@@ -395,18 +395,22 @@ public class Gdx3DInputHandler implements InputProcessor {
             return;
         }
 
-        // Shift+X toggles experiment mode (live sandbox with in-memory snapshot/restore).
+        // Shift+X toggles experiment mode (live sandbox with in-memory snapshot/restore). Not in
+        // TRAINS: there the letter is a locomotive aspect, like in the 2D terminal.
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
                 && stroke.getCharacter() == 'X' && !stroke.isCtrlDown() && !stroke.isAltDown()
-                && model.getMode() != Model.GameMode.PROGRAM) {
+                && model.getMode() != Model.GameMode.PROGRAM
+                && model.getMode() != Model.GameMode.TRAINS) {
             view.toggleExperimentMode();
             return;
         }
 
         // Shift+R toggles the Record/edit mode (freeze + instant build + undo/redo + journal).
+        // Not in TRAINS, where 'R' builds the locomotive with aspect R.
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
                 && stroke.getCharacter() == 'R' && !stroke.isCtrlDown() && !stroke.isAltDown()
-                && model.getMode() != Model.GameMode.PROGRAM) {
+                && model.getMode() != Model.GameMode.PROGRAM
+                && model.getMode() != Model.GameMode.TRAINS) {
             togglePauseEditing();
             return;
         }

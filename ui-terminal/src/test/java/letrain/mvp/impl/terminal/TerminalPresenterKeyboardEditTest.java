@@ -169,6 +169,40 @@ class TerminalPresenterKeyboardEditTest {
     }
 
     @Test
+    @DisplayName("in TRAINS the reserved letters z and X build vehicles (2D parity)")
+    void trainsMode_buildsReservedLetters() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = silentPresenter(model);
+        trackAt(model, 0, 0).connect(Dir.E, trackAt(model, 1, 0));
+        model.getRailMap().getTrackAt(1, 0).connect(Dir.W, model.getRailMap().getTrackAt(0, 0));
+        model.getCursor().setPosition(new Point(0, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.TRAINS);
+
+        presenter.onChar(charKey('z'));
+
+        assertEquals(1, model.getWagons().size(), "z must build a wagon in TRAINS");
+        assertEquals("z", model.getWagons().get(0).getAspect());
+    }
+
+    @Test
+    @DisplayName("in TRAINS, X builds a locomotive instead of toggling experiment mode")
+    void trainsMode_xBuildsLocomotive() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = silentPresenter(model);
+        trackAt(model, 0, 0).connect(Dir.E, trackAt(model, 1, 0));
+        model.getRailMap().getTrackAt(1, 0).connect(Dir.W, model.getRailMap().getTrackAt(0, 0));
+        model.getCursor().setPosition(new Point(0, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.TRAINS);
+
+        presenter.onChar(new InputEvent(KeyType.Character, 'X', false, false, true));
+
+        assertEquals(1, model.getLocomotives().size(), "X must build a locomotive in TRAINS");
+        assertEquals("X", model.getLocomotives().get(0).getAspect());
+    }
+
+    @Test
     @DisplayName("inverting a plain sensor from the keyboard is journaled")
     void keyboardSensorInvert_isJournaled() {
         Model model = new Model(1);
