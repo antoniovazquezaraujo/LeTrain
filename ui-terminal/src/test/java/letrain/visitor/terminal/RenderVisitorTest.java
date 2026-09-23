@@ -239,6 +239,7 @@ class RenderVisitorTest {
         loco.setTrack(locoTrack);
         loco.setPosition(new Point(5, 5));
         loco.setDir(Dir.E);
+        loco.setEngineOn(true);
         when(model.getLocomotives()).thenReturn(List.of(loco));
 
         visitor.visitModel(model);
@@ -268,6 +269,7 @@ class RenderVisitorTest {
         loco.setTrack(locoTrack);
         loco.setPosition(new Point(5, 5));
         loco.setDir(Dir.E);
+        loco.setEngineOn(true);
         when(model.getLocomotives()).thenReturn(List.of(loco));
 
         visitor.visitModel(model);
@@ -303,6 +305,7 @@ class RenderVisitorTest {
         loco.setTrack(locoTrack);
         loco.setPosition(new Point(5, 5));
         loco.setDir(Dir.E);
+        loco.setEngineOn(true);
         when(model.getLocomotives()).thenReturn(List.of(loco));
 
         visitor.visitModel(model);
@@ -316,6 +319,35 @@ class RenderVisitorTest {
         TextColor bandBoard =
                 palette.colorOf(TerminalPalette.rgbFor(band).get(TerminalPalette.Token.BOARD));
         verify(view, never()).setBgColor(argThat(c -> c != null && !c.equals(bandBoard)));
+    }
+
+    @Test
+    @DisplayName("a locomotive with the engine off casts no light even at night")
+    void visitModel_shouldHideHeadlight_whenEngineIsOff() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(1f);
+
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+        RailTrack locoTrack = new RailTrack();
+        locoTrack.setPosition(new Point(5, 5));
+        loco.setTrack(locoTrack);
+        loco.setPosition(new Point(5, 5));
+        loco.setDir(Dir.E); // engine off by default: no headlight
+        when(model.getLocomotives()).thenReturn(List.of(loco));
+
+        visitor.visitModel(model);
+
+        RailTrack ahead = new RailTrack();
+        ahead.setPosition(new Point(6, 5));
+        visitor.visitRailTrack(ahead);
+
+        verify(view, never()).setBgColor(litBoard(palette, 1, 0));
     }
 
     /** Fondo esperado de una celda iluminada con factor {@code (dx, dy)} respecto a la loco. */
@@ -346,6 +378,7 @@ class RenderVisitorTest {
         loco.setTrack(tunnel);
         loco.setPosition(new Point(5, 5));
         loco.setDir(Dir.E);
+        loco.setEngineOn(true);
         when(model.getLocomotives()).thenReturn(List.of(loco));
 
         visitor.visitModel(model);
@@ -377,6 +410,7 @@ class RenderVisitorTest {
         loco.setTrack(tunnel);
         loco.setPosition(new Point(5, 5));
         loco.setDir(Dir.E);
+        loco.setEngineOn(true);
         when(model.getLocomotives()).thenReturn(List.of(loco));
 
         visitor.visitModel(model);
@@ -413,6 +447,7 @@ class RenderVisitorTest {
         loco.setTrack(locoTrack);
         loco.setPosition(new Point(5, 5));
         loco.setDir(Dir.E);
+        loco.setEngineOn(true);
         when(model.getLocomotives()).thenReturn(List.of(loco));
 
         visitor.visitModel(model);

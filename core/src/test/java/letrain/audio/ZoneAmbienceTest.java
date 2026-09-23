@@ -28,6 +28,10 @@ class ZoneAmbienceTest {
     @BeforeEach
     void setUp() {
         model = mock(Model.class);
+        when(model.getEffectiveMode()).thenAnswer(invocation -> {
+            Model.GameMode mode = model.getMode();
+            return mode == Model.GameMode.COMMAND ? model.getPreviousMode() : mode;
+        });
         cursor = mock(Cursor.class);
         locomotive = mock(Locomotive.class);
         cells = new int[128][128];
@@ -91,6 +95,20 @@ class ZoneAmbienceTest {
 
         assertEquals("fields", update.primary());
         assertFalse(update.focusChanged());
+    }
+
+    @Test
+    @DisplayName("the console over DRIVE listens from the selected locomotive, even from a cold start")
+    void should_FollowLocomotive_InConsoleOverDrive() {
+        when(model.getMode()).thenReturn(Model.GameMode.COMMAND);
+        when(model.getPreviousMode()).thenReturn(Model.GameMode.DRIVE);
+        when(model.getSelectedLocomotive()).thenReturn(locomotive);
+        when(locomotive.getPosition()).thenReturn(new Point(60, 64));
+
+        ZoneAmbience.Update update = ambience().update(model, 0L, true);
+
+        assertEquals("sea", update.primary(), update.weights() + " " + update.influence());
+        assertTrue(update.weightOf("fields") > 0f, update.weights() + " " + update.influence());
     }
 
     @Test
