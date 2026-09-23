@@ -368,12 +368,19 @@ public class Gdx3DResourceContext implements Disposable {
      * avisos y resaltados no pasan por aquí.
      */
     public Color attenuatePlayerColor(Color color) {
+        return attenuate(color, VisualPalette.playerColorFactor(dayNightRatio));
+    }
+
+    /**
+     * Devuelve una **copia** atenuada del color; nunca modifica el original, que muchas veces es
+     * una constante compartida de LibGDX ({@code Color.YELLOW}…). Mutarla en sitio oscurecía la
+     * constante para siempre (una loco amarilla se quedaba negra tras el primer anochecer).
+     */
+    static Color attenuate(Color color, float factor) {
         if (color == null) {
             return null;
         }
-        float factor = VisualPalette.playerColorFactor(dayNightRatio);
-        color.mul(factor, factor, factor, 1f);
-        return color;
+        return new Color(color.r * factor, color.g * factor, color.b * factor, color.a);
     }
 
     /** Last resolved colour of a token; the ground renderer uses it for walls and edges. */

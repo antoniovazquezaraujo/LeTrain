@@ -33,4 +33,24 @@ class Gdx3DResourceContextTest {
         assertEquals(0x99 / 255f, color.g, 1e-6);
         assertEquals(0x4C / 255f, color.b, 1e-6);
     }
+
+    @Test
+    @DisplayName("attenuating a player colour never mutates the original constant")
+    void should_NotMutatePlayerColour_When_Attenuating() {
+        Color yellow = new Color(Color.YELLOW);
+
+        Color dimmed = Gdx3DResourceContext.attenuate(Color.YELLOW, 0.55f);
+
+        assertEquals(1f, Color.YELLOW.r, 1e-6);
+        assertEquals(1f, Color.YELLOW.g, 1e-6);
+        assertEquals(0f, Color.YELLOW.b, 1e-6);
+        assertEquals(0.55f, dimmed.r, 1e-6);
+        assertEquals(0.55f, dimmed.g, 1e-6);
+        assertEquals(0f, dimmed.b, 1e-6);
+        assertEquals(1f, yellow.r, 1e-6);
+
+        // repeated attenuation does not compound on the source
+        Gdx3DResourceContext.attenuate(Color.YELLOW, 0.55f);
+        assertEquals(1f, Color.YELLOW.r, 1e-6);
+    }
 }
