@@ -14,11 +14,13 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import letrain.mvp.input.InputEvent;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
+import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.palette.VisualPalette;
@@ -27,11 +29,13 @@ import letrain.mvp.impl.RailTrackMaker;
 import letrain.mvp.impl.SimulationController;
 import letrain.game.audio.SoundscapeAmbience;
 import letrain.utils.FontManager;
+import letrain.utils.PathGeometry;
 import letrain.utils.ValidationUtils;
 import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.gdx3d.Gdx3DRenderer;
+import letrain.visitor.gdx3d.Headlights;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,6 +79,14 @@ public class GraphicPresenter extends ApplicationAdapter
     private final VisualPalette palette = new VisualPalette();
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute ambientAttribute;
     private com.badlogic.gdx.graphics.g3d.environment.DirectionalLight sunLight;
+    /** Real lights for the nearest locomotive headlights (ADR-022 phase 1e). */
+    private static final int HEADLIGHT_POOL = 4;
+
+    private static final float HEADLIGHT_INTENSITY = 25f;
+    private final com.badlogic.gdx.graphics.g3d.environment.PointLight[] headlightLights =
+            new com.badlogic.gdx.graphics.g3d.environment.PointLight[HEADLIGHT_POOL];
+    private final Color headlightColor = new Color();
+    private final Vector3 headlightPosition = new Vector3();
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute tableDiffuse;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute gridDiffuse;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute boxDiffuse;
@@ -201,6 +213,10 @@ public class GraphicPresenter extends ApplicationAdapter
         sunLight = new DirectionalLight();
         sunLight.set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f);
         environment.add(sunLight);
+        for (int i = 0; i < headlightLights.length; i++) {
+            headlightLights[i] = new com.badlogic.gdx.graphics.g3d.environment.PointLight();
+            environment.add(headlightLights[i]);
+        }
 
         cam = cameraController.init(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
@@ -1367,6 +1383,30 @@ public class GraphicPresenter extends ApplicationAdapter
         double a = Math.toRadians(azimuth);
         sunLight.direction.set((float) (-Math.cos(e) * Math.sin(a)), (float) -Math.sin(e),
                 (float) (Math.cos(e) * Math.cos(a))).nor();
+        updateHeadlights(ratio);
+    }
+
+    /** Lights the nearest locomotive headlights; off while the sun is up (phase 1e). */
+    private void updateHeadlights(double ratio) {
+        float intensity = HEADLIGHT_INTENSITY * (float) ratio;
+        setColor(headlightColor, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, ratio));
+        for (com.badlogic.gdx.graphics.g3d.environment.PointLight light : headlightLights) {
+            light.intensity = 0f;
+        }
+        if (model == null || cam == null || intensity <= 0f) {
+            return;
+        }
+        List<Locomotive> nearest =
+                Headlights.nearestTo(model.getLocomotives(), cam.position, headlightLights.length);
+        for (int i = 0; i < nearest.size(); i++) {
+            Locomotive locomotive = nearest.get(i);
+            Dir dir = locomotive.getDir();
+            float dirX = dir == null ? 0f : PathGeometry.getDirX(dir);
+            float dirZ = dir == null ? 0f : PathGeometry.getDirZ(dir);
+            headlightPosition.set(locomotive.getPosition().getX() + 0.5f + dirX * 0.6f, 0.7f,
+                    locomotive.getPosition().getY() + 0.5f + dirZ * 0.6f);
+            headlightLights[i].set(headlightColor, headlightPosition, intensity);
+        }
     }
 
     /**

@@ -83,6 +83,15 @@ class VisualPaletteTest {
         assertTrue(mid > 0xAAAAAA && mid < 0xCCCCCC, "mid=" + Integer.toHexString(mid));
     }
 
+    @Test
+    @DisplayName("emissive headlight stays warm and bright at every hour (phase 1e)")
+    void should_KeepHeadlightConstant() {
+        for (int i = 0; i <= 20; i++) {
+            assertEquals(0xFFF2C8, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, i / 20.0),
+                    "ratio=" + i / 20.0);
+        }
+    }
+
     private static double luminance(int rgb) {
         return 0.2126 * ((rgb >> 16) & 0xFF) + 0.7152 * ((rgb >> 8) & 0xFF) + 0.0722 * (rgb & 0xFF);
     }

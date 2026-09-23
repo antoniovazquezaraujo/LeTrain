@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.googlecode.lanterna.TextColor;
 import java.util.List;
+import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Model;
 import letrain.mvp.impl.terminal.TerminalView;
@@ -217,5 +218,71 @@ class RenderVisitorTest {
                 palette.colorOf(TerminalPalette.rgbFor(band).get(TerminalPalette.Token.RAIL));
         visitor.visitRailTrack(new RailTrack());
         verify(view, atLeastOnce()).setFgColor(expected);
+    }
+
+    @Test
+    @DisplayName("at night a locomotive casts a headlight beam on the rail ahead")
+    void visitModel_shouldCastHeadlightBeam_atNight() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(1f);
+
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+        RailTrack locoTrack = new RailTrack();
+        locoTrack.setPosition(new Point(5, 5));
+        loco.setTrack(locoTrack);
+        loco.setPosition(new Point(5, 5));
+        loco.setDir(Dir.E);
+        when(model.getLocomotives()).thenReturn(List.of(loco));
+
+        visitor.visitModel(model);
+
+        RailTrack ahead = new RailTrack();
+        ahead.setPosition(new Point(6, 5));
+        visitor.visitRailTrack(ahead);
+
+        verify(view, atLeastOnce()).setBgColor(litBoard(palette, 1, 0));
+    }
+
+    @Test
+    @DisplayName("by day the headlight stays off")
+    void visitModel_shouldNotCastHeadlightBeam_byDay() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(0f);
+
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+        RailTrack locoTrack = new RailTrack();
+        locoTrack.setPosition(new Point(5, 5));
+        loco.setTrack(locoTrack);
+        loco.setPosition(new Point(5, 5));
+        loco.setDir(Dir.E);
+        when(model.getLocomotives()).thenReturn(List.of(loco));
+
+        visitor.visitModel(model);
+
+        RailTrack ahead = new RailTrack();
+        ahead.setPosition(new Point(6, 5));
+        visitor.visitRailTrack(ahead);
+
+        verify(view, never()).setBgColor(litBoard(palette, 1, 0));
+    }
+
+    /** Fondo esperado de una celda iluminada con factor {@code (dx, dy)} respecto a la loco. */
+    private static TextColor litBoard(TerminalPalette palette, int dx, int dy) {
+        float lit = Headlight.factor(dx, dy, Dir.E) * Headlight.MAX_LIGHT;
+        int nightBoard = TerminalPalette.rgbFor(1f).get(TerminalPalette.Token.BOARD);
+        int dayBoard = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.BOARD);
+        return palette.colorOf(TerminalPalette.mix(nightBoard, dayBoard, lit));
     }
 }

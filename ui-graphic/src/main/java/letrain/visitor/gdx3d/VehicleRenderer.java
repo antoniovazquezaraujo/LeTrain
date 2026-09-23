@@ -188,6 +188,23 @@ public class VehicleRenderer extends BaseSubRenderer {
             }
         }
 
+        // Headlight lamps (phase 1e): emissive dots on the front, only after dark
+        if (!locomotive.isDestroying() && resourceContext.getDayNightRatio() > 0.1
+                && resourceContext.headlightModel != null) {
+            v1.set(renderTangent).nor();
+            float dxL = v1.x;
+            float dzL = v1.z;
+            float perpXL = dzL * 0.2f;
+            float perpZL = -dxL * 0.2f;
+            for (int side = -1; side <= 1; side += 2) {
+                ModelInstance lamp =
+                        resourceContext.getModelInstance(resourceContext.headlightModel);
+                lamp.transform.setToTranslation(renderX + dxL * 0.42f + perpXL * side, 0.5f,
+                        renderY + dzL * 0.42f + perpZL * side);
+                instances.add(lamp);
+            }
+        }
+
         // Green line (direction marker) - ONLY for selected locomotive
         boolean isSelected = (modelRef != null && modelRef.getSelectedLocomotive() == locomotive);
         if (isSelected) {
