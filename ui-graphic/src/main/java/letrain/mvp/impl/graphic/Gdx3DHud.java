@@ -39,6 +39,7 @@ public class Gdx3DHud {
     private final Stage stage;
     private Skin skin;
     private Table menuTable;
+    private Table bottomContainer;
     private Label descLabel;
     private Label globalHelpLabel;
     private Label recDot;
@@ -46,6 +47,9 @@ public class Gdx3DHud {
     private Label balanceLabel;
     private Label incomeLabel;
     private Label expensesLabel;
+
+    /** 2D parity: 2 full, 1 compact, 0 hidden (see {@link HudHelp}). */
+    private int helpLevel = HudHelp.FULL;
 
     private NotchLever notchLever;
     private ShapeRenderer shapeRenderer;
@@ -340,18 +344,18 @@ public class Gdx3DHud {
         descLabel.setWrap(true);
         descLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
         globalHelpLabel = new Label(
-                "[LIGHT_GRAY][ALT+⏶⏷/kj / MOUSE WHEEL]: ZOOM | [ALT+⏴⏵/hl]: ROTATE CAMERA | [Z]: CHANGE CAMERA VIEW | [R]: RECORD | [X]: EXPERIMENT[]",
+                "[LIGHT_GRAY][ALT+⏶⏷/kj / MOUSE WHEEL]: ZOOM | [ALT+⏴⏵/hl]: ROTATE CAMERA | [Z]: CHANGE CAMERA VIEW | [R]: RECORD | [X]: EXPERIMENT | [TAB]: HIDE/SHOW PANEL[]",
                 skin, "tiny");
         globalHelpLabel.setWrap(true);
         globalHelpLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
 
-        Table bottomContainer = new Table();
+        bottomContainer = new Table();
         bottomContainer.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.6f)));
         bottomContainer.pad(10);
 
-        // Notch Lever (Repositioned to bottom-left of menu area)
+        // Notch Lever (horizontal, like the 2D throttle read-out)
         notchLever = new NotchLever();
-        bottomContainer.add(notchLever).size(100, 100).padLeft(10).padRight(10).top().bottom();
+        bottomContainer.add(notchLever).size(260, 46).padLeft(10).padRight(10);
 
         // Finances Area (Now between NotchLever and menu)
         Table financeArea = new Table();
@@ -391,6 +395,25 @@ public class Gdx3DHud {
         mainBottomTable.add(bottomContainer).expandX().fillX();
 
         updateMenuButtons();
+        applyHelpLevel();
+    }
+
+    /**
+     * Tab parity with the 2D terminal: cycles the bottom panel between full, compact and hidden.
+     */
+    public void cycleHelpLevel() {
+        setHelpLevel(HudHelp.cycle(helpLevel));
+    }
+
+    /** Applies a help level (2 full, 1 compact, 0 hidden). */
+    public void setHelpLevel(int level) {
+        this.helpLevel = Math.max(HudHelp.HIDDEN, Math.min(HudHelp.FULL, level));
+        applyHelpLevel();
+    }
+
+    private void applyHelpLevel() {
+        bottomContainer.setVisible(HudHelp.showBottomPanel(helpLevel));
+        globalHelpLabel.setVisible(HudHelp.showKeyHelp(helpLevel));
     }
 
     private String getMenuButtonText(String rawName, boolean isEnabled) {
@@ -1645,22 +1668,23 @@ public class Gdx3DHud {
 
             shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
 
-            float x = getX() + 50; // Centered in the 100px width
+            float x = getX();
             float y = getY();
+            float w = getWidth();
             float h = getHeight();
+            float barY = y + h - 16f; // Horizontal slot centre line
 
-            // Background slot
+            // Background slot (horizontal, like the 2D throttle read-out)
             shapeRenderer.setColor(0.2f, 0.2f, 0.2f, 0.4f * parentAlpha); // Translucent gray
-            shapeRenderer.rect(x - 40, y - 20, 65, h + 40); // Even taller to fully enclose labels 0
-                                                            // and 10
+            shapeRenderer.rect(x - 8, barY - 12, w + 16, 24);
 
             // Tick marks
             shapeRenderer.end();
             shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Line);
             shapeRenderer.setColor(Color.WHITE);
             for (int i = 0; i <= 10; i++) {
-                float ty = y + (i / 10f) * h;
-                shapeRenderer.line(x - 10, ty, x + 10, ty);
+                float tx = x + (i / 10f) * w;
+                shapeRenderer.line(tx, barY - 8, tx, barY + 8);
             }
             shapeRenderer.end();
 
@@ -1673,25 +1697,25 @@ public class Gdx3DHud {
             font.getData().setScale(0.5f);
 
             for (int i = 0; i <= 10; i++) {
-                float ty = y + (i / 10f) * h;
+                float tx = x + (i / 10f) * w;
                 String txt = String.valueOf(i);
                 com.badlogic.gdx.graphics.g2d.GlyphLayout layout =
                         new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, txt);
-                font.draw(batch, txt, x - 25 - layout.width, ty + layout.height / 2);
+                font.draw(batch, txt, tx - layout.width / 2, y + 10);
             }
             font.getData().setScale(oldScaleX, oldScaleY);
             batch.end();
 
-            // Target Notch Indicator (Transparent Square)
+            // Target Notch Indicator (transparent vertical bar)
             shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(1, 1, 1, 0.4f * parentAlpha); // Semi-transparent white
-            float tyNode = y + (targetNotch / 10f) * h;
-            shapeRenderer.rect(x - 18, tyNode - 8, 36, 16);
+            float targetX = x + (targetNotch / 10f) * w;
+            shapeRenderer.rect(targetX - 4, barY - 13, 8, 26);
 
-            // Handle (Actual Speed)
+            // Handle (Actual Speed): vertical red bar over the horizontal slot
             shapeRenderer.setColor(Color.RED);
-            float hy = y + (visualNotch / 10f) * h;
-            shapeRenderer.rect(x - 15, hy - 5, 30, 10);
+            float handleX = x + (visualNotch / 10f) * w;
+            shapeRenderer.rect(handleX - 3, barY - 15, 6, 30);
             shapeRenderer.end();
 
             Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);

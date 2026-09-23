@@ -431,6 +431,14 @@ public class Gdx3DInputHandler implements InputProcessor {
             return;
         }
 
+        // Tab cycles the HUD panel (full / compact / hidden), like the 2D terminal's help levels.
+        // Not in PROGRAM, where the IDE uses Tab.
+        if (getEffectiveKeyType(stroke) == KeyType.Tab
+                && model.getMode() != Model.GameMode.PROGRAM) {
+            view.cycleHelpLevel();
+            return;
+        }
+
         // Global Camera Zoom/Rotation (Alt + Arrows)
         if (stroke.isAltDown()) {
             if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {

@@ -114,6 +114,7 @@
 - [[letrain.mvp.impl.graphic.Gdx3DHud|Gdx3DHud]] (ui-graphic)
 - [[letrain.mvp.impl.graphic.Gdx3DInputHandler|Gdx3DInputHandler]] (ui-graphic)
 - [[letrain.mvp.impl.graphic.GraphicPresenter|GraphicPresenter]] (ui-graphic)
+- [[letrain.mvp.impl.graphic.HudHelp|HudHelp]] (ui-graphic)
 - [[letrain.mvp.impl.services.AutomationEngine|AutomationEngine]] (core)
 - [[letrain.mvp.impl.services.ModelListenerService|ModelListenerService]] (core)
 - [[letrain.mvp.impl.services.ModelReportService|ModelReportService]] (core)

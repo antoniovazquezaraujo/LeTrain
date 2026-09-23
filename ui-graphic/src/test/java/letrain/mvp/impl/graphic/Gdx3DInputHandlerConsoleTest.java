@@ -341,6 +341,33 @@ class Gdx3DInputHandlerConsoleTest {
     }
 
     @Test
+    @DisplayName("Tab cycles the HUD panel like the 2D terminal's help levels")
+    void tab_cyclesHudPanel() {
+        handler.onChar(key(KeyType.Tab));
+
+        verify(view).cycleHelpLevel();
+    }
+
+    @Test
+    @DisplayName("Tab inside the console keeps typing and does not change the panel")
+    void tab_ignoredInConsole() {
+        handler.onChar(charKey(':'));
+        handler.onChar(key(KeyType.Tab));
+
+        verify(view, never()).cycleHelpLevel();
+    }
+
+    @Test
+    @DisplayName("Tab is not stolen from the PROGRAM IDE")
+    void tab_ignoredInProgram() {
+        model.setMode(Model.GameMode.PROGRAM);
+
+        handler.onChar(key(KeyType.Tab));
+
+        verify(view, never()).cycleHelpLevel();
+    }
+
+    @Test
     @DisplayName("history survives a model/handler swap like the one an undo performs")
     void history_survivesHandlerRecreation() {
         executeInConsole("go 5,0; face e; write 1;");
