@@ -76,7 +76,7 @@ public class ZoneAmbience {
     }
 
     private Focus resolve(Model model) {
-        Model.GameMode mode = model.getMode();
+        Model.GameMode mode = model.getEffectiveMode();
         return switch (mode) {
             case DRIVE, TRAINS, LINK, UNLINK -> focus(mode, model.getSelectedLocomotive());
             case RAILS, ADD -> focus(mode, model.getCursor());

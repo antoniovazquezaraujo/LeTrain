@@ -375,9 +375,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      * listening height, mirroring the 3D camera zoom (ADR-025).
      */
     void updateAmbientAudio() {
-        Point listenerPos = model.getMode() == DRIVE && model.getSelectedLocomotive() != null
-                ? model.getSelectedLocomotive().getPosition()
-                : model.getCursor().getPosition();
+        Point listenerPos =
+                model.getEffectiveMode() == DRIVE && model.getSelectedLocomotive() != null
+                        ? model.getSelectedLocomotive().getPosition()
+                        : model.getCursor().getPosition();
         int ambientCells = view.getCols() * view.getRows();
         float ambientZoom = Math.max(0f, Math.min(1f, (ambientCells - AMBIENT_BASE_CELLS)
                 / (float) (AMBIENT_FULL_CELLS - AMBIENT_BASE_CELLS)));
@@ -424,7 +425,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 renderer.visitModel(model);
                 informer.visitModel(model);
                 view.paint();
-                if (model.getMode() == DRIVE) {
+                if (model.getEffectiveMode() == DRIVE) {
                     Locomotive selectedLocomotive = model.getSelectedLocomotive();
                     if (selectedLocomotive != null) {
                         view.ensureVisible(selectedLocomotive.getPosition().getX(),
@@ -519,8 +520,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
         model.setCommandText("");
         model.setCommandError("");
-        view.centerOn(model.getCursor().getPosition().getX(),
-                model.getCursor().getPosition().getY());
+        // In DRIVE the view keeps following the locomotive; centring on the cursor would yank it.
+        if (model.getEffectiveMode() != letrain.mvp.Model.GameMode.DRIVE) {
+            view.centerOn(model.getCursor().getPosition().getX(),
+                    model.getCursor().getPosition().getY());
+        }
     }
 
     /**

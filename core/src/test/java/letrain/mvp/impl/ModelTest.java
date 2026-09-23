@@ -202,6 +202,34 @@ class ModelTest {
     }
 
     @Test
+    @DisplayName("the console is an overlay: the effective mode stays the one it was opened from")
+    void should_KeepEffectiveMode_When_ConsoleOpen() {
+        model.setMode(GameMode.DRIVE);
+        model.setMode(GameMode.COMMAND);
+
+        assertEquals(GameMode.COMMAND, model.getMode(), "input routing must still see the console");
+        assertEquals(GameMode.DRIVE, model.getEffectiveMode(),
+                "camera, ambience and menu keep behaving as DRIVE");
+
+        model.setMode(GameMode.RAILS);
+        assertEquals(GameMode.RAILS, model.getEffectiveMode(),
+                "outside the console both modes agree");
+    }
+
+    @Test
+    @DisplayName("the mode menu stays highlighted on the mode underneath the console")
+    void should_KeepMenuHighlight_When_ConsoleOpen() {
+        model.setMode(GameMode.DRIVE);
+        model.setMode(GameMode.COMMAND);
+
+        assertTrue(
+                model.getMenuModel().stream()
+                        .filter(option -> option.gameModeName().contains("Drive"))
+                        .anyMatch(option -> option.selectedIf().get()),
+                "the Drive entry must stay selected while the console is open");
+    }
+
+    @Test
     @DisplayName("should produce non-empty game objects and graph reports")
     void should_GenerateReports_When_Requested() {
         String objReport = model.getGameObjectsReport();

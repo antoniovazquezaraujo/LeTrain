@@ -38,6 +38,31 @@ class TerminalPresenterAmbienceTest {
     }
 
     @Test
+    @DisplayName("the console over DRIVE keeps the listener on the locomotive, not the cursor")
+    void should_KeepListenerOnLocomotive_When_ConsoleOpen() {
+        TerminalView view = mock(TerminalView.class);
+        when(view.getCols()).thenReturn(80);
+        when(view.getRows()).thenReturn(25);
+        Model model = new Model(1);
+        letrain.vehicle.rail.impl.Locomotive loco =
+                new letrain.vehicle.rail.impl.Locomotive(1, "A");
+        loco.setPosition(new letrain.map.Point(33, 44));
+        model.addLocomotive(loco);
+        model.setSelectedLocomotive(loco);
+        model.getCursor().setPosition(new letrain.map.Point(3, 4));
+        model.setMode(Model.GameMode.DRIVE);
+        model.setMode(Model.GameMode.COMMAND);
+
+        TerminalPresenter presenter = new TerminalPresenter(model, view);
+        AudioController audio = mock(AudioController.class);
+        presenter.audioController = audio;
+
+        presenter.updateAmbientAudio();
+
+        verify(audio).setListenerPosition(33f, 44f, 0f, 0);
+    }
+
+    @Test
     @DisplayName("without the glue, the legacy ambient keeps playing")
     void should_KeepLegacyAmbient_WithoutGlue() {
         TerminalView view = mock(TerminalView.class);

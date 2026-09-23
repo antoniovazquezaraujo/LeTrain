@@ -682,6 +682,11 @@ public class Model implements letrain.mvp.Model {
         return previousMode;
     }
 
+    @Override
+    public GameMode getEffectiveMode() {
+        return mode == GameMode.COMMAND ? previousMode : mode;
+    }
+
     @JsonIgnore
     public letrain.segments.RailwayGraph getRailwayGraph() {
         if (currentGraph == null) {
