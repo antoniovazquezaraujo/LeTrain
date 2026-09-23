@@ -51,6 +51,20 @@ public class GraphicPresenter extends ApplicationAdapter
     private java.util.Map<Character, com.badlogic.gdx.graphics.g2d.TextureRegion> glyphRegions =
             new java.util.HashMap<>();
 
+    /**
+     * Region of a glyph inside its own atlas page. The 128 px font atlas spans several pages and
+     * always reading {@code font.getRegion()} (page 0) rendered the wrong characters for every
+     * glyph packed on the following pages (bug #603: lowercase wagon aspects showed garbage).
+     */
+    static com.badlogic.gdx.graphics.g2d.TextureRegion glyphRegion(
+            com.badlogic.gdx.graphics.g2d.BitmapFont font,
+            com.badlogic.gdx.graphics.g2d.BitmapFont.Glyph glyph) {
+        com.badlogic.gdx.graphics.Texture pageTexture =
+                font.getRegions().get(glyph.page).getTexture();
+        return new com.badlogic.gdx.graphics.g2d.TextureRegion(pageTexture, glyph.u, glyph.v,
+                glyph.u2, glyph.v2);
+    }
+
     private com.badlogic.gdx.graphics.g3d.decals.Decal getGlyphDecal(char c) {
         if (!glyphRegions.containsKey(c)) {
             com.badlogic.gdx.graphics.g2d.BitmapFont.Glyph glyph = font.getData().getGlyph(c);
@@ -58,9 +72,7 @@ public class GraphicPresenter extends ApplicationAdapter
                 return null;
             }
 
-            com.badlogic.gdx.graphics.g2d.TextureRegion region =
-                    new com.badlogic.gdx.graphics.g2d.TextureRegion(font.getRegion().getTexture(),
-                            glyph.u, glyph.v, glyph.u2, glyph.v2);
+            com.badlogic.gdx.graphics.g2d.TextureRegion region = glyphRegion(font, glyph);
             region.flip(false, true); // Corregir inversión vertical
             glyphRegions.put(c, region);
         }
