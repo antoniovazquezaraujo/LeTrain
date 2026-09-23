@@ -51,6 +51,20 @@ public class GraphicPresenter extends ApplicationAdapter
     private java.util.Map<Character, com.badlogic.gdx.graphics.g2d.TextureRegion> glyphRegions =
             new java.util.HashMap<>();
 
+    /**
+     * Region of a glyph inside its own atlas page. The 128 px font atlas spans several pages and
+     * always reading {@code font.getRegion()} (page 0) rendered the wrong characters for every
+     * glyph packed on the following pages (bug #603: lowercase wagon aspects showed garbage).
+     */
+    static com.badlogic.gdx.graphics.g2d.TextureRegion glyphRegion(
+            com.badlogic.gdx.graphics.g2d.BitmapFont font,
+            com.badlogic.gdx.graphics.g2d.BitmapFont.Glyph glyph) {
+        com.badlogic.gdx.graphics.Texture pageTexture =
+                font.getRegions().get(glyph.page).getTexture();
+        return new com.badlogic.gdx.graphics.g2d.TextureRegion(pageTexture, glyph.u, glyph.v,
+                glyph.u2, glyph.v2);
+    }
+
     private com.badlogic.gdx.graphics.g3d.decals.Decal getGlyphDecal(char c) {
         if (!glyphRegions.containsKey(c)) {
             com.badlogic.gdx.graphics.g2d.BitmapFont.Glyph glyph = font.getData().getGlyph(c);
@@ -58,9 +72,7 @@ public class GraphicPresenter extends ApplicationAdapter
                 return null;
             }
 
-            com.badlogic.gdx.graphics.g2d.TextureRegion region =
-                    new com.badlogic.gdx.graphics.g2d.TextureRegion(font.getRegion().getTexture(),
-                            glyph.u, glyph.v, glyph.u2, glyph.v2);
+            com.badlogic.gdx.graphics.g2d.TextureRegion region = glyphRegion(font, glyph);
             region.flip(false, true); // Corregir inversión vertical
             glyphRegions.put(c, region);
         }
@@ -274,6 +286,9 @@ public class GraphicPresenter extends ApplicationAdapter
 
     private float stateTime = 0f;
 
+    /** Terrain block (in cells) materialized around the camera target, half the side. */
+    private static final int CAMERA_VIEW_RADIUS = 28;
+
     @Override
     public letrain.audio.AudioController getAudioController() {
         return audioController;
@@ -292,6 +307,14 @@ public class GraphicPresenter extends ApplicationAdapter
             int radius = model.getEconomyManager().getViewRadius();
             model.getGroundMap().renderBlock(cp.getX() - radius, cp.getY() - radius, radius * 2 + 1,
                     radius * 2 + 1);
+
+            // La cámara mira mucho más allá del bloque del cursor: materializamos también el
+            // terreno que sobrevuela, o su borde se ve como el VOID negro en el horizonte.
+            float camTargetX = cameraController.getTargetX();
+            float camTargetZ = cameraController.getTargetZ();
+            model.getGroundMap().renderBlock(Math.round(camTargetX) - CAMERA_VIEW_RADIUS,
+                    Math.round(camTargetZ) - CAMERA_VIEW_RADIUS, CAMERA_VIEW_RADIUS * 2 + 1,
+                    CAMERA_VIEW_RADIUS * 2 + 1);
 
             simulationController.tick();
             if (hud != null) {

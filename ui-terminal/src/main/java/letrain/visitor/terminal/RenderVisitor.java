@@ -356,7 +356,8 @@ public class RenderVisitor implements Visitor {
             } else {
                 view.setFgColor(color(TerminalPalette.Token.LABEL));
             }
-            view.set(renderPos.getX() + 1, renderPos.getY(), String.valueOf(station.getId()));
+            int step = labelStep(renderPos, track.getPosition());
+            view.set(renderPos.getX() + step, renderPos.getY(), String.valueOf(station.getId()));
             view.setUnderline(false);
         }
         resetColors();
@@ -383,8 +384,9 @@ public class RenderVisitor implements Visitor {
                 view.setFgColor(color(TerminalPalette.Token.LABEL));
             }
             String arrow = speedSignalArrow(sensor.getCreationDir());
-            view.set(renderPos.getX() + 1, renderPos.getY(), arrow);
-            view.set(renderPos.getX() + 2, renderPos.getY(), String.valueOf(sensor.getId()));
+            int step = labelStep(renderPos, sensor.getTrack().getPosition());
+            view.set(renderPos.getX() + step, renderPos.getY(), arrow);
+            view.set(renderPos.getX() + 2 * step, renderPos.getY(), String.valueOf(sensor.getId()));
             view.setUnderline(false);
         }
         resetColors();
@@ -409,8 +411,10 @@ public class RenderVisitor implements Visitor {
                 view.setFgColor(color(TerminalPalette.Token.LABEL));
             }
             String arrow = speedSignalArrow(semaphore.getCreationDir());
-            view.set(renderPos.getX() + 1, renderPos.getY(), arrow);
-            view.set(renderPos.getX() + 2, renderPos.getY(), String.valueOf(semaphore.getId()));
+            int step = labelStep(renderPos, semaphore.getPosition());
+            view.set(renderPos.getX() + step, renderPos.getY(), arrow);
+            view.set(renderPos.getX() + 2 * step, renderPos.getY(),
+                    String.valueOf(semaphore.getId()));
             view.setUnderline(false);
         }
         resetColors();
@@ -445,11 +449,24 @@ public class RenderVisitor implements Visitor {
                 view.setFgColor(color(TerminalPalette.Token.LABEL));
             }
             String arrow = speedSignalArrow(speedSignal.getCreationDir());
-            view.set(renderPos.getX() + 1, renderPos.getY(), arrow);
-            view.set(renderPos.getX() + 2, renderPos.getY(), String.valueOf(speedSignal.getId()));
+            int step = labelStep(renderPos, speedSignal.getPosition());
+            view.set(renderPos.getX() + step, renderPos.getY(), arrow);
+            view.set(renderPos.getX() + 2 * step, renderPos.getY(),
+                    String.valueOf(speedSignal.getId()));
             view.setUnderline(false);
         }
         resetColors();
+    }
+
+    /**
+     * Column step for the arrow/ID drawn next to an element icon: to the outer side, so a signal on
+     * the west side does not paint its label over the rails.
+     */
+    private int labelStep(Point renderPos, Point trackPos) {
+        if (trackPos == null) {
+            return 1;
+        }
+        return renderPos.getX() < trackPos.getX() ? -1 : 1;
     }
 
     private String speedSignalArrow(letrain.map.Dir dir) {

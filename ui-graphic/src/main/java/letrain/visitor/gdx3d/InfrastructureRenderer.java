@@ -222,11 +222,11 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
         letrain.map.Dir dir = semaphore.getCreationDir();
         if (dir != null) {
-            float dx = PathGeometry.getDirX(dir);
-            float dz = PathGeometry.getDirZ(dir);
-            offsetX = dz * 1.0f;
-            offsetZ = -dx * 1.0f;
-            angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
+            // Right-hand side of the track, like the 2D terminal (facing E, right is S), and the
+            // plate facing the traffic that reads it (same orientation as speed signals).
+            offsetX = PathGeometry.getRightX(dir);
+            offsetZ = PathGeometry.getRightZ(dir);
+            angle = PathGeometry.getFacingDegrees(dir);
         }
 
         instance.transform.setToTranslation(x + 0.5f + offsetX, 0.5f, y + 0.5f + offsetZ);
@@ -579,13 +579,11 @@ public class InfrastructureRenderer extends BaseSubRenderer {
 
         Dir creationDir = speedSignal.getCreationDir();
         if (creationDir != null) {
-            float dx = PathGeometry.getDirX(creationDir);
-            float dz = PathGeometry.getDirZ(creationDir);
-            // Position the signal to the side of the track (like semaphore)
-            offsetX = dz * 1.0f;
-            offsetZ = -dx * 1.0f;
-            angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees
-                    + 180f;
+            // Right-hand side of the track (like semaphores and the 2D client) and the plate
+            // facing the traffic that reads it.
+            offsetX = PathGeometry.getRightX(creationDir);
+            offsetZ = PathGeometry.getRightZ(creationDir);
+            angle = PathGeometry.getFacingDegrees(creationDir);
         }
 
         instance.transform.setToTranslation(x + 0.5f + offsetX, 0.5f, y + 0.5f + offsetZ);

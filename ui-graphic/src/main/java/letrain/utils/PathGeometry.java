@@ -25,6 +25,31 @@ public class PathGeometry {
         }
     }
 
+    /**
+     * X component of the right-hand side of a direction, with the same half-cell scale as
+     * {@link #getDirX}. Mirrors the 2D terminal's {@code getRightSide}: facing east, the right is
+     * south. Track elements (semaphores, speed signals…) are placed at this side of the track.
+     */
+    public static float getRightX(Dir dir) {
+        return -getDirZ(dir);
+    }
+
+    /** Z component of the right-hand side of a direction (see {@link #getRightX}). */
+    public static float getRightZ(Dir dir) {
+        return getDirX(dir);
+    }
+
+    /**
+     * Model rotation (degrees) of semaphores and speed signals: half a turn from the direction
+     * vector, so the plate faces the traffic that reads it (the train passes and sees it). The
+     * renderer places the base and the ID to the right of the track with {@link #getRightX}.
+     */
+    public static float getFacingDegrees(Dir dir) {
+        float dx = getDirX(dir);
+        float dz = getDirZ(dir);
+        return (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
+    }
+
     public static float getDirZ(Dir dir) {
         if (dir == null) {
             return 0;

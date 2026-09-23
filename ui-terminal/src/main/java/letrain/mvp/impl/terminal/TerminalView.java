@@ -503,8 +503,8 @@ public class TerminalView implements letrain.mvp.View {
             return;
         }
         menuBox.setForegroundColor(DISABLED_FG_COLOR);
-        menuBox.putString(menuBoxPosition.withRelative(1, 4),
-                text + " | [R]: Record " + (gameViewListener.isRecordingCommands() ? "ON" : "OFF"));
+        menuBox.putString(menuBoxPosition.withRelative(1, 4), text + " | [R]: Record "
+                + (gameViewListener.isRecordingCommands() ? "ON" : "OFF") + " | [X]: Experiment");
         menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
     }
 

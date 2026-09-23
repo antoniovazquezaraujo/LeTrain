@@ -1,7 +1,11 @@
 package letrain.mvp.impl.graphic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import letrain.map.Dir;
@@ -27,6 +31,26 @@ class Gdx3DInputHandlerConsoleTest {
     private GraphicPresenter view;
     private Gdx3DInputHandler handler;
     private RailTrackMaker trackMaker;
+    private CameraController cameraController;
+    private com.badlogic.gdx.Input previousInput;
+
+    @org.junit.jupiter.api.AfterEach
+    void restoreGdxInput() {
+        com.badlogic.gdx.Gdx.input = previousInput;
+    }
+
+    /**
+     * Emulates the real key flow: typed characters go through {@code view.onChar} into the handler,
+     * and {@code Gdx.input} answers the modifier queries.
+     */
+    private void installTypedKeyBridge() {
+        previousInput = com.badlogic.gdx.Gdx.input;
+        com.badlogic.gdx.Gdx.input = mock(com.badlogic.gdx.Input.class);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            handler.onChar(invocation.getArgument(0));
+            return null;
+        }).when(view).onChar(org.mockito.ArgumentMatchers.any());
+    }
 
     private static InputEvent key(KeyType type) {
         return new InputEvent(type);
@@ -57,7 +81,8 @@ class Gdx3DInputHandlerConsoleTest {
         when(makerPresenter.getUndoRedoHistory()).thenReturn(null);
         trackMaker = new RailTrackMaker(makerPresenter);
 
-        handler = new Gdx3DInputHandler(model, view, new CameraController(model), trackMaker,
+        cameraController = new CameraController(model);
+        handler = new Gdx3DInputHandler(model, view, cameraController, trackMaker,
                 mock(letrain.audio.AudioController.class));
     }
 
@@ -285,6 +310,37 @@ class Gdx3DInputHandlerConsoleTest {
     }
 
     @Test
+    @DisplayName("shifted H/J/K/L are typed characters: they build locomotives in TRAINS mode")
+    void shiftedVimKeys_buildLocomotives_inTrainsMode() {
+        trackAt(model, 0, 0).connect(Dir.E, trackAt(model, 1, 0));
+        model.getRailMap().getTrackAt(1, 0).connect(Dir.W, model.getRailMap().getTrackAt(0, 0));
+        model.getCursor().setPosition(new Point(0, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.TRAINS);
+        installTypedKeyBridge();
+
+        handler.keyTyped('H');
+
+        assertEquals(1, model.getLocomotives().size(), "Shift+H must build a locomotive");
+        assertEquals("H", model.getLocomotives().get(0).getAspect());
+    }
+
+    @Test
+    @DisplayName("plain lowercase h in TRAINS mode still builds a wagon")
+    void plainH_buildsWagon_inTrainsMode() {
+        trackAt(model, 0, 0).connect(Dir.E, trackAt(model, 1, 0));
+        model.getRailMap().getTrackAt(1, 0).connect(Dir.W, model.getRailMap().getTrackAt(0, 0));
+        model.getCursor().setPosition(new Point(0, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.TRAINS);
+
+        handler.onChar(charKey('h'));
+
+        assertEquals(1, model.getWagons().size(), "lowercase h must build a wagon");
+        assertEquals("h", model.getWagons().get(0).getAspect());
+    }
+
+    @Test
     @DisplayName("history survives a model/handler swap like the one an undo performs")
     void history_survivesHandlerRecreation() {
         executeInConsole("go 5,0; face e; write 1;");
@@ -313,6 +369,52 @@ class Gdx3DInputHandlerConsoleTest {
     }
 
     @Test
+    @DisplayName("in TRAINS the reserved letters X and R build locomotives")
+    void trainsMode_buildsLocomotivesWithReservedLetters() {
+        trackAt(model, 0, 0).connect(Dir.E, trackAt(model, 1, 0));
+        model.getRailMap().getTrackAt(1, 0).connect(Dir.W, model.getRailMap().getTrackAt(0, 0));
+        model.getCursor().setPosition(new Point(0, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.TRAINS);
+
+        handler.onChar(charKey('X'));
+
+        assertEquals(1, model.getLocomotives().size(), "X must build a locomotive in TRAINS");
+        assertEquals("X", model.getLocomotives().get(0).getAspect());
+        verify(view, never()).toggleExperimentMode();
+    }
+
+    @Test
+    @DisplayName("in TRAINS, z builds a wagon and does not change the camera")
+    void trainsMode_zBuildsWagon_withoutCameraChange() {
+        trackAt(model, 0, 0).connect(Dir.E, trackAt(model, 1, 0));
+        model.getRailMap().getTrackAt(1, 0).connect(Dir.W, model.getRailMap().getTrackAt(0, 0));
+        model.getCursor().setPosition(new Point(0, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.TRAINS);
+        installTypedKeyBridge();
+        CameraController.CameraMode before = cameraController.getMode();
+
+        handler.keyTyped('z');
+
+        assertEquals(1, model.getWagons().size(), "z must build a wagon in TRAINS");
+        assertEquals("z", model.getWagons().get(0).getAspect());
+        assertEquals(before, cameraController.getMode(), "the camera must not change in TRAINS");
+    }
+
+    @Test
+    @DisplayName("outside TRAINS, z still cycles the camera and builds nothing")
+    void cameraKey_worksOutsideTrains() {
+        installTypedKeyBridge();
+        CameraController.CameraMode before = cameraController.getMode();
+
+        handler.keyTyped('z');
+
+        assertNotEquals(before, cameraController.getMode());
+        assertTrue(model.getWagons().isEmpty() && model.getLocomotives().isEmpty());
+    }
+
+    @Test
     @DisplayName("running a command from the console also returns to the previous mode")
     void consoleCommand_returnsToPreviousMode() {
         model.setMode(Model.GameMode.TRAINS);
@@ -322,5 +424,20 @@ class Gdx3DInputHandlerConsoleTest {
         handler.onChar(key(KeyType.Enter));
 
         assertEquals(Model.GameMode.TRAINS, model.getMode());
+    }
+
+    @Test
+    @DisplayName("in TRAINS, R builds the locomotive with aspect R")
+    void trainsMode_rBuildsLocomotive() {
+        trackAt(model, 0, 0).connect(Dir.E, trackAt(model, 1, 0));
+        model.getRailMap().getTrackAt(1, 0).connect(Dir.W, model.getRailMap().getTrackAt(0, 0));
+        model.getCursor().setPosition(new Point(0, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.TRAINS);
+
+        handler.onChar(charKey('R'));
+
+        assertEquals(1, model.getLocomotives().size(), "R must build a locomotive in TRAINS");
+        assertEquals("R", model.getLocomotives().get(0).getAspect());
     }
 }

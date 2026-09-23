@@ -1497,9 +1497,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
         Dir cursorDir = Dir.E;
         String prefix = cursorPrefix();
-        if (c.toUpperCase().equals(c)) {
+        // Uppercase builds a locomotive. Some terminals report the unshifted character, so the
+        // shift flag counts as uppercase too.
+        if (Character.isUpperCase(cChar) || keyEvent.isShiftDown()) {
+            String aspect = c.toUpperCase(java.util.Locale.ROOT);
             int locoId = model.peekNextLocomotiveId();
-            Locomotive locomotive = new Locomotive(locoId, c);
+            Locomotive locomotive = new Locomotive(locoId, aspect);
             int trainId = model.peekNextTrainId();
             Train train = new Train(trainId);
             train.pushBack(locomotive);
@@ -1520,7 +1523,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             train.getSafetyManager().claimOccupiedSegments();
             cursorDir = locomotive.getDir();
             lastCreatedLoco = locomotive;
-            journalEditingCommand(prefix + "new locomotive " + c + " "
+            journalEditingCommand(prefix + "new locomotive " + aspect + " "
                     + locomotive.getColor().toLowerCase() + ";");
         } else {
             Wagon wagon = new Wagon(c);
