@@ -24,6 +24,13 @@ public final class VisualPalette {
     private static final int DUSK = 1;
     private static final int NIGHT = 2;
 
+    /**
+     * Day/night ratio at which the emissive lights come on. Emissive tokens never dim, but they
+     * should not glow in broad daylight either; one shared threshold keeps the lamp and its glow
+     * switching on together in both clients.
+     */
+    public static final double LIGHTS_ON_RATIO = 0.1;
+
     /** Keys are {@code [token][phase]} as 0xRRGGBB. */
     private static final int[][] KEYS = {
             // AMBIENT_LIGHT: neutral day, warm dusk, blue night
@@ -65,6 +72,18 @@ public final class VisualPalette {
             return mix(keys[DAY], keys[DUSK], (float) (ratio * 2.0));
         }
         return mix(keys[DUSK], keys[NIGHT], (float) ((ratio - 0.5) * 2.0));
+    }
+
+    /**
+     * How strongly the emissive lights burn at a ratio: 0 below {@link #LIGHTS_ON_RATIO} (day), 1
+     * at night.
+     */
+    public static float lightsOnFactor(double dayNightRatio) {
+        double ratio = Math.max(0.0, Math.min(1.0, dayNightRatio));
+        if (ratio <= LIGHTS_ON_RATIO) {
+            return 0f;
+        }
+        return (float) ((ratio - LIGHTS_ON_RATIO) / (1.0 - LIGHTS_ON_RATIO));
     }
 
     /** Perceptual (linear light) interpolation between two 0xRRGGBB colours. */

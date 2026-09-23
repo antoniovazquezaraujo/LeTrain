@@ -1398,7 +1398,7 @@ public class GraphicPresenter extends ApplicationAdapter
      * train.
      */
     private void updateHeadlights(double ratio) {
-        float intensity = HEADLIGHT_INTENSITY * (float) ratio;
+        float intensity = HEADLIGHT_INTENSITY * VisualPalette.lightsOnFactor(ratio);
         setColor(headlightColor, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, ratio));
         for (com.badlogic.gdx.graphics.g3d.environment.PointLight light : headlightLights) {
             light.intensity = 0f;

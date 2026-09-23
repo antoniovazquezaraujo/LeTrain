@@ -2,6 +2,7 @@ package letrain.visitor.terminal;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
 import java.util.List;
@@ -276,6 +277,45 @@ class RenderVisitorTest {
         visitor.visitRailTrack(ahead);
 
         verify(view, never()).setBgColor(litBoard(palette, 1, 0));
+    }
+
+    @Test
+    @DisplayName("with the terminal band already off day, the beam still waits for the lights-on ratio")
+    void visitModel_shouldNotCastHeadlightBeam_beforeDusk() {
+        // 0.08 is a ratio where the terminal band left day (>0) but the shared lights-on threshold
+        // (0.1) has not been crossed, so this pins the headlight gate, not the palette band.
+        assertTrue(TerminalPalette.band(0.08f, -1f) > 0f);
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+        // From here on only the frame's own drawing counts: the constructor paints with the day
+        // palette before the visitor knows the clock.
+        clearInvocations(view);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(0.08f);
+
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+        RailTrack locoTrack = new RailTrack();
+        locoTrack.setPosition(new Point(5, 5));
+        loco.setTrack(locoTrack);
+        loco.setPosition(new Point(5, 5));
+        loco.setDir(Dir.E);
+        when(model.getLocomotives()).thenReturn(List.of(loco));
+
+        visitor.visitModel(model);
+
+        RailTrack ahead = new RailTrack();
+        ahead.setPosition(new Point(6, 5));
+        visitor.visitRailTrack(ahead);
+
+        // Only the band's board colour may ever be set as background: nothing is lit.
+        float band = TerminalPalette.band(0.08f, -1f);
+        TextColor bandBoard =
+                palette.colorOf(TerminalPalette.rgbFor(band).get(TerminalPalette.Token.BOARD));
+        verify(view, never()).setBgColor(argThat(c -> c != null && !c.equals(bandBoard)));
     }
 
     /** Fondo esperado de una celda iluminada con factor {@code (dx, dy)} respecto a la loco. */

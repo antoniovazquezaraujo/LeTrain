@@ -14,6 +14,7 @@ import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.impl.terminal.TerminalView;
+import letrain.palette.VisualPalette;
 import letrain.segments.BlockManager;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
@@ -111,9 +112,9 @@ public class RenderVisitor implements Visitor {
     }
 
     /** Recalcula las celdas que iluminan los faros; de día no hay haz. */
-    private void updateHeadlights() {
+    private void updateHeadlights(float dayNightRatio) {
         litCells.clear();
-        if (paletteBand <= 0f || model.getLocomotives() == null) {
+        if (VisualPalette.lightsOnFactor(dayNightRatio) <= 0f || model.getLocomotives() == null) {
             return;
         }
         for (Locomotive locomotive : model.getLocomotives()) {
@@ -223,7 +224,7 @@ public class RenderVisitor implements Visitor {
         }
         this.showId = model.isShowId();
         this.mode = model.getMode();
-        updateHeadlights();
+        updateHeadlights(dayNightRatio);
         selectedLocomotive = model.getSelectedLocomotive();
         selectedFork = model.getSelectedFork();
         selectedStation = model.getSelectedStation();

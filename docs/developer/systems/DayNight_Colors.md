@@ -147,7 +147,9 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
    resaltados conservan color y contraste de noche (son información de juego, no decorado).
 4. **Colores de jugador**: solo atenuación global (≤ 45 % de noche); no se re-mapean a variantes.
 5. **Emisivos**: faros de locomotora, farolas y ventanas iluminadas se añaden como tokens
-   "emisivos" que no se atenúan (fase 1e); son la guía visual de noche.
+   "emisivos" que no se atenúan (fase 1e); son la guía visual de noche. Lámpara y luz se encienden a
+   la vez: umbral compartido `VisualPalette.LIGHTS_ON_RATIO` (0,1) y rampa `lightsOnFactor` en 3D y
+   2D.
 6. **Rendimiento**: interpolar la paleta una vez por frame (no por instancia); los materiales
    actualizan su `ColorAttribute` solo cuando el token cambia.
 
@@ -199,7 +201,9 @@ Estado: **1a, 1b y 1d hechas; 1e parcial (faros de locomotora)** (1c pendiente).
   semiángulo 40°, tope `MAX_LIGHT`), y las celdas que ilumina se pintan mezclando su color nocturno
   con el diurno, **incluido el fondo**, así que el haz "aclara" vía y terreno. El túnel oculto (fuera
   del modo Rails, donde ni tren ni vía se dibujan) también esconde la luz: la locomotora en túnel no
-  proyecta haz y las celdas de túnel no se iluminan.
+  proyecta haz y las celdas de túnel no se iluminan. Todo el sistema enciende con el mismo umbral
+  (`VisualPalette.LIGHTS_ON_RATIO`) y rampa (`lightsOnFactor`), para que lámpara, resplandor y haz
+  aparezcan a la vez en ambos clientes.
 
 ## Decisiones pendientes
 

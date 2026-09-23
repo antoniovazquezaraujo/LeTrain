@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import java.util.List;
+import letrain.palette.VisualPalette;
 import letrain.track.CargoTypes;
 import letrain.utils.PathGeometry;
 import letrain.vehicle.Tractor;
@@ -201,8 +202,8 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
 
         // Headlight lamps (phase 1e): emissive dots on the front, only after dark
-        if (!locomotive.isDestroying() && resourceContext.getDayNightRatio() > 0.1
-                && resourceContext.headlightModel != null) {
+        if (!locomotive.isDestroying() && resourceContext.headlightModel != null
+                && VisualPalette.lightsOnFactor(resourceContext.getDayNightRatio()) > 0f) {
             v1.set(renderTangent).nor();
             float dxL = v1.x;
             float dzL = v1.z;
