@@ -367,6 +367,33 @@ public class Gdx3DResourceContext implements Disposable {
         setDiffuse(terrainWallModel,
                 palette.color(VisualPalette.Token.STRUCTURE_TERRAIN_WALL, dayNightRatio));
         setPortalStone(palette.color(VisualPalette.Token.STRUCTURE_TUNNEL_PORTAL, dayNightRatio));
+        // Phase 1c: track and train base materials
+        setDiffuse(railModel, palette.color(VisualPalette.Token.TRACK_RAIL, dayNightRatio));
+        setDiffuse(inactiveRailModel,
+                palette.color(VisualPalette.Token.TRACK_RAIL_INACTIVE, dayNightRatio));
+        setDiffuse(locomotiveModel,
+                palette.color(VisualPalette.Token.TRAIN_LOCOMOTIVE, dayNightRatio));
+        setDiffuse(wagonModel, palette.color(VisualPalette.Token.TRAIN_WAGON, dayNightRatio));
+    }
+
+    /**
+     * Atenúa un color de jugador (librea, vagón, vía bloqueada) según el ratio día/noche; los
+     * avisos y resaltados no pasan por aquí.
+     */
+    public Color attenuatePlayerColor(Color color) {
+        return attenuate(color, VisualPalette.playerColorFactor(dayNightRatio));
+    }
+
+    /**
+     * Devuelve una **copia** atenuada del color; nunca modifica el original, que muchas veces es
+     * una constante compartida de LibGDX ({@code Color.YELLOW}…). Mutarla en sitio oscurecía la
+     * constante para siempre (una loco amarilla se quedaba negra tras el primer anochecer).
+     */
+    static Color attenuate(Color color, float factor) {
+        if (color == null) {
+            return null;
+        }
+        return new Color(color.r * factor, color.g * factor, color.b * factor, color.a);
     }
 
     /** Last resolved colour of a token; the ground renderer uses it for walls and edges. */

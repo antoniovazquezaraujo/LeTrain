@@ -159,15 +159,21 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 |---|---|---|
 | 1a | `VisualPalette` + ambiente 3D (luz, fondo, mesa, rejilla) | El mundo se apaga con `getDayNightRatio()`; test de paleta determinista |
 | 1b | Terreno (campos, agua, montaña, balasto, túnel, pared) | Hecha: tokens de terreno en `VisualPalette` y materiales del `Gdx3DResourceContext`/`GroundRenderer` |
-| 1c | Elementos, vía y trenes | Materiales por token; avisos intactos |
+| 1c | Elementos, vía y trenes | Hecha: tokens de vía/trenes base + atenuación de colores de jugador; avisos intactos |
 | 1d | 2D: paleta día/noche del terminal (familia clara) | Hecha: `TerminalPalette` + wiring del `RenderVisitor` |
 | 1e | Emisivos (faros/farolas) y niebla/cielo fino | Parcial: **faros de locomotora** (luz real en 3D + haz simulado en 2D); farolas/ventanas y niebla pendientes; coordinar con #480 |
 
-Estado: **1a, 1b y 1d hechas; 1e parcial (faros de locomotora)** (1c pendiente).
+Estado: **1a, 1b, 1c y 1d hechas; 1e parcial (faros de locomotora)** (farolas/ventanas y niebla
+pendientes).
 
 - 3D (1a): `VisualPalette` (core, `letrain.palette`) con `AMBIENT_LIGHT`, `SUN_LIGHT`, `SKY` y
   `TABLE_BOARD`; el `GraphicPresenter` los aplica cada tick (luz ambiental, sol direccional según
   `SolarModel`, color de fondo y tablero).
+- Vía y trenes 3D (1c): `VisualPalette` gana `TRACK_RAIL`, `TRACK_RAIL_INACTIVE`, `TRAIN_LOCOMOTIVE`
+  y `TRAIN_WAGON` (materiales base, atenuados de noche); la librea de jugador, los chasis de vagón
+  y el tinte de vía bloqueada se **atenúan** con `playerColorFactor` (1.0 → 0.8 → 0.55) sin
+  re-mapearse. Avisos, semáforos, señales, sensores, resaltados, cursor y fuego se quedan como
+  estaban (información de juego).
 - Horizonte 3D: el fondo se reparte con `glScissor` según la línea de horizonte real (pitch de la
   cámara y FOV): **cielo** por encima y token `VOID` (negro) por debajo, para lo inexplorado. La
   geometría se dibuja encima de ambos, así que la línea solo se ve donde no hay mundo.

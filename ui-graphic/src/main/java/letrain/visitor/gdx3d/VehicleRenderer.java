@@ -162,7 +162,8 @@ public class VehicleRenderer extends BaseSubRenderer {
 
         ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
         if (locomotive.getColor() != null && !instance.materials.isEmpty()) {
-            Color locoColor = getLibGdxColor(locomotive.getColor());
+            Color locoColor =
+                    resourceContext.attenuatePlayerColor(getLibGdxColor(locomotive.getColor()));
             if (locoColor != null) {
                 instance.materials.get(0)
                         .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -270,6 +271,8 @@ public class VehicleRenderer extends BaseSubRenderer {
                     || locomotive.getColor().equalsIgnoreCase("YELLOW_BRIGHT"))) {
                 labelColor = Color.BLACK;
             }
+            // Decals no reciben la luz de la escena: se atenúan a mano de noche.
+            labelColor = resourceContext.attenuatePlayerColor(labelColor);
 
             addLabel(v1, "" + locomotive.getId(), v2, v3, labelColor, 0.5f);
 
@@ -332,7 +335,7 @@ public class VehicleRenderer extends BaseSubRenderer {
 
         ModelInstance instance = resourceContext.getModelInstance(chassisModel);
         instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                .createDiffuse(chassisColor));
+                .createDiffuse(resourceContext.attenuatePlayerColor(chassisColor)));
 
         float renderX = wagon.getPosition().getX() + 0.5f;
         float renderY = wagon.getPosition().getY() + 0.5f;
@@ -488,11 +491,13 @@ public class VehicleRenderer extends BaseSubRenderer {
 
             v1.set(renderX + perpXW, 0.5f, renderY + perpZW);
             v2.set(perpXW, 0, perpZW).nor();
-            addLabel(v1, wagon.getAspect(), v2);
+            addLabel(v1, wagon.getAspect(), v2, null,
+                    resourceContext.attenuatePlayerColor(Color.WHITE), 1.0f);
 
             v1.set(renderX - perpXW, 0.5f, renderY - perpZW);
             v2.set(-perpXW, 0, -perpZW).nor();
-            addLabel(v1, wagon.getAspect(), v2);
+            addLabel(v1, wagon.getAspect(), v2, null,
+                    resourceContext.attenuatePlayerColor(Color.WHITE), 1.0f);
         }
     }
 
