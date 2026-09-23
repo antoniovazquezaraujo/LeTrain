@@ -476,6 +476,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void executeCommand(String cmd) {
         log.info("Execute command: " + cmd);
         boolean fromConsole = model.getMode() == letrain.mvp.Model.GameMode.COMMAND;
+        letrain.mvp.Model.GameMode returnMode = model.getPreviousMode();
         // Capture the cursor BEFORE executing so the journaled copy is self-positioned and the
         // replay (undo) is deterministic regardless of any (unrecorded) keyboard navigation.
         String prefix = cursorPrefix();
@@ -511,7 +512,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
         if (fromConsole && model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
             // Back from the console: return to the mode the player was in.
-            model.setMode(model.getPreviousMode());
+            model.setMode(returnMode);
         } else if (!fromConsole) {
             // The '.' repeat path keeps the old behaviour of landing in RAILS.
             model.setMode(letrain.mvp.Model.GameMode.RAILS);

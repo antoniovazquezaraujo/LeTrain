@@ -297,4 +297,30 @@ class Gdx3DInputHandlerConsoleTest {
         handler.onChar(key(KeyType.ArrowUp));
         assertEquals("go 5,0; face e; write 1;", model.getCommandText());
     }
+
+    @Test
+    @DisplayName("leaving the console with Esc returns to the mode the player was in")
+    void consoleExit_returnsToPreviousMode() {
+        model.setMode(Model.GameMode.DRIVE);
+
+        handler.onChar(charKey(':'));
+        assertEquals(Model.GameMode.COMMAND, model.getMode(), "':' opens the console");
+
+        handler.onChar(key(KeyType.Escape));
+
+        assertEquals(Model.GameMode.DRIVE, model.getMode());
+        assertEquals("", model.getCommandText());
+    }
+
+    @Test
+    @DisplayName("running a command from the console also returns to the previous mode")
+    void consoleCommand_returnsToPreviousMode() {
+        model.setMode(Model.GameMode.TRAINS);
+
+        handler.onChar(charKey(':'));
+        typeCommand("help");
+        handler.onChar(key(KeyType.Enter));
+
+        assertEquals(Model.GameMode.TRAINS, model.getMode());
+    }
 }
