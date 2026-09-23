@@ -482,6 +482,15 @@ public class Locomotive extends Linker implements Tractor {
         return getTrain() != null && getTrain().getDirectorLinker() == this;
     }
 
+    /**
+     * True when this locomotive is the head of its train (the director, the "cabeza tractora") or
+     * travels alone. Only the head shows the headlights after dark; the rest of the locomotives in
+     * the consist keep theirs off.
+     */
+    public boolean isHeadLocomotive() {
+        return getTrain() == null || getTrain().getDirectorLinker() == this;
+    }
+
     public boolean isShowingDir() {
         if (showingDirTurns > 0) {
             showingDirTurns--;

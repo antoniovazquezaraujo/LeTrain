@@ -397,6 +397,57 @@ class RenderVisitorTest {
         verify(view, never()).set(eq(5), eq(5), eq("7")); // never over the track
     }
 
+    @Test
+    @DisplayName("only the head tractor lights up: a mid-train locomotive casts no beam")
+    void visitModel_shouldLightOnlyTheHeadLocomotive() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(1f);
+
+        Locomotive head = new Locomotive(1, "A");
+        Locomotive mid = new Locomotive(2, "B");
+        letrain.vehicle.rail.impl.Train train = new letrain.vehicle.rail.impl.Train(9);
+        train.pushBack(head);
+        train.pushBack(mid);
+        train.setDirectorLinker(head);
+
+        RailTrack headTrack = new RailTrack();
+        headTrack.setPosition(new Point(5, 5));
+        head.setTrack(headTrack);
+        head.setPosition(new Point(5, 5));
+        head.setDir(Dir.E);
+        head.setEngineOn(true);
+
+        RailTrack midTrack = new RailTrack();
+        midTrack.setPosition(new Point(20, 5));
+        mid.setTrack(midTrack);
+        mid.setPosition(new Point(20, 5));
+        mid.setDir(Dir.E);
+        mid.setEngineOn(true);
+
+        when(model.getLocomotives()).thenReturn(List.of(head, mid));
+
+        visitor.visitModel(model);
+
+        // The head lights the cell ahead...
+        RailTrack aheadOfHead = new RailTrack();
+        aheadOfHead.setPosition(new Point(6, 5));
+        visitor.visitRailTrack(aheadOfHead);
+        verify(view, atLeastOnce()).setBgColor(litBoard(palette, 1, 0));
+
+        // ...and the mid-train locomotive lights nothing of its own.
+        clearInvocations(view);
+        RailTrack aheadOfMid = new RailTrack();
+        aheadOfMid.setPosition(new Point(21, 5));
+        visitor.visitRailTrack(aheadOfMid);
+        verify(view, never()).setBgColor(litBoard(palette, 1, 0));
+    }
+
     /** Fondo esperado de una celda iluminada con factor {@code (dx, dy)} respecto a la loco. */
     private static TextColor litBoard(TerminalPalette palette, int dx, int dy) {
         float lit = Headlight.factor(dx, dy, Dir.E) * Headlight.MAX_LIGHT;
