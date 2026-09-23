@@ -14,6 +14,7 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import letrain.mvp.input.InputEvent;
 import java.io.File;
@@ -32,6 +33,7 @@ import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.gdx3d.Gdx3DRenderer;
+import letrain.visitor.gdx3d.Headlights;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,8 +77,19 @@ public class GraphicPresenter extends ApplicationAdapter
     private final VisualPalette palette = new VisualPalette();
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute ambientAttribute;
     private com.badlogic.gdx.graphics.g3d.environment.DirectionalLight sunLight;
+    /** Real lights for the nearest locomotive headlights (ADR-022 phase 1e). */
+    private static final int HEADLIGHT_POOL = 4;
+
+    private static final float HEADLIGHT_INTENSITY = 25f;
+    private final com.badlogic.gdx.graphics.g3d.environment.PointLight[] headlightLights =
+            new com.badlogic.gdx.graphics.g3d.environment.PointLight[HEADLIGHT_POOL];
+    private final Color headlightColor = new Color();
+    private final Vector3 headlightPosition = new Vector3();
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute tableDiffuse;
+    private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute gridDiffuse;
+    private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute boxDiffuse;
     private final Color skyColor = new Color();
+    private final Color voidColor = new Color();
 
     private letrain.mvp.Model model;
     private Gdx3DRenderer renderer;
@@ -198,6 +211,10 @@ public class GraphicPresenter extends ApplicationAdapter
         sunLight = new DirectionalLight();
         sunLight.set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f);
         environment.add(sunLight);
+        for (int i = 0; i < headlightLights.length; i++) {
+            headlightLights[i] = new com.badlogic.gdx.graphics.g3d.environment.PointLight();
+            environment.add(headlightLights[i]);
+        }
 
         cam = cameraController.init(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
@@ -211,10 +228,11 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Rejilla para orientación (1x1 para coincidir con las celdas)
         modelBuilder.begin();
+        gridDiffuse = ColorAttribute.createDiffuse(Color.LIGHT_GRAY);
         com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpb =
                 modelBuilder.part("grid", GL20.GL_LINES, Usage.Position | Usage.ColorUnpacked,
-                        new com.badlogic.gdx.graphics.g3d.Material());
-        mpb.setColor(Color.LIGHT_GRAY);
+                        new com.badlogic.gdx.graphics.g3d.Material(gridDiffuse));
+        mpb.setColor(Color.WHITE);
         for (int i = -100; i <= 100; i += 1) {
             mpb.line(i, 0.01f, -100, i, 0.01f, 100);
             mpb.line(-100, 0.01f, i, 100, 0.01f, i);
@@ -224,11 +242,10 @@ public class GraphicPresenter extends ApplicationAdapter
         cameraGroupStrategy = new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam);
         decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(cameraGroupStrategy);
 
-        boxModel =
-                modelBuilder.createBox(0.8f, 0.8f, 0.8f,
-                        new com.badlogic.gdx.graphics.g3d.Material(
-                                ColorAttribute.createDiffuse(Color.FOREST)),
-                        Usage.Position | Usage.Normal);
+        boxDiffuse = ColorAttribute.createDiffuse(Color.FOREST);
+        boxModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
+                new com.badlogic.gdx.graphics.g3d.Material(boxDiffuse),
+                Usage.Position | Usage.Normal);
 
         spriteBatch = new SpriteBatch();
         font = FontManager.loadMonospaceFont(128); // High resolution for 3D Decal
@@ -313,12 +330,24 @@ public class GraphicPresenter extends ApplicationAdapter
         }
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        Gdx.gl.glClearColor(skyColor.r, skyColor.g, skyColor.b, 1f);
+        // Horizon split: sky above, unexplored void below; the world is drawn on top of both.
+        Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
+        Gdx.gl.glClearColor(voidColor.r, voidColor.g, voidColor.b, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+        int horizon = horizonScreenY();
+        if (horizon > 0) {
+            Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
+            Gdx.gl.glScissor(0, horizon, Gdx.graphics.getWidth(),
+                    Gdx.graphics.getHeight() - horizon);
+            Gdx.gl.glClearColor(skyColor.r, skyColor.g, skyColor.b, 1f);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+            Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
+        }
 
         // Actualizar instancias desde el modelo
         renderer.clear();
         renderer.visitModel(model, cam);
+        updateHeadlights(dayNightRatio());
         modelBatch.begin(cam);
         modelBatch.render(renderer.getInstances(), environment);
         // Render the background table slightly below ground level
@@ -1338,6 +1367,10 @@ public class GraphicPresenter extends ApplicationAdapter
         setColor(sunLight.color, palette.color(VisualPalette.Token.SUN_LIGHT, ratio));
         setColor(tableDiffuse.color, palette.color(VisualPalette.Token.TABLE_BOARD, ratio));
         setColor(skyColor, palette.color(VisualPalette.Token.SKY, ratio));
+        setColor(voidColor, palette.color(VisualPalette.Token.VOID, ratio));
+        setColor(gridDiffuse.color, palette.color(VisualPalette.Token.TABLE_GRID, ratio));
+        setColor(boxDiffuse.color, palette.color(VisualPalette.Token.DECOR_BOX, ratio));
+        resourceContext.applyTerrainPalette(palette, ratio);
 
         int dayOfYear = letrain.time.SolarModel.dayOfYear(now.day());
         double hour = now.hour() + now.minute() / 60.0;
@@ -1349,6 +1382,50 @@ public class GraphicPresenter extends ApplicationAdapter
         double a = Math.toRadians(azimuth);
         sunLight.direction.set((float) (-Math.cos(e) * Math.sin(a)), (float) -Math.sin(e),
                 (float) (Math.cos(e) * Math.cos(a))).nor();
+    }
+
+    /** Clock day/night ratio, or 0 (day) when there is no clock. */
+    private double dayNightRatio() {
+        if (model == null || model.getGameClock() == null) {
+            return 0.0;
+        }
+        return model.getGameClock().getDayNightRatio();
+    }
+
+    /**
+     * Lights the nearest locomotive headlights; off while the sun is up (phase 1e). Uses the
+     * rendered positions collected by the vehicle renderer this frame, so the light glides with the
+     * train.
+     */
+    private void updateHeadlights(double ratio) {
+        float intensity = HEADLIGHT_INTENSITY * VisualPalette.lightsOnFactor(ratio);
+        setColor(headlightColor, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, ratio));
+        for (com.badlogic.gdx.graphics.g3d.environment.PointLight light : headlightLights) {
+            light.intensity = 0f;
+        }
+        if (cam == null || intensity <= 0f) {
+            return;
+        }
+        List<Headlights.Source> nearest = Headlights.nearestTo(renderer.getHeadlightSources(),
+                cam.position, headlightLights.length);
+        for (int i = 0; i < nearest.size(); i++) {
+            Headlights.Source source = nearest.get(i);
+            headlightPosition.set(source.x() + source.dirX() * 0.6f, 0.7f,
+                    source.z() + source.dirZ() * 0.6f);
+            headlightLights[i].set(headlightColor, headlightPosition, intensity);
+        }
+    }
+
+    /**
+     * Screen Y (from the bottom, like glScissor) of the horizon: the camera pitch projected with
+     * the vertical FOV. Looking down, the horizon sits above the centre; looking up, below.
+     */
+    private int horizonScreenY() {
+        double halfFov = Math.toRadians(cam.fieldOfView / 2.0);
+        double pitch = Math.asin(Math.max(-1.0, Math.min(1.0, -cam.direction.y)));
+        double ndc = Math.tan(pitch) / Math.tan(halfFov);
+        int height = Gdx.graphics.getHeight();
+        return (int) Math.max(0, Math.min(height, Math.round(height * (1 + ndc) / 2.0)));
     }
 
     private static void setColor(Color target, int rgb) {

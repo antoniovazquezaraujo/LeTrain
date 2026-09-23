@@ -2,9 +2,11 @@ package letrain.visitor.terminal;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
 import java.util.List;
+import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Model;
 import letrain.mvp.impl.terminal.TerminalView;
@@ -217,5 +219,212 @@ class RenderVisitorTest {
                 palette.colorOf(TerminalPalette.rgbFor(band).get(TerminalPalette.Token.RAIL));
         visitor.visitRailTrack(new RailTrack());
         verify(view, atLeastOnce()).setFgColor(expected);
+    }
+
+    @Test
+    @DisplayName("at night a locomotive casts a headlight beam on the rail ahead")
+    void visitModel_shouldCastHeadlightBeam_atNight() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(1f);
+
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+        RailTrack locoTrack = new RailTrack();
+        locoTrack.setPosition(new Point(5, 5));
+        loco.setTrack(locoTrack);
+        loco.setPosition(new Point(5, 5));
+        loco.setDir(Dir.E);
+        when(model.getLocomotives()).thenReturn(List.of(loco));
+
+        visitor.visitModel(model);
+
+        RailTrack ahead = new RailTrack();
+        ahead.setPosition(new Point(6, 5));
+        visitor.visitRailTrack(ahead);
+
+        verify(view, atLeastOnce()).setBgColor(litBoard(palette, 1, 0));
+    }
+
+    @Test
+    @DisplayName("by day the headlight stays off")
+    void visitModel_shouldNotCastHeadlightBeam_byDay() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(0f);
+
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+        RailTrack locoTrack = new RailTrack();
+        locoTrack.setPosition(new Point(5, 5));
+        loco.setTrack(locoTrack);
+        loco.setPosition(new Point(5, 5));
+        loco.setDir(Dir.E);
+        when(model.getLocomotives()).thenReturn(List.of(loco));
+
+        visitor.visitModel(model);
+
+        RailTrack ahead = new RailTrack();
+        ahead.setPosition(new Point(6, 5));
+        visitor.visitRailTrack(ahead);
+
+        verify(view, never()).setBgColor(litBoard(palette, 1, 0));
+    }
+
+    @Test
+    @DisplayName("with the terminal band already off day, the beam still waits for the lights-on ratio")
+    void visitModel_shouldNotCastHeadlightBeam_beforeDusk() {
+        // 0.08 is a ratio where the terminal band left day (>0) but the shared lights-on threshold
+        // (0.1) has not been crossed, so this pins the headlight gate, not the palette band.
+        assertTrue(TerminalPalette.band(0.08f, -1f) > 0f);
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+        // From here on only the frame's own drawing counts: the constructor paints with the day
+        // palette before the visitor knows the clock.
+        clearInvocations(view);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(0.08f);
+
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+        RailTrack locoTrack = new RailTrack();
+        locoTrack.setPosition(new Point(5, 5));
+        loco.setTrack(locoTrack);
+        loco.setPosition(new Point(5, 5));
+        loco.setDir(Dir.E);
+        when(model.getLocomotives()).thenReturn(List.of(loco));
+
+        visitor.visitModel(model);
+
+        RailTrack ahead = new RailTrack();
+        ahead.setPosition(new Point(6, 5));
+        visitor.visitRailTrack(ahead);
+
+        // Only the band's board colour may ever be set as background: nothing is lit.
+        float band = TerminalPalette.band(0.08f, -1f);
+        TextColor bandBoard =
+                palette.colorOf(TerminalPalette.rgbFor(band).get(TerminalPalette.Token.BOARD));
+        verify(view, never()).setBgColor(argThat(c -> c != null && !c.equals(bandBoard)));
+    }
+
+    /** Fondo esperado de una celda iluminada con factor {@code (dx, dy)} respecto a la loco. */
+    private static TextColor litBoard(TerminalPalette palette, int dx, int dy) {
+        float lit = Headlight.factor(dx, dy, Dir.E) * Headlight.MAX_LIGHT;
+        int nightBoard = TerminalPalette.rgbFor(1f).get(TerminalPalette.Token.BOARD);
+        int dayBoard = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.BOARD);
+        return palette.colorOf(TerminalPalette.mix(nightBoard, dayBoard, lit));
+    }
+
+    @Test
+    @DisplayName("a locomotive hidden inside a tunnel casts no light outside Rails mode")
+    void visitModel_shouldHideHeadlight_whenLocomotiveIsInsideTunnel() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(1f);
+        when(model.getMode()).thenReturn(letrain.mvp.Model.GameMode.DRIVE);
+
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+        RailTrack tunnel = new RailTrack();
+        tunnel.setPosition(new Point(5, 5));
+        tunnel.setVisualType(RailTrack.VisualType.TUNNEL);
+        loco.setTrack(tunnel);
+        loco.setPosition(new Point(5, 5));
+        loco.setDir(Dir.E);
+        when(model.getLocomotives()).thenReturn(List.of(loco));
+
+        visitor.visitModel(model);
+
+        RailTrack ahead = new RailTrack();
+        ahead.setPosition(new Point(6, 5));
+        visitor.visitRailTrack(ahead);
+
+        verify(view, never()).setBgColor(litBoard(palette, 1, 0));
+    }
+
+    @Test
+    @DisplayName("in Rails mode tunnels are visible, so the headlight is too")
+    void visitModel_shouldCastHeadlight_insideTunnel_whileInRailsMode() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(1f);
+        when(model.getMode()).thenReturn(letrain.mvp.Model.GameMode.RAILS);
+
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+        RailTrack tunnel = new RailTrack();
+        tunnel.setPosition(new Point(5, 5));
+        tunnel.setVisualType(RailTrack.VisualType.TUNNEL);
+        loco.setTrack(tunnel);
+        loco.setPosition(new Point(5, 5));
+        loco.setDir(Dir.E);
+        when(model.getLocomotives()).thenReturn(List.of(loco));
+
+        visitor.visitModel(model);
+
+        RailTrack ahead = new RailTrack();
+        ahead.setPosition(new Point(6, 5));
+        visitor.visitRailTrack(ahead);
+
+        verify(view, atLeastOnce()).setBgColor(litBoard(palette, 1, 0));
+    }
+
+    @Test
+    @DisplayName("the beam stops at hidden tunnel cells instead of lighting through them")
+    void visitModel_shouldNotLightHiddenTunnelCells() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.time.GameClock clock = mock(letrain.time.GameClock.class);
+        when(model.getGameClock()).thenReturn(clock);
+        when(clock.getDayNightRatio()).thenReturn(1f);
+        when(model.getMode()).thenReturn(letrain.mvp.Model.GameMode.DRIVE);
+
+        letrain.map.impl.RailMap railMap = mock(letrain.map.impl.RailMap.class);
+        RailTrack tunnel = new RailTrack();
+        tunnel.setVisualType(RailTrack.VisualType.TUNNEL);
+        when(railMap.getTrackAt(6, 5)).thenReturn(tunnel);
+        when(model.getRailMap()).thenReturn(railMap);
+
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+        RailTrack locoTrack = new RailTrack();
+        locoTrack.setPosition(new Point(5, 5));
+        loco.setTrack(locoTrack);
+        loco.setPosition(new Point(5, 5));
+        loco.setDir(Dir.E);
+        when(model.getLocomotives()).thenReturn(List.of(loco));
+
+        visitor.visitModel(model);
+
+        RailTrack throughTunnel = new RailTrack();
+        throughTunnel.setPosition(new Point(6, 5));
+        visitor.visitRailTrack(throughTunnel);
+        RailTrack diagonal = new RailTrack();
+        diagonal.setPosition(new Point(7, 6));
+        visitor.visitRailTrack(diagonal);
+
+        verify(view, never()).setBgColor(litBoard(palette, 1, 0));
+        verify(view, atLeastOnce()).setBgColor(litBoard(palette, 2, 1));
     }
 }

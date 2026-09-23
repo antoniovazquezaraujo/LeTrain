@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import letrain.palette.VisualPalette;
 import letrain.track.CargoTypes;
 
 /**
@@ -30,6 +31,8 @@ import letrain.track.CargoTypes;
  */
 public class Gdx3DResourceContext implements Disposable {
     private final List<Model> models = new ArrayList<>();
+    private VisualPalette palette = new VisualPalette();
+    private double dayNightRatio;
     private ModelBuilder modelBuilder;
 
     private static final Color HIGHLIGHT_TRANSLUCENT_YELLOW = new Color(1f, 1f, 0f, 0.75f);
@@ -146,6 +149,8 @@ public class Gdx3DResourceContext implements Disposable {
     public Model yellowSphereModel2;
     public Model yellowSphereModel3;
     public Model autoModeDotModel;
+    /** Emissive lamp dot of the locomotive headlights (phase 1e). */
+    public Model headlightModel;
 
     public final com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute blackDiffuseAttribute =
             com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -322,6 +327,10 @@ public class Gdx3DResourceContext implements Disposable {
             yellowSphereModel2 = register(createSphereModel(0.25f, Color.ORANGE));
             yellowSphereModel3 = register(createSphereModel(0.25f, Color.YELLOW));
 
+            // Headlight lamp (phase 1e): emissive, so it never dims with the palette
+            headlightModel = register(createHeadlightModel(
+                    palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, dayNightRatio)));
+
             // Consumer Models
             goldConsumerModel = register(createConsumerModel(
                     com.badlogic.gdx.graphics.Color.valueOf(CargoTypes.GOLD.getColor())));
@@ -335,6 +344,61 @@ public class Gdx3DResourceContext implements Disposable {
     private Model register(Model model) {
         models.add(model);
         return model;
+    }
+
+    /** Applies the day/night palette to the terrain materials (ADR-022 phase 1b). */
+    public void applyTerrainPalette(VisualPalette palette, double dayNightRatio) {
+        this.palette = palette;
+        this.dayNightRatio = dayNightRatio;
+        setDiffuse(groundModel, palette.color(VisualPalette.Token.TERRAIN_FIELDS, dayNightRatio));
+        setDiffuse(waterModel, palette.color(VisualPalette.Token.TERRAIN_WATER, dayNightRatio));
+        setDiffuse(mountainModel,
+                palette.color(VisualPalette.Token.TERRAIN_MOUNTAIN, dayNightRatio));
+        setDiffuse(ballastModel, palette.color(VisualPalette.Token.TERRAIN_BALLAST, dayNightRatio));
+        setDiffuse(bridgePillarModel,
+                palette.color(VisualPalette.Token.STRUCTURE_BRIDGE_PILLAR, dayNightRatio));
+        setDiffuse(terrainWallModel,
+                palette.color(VisualPalette.Token.STRUCTURE_TERRAIN_WALL, dayNightRatio));
+        setPortalStone(palette.color(VisualPalette.Token.STRUCTURE_TUNNEL_PORTAL, dayNightRatio));
+    }
+
+    /** Last resolved colour of a token; the ground renderer uses it for walls and edges. */
+    public void paletteColor(VisualPalette.Token token, Color target) {
+        int rgb = palette.color(token, dayNightRatio);
+        target.set(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f,
+                1f);
+    }
+
+    private static void setDiffuse(Model model, int rgb) {
+        if (model == null) {
+            return;
+        }
+        for (Material material : model.materials) {
+            ColorAttribute diffuse = (ColorAttribute) material.get(ColorAttribute.Diffuse);
+            if (diffuse != null) {
+                setIfChanged(diffuse.color, rgb);
+            }
+        }
+    }
+
+    private void setPortalStone(int rgb) {
+        if (tunnelPortalModel == null) {
+            return;
+        }
+        for (Material material : tunnelPortalModel.materials) {
+            if ("stone".equals(material.id)) {
+                setIfChanged(((ColorAttribute) material.get(ColorAttribute.Diffuse)).color, rgb);
+            }
+        }
+    }
+
+    static void setIfChanged(Color color, int rgb) {
+        float r = ((rgb >> 16) & 0xFF) / 255f;
+        float g = ((rgb >> 8) & 0xFF) / 255f;
+        float b = (rgb & 0xFF) / 255f;
+        if (color.r != r || color.g != g || color.b != b) {
+            color.set(r, g, b, 1f);
+        }
     }
 
     private Model createSpeedSignalModel(boolean isMax) {
@@ -469,6 +533,22 @@ public class Gdx3DResourceContext implements Disposable {
                 (long) (VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
     }
 
+    /** Small emissive lamp: diffuse so it has shape, emissive so no light can dim it. */
+    private Model createHeadlightModel(int rgb) {
+        Color color = new Color();
+        setIfChanged(color, rgb);
+        ModelBuilder mb = new ModelBuilder();
+        return mb.createSphere(0.16f, 0.16f, 0.16f, 10, 10,
+                new Material(ColorAttribute.createDiffuse(color),
+                        ColorAttribute.createEmissive(color)),
+                (long) (VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+    }
+
+    /** Day/night ratio last applied to the palette (0 = day, 1 = night). */
+    public double getDayNightRatio() {
+        return dayNightRatio;
+    }
+
     private Model createPyramidModel(float w, float h, float d, Color color) {
         ModelBuilder mb = new ModelBuilder();
         mb.begin();
@@ -533,6 +613,7 @@ public class Gdx3DResourceContext implements Disposable {
         mb.begin();
         MeshPartBuilder mpb;
         Material stoneMat = new Material(ColorAttribute.createDiffuse(Color.GRAY));
+        stoneMat.id = "stone";
         Material darkMat =
                 new Material(ColorAttribute.createDiffuse(new Color(0.05f, 0.05f, 0.05f, 1f)));
 
