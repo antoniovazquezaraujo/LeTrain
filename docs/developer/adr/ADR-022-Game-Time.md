@@ -137,7 +137,9 @@ Semántica:
   `departure − arrival` en **tiempo de juego**, invariante al ritmo (`time.dayDurationSeconds`).
 - Sin `departure`, el tren sale cuando acaban sus acciones; sin `arrival`, no hay medida de
   llegada. Sin ninguna hora, el waypoint se comporta como hasta ahora.
-- En **sensores** la hora es un control de paso: solo mide, nunca retiene.
+- En **sensores** las horas funcionan **igual que en una estación** (también pueden retener hasta su
+  `departure`); la única diferencia es que no hay carga ni descarga. (Decidido tras revisión: un
+  tren puede necesitar esperar en un sensor.)
 - Las horas se leen **en secuencia**: si una es menor que la anterior, pertenece al día siguiente
   (`arrival 23:50 departure 00:10`). Un tren con retraso no espera 24 h: si llega después de su
   hora, sale de inmediato y se mide el desfase.
@@ -152,9 +154,37 @@ Métrica (fase 2, solo medir; la economía horaria es la fase 4):
 Compatibilidad: los itinerarios sin horas siguen funcionando igual y `WAIT n` conserva su semántica
 (segundos de simulación).
 
+#### La jornada completa (ejemplo)
+
+Servicio diario entre dos estaciones, con cocheras al final de la jornada. **El autopilot ya
+recorre el itinerario en bucle** (`advanceWaypoint` vuelve al primer waypoint al terminar), así
+que una jornada es un itinerario que se repite solo: las horas se leen en secuencia y, al volver
+al primer waypoint, su hora pertenece al día siguiente (rollover).
+
+```letrain
+create itinerary "cercanías diario" {
+  add station "Cocheras" departure 06:00;        // arranque de la jornada
+  add station "A" arrival 06:10, departure 06:15;
+  add station "B" arrival 06:27, departure 06:30;
+  ...                                            // las otras tres idas y vueltas
+  add station "Cocheras" arrival 22:50 park;     // fin de jornada: a cocheras
+}
+assign itinerary "cercanías diario" to train 1;
+```
+
+- **Cómo se inicia cada mañana**: el tren pasa la noche en cocheras (el último y el primer
+  waypoint son el mismo sitio) y a las 06:00 la `departure` del primer waypoint lo libera. La
+  salida programada debe **arrancar el motor**: el `park` lo deja apagado de forma explícita y un
+  tren así no se mueve con una orden de velocidad.
+- **`park` (nuevo) frente a `stop` (actual)**: `stop` frena y **desactiva el autopilot** (fin de
+  servicio, paso a manual), así que no sirve para una jornada que se repite; `park` frena y apaga
+  el motor **manteniendo el autopilot** a la espera de la próxima salida programada.
+
 Puntos abiertos (seguimos pensando): dónde mostrar los desfases (¿HUD o solo `info`?), el uso de
-estos horarios para los **cruces en vía única** (fase 2c) y si más adelante `arrival` también
-limitará la velocidad para no llegar antes de hora.
+estos horarios para los **cruces en vía única** (fase 2c), si más adelante `arrival` también
+limitará la velocidad para no llegar antes de hora, el `park` frente al `stop` actual, la
+existencia de itinerarios **de un solo uso** (hoy todos se repiten) y si hacen falta bloques
+`repeat` para no escribir cuatro veces las mismas paradas.
 
 ### Contrato (implementado en la fase 0)
 
