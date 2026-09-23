@@ -567,6 +567,16 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     /**
+     * Tab parity with the 2D terminal: cycles the HUD bottom panel between full, compact and
+     * hidden, so the map can be seen without the panel.
+     */
+    public void cycleHelpLevel() {
+        if (hud != null) {
+            hud.cycleHelpLevel();
+        }
+    }
+
+    /**
      * Starts/clears the paused-editing undo/redo session when the editing pause is toggled (called
      * by the input handler on {@code x}), mirroring TerminalPresenter.togglePauseEditing.
      */
