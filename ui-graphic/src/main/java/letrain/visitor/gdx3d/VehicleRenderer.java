@@ -236,6 +236,8 @@ public class VehicleRenderer extends BaseSubRenderer {
                     || locomotive.getColor().equalsIgnoreCase("YELLOW_BRIGHT"))) {
                 labelColor = Color.BLACK;
             }
+            // Decals no reciben la luz de la escena: se atenúan a mano de noche.
+            labelColor = resourceContext.attenuatePlayerColor(labelColor);
 
             addLabel(v1, "" + locomotive.getId(), v2, v3, labelColor, 0.5f);
 
@@ -454,11 +456,13 @@ public class VehicleRenderer extends BaseSubRenderer {
 
             v1.set(renderX + perpXW, 0.5f, renderY + perpZW);
             v2.set(perpXW, 0, perpZW).nor();
-            addLabel(v1, wagon.getAspect(), v2);
+            addLabel(v1, wagon.getAspect(), v2, null,
+                    resourceContext.attenuatePlayerColor(Color.WHITE), 1.0f);
 
             v1.set(renderX - perpXW, 0.5f, renderY - perpZW);
             v2.set(-perpXW, 0, -perpZW).nor();
-            addLabel(v1, wagon.getAspect(), v2);
+            addLabel(v1, wagon.getAspect(), v2, null,
+                    resourceContext.attenuatePlayerColor(Color.WHITE), 1.0f);
         }
     }
 
