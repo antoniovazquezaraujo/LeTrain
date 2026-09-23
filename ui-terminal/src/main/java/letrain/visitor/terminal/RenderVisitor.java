@@ -122,7 +122,7 @@ public class RenderVisitor implements Visitor {
     }
 
     private void addHeadlight(Locomotive locomotive) {
-        if (locomotive.getDir() == null) {
+        if (locomotive.getDir() == null || isHiddenInTunnel(locomotive)) {
             return;
         }
         int cx = locomotive.getPosition().getX();
@@ -133,6 +133,9 @@ public class RenderVisitor implements Visitor {
                 if (factor <= 0f) {
                     continue;
                 }
+                if (isHiddenTunnelCell(cx + dx, cy + dy)) {
+                    continue;
+                }
                 long key = cellKey(cx + dx, cy + dy);
                 Float previous = litCells.get(key);
                 if (previous == null || factor > previous) {
@@ -140,6 +143,25 @@ public class RenderVisitor implements Visitor {
                 }
             }
         }
+    }
+
+    /**
+     * A train inside a tunnel disappears from the map outside Rails mode; its light must vanish
+     * with it.
+     */
+    private boolean isHiddenInTunnel(Locomotive locomotive) {
+        return this.mode != GameMode.RAILS && locomotive.getTrack() instanceof RailTrack
+                && ((RailTrack) locomotive.getTrack())
+                        .getVisualType() == RailTrack.VisualType.TUNNEL;
+    }
+
+    /** The same rule per cell: a hidden tunnel swallows the beam instead of lighting it up. */
+    private boolean isHiddenTunnelCell(int x, int y) {
+        if (this.mode == GameMode.RAILS || model.getRailMap() == null) {
+            return false;
+        }
+        RailTrack track = model.getRailMap().getTrackAt(x, y);
+        return track != null && track.getVisualType() == RailTrack.VisualType.TUNNEL;
     }
 
     private static long cellKey(int x, int y) {
@@ -199,9 +221,9 @@ public class RenderVisitor implements Visitor {
             paletteBand = band;
             paletteColors = palette.resolve(band);
         }
-        updateHeadlights();
         this.showId = model.isShowId();
         this.mode = model.getMode();
+        updateHeadlights();
         selectedLocomotive = model.getSelectedLocomotive();
         selectedFork = model.getSelectedFork();
         selectedStation = model.getSelectedStation();

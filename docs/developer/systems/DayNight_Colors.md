@@ -197,7 +197,9 @@ Estado: **1a, 1b y 1d hechas; 1e parcial (faros de locomotora)** (1c pendiente).
   celda en celda. En 2D el
   `RenderVisitor` simula el haz: `Headlight.factor(dx, dy, dir)` da el cono (alcance 3 celdas,
   semiángulo 40°, tope `MAX_LIGHT`), y las celdas que ilumina se pintan mezclando su color nocturno
-  con el diurno, **incluido el fondo**, así que el haz "aclara" vía y terreno.
+  con el diurno, **incluido el fondo**, así que el haz "aclara" vía y terreno. El túnel oculto (fuera
+  del modo Rails, donde ni tren ni vía se dibujan) también esconde la luz: la locomotora en túnel no
+  proyecta haz y las celdas de túnel no se iluminan.
 
 ## Decisiones pendientes
 
