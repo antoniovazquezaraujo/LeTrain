@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.badlogic.gdx.math.Vector3;
 import java.util.List;
-import letrain.map.Point;
-import letrain.vehicle.rail.impl.Locomotive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -13,35 +11,30 @@ import org.junit.jupiter.api.Test;
 class HeadlightsTest {
 
     @Test
-    @DisplayName("picks the nearest locomotives to the camera, nearest first")
+    @DisplayName("picks the nearest rendered sources to the camera, nearest first")
     void should_PickNearest() {
-        Locomotive near = locoAt(2, 2);
-        Locomotive mid = locoAt(10, 10);
-        Locomotive far = locoAt(40, 40);
+        Headlights.Source near = new Headlights.Source(2.5f, 2.5f, 1f, 0f);
+        Headlights.Source mid = new Headlights.Source(10.5f, 10.5f, 1f, 0f);
+        Headlights.Source far = new Headlights.Source(40.5f, 40.5f, 1f, 0f);
 
-        List<Locomotive> picked = Headlights.nearestTo(List.of(far, near, mid), new Vector3(), 2);
+        List<Headlights.Source> picked =
+                Headlights.nearestTo(List.of(far, near, mid), new Vector3(), 2);
 
         assertEquals(List.of(near, mid), picked);
     }
 
     @Test
-    @DisplayName("keeps every locomotive when the pool is big enough")
+    @DisplayName("keeps every source when the pool is big enough")
     void should_KeepAll_WhenTheyFit() {
-        Locomotive a = locoAt(1, 0);
-        Locomotive b = locoAt(0, 3);
+        Headlights.Source a = new Headlights.Source(1.5f, 0.5f, 1f, 0f);
+        Headlights.Source b = new Headlights.Source(0.5f, 3.5f, 0f, 1f);
 
         assertEquals(List.of(a, b), Headlights.nearestTo(List.of(a, b), new Vector3(), 4));
     }
 
     @Test
-    @DisplayName("no locomotives means no lights")
-    void should_ReturnEmpty_When_NoLocomotives() {
+    @DisplayName("no sources means no lights")
+    void should_ReturnEmpty_When_NoSources() {
         assertEquals(List.of(), Headlights.nearestTo(null, new Vector3(), 4));
-    }
-
-    private static Locomotive locoAt(int x, int y) {
-        Locomotive locomotive = new Locomotive(x, "L" + x, "GREEN_BRIGHT");
-        locomotive.setPosition(new Point(x, y));
-        return locomotive;
     }
 }

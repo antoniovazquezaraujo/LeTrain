@@ -17,9 +17,14 @@ import letrain.vehicle.rail.impl.Wagon;
 public class VehicleRenderer extends BaseSubRenderer {
 
     public VehicleRenderer(Gdx3DResourceContext resourceContext, List<ModelInstance> instances,
-            List<ModelInstance> transparentInstances, List<Gdx3DRenderer.VehicleLabel> labels) {
+            List<ModelInstance> transparentInstances, List<Gdx3DRenderer.VehicleLabel> labels,
+            List<Headlights.Source> headlightSources) {
         super(resourceContext, instances, transparentInstances, labels);
+        this.headlightSources = headlightSources;
     }
+
+    /** Rendered headlight positions collected during the frame, for the real lights. */
+    private final List<Headlights.Source> headlightSources;
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
@@ -143,6 +148,13 @@ public class VehicleRenderer extends BaseSubRenderer {
         }
 
         Model locoModelToUse = resourceContext.locomotiveModel;
+
+        // Headlight source at the rendered (interpolated) position, so the real light glides with
+        // the locomotive instead of jumping cell by cell.
+        if (!locomotive.isDestroying()) {
+            v1.set(renderTangent).nor();
+            headlightSources.add(new Headlights.Source(renderX, renderY, v1.x, v1.z));
+        }
 
         ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
         if (locomotive.getColor() != null && !instance.materials.isEmpty()) {

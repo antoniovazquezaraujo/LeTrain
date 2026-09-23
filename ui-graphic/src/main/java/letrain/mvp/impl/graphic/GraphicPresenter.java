@@ -20,7 +20,6 @@ import letrain.mvp.input.InputEvent;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
-import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.palette.VisualPalette;
@@ -29,7 +28,6 @@ import letrain.mvp.impl.RailTrackMaker;
 import letrain.mvp.impl.SimulationController;
 import letrain.game.audio.SoundscapeAmbience;
 import letrain.utils.FontManager;
-import letrain.utils.PathGeometry;
 import letrain.utils.ValidationUtils;
 import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
@@ -349,6 +347,7 @@ public class GraphicPresenter extends ApplicationAdapter
         // Actualizar instancias desde el modelo
         renderer.clear();
         renderer.visitModel(model, cam);
+        updateHeadlights(dayNightRatio());
         modelBatch.begin(cam);
         modelBatch.render(renderer.getInstances(), environment);
         // Render the background table slightly below ground level
@@ -1383,28 +1382,36 @@ public class GraphicPresenter extends ApplicationAdapter
         double a = Math.toRadians(azimuth);
         sunLight.direction.set((float) (-Math.cos(e) * Math.sin(a)), (float) -Math.sin(e),
                 (float) (Math.cos(e) * Math.cos(a))).nor();
-        updateHeadlights(ratio);
     }
 
-    /** Lights the nearest locomotive headlights; off while the sun is up (phase 1e). */
+    /** Clock day/night ratio, or 0 (day) when there is no clock. */
+    private double dayNightRatio() {
+        if (model == null || model.getGameClock() == null) {
+            return 0.0;
+        }
+        return model.getGameClock().getDayNightRatio();
+    }
+
+    /**
+     * Lights the nearest locomotive headlights; off while the sun is up (phase 1e). Uses the
+     * rendered positions collected by the vehicle renderer this frame, so the light glides with the
+     * train.
+     */
     private void updateHeadlights(double ratio) {
         float intensity = HEADLIGHT_INTENSITY * (float) ratio;
         setColor(headlightColor, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, ratio));
         for (com.badlogic.gdx.graphics.g3d.environment.PointLight light : headlightLights) {
             light.intensity = 0f;
         }
-        if (model == null || cam == null || intensity <= 0f) {
+        if (cam == null || intensity <= 0f) {
             return;
         }
-        List<Locomotive> nearest =
-                Headlights.nearestTo(model.getLocomotives(), cam.position, headlightLights.length);
+        List<Headlights.Source> nearest = Headlights.nearestTo(renderer.getHeadlightSources(),
+                cam.position, headlightLights.length);
         for (int i = 0; i < nearest.size(); i++) {
-            Locomotive locomotive = nearest.get(i);
-            Dir dir = locomotive.getDir();
-            float dirX = dir == null ? 0f : PathGeometry.getDirX(dir);
-            float dirZ = dir == null ? 0f : PathGeometry.getDirZ(dir);
-            headlightPosition.set(locomotive.getPosition().getX() + 0.5f + dirX * 0.6f, 0.7f,
-                    locomotive.getPosition().getY() + 0.5f + dirZ * 0.6f);
+            Headlights.Source source = nearest.get(i);
+            headlightPosition.set(source.x() + source.dirX() * 0.6f, 0.7f,
+                    source.z() + source.dirZ() * 0.6f);
             headlightLights[i].set(headlightColor, headlightPosition, intensity);
         }
     }

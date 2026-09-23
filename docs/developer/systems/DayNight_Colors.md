@@ -191,7 +191,10 @@ Estado: **1a, 1b y 1d hechas; 1e parcial (faros de locomotora)** (1c pendiente).
 - Faros (1e parcial): token `EMISSIVE_HEADLIGHT` (constante a cualquier hora). En 3D el
   `GraphicPresenter` enciende hasta **4 `PointLight`** reales en las locomotoras más cercanas a la
   cámara (`Headlights.nearestTo`) con intensidad proporcional al ratio, y el `VehicleRenderer` pinta
-  dos lámparas emisivas en el frontal (`headlightModel`, material con `Emissive`). En 2D el
+  dos lámparas emisivas en el frontal (`headlightModel`, material con `Emissive`). La luz usa la
+  posición **renderizada** (interpolada) que el `VehicleRenderer` publica cada frame
+  (`Gdx3DRenderer.getHeadlightSources()`), así el haz se desliza con el tren en vez de saltar de
+  celda en celda. En 2D el
   `RenderVisitor` simula el haz: `Headlight.factor(dx, dy, dir)` da el cono (alcance 7 celdas,
   semiángulo 40°, tope `MAX_LIGHT`), y las celdas que ilumina se pintan mezclando su color nocturno
   con el diurno, **incluido el fondo**, así que el haz "aclara" vía y terreno.
