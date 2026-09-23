@@ -39,6 +39,17 @@ public class PathGeometry {
         return getDirX(dir);
     }
 
+    /**
+     * Model rotation (degrees) of semaphores and speed signals: half a turn from the direction
+     * vector, so the plate faces the traffic that reads it (the train passes and sees it). The
+     * renderer places the base and the ID to the right of the track with {@link #getRightX}.
+     */
+    public static float getFacingDegrees(Dir dir) {
+        float dx = getDirX(dir);
+        float dz = getDirZ(dir);
+        return (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
+    }
+
     public static float getDirZ(Dir dir) {
         if (dir == null) {
             return 0;

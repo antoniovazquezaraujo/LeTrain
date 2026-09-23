@@ -38,4 +38,20 @@ class PathGeometryTest {
         assertEquals(0f, PathGeometry.getRightX(null), 1e-6);
         assertEquals(0f, PathGeometry.getRightZ(null), 1e-6);
     }
+
+    @Test
+    @DisplayName("signal plates face the traffic: half a turn from the direction")
+    void should_ReturnFacingDegrees() {
+        // The plate faces the train that passes, half a turn from the direction vector:
+        // semaphores and speed signals share this orientation.
+        assertEquals(270f, normalized(PathGeometry.getFacingDegrees(Dir.E)), 1e-3);
+        assertEquals(0f, normalized(PathGeometry.getFacingDegrees(Dir.N)), 1e-3);
+        assertEquals(180f, normalized(PathGeometry.getFacingDegrees(Dir.S)), 1e-3);
+        assertEquals(90f, normalized(PathGeometry.getFacingDegrees(Dir.W)), 1e-3);
+    }
+
+    private static float normalized(float degrees) {
+        float value = degrees % 360f;
+        return value < 0 ? value + 360f : value;
+    }
 }
