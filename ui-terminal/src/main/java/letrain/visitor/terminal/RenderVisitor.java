@@ -356,7 +356,8 @@ public class RenderVisitor implements Visitor {
             } else {
                 view.setFgColor(color(TerminalPalette.Token.LABEL));
             }
-            view.set(renderPos.getX() + 1, renderPos.getY(), String.valueOf(station.getId()));
+            int step = labelStep(renderPos, track.getPosition());
+            view.set(renderPos.getX() + step, renderPos.getY(), String.valueOf(station.getId()));
             view.setUnderline(false);
         }
         resetColors();

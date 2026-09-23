@@ -224,8 +224,9 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         if (dir != null) {
             float dx = PathGeometry.getDirX(dir);
             float dz = PathGeometry.getDirZ(dir);
-            offsetX = dz * 1.0f;
-            offsetZ = -dx * 1.0f;
+            // Right-hand side of the track, like the 2D terminal (facing E, right is S).
+            offsetX = PathGeometry.getRightX(dir);
+            offsetZ = PathGeometry.getRightZ(dir);
             angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
         }
 
@@ -581,9 +582,9 @@ public class InfrastructureRenderer extends BaseSubRenderer {
         if (creationDir != null) {
             float dx = PathGeometry.getDirX(creationDir);
             float dz = PathGeometry.getDirZ(creationDir);
-            // Position the signal to the side of the track (like semaphore)
-            offsetX = dz * 1.0f;
-            offsetZ = -dx * 1.0f;
+            // Position the signal to the right of the track (like semaphores and the 2D client)
+            offsetX = PathGeometry.getRightX(creationDir);
+            offsetZ = PathGeometry.getRightZ(creationDir);
             angle = (float) Math.atan2(dx, dz) * com.badlogic.gdx.math.MathUtils.radiansToDegrees
                     + 180f;
         }

@@ -25,6 +25,20 @@ public class PathGeometry {
         }
     }
 
+    /**
+     * X component of the right-hand side of a direction, with the same half-cell scale as
+     * {@link #getDirX}. Mirrors the 2D terminal's {@code getRightSide}: facing east, the right is
+     * south. Track elements (semaphores, speed signals…) are placed at this side of the track.
+     */
+    public static float getRightX(Dir dir) {
+        return -getDirZ(dir);
+    }
+
+    /** Z component of the right-hand side of a direction (see {@link #getRightX}). */
+    public static float getRightZ(Dir dir) {
+        return getDirX(dir);
+    }
+
     public static float getDirZ(Dir dir) {
         if (dir == null) {
             return 0;
