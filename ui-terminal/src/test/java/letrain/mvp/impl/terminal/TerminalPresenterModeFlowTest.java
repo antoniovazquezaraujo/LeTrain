@@ -82,4 +82,49 @@ class TerminalPresenterModeFlowTest {
         assertEquals(Model.GameMode.RAILS, model.getMode(),
                 "after the IDE closes the highlighted PROGRAM option must be cleared");
     }
+
+    @Test
+    @DisplayName("leaving the console with Esc returns to the mode the player was in")
+    void consoleExit_returnsToPreviousMode() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = presenterWith(model, mock(TerminalView.class));
+        model.setMode(Model.GameMode.DRIVE);
+
+        presenter.onChar(charKey(':'));
+        assertEquals(Model.GameMode.COMMAND, model.getMode(), "':' opens the console");
+
+        presenter.onChar(new InputEvent(KeyType.Escape));
+
+        assertEquals(Model.GameMode.DRIVE, model.getMode());
+        assertEquals("", model.getCommandText());
+    }
+
+    @Test
+    @DisplayName("running a command from the console also returns to the previous mode")
+    void consoleCommand_returnsToPreviousMode() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = presenterWith(model, mock(TerminalView.class));
+        model.setMode(Model.GameMode.TRAINS);
+
+        presenter.onChar(charKey(':'));
+        for (char c : "help".toCharArray()) {
+            presenter.onChar(charKey(c));
+        }
+        presenter.onChar(new InputEvent(KeyType.Enter));
+
+        assertEquals(Model.GameMode.TRAINS, model.getMode());
+    }
+
+    @Test
+    @DisplayName("leaving the console from RAILS still lands in RAILS")
+    void consoleExit_fromRails_staysInRails() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = presenterWith(model, mock(TerminalView.class));
+        model.setMode(Model.GameMode.RAILS);
+
+        presenter.onChar(charKey(':'));
+        presenter.onChar(new InputEvent(KeyType.Escape));
+
+        assertEquals(Model.GameMode.RAILS, model.getMode());
+    }
 }

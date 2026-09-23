@@ -475,6 +475,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void executeCommand(String cmd) {
         log.info("Execute command: " + cmd);
+        boolean fromConsole = model.getMode() == letrain.mvp.Model.GameMode.COMMAND;
         // Capture the cursor BEFORE executing so the journaled copy is self-positioned and the
         // replay (undo) is deterministic regardless of any (unrecorded) keyboard navigation.
         String prefix = cursorPrefix();
@@ -508,11 +509,27 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (model.isSimulationPaused() && !letrain.command.EditCommandFilter.isNonRecordable(cmd)) {
             history.record(prefix + cmd);
         }
-        model.setMode(letrain.mvp.Model.GameMode.RAILS);
+        if (fromConsole && model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
+            // Back from the console: return to the mode the player was in.
+            model.setMode(model.getPreviousMode());
+        } else if (!fromConsole) {
+            // The '.' repeat path keeps the old behaviour of landing in RAILS.
+            model.setMode(letrain.mvp.Model.GameMode.RAILS);
+        }
         model.setCommandText("");
         model.setCommandError("");
         view.centerOn(model.getCursor().getPosition().getX(),
                 model.getCursor().getPosition().getY());
+    }
+
+    /**
+     * Leaving the console (Esc or an empty Enter) returns to the mode the player was in before
+     * opening it, instead of always landing in RAILS.
+     */
+    private void leaveCommandMode() {
+        model.setMode(model.getPreviousMode());
+        model.setCommandText("");
+        model.setCommandError("");
     }
 
     /** Absolute cursor prefix: {@code "go x,y; face d; "} from the current cursor state. */
@@ -699,16 +716,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
             if (keyEvent.getKeyType() == KeyType.Escape) {
-                model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                model.setCommandText("");
-                model.setCommandError("");
+                leaveCommandMode();
                 return;
             } else if (keyEvent.getKeyType() == KeyType.Enter) {
                 String cmd = model.getCommandText().trim();
                 if (cmd.isEmpty()) {
-                    model.setMode(letrain.mvp.Model.GameMode.RAILS);
-                    model.setCommandText("");
-                    model.setCommandError("");
+                    leaveCommandMode();
                     return;
                 }
                 if (commandHistory.isEmpty()
