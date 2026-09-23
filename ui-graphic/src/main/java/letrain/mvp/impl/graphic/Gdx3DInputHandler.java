@@ -100,6 +100,11 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private boolean triggerKeyDown(int keycode) {
+        if (model.getMode() == Model.GameMode.TRAINS && isShiftedVimLetter(keycode)) {
+            // Shift+H/J/K/L are typed aspect letters here: keyTyped delivers them, so keyDown must
+            // neither move the cursor nor repeat them.
+            return false;
+        }
         InputEvent keyStroke = translateKeyCode(keycode);
         if (keyStroke != null) {
             boolean ctrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)
@@ -114,6 +119,18 @@ public class Gdx3DInputHandler implements InputProcessor {
             return true;
         }
         return false;
+    }
+
+    private boolean isShiftedVimLetter(int keycode) {
+        if (keycode != Input.Keys.H && keycode != Input.Keys.J && keycode != Input.Keys.K
+                && keycode != Input.Keys.L) {
+            return false;
+        }
+        if (Gdx.input == null) {
+            return false;
+        }
+        return Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
     }
 
     @Override
@@ -185,13 +202,21 @@ public class Gdx3DInputHandler implements InputProcessor {
                 || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
         boolean altPressed = Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)
                 || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
+        boolean shiftPressed = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
 
         if (!Character.isISOControl(character)) {
             char lower = Character.toLowerCase(character);
             if (lower == 'h' || lower == 'j' || lower == 'k' || lower == 'l') {
-                return false; // Already handled in keyDown
+                // Lowercase vim keys move and are handled in keyDown; in TRAINS the shifted letter
+                // is a typed aspect letter (Shift+H/J/K/L build locomotives).
+                if (!(model.getMode() == Model.GameMode.TRAINS
+                        && Character.isUpperCase(character))) {
+                    return false; // Already handled in keyDown
+                }
             }
-            view.onChar(new InputEvent(character, ctrlPressed, altPressed));
+            view.onChar(new InputEvent(KeyType.Character, character, ctrlPressed, altPressed,
+                    shiftPressed));
             return true;
         }
         return false;
@@ -1307,6 +1332,10 @@ public class Gdx3DInputHandler implements InputProcessor {
     private void handleTrainsInput(InputEvent stroke) {
         if (stroke.getKeyType() == KeyType.Character) {
             char c = stroke.getCharacter();
+            if (stroke.isShiftDown() && Character.isLetter(c)) {
+                // Some layouts report the unshifted character: Shift means the uppercase aspect.
+                c = Character.toUpperCase(c);
+            }
             if (Character.isDigit(c)) {
                 if (lastCreatedLoco != null) {
                     int colorIdx = c - '0';

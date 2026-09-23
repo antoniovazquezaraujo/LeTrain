@@ -118,6 +118,57 @@ class TerminalPresenterKeyboardEditTest {
     }
 
     @Test
+    @DisplayName("shifted H/J/K/L build locomotives in TRAINS mode like any other letter")
+    void shiftedVimKeys_buildLocomotives_inTrainsMode() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = silentPresenter(model);
+        trackAt(model, 0, 0).connect(Dir.E, trackAt(model, 1, 0));
+        model.getRailMap().getTrackAt(1, 0).connect(Dir.W, model.getRailMap().getTrackAt(0, 0));
+        model.getCursor().setPosition(new Point(0, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.TRAINS);
+
+        presenter.onChar(new InputEvent(KeyType.Character, 'H', false, false, true));
+
+        assertEquals(1, model.getLocomotives().size(), "Shift+H must build a locomotive");
+        assertEquals("H", model.getLocomotives().get(0).getAspect());
+    }
+
+    @Test
+    @DisplayName("lowercase vim letters still build wagons in TRAINS mode")
+    void lowercaseVimKeys_buildWagons_inTrainsMode() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = silentPresenter(model);
+        trackAt(model, 0, 0).connect(Dir.E, trackAt(model, 1, 0));
+        model.getRailMap().getTrackAt(1, 0).connect(Dir.W, model.getRailMap().getTrackAt(0, 0));
+        model.getCursor().setPosition(new Point(0, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.TRAINS);
+
+        presenter.onChar(charKey('h'));
+
+        assertEquals(1, model.getWagons().size(), "lowercase h must build a wagon");
+        assertEquals(0, model.getLocomotives().size());
+    }
+
+    @Test
+    @DisplayName("a terminal that reports the unshifted character still builds a locomotive with Shift")
+    void shiftedLowercaseChar_buildsUppercaseLocomotive() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = silentPresenter(model);
+        trackAt(model, 0, 0).connect(Dir.E, trackAt(model, 1, 0));
+        model.getRailMap().getTrackAt(1, 0).connect(Dir.W, model.getRailMap().getTrackAt(0, 0));
+        model.getCursor().setPosition(new Point(0, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.TRAINS);
+
+        presenter.onChar(new InputEvent(KeyType.Character, 'h', false, false, true));
+
+        assertEquals(1, model.getLocomotives().size());
+        assertEquals("H", model.getLocomotives().get(0).getAspect());
+    }
+
+    @Test
     @DisplayName("inverting a plain sensor from the keyboard is journaled")
     void keyboardSensorInvert_isJournaled() {
         Model model = new Model(1);

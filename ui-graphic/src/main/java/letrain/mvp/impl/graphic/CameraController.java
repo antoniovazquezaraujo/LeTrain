@@ -75,6 +75,16 @@ public class CameraController {
         this.cabSnapNeeded = true;
     }
 
+    /** Ground X of the point the camera orbits (interpolated), used to materialize terrain. */
+    public float getTargetX() {
+        return camTarget.x;
+    }
+
+    /** Ground Z of the point the camera orbits (interpolated), used to materialize terrain. */
+    public float getTargetZ() {
+        return camTarget.z;
+    }
+
     /**
      * Re-targets this controller to a new model instance while preserving the current camera pose
      * (used by the paused-editing undo/redo swap, where the world is frozen and visually

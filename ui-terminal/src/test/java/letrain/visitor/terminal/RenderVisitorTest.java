@@ -350,6 +350,29 @@ class RenderVisitorTest {
         verify(view, never()).setBgColor(litBoard(palette, 1, 0));
     }
 
+    @Test
+    @DisplayName("a speed signal west of the track draws arrow and ID away from the rails")
+    void visitSpeedSignal_shouldDrawLabelOutwards_whenSignalIsWestOfTrack() {
+        TerminalView view = mock(TerminalView.class);
+        RenderVisitor visitor = new RenderVisitor(view);
+
+        Model model = mock(Model.class);
+        when(model.getMode()).thenReturn(letrain.mvp.Model.GameMode.SPEED_SIGNALS);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(5, 5));
+        letrain.track.SpeedSignal signal = new letrain.track.SpeedSignal(7, Dir.S, 3, true);
+        signal.setTrack(track);
+
+        visitor.visitModel(model);
+        visitor.visitSpeedSignal(signal);
+
+        verify(view, atLeastOnce()).set(eq(4), eq(5), anyString()); // icon on the west side
+        verify(view, atLeastOnce()).set(eq(3), eq(5), eq("↓")); // arrow further out
+        verify(view, atLeastOnce()).set(eq(2), eq(5), eq("7")); // ID further out
+        verify(view, never()).set(eq(5), eq(5), eq("7")); // never over the track
+    }
+
     /** Fondo esperado de una celda iluminada con factor {@code (dx, dy)} respecto a la loco. */
     private static TextColor litBoard(TerminalPalette palette, int dx, int dy) {
         float lit = Headlight.factor(dx, dy, Dir.E) * Headlight.MAX_LIGHT;

@@ -274,6 +274,9 @@ public class GraphicPresenter extends ApplicationAdapter
 
     private float stateTime = 0f;
 
+    /** Terrain block (in cells) materialized around the camera target, half the side. */
+    private static final int CAMERA_VIEW_RADIUS = 28;
+
     @Override
     public letrain.audio.AudioController getAudioController() {
         return audioController;
@@ -292,6 +295,14 @@ public class GraphicPresenter extends ApplicationAdapter
             int radius = model.getEconomyManager().getViewRadius();
             model.getGroundMap().renderBlock(cp.getX() - radius, cp.getY() - radius, radius * 2 + 1,
                     radius * 2 + 1);
+
+            // La cámara mira mucho más allá del bloque del cursor: materializamos también el
+            // terreno que sobrevuela, o su borde se ve como el VOID negro en el horizonte.
+            float camTargetX = cameraController.getTargetX();
+            float camTargetZ = cameraController.getTargetZ();
+            model.getGroundMap().renderBlock(Math.round(camTargetX) - CAMERA_VIEW_RADIUS,
+                    Math.round(camTargetZ) - CAMERA_VIEW_RADIUS, CAMERA_VIEW_RADIUS * 2 + 1,
+                    CAMERA_VIEW_RADIUS * 2 + 1);
 
             simulationController.tick();
             if (hud != null) {

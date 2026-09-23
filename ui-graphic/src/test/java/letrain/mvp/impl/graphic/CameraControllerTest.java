@@ -223,4 +223,13 @@ class CameraControllerTest {
         }
         assertEquals(-Math.sin(Math.toRadians(35.0)), cam.direction.y, 0.01f);
     }
+
+    @Test
+    @DisplayName("the controller exposes the ground target it orbits (terrain materialization)")
+    void should_ExposeGroundTarget() {
+        cameraController.init(800, 600);
+
+        assertEquals(10.5f, cameraController.getTargetX(), 0.001f);
+        assertEquals(10.5f, cameraController.getTargetZ(), 0.001f);
+    }
 }

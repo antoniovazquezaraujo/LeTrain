@@ -285,6 +285,46 @@ class Gdx3DInputHandlerConsoleTest {
     }
 
     @Test
+    @DisplayName("shifted H/J/K/L are typed characters: they build locomotives in TRAINS mode")
+    void shiftedVimKeys_buildLocomotives_inTrainsMode() {
+        trackAt(model, 0, 0).connect(Dir.E, trackAt(model, 1, 0));
+        model.getRailMap().getTrackAt(1, 0).connect(Dir.W, model.getRailMap().getTrackAt(0, 0));
+        model.getCursor().setPosition(new Point(0, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.TRAINS);
+        com.badlogic.gdx.Input previousInput = com.badlogic.gdx.Gdx.input;
+        com.badlogic.gdx.Gdx.input = mock(com.badlogic.gdx.Input.class);
+        try {
+            org.mockito.Mockito.doAnswer(invocation -> {
+                handler.onChar(invocation.getArgument(0));
+                return null;
+            }).when(view).onChar(org.mockito.ArgumentMatchers.any());
+
+            handler.keyTyped('H');
+
+            assertEquals(1, model.getLocomotives().size(), "Shift+H must build a locomotive");
+            assertEquals("H", model.getLocomotives().get(0).getAspect());
+        } finally {
+            com.badlogic.gdx.Gdx.input = previousInput;
+        }
+    }
+
+    @Test
+    @DisplayName("plain lowercase h in TRAINS mode still builds a wagon")
+    void plainH_buildsWagon_inTrainsMode() {
+        trackAt(model, 0, 0).connect(Dir.E, trackAt(model, 1, 0));
+        model.getRailMap().getTrackAt(1, 0).connect(Dir.W, model.getRailMap().getTrackAt(0, 0));
+        model.getCursor().setPosition(new Point(0, 0));
+        model.getCursor().setDir(Dir.E);
+        model.setMode(Model.GameMode.TRAINS);
+
+        handler.onChar(charKey('h'));
+
+        assertEquals(1, model.getWagons().size(), "lowercase h must build a wagon");
+        assertEquals("h", model.getWagons().get(0).getAspect());
+    }
+
+    @Test
     @DisplayName("history survives a model/handler swap like the one an undo performs")
     void history_survivesHandlerRecreation() {
         executeInConsole("go 5,0; face e; write 1;");
