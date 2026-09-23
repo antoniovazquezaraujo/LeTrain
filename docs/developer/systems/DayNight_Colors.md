@@ -135,6 +135,7 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 | `light.sun` | `DirectionalLight (0.8, 0.8, 0.8)` dir `(-1, -0.8, -0.2)` (:191) | actual | `(0.7, 0.5, 0.3)` | `(0.25, 0.3, 0.4)` |
 | `sky.background` | sin definir (clear negro) | azul cielo `#87CEEB` | `(0.42, 0.27, 0.20)` | `(0.02, 0.03, 0.06)` |
 | `sky.fog` | no existe | sin niebla | niebla suave | niebla tenue azulada |
+| `light.headlight` | no existía | apagado | `#FFF2C8` atenuado por el ratio | `#FFF2C8`, hasta 4 locomotoras cercanas |
 
 ## Reglas y guardarraíles
 
@@ -146,7 +147,9 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
    resaltados conservan color y contraste de noche (son información de juego, no decorado).
 4. **Colores de jugador**: solo atenuación global (≤ 45 % de noche); no se re-mapean a variantes.
 5. **Emisivos**: faros de locomotora, farolas y ventanas iluminadas se añaden como tokens
-   "emisivos" que no se atenúan (fase 1e); son la guía visual de noche.
+   "emisivos" que no se atenúan (fase 1e); son la guía visual de noche. Lámpara y luz se encienden a
+   la vez: umbral compartido `VisualPalette.LIGHTS_ON_RATIO` (0,1) y rampa `lightsOnFactor` en 3D y
+   2D.
 6. **Rendimiento**: interpolar la paleta una vez por frame (no por instancia); los materiales
    actualizan su `ColorAttribute` solo cuando el token cambia.
 
@@ -158,9 +161,9 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 | 1b | Terreno (campos, agua, montaña, balasto, túnel, pared) | Hecha: tokens de terreno en `VisualPalette` y materiales del `Gdx3DResourceContext`/`GroundRenderer` |
 | 1c | Elementos, vía y trenes | Materiales por token; avisos intactos |
 | 1d | 2D: paleta día/noche del terminal (familia clara) | Hecha: `TerminalPalette` + wiring del `RenderVisitor` |
-| 1e | Emisivos (faros/farolas) y niebla/cielo fino | Noche con guías de luz; coordinar con #480 |
+| 1e | Emisivos (faros/farolas) y niebla/cielo fino | Parcial: **faros de locomotora** (luz real en 3D + haz simulado en 2D); farolas/ventanas y niebla pendientes; coordinar con #480 |
 
-Estado: **1a, 1b y 1d hechas** (1c pendiente).
+Estado: **1a, 1b y 1d hechas; 1e parcial (faros de locomotora)** (1c pendiente).
 
 - 3D (1a): `VisualPalette` (core, `letrain.palette`) con `AMBIENT_LIGHT`, `SUN_LIGHT`, `SKY` y
   `TABLE_BOARD`; el `GraphicPresenter` los aplica cada tick (luz ambiental, sol direccional según
@@ -183,8 +186,24 @@ Estado: **1a, 1b y 1d hechas** (1c pendiente).
   el `InfoVisitor` se quedan como estaban.
   **Escalonado**: el ratio solar es continuo y, interpolado, obligaba al terminal a repintar el
   mapa entero cada minuto de juego (parpadeo de 1 Hz en pantalla clara). El cliente cuantiza el
-  ratio en **4 escalones** (0, 0.25, 0.5, 0.75, 1) con histéresis de 0.06: la paleta se resuelve
-  solo al cambiar de escalón. El laboratorio sí interpola, que es para lo que está.
+  ratio en **20 niveles** espaciados por luminosidad percibida (`TerminalPalette.BANDS`) con
+  **histéresis direccional**: la paleta se resuelve solo al cruzar la frontera del nivel (con
+  margen) y las teclas de debug recorren niveles contiguos. El laboratorio sí interpola, que es para
+  lo que está.
+- Faros (1e parcial): token `EMISSIVE_HEADLIGHT` (constante a cualquier hora). En 3D el
+  `GraphicPresenter` enciende hasta **4 `PointLight`** reales en las locomotoras más cercanas a la
+  cámara (`Headlights.nearestTo`) con intensidad proporcional al ratio, y el `VehicleRenderer` pinta
+  dos lámparas emisivas en el frontal (`headlightModel`, material con `Emissive`). La luz usa la
+  posición **renderizada** (interpolada) que el `VehicleRenderer` publica cada frame
+  (`Gdx3DRenderer.getHeadlightSources()`), así el haz se desliza con el tren en vez de saltar de
+  celda en celda. En 2D el
+  `RenderVisitor` simula el haz: `Headlight.factor(dx, dy, dir)` da el cono (alcance 3 celdas,
+  semiángulo 40°, tope `MAX_LIGHT`), y las celdas que ilumina se pintan mezclando su color nocturno
+  con el diurno, **incluido el fondo**, así que el haz "aclara" vía y terreno. El túnel oculto (fuera
+  del modo Rails, donde ni tren ni vía se dibujan) también esconde la luz: la locomotora en túnel no
+  proyecta haz y las celdas de túnel no se iluminan. Todo el sistema enciende con el mismo umbral
+  (`VisualPalette.LIGHTS_ON_RATIO`) y rampa (`lightsOnFactor`), para que lámpara, resplandor y haz
+  aparezcan a la vez en ambos clientes.
 
 ## Decisiones pendientes
 

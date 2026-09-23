@@ -252,11 +252,14 @@
 - [[letrain.visitor.gdx3d.Gdx3DRenderer|Gdx3DRenderer]] (ui-graphic)
 - [[letrain.visitor.gdx3d.Gdx3DResourceContext|Gdx3DResourceContext]] (ui-graphic)
 - [[letrain.visitor.gdx3d.GroundRenderer|GroundRenderer]] (ui-graphic)
+- [[letrain.visitor.gdx3d.Headlights|Headlights]] (ui-graphic)
 - [[letrain.visitor.gdx3d.InfrastructureRenderer|InfrastructureRenderer]] (ui-graphic)
 - [[letrain.visitor.gdx3d.TrackRenderer|TrackRenderer]] (ui-graphic)
 - [[letrain.visitor.gdx3d.VehicleRenderer|VehicleRenderer]] (ui-graphic)
+- [[letrain.visitor.terminal.Headlight|Headlight]] (ui-terminal)
 - [[letrain.visitor.terminal.InfoVisitor|InfoVisitor]] (ui-terminal)
 - [[letrain.visitor.terminal.RenderVisitor|RenderVisitor]] (ui-terminal)
+- [[letrain.visitor.terminal.TerminalPalette|TerminalPalette]] (ui-terminal)
 
 ## letrain.weather
 - [[letrain.weather.ClimateCalendar|ClimateCalendar]] (core)
