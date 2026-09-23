@@ -150,9 +150,12 @@ public class VehicleRenderer extends BaseSubRenderer {
 
         Model locoModelToUse = resourceContext.locomotiveModel;
 
+        boolean headlightsOn = !locomotive.isDestroying() && locomotive.isEngineOn()
+                && VisualPalette.lightsOnFactor(resourceContext.getDayNightRatio()) > 0f;
+
         // Headlight source at the rendered (interpolated) position, so the real light glides with
         // the locomotive instead of jumping cell by cell.
-        if (!locomotive.isDestroying()) {
+        if (headlightsOn) {
             v1.set(renderTangent).nor();
             headlightSources.add(new Headlights.Source(renderX, renderY, v1.x, v1.z));
         }
@@ -201,17 +204,19 @@ public class VehicleRenderer extends BaseSubRenderer {
             }
         }
 
-        // Headlight lamps (phase 1e): emissive dots on the front, only after dark
+        // Headlight lamps (phase 1e): always visible; emissive only with the engine running after
+        // dark, unlit by day or with the engine stopped
         if (!locomotive.isDestroying() && resourceContext.headlightModel != null
-                && VisualPalette.lightsOnFactor(resourceContext.getDayNightRatio()) > 0f) {
+                && resourceContext.headlightOffModel != null) {
+            Model lampModel = headlightsOn ? resourceContext.headlightModel
+                    : resourceContext.headlightOffModel;
             v1.set(renderTangent).nor();
             float dxL = v1.x;
             float dzL = v1.z;
             float perpXL = dzL * 0.2f;
             float perpZL = -dxL * 0.2f;
             for (int side = -1; side <= 1; side += 2) {
-                ModelInstance lamp =
-                        resourceContext.getModelInstance(resourceContext.headlightModel);
+                ModelInstance lamp = resourceContext.getModelInstance(lampModel);
                 lamp.transform.setToTranslation(renderX + dxL * 0.42f + perpXL * side, 0.5f,
                         renderY + dzL * 0.42f + perpZL * side);
                 instances.add(lamp);
