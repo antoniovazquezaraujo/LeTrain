@@ -195,7 +195,7 @@ Estado: **1a, 1b y 1d hechas; 1e parcial (faros de locomotora)** (1c pendiente).
   posición **renderizada** (interpolada) que el `VehicleRenderer` publica cada frame
   (`Gdx3DRenderer.getHeadlightSources()`), así el haz se desliza con el tren en vez de saltar de
   celda en celda. En 2D el
-  `RenderVisitor` simula el haz: `Headlight.factor(dx, dy, dir)` da el cono (alcance 7 celdas,
+  `RenderVisitor` simula el haz: `Headlight.factor(dx, dy, dir)` da el cono (alcance 3 celdas,
   semiángulo 40°, tope `MAX_LIGHT`), y las celdas que ilumina se pintan mezclando su color nocturno
   con el diurno, **incluido el fondo**, así que el haz "aclara" vía y terreno.
 

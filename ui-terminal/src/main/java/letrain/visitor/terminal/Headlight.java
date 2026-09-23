@@ -10,8 +10,8 @@ import letrain.map.Dir;
  */
 public final class Headlight {
 
-    /** Alcance del faro, en celdas. */
-    public static final int RADIUS = 7;
+    /** Alcance del faro, en celdas: ilumina un par de ellas por delante y se apaga. */
+    public static final int RADIUS = 3;
 
     /**
      * Cuánto puede acercar el faro una celda a la paleta diurna como máximo. Menos de 1 para que la
