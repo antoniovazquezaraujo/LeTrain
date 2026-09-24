@@ -191,10 +191,32 @@ assign itinerary "cercanías diario" to train 1;
 - **El bucle es el comportamiento por defecto**: el autopilot vuelve siempre al primer waypoint
   (no se añade un atributo `loop` ni `once` por ahora).
 
-Puntos abiertos (seguimos pensando): dónde mostrar los desfases (¿HUD o solo `info`?), el uso de
-estos horarios para los **cruces en vía única** (fase 2c), si más adelante `arrival` también
-limitará la velocidad para no llegar antes de hora, y si hará falta azúcar `repeat` para no
-escribir cuatro veces las mismas paradas.
+#### Cruces en vía única: seguridad y plan
+
+Los **cantones** ya resuelven la seguridad en tiempo real: `BlockManager.tryLock` da un único dueño
+por segmento, el tren que no lo consigue frena y espera (`isWaitingForBlock`) y reanuda cuando el
+dueño lo libera (`onBlockReleased`). Dos trenes no pueden ocupar el mismo cantón, así que el choque
+no ocurre sin intervención manual. Pero los cantones **no planifican**: el primero que llega se
+lleva el segmento, el otro espera sin saber cuánto ni por qué, y con cuatro trenes y tres
+apartaderos el sistema serializa los movimientos pero no elige el orden.
+
+El horario es la **capa de plan** encima de la de seguridad: dice a qué hora debe estar cada tren en
+cada apartadero, de modo que los cruces ocurran **donde toca** y quien espera sepa hasta cuándo (su
+`departure`). Reglas:
+
+- **El horario nunca anula la seguridad**: si el cantón está ocupado, el tren espera aunque su hora
+  haya pasado; el retraso queda medido.
+- El `departure` del apartadero es la sincronización del cruce: "no salgas de aquí antes de las X".
+- Sin horario, todo sigue como hoy (cantones y buena voluntad).
+
+Queda abierto: la **prioridad** cuando el plan se cruza con imprevistos (retrasos, trenes manuales)
+y si algún día conviene una negociación automática de encuentros (elegir apartadero y prioridad sin
+horario) en lugar de confiar en el plan.
+
+Puntos abiertos (seguimos pensando): dónde mostrar los desfases (¿HUD o solo `info`?), la
+**prioridad** en los cruces (ver *Cruces en vía única*), si más adelante `arrival` también limitará
+la velocidad para no llegar antes de hora, y si hará falta azúcar `repeat` para no escribir cuatro
+veces las mismas paradas.
 
 ### Contrato (implementado en la fase 0)
 
@@ -232,8 +254,9 @@ public interface GameClock {
 
 ## Decisiones pendientes
 
-- Fase 2 en diseño (ver *Horarios*): quedan por decidir dónde mostrar los desfases, el uso de los
-  horarios en los cruces de vía única y si `arrival` limitará la velocidad más adelante.
+- Fase 2 en diseño (ver *Horarios*): quedan por decidir dónde mostrar los desfases, la prioridad
+  entre trenes cuando el plan se cruza con imprevistos (ver *Cruces en vía única*) y si `arrival`
+  limitará la velocidad más adelante.
 
 ## Alternativas consideradas
 
