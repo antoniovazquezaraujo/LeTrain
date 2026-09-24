@@ -42,8 +42,9 @@ public final class Timetable {
      * Nearest occurrence of a time of day when the schedule has no previous event yet (fresh
      * activation, load): the occurrence within half a day of now, so an evening start
      * ({@code departure 06:00} at 22:00) waits for the next morning while a late train
-     * ({@code departure 08:05} at 08:10) departs immediately. With a cursor available always prefer
-     * {@link #resolveAfter}.
+     * ({@code departure 08:05} at 08:10) departs immediately. Exactly ±12 h ties keep the current
+     * day's occurrence (documented decision: the tie resolves to the same day). With a cursor
+     * available always prefer {@link #resolveAfter}.
      */
     public static long resolveNearest(long nowAbsoluteMinute, LocalTime time) {
         long dayStart = Math.floorDiv(nowAbsoluteMinute, MINUTES_PER_DAY) * MINUTES_PER_DAY;

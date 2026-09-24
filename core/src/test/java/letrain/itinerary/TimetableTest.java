@@ -107,4 +107,15 @@ class TimetableTest {
         assertEquals(Timetable.absoluteMinute(new GameTime(2, 6, 0)), target,
                 "departure 06:00 at 22:00 belongs to the next morning");
     }
+
+    @Test
+    @DisplayName("resolveNearest ties at exactly ±12 h keep the current day's occurrence")
+    void resolveNearest_exactHalfDay_keepsCurrentDay() {
+        // 20:00 vs 08:00: exactly 12 h behind -> current day (late).
+        assertEquals(Timetable.absoluteMinute(new GameTime(1, 8, 0)), Timetable.resolveNearest(
+                Timetable.absoluteMinute(new GameTime(1, 20, 0)), LocalTime.of(8, 0)));
+        // 08:00 vs 20:00: exactly 12 h ahead -> current day (waits 12 h).
+        assertEquals(Timetable.absoluteMinute(new GameTime(1, 20, 0)), Timetable.resolveNearest(
+                Timetable.absoluteMinute(new GameTime(1, 8, 0)), LocalTime.of(20, 0)));
+    }
 }

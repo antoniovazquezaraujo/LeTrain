@@ -91,6 +91,32 @@ class PunctualityTest {
     }
 
     @Test
+    @DisplayName("exact zero prints without a sign (0 min, not +0 min)")
+    void zeroDelta_hasNoSign() {
+        Punctuality punctuality = new Punctuality();
+        punctuality.recordArrival(Waypoint.Type.STATION, 1, 0);
+        punctuality.recordDeparture(Waypoint.Type.STATION, 1, 0);
+
+        String text = punctuality.describe();
+
+        assertTrue(text.contains("Station 1: arrival 0 min, departure 0 min"), text);
+        assertTrue(text.contains("Current: 0 min"), text);
+        assertTrue(text.contains("Average: 0.0 min"), text);
+        assertTrue(text.contains("Max: 0 min"), text);
+        assertFalse(text.contains("+0"), text);
+    }
+
+    @Test
+    @DisplayName("all early: max is the signed maximum (least early)")
+    void allEarly_maxIsLeastEarly() {
+        Punctuality punctuality = new Punctuality();
+        punctuality.recordArrival(Waypoint.Type.STATION, 1, -5);
+        punctuality.recordArrival(Waypoint.Type.STATION, 2, -1);
+
+        assertTrue(punctuality.describe().contains("Max: -1 min"), punctuality.describe());
+    }
+
+    @Test
     @DisplayName("clear forgets the history")
     void clearResets() {
         Punctuality punctuality = new Punctuality();

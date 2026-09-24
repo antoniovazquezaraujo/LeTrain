@@ -23,8 +23,12 @@ import java.util.OptionalInt;
  * <li><b>current</b>: the most recently measured delta (the last stop's departure if it has one,
  * otherwise its arrival);
  * <li><b>average</b> and <b>max</b>: over <b>all measured deltas</b>, arrivals and departures
- * counted individually.
+ * counted individually. The max is the maximum <b>signed</b> delta, so with only early measurements
+ * it is the least early one (e.g. {@code -1}).
  * </ul>
+ *
+ * <p>
+ * Exact zero is printed without a sign ({@code 0 min}, not {@code +0 min}).
  *
  * <p>
  * The history is deterministic (derived only from ticks and the schedule) and lives in memory: it
@@ -160,8 +164,9 @@ public final class Punctuality {
             sb.append(String.join(", ", parts)).append('\n');
         }
         sb.append("  Current: ").append(signed(currentDelta().orElseThrow())).append(" min\n");
+        double average = averageDelta().orElseThrow();
         sb.append("  Average: ")
-                .append(String.format(Locale.ROOT, "%+.1f", averageDelta().orElseThrow()))
+                .append(String.format(Locale.ROOT, average > 0 ? "+%.1f" : "%.1f", average))
                 .append(" min\n");
         sb.append("  Max: ").append(signed(maxDelta().orElseThrow())).append(" min\n");
         return sb.toString();
@@ -171,7 +176,8 @@ public final class Punctuality {
         return (stop.type() == Waypoint.Type.STATION ? "Station " : "Sensor ") + stop.targetId();
     }
 
+    /** Signed delta: {@code +2} late, {@code -1} early, exact {@code 0} without sign. */
     private static String signed(int deltaMinutes) {
-        return (deltaMinutes >= 0 ? "+" : "") + deltaMinutes;
+        return deltaMinutes > 0 ? "+" + deltaMinutes : Integer.toString(deltaMinutes);
     }
 }

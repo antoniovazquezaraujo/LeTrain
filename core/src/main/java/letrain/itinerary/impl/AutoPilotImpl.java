@@ -47,6 +47,9 @@ public class AutoPilotImpl implements AutoPilot {
     private long scheduleCursor = NO_SCHEDULE_EVENT;
     /** Invalidates delayed retention releases from a previous hold. */
     private long retentionSerial = 0;
+    /** Last departure recorded for the current stop; avoids a duplicate after a reload. */
+    private Waypoint lastDepartureWaypoint;
+    private long lastDepartureTarget = NO_SCHEDULE_EVENT;
 
     public AutoPilotImpl() {
         this.train = null;
@@ -172,6 +175,8 @@ public class AutoPilotImpl implements AutoPilot {
         this.currentIndex = 0;
         // A new itinerary is a new service: sequence cursor and punctuality history restart.
         this.scheduleCursor = NO_SCHEDULE_EVENT;
+        this.lastDepartureWaypoint = null;
+        this.lastDepartureTarget = NO_SCHEDULE_EVENT;
         this.punctuality.clear();
         this.retentionSerial++;
     }
@@ -333,6 +338,8 @@ public class AutoPilotImpl implements AutoPilot {
         int delta = (int) (nowAbs - targetAbs);
         punctuality.recordArrival(waypoint.type(), waypoint.targetId(), delta);
         scheduleCursor = Math.max(scheduleCursor, targetAbs);
+        // A new arrival opens a new stop: its departure may be recorded again.
+        lastDepartureWaypoint = null;
         log.info("[AP] arrival at {} {} scheduled {} -> delta {} min", waypoint.type(),
                 waypoint.targetId(), Timetable.toGameTime(targetAbs), delta);
     }
@@ -355,8 +362,13 @@ public class AutoPilotImpl implements AutoPilot {
         long targetAbs = resolveScheduleTime(waypoint.departure().get(), nowAbs);
         long delta = nowAbs - targetAbs;
         if (delta >= 0) {
-            // Due or late: the train departs now and the deviation is measured.
-            punctuality.recordDeparture(waypoint.type(), waypoint.targetId(), (int) delta);
+            // Due or late: the train departs now and the deviation is measured. The guard keeps a
+            // reload inside the due window from recording the same departure twice.
+            if (waypoint != lastDepartureWaypoint || targetAbs != lastDepartureTarget) {
+                punctuality.recordDeparture(waypoint.type(), waypoint.targetId(), (int) delta);
+                lastDepartureWaypoint = waypoint;
+                lastDepartureTarget = targetAbs;
+            }
             scheduleCursor = Math.max(scheduleCursor, targetAbs);
             log.info("[AP] departure from {} {} scheduled {} -> delta {} min", waypoint.type(),
                     waypoint.targetId(), Timetable.toGameTime(targetAbs), delta);
