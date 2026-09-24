@@ -735,15 +735,10 @@ public class GraphicPresenter extends ApplicationAdapter
                 while (scanner.hasNextLine()) {
                     sb.append(scanner.nextLine()).append("\n");
                 }
-                // ADR-022 compatibility: a program saved before timetables keeps loading; the
-                // legacy comma-less waypoint syntax is normalized to the comma form with a warning.
+                // ADR-022 compatibility: a program saved before timetables keeps loading. The model
+                // normalizes the legacy comma-less syntax and warns (shared by both clients).
                 String text = sb.toString();
-                String normalized = letrain.command.LegacyScriptNormalizer.normalize(text);
-                if (!normalized.equals(text)) {
-                    log.warn("Legacy waypoint syntax found in {}; normalized to the comma form "
-                            + "(ADR-022)", file.getName());
-                }
-                List<String> errors = model.setProgram(normalized);
+                List<String> errors = model.setProgramFromDisk(text);
                 handleScriptErrors(errors);
                 log.info("Commands loaded successfully from {}", file.getAbsolutePath());
             } catch (java.io.FileNotFoundException e) {

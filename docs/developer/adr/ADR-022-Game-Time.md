@@ -172,6 +172,12 @@ journal importado se normaliza al cargar. Los fixtures viejos
 (`core/src/test/resources/bucle.json`) se conservan como tests de compatibilidad. `WAIT n` conserva
 su semántica (segundos de simulación) y los itinerarios sin horas siguen funcionando igual.
 
+El validador `letrain-check` se comporta **como la carga del juego**: normaliza el texto antes de
+compilar e **imprime un aviso visible** (`path: warning: ...`), de modo que nunca rechaza un
+escenario que el juego carga; el código de salida solo refleja los diagnósticos que queden (y sigue
+siendo `1` si hay errores reales). El compilador del **editor** en cambio es estricto al escribir,
+para que la sintaxis nueva se aprenda sin ambigüedad.
+
 Implementación de la fase 2a (esta entrega): las horas viven en el `Waypoint` (`arrival`/
 `departure`, un `LocalTime` opcional cada una), se validan en la gramática (token `TIME`, comas y
 orden obligatorios) y sobreviven a `GameSaveService` (JSON `HH:mm`) y al export/import de
@@ -196,6 +202,9 @@ create itinerary "cercanías diario" {
 }
 assign itinerary "cercanías diario" to train 1;
 ```
+
+> **Nota:** en este ejemplo `park` llega con la fase 2c y los comentarios `//` son ilustrativos (el
+> DSL no admite comentarios todavía); el resto de la sintaxis es la vigente en la fase 2a.
 
 - **Cómo se inicia cada mañana**: el tren pasa la noche en cocheras (el último y el primer
   waypoint son el mismo sitio) y a las 06:00 la `departure` del primer waypoint lo libera. La

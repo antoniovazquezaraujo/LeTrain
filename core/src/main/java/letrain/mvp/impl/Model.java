@@ -373,13 +373,7 @@ public class Model implements letrain.mvp.Model {
         if (this.program != null && !this.program.isEmpty()) {
             // ADR-022 compatibility: programs saved before timetables may use the old comma-less
             // waypoint syntax. Loading must keep working: normalize and re-parse with a warning.
-            String normalized = LegacyScriptNormalizer.normalize(this.program);
-            if (!normalized.equals(this.program)) {
-                log.warn("Legacy waypoint syntax found in the saved program; normalized to the "
-                        + "comma form (ADR-022).");
-                this.program = normalized;
-            }
-            this.setProgram(this.program);
+            this.setProgramFromDisk(this.program);
         }
 
         if (this.mode == letrain.mvp.Model.GameMode.COMMAND) {
@@ -903,6 +897,13 @@ public class Model implements letrain.mvp.Model {
     public List<String> setProgram(String program) {
         this.program = program;
         return getAutomationEngine().setProgram(program);
+    }
+
+    @Override
+    public List<String> setProgramFromDisk(String program) {
+        String normalized = LegacyScriptNormalizer.normalize(program,
+                warning -> log.warn("{} in the loaded program.", warning));
+        return setProgram(normalized);
     }
 
     public void reestablishSystemListeners() {

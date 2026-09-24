@@ -201,6 +201,9 @@ public class GrammarReference {
 
         Node itin = new Node("create itinerary");
         itin.add(new Node("template", "create itinerary \"\" {\n  add station #\n}"));
+        itin.add(new Node("waypoint rules",
+                "waypoints: commas between actions are mandatory; order: arrival, actions, "
+                        + "departure"));
         itin.setExpanded(true);
         root.add(itin);
 
@@ -213,8 +216,7 @@ public class GrammarReference {
         addSt.add(new Node("speed n", "add station # speed #"));
         addSt.add(new Node("arrival hh:mm", "add station # arrival 9:20"));
         addSt.add(new Node("departure hh:mm", "add station # departure 9:30"));
-        addSt.add(new Node("timed stop",
-                "add station # arrival 9:20, load, departure 9:30"));
+        addSt.add(new Node("timed stop", "add station # arrival 9:20, load, departure 9:30"));
         root.add(addSt);
 
         Node addSe = new Node("add sensor [cmd]");

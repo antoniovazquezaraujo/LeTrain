@@ -69,6 +69,9 @@ letrain-check mi-escenario.ltr
 - salida `0` si es válido, `1` si hay diagnósticos, `2` para errores de uso/IO.
 - cada diagnóstico se imprime como `ruta:línea:col: error: mensaje`, para que editores como vim o
   VS Code salten directos a la línea.
+- como la carga del juego, el validador acepta escenarios escritos antes de los horarios: la
+  sintaxis vieja de waypoints sin comas se normaliza primero y se avisa con `ruta: warning: ...`,
+  sin cambiar el código de salida si el resto es válido.
 
 ## El editor
 

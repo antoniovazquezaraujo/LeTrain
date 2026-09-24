@@ -324,6 +324,14 @@ public interface Model {
 
     public List<String> setProgram(String program);
 
+    /**
+     * Installs a program that came from disk (a savegame, a program file…). ADR-022 compatibility:
+     * legacy comma-less waypoint syntax is normalized to the comma form first, with a warning in
+     * the log, so old files keep loading. New text typed by the user goes through
+     * {@link #setProgram(String)} and stays strict.
+     */
+    public List<String> setProgramFromDisk(String program);
+
     public String getProgram();
 
     public EconomyManager getEconomyManager();

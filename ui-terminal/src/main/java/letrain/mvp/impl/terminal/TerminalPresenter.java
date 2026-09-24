@@ -2353,14 +2353,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (input == null) {
             return;
         }
-        // ADR-022 compatibility: a program saved before timetables keeps loading; the legacy
-        // comma-less waypoint syntax is normalized to the comma form with a warning.
-        String normalized = letrain.command.LegacyScriptNormalizer.normalize(input);
-        if (!normalized.equals(input)) {
-            log.warn("Legacy waypoint syntax found in {}; normalized to the comma form (ADR-022)",
-                    file.getName());
-        }
-        List<String> errors = model.setProgram(normalized);
+        // ADR-022 compatibility: a program saved before timetables keeps loading. The model
+        // normalizes the legacy comma-less syntax and warns; both clients share that behaviour.
+        List<String> errors = model.setProgramFromDisk(input);
         handleScriptErrors(errors);
     }
 

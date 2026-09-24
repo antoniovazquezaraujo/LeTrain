@@ -210,8 +210,8 @@ public final class ScenarioFile {
             }
         }
         return new Scenario(seed, parseConfig(configLines), normalizeCommands(build),
-                normalizeCommands(start), normalizeProgram(stripCommonIndent(
-                        program.toString().stripTrailing())));
+                normalizeCommands(start),
+                normalizeProgram(stripCommonIndent(program.toString().stripTrailing())));
     }
 
     /**
@@ -240,8 +240,8 @@ public final class ScenarioFile {
 
     private static void warnIfChanged(boolean changed) {
         if (changed) {
-            log.warn("Legacy waypoint syntax found while loading a scenario; normalized to the "
-                    + "comma form (ADR-022). Update the file to silence this warning.");
+            log.warn("{} while loading a scenario; update the file to silence this warning.",
+                    LegacyScriptNormalizer.LEGACY_WARNING);
         }
     }
 
