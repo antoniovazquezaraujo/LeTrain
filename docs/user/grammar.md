@@ -27,8 +27,10 @@ These are executed immediately. **They require a semicolon (`;`) at the end**.
 
 ### 2. Autopilot and Itineraries
 Allows you to program a list of destinations (waypoints) so the train can find its path using A*.
-Itinerary blocks use curly braces `{ }`; the `;` after a waypoint is optional. A waypoint can also
-carry a timetable: `arrival HH:MM` and/or `departure HH:MM` (24 h clock, `H:MM` or `HH:MM`).
+Itinerary blocks use curly braces `{ }`; the `;` after a waypoint is optional, and the closing `}`
+ends the block (a `;` after it is also optional; the console adds one automatically when you type
+the block). A waypoint can also carry a timetable: `arrival HH:MM` and/or `departure HH:MM` (24 h
+clock, `H:MM` or `HH:MM`).
 
 **Create Itinerary:**
 ```letrain
