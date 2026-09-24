@@ -27,17 +27,25 @@ Se ejecutan inmediatamente. **Requieren punto y coma (`;`) al final**.
 
 ### 2. Autopilot e Itinerarios
 Permite programar una lista de destinos (waypoints) para que el tren busque el camino mediante A*.
-Los bloques de itinerario usan llaves `{ }` y no requieren `;` al final.
+Los bloques de itinerario usan llaves `{ }`; el `;` al final de un waypoint es opcional. Un waypoint
+puede llevar además un horario: `arrival HH:MM` y/o `departure HH:MM` (reloj de 24 h, `H:MM` o
+`HH:MM`).
 
 **Crear Itinerario:**
 ```letrain
 create itinerary "RutaCarbon" {
     add station 1 load
-    add station 2 reverse unload
+    add station 2 arrival 10:23, reverse, unload, departure 10:30
     add sensor 5 speed 20
 }
 ```
-*Acciones de Waypoint permitidas:* `load`, `unload`, `reverse`, `stop`, `wait [NUM]`, `speed [NUM]`. Se puede opcionalmente fijar la dirección de entrada (una dirección de brújula como `n`, `e`, `s`, `w`) y añadir múltiples acciones.
+*Reglas de los waypoints:*
+
+- Las **comas son obligatorias** entre las acciones del waypoint. La referencia a la estación/sensor y la dirección de entrada opcional (una dirección de brújula como `n`, `e`, `s`, `w`) **no** llevan coma.
+- El **orden es obligatorio**: `arrival` primero, después las acciones en su orden de ejecución (`load`, `unload`, `reverse`, `stop`, `wait [NUM]`, `speed [NUM]`) y `departure` al final. Escribir un atributo fuera de orden es un error de sintaxis.
+- `arrival` se mide al llegar al waypoint; `departure` es la hora programada de salida (al llegar se ejecutan las acciones y, si terminan antes, el tren espera hasta ella). La estancia es `departure − arrival` en tiempo de juego. Las horas se leen en secuencia: una hora menor que la anterior pertenece al día siguiente (`arrival 23:50, departure 00:10`). Sin horas, el waypoint se comporta exactamente como antes.
+- Las horas se validan, se guardan y se exportan; el autopilot todavía no retiene ni mide con ellas.
+- La sintaxis vieja sin comas (p. ej. `add station 2 reverse unload`) se **rechaza en todos los puntos de entrada** (juego, editor y `letrain-check`) con un diagnóstico: esta beta no migra los itinerarios antiguos.
 
 **Asignar y Activar:**
 - `assign itinerary "RutaCarbon" to train 1;`

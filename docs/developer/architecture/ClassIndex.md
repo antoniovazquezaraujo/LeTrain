@@ -66,6 +66,7 @@
 - [[letrain.itinerary.AutoPilot|AutoPilot]] (core)
 - [[letrain.itinerary.Itinerary|Itinerary]] (core)
 - [[letrain.itinerary.SegmentPathfinder|SegmentPathfinder]] (core)
+- [[letrain.itinerary.Timetable|Timetable]] (core)
 - [[letrain.itinerary.TrainActionManager|TrainActionManager]] (core)
 - [[letrain.itinerary.Waypoint|Waypoint]] (core)
 - [[letrain.itinerary.WaypointCommand|WaypointCommand]] (core)

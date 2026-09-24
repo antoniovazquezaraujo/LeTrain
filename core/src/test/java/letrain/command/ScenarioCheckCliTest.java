@@ -1,7 +1,11 @@
 package letrain.command;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.DisplayName;
@@ -22,6 +26,28 @@ class ScenarioCheckCliTest {
         } finally {
             Files.deleteIfExists(file);
         }
+    }
+
+    @Test
+    @DisplayName("old comma-less waypoints are rejected with a diagnostic (strict, no migration)")
+    void run_commaLessWaypoints_returnsOneWithDiagnostic() throws Exception {
+        Path file = Files.createTempFile("commaless", ".ltr");
+        Files.writeString(file, "# LeTrain scenario v1\nseed 1\nprogram {\n"
+                + "create itinerary \"x\" {\n  add station 2 reverse unload\n}\n}\n");
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+        PrintStream original = System.out;
+        try {
+            System.setOut(new PrintStream(captured, true, StandardCharsets.UTF_8));
+            assertEquals(1, ScenarioCheckCli.run(new String[] {file.toString()}),
+                    "the validator must reject the old syntax like every other entry point");
+        } finally {
+            System.setOut(original);
+            Files.deleteIfExists(file);
+        }
+        String output = captured.toString(StandardCharsets.UTF_8);
+        assertTrue(output.contains(":5:"), output);
+        assertTrue(output.contains("error:"), output);
+        assertTrue(output.contains("unload"), output);
     }
 
     @Test

@@ -370,7 +370,9 @@ public class Model implements letrain.mvp.Model {
         }
         reestablishSystemListeners();
         if (this.program != null && !this.program.isEmpty()) {
-            this.setProgram(this.program);
+            // Single load path, shared with the clients' program files. The text is parsed
+            // strictly: ADR-022 does not migrate the old comma-less waypoint syntax.
+            this.setProgramFromDisk(this.program);
         }
 
         if (this.mode == letrain.mvp.Model.GameMode.COMMAND) {
@@ -894,6 +896,11 @@ public class Model implements letrain.mvp.Model {
     public List<String> setProgram(String program) {
         this.program = program;
         return getAutomationEngine().setProgram(program);
+    }
+
+    @Override
+    public List<String> setProgramFromDisk(String program) {
+        return setProgram(program);
     }
 
     public void reestablishSystemListeners() {

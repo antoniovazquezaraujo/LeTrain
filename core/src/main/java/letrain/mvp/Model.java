@@ -324,6 +324,13 @@ public interface Model {
 
     public List<String> setProgram(String program);
 
+    /**
+     * Installs a program that came from disk (a savegame, a program file…): the single load path
+     * shared by {@code postLoadInit} and the clients. The text is parsed strictly like any other
+     * program (ADR-022: the old comma-less waypoint syntax is not migrated).
+     */
+    public List<String> setProgramFromDisk(String program);
+
     public String getProgram();
 
     public EconomyManager getEconomyManager();

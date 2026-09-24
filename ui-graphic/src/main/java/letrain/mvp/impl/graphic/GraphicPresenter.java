@@ -735,7 +735,10 @@ public class GraphicPresenter extends ApplicationAdapter
                 while (scanner.hasNextLine()) {
                     sb.append(scanner.nextLine()).append("\n");
                 }
-                List<String> errors = model.setProgram(sb.toString());
+                // Program file from disk: the model's load path (strict, like every other
+                // entry point).
+                String text = sb.toString();
+                List<String> errors = model.setProgramFromDisk(text);
                 handleScriptErrors(errors);
                 log.info("Commands loaded successfully from {}", file.getAbsolutePath());
             } catch (java.io.FileNotFoundException e) {

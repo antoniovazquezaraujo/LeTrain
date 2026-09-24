@@ -2353,7 +2353,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (input == null) {
             return;
         }
-        List<String> errors = model.setProgram(input);
+        // Program file from disk: the model's load path (strict, like every other entry point).
+        List<String> errors = model.setProgramFromDisk(input);
         handleScriptErrors(errors);
     }
 

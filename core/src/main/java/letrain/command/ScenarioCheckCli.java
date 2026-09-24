@@ -11,6 +11,10 @@ import java.nio.file.Path;
  * code, so editors (e.g. vim's {@code :make}) can validate a scenario without starting the game.
  *
  * <p>
+ * The check is <b>strict</b> (ADR-022): the comma waypoint syntax is required everywhere and old
+ * comma-less text is reported as a diagnostic, just like the game's own load paths.
+ *
+ * <p>
  * Exit codes: {@code 0} ok, {@code 1} diagnostics, {@code 2} usage/IO error.
  */
 public final class ScenarioCheckCli {
