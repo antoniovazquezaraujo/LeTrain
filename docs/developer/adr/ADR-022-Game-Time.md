@@ -191,23 +191,31 @@ assign itinerary "cercanías diario" to train 1;
 - **El bucle es el comportamiento por defecto**: el autopilot vuelve siempre al primer waypoint
   (no se añade un atributo `loop` ni `once` por ahora).
 
-#### Cruces en vía única: seguridad y plan
+#### Cruces en vía única: cantones (seguridad) y horario (plan)
 
-Los **cantones** ya resuelven la seguridad en tiempo real: `BlockManager.tryLock` da un único dueño
-por segmento, el tren que no lo consigue frena y espera (`isWaitingForBlock`) y reanuda cuando el
-dueño lo libera (`onBlockReleased`). Dos trenes no pueden ocupar el mismo cantón, así que el choque
-no ocurre sin intervención manual. Pero los cantones **no planifican**: el primero que llega se
-lleva el segmento, el otro espera sin saber cuánto ni por qué, y con cuatro trenes y tres
-apartaderos el sistema serializa los movimientos pero no elige el orden.
+Un **cantón** es el tramo entre **nodos**: bifurcaciones (`ForkRailTrack`) y extremos/empalmes
+irregulares (`getConnections().size() != 2`). Las **estaciones y sensores no parten el cantón** por
+sí solos: un apeadero en mitad de una línea recta vive dentro del mismo cantón.
 
-El horario es la **capa de plan** encima de la de seguridad: dice a qué hora debe estar cada tren en
-cada apartadero, de modo que los cruces ocurran **donde toca** y quien espera sepa hasta cuándo (su
-`departure`). Reglas:
+Consecuencias:
 
-- **El horario nunca anula la seguridad**: si el cantón está ocupado, el tren espera aunque su hora
-  haya pasado; el retraso queda medido.
-- El `departure` del apartadero es la sincronización del cruce: "no salgas de aquí antes de las X".
-- Sin horario, todo sigue como hoy (cantones y buena voluntad).
+- **Apartadero de verdad** (dos desvíos con su vía de apartado): la vía principal y la de apartado
+  son cantones distintos entre los desvíos, así que dos trenes pueden estar a la vez en el tramo
+  (uno en la principal, otro en el apartado) y el que espera lo hace **en el desvío**, a la entrada
+  del apartadero. La espera es corta: lo que tarda el otro en recorrer el tramo.
+- **Línea A—B sin nodos intermedios**: todo el trayecto es **un solo cantón**; el primero que lo
+  reclama entra (`BlockManager.tryLock` da un dueño por cantón) y el otro espera en el nodo
+  anterior —su estación de origen— el cruce completo. No puede "avanzar hasta el apartadero"
+  porque, para los cantones, ese apartadero no delimita nada: es el mismo segmento.
+
+Prioridad y espera: el primero que reclama tiene prioridad **de facto** (por orden de llegada) y la
+espera termina cuando el dueño libera (`onBlockReleased`), así que no es infinita; pero no está
+acotada por ningún plan y puede encadenar retrasos (un tren que espera dos cruces seguidos).
+
+El horario es la **capa de plan** encima de la seguridad: decide **quién espera y dónde** (en el
+apartadero, no en mitad del tramo) y el `departure` del apartadero sincroniza el cruce ("no salgas
+antes de las X"). Regla de oro: **el horario nunca anula la seguridad**; si el cantón está ocupado,
+se espera y el retraso se mide.
 
 Queda abierto: la **prioridad** cuando el plan se cruza con imprevistos (retrasos, trenes manuales)
 y si algún día conviene una negociación automática de encuentros (elegir apartadero y prioridad sin
