@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import letrain.command.LegacyScriptNormalizer;
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -370,6 +371,14 @@ public class Model implements letrain.mvp.Model {
         }
         reestablishSystemListeners();
         if (this.program != null && !this.program.isEmpty()) {
+            // ADR-022 compatibility: programs saved before timetables may use the old comma-less
+            // waypoint syntax. Loading must keep working: normalize and re-parse with a warning.
+            String normalized = LegacyScriptNormalizer.normalize(this.program);
+            if (!normalized.equals(this.program)) {
+                log.warn("Legacy waypoint syntax found in the saved program; normalized to the "
+                        + "comma form (ADR-022).");
+                this.program = normalized;
+            }
             this.setProgram(this.program);
         }
 
