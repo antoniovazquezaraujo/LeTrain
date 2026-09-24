@@ -48,4 +48,17 @@ class WaypointCommandTest {
         assertTrue(WaypointCommand.REVERSE.isReverse());
         assertFalse(WaypointCommand.LOAD.isReverse());
     }
+
+    @Test
+    @DisplayName("PARK survives the savegame JSON round-trip (ADR-022 phase 2b)")
+    void parkSurvivesSerialization() throws Exception {
+        com.fasterxml.jackson.databind.ObjectMapper mapper =
+                new com.fasterxml.jackson.databind.ObjectMapper();
+        mapper.addMixIn(WaypointCommand.class, letrain.mvp.impl.WaypointCommandMixin.class);
+
+        String json = mapper.writeValueAsString(WaypointCommand.PARK);
+        assertTrue(json.contains("PARK"), json);
+
+        assertEquals(WaypointCommand.PARK, mapper.readValue(json, WaypointCommand.class));
+    }
 }

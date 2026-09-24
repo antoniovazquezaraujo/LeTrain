@@ -172,4 +172,38 @@ class SimpleGameClockTest {
         assertEquals(before, clock.elapsedTicks());
         assertEquals(8, clock.now().hour());
     }
+
+    @Test
+    @DisplayName("ticksUntil counts the ticks to the requested minute and is negative in the past")
+    void should_CountTicksUntil() {
+        SimpleGameClock clock = new SimpleGameClock();
+
+        assertEquals(100, clock.ticksUntil(new GameTime(1, 8, 5)));
+        assertEquals(0, clock.ticksUntil(new GameTime(1, 8, 0)));
+        assertEquals(-20, clock.ticksUntil(new GameTime(1, 7, 59)));
+
+        for (int i = 0; i < 99; i++) {
+            clock.tick();
+        }
+        assertEquals(1, clock.ticksUntil(new GameTime(1, 8, 5)),
+                "the release must not happen before the target minute");
+    }
+
+    @Test
+    @DisplayName("ticksUntil follows the configured day scale")
+    void should_CountTicksUntil_WithCustomScale() {
+        SimpleGameClock clock = new SimpleGameClock(720);
+
+        // 720 real seconds per day => 10 ticks per game minute.
+        assertEquals(50, clock.ticksUntil(new GameTime(1, 8, 5)));
+    }
+
+    @Test
+    @DisplayName("ticksUntil matches setTime jumps")
+    void should_CountTicksUntil_AfterSetTime() {
+        SimpleGameClock clock = new SimpleGameClock();
+        clock.setTime(new GameTime(1, 8, 4));
+
+        assertEquals(20, clock.ticksUntil(new GameTime(1, 8, 5)));
+    }
 }

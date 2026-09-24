@@ -1,10 +1,13 @@
 package letrain.itinerary.impl;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import letrain.itinerary.AutoPilot;
 import letrain.itinerary.Itinerary;
+import letrain.itinerary.Punctuality;
 import letrain.itinerary.SegmentPathfinder;
+import letrain.itinerary.Timetable;
 import letrain.itinerary.TrainActionManager;
 import letrain.itinerary.Waypoint;
 import letrain.itinerary.WaypointCommand;
@@ -13,8 +16,11 @@ import letrain.segments.Port;
 import letrain.segments.RailNode;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
+import letrain.time.GameClock;
+import letrain.time.GameTime;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
+import letrain.utils.SimulationScheduler;
 import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +39,17 @@ public class AutoPilotImpl implements AutoPilot {
     private Train train;
     private final List<WaypointCommand> pendingCommands = new java.util.ArrayList<>();
     private int waitTicks = 0;
+
+    // ADR-022 phase 2b: per-service timetable state (in memory, deterministic).
+    private final Punctuality punctuality = new Punctuality();
+    /** Absolute game minute of the last resolved schedule event; unset means "no event yet". */
+    private static final long NO_SCHEDULE_EVENT = Long.MIN_VALUE;
+    private long scheduleCursor = NO_SCHEDULE_EVENT;
+    /** Invalidates delayed retention releases from a previous hold. */
+    private long retentionSerial = 0;
+    /** Last departure recorded for the current stop; avoids a duplicate after a reload. */
+    private Waypoint lastDepartureWaypoint;
+    private long lastDepartureTarget = NO_SCHEDULE_EVENT;
 
     public AutoPilotImpl() {
         this.train = null;
@@ -66,7 +83,20 @@ public class AutoPilotImpl implements AutoPilot {
 
     public void reinitialize(Train train, TrainActionManager actionManager) {
         this.train = train;
-
+        if (mode == Mode.WAITING) {
+            // The delayed release lives in the transient scheduler: re-arm it after a load so a
+            // train saved while holding does not stay stuck forever.
+            if (!retainUntilDeparture()) {
+                SimulationScheduler scheduler = scheduler();
+                if (scheduler != null) {
+                    scheduler.schedule(0, () -> {
+                        if (mode == Mode.WAITING) {
+                            completeRetention();
+                        }
+                    });
+                }
+            }
+        }
         log.info("[AP] reinitialized");
     }
 
@@ -143,6 +173,12 @@ public class AutoPilotImpl implements AutoPilot {
         this.waitTicks = 0;
         this.pendingCommands.clear();
         this.currentIndex = 0;
+        // A new itinerary is a new service: sequence cursor and punctuality history restart.
+        this.scheduleCursor = NO_SCHEDULE_EVENT;
+        this.lastDepartureWaypoint = null;
+        this.lastDepartureTarget = NO_SCHEDULE_EVENT;
+        this.punctuality.clear();
+        this.retentionSerial++;
     }
 
     @Override
@@ -282,6 +318,134 @@ public class AutoPilotImpl implements AutoPilot {
         log.info("[AP] resumeWaiting from wait");
         this.waitTicks = 0;
         this.mode = Mode.FOLLOWING;
+    }
+
+    /***********************************************************
+     * ADR-022 phase 2b: retention and punctuality
+     **********************************************************/
+
+    @Override
+    public void measureArrival(Waypoint waypoint) {
+        if (waypoint == null || waypoint.arrival().isEmpty()) {
+            return;
+        }
+        GameClock clock = gameClock();
+        if (clock == null) {
+            return;
+        }
+        long nowAbs = Timetable.absoluteMinute(clock.now());
+        long targetAbs = resolveScheduleTime(waypoint.arrival().get(), nowAbs);
+        int delta = (int) (nowAbs - targetAbs);
+        punctuality.recordArrival(waypoint.type(), waypoint.targetId(), delta);
+        scheduleCursor = Math.max(scheduleCursor, targetAbs);
+        // A new arrival opens a new stop: its departure may be recorded again.
+        lastDepartureWaypoint = null;
+        log.info("[AP] arrival at {} {} scheduled {} -> delta {} min", waypoint.type(),
+                waypoint.targetId(), Timetable.toGameTime(targetAbs), delta);
+    }
+
+    @Override
+    public boolean retainUntilDeparture() {
+        if (mode == Mode.IDLE || itinerary == null) {
+            return false;
+        }
+        Waypoint waypoint = currentWaypoint().orElse(null);
+        if (waypoint == null || waypoint.departure().isEmpty()) {
+            return false;
+        }
+        GameClock clock = gameClock();
+        SimulationScheduler scheduler = scheduler();
+        if (clock == null || scheduler == null) {
+            return false;
+        }
+        long nowAbs = Timetable.absoluteMinute(clock.now());
+        long targetAbs = resolveScheduleTime(waypoint.departure().get(), nowAbs);
+        long delta = nowAbs - targetAbs;
+        if (delta >= 0) {
+            // Due or late: the train departs now and the deviation is measured. The guard keeps a
+            // reload inside the due window from recording the same departure twice.
+            if (waypoint != lastDepartureWaypoint || targetAbs != lastDepartureTarget) {
+                punctuality.recordDeparture(waypoint.type(), waypoint.targetId(), (int) delta);
+                lastDepartureWaypoint = waypoint;
+                lastDepartureTarget = targetAbs;
+            }
+            scheduleCursor = Math.max(scheduleCursor, targetAbs);
+            log.info("[AP] departure from {} {} scheduled {} -> delta {} min", waypoint.type(),
+                    waypoint.targetId(), Timetable.toGameTime(targetAbs), delta);
+            return false;
+        }
+        GameTime target = Timetable.toGameTime(targetAbs);
+        long ticks = Math.max(0, clock.ticksUntil(target));
+        mode = Mode.WAITING;
+        final long serial = ++retentionSerial;
+        log.info("[AP] holding at {} {} until {} ({} ticks, {} min early)", waypoint.type(),
+                waypoint.targetId(), target, ticks, -delta);
+        scheduler.schedule((int) Math.min(ticks, Integer.MAX_VALUE),
+                () -> onRetentionDue(waypoint, targetAbs, serial));
+        return true;
+    }
+
+    @Override
+    public Optional<Punctuality> punctuality() {
+        return punctuality.isEmpty() ? Optional.empty() : Optional.of(punctuality);
+    }
+
+    /**
+     * Delayed release of a schedule hold; re-arms itself if the clock has not reached the departure
+     * yet (it may have been rewound by {@code time set}) and ignores stale releases.
+     */
+    private void onRetentionDue(Waypoint waypoint, long targetAbs, long serial) {
+        if (mode != Mode.WAITING || serial != retentionSerial) {
+            return;
+        }
+        if (currentWaypoint().orElse(null) != waypoint) {
+            return;
+        }
+        GameClock clock = gameClock();
+        SimulationScheduler scheduler = scheduler();
+        if (clock == null || scheduler == null) {
+            completeRetention();
+            return;
+        }
+        long nowAbs = Timetable.absoluteMinute(clock.now());
+        if (nowAbs < targetAbs) {
+            long ticks = Math.max(0, clock.ticksUntil(Timetable.toGameTime(targetAbs)));
+            scheduler.schedule((int) Math.min(ticks, Integer.MAX_VALUE),
+                    () -> onRetentionDue(waypoint, targetAbs, serial));
+            return;
+        }
+        completeRetention();
+    }
+
+    private void completeRetention() {
+        mode = Mode.FOLLOWING;
+        if (train != null && train.getActionManager() != null) {
+            train.getActionManager().onRetentionReleased();
+        }
+    }
+
+    /**
+     * Resolves a time of day onto a monotonic absolute minute: after the previous schedule event
+     * when there is one (sequence with midnight rollover), otherwise the nearest occurrence around
+     * the current time (see {@link Timetable#resolveNearest}).
+     */
+    private long resolveScheduleTime(LocalTime time, long nowAbs) {
+        return scheduleCursor != NO_SCHEDULE_EVENT ? Timetable.resolveAfter(scheduleCursor, time)
+                : Timetable.resolveNearest(nowAbs, time);
+    }
+
+    private GameClock gameClock() {
+        if (train == null || train.getModel() == null) {
+            return null;
+        }
+        return train.getModel().getGameClock();
+    }
+
+    private SimulationScheduler scheduler() {
+        if (train == null || train.getModel() == null) {
+            return null;
+        }
+        return train.getModel().getScheduler();
     }
 
     @Override

@@ -154,5 +154,8 @@ MIN: 'min';
 
 STOP: 'stop';
 
+// ADR-022 phase 2b: hold at the waypoint with the engine off, keeping the autopilot
+PARK: 'park';
+
 // Identifiers
 ID : [a-zA-Z0-9_]+ ;

@@ -55,4 +55,26 @@ public interface AutoPilot {
 
     /** Ensure the fork between 'from' and 'to' segments is oriented correctly. */
     default void ensureForkRoute(letrain.segments.Segment from, letrain.segments.Segment to) {}
+
+    /**
+     * Measures the arrival at a waypoint against its timetable (ADR-022 phase 2b). No-op when the
+     * waypoint has no {@code arrival} time.
+     */
+    default void measureArrival(Waypoint waypoint) {}
+
+    /**
+     * Checks the current waypoint's {@code departure} time (ADR-022 phase 2b). When the train is
+     * early it returns {@code true} and the autopilot switches to {@link Mode#WAITING} until the
+     * departure (a deterministic tick-scheduled release). When the departure is due or already
+     * passed it records the departure delta and returns {@code false}. No-op (returns false) when
+     * there is no departure or no clock, so waypoints without times keep the old behaviour.
+     */
+    default boolean retainUntilDeparture() {
+        return false;
+    }
+
+    /** Punctuality history of the current service (ADR-022 phase 2b). */
+    default Optional<Punctuality> punctuality() {
+        return Optional.empty();
+    }
 }

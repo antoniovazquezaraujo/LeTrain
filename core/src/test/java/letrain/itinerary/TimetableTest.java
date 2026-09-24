@@ -3,6 +3,7 @@ package letrain.itinerary;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.LocalTime;
+import letrain.time.GameTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,5 +63,59 @@ class TimetableTest {
     void dwellMinutes_rollsOverMidnight(String arrival, String departure, int expected) {
         assertEquals(expected,
                 Timetable.dwellMinutes(LocalTime.parse(arrival), LocalTime.parse(departure)));
+    }
+
+    @Test
+    @DisplayName("absolute minutes count from day 1 00:00 and round-trip through GameTime")
+    void absoluteMinute_roundTrip() {
+        assertEquals(0, Timetable.absoluteMinute(new GameTime(1, 0, 0)));
+        assertEquals(480, Timetable.absoluteMinute(new GameTime(1, 8, 0)));
+        assertEquals(Timetable.MINUTES_PER_DAY + 10,
+                Timetable.absoluteMinute(new GameTime(2, 0, 10)));
+        assertEquals(new GameTime(2, 0, 10), Timetable.toGameTime(Timetable.MINUTES_PER_DAY + 10));
+    }
+
+    @Test
+    @DisplayName("resolveNearest picks the same-day occurrence when the train is late")
+    void resolveNearest_late_sameDay() {
+        long now = Timetable.absoluteMinute(new GameTime(1, 8, 10));
+
+        long target = Timetable.resolveNearest(now, LocalTime.of(8, 5));
+
+        assertEquals(Timetable.absoluteMinute(new GameTime(1, 8, 5)), target);
+        assertEquals(5, now - target, "late by five game minutes");
+    }
+
+    @Test
+    @DisplayName("resolveNearest picks the same-day occurrence when the train is early")
+    void resolveNearest_early_sameDay() {
+        long now = Timetable.absoluteMinute(new GameTime(1, 8, 0));
+
+        long target = Timetable.resolveNearest(now, LocalTime.of(8, 5));
+
+        assertEquals(Timetable.absoluteMinute(new GameTime(1, 8, 5)), target);
+        assertEquals(-5, now - target, "early by five game minutes");
+    }
+
+    @Test
+    @DisplayName("resolveNearest at night picks the next morning when it is closer than half a day")
+    void resolveNearest_night_picksNextMorning() {
+        long now = Timetable.absoluteMinute(new GameTime(1, 22, 0));
+
+        long target = Timetable.resolveNearest(now, LocalTime.of(6, 0));
+
+        assertEquals(Timetable.absoluteMinute(new GameTime(2, 6, 0)), target,
+                "departure 06:00 at 22:00 belongs to the next morning");
+    }
+
+    @Test
+    @DisplayName("resolveNearest ties at exactly ±12 h keep the current day's occurrence")
+    void resolveNearest_exactHalfDay_keepsCurrentDay() {
+        // 20:00 vs 08:00: exactly 12 h behind -> current day (late).
+        assertEquals(Timetable.absoluteMinute(new GameTime(1, 8, 0)), Timetable.resolveNearest(
+                Timetable.absoluteMinute(new GameTime(1, 20, 0)), LocalTime.of(8, 0)));
+        // 08:00 vs 20:00: exactly 12 h ahead -> current day (waits 12 h).
+        assertEquals(Timetable.absoluteMinute(new GameTime(1, 20, 0)), Timetable.resolveNearest(
+                Timetable.absoluteMinute(new GameTime(1, 8, 0)), LocalTime.of(20, 0)));
     }
 }

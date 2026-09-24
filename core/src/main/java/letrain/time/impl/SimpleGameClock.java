@@ -98,6 +98,20 @@ public class SimpleGameClock implements GameClock {
     }
 
     @Override
+    public long ticksUntil(GameTime time) {
+        if (time == null) {
+            return 0;
+        }
+        double minutesFromStart = (time.day() - 1) * (double) MINUTES_PER_DAY + time.minuteOfDay()
+                - START_MINUTE_OF_DAY;
+        double ticksPerMinute = dayDurationSeconds * TICKS_PER_SECOND / (double) MINUTES_PER_DAY;
+        // ceil so the target tick is the first one whose displayed minute is the requested one
+        // (never earlier); the tiny epsilon absorbs floating-point noise on exact multiples.
+        long targetTicks = (long) Math.ceil(minutesFromStart * ticksPerMinute - 1e-9);
+        return targetTicks - elapsedTicks;
+    }
+
+    @Override
     public void addListener(GameClockListener listener) {
         if (listener != null) {
             listeners.add(listener);

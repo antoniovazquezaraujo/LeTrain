@@ -1,6 +1,7 @@
 package letrain.itinerary;
 
 import java.time.LocalTime;
+import letrain.time.GameTime;
 
 /**
  * ADR-022 phase 2 timetable semantics for waypoint times.
@@ -14,14 +15,47 @@ import java.time.LocalTime;
  *
  * <p>
  * This class is a pure, deterministic helper: it holds no clock and does not retain or regulate
- * trains. The autopilot retention behaviour is phase 2b; phase 2a only parses, validates and
- * persists the times.
+ * trains; the autopilot keeps the sequence cursor and asks {@link #resolveAfter} /
+ * {@link #resolveNearest} to turn a time of day into a monotonic absolute minute.
  */
 public final class Timetable {
 
     public static final int MINUTES_PER_DAY = 24 * 60;
 
     private Timetable() {}
+
+    /**
+     * Absolute game minute of an instant, counting from day 1 {@code 00:00} (day 1 08:00 = 480).
+     */
+    public static long absoluteMinute(GameTime time) {
+        return (time.day() - 1L) * MINUTES_PER_DAY + time.minuteOfDay();
+    }
+
+    /** Game instant at an absolute minute ({@link #absoluteMinute} inverse). */
+    public static GameTime toGameTime(long absoluteMinute) {
+        long day = Math.floorDiv(absoluteMinute, MINUTES_PER_DAY) + 1;
+        int minuteOfDay = (int) Math.floorMod(absoluteMinute, MINUTES_PER_DAY);
+        return new GameTime((int) day, minuteOfDay / 60, minuteOfDay % 60);
+    }
+
+    /**
+     * Nearest occurrence of a time of day when the schedule has no previous event yet (fresh
+     * activation, load): the occurrence within half a day of now, so an evening start
+     * ({@code departure 06:00} at 22:00) waits for the next morning while a late train
+     * ({@code departure 08:05} at 08:10) departs immediately. Exactly ±12 h ties keep the current
+     * day's occurrence (documented decision: the tie resolves to the same day). With a cursor
+     * available always prefer {@link #resolveAfter}.
+     */
+    public static long resolveNearest(long nowAbsoluteMinute, LocalTime time) {
+        long dayStart = Math.floorDiv(nowAbsoluteMinute, MINUTES_PER_DAY) * MINUTES_PER_DAY;
+        long candidate = dayStart + minuteOfDay(time);
+        if (nowAbsoluteMinute - candidate > MINUTES_PER_DAY / 2) {
+            candidate += MINUTES_PER_DAY;
+        } else if (candidate - nowAbsoluteMinute > MINUTES_PER_DAY / 2) {
+            candidate -= MINUTES_PER_DAY;
+        }
+        return candidate;
+    }
 
     /** Minute of the day of a time-of-day value ({@code 00:00} = 0 … {@code 23:59} = 1439). */
     public static int minuteOfDay(LocalTime time) {

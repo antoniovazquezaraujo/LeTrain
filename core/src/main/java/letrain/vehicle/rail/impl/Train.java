@@ -160,6 +160,15 @@ public class Train implements Renderable {
         return autopilot.mode() != letrain.itinerary.AutoPilot.Mode.IDLE;
     }
 
+    /**
+     * True while the autopilot holds the train at a waypoint until its departure (ADR-022 phase
+     * 2b). A requested speed is then deferred (saved) instead of moving the train, like a block
+     * wait; the scheduled departure restores it.
+     */
+    public boolean isHeldBySchedule() {
+        return autopilot != null && autopilot.mode() == letrain.itinerary.AutoPilot.Mode.WAITING;
+    }
+
     public long getSimulationTick() {
         return simulationTick;
     }
@@ -680,9 +689,13 @@ public class Train implements Renderable {
         }
     }
 
-    /** Stops all tractors immediately (speed = 0). */
+    /**
+     * Stops all tractors immediately (speed = 0). A previously saved cruise speed is preserved when
+     * the train was already braking (target 0): buffer contacts must not forget it, or the
+     * scheduled departure of a parked train would resume at the default speed (ADR-022 2b).
+     */
     public void emergencyStop() {
-        if (getDirectorLinker() != null) {
+        if (getDirectorLinker() != null && getDirectorLinker().getTargetSpeed() > 0) {
             savedTargetSpeed = getDirectorLinker().getTargetSpeed();
         }
         getTractors().forEach(t -> {

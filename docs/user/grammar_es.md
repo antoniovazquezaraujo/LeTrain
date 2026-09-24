@@ -42,9 +42,12 @@ create itinerary "RutaCarbon" {
 *Reglas de los waypoints:*
 
 - Las **comas son obligatorias** entre las acciones del waypoint. La referencia a la estación/sensor y la dirección de entrada opcional (una dirección de brújula como `n`, `e`, `s`, `w`) **no** llevan coma.
-- El **orden es obligatorio**: `arrival` primero, después las acciones en su orden de ejecución (`load`, `unload`, `reverse`, `stop`, `wait [NUM]`, `speed [NUM]`) y `departure` al final. Escribir un atributo fuera de orden es un error de sintaxis.
-- `arrival` se mide al llegar al waypoint; `departure` es la hora programada de salida (al llegar se ejecutan las acciones y, si terminan antes, el tren espera hasta ella). La estancia es `departure − arrival` en tiempo de juego. Las horas se leen en secuencia: una hora menor que la anterior pertenece al día siguiente (`arrival 23:50, departure 00:10`). Sin horas, el waypoint se comporta exactamente como antes.
-- Las horas se validan, se guardan y se exportan; el autopilot todavía no retiene ni mide con ellas.
+- El **orden es obligatorio**: `arrival` primero, después las acciones en su orden de ejecución (`load`, `unload`, `reverse`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`) y `departure` al final. Escribir un atributo fuera de orden es un error de sintaxis.
+- `arrival` se mide al llegar al waypoint; `departure` es la hora programada de salida: al llegar se ejecutan las acciones, el tren espera hasta ella y la salida programada arranca el motor. La estancia es `departure − arrival` en tiempo de juego. Las horas se leen en secuencia: una hora menor que la anterior pertenece al día siguiente (`arrival 23:50, departure 00:10`). Si el tren llega tarde, sale de inmediato y se mide el desfase. Sin horas, el waypoint se comporta exactamente como antes.
+- `park` frena, apaga el motor y **mantiene el autopilot activo** (a diferencia de `stop`, que frena y desactiva el autopilot). La siguiente salida programada arranca el motor y recupera la velocidad de crucero, de modo que un servicio diario que se repite puede terminar con `park` y volver a salir a la mañana siguiente. Un `park` **sin salida programada posterior** deja el tren aparcado (motor apagado, plan conservado): no vuelve a moverse hasta que una salida programada lo arranque o lo conduzcas manualmente.
+- El tren muestra su puntualidad en `info train N`: desfases de llegada y salida por parada en minutos de juego (`+` = tarde, `−` = adelantado), más el desfase actual, medio y máximo. Un tren sin horas no muestra nada.
+- La seguridad manda: la retención nunca pisa los cantones; si el bloque siguiente está ocupado, el tren espera y el retraso aparece en la siguiente medida.
+- Las horas se validan, se guardan y se exportan.
 - La sintaxis vieja sin comas (p. ej. `add station 2 reverse unload`) se **rechaza en todos los puntos de entrada** (juego, editor y `letrain-check`) con un diagnóstico: esta beta no migra los itinerarios antiguos.
 
 **Asignar y Activar:**

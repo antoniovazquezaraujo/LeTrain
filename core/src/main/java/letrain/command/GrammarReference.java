@@ -212,6 +212,7 @@ public class GrammarReference {
         addSt.add(new Node("unload", "add station # unload"));
         addSt.add(new Node("reverse", "add station # reverse"));
         addSt.add(new Node("stop", "add station # stop"));
+        addSt.add(new Node("park", "add station # park"));
         addSt.add(new Node("wait n", "add station # wait #"));
         addSt.add(new Node("speed n", "add station # speed #"));
         addSt.add(new Node("arrival hh:mm", "add station # arrival 9:20"));
@@ -222,6 +223,7 @@ public class GrammarReference {
         Node addSe = new Node("add sensor [cmd]");
         addSe.add(new Node("load", "add sensor # load"));
         addSe.add(new Node("unload", "add sensor # unload"));
+        addSe.add(new Node("park", "add sensor # park"));
         addSe.add(new Node("wait n", "add sensor # wait #"));
         addSe.add(new Node("arrival hh:mm", "add sensor # arrival 10:37"));
         addSe.add(new Node("departure hh:mm", "add sensor # departure 10:40"));
