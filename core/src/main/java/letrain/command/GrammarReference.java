@@ -211,12 +211,18 @@ public class GrammarReference {
         addSt.add(new Node("stop", "add station # stop"));
         addSt.add(new Node("wait n", "add station # wait #"));
         addSt.add(new Node("speed n", "add station # speed #"));
+        addSt.add(new Node("arrival hh:mm", "add station # arrival 9:20"));
+        addSt.add(new Node("departure hh:mm", "add station # departure 9:30"));
+        addSt.add(new Node("timed stop",
+                "add station # arrival 9:20, load, departure 9:30"));
         root.add(addSt);
 
         Node addSe = new Node("add sensor [cmd]");
         addSe.add(new Node("load", "add sensor # load"));
         addSe.add(new Node("unload", "add sensor # unload"));
         addSe.add(new Node("wait n", "add sensor # wait #"));
+        addSe.add(new Node("arrival hh:mm", "add sensor # arrival 10:37"));
+        addSe.add(new Node("departure hh:mm", "add sensor # departure 10:40"));
         root.add(addSe);
 
         root.add(new Node("assign itinerary", "assign itinerary \"\" to train #;"));

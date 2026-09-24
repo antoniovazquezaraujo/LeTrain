@@ -36,9 +36,21 @@ bool : TRUE | FALSE ;
 
 trainRef : NUMBER | STRING ;
 
-waypoint : ADD STATION stationRef direction? action*
-         | ADD SENSOR  sensorRef  direction? action*
+waypoint : ADD STATION stationRef direction? waypointPlan? SEMI?
+         | ADD SENSOR  sensorRef  direction? waypointPlan? SEMI?
          ;
+
+/**
+ * ADR-022 timetable attributes. Commas are mandatory between the plan items, but the waypoint
+ * reference and its direction take no comma. The order is mandatory: `arrival` first, then the
+ * actions in execution order, `departure` last. A single `departure` needs no comma either.
+ */
+waypointPlan : departureAttr
+             | (arrivalAttr | action) (COMMA action)* (COMMA departureAttr)?
+             ;
+
+arrivalAttr   : ARRIVAL TIME ;
+departureAttr : DEPARTURE TIME ;
 
 stationRef : STRING | NUMBER ;
 sensorRef  : STRING | NUMBER ;
