@@ -1,9 +1,11 @@
 package letrain.command;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import letrain.itinerary.Itinerary;
 import letrain.itinerary.Waypoint;
 import letrain.itinerary.WaypointCommand;
@@ -499,15 +501,17 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             if (st == null) {
                 return null;
             }
-            wp = new WaypointImpl(Waypoint.Type.STATION, st.getId(), resolveDir(ctx),
-                    resolveCommands(ctx));
+            wp = new WaypointImpl(Waypoint.Type.STATION, st.getId(),
+                    Optional.ofNullable(resolveDir(ctx)), resolveCommands(ctx), resolveArrival(ctx),
+                    resolveDeparture(ctx));
         } else if (ctx.sensorRef() != null) {
             Sensor se = resolveSensor(ctx.sensorRef());
             if (se == null) {
                 return null;
             }
-            wp = new WaypointImpl(Waypoint.Type.SENSOR, se.getId(), resolveDir(ctx),
-                    resolveCommands(ctx));
+            wp = new WaypointImpl(Waypoint.Type.SENSOR, se.getId(),
+                    Optional.ofNullable(resolveDir(ctx)), resolveCommands(ctx), resolveArrival(ctx),
+                    resolveDeparture(ctx));
         } else {
             return null;
         }
@@ -522,9 +526,36 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         return null; // default
     }
 
+    private Optional<LocalTime> resolveArrival(ScriptLogicParser.WaypointContext ctx) {
+        ScriptLogicParser.WaypointPlanContext plan = ctx.waypointPlan();
+        if (plan == null || plan.arrivalAttr() == null || plan.arrivalAttr().TIME() == null) {
+            // TIME() is null only after parser error recovery; the diagnostic is already reported.
+            return Optional.empty();
+        }
+        return Optional.of(parseTime(plan.arrivalAttr().TIME().getText()));
+    }
+
+    private Optional<LocalTime> resolveDeparture(ScriptLogicParser.WaypointContext ctx) {
+        ScriptLogicParser.WaypointPlanContext plan = ctx.waypointPlan();
+        if (plan == null || plan.departureAttr() == null || plan.departureAttr().TIME() == null) {
+            // TIME() is null only after parser error recovery; the diagnostic is already reported.
+            return Optional.empty();
+        }
+        return Optional.of(parseTime(plan.departureAttr().TIME().getText()));
+    }
+
+    /** Parses a grammar-validated {@code H:MM} / {@code HH:MM} literal into a time of day. */
+    private static LocalTime parseTime(String text) {
+        String[] parts = text.split(":");
+        return LocalTime.of(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+    }
+
     private List<WaypointCommand> resolveCommands(ScriptLogicParser.WaypointContext ctx) {
         List<WaypointCommand> all = new ArrayList<>();
-        for (var act : ctx.action()) {
+        if (ctx.waypointPlan() == null) {
+            return all;
+        }
+        for (var act : ctx.waypointPlan().action()) {
             all.addAll(toCommands(act));
         }
         return all;

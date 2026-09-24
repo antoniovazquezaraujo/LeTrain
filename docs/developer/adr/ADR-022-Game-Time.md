@@ -1,6 +1,6 @@
 # ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)
 
-## Estado: PROPUESTO — fase 0 en implementación (reloj, HUD y comando `time set`)
+## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2a implementada (gramática y modelo de horarios, sin retención todavía)
 
 ## Contexto
 
@@ -159,12 +159,24 @@ Métrica (fase 2, solo medir; la economía horaria es la fase 4):
   (`+2` = dos minutos tarde, `−1` = adelantado) referido al tren seleccionado/en conducción; si el
   itinerario no tiene horas, no se muestra nada.
 
-Compatibilidad: los itinerarios sin horas siguen funcionando igual si ya usan comas; `WAIT n`
-conserva su semántica (segundos de simulación). Al exigir comas entre acciones, los itinerarios
-con varias acciones sin comas (`add station 2 reverse unload`) dejan de ser válidos y hay que
-migrarlos al implementar la fase 2: ejemplos de `docs/user/grammar*.md`, tests
-(`AutoPilotIntegrationTest`), el exportador de escenarios y los escenarios guardados por el
-jugador.
+Compatibilidad (**decidida**): la sintaxis nueva es **estricta en todos los puntos de entrada**
+(consola, editor, escenarios, partidas guardadas, journals y `letrain-check`): las acciones sin
+comas y los atributos fuera de orden son errores con diagnóstico. Al ser una beta **sin compromiso
+de compatibilidad**, el texto viejo **no se migra**: los escenarios, programas y journals escritos
+con la sintaxis anterior (`add station 2 reverse unload`, `SPEED 0 WAIT 3 SPEED 3`) quedan inválidos
+y hay que reescribir sus itinerarios a mano; los ejemplos del repo se migran en esta entrega
+(`docs/user/grammar*.md`, `AutoPilotIntegrationTest`) y el exportador ya emite la sintaxis nueva
+porque el journal vivía en memoria. Lo único que se conserva es el **formato de guardado**: un JSON
+viejo sin los campos `arrival`/`departure` carga con horas vacías
+(`core/src/test/resources/bucle.json` se conserva como test de ese caso). `WAIT n` conserva su
+semántica (segundos de simulación) y los itinerarios sin horas siguen funcionando igual.
+
+Implementación de la fase 2a (esta entrega): las horas viven en el `Waypoint` (`arrival`/
+`departure`, un `LocalTime` opcional cada una), se validan en la gramática (token `TIME`, comas y
+orden obligatorios) y sobreviven a `GameSaveService` (JSON `HH:mm`) y al export/import de
+escenarios. La semántica de secuencia y estancia vive en `letrain.itinerary.Timetable`
+(`resolveAfter`/`dwellMinutes`, con rollover de medianoche) y queda cubierta por tests; la
+retención y la medida de desfases son la fase 2b.
 
 #### La jornada completa (ejemplo)
 
@@ -183,6 +195,9 @@ create itinerary "cercanías diario" {
 }
 assign itinerary "cercanías diario" to train 1;
 ```
+
+> **Nota:** en este ejemplo `park` llega con la fase 2c y los comentarios `//` son ilustrativos (el
+> DSL no admite comentarios todavía); el resto de la sintaxis es la vigente en la fase 2a.
 
 - **Cómo se inicia cada mañana**: el tren pasa la noche en cocheras (el último y el primer
   waypoint son el mismo sitio) y a las 06:00 la `departure` del primer waypoint lo libera. La

@@ -242,8 +242,16 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             onMessage.accept("Time", text);
             return null;
         }
-        int hour = Integer.parseInt(ctx.NUMBER(0).getText());
-        int minute = Integer.parseInt(ctx.NUMBER(1).getText());
+        int hour;
+        int minute;
+        if (ctx.TIME() != null) {
+            String[] parts = ctx.TIME().getText().split(":");
+            hour = Integer.parseInt(parts[0]);
+            minute = Integer.parseInt(parts[1]);
+        } else {
+            hour = Integer.parseInt(ctx.NUMBER(0).getText());
+            minute = Integer.parseInt(ctx.NUMBER(1).getText());
+        }
         letrain.time.GameTime target = new letrain.time.GameTime(clock.now().day(), hour, minute);
         clock.setTime(target);
         log.info("[time] set to {}", clock.now());
