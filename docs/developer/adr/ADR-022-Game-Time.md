@@ -226,6 +226,20 @@ ordena a los que esperan por ese turno (empate: id de locomotora) y el primero q
 lleva; el turno se limpia al dejar de esperar. Hoy gana la más veterana; pasar a FIFO es pequeño y
 hay `BlockManagerTest`, `BlockReleaseIntegrationTest` y `TrainSafetyManagerTest` para cubrirlo.
 
+**Prioridades (diseño previsto, para cuando lleguen los trenes de pasajeros)**: la cola se ordenará
+por la clave **`(clase, turno)`** — clases tipo **pasajeros > mercancías > maniobras**, FIFO dentro
+de cada clase — para que un tren de pasajeros pueda adelantar al resto. Dos cautelas:
+
+- **Antiinanición**: "siempre primero" puede dejar a un mercancías esperando sin fin; se resolverá
+  con **envejecimiento** (asciende de clase tras X minutos de juego esperando) o con **prioridad por
+  retraso** (el de pasajeros solo adelanta si va por encima de un umbral). La política se decidirá
+  cuando existan los trenes de pasajeros.
+- **La prioridad no expulsa**: si el cantón ya está ocupado, el prioritario espera a que se libere;
+  decide *quién espera cuando hay cola*, no crea vía.
+
+La clase vive en el tren (todos `DEFAULT` mientras no haya pasajeros) y conviene mostrarla en
+`info train` junto al tiempo de espera.
+
 El horario es la **capa de plan** encima de la seguridad: decide **quién espera y dónde** (en el
 apartadero, no en mitad del tramo) y el `departure` del apartadero sincroniza el cruce ("no salgas
 antes de las X"). Regla de oro: **el horario nunca anula la seguridad**; si el cantón está ocupado,
@@ -236,8 +250,9 @@ y si algún día conviene una negociación automática de encuentros (elegir apa
 horario) en lugar de confiar en el plan.
 
 Puntos abiertos (seguimos pensando): dónde mostrar los desfases (¿HUD o solo `info`?), si más
-adelante `arrival` también limitará la velocidad para no llegar antes de hora, y si hará falta
-azúcar `repeat` para no escribir cuatro veces las mismas paradas.
+adelante `arrival` también limitará la velocidad para no llegar antes de hora, si hará falta azúcar
+`repeat` para no escribir cuatro veces las mismas paradas, y la política de prioridad de pasajeros
+(¿siempre, o solo con retraso?) con su mecanismo antiinanición (envejecimiento o cupo).
 
 ### Contrato (implementado en la fase 0)
 
