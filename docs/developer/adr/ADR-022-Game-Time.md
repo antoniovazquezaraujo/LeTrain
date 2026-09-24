@@ -33,7 +33,7 @@ elegida en cada punto:
 | Eventos | Listeners de hora/día + `SimulationScheduler` | Uso directo desde servicios/presenters | Listeners + scheduler; nada de polling en `tick()` |
 | Persistencia | `elapsedTicks` (long) | campo `gameTime` opcional en `Model` | Long simple (`elapsedTicks`) y `GameTime` derivado; saves viejos → 08:00 Día 1 |
 | `WAIT n` | Sigue en segundos de simulación | No lo redefine | Se mantiene por compatibilidad; horarios con `DEPART`/`UNTIL` |
-| DSL horarios | `DEPART hh:mm`, `UNTIL hh:mm`, `on time` | `DEPART AT hh:mm`, `WAIT UNTIL hh:mm`, `AT "07:00" DO`, `EVERY 30m` | Sintaxis final en el PR de gramática; se adopta `EVERY` como aportación |
+| DSL horarios | `DEPART hh:mm`, `UNTIL hh:mm`, `on time` | `DEPART AT hh:mm`, `WAIT UNTIL hh:mm`, `AT "07:00" DO`, `EVERY 30m` | **Horas por parada**: `arrival HH:MM` (medida) / `departure HH:MM` (retención) como atributos del waypoint (ver *Horarios*); `EVERY` entra en la fase 3 |
 | Día/noche | Visual en fase 1 | Sol/luna/cielo, faros, farolas, tinte 2D | Igual: visual primero, `isNight()` disponible para gameplay futuro |
 | Economía | Tarifas, multas, mantenimiento nocturno | Mantenimiento diario, turnos de producción, bonus por puntualidad | Se adopta el detalle de la opción B en la fase 4 |
 | Operación | Puntualidad (delta entre visitas) | Rol de regulador, cruces en vía única | Ambos: cruces y apartaderos como juego emergente de los horarios |
@@ -58,8 +58,9 @@ elegida en cada punto:
 6. Los **eventos de tiempo** (cambio de hora, día/noche, horarios) se despachan vía
    `SimulationScheduler`; nada de lógica nueva en bucles periódicos.
 7. **`WAIT n` se mantiene en segundos de simulación** para no romper escenarios existentes. Los
-   horarios se expresan en tiempo de juego: `DEPART hh:mm`, `WAIT UNTIL hh:mm` y disparadores
-   temporales (`at "HH:mm"` / `every 30m`) en la gramática de scripts.
+   horarios se expresan en tiempo de juego como atributos del waypoint (`arrival HH:MM` /
+   `departure HH:MM`, ver *Horarios*); los disparadores temporales (`at "HH:mm"` / `every 30m`)
+   llegan en la fase 3.
 8. **Día/noche es visual** en esta fase (paleta del terminal y luz/faros en 3D); `isNight()` y
    `getDayNightRatio()` quedan disponibles para un futuro efecto sobre el gameplay.
 9. **Comando de consola del reloj**: `time;` muestra la hora actual (`Día 1 08:00`);
@@ -113,6 +114,202 @@ Referencia rápida (notch 10 = 5 ticks/celda):
 | Acelerador de simulación (futuro, pruebas) | ×N | ×N | invariante |
 | Cambiar `dayDurationSeconds` | sin efecto | nueva escala | cambia (por eso se fija por partida) |
 
+### Horarios (fase 2): horas por parada
+
+Cada **waypoint** del itinerario puede llevar la hora de **llegada** y/o de **salida** como
+atributos, en formato de 24 h (`H:MM` o `HH:MM`). Las comas son separadores **obligatorios** entre
+acciones (una sola forma de escribir, más legible; la referencia del waypoint y su dirección no
+llevan coma):
+
+```letrain
+create itinerary "cercanías" {
+  add station 1 load, departure 9:20;
+  add station 2 arrival 10:23, unload, departure 10:30;
+  add sensor 5 arrival 10:37
+}
+```
+
+Semántica:
+
+- **`arrival HH:MM` es medida**: el autopilot apunta la hora real de llegada al waypoint y su
+  desfase (puede ser negativo = adelantado). **No retiene ni regula la velocidad**: si llega antes,
+  espera a su `departure` (o continúa con sus acciones si no lo tiene).
+- **`departure HH:MM` es retención**: al llegar se ejecutan las acciones del waypoint (`load`,
+  `unload`, `wait n`…); si terminan antes de la hora, el tren **espera**; si terminan después,
+  **sale tarde** y el desfase de salida queda registrado. La estancia (`dwell`) es, por tanto,
+  `departure − arrival` en **tiempo de juego**, invariante al ritmo (`time.dayDurationSeconds`).
+- Sin `departure`, el tren sale cuando acaban sus acciones; sin `arrival`, no hay medida de
+  llegada. Sin ninguna hora, el waypoint se comporta como hasta ahora.
+- En **sensores** las horas funcionan **igual que en una estación** (también pueden retener hasta su
+  `departure`); la única diferencia es que no hay carga ni descarga. (Decidido tras revisión: un
+  tren puede necesitar esperar en un sensor.)
+- Las horas se leen **en secuencia**: si una es menor que la anterior, pertenece al día siguiente
+  (`arrival 23:50 departure 00:10`). Un tren con retraso no espera 24 h: si llega después de su
+  hora, sale de inmediato y se mide el desfase.
+- **Orden de ejecución obligatorio**: `arrival` (si está) va primero, después las acciones en su
+  orden de ejecución (`load`, `unload`, `wait n`…) y `departure` (si está) al final. Escribir un
+  atributo fuera de ese orden es un error de validación (no se admiten atributos "declarativos"
+  en cualquier posición).
+
+Métrica (fase 2, solo medir; la economía horaria es la fase 4):
+
+- Por parada: `arrivalDelta` y `departureDelta` en **minutos de juego**.
+- Por tren: retraso actual (última parada), medio y máximo.
+- Se muestra en **`info train N`** (detalle) y en el **HUD** con un simple número con signo
+  (`+2` = dos minutos tarde, `−1` = adelantado) referido al tren seleccionado/en conducción; si el
+  itinerario no tiene horas, no se muestra nada.
+
+Compatibilidad: los itinerarios sin horas siguen funcionando igual si ya usan comas; `WAIT n`
+conserva su semántica (segundos de simulación). Al exigir comas entre acciones, los itinerarios
+con varias acciones sin comas (`add station 2 reverse unload`) dejan de ser válidos y hay que
+migrarlos al implementar la fase 2: ejemplos de `docs/user/grammar*.md`, tests
+(`AutoPilotIntegrationTest`), el exportador de escenarios y los escenarios guardados por el
+jugador.
+
+#### La jornada completa (ejemplo)
+
+Servicio diario entre dos estaciones, con cocheras al final de la jornada. **El autopilot ya
+recorre el itinerario en bucle** (`advanceWaypoint` vuelve al primer waypoint al terminar), así
+que una jornada es un itinerario que se repite solo: las horas se leen en secuencia y, al volver
+al primer waypoint, su hora pertenece al día siguiente (rollover).
+
+```letrain
+create itinerary "cercanías diario" {
+  add station "Cocheras" departure 06:00;        // arranque de la jornada
+  add station "A" arrival 06:10, departure 06:15;
+  add station "B" arrival 06:27, departure 06:30;
+  ...                                            // las otras tres idas y vueltas
+  add station "Cocheras" arrival 22:50 park;     // fin de jornada: a cocheras
+}
+assign itinerary "cercanías diario" to train 1;
+```
+
+- **Cómo se inicia cada mañana**: el tren pasa la noche en cocheras (el último y el primer
+  waypoint son el mismo sitio) y a las 06:00 la `departure` del primer waypoint lo libera. La
+  salida programada debe **arrancar el motor**: el `park` lo deja apagado de forma explícita y un
+  tren así no se mueve con una orden de velocidad.
+- **`park` (nuevo) frente a `stop` (actual)**: `stop` frena y **desactiva el autopilot** (fin de
+  servicio, paso a manual), así que no sirve para una jornada que se repite; `park` frena y apaga
+  el motor **manteniendo el autopilot** a la espera de la próxima salida programada. **Decidido**:
+  `park` se añade como acción nueva y `stop` conserva su significado actual.
+- **Cambios de sentido (push-pull)**: la composición del ejemplo lleva **una locomotora en cada
+  extremo** (el jugador las paga), así que el `reverse` de los terminales basta: la nueva cabeza
+  pasa a tirar. Un jugador "pro" puede programar el *run-around* (desenganchar, mover la locomotora
+  a la otra vía, volver a enganchar e invertir) **como acciones del waypoint** con las órdenes de
+  tren (`uncouple`/`couple`/`stop at`…, ver *Maniobras en el itinerario*), o desde scripts.
+- **Faros al invertir**: deben seguir al **frente físico** (`Train.getPhysicalFront()`): en push-pull
+  se apagan los de la cola y se encienden los de la nueva cabeza; con una sola locomotora siguen
+  encendidos aunque miren hacia los vagones (issue #618).
+- **El bucle es el comportamiento por defecto**: el autopilot vuelve siempre al primer waypoint
+  (no se añade un atributo `loop` ni `once` por ahora).
+- **Sin azúcar `repeat`**: cada vuelta lleva su propio horario (no son las mismas paradas a las
+  mismas horas), así que los waypoints se escriben a mano, aunque sean más líneas.
+
+#### Maniobras en el itinerario
+
+Las maniobras "pro" (run-around, apartarse, mover la locomotora sola) se escriben como **acciones
+del waypoint**, con las mismas órdenes de tren que los scripts. El autopilot las ejecuta **en
+orden** al llegar a la parada; las de movimiento (`stop at …`) son misiones que deben completarse
+antes de pasar a la siguiente acción, y el `departure` libera cuando la maniobra ha terminado (si
+tarda más, el tren sale tarde y se mide).
+
+```letrain
+add station "B" arrival 06:27,
+               uncouple forward 1,
+               stop at sensor 5 speed 2,     // entra en el bucle
+               reverse,                      // el cambio de sentido lo escribe el autor
+               fork 3 set curved,            // si hace falta, fuerza el desvío de vuelta
+               stop at sensor 6 speed 2,     // vuelve por el otro lado del tren
+               couple forward 1,
+               reverse,                      // queda mirando hacia la salida
+               departure 06:45;
+```
+
+- **Los cambios de sentido son explícitos**: cada `reverse` va escrito entre tramos. Dentro del
+  itinerario, `stop at` **no** auto-invierte: si falta un `reverse`, no hay ruta desde el sentido
+  actual y se avisa. La auto-inversión (opción B de la issue #619) es para órdenes sueltas de
+  scripts/consola, donde no hay coreografía escrita.
+- **Agujas**: el autopilot ya orienta los desvíos a lo largo de la ruta que calcula
+  (`ensureForkRoute`); además, el waypoint puede llevar acciones de fork (`fork 3 set curved`,
+  `fork 3 flip`) para forzar un camino o dejarlo preparado.
+- **Las órdenes sueltas no pisan el plan**: si el tren está cumpliendo un itinerario, una orden
+  suelta de consola o script (`stop at …`, `invert`, etc.) se **rechaza con aviso** (consola y
+  log: "está en itinerario; quítale el autopilot o escríbela en el itinerario"). Nada de pausar y
+  reanudar en silencio. Para maniobras manuales: `train N set autopilot false;`.
+- La maniobra **no se recorta**: el horario es plan, la maniobra es trabajo; si no da tiempo, el
+  tren sale tarde y el desfase se mide.
+
+#### Cruces en vía única: cantones (seguridad) y horario (plan)
+
+Un **cantón** es el tramo entre **nodos**: bifurcaciones (`ForkRailTrack`) y extremos/empalmes
+irregulares (`getConnections().size() != 2`). Las **estaciones y sensores no parten el cantón** por
+sí solos: un apeadero en mitad de una línea recta vive dentro del mismo cantón.
+
+Consecuencias:
+
+- **Apartadero de verdad** (dos desvíos con su vía de apartado): la vía principal y la de apartado
+  son cantones distintos entre los desvíos, así que dos trenes pueden estar a la vez en el tramo
+  (uno en la principal, otro en el apartado) y el que espera lo hace **en el desvío**, a la entrada
+  del apartadero. La espera es corta: lo que tarda el otro en recorrer el tramo.
+- **Línea A—B sin nodos intermedios**: todo el trayecto es **un solo cantón**; el primero que lo
+  reclama entra (`BlockManager.tryLock` da un dueño por cantón) y el otro espera en el nodo
+  anterior —su estación de origen— el cruce completo. No puede "avanzar hasta el apartadero"
+  porque, para los cantones, ese apartadero no delimita nada: es el mismo segmento.
+
+**Hoy (a sustituir por la decisión de abajo)**: cuando el cantón se libera, `Model` avisa a los que
+esperan **recorriendo `model.getLocomotives()` en orden**, y el primero de esa lista que está
+esperando el cantón reintenta el lock en el acto (`tryLock` es síncrono) y se lo queda. No es
+aleatorio —es determinista y reproducible—, pero **no es FIFO por llegada**: `locomotives` es el
+registro de locomotoras del mundo en **orden de creación** (o el del guardado, al cargar) y **no se
+reordena con el tráfico**, así que gana la locomotora más veterana de las que esperan, aunque haya
+llegado más tarde. El que pierde reintenta en la siguiente liberación (no hay inanición, aunque
+puede encadenar esperas). Además, antes de esperar el tren intenta `tryAlternativeSegment`: si
+existe un cantón paralelo entre los mismos nodos (p. ej. la vía de apartado) y no tiene paradas
+pendientes en el bloqueado, lo toma y evita la espera.
+
+**Decidido (a implementar)**: la prioridad debe ser **FIFO por llegada al cantón**, no el orden del
+registro de locomotoras. Plan: al empezar a esperar, el tren pide un **turno** monótono
+(determinista, sin reloj de pared, mantenido en el `BlockManager`); al liberarse el cantón, `Model`
+ordena a los que esperan por ese turno (empate: id de locomotora) y el primero que lo reclama se lo
+lleva; el turno se limpia al dejar de esperar. Hoy gana la más veterana; pasar a FIFO es pequeño y
+hay `BlockManagerTest`, `BlockReleaseIntegrationTest` y `TrainSafetyManagerTest` para cubrirlo. El
+PR de implementación sustituirá el párrafo *Hoy* de arriba por la descripción del FIFO.
+
+**Prioridades (diseño previsto, para cuando lleguen los trenes de pasajeros)**: la cola se ordenará
+por la clave **`(clase, turno)`** — clases tipo **pasajeros > mercancías > maniobras**, FIFO dentro
+de cada clase. **Los pasajeros tienen prioridad siempre** (no solo cuando van con retraso); lo único
+que puede superarla es la **antiinanición**. Dos cautelas:
+
+- **Antiinanición**: "siempre primero" puede dejar a un mercancías esperando sin fin. Un tren que
+  lleve esperando más de X minutos de juego pasa en la siguiente liberación, **por delante de
+  cualquier clase** (pasajeros incluidos). Queda fijar X (o, alternativamente, un cupo de N cesiones
+  consecutivas por clase).
+- **La prioridad no expulsa**: si el cantón ya está ocupado, el prioritario espera a que se libere;
+  decide *quién espera cuando hay cola*, no crea vía.
+
+La clase vive en el tren (todos `DEFAULT` mientras no haya pasajeros) y conviene mostrarla en
+`info train` junto al tiempo de espera.
+
+**Los apartaderos se usan solos**: el jugador construye la infraestructura (dos desvíos con su vía de
+apartado) y el sistema la aprovecha automáticamente: un tren que no puede continuar (cantón ocupado
+o retención del horario) **se aparta a la vía libre** —el cantón paralelo entre los mismos nodos, que
+`tryAlternativeSegment` ya sabe detectar— y cede la directa al que pasa. El itinerario **no** necesita
+sensores ni waypoints en los apartaderos: los cruces se resuelven con las horas de las estaciones y
+la seguridad. Un punto de control (sensor) en un apartadero es opcional, solo para medir el paso o
+forzar una retención ahí.
+
+El horario es la **capa de plan** encima de la seguridad: decide **quién espera y dónde** (en el
+apartadero, no en mitad del tramo) y el `departure` del apartadero sincroniza el cruce ("no salgas
+antes de las X"). Regla de oro: **el horario nunca anula la seguridad**; si el cantón está ocupado,
+se espera y el retraso se mide.
+
+Queda abierto: la **prioridad** cuando el plan se cruza con imprevistos (retrasos, trenes manuales)
+y si algún día conviene una negociación automática de encuentros (elegir apartadero y prioridad sin
+horario) en lugar de confiar en el plan.
+
+Punto abierto: fijar el parámetro de la antiinanición (X minutos de espera o N cesiones
+consecutivas) cuando existan los trenes de pasajeros.
+
 ### Contrato (implementado en la fase 0)
 
 ```java
@@ -143,14 +340,15 @@ public interface GameClock {
 |---|---|---|
 | 0 | Reloj de juego: `GameClock`, `time.dayDurationSeconds`, serialización, reloj en HUD 2D/3D y comando `time set` | Sin efecto en gameplay; tests deterministas |
 | 1 | Día/noche: paleta 2D, sol/luna/cielo, luz ambiental, faros y farolas en 3D usando `isNight()`/`getDayNightRatio()` | Visual; coordinar con #480 |
-| 2 | Horarios: `DEPART hh:mm` / `WAIT UNTIL hh:mm` en itinerarios y puntualidad básica; cruces en vía única y apartaderos | El autopilot espera; se mide el delta |
+| 2 | Horarios: `arrival` / `departure` por parada en los itinerarios y puntualidad básica; cruces en vía única y apartaderos | El autopilot retiene hasta la salida programada; se mide el delta |
 | 3 | Triggers temporales (`at`/`every`) y demanda por franjas; integración con trenes de pasajeros | Engancha con `PassengerTrains_Design.md` |
 | 4 | Economía horaria: mantenimiento diario, turnos de producción, tarifas por franja y bonus/multa por puntualidad | Reglas de negocio |
 
 ## Decisiones pendientes
 
-- Sintaxis exacta de la gramática de horarios (`DEPART hh:mm` vs `DEPART AT hh:mm`;
-  `at "HH:mm"` vs `AT "HH:mm" DO`): se fija al abrir la fase 2.
+- Fase 2 diseñada (ver *Horarios* y *Cruces en vía única*): solo queda fijar el parámetro de la
+  antiinanición (X minutos de espera o N cesiones consecutivas) cuando existan los trenes de
+  pasajeros.
 
 ## Alternativas consideradas
 
