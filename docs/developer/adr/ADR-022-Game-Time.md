@@ -211,9 +211,11 @@ Consecuencias:
 Prioridad y espera: cuando el cantón se libera, `Model` avisa a los que esperan **recorriendo
 `model.getLocomotives()` en orden**, y el primero de esa lista que está esperando el cantón
 reintenta el lock en el acto (`tryLock` es síncrono) y se lo queda. **No es aleatorio** —es
-determinista y reproducible—, pero **tampoco es FIFO por llegada**: la prioridad es el orden de la
-lista de locomotoras, no quién llegó antes. El que pierde reintenta en la siguiente liberación (no
-hay inanición, aunque puede encadenar esperas). Además, antes de esperar el tren intenta
+determinista y reproducible—, pero **tampoco es FIFO por llegada**: `locomotives` es el registro de
+locomotoras del mundo en **orden de creación** (o el del guardado, al cargar) y **no se reordena
+con el tráfico**, así que gana la locomotora más veterana de las que esperan, aunque haya llegado
+más tarde. El que pierde reintenta en la siguiente liberación (no hay inanición, aunque puede
+encadenar esperas). Además, antes de esperar el tren intenta
 `tryAlternativeSegment`: si existe un cantón paralelo entre los mismos nodos (p. ej. la vía de
 apartado) y no tiene paradas pendientes en el bloqueado, lo toma y evita la espera.
 
