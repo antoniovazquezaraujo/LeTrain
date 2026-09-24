@@ -219,6 +219,13 @@ encadenar esperas). Además, antes de esperar el tren intenta
 `tryAlternativeSegment`: si existe un cantón paralelo entre los mismos nodos (p. ej. la vía de
 apartado) y no tiene paradas pendientes en el bloqueado, lo toma y evita la espera.
 
+**Decidido (a implementar)**: la prioridad debe ser **FIFO por llegada al cantón**, no el orden del
+registro de locomotoras. Plan: al empezar a esperar, el tren pide un **turno** monótono
+(determinista, sin reloj de pared, mantenido en el `BlockManager`); al liberarse el cantón, `Model`
+ordena a los que esperan por ese turno (empate: id de locomotora) y el primero que lo reclama se lo
+lleva; el turno se limpia al dejar de esperar. Hoy gana la más veterana; pasar a FIFO es pequeño y
+hay `BlockManagerTest`, `BlockReleaseIntegrationTest` y `TrainSafetyManagerTest` para cubrirlo.
+
 El horario es la **capa de plan** encima de la seguridad: decide **quién espera y dónde** (en el
 apartadero, no en mitad del tramo) y el `departure` del apartadero sincroniza el cruce ("no salgas
 antes de las X"). Regla de oro: **el horario nunca anula la seguridad**; si el cantón está ocupado,
@@ -228,10 +235,9 @@ Queda abierto: la **prioridad** cuando el plan se cruza con imprevistos (retraso
 y si algún día conviene una negociación automática de encuentros (elegir apartadero y prioridad sin
 horario) en lugar de confiar en el plan.
 
-Puntos abiertos (seguimos pensando): dónde mostrar los desfases (¿HUD o solo `info`?), la
-**prioridad** en los cruces (ver *Cruces en vía única*), si más adelante `arrival` también limitará
-la velocidad para no llegar antes de hora, y si hará falta azúcar `repeat` para no escribir cuatro
-veces las mismas paradas.
+Puntos abiertos (seguimos pensando): dónde mostrar los desfases (¿HUD o solo `info`?), si más
+adelante `arrival` también limitará la velocidad para no llegar antes de hora, y si hará falta
+azúcar `repeat` para no escribir cuatro veces las mismas paradas.
 
 ### Contrato (implementado en la fase 0)
 
