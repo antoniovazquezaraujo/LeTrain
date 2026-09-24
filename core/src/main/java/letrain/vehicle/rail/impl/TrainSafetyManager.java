@@ -2,6 +2,7 @@ package letrain.vehicle.rail.impl;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 import letrain.itinerary.Waypoint;
 import letrain.map.Dir;
@@ -29,6 +30,9 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
 
     private boolean isWaitingForBlock = false; // Única variable de estado de parada de bloque
     private transient boolean insideFindNextSegment = false;
+
+    /** Guard de seguridad para caminatas topológicas en bucles puros (issue #633). */
+    static final int MAX_TOPOLOGY_WALK_ITERATIONS = 10000;
 
     /**
      * Instante (tick de simulación) en que la cabeza del tren atravesó la última curva. -1 indica
@@ -659,6 +663,52 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         log.info("Train {} findNextSegmentTopological: next segment not found topographically",
                 train.getId());
         return null;
+    }
+
+    @Override
+    public OptionalInt railsToBoundary() {
+        RailwayGraph graph = train.getModel() != null ? train.getModel().getRailwayGraph() : null;
+        return railsToBoundary(train.getPhysicalFront(), currentSegment, graph);
+    }
+
+    /**
+     * Pure walker behind {@link #railsToBoundary()}: starting from {@code head}'s track and real
+     * direction, advances rail by rail with a {@link RailIterator} (same pattern as
+     * {@link #findNextSegmentTopological}) while the landed rail still belongs to {@code segment}.
+     *
+     * <p>
+     * Returns the number of advances that stay inside the segment. {@code 0} means the next advance
+     * already lands outside (the head is on the last rail of the segment in its travel direction;
+     * the boundary node/fork rail counts as inside because the topology registers it in both
+     * adjacent segments). {@code empty} means there is no reachable boundary: the head is not on a
+     * rail, has no direction, there is no segment/graph, the way ends before leaving the segment
+     * (dead end), or the {@link #MAX_TOPOLOGY_WALK_ITERATIONS} guard tripped (pure loop). When
+     * {@code segment} is null the head's own segment is used as fallback.
+     */
+    public static OptionalInt railsToBoundary(Linker head, Segment segment, RailwayGraph graph) {
+        if (head == null || graph == null || !(head.getTrack() instanceof RailTrack headTrack)) {
+            return OptionalInt.empty();
+        }
+        Segment target = segment != null ? segment : graph.getSegment(headTrack);
+        if (target == null) {
+            return OptionalInt.empty();
+        }
+        Dir exitDir = head.getRealDir();
+        if (exitDir == null) {
+            return OptionalInt.empty();
+        }
+
+        RailIterator iterator = new RailIterator(headTrack, exitDir);
+        int railsInside = 0;
+        int guard = MAX_TOPOLOGY_WALK_ITERATIONS;
+        while (guard-- > 0 && iterator.advance()) {
+            Track next = iterator.getTrack();
+            if (!(next instanceof RailTrack nextRail) || !graph.containsTrack(target, nextRail)) {
+                return OptionalInt.of(railsInside);
+            }
+            railsInside++;
+        }
+        return OptionalInt.empty();
     }
 
     private boolean tryAlternativeSegment(Model model) {
