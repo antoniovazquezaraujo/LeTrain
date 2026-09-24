@@ -26,8 +26,8 @@ public interface Waypoint {
 
     /**
      * Scheduled departure time of day (ADR-022 phase 2). The dwell at the waypoint is
-     * {@code departure - arrival} in game time (see {@link Timetable#dwellMinutes}). Empty means the
-     * train leaves as soon as its actions finish.
+     * {@code departure - arrival} in game time (see {@link Timetable#dwellMinutes}). Empty means
+     * the train leaves as soon as its actions finish.
      */
     Optional<LocalTime> departure();
 }

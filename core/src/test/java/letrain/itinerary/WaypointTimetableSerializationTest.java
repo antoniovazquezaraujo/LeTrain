@@ -58,8 +58,8 @@ class WaypointTimetableSerializationTest {
         assertNotNull(restored);
         assertEquals(PROGRAM, restored.getProgram(),
                 "the exported program must keep the timetable text");
-        Itinerary itinerary = restored.getTrainFromLocomotiveId(1).getAutopilot().itinerary()
-                .orElseThrow();
+        Itinerary itinerary =
+                restored.getTrainFromLocomotiveId(1).getAutopilot().itinerary().orElseThrow();
         assertEquals(LocalTime.of(9, 0), itinerary.waypoints().get(0).arrival().orElseThrow());
         assertEquals(LocalTime.of(9, 20), itinerary.waypoints().get(0).departure().orElseThrow());
         assertEquals(LocalTime.of(10, 23), itinerary.waypoints().get(1).arrival().orElseThrow());

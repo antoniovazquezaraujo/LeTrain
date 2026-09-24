@@ -60,7 +60,7 @@ class TimetableTest {
     @CsvSource({"09:20, 09:30, 10", "23:50, 00:10, 20", "00:00, 00:00, 0"})
     @DisplayName("dwell = departure - arrival in game minutes, rolling over midnight")
     void dwellMinutes_rollsOverMidnight(String arrival, String departure, int expected) {
-        assertEquals(expected, Timetable.dwellMinutes(LocalTime.parse(arrival),
-                LocalTime.parse(departure)));
+        assertEquals(expected,
+                Timetable.dwellMinutes(LocalTime.parse(arrival), LocalTime.parse(departure)));
     }
 }

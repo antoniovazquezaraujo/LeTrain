@@ -142,8 +142,8 @@ class TimetableGrammarTest {
                     assign itinerary "Ruta" to train 1;
                     """);
 
-            assertEquals(LocalTime.of(6, 0), assignedItinerary().waypoints().get(0).departure()
-                    .orElseThrow());
+            assertEquals(LocalTime.of(6, 0),
+                    assignedItinerary().waypoints().get(0).departure().orElseThrow());
         }
     }
 
@@ -153,8 +153,8 @@ class TimetableGrammarTest {
 
         /** Runs an invalid waypoint line and returns the first parser diagnostic. */
         private String assertProgramRejected(String waypointLine) {
-            List<String> errors = model.setProgram(
-                    "create itinerary \"Ruta\" {\n    " + waypointLine + "\n}\n");
+            List<String> errors =
+                    model.setProgram("create itinerary \"Ruta\" {\n    " + waypointLine + "\n}\n");
             assertFalse(errors.isEmpty(), "expected a syntax error for: " + waypointLine);
             return errors.get(0);
         }
@@ -182,8 +182,9 @@ class TimetableGrammarTest {
         @Test
         @DisplayName("action after departure (out of order)")
         void actionAfterDeparture_isRejected() {
-            assertTrue(assertProgramRejected("add station 1 departure 9:20, load")
-                    .contains("line 2"), "the diagnostic must point at the offending line");
+            assertTrue(
+                    assertProgramRejected("add station 1 departure 9:20, load").contains("line 2"),
+                    "the diagnostic must point at the offending line");
         }
 
         @Test
