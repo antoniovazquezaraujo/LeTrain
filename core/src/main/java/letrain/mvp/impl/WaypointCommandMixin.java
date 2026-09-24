@@ -36,6 +36,7 @@ public abstract class WaypointCommandMixin {
                 case UNLOAD -> WaypointCommand.UNLOAD;
                 case REVERSE -> WaypointCommand.REVERSE;
                 case STOP -> WaypointCommand.STOP;
+                case PARK -> WaypointCommand.PARK;
                 case WAIT -> WaypointCommand.waitSeconds(seconds);
                 case SPEED -> WaypointCommand.speed(targetSpeed);
                 default -> WaypointCommand.NONE;

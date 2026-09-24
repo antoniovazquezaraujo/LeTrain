@@ -5,6 +5,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import letrain.itinerary.Waypoint;
 import letrain.itinerary.WaypointCommand;
 import letrain.track.Station;
+import letrain.vehicle.Tractor;
+import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,9 +31,27 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             return;
         }
         currentProcessingWaypoint = waypoint;
+        letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
+        if (autopilot != null && autopilot.itinerary().isPresent()) {
+            // ADR-022 phase 2b: measure the arrival and, when the stop has a departure, start
+            // braking now so the train waits at the waypoint instead of rolling past it.
+            autopilot.measureArrival(waypoint);
+            brakeForScheduledDeparture(waypoint);
+        }
         pendingCommands.clear();
         pendingCommands.addAll(waypoint.commands());
         runPendingCommands();
+    }
+
+    /** A waypoint with a departure is a scheduled stop: brake on arrival (safety first). */
+    private void brakeForScheduledDeparture(Waypoint waypoint) {
+        if (waypoint == null || waypoint.departure().isEmpty()) {
+            return;
+        }
+        Tractor director = train.getDirectorLinker();
+        if (director != null && director.getSpeed() > 0) {
+            train.getMovementManager().initiateBraking();
+        }
     }
 
     @Override
@@ -63,11 +83,6 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             }
         }
 
-        if (savedTargetSpeed > 0) {
-            train.setSpeed(savedTargetSpeed);
-            savedTargetSpeed = 0;
-        }
-
         letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
         if (autopilot != null && autopilot.itinerary().isPresent()) {
             if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
@@ -75,6 +90,26 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
                 return;
             }
 
+            // ADR-022 phase 2b: hold at the waypoint until its departure; when the time is due or
+            // already past, the release completes the stop and measures the departure delta.
+            if (autopilot.retainUntilDeparture()) {
+                holdTrainAtWaypoint();
+                return;
+            }
+            Waypoint waypoint = autopilot.currentWaypoint().orElse(null);
+            if (waypoint != null && waypoint.departure().isPresent()) {
+                // A scheduled departure starts the engine (park left it explicitly off) and
+                // resumes the cruise speed; safety still gates the actual movement afterwards.
+                startEnginesAndResume();
+            }
+        }
+
+        if (savedTargetSpeed > 0) {
+            train.setSpeed(savedTargetSpeed);
+            savedTargetSpeed = 0;
+        }
+
+        if (autopilot != null && autopilot.itinerary().isPresent()) {
             autopilot.advanceWaypoint();
             autopilot.clearRoute();
             currentProcessingWaypoint = null;
@@ -82,9 +117,8 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             autopilot.currentWaypoint().ifPresent(wp -> {
                 if (train.isCurrentlyOn(wp)) {
                     log.info("Train {} consecutive waypoint reached", train.getId());
-                    pendingCommands.clear();
-                    pendingCommands.addAll(wp.commands());
-                    runPendingCommands();
+                    // Full waypoint entry so the consecutive stop measures its schedule too.
+                    onWaypointReached(train, wp);
                 }
             });
 
@@ -95,6 +129,35 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
                 this.train.getSafetyManager().acquireInitialLocks();
             }
         }
+    }
+
+    /** Keeps the train stopped while the schedule holds it; the departure will resume it. */
+    private void holdTrainAtWaypoint() {
+        if (train.getDirectorLinker() == null) {
+            return;
+        }
+        if (train.getDirectorLinker().getSpeed() > 0) {
+            train.getMovementManager().initiateBraking();
+        } else {
+            train.brake();
+        }
+    }
+
+    /** Scheduled departure: engine on for the whole consist and restore the cruise speed. */
+    private void startEnginesAndResume() {
+        List<Locomotive> locomotives = train.getLocomotives();
+        if (locomotives != null) {
+            for (Locomotive locomotive : locomotives) {
+                locomotive.setEngineOn(true);
+            }
+        }
+        train.restoreSpeed();
+    }
+
+    @Override
+    public void onRetentionReleased() {
+        this.waitTicks = 0;
+        runPendingCommands();
     }
 
     private boolean executeCommand(WaypointCommand command) {
@@ -173,9 +236,34 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
                 }
                 pendingCommands.clear();
                 return true;
+            case PARK: {
+                Tractor director = train.getDirectorLinker();
+                if (director != null && director.getSpeed() > 0) {
+                    // Brake first; the engine is switched off once the train is stopped.
+                    pendingCommandToResume = command;
+                    train.getMovementManager().initiateBraking();
+                    return true;
+                }
+                if (director != null && director.getTargetSpeed() > 0) {
+                    train.brake();
+                }
+                turnOffEngines();
+                return false;
+            }
             default:
                 return false;
         }
+    }
+
+    /** Explicit engine off for the whole consist; the autopilot keeps running (ADR-022 2b). */
+    private void turnOffEngines() {
+        List<Locomotive> locomotives = train.getLocomotives();
+        if (locomotives != null) {
+            for (Locomotive locomotive : locomotives) {
+                locomotive.setEngineOn(false);
+            }
+        }
+        log.info("Train {} parked: engine off, autopilot kept", train.getId());
     }
 
     private void scheduleResume(int ticks) {

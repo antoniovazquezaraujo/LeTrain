@@ -35,5 +35,12 @@ public interface GameClock {
 
     double getLatitude();
 
+    /**
+     * Number of ticks until the clock reaches the given game instant. Negative when the instant is
+     * already in the past. The result is exact (never releases before the requested time, even with
+     * fractional ticks-per-minute) and deterministic; schedule holds (ADR-022 phase 2b) rely on it.
+     */
+    long ticksUntil(GameTime time);
+
     void addListener(GameClockListener listener);
 }

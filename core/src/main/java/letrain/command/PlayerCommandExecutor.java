@@ -380,6 +380,12 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 sb.append("Name: ").append(found.getTrain().getName()).append("\n");
                 sb.append("Speed: ").append(found.getSpeed()).append("\n");
                 sb.append(found.getTrain().describeComposition());
+                // ADR-022 phase 2b: only trains with measured timetable deltas show the block.
+                letrain.itinerary.AutoPilot autopilot = found.getTrain().getAutopilot();
+                if (autopilot != null) {
+                    autopilot.punctuality()
+                            .ifPresent(punctuality -> sb.append(punctuality.describe()));
+                }
             } else
                 return "Train not found";
         } else if (type.STATION() != null) {

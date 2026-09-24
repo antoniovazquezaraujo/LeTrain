@@ -795,6 +795,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             case "unload" -> List.of(WaypointCommand.UNLOAD);
             case "reverse" -> List.of(WaypointCommand.REVERSE);
             case "stop" -> List.of(WaypointCommand.STOP);
+            case "park" -> List.of(WaypointCommand.PARK);
             default -> {
                 if (text.startsWith("wait")) {
                     int seconds = Integer.parseInt(ctx.NUMBER().getText());

@@ -6,7 +6,7 @@ package letrain.itinerary;
  */
 public class WaypointCommand {
     public enum Kind {
-        LOAD, UNLOAD, REVERSE, WAIT, SPEED, STOP, NONE
+        LOAD, UNLOAD, REVERSE, WAIT, SPEED, STOP, PARK, NONE
     }
 
     /** Simulation ticks per second. Used to convert seconds ↔ ticks. */
@@ -16,6 +16,10 @@ public class WaypointCommand {
     public static final WaypointCommand UNLOAD = new WaypointCommand(Kind.UNLOAD);
     public static final WaypointCommand REVERSE = new WaypointCommand(Kind.REVERSE);
     public static final WaypointCommand STOP = new WaypointCommand(Kind.STOP);
+    /**
+     * Brakes and turns the engine off but keeps the autopilot; a scheduled departure restarts it.
+     */
+    public static final WaypointCommand PARK = new WaypointCommand(Kind.PARK);
     public static final WaypointCommand NONE = new WaypointCommand(Kind.NONE);
 
     private final Kind kind;

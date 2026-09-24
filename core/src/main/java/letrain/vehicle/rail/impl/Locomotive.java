@@ -341,15 +341,16 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void setTargetSpeed(int speed) {
-        if (getTrain() != null && getTrain().getSafetyManager() != null
-                && getTrain().getSafetyManager().isWaitingForBlock()) {
-            if (speed > 0) {
-                log.info(
-                        "Locomotive {}: Train is waiting for block. Intercepting setTargetSpeed({}) and saving it instead.",
-                        id, speed);
-                getTrain().setSavedTargetSpeed(speed);
-                speed = 0;
-            }
+        boolean heldBySchedule = getTrain() != null && getTrain().isHeldBySchedule();
+        boolean waitingForBlock = getTrain() != null && getTrain().getSafetyManager() != null
+                && getTrain().getSafetyManager().isWaitingForBlock();
+        if (speed > 0 && (waitingForBlock || heldBySchedule)) {
+            log.info(
+                    "Locomotive {}: Train is {} (waiting for block={}, schedule hold={}). Intercepting setTargetSpeed({}) and saving it instead.",
+                    id, waitingForBlock ? "waiting for block" : "holding at a waypoint",
+                    waitingForBlock, heldBySchedule, speed);
+            getTrain().setSavedTargetSpeed(speed);
+            speed = 0;
         }
         if (this.targetSpeed != speed) {
             log.info("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed,

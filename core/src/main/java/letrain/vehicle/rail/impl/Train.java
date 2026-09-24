@@ -160,6 +160,15 @@ public class Train implements Renderable {
         return autopilot.mode() != letrain.itinerary.AutoPilot.Mode.IDLE;
     }
 
+    /**
+     * True while the autopilot holds the train at a waypoint until its departure (ADR-022 phase
+     * 2b). A requested speed is then deferred (saved) instead of moving the train, like a block
+     * wait; the scheduled departure restores it.
+     */
+    public boolean isHeldBySchedule() {
+        return autopilot != null && autopilot.mode() == letrain.itinerary.AutoPilot.Mode.WAITING;
+    }
+
     public long getSimulationTick() {
         return simulationTick;
     }
