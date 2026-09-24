@@ -293,6 +293,24 @@ public class Locomotive extends Linker implements Tractor {
         return currentSpeed > targetSpeed && currentSpeed > 0;
     }
 
+    /**
+     * Rails the train still advances while braking from {@code speed} down to a full stop with the
+     * current inertia model (issue #633). While braking ({@code targetSpeed == 0}) updateInertia
+     * drops one notch every {@code max(1, currentSpeed)} rails, so starting from a steady cruise
+     * (rail counter at 0) the count is {@code speed + (speed-1) + ... + 1 = speed(speed+1)/2}.
+     *
+     * <p>
+     * Pure helper: it only computes the distance, it does not brake anything. Negative speeds count
+     * as 0. This is the braking distance the safety layer compares against the rails left to the
+     * segment boundary before deciding when to start braking.
+     */
+    public static int brakingRails(int speed) {
+        if (speed <= 0) {
+            return 0;
+        }
+        return speed * (speed + 1) / 2;
+    }
+
     public boolean isEngineOn() {
         return engineOn;
     }
