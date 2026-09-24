@@ -296,9 +296,9 @@ public interface GameClock {
 
 ## Decisiones pendientes
 
-- Fase 2 en diseño (ver *Horarios*): quedan por decidir dónde mostrar los desfases, la prioridad
-  entre trenes cuando el plan se cruza con imprevistos (ver *Cruces en vía única*) y si `arrival`
-  limitará la velocidad más adelante.
+- Fase 2 diseñada (ver *Horarios* y *Cruces en vía única*): solo queda fijar el parámetro de la
+  antiinanición (X minutos de espera o N cesiones consecutivas) cuando existan los trenes de
+  pasajeros.
 
 ## Alternativas consideradas
 
