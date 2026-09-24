@@ -201,6 +201,7 @@ public class GrammarReference {
 
         Node itin = new Node("create itinerary");
         itin.add(new Node("template", "create itinerary \"\" {\n  add station #\n}"));
+        itin.add(new Node("block terminator", "} ends the block; a trailing ; is optional"));
         itin.add(new Node("waypoint rules",
                 "waypoints: commas between actions are mandatory; order: arrival, actions, "
                         + "departure"));

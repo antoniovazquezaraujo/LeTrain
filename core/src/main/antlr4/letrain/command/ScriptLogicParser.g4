@@ -3,8 +3,12 @@ options { tokenVocab=LeTrainLexer; }
 
 scriptStart : statement+ EOF;
 
-statement : trigger commandBlock          // event-driven automation
-          | createItinerary               // } is the terminator, no ; needed
+// Block-terminated statements take an OPTIONAL trailing ';' after the closing '}': the console
+// funnels every typed line through PlayerCommandExecutor, which appends one when the text does not
+// end with ';', and users may type it explicitly. Without SEMI? the console could never create an
+// itinerary ("extraneous input ';'").
+statement : trigger commandBlock SEMI?    // event-driven automation
+          | createItinerary SEMI?         // } terminates the block; the ; after it is optional
           | directCommand SEMI            // other immediate commands need ;
           ;
 
