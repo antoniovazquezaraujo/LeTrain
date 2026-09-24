@@ -155,10 +155,11 @@ Métrica (fase 2, solo medir; la economía horaria es la fase 4):
 
 - Por parada: `arrivalDelta` y `departureDelta` en **minutos de juego**.
 - **Convención de signo (implementada)**: `+` = tarde, `−` = adelantado (`+2` = dos minutos tarde,
-  `−1` = un minuto adelantado).
+  `−1` = un minuto adelantado); el cero exacto se imprime sin signo (`0 min`, no `+0 min`).
 - **Media y máximo (implementados)** se calculan sobre **todas las medidas** (cada llegada y cada
   salida cuenta una): el *actual* es la última medida registrada (la salida de la última parada; o
-  su llegada si aún no tiene salida).
+  su llegada si aún no tiene salida). El **máximo es con signo**: es el mayor valor, de modo que en
+  un servicio todo adelantado imprime el menos adelantado (`Max: −1 min`).
 - `arrivalDelta` se mide al entrar en el waypoint; `departureDelta`, cuando termina la retención
   (a la hora programada, o antes si llegó tarde: sale de inmediato y el desfase es positivo).
 - Se muestra en **`info train N`** (detalle: una línea por parada más actual/media/máximo) y, en
@@ -189,15 +190,24 @@ Implementación de la fase 2b (esta entrega): el autopilot **retiene** en el way
 `departure` con un despertar determinista por ticks (`GameClock.ticksUntil` + `SimulationScheduler`;
 si el reloj retrocede, se reprograma). La secuencia se lleva con un **cursor** de minuto absoluto
 por servicio: la primera hora se resuelve con `Timetable.resolveNearest` y las siguientes con
-`Timetable.resolveAfter` (rollover al volver al primer waypoint). Al llegar a un waypoint con
-`departure` el tren **frena** y, si va a esperar, el autopilot pasa a `WAITING` (una orden de
-velocidad durante la espera queda diferida y se restaura en la salida). La `departure` **arranca el
-motor** de todo el tren, lo que cierra el ciclo del `park`; `park` es una acción nueva
-(`WaypointCommand.Kind.PARK`) que frena, apaga el motor y **mantiene el autopilot** (frente a
-`stop`, que lo desactiva). La seguridad manda: la retención no toca cantones; si el bloque
-siguiente está ocupado, el tren espera y el retraso se refleja en la siguiente medida. La métrica
-vive en `letrain.itinerary.Punctuality` y se expone en `info train N`. Tests de referencia:
-`RetentionParkMetricsTest` (reloj con `time set` + ticks), `PunctualityTest` y `TimetableTest`.
+`Timetable.resolveAfter` (rollover al volver al primer waypoint; en el empate exacto a ±12 h se
+mantiene la ocurrencia del día actual). Al llegar a un waypoint con `departure` el tren **frena** y,
+si va a esperar, el autopilot pasa a `WAITING` (una orden de velocidad durante la espera queda
+diferida y se restaura en la salida). La `departure` **arranca el motor** de todo el tren, lo que
+cierra el ciclo del `park`; `park` es una acción nueva (`WaypointCommand.Kind.PARK`) que frena,
+apaga el motor y **mantiene el autopilot** (frente a `stop`, que lo desactiva). Un `park` **sin
+`departure` posterior** deja al tren aparcado con el motor apagado: el cursor del plan avanza como
+en cualquier waypoint, pero el tren no vuelve a moverse hasta una salida programada (que arranca el
+motor) o una orden manual; es un fin de servicio, no una espera activa. Los comandos diferidos
+(`park`, `load`/`unload`) se reanudan también al **contacto con el tope de vía**, donde la parada
+llega por `emergencyStop` dentro del guard de reentrada y no dispara `onSpeedChanged`; sin ese
+camino el plan quedaría clavado en cocheras/terminales. La seguridad manda: la retención no toca
+cantones; si el bloque siguiente está ocupado, el tren espera y el retraso se refleja en la
+siguiente medida. La métrica vive en `letrain.itinerary.Punctuality` y se expone en `info train N`.
+**Al cargar**, el cursor de secuencia no viaja en el guardado: la primera hora se re-resuelve con
+`resolveNearest` (una salida ya pasada libera de inmediato) y el replay del programa reinicia el
+servicio igualmente. Tests de referencia: `RetentionParkMetricsTest` (reloj con `time set` + ticks),
+`PunctualityTest` y `TimetableTest`.
 
 #### La jornada completa (ejemplo)
 
