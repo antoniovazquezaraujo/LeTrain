@@ -337,15 +337,15 @@ La clase vive en el tren (todos `DEFAULT` mientras no haya pasajeros) y conviene
 `info train` junto al tiempo de espera.
 
 **Los apartaderos se usan solos**: el jugador construye la infraestructura (dos desvíos con su vía de
-apartado) y el sistema la aprovecha automáticamente: un tren que no puede continuar (cantón ocupado
-o retención del horario) **se aparta a la vía libre** —el cantón paralelo entre los mismos nodos, que
+apartado) y el sistema la aprovecha automáticamente: un tren que no puede continuar (cantón ocupado)
+**se aparta a la vía libre** —el cantón paralelo entre los mismos nodos, que
 `tryAlternativeSegment` ya sabe detectar— y cede la directa al que pasa. El itinerario **no** necesita
 sensores ni waypoints en los apartaderos: los cruces se resuelven con las horas de las estaciones y
 la seguridad. Un punto de control (sensor) en un apartadero es opcional, solo para medir el paso o
 forzar una retención ahí.
 
-El horario es la **capa de plan** encima de la seguridad: decide **quién espera y dónde** (en el
-apartadero, no en mitad del tramo) y el `departure` del apartadero sincroniza el cruce ("no salgas
+El horario es la **capa de plan** encima de la seguridad: decide **quién espera** y el
+`departure` del apartadero sincroniza el cruce ("no salgas
 antes de las X"). Regla de oro: **el horario nunca anula la seguridad**; si el cantón está ocupado,
 se espera y el retraso se mide.
 
