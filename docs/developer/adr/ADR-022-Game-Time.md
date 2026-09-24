@@ -194,9 +194,9 @@ assign itinerary "cercanías diario" to train 1;
   `park` se añade como acción nueva y `stop` conserva su significado actual.
 - **Cambios de sentido (push-pull)**: la composición del ejemplo lleva **una locomotora en cada
   extremo** (el jugador las paga), así que el `reverse` de los terminales basta: la nueva cabeza
-  pasa a tirar. Un jugador "pro" puede montar el *run-around* por su cuenta (desenganchar, mover la
-  locomotora a la otra vía con sensores, volver a enganchar e invertir) con la automatización que ya
-  existe (`uncouple`/`couple`/`invert` + sensores); no hace falta una acción de itinerario.
+  pasa a tirar. Un jugador "pro" puede programar el *run-around* (desenganchar, mover la locomotora
+  a la otra vía, volver a enganchar e invertir) **como acciones del waypoint** con las órdenes de
+  tren (`uncouple`/`couple`/`stop at`…, ver *Maniobras en el itinerario*), o desde scripts.
 - **Faros al invertir**: deben seguir al **frente físico** (`Train.getPhysicalFront()`): en push-pull
   se apagan los de la cola y se encienden los de la nueva cabeza; con una sola locomotora siguen
   encendidos aunque miren hacia los vagones (issue #618).
@@ -204,6 +204,36 @@ assign itinerary "cercanías diario" to train 1;
   (no se añade un atributo `loop` ni `once` por ahora).
 - **Sin azúcar `repeat`**: cada vuelta lleva su propio horario (no son las mismas paradas a las
   mismas horas), así que los waypoints se escriben a mano, aunque sean más líneas.
+
+#### Maniobras en el itinerario
+
+Las maniobras "pro" (run-around, apartarse, mover la locomotora sola) se escriben como **acciones
+del waypoint**, con las mismas órdenes de tren que los scripts. El autopilot las ejecuta **en
+orden** al llegar a la parada; las de movimiento (`stop at …`) son misiones que deben completarse
+antes de pasar a la siguiente acción, y el `departure` libera cuando la maniobra ha terminado (si
+tarda más, el tren sale tarde y se mide).
+
+```letrain
+add station "B" arrival 06:27,
+               uncouple forward 1,
+               stop at sensor 5 speed 2,     // entra en el bucle
+               reverse,                      // el cambio de sentido lo escribe el autor
+               fork 3 set curved,            // si hace falta, fuerza el desvío de vuelta
+               stop at sensor 6 speed 2,     // vuelve por el otro lado del tren
+               couple forward 1,
+               reverse,                      // queda mirando hacia la salida
+               departure 06:45;
+```
+
+- **Los cambios de sentido son explícitos**: cada `reverse` va escrito entre tramos. Dentro del
+  itinerario, `stop at` **no** auto-invierte: si falta un `reverse`, no hay ruta desde el sentido
+  actual y se avisa. La auto-inversión (opción B de la issue #619) es para órdenes sueltas de
+  scripts/consola, donde no hay coreografía escrita.
+- **Agujas**: el autopilot ya orienta los desvíos a lo largo de la ruta que calcula
+  (`ensureForkRoute`); además, el waypoint puede llevar acciones de fork (`fork 3 set curved`,
+  `fork 3 flip`) para forzar un camino o dejarlo preparado.
+- La maniobra **no se recorta**: el horario es plan, la maniobra es trabajo; si no da tiempo, el
+  tren sale tarde y el desfase se mide.
 
 #### Cruces en vía única: cantones (seguridad) y horario (plan)
 
