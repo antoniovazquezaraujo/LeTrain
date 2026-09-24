@@ -132,7 +132,8 @@ create itinerary "cercanías" {
 Semántica:
 
 - **`arrival HH:MM` es medida**: el autopilot apunta la hora real de llegada al waypoint y su
-  desfase (puede ser negativo = adelantado). **No retiene**.
+  desfase (puede ser negativo = adelantado). **No retiene ni regula la velocidad**: si llega antes,
+  espera a su `departure` (o continúa con sus acciones si no lo tiene).
 - **`departure HH:MM` es retención**: al llegar se ejecutan las acciones del waypoint (`load`,
   `unload`, `wait n`…); si terminan antes de la hora, el tren **espera**; si terminan después,
   **sale tarde** y el desfase de salida queda registrado. La estancia (`dwell`) es, por tanto,
@@ -255,9 +256,8 @@ Queda abierto: la **prioridad** cuando el plan se cruza con imprevistos (retraso
 y si algún día conviene una negociación automática de encuentros (elegir apartadero y prioridad sin
 horario) en lugar de confiar en el plan.
 
-Puntos abiertos (seguimos pensando): si más adelante `arrival` también limitará la velocidad para
-no llegar antes de hora, y la política de prioridad de pasajeros (¿siempre, o solo con retraso?) con
-su mecanismo antiinanición (envejecimiento o cupo).
+Puntos abiertos (seguimos pensando): la política de prioridad de pasajeros (¿siempre, o solo con
+retraso?) con su mecanismo antiinanición (envejecimiento o cupo).
 
 ### Contrato (implementado en la fase 0)
 
