@@ -208,9 +208,14 @@ Consecuencias:
   anterior —su estación de origen— el cruce completo. No puede "avanzar hasta el apartadero"
   porque, para los cantones, ese apartadero no delimita nada: es el mismo segmento.
 
-Prioridad y espera: el primero que reclama tiene prioridad **de facto** (por orden de llegada) y la
-espera termina cuando el dueño libera (`onBlockReleased`), así que no es infinita; pero no está
-acotada por ningún plan y puede encadenar retrasos (un tren que espera dos cruces seguidos).
+Prioridad y espera: cuando el cantón se libera, `Model` avisa a los que esperan **recorriendo
+`model.getLocomotives()` en orden**, y el primero de esa lista que está esperando el cantón
+reintenta el lock en el acto (`tryLock` es síncrono) y se lo queda. **No es aleatorio** —es
+determinista y reproducible—, pero **tampoco es FIFO por llegada**: la prioridad es el orden de la
+lista de locomotoras, no quién llegó antes. El que pierde reintenta en la siguiente liberación (no
+hay inanición, aunque puede encadenar esperas). Además, antes de esperar el tren intenta
+`tryAlternativeSegment`: si existe un cantón paralelo entre los mismos nodos (p. ej. la vía de
+apartado) y no tiene paradas pendientes en el bloqueado, lo toma y evita la espera.
 
 El horario es la **capa de plan** encima de la seguridad: decide **quién espera y dónde** (en el
 apartadero, no en mitad del tramo) y el `departure` del apartadero sincroniza el cruce ("no salgas
