@@ -232,6 +232,10 @@ add station "B" arrival 06:27,
 - **Agujas**: el autopilot ya orienta los desvíos a lo largo de la ruta que calcula
   (`ensureForkRoute`); además, el waypoint puede llevar acciones de fork (`fork 3 set curved`,
   `fork 3 flip`) para forzar un camino o dejarlo preparado.
+- **Las órdenes sueltas no pisan el plan**: si el tren está cumpliendo un itinerario, una orden
+  suelta de consola o script (`stop at …`, `invert`, etc.) se **rechaza con aviso** (consola y
+  log: "está en itinerario; quítale el autopilot o escríbela en el itinerario"). Nada de pausar y
+  reanudar en silencio. Para maniobras manuales: `train N set autopilot false;`.
 - La maniobra **no se recorta**: el horario es plan, la maniobra es trabajo; si no da tiempo, el
   tren sale tarde y el desfase se mide.
 
