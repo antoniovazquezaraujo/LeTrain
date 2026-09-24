@@ -41,9 +41,12 @@ create itinerary "CoalRoute" {
 *Waypoint rules:*
 
 - **Commas are mandatory** between the waypoint's actions. The station/sensor reference and the optional entry direction (a compass direction such as `n`, `e`, `s`, `w`) take **no** comma.
-- The **order is mandatory**: `arrival` first, then the actions in execution order (`load`, `unload`, `reverse`, `stop`, `wait [NUM]`, `speed [NUM]`), and `departure` last. Writing an attribute out of order is a syntax error.
-- `arrival` is measured when the waypoint is reached; `departure` is the scheduled leaving time (on arrival the actions run and, if they finish early, the train waits until that time). The dwell is `departure − arrival` in game time. Times are read in sequence: a smaller time than the previous one belongs to the next day (`arrival 23:50, departure 00:10`). Without times, a waypoint behaves exactly as before.
-- Times are validated, saved and exported; the autopilot does not retain or measure them yet.
+- The **order is mandatory**: `arrival` first, then the actions in execution order (`load`, `unload`, `reverse`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`), and `departure` last. Writing an attribute out of order is a syntax error.
+- `arrival` is measured when the waypoint is reached; `departure` is the scheduled leaving time: on arrival the actions run, the train waits until that time and a scheduled departure starts the engine. The dwell is `departure − arrival` in game time. Times are read in sequence: a smaller time than the previous one belongs to the next day (`arrival 23:50, departure 00:10`). If the train arrives late it leaves immediately and the deviation is measured. Without times, a waypoint behaves exactly as before.
+- `park` brakes, switches the engine off and **keeps the autopilot running** (unlike `stop`, which brakes and turns the autopilot off). The next scheduled departure starts the engine and resumes the cruise speed, so a repeating daily service can end with `park` and leave again the next morning.
+- The train reports its punctuality in `info train N`: arrival and departure deltas per stop in game minutes (`+` = late, `−` = early), plus the current, average and maximum deviation. A train without times shows nothing.
+- Safety wins: retention never overrides blocks; if the next block is occupied, the train waits and the delay shows up in the next measurement.
+- Times are validated, saved and exported.
 - The old comma-less syntax (e.g. `add station 2 reverse unload`) is **rejected everywhere** (game, editor and `letrain-check`) with a diagnostic: this beta does not migrate old itineraries.
 
 **Assign and Activate:**

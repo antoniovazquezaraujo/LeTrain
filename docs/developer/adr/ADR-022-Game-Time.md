@@ -1,6 +1,6 @@
 # ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)
 
-## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2a implementada (gramática y modelo de horarios, sin retención todavía)
+## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2a implementada (gramática y modelo de horarios); fase 2b implementada (retención, `park` y métrica de puntualidad en core; el HUD llega en 2c)
 
 ## Contexto
 
@@ -154,10 +154,18 @@ Semántica:
 Métrica (fase 2, solo medir; la economía horaria es la fase 4):
 
 - Por parada: `arrivalDelta` y `departureDelta` en **minutos de juego**.
-- Por tren: retraso actual (última parada), medio y máximo.
-- Se muestra en **`info train N`** (detalle) y en el **HUD** con un simple número con signo
-  (`+2` = dos minutos tarde, `−1` = adelantado) referido al tren seleccionado/en conducción; si el
-  itinerario no tiene horas, no se muestra nada.
+- **Convención de signo (implementada)**: `+` = tarde, `−` = adelantado (`+2` = dos minutos tarde,
+  `−1` = un minuto adelantado).
+- **Media y máximo (implementados)** se calculan sobre **todas las medidas** (cada llegada y cada
+  salida cuenta una): el *actual* es la última medida registrada (la salida de la última parada; o
+  su llegada si aún no tiene salida).
+- `arrivalDelta` se mide al entrar en el waypoint; `departureDelta`, cuando termina la retención
+  (a la hora programada, o antes si llegó tarde: sale de inmediato y el desfase es positivo).
+- Se muestra en **`info train N`** (detalle: una línea por parada más actual/media/máximo) y, en
+  la fase 2c, en el **HUD** con un simple número con signo referido al tren seleccionado/en
+  conducción; si el itinerario no tiene horas, o aún no se ha medido ninguna parada, no se muestra
+  nada. La historia vive en memoria (no viaja en el guardado): al cargar, el servicio se reanuda y
+  la vuelve a medir.
 
 Compatibilidad (**decidida**): la sintaxis nueva es **estricta en todos los puntos de entrada**
 (consola, editor, escenarios, partidas guardadas, journals y `letrain-check`): las acciones sin
@@ -171,12 +179,25 @@ viejo sin los campos `arrival`/`departure` carga con horas vacías
 (`core/src/test/resources/bucle.json` se conserva como test de ese caso). `WAIT n` conserva su
 semántica (segundos de simulación) y los itinerarios sin horas siguen funcionando igual.
 
-Implementación de la fase 2a (esta entrega): las horas viven en el `Waypoint` (`arrival`/
-`departure`, un `LocalTime` opcional cada una), se validan en la gramática (token `TIME`, comas y
-orden obligatorios) y sobreviven a `GameSaveService` (JSON `HH:mm`) y al export/import de
-escenarios. La semántica de secuencia y estancia vive en `letrain.itinerary.Timetable`
-(`resolveAfter`/`dwellMinutes`, con rollover de medianoche) y queda cubierta por tests; la
-retención y la medida de desfases son la fase 2b.
+Implementación de la fase 2a: las horas viven en el `Waypoint` (`arrival`/`departure`, un
+`LocalTime` opcional cada una), se validan en la gramática (token `TIME`, comas y orden
+obligatorios) y sobreviven a `GameSaveService` (JSON `HH:mm`) y al export/import de escenarios. La
+semántica de secuencia y estancia vive en `letrain.itinerary.Timetable` (`resolveAfter`/
+`dwellMinutes`, con rollover de medianoche).
+
+Implementación de la fase 2b (esta entrega): el autopilot **retiene** en el waypoint hasta su
+`departure` con un despertar determinista por ticks (`GameClock.ticksUntil` + `SimulationScheduler`;
+si el reloj retrocede, se reprograma). La secuencia se lleva con un **cursor** de minuto absoluto
+por servicio: la primera hora se resuelve con `Timetable.resolveNearest` y las siguientes con
+`Timetable.resolveAfter` (rollover al volver al primer waypoint). Al llegar a un waypoint con
+`departure` el tren **frena** y, si va a esperar, el autopilot pasa a `WAITING` (una orden de
+velocidad durante la espera queda diferida y se restaura en la salida). La `departure` **arranca el
+motor** de todo el tren, lo que cierra el ciclo del `park`; `park` es una acción nueva
+(`WaypointCommand.Kind.PARK`) que frena, apaga el motor y **mantiene el autopilot** (frente a
+`stop`, que lo desactiva). La seguridad manda: la retención no toca cantones; si el bloque
+siguiente está ocupado, el tren espera y el retraso se refleja en la siguiente medida. La métrica
+vive en `letrain.itinerary.Punctuality` y se expone en `info train N`. Tests de referencia:
+`RetentionParkMetricsTest` (reloj con `time set` + ticks), `PunctualityTest` y `TimetableTest`.
 
 #### La jornada completa (ejemplo)
 
@@ -196,8 +217,8 @@ create itinerary "cercanías diario" {
 assign itinerary "cercanías diario" to train 1;
 ```
 
-> **Nota:** en este ejemplo `park` llega con la fase 2c y los comentarios `//` son ilustrativos (el
-> DSL no admite comentarios todavía); el resto de la sintaxis es la vigente en la fase 2a.
+> **Nota:** `park` ya está implementado (fase 2b); los comentarios `//` son ilustrativos (el DSL no
+> admite comentarios todavía).
 
 - **Cómo se inicia cada mañana**: el tren pasa la noche en cocheras (el último y el primer
   waypoint son el mismo sitio) y a las 06:00 la `departure` del primer waypoint lo libera. La

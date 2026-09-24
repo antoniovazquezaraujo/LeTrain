@@ -65,6 +65,7 @@
 - [[letrain.itinerary.AStarPathfinder|AStarPathfinder]] (core)
 - [[letrain.itinerary.AutoPilot|AutoPilot]] (core)
 - [[letrain.itinerary.Itinerary|Itinerary]] (core)
+- [[letrain.itinerary.Punctuality|Punctuality]] (core)
 - [[letrain.itinerary.SegmentPathfinder|SegmentPathfinder]] (core)
 - [[letrain.itinerary.Timetable|Timetable]] (core)
 - [[letrain.itinerary.TrainActionManager|TrainActionManager]] (core)
