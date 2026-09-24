@@ -65,9 +65,6 @@ letrain-check my-scenario.ltr
 - exit `0` if valid, `1` if there are diagnostics, `2` for usage/IO errors.
 - each diagnostic is printed as `path:line:col: error: message`, so editors such as vim or VS Code
   can jump straight to the line.
-- like loading the game, the validator accepts scenarios written before timetables: legacy
-  comma-less waypoint syntax is normalized first and reported as `path: warning: ...`, without
-  changing the exit code if the rest is valid.
 
 ## The editor
 

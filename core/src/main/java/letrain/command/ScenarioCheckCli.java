@@ -11,12 +11,6 @@ import java.nio.file.Path;
  * code, so editors (e.g. vim's {@code :make}) can validate a scenario without starting the game.
  *
  * <p>
- * ADR-022 compatibility: the validator behaves like loading the game, so it <b>never rejects a
- * scenario the game loads</b>. Legacy comma-less waypoint syntax is normalized to the comma form
- * before compiling and a {@code path: warning: ...} line is printed; the exit code only reflects
- * the remaining diagnostics. The in-game editor's compiler stays strict on purpose.
- *
- * <p>
  * Exit codes: {@code 0} ok, {@code 1} diagnostics, {@code 2} usage/IO error.
  */
 public final class ScenarioCheckCli {
@@ -38,10 +32,7 @@ public final class ScenarioCheckCli {
         }
         try {
             String text = Files.readString(Path.of(path));
-            String filePath = path;
-            String normalized = LegacyScriptNormalizer.normalize(text,
-                    warning -> System.out.println(filePath + ": warning: " + warning));
-            ScenarioCompiler.Result result = ScenarioCompiler.compile(normalized);
+            ScenarioCompiler.Result result = ScenarioCompiler.compile(text);
             for (ScenarioCompiler.Diagnostic d : result.diagnostics()) {
                 System.out
                         .println(path + ":" + d.line() + ":" + d.col() + ": error: " + d.message());

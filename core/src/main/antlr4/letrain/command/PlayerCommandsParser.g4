@@ -29,7 +29,7 @@ playerStatement : statement
 
 journalCommand : JOURNAL ;
 
-timeCommand : TIME_KW (SET (TIME | NUMBER COLON NUMBER))? ;
+timeCommand : TIME (SET NUMBER COLON NUMBER)? ;
 
 undoCommand : UNDO (NUMBER)? ;
 
