@@ -192,6 +192,14 @@ assign itinerary "cercanías diario" to train 1;
   servicio, paso a manual), así que no sirve para una jornada que se repite; `park` frena y apaga
   el motor **manteniendo el autopilot** a la espera de la próxima salida programada. **Decidido**:
   `park` se añade como acción nueva y `stop` conserva su significado actual.
+- **Cambios de sentido (push-pull)**: la composición del ejemplo lleva **una locomotora en cada
+  extremo** (el jugador las paga), así que el `reverse` de los terminales basta: la nueva cabeza
+  pasa a tirar. Un jugador "pro" puede montar el *run-around* por su cuenta (desenganchar, mover la
+  locomotora a la otra vía con sensores, volver a enganchar e invertir) con la automatización que ya
+  existe (`uncouple`/`couple`/`invert` + sensores); no hace falta una acción de itinerario.
+- **Faros al invertir**: deben seguir al **frente físico** (`Train.getPhysicalFront()`): en push-pull
+  se apagan los de la cola y se encienden los de la nueva cabeza; con una sola locomotora siguen
+  encendidos aunque miren hacia los vagones (issue #618).
 - **El bucle es el comportamiento por defecto**: el autopilot vuelve siempre al primer waypoint
   (no se añade un atributo `loop` ni `once` por ahora).
 - **Sin azúcar `repeat`**: cada vuelta lleva su propio horario (no son las mismas paradas a las
