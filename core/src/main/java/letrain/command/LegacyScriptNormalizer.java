@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,12 +15,28 @@ import java.util.regex.Pattern;
  *
  * <p>
  * Adopted compatibility policy: <b>strict when writing, tolerant when loading existing text from
- * disk</b>. Loading surfaces (saved games, scenario files and their recorded journals) run their
- * text through this class, which only rewrites lines it fully understands; anything else is left
- * untouched so the strict parser reports the error. The rewrite is deterministic and idempotent:
- * lines that already use commas, times ({@code 10:23}) or unknown tokens are returned unchanged.
+ * disk</b>. Loading surfaces (saved games, scenario files and their recorded journals, program
+ * files loaded by the clients and the {@code letrain-check} validator) run their text through this
+ * class, which only rewrites lines it fully understands; anything else is left untouched so the
+ * strict parser reports the error. The rewrite is deterministic and idempotent: lines that already
+ * use commas, times ({@code 10:23}) or unknown tokens are returned unchanged. Commas and colons
+ * inside quoted names (e.g. {@code add station "A:1" reverse unload}) do not stop the rewrite; the
+ * scan only looks outside quotes.
+ *
+ * <p>
+ * Known limitation: two waypoints on the same line
+ * ({@code add station 1 load add station 2 unload}) are left untouched, so they still fail under
+ * the strict parser; the normalizer never guesses where one waypoint ends and the next begins. Line
+ * endings (LF, CRLF or a lone CR) are handled and normalized to LF only when a line is actually
+ * rewritten.
  */
 public final class LegacyScriptNormalizer {
+
+    /**
+     * Warning emitted by the {@link #normalize(String, Consumer)} overload when it rewrites text.
+     */
+    public static final String LEGACY_WARNING =
+            "legacy waypoint syntax normalized to the comma form (ADR-022)";
 
     private static final Pattern WAYPOINT_LINE =
             Pattern.compile("^(\\s*add\\s+(?:station|sensor)\\s+)(.*)$", Pattern.CASE_INSENSITIVE);
@@ -33,13 +50,17 @@ public final class LegacyScriptNormalizer {
 
     /**
      * Returns {@code text} with legacy waypoint lines rewritten to the comma syntax. The same
-     * instance is returned (same reference) when there is nothing to normalize.
+     * instance is returned (same reference) when there is nothing to normalize, so callers can
+     * compare by reference and skip warning about untouched text.
      */
     public static String normalize(String text) {
         if (text == null || text.isEmpty()) {
             return text;
         }
-        String[] lines = text.split("\n", -1);
+        // \R splits LF, CRLF and lone CR without keeping the separator: CRLF files are normalized
+        // exactly like LF ones (the TerminalPresenter reads program files with readAllBytes, so
+        // their \r reaches this method).
+        String[] lines = text.split("\\R", -1);
         StringBuilder sb = new StringBuilder(text.length() + 16);
         boolean changed = false;
         for (int i = 0; i < lines.length; i++) {
@@ -54,9 +75,22 @@ public final class LegacyScriptNormalizer {
     }
 
     /**
+     * Normalizes like {@link #normalize(String)} and reports {@link #LEGACY_WARNING} through
+     * {@code warningSink} when something changed. Shared by every load surface so the game, the
+     * clients and the validator all behave the same.
+     */
+    public static String normalize(String text, Consumer<String> warningSink) {
+        String normalized = normalize(text);
+        if (warningSink != null && !normalized.equals(text)) {
+            warningSink.accept(LEGACY_WARNING);
+        }
+        return normalized;
+    }
+
+    /**
      * Rewrites a single {@code add station}/{@code add sensor} line with two or more comma-less
      * actions. Returns the line unchanged when it is not a waypoint line, already uses commas or
-     * times, or contains anything this normalizer does not fully understand.
+     * times outside quotes, or contains anything this normalizer does not fully understand.
      */
     static String normalizeLine(String line) {
         Matcher matcher = WAYPOINT_LINE.matcher(line);
@@ -65,7 +99,7 @@ public final class LegacyScriptNormalizer {
         }
         String head = matcher.group(1);
         String tail = matcher.group(2);
-        if (tail.indexOf(',') >= 0 || tail.indexOf(':') >= 0) {
+        if (containsOutsideQuotes(tail, ',') || containsOutsideQuotes(tail, ':')) {
             return line; // already comma syntax, or a time attribute
         }
 
@@ -119,6 +153,20 @@ public final class LegacyScriptNormalizer {
             sb.append(' ');
         }
         return sb.append(suffix).toString();
+    }
+
+    /** True when {@code c} appears in {@code text} outside a double-quoted run. */
+    private static boolean containsOutsideQuotes(String text, char c) {
+        boolean quoted = false;
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (ch == '"') {
+                quoted = !quoted;
+            } else if (ch == c && !quoted) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static List<String> tokenize(String text) {

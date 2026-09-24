@@ -3,6 +3,8 @@ package letrain.command;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -35,8 +37,8 @@ class LegacyScriptNormalizerTest {
     @Test
     @DisplayName("preserves indentation, quoted names with spaces and the trailing separator")
     void preservesLayout() {
-        assertEquals("      add station \"Central Mine\" reverse, unload;",
-                LegacyScriptNormalizer.normalize("      add station \"Central Mine\" reverse unload;"));
+        assertEquals("      add station \"Central Mine\" reverse, unload;", LegacyScriptNormalizer
+                .normalize("      add station \"Central Mine\" reverse unload;"));
         assertEquals("add station 1 load, unload }",
                 LegacyScriptNormalizer.normalize("add station 1 load unload }"));
     }
@@ -67,5 +69,46 @@ class LegacyScriptNormalizerTest {
 
         assertEquals("create itinerary \"x\" {\n  add station 2 reverse, unload\n}\n", once);
         assertSame(once, LegacyScriptNormalizer.normalize(once));
+    }
+
+    @Test
+    @DisplayName("CRLF (and lone CR) text is normalized like LF text")
+    void normalizesCrlfAndCrText() {
+        String crlf = "create itinerary \"x\" {\r\n  add station 2 reverse unload\r\n}\r\n";
+        assertEquals("create itinerary \"x\" {\n  add station 2 reverse, unload\n}\n",
+                LegacyScriptNormalizer.normalize(crlf));
+
+        String cr = "create itinerary \"x\" {\r  add station 2 reverse unload\r}\r";
+        assertEquals("create itinerary \"x\" {\n  add station 2 reverse, unload\n}\n",
+                LegacyScriptNormalizer.normalize(cr));
+    }
+
+    @Test
+    @DisplayName("CRLF text without legacy waypoints is returned untouched (same reference)")
+    void crlfWithoutLegacy_isUntouched() {
+        String crlf = "create itinerary \"x\" {\r\n  add station 2 reverse, unload\r\n}\r\n";
+
+        assertSame(crlf, LegacyScriptNormalizer.normalize(crlf));
+    }
+
+    @Test
+    @DisplayName("commas and colons inside quoted names do not stop the rewrite")
+    void quotedNamesWithPunctuation_areNormalized() {
+        assertEquals("add station \"A:1\" reverse, unload",
+                LegacyScriptNormalizer.normalize("add station \"A:1\" reverse unload"));
+        assertEquals("add station \"A,B\" load, unload",
+                LegacyScriptNormalizer.normalize("add station \"A,B\" load unload"));
+    }
+
+    @Test
+    @DisplayName("the warning sink reports LEGACY_WARNING exactly when something changed")
+    void warningSink_reportsOnlyWhenChanged() {
+        List<String> warnings = new ArrayList<>();
+
+        LegacyScriptNormalizer.normalize("add station 2 reverse, unload", warnings::add);
+        assertEquals(List.of(), warnings, "no warning for text that already parses");
+
+        LegacyScriptNormalizer.normalize("add station 2 reverse unload", warnings::add);
+        assertEquals(List.of(LegacyScriptNormalizer.LEGACY_WARNING), warnings);
     }
 }
