@@ -22,8 +22,6 @@ SPEED: 'speed';
 ON: 'on';
 OFF: 'off';
 ENGINE: 'engine';
-ARRIVAL: 'arrival';
-DEPARTURE: 'departure';
 
 CRASH: 'crash';
 CONTACT: 'contact';
@@ -82,7 +80,7 @@ GN: 'gn';
 GP: 'gp';
 RAIL: 'rail' | 'rl';
 END: 'end';
-TIME_KW: 'time';
+TIME: 'time';
 
 // Directions
 DIR_E: 'e';
@@ -103,9 +101,6 @@ COLON: ':';
 EQUALS: '=';
 
 // Data types
-// Time of day in 24 h format (H:MM or HH:MM). Out-of-range values (24:00, 9:60…) do not match
-// and are reported as syntax errors. Longest match wins over NUMBER, so 9:20 is one token.
-TIME : ([01]?[0-9] | '2' [0-3]) ':' [0-5][0-9] ;
 NUMBER : '-'? [0-9]+;
 STRING : '"' ~["]* '"' ;
 

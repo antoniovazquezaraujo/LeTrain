@@ -430,12 +430,9 @@ class SerializationTest {
                         letrain.itinerary.WaypointCommand.speed(8));
         itinerary.addWaypoint(
                 new letrain.itinerary.impl.WaypointImpl(letrain.itinerary.Waypoint.Type.STATION, 10,
-                        java.util.Optional.of(letrain.map.Dir.N), cmds1,
-                        java.util.Optional.of(java.time.LocalTime.of(9, 0)),
-                        java.util.Optional.of(java.time.LocalTime.of(9, 20))));
+                        java.util.Optional.of(letrain.map.Dir.N), cmds1));
         itinerary.addWaypoint(new letrain.itinerary.impl.WaypointImpl(
-                letrain.itinerary.Waypoint.Type.SENSOR, 20, java.util.Optional.empty(), cmds2,
-                java.util.Optional.empty(), java.util.Optional.of(java.time.LocalTime.of(23, 50))));
+                letrain.itinerary.Waypoint.Type.SENSOR, 20, java.util.Optional.empty(), cmds2));
         // Build AutoPilot
         letrain.itinerary.impl.AutoPilotImpl ap =
                 new letrain.itinerary.impl.AutoPilotImpl(original, original.getActionManager());
@@ -469,17 +466,11 @@ class SerializationTest {
         assertEquals(letrain.map.Dir.N, wp1.entryDir().orElse(null));
         assertEquals(1, wp1.commands().size());
         assertEquals(letrain.itinerary.WaypointCommand.LOAD, wp1.commands().get(0));
-        assertEquals(java.time.LocalTime.of(9, 0), wp1.arrival().orElse(null),
-                "scheduled arrival must survive save/load");
-        assertEquals(java.time.LocalTime.of(9, 20), wp1.departure().orElse(null),
-                "scheduled departure must survive save/load");
 
         letrain.itinerary.Waypoint wp2 = restoredItin.waypoints().get(1);
         assertEquals(letrain.itinerary.Waypoint.Type.SENSOR, wp2.type());
         assertEquals(20, wp2.targetId());
         assertTrue(wp2.entryDir().isEmpty());
-        assertTrue(wp2.arrival().isEmpty(), "an unscheduled arrival must stay empty");
-        assertEquals(java.time.LocalTime.of(23, 50), wp2.departure().orElse(null));
         assertEquals(2, wp2.commands().size());
         assertEquals(letrain.itinerary.WaypointCommand.Kind.WAIT, wp2.commands().get(0).kind());
         assertEquals(5, wp2.commands().get(0).seconds());

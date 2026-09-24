@@ -73,26 +73,6 @@ class TerminalPresenterScenarioEditorTest {
     }
 
     @Test
-    @DisplayName("onLoadCommands normalizes a legacy program file with CRLF line endings")
-    void loadCommands_normalizesLegacyCrlfProgram() throws Exception {
-        Model model = new Model(1);
-        TerminalPresenter presenter = presenterWith(model);
-        java.nio.file.Path file = java.nio.file.Files.createTempFile("legacy-program", ".txt");
-        java.nio.file.Files.writeString(file,
-                "create itinerary \"x\" {\r\n  add station 2 reverse unload\r\n}\r\n");
-        try {
-            presenter.onLoadCommands(file.toFile());
-
-            String program = model.getProgram();
-            assertTrue(program.contains("add station 2 reverse, unload"),
-                    "the legacy program file must load normalized: " + program);
-            assertFalse(program.contains("\r"), "CRLF must not survive normalization: " + program);
-        } finally {
-            java.nio.file.Files.deleteIfExists(file);
-        }
-    }
-
-    @Test
     @DisplayName("onPlayScenarioText rebuilds the world and installs the program")
     void playText_rebuildsWorld() {
         Model model = new Model(1);

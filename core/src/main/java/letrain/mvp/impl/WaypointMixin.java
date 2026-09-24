@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.IOException;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import letrain.itinerary.Waypoint;
@@ -28,8 +27,6 @@ public abstract class WaypointMixin {
             gen.writeStartObject();
             gen.writeStringField("type", value.type().name());
             gen.writeNumberField("targetId", value.targetId());
-            writeTimeField(gen, "arrival", value.arrival());
-            writeTimeField(gen, "departure", value.departure());
             if (value.entryDir().isPresent()) {
                 gen.writeStringField("entryDir", value.entryDir().get().name());
             } else {
@@ -37,16 +34,6 @@ public abstract class WaypointMixin {
             }
             serializers.defaultSerializeField("commands", value.commands(), gen);
             gen.writeEndObject();
-        }
-
-        /** Times are written as deterministic ISO {@code HH:mm} strings (null when unscheduled). */
-        private void writeTimeField(JsonGenerator gen, String field, Optional<LocalTime> time)
-                throws IOException {
-            if (time.isPresent()) {
-                gen.writeStringField(field, time.get().toString());
-            } else {
-                gen.writeNullField(field);
-            }
         }
     }
 
@@ -56,8 +43,6 @@ public abstract class WaypointMixin {
             Waypoint.Type type = null;
             int targetId = 0;
             Optional<Dir> entryDir = Optional.empty();
-            Optional<LocalTime> arrival = Optional.empty();
-            Optional<LocalTime> departure = Optional.empty();
             List<WaypointCommand> commands = null;
 
             com.fasterxml.jackson.databind.JsonNode node = p.readValueAsTree();
@@ -66,12 +51,6 @@ public abstract class WaypointMixin {
             }
             if (node.has("targetId")) {
                 targetId = node.get("targetId").asInt();
-            }
-            if (node.has("arrival") && !node.get("arrival").isNull()) {
-                arrival = Optional.of(LocalTime.parse(node.get("arrival").asText()));
-            }
-            if (node.has("departure") && !node.get("departure").isNull()) {
-                departure = Optional.of(LocalTime.parse(node.get("departure").asText()));
             }
             if (node.has("entryDir") && !node.get("entryDir").isNull()) {
                 entryDir = Optional.of(Dir.valueOf(node.get("entryDir").asText()));
@@ -83,7 +62,7 @@ public abstract class WaypointMixin {
                         .constructCollectionType(List.class, WaypointCommand.class));
             }
 
-            return new WaypointImpl(type, targetId, entryDir, commands, arrival, departure);
+            return new WaypointImpl(type, targetId, entryDir, commands);
         }
     }
 }
