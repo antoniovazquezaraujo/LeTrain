@@ -235,12 +235,13 @@ PR de implementación sustituirá el párrafo *Hoy* de arriba por la descripció
 
 **Prioridades (diseño previsto, para cuando lleguen los trenes de pasajeros)**: la cola se ordenará
 por la clave **`(clase, turno)`** — clases tipo **pasajeros > mercancías > maniobras**, FIFO dentro
-de cada clase — para que un tren de pasajeros pueda adelantar al resto. Dos cautelas:
+de cada clase. **Los pasajeros tienen prioridad siempre** (no solo cuando van con retraso); lo único
+que puede superarla es la **antiinanición**. Dos cautelas:
 
-- **Antiinanición**: "siempre primero" puede dejar a un mercancías esperando sin fin; se resolverá
-  con **envejecimiento** (asciende de clase tras X minutos de juego esperando) o con **prioridad por
-  retraso** (el de pasajeros solo adelanta si va por encima de un umbral). La política se decidirá
-  cuando existan los trenes de pasajeros.
+- **Antiinanición**: "siempre primero" puede dejar a un mercancías esperando sin fin. Un tren que
+  lleve esperando más de X minutos de juego pasa en la siguiente liberación, **por delante de
+  cualquier clase** (pasajeros incluidos). Queda fijar X (o, alternativamente, un cupo de N cesiones
+  consecutivas por clase).
 - **La prioridad no expulsa**: si el cantón ya está ocupado, el prioritario espera a que se libere;
   decide *quién espera cuando hay cola*, no crea vía.
 
@@ -256,8 +257,8 @@ Queda abierto: la **prioridad** cuando el plan se cruza con imprevistos (retraso
 y si algún día conviene una negociación automática de encuentros (elegir apartadero y prioridad sin
 horario) en lugar de confiar en el plan.
 
-Puntos abiertos (seguimos pensando): la política de prioridad de pasajeros (¿siempre, o solo con
-retraso?) con su mecanismo antiinanición (envejecimiento o cupo).
+Punto abierto: fijar el parámetro de la antiinanición (X minutos de espera o N cesiones
+consecutivas) cuando existan los trenes de pasajeros.
 
 ### Contrato (implementado en la fase 0)
 
