@@ -57,13 +57,37 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     @Override
     public void onSpeedChanged(int speed) {
         if (speed == 0 && pendingCommandToResume != null) {
-            WaypointCommand cmd = pendingCommandToResume;
-            pendingCommandToResume = null;
-            if (executeCommand(cmd)) {
-                return;
-            }
-            runPendingCommands();
+            resumeDeferredCommand();
         }
+    }
+
+    /**
+     * Buffer contacts stop the train from inside {@code Train.guardNotify}: the re-entrant
+     * {@code notifySpeedChanged(0)} is dropped, so a command deferred for the stop (PARK,
+     * LOAD/UNLOAD) must be resumed here or the waypoint would never complete. Crashes stall the
+     * train and are ignored (the train is being destroyed).
+     */
+    @Override
+    public void onContact(Train train, letrain.map.Point pos, int speed) {
+        resumeDeferredCommand();
+    }
+
+    @Override
+    public void onCrash(Train train, letrain.map.Point pos, int speed) {
+        resumeDeferredCommand();
+    }
+
+    /** Runs a command that was waiting for the train to stop, then continues the waypoint. */
+    private void resumeDeferredCommand() {
+        if (pendingCommandToResume == null || train.isStalled()) {
+            return;
+        }
+        WaypointCommand cmd = pendingCommandToResume;
+        pendingCommandToResume = null;
+        if (executeCommand(cmd)) {
+            return;
+        }
+        runPendingCommands();
     }
 
     @Override

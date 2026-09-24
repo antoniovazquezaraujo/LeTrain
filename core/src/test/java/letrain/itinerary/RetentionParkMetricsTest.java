@@ -13,6 +13,7 @@ import letrain.command.PlayerCommandExecutor;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.impl.Model;
+import letrain.track.CargoTypes;
 import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.Track;
@@ -21,6 +22,7 @@ import letrain.track.rail.RailTrack;
 import letrain.time.GameTime;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
+import letrain.vehicle.rail.impl.Wagon;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -216,6 +218,78 @@ class RetentionParkMetricsTest {
         }
 
         @Test
+        @DisplayName("same-site consecutive waypoints and overnight rollover (cocheras example)")
+        void sameSiteOvernight_parksThenLeavesNextMorning() {
+            List<RailTrack> line = makeLine(4);
+            Station a = makeStation(line.get(0), "A");
+            Station b = makeStation(line.get(3), "B");
+            Train t = makeTrain(line.get(0), Dir.W);
+            Locomotive loco = (Locomotive) t.getDirectorLinker();
+            setTime(22, 45);
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "Ruta" {
+                        add station %d arrival 22:50, park
+                        add station %d departure 06:00
+                        add station %d
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(a.getId(), a.getId(), b.getId(), t.getId(), t.getId(),
+                    t.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            assertEquals(AutoPilot.Mode.WAITING, t.getAutopilot().mode(),
+                    "the same-site departure must hold the train");
+            assertFalse(loco.isEngineOn(), "park leaves the engine off during the night");
+            assertEquals(1, t.getAutopilot().currentWaypointIndex(),
+                    "the cursor advanced to the next-day waypoint");
+            assertTrue(
+                    infoTrain(loco.getId()).contains("Station " + a.getId() + ": arrival -5 min"),
+                    infoTrain(loco.getId()));
+
+            runTicks((int) model.getGameClock().ticksUntil(new GameTime(2, 6, 0)) + 2);
+            assertTrue(loco.isEngineOn(), "the morning departure must start the engine");
+            assertEquals(3, loco.getTargetSpeed());
+            assertEquals(AutoPilot.Mode.FOLLOWING, t.getAutopilot().mode());
+
+            runUntil(() -> t.getStationId() == b.getId(), 900);
+            assertEquals(b.getId(), t.getStationId(), "the train leaves cocheras after 06:00");
+        }
+
+        @Test
+        @DisplayName("a stop can roll over midnight (arrival 23:50, departure 00:10)")
+        void midnightRollover_holdsPastMidnight() {
+            List<RailTrack> line = makeLine(4);
+            Station a = makeStation(line.get(0), "A");
+            Station b = makeStation(line.get(3), "B");
+            Train t = makeTrain(line.get(0), Dir.W);
+            Locomotive loco = (Locomotive) t.getDirectorLinker();
+            setTime(23, 45);
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "Ruta" {
+                        add station %d arrival 23:50, departure 00:10
+                        add station %d
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            runTicks((int) model.getGameClock().ticksUntil(new GameTime(1, 23, 59)));
+            assertEquals(AutoPilot.Mode.WAITING, t.getAutopilot().mode(),
+                    "still holding before midnight");
+
+            runTicks((int) model.getGameClock().ticksUntil(new GameTime(2, 0, 10)) + 2);
+            assertEquals(AutoPilot.Mode.FOLLOWING, t.getAutopilot().mode(),
+                    "the 00:10 departure releases the hold");
+            assertTrue(loco.getTargetSpeed() > 0);
+        }
+
+        @Test
         @DisplayName("a waypoint without times keeps the old pass-through behaviour and no metric")
         void withoutTimes_noRetention_noPunctuality() {
             List<RailTrack> line = makeLine(4);
@@ -287,6 +361,135 @@ class RetentionParkMetricsTest {
             assertEquals(3, loco.getTargetSpeed(), "the deferred speed must be restored");
             runTicks(60);
             assertTrue(t.getSpeed() > 0, "the train must move after the departure");
+        }
+
+        @Test
+        @DisplayName("park at a dead-end buffer: engine off, autopilot on and the plan advances")
+        void parkAtBuffer_engineOffAndPlanAdvances() {
+            List<RailTrack> line = makeLine(5);
+            Station a = makeStation(line.get(0), "A");
+            Station b = makeStation(line.get(4), "B");
+            Train t = makeTrain(line.get(0), Dir.W);
+            Locomotive loco = (Locomotive) t.getDirectorLinker();
+            setTime(8, 0);
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "Ruta" {
+                        add station %d
+                        add station %d park
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 2;
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            runUntil(() -> !loco.isEngineOn(), 500);
+            assertFalse(loco.isEngineOn(),
+                    "the buffer contact must complete the deferred park (engine off)");
+            assertTrue(t.isAutoMode(), "park must keep the autopilot");
+            assertEquals(0, t.getSpeed());
+            assertEquals(0, t.getAutopilot().currentWaypointIndex(),
+                    "the plan must advance past the park waypoint");
+        }
+
+        @Test
+        @DisplayName("park + departure at a dead-end buffer: the hold engages and the departure starts")
+        void parkAtBuffer_withDeparture_holdsAndStarts() {
+            List<RailTrack> line = makeLine(5);
+            Station a = makeStation(line.get(0), "A");
+            Station b = makeStation(line.get(4), "B");
+            Train t = makeTrain(line.get(0), Dir.W);
+            Locomotive loco = (Locomotive) t.getDirectorLinker();
+            setTime(8, 0);
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "Ruta" {
+                        add station %d
+                        add station %d park, departure 08:10
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 2;
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            runUntil(() -> t.getAutopilot().mode() == AutoPilot.Mode.WAITING && !loco.isEngineOn(),
+                    600);
+            assertEquals(AutoPilot.Mode.WAITING, t.getAutopilot().mode(),
+                    "the schedule must hold at the buffer");
+            assertFalse(loco.isEngineOn());
+
+            runTicks((int) model.getGameClock().ticksUntil(new GameTime(1, 8, 10)) + 2);
+            assertTrue(loco.isEngineOn(), "the scheduled departure must start the engine");
+            assertEquals(2, loco.getTargetSpeed(), "the deferred speed must be restored");
+        }
+
+        @Test
+        @DisplayName("a deferred load at a dead-end buffer still executes after the contact stop")
+        void loadDeferredAtBuffer_startsLoading() {
+            // Line x=0..5: the wagon rides at x=0, the loco (and station A) at x=1, B at x=5.
+            List<RailTrack> line = makeLine(6);
+            Station a = makeStation(line.get(1), "A");
+            Station b = makeStation(line.get(5), "B");
+            b.setRole(CargoTypes.StationRole.PRODUCER);
+            b.setCargoType(CargoTypes.COAL);
+            b.setStorage(50);
+            Train t = makeTrain(line.get(1), Dir.W);
+            Wagon wagon = new Wagon("w");
+            t.pushBack(wagon);
+            model.addWagon(wagon);
+            line.get(0).enterLinkerFromDir(Dir.W, wagon);
+            setTime(8, 0);
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "Ruta" {
+                        add station %d
+                        add station %d load
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 2;
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            runUntil(() -> wagon.getCargoAmount() > 0, 500);
+            assertTrue(wagon.getCargoAmount() > 0,
+                    "the deferred load must execute after the buffer contact");
+        }
+
+        @Test
+        @DisplayName("a deferred unload at a dead-end buffer still executes after the contact stop")
+        void unloadDeferredAtBuffer_startsUnloading() {
+            List<RailTrack> line = makeLine(6);
+            Station a = makeStation(line.get(1), "A");
+            Station b = makeStation(line.get(5), "B");
+            b.setRole(CargoTypes.StationRole.CONSUMER);
+            b.setCargoType(CargoTypes.COAL);
+            b.setStorage(0);
+            Train t = makeTrain(line.get(1), Dir.W);
+            Wagon wagon = new Wagon("w");
+            wagon.load(50);
+            wagon.setCargoType(CargoTypes.COAL);
+            t.pushBack(wagon);
+            model.addWagon(wagon);
+            line.get(0).enterLinkerFromDir(Dir.W, wagon);
+            setTime(8, 0);
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "Ruta" {
+                        add station %d
+                        add station %d unload
+                    }
+                    assign itinerary "Ruta" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 2;
+                    """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            runUntil(() -> wagon.getCargoAmount() < 50, 500);
+            assertTrue(wagon.getCargoAmount() < 50,
+                    "the deferred unload must execute after the buffer contact");
         }
 
         @Test

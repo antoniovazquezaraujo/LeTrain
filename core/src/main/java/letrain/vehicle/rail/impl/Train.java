@@ -689,9 +689,13 @@ public class Train implements Renderable {
         }
     }
 
-    /** Stops all tractors immediately (speed = 0). */
+    /**
+     * Stops all tractors immediately (speed = 0). A previously saved cruise speed is preserved when
+     * the train was already braking (target 0): buffer contacts must not forget it, or the
+     * scheduled departure of a parked train would resume at the default speed (ADR-022 2b).
+     */
     public void emergencyStop() {
-        if (getDirectorLinker() != null) {
+        if (getDirectorLinker() != null && getDirectorLinker().getTargetSpeed() > 0) {
             savedTargetSpeed = getDirectorLinker().getTargetSpeed();
         }
         getTractors().forEach(t -> {
