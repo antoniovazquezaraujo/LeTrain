@@ -153,7 +153,10 @@ Semántica:
 Métrica (fase 2, solo medir; la economía horaria es la fase 4):
 
 - Por parada: `arrivalDelta` y `departureDelta` en **minutos de juego**.
-- Por tren: retraso actual (última salida), medio y máximo, visibles en `info train N` y/o HUD.
+- Por tren: retraso actual (última parada), medio y máximo.
+- Se muestra en **`info train N`** (detalle) y en el **HUD** con un simple número con signo
+  (`+2` = dos minutos tarde, `−1` = adelantado) referido al tren seleccionado/en conducción; si el
+  itinerario no tiene horas, no se muestra nada.
 
 Compatibilidad: los itinerarios sin horas siguen funcionando igual si ya usan comas; `WAIT n`
 conserva su semántica (segundos de simulación). Al exigir comas entre acciones, los itinerarios
@@ -190,6 +193,8 @@ assign itinerary "cercanías diario" to train 1;
   `park` se añade como acción nueva y `stop` conserva su significado actual.
 - **El bucle es el comportamiento por defecto**: el autopilot vuelve siempre al primer waypoint
   (no se añade un atributo `loop` ni `once` por ahora).
+- **Sin azúcar `repeat`**: cada vuelta lleva su propio horario (no son las mismas paradas a las
+  mismas horas), así que los waypoints se escriben a mano, aunque sean más líneas.
 
 #### Cruces en vía única: cantones (seguridad) y horario (plan)
 
@@ -250,10 +255,9 @@ Queda abierto: la **prioridad** cuando el plan se cruza con imprevistos (retraso
 y si algún día conviene una negociación automática de encuentros (elegir apartadero y prioridad sin
 horario) en lugar de confiar en el plan.
 
-Puntos abiertos (seguimos pensando): dónde mostrar los desfases (¿HUD o solo `info`?), si más
-adelante `arrival` también limitará la velocidad para no llegar antes de hora, si hará falta azúcar
-`repeat` para no escribir cuatro veces las mismas paradas, y la política de prioridad de pasajeros
-(¿siempre, o solo con retraso?) con su mecanismo antiinanición (envejecimiento o cupo).
+Puntos abiertos (seguimos pensando): si más adelante `arrival` también limitará la velocidad para
+no llegar antes de hora, y la política de prioridad de pasajeros (¿siempre, o solo con retraso?) con
+su mecanismo antiinanición (envejecimiento o cupo).
 
 ### Contrato (implementado en la fase 0)
 
