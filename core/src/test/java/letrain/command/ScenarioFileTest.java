@@ -15,6 +15,19 @@ import org.junit.jupiter.api.Test;
 class ScenarioFileTest {
 
     @Test
+    @DisplayName("a program with waypoint times round-trips through render/parse and compiles")
+    void programWithTimetable_roundTrip() {
+        String program = "create itinerary \"r\" {\n"
+                + "  add station 1 arrival 9:20, load, departure 9:30\n}\n";
+        String text = ScenarioFile.render(7, List.of("go 0,0; face e; write 1;"), null, program);
+
+        ScenarioFile.Scenario s = ScenarioFile.parse(text);
+
+        assertEquals(program.stripTrailing(), s.program(), "times must survive verbatim");
+        assertTrue(ScenarioCompiler.compile(text).ok(), "the timetable syntax must compile");
+    }
+
+    @Test
     @DisplayName("render/parse round-trips the seed and the commands")
     void render_parse_roundTrip() {
         List<String> commands =

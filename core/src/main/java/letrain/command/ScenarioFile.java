@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Scenario file format (ADR-020 roadmap, item 4). A scenario is a plain-text file that rebuilds a
@@ -47,6 +49,8 @@ import java.util.regex.Pattern;
  * ignored, so users can annotate scenarios by hand (external editor friendly).
  */
 public final class ScenarioFile {
+
+    private static final Logger log = LoggerFactory.getLogger(ScenarioFile.class);
 
     public static final String EXTENSION = ".ltr";
     private static final String HEADER = "# LeTrain scenario v1";
@@ -119,6 +123,11 @@ public final class ScenarioFile {
      * with a brace-depth counter, so the {@code program} section may contain nested blocks
      * ({@code trigger ... { ... }}); the program keeps its comments and relative indentation (the
      * wrapper's base indent is stripped) so it stays editable by hand.
+     *
+     * <p>
+     * Legacy comma-less waypoint syntax is normalized to the comma form on load (ADR-022
+     * compatibility policy: strict when writing, tolerant when loading from disk), so old scenario
+     * files and recorded journals keep working. A warning is logged when that happens.
      *
      * @throws IllegalArgumentException when the file has no {@code seed} line
      */
@@ -200,8 +209,40 @@ public final class ScenarioFile {
                 }
             }
         }
-        return new Scenario(seed, parseConfig(configLines), build, start,
-                stripCommonIndent(program.toString().stripTrailing()));
+        return new Scenario(seed, parseConfig(configLines), normalizeCommands(build),
+                normalizeCommands(start),
+                normalizeProgram(stripCommonIndent(program.toString().stripTrailing())));
+    }
+
+    /**
+     * Applies the ADR-022 compatibility policy (strict for new input, tolerant when loading text
+     * from disk): legacy comma-less waypoint actions are rewritten to the comma syntax with a
+     * warning, so scenarios and recorded journals written before timetables keep loading.
+     */
+    private static List<String> normalizeCommands(List<String> commands) {
+        List<String> out = new ArrayList<>(commands.size());
+        boolean changed = false;
+        for (String command : commands) {
+            String normalized = LegacyScriptNormalizer.normalize(command);
+            changed |= !normalized.equals(command);
+            out.add(normalized);
+        }
+        warnIfChanged(changed);
+        return out;
+    }
+
+    /** Same compatibility policy for the {@code program} section (it may contain itineraries). */
+    private static String normalizeProgram(String program) {
+        String normalized = LegacyScriptNormalizer.normalize(program);
+        warnIfChanged(!normalized.equals(program));
+        return normalized;
+    }
+
+    private static void warnIfChanged(boolean changed) {
+        if (changed) {
+            log.warn("{} while loading a scenario; update the file to silence this warning.",
+                    LegacyScriptNormalizer.LEGACY_WARNING);
+        }
     }
 
     /**

@@ -735,7 +735,10 @@ public class GraphicPresenter extends ApplicationAdapter
                 while (scanner.hasNextLine()) {
                     sb.append(scanner.nextLine()).append("\n");
                 }
-                List<String> errors = model.setProgram(sb.toString());
+                // ADR-022 compatibility: a program saved before timetables keeps loading. The model
+                // normalizes the legacy comma-less syntax and warns (shared by both clients).
+                String text = sb.toString();
+                List<String> errors = model.setProgramFromDisk(text);
                 handleScriptErrors(errors);
                 log.info("Commands loaded successfully from {}", file.getAbsolutePath());
             } catch (java.io.FileNotFoundException e) {

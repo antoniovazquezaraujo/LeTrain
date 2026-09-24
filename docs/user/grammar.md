@@ -27,17 +27,24 @@ These are executed immediately. **They require a semicolon (`;`) at the end**.
 
 ### 2. Autopilot and Itineraries
 Allows you to program a list of destinations (waypoints) so the train can find its path using A*.
-Itinerary blocks use curly braces `{ }` and do not require a `;` at the end.
+Itinerary blocks use curly braces `{ }`; the `;` after a waypoint is optional. A waypoint can also
+carry a timetable: `arrival HH:MM` and/or `departure HH:MM` (24 h clock, `H:MM` or `HH:MM`).
 
 **Create Itinerary:**
 ```letrain
 create itinerary "CoalRoute" {
     add station 1 load
-    add station 2 reverse unload
+    add station 2 arrival 10:23, reverse, unload, departure 10:30
     add sensor 5 speed 20
 }
 ```
-*Allowed Waypoint Actions:* `load`, `unload`, `reverse`, `stop`, `wait [NUM]`, `speed [NUM]`. You can optionally set the entry direction (a compass direction such as `n`, `e`, `s`, `w`) and chain multiple actions.
+*Waypoint rules:*
+
+- **Commas are mandatory** between the waypoint's actions. The station/sensor reference and the optional entry direction (a compass direction such as `n`, `e`, `s`, `w`) take **no** comma.
+- The **order is mandatory**: `arrival` first, then the actions in execution order (`load`, `unload`, `reverse`, `stop`, `wait [NUM]`, `speed [NUM]`), and `departure` last. Writing an attribute out of order is a syntax error.
+- `arrival` is measured when the waypoint is reached; `departure` is the scheduled leaving time (on arrival the actions run and, if they finish early, the train waits until that time). The dwell is `departure − arrival` in game time. Times are read in sequence: a smaller time than the previous one belongs to the next day (`arrival 23:50, departure 00:10`). Without times, a waypoint behaves exactly as before.
+- Times are validated, saved and exported; the autopilot does not retain or measure them yet.
+- Itineraries written before timetables (actions without commas, e.g. `add station 2 reverse unload`) are **normalized on load** with a warning, but new text must use commas.
 
 **Assign and Activate:**
 - `assign itinerary "CoalRoute" to train 1;`

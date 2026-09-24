@@ -2353,7 +2353,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (input == null) {
             return;
         }
-        List<String> errors = model.setProgram(input);
+        // ADR-022 compatibility: a program saved before timetables keeps loading. The model
+        // normalizes the legacy comma-less syntax and warns; both clients share that behaviour.
+        List<String> errors = model.setProgramFromDisk(input);
         handleScriptErrors(errors);
     }
 

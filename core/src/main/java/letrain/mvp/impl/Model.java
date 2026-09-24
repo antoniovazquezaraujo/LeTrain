@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import letrain.command.LegacyScriptNormalizer;
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
@@ -370,7 +371,9 @@ public class Model implements letrain.mvp.Model {
         }
         reestablishSystemListeners();
         if (this.program != null && !this.program.isEmpty()) {
-            this.setProgram(this.program);
+            // ADR-022 compatibility: programs saved before timetables may use the old comma-less
+            // waypoint syntax. Loading must keep working: normalize and re-parse with a warning.
+            this.setProgramFromDisk(this.program);
         }
 
         if (this.mode == letrain.mvp.Model.GameMode.COMMAND) {
@@ -894,6 +897,13 @@ public class Model implements letrain.mvp.Model {
     public List<String> setProgram(String program) {
         this.program = program;
         return getAutomationEngine().setProgram(program);
+    }
+
+    @Override
+    public List<String> setProgramFromDisk(String program) {
+        String normalized = LegacyScriptNormalizer.normalize(program,
+                warning -> log.warn("{} in the loaded program.", warning));
+        return setProgram(normalized);
     }
 
     public void reestablishSystemListeners() {
