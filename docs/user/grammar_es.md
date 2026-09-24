@@ -27,9 +27,10 @@ Se ejecutan inmediatamente. **Requieren punto y coma (`;`) al final**.
 
 ### 2. Autopilot e Itinerarios
 Permite programar una lista de destinos (waypoints) para que el tren busque el camino mediante A*.
-Los bloques de itinerario usan llaves `{ }`; el `;` al final de un waypoint es opcional. Un waypoint
-puede llevar además un horario: `arrival HH:MM` y/o `departure HH:MM` (reloj de 24 h, `H:MM` o
-`HH:MM`).
+Los bloques de itinerario usan llaves `{ }`; el `;` al final de un waypoint es opcional y la `}` de
+cierre termina el bloque (el `;` detrás de ella también es opcional; la consola lo añade solo al
+teclear el bloque). Un waypoint puede llevar además un horario: `arrival HH:MM` y/o
+`departure HH:MM` (reloj de 24 h, `H:MM` o `HH:MM`).
 
 **Crear Itinerario:**
 ```letrain
