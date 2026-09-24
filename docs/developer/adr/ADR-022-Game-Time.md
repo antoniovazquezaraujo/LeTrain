@@ -117,7 +117,9 @@ Referencia rápida (notch 10 = 5 ticks/celda):
 ### Horarios (fase 2): horas por parada
 
 Cada **waypoint** del itinerario puede llevar la hora de **llegada** y/o de **salida** como
-atributos, en formato de 24 h (`H:MM` o `HH:MM`). Las comas son separadores opcionales:
+atributos, en formato de 24 h (`H:MM` o `HH:MM`). Las comas son separadores **obligatorios** entre
+acciones (una sola forma de escribir, más legible; la referencia del waypoint y su dirección no
+llevan coma):
 
 ```letrain
 create itinerary "cercanías" {
@@ -143,16 +145,22 @@ Semántica:
 - Las horas se leen **en secuencia**: si una es menor que la anterior, pertenece al día siguiente
   (`arrival 23:50 departure 00:10`). Un tren con retraso no espera 24 h: si llega después de su
   hora, sale de inmediato y se mide el desfase.
-- Los atributos son **declarativos** (no pasos secuenciales): da igual escribirlos antes o después
-  de `load`; la retención se aplica justo antes de salir.
+- **Orden de ejecución obligatorio**: `arrival` (si está) va primero, después las acciones en su
+  orden de ejecución (`load`, `unload`, `wait n`…) y `departure` (si está) al final. Escribir un
+  atributo fuera de ese orden es un error de validación (no se admiten atributos "declarativos"
+  en cualquier posición).
 
 Métrica (fase 2, solo medir; la economía horaria es la fase 4):
 
 - Por parada: `arrivalDelta` y `departureDelta` en **minutos de juego**.
 - Por tren: retraso actual (última salida), medio y máximo, visibles en `info train N` y/o HUD.
 
-Compatibilidad: los itinerarios sin horas siguen funcionando igual y `WAIT n` conserva su semántica
-(segundos de simulación).
+Compatibilidad: los itinerarios sin horas siguen funcionando igual si ya usan comas; `WAIT n`
+conserva su semántica (segundos de simulación). Al exigir comas entre acciones, los itinerarios
+con varias acciones sin comas (`add station 2 reverse unload`) dejan de ser válidos y hay que
+migrarlos al implementar la fase 2: ejemplos de `docs/user/grammar*.md`, tests
+(`AutoPilotIntegrationTest`), el exportador de escenarios y los escenarios guardados por el
+jugador.
 
 #### La jornada completa (ejemplo)
 
