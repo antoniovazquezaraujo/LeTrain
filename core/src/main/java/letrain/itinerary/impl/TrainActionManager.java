@@ -21,6 +21,8 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     private transient WaypointCommand pendingCommandToResume = null;
     /** Mission started by the current waypoint action (ADR-022 phase 2f), if any. */
     private transient TrainMission pendingMission = null;
+    /** Guards the consecutive-waypoint chain against an itinerary repeating the same stop. */
+    private transient boolean processingConsecutiveWaypoint = false;
     private letrain.itinerary.Waypoint currentProcessingWaypoint;
 
     public TrainActionManager(Train train) {
@@ -142,13 +144,23 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             autopilot.clearRoute();
             currentProcessingWaypoint = null;
 
-            autopilot.currentWaypoint().ifPresent(wp -> {
-                if (train.isCurrentlyOn(wp)) {
-                    log.info("Train {} consecutive waypoint reached", train.getId());
-                    // Full waypoint entry so the consecutive stop measures its schedule too.
-                    onWaypointReached(train, wp);
-                }
-            });
+            // A consecutive waypoint is processed once per arrival: an itinerary repeating the
+            // same station (A, A) would otherwise recurse forever (advance -> onWaypointReached ->
+            // advance...) and blow the stack.
+            if (!processingConsecutiveWaypoint) {
+                autopilot.currentWaypoint().ifPresent(wp -> {
+                    if (train.isCurrentlyOn(wp)) {
+                        log.info("Train {} consecutive waypoint reached", train.getId());
+                        // Full waypoint entry so the consecutive stop measures its schedule too.
+                        processingConsecutiveWaypoint = true;
+                        try {
+                            onWaypointReached(train, wp);
+                        } finally {
+                            processingConsecutiveWaypoint = false;
+                        }
+                    }
+                });
+            }
 
             if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING
                     && this.train.getSafetyManager() != null) {
