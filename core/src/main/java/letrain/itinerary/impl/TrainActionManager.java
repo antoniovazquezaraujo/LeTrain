@@ -21,8 +21,6 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     private transient WaypointCommand pendingCommandToResume = null;
     /** Mission started by the current waypoint action (ADR-022 phase 2f), if any. */
     private transient TrainMission pendingMission = null;
-    /** Guards the consecutive-waypoint chain against an itinerary repeating the same stop. */
-    private transient boolean processingConsecutiveWaypoint = false;
     private letrain.itinerary.Waypoint currentProcessingWaypoint;
 
     public TrainActionManager(Train train) {
@@ -35,6 +33,15 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         if (waypoint == currentProcessingWaypoint) {
             return;
         }
+        startWaypoint(waypoint);
+        runPendingCommands();
+    }
+
+    /**
+     * Arrival bookkeeping shared by the arrival callback and the consecutive-waypoint chain:
+     * measures the arrival, brakes for a scheduled departure and loads the waypoint's actions.
+     */
+    private void startWaypoint(Waypoint waypoint) {
         currentProcessingWaypoint = waypoint;
         pendingMission = null;
         letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
@@ -46,7 +53,6 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         }
         pendingCommands.clear();
         pendingCommands.addAll(waypoint.commands());
-        runPendingCommands();
     }
 
     /** A waypoint with a departure is a scheduled stop: brake on arrival (safety first). */
@@ -106,10 +112,64 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     }
 
     private void runPendingCommands() {
+        if (!completePendingCommands()) {
+            return;
+        }
+
+        letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
+        if (autopilot == null || autopilot.itinerary().isEmpty()) {
+            return;
+        }
+
+        int startIndex = autopilot.currentWaypointIndex();
+        autopilot.advanceWaypoint();
+        autopilot.clearRoute();
+        currentProcessingWaypoint = null;
+
+        // Consecutive waypoints: the train is already on the next stop, so its actions run now.
+        // The chain is a bounded loop over the waypoints not processed yet in this pass: a
+        // repeated stop neither recurses nor replays its actions.
+        java.util.Set<Integer> processed = new java.util.HashSet<>();
+        processed.add(startIndex);
+        int waypointCount = autopilot.itinerary().map(it -> it.waypoints().size()).orElse(0);
+        while (processed.size() < waypointCount) {
+            int index = autopilot.currentWaypointIndex();
+            if (processed.contains(index)) {
+                break;
+            }
+            Waypoint wp = autopilot.currentWaypoint().orElse(null);
+            if (wp == null || !train.isCurrentlyOn(wp)) {
+                break;
+            }
+            processed.add(index);
+            log.info("Train {} consecutive waypoint reached", train.getId());
+            startWaypoint(wp);
+            if (!completePendingCommands()) {
+                return;
+            }
+            autopilot.advanceWaypoint();
+            autopilot.clearRoute();
+            currentProcessingWaypoint = null;
+        }
+
+        if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING
+                && this.train.getSafetyManager() != null) {
+            this.train.notifyAutopilotSegmentEntered(this.train.resolveCurrentSegmentFromGraph());
+            this.train.getSafetyManager().acquireInitialLocks();
+        }
+    }
+
+    /**
+     * Runs the pending actions and the departure handling of the current waypoint.
+     *
+     * @return true when the waypoint is complete and the flow may advance; false when a command
+     *         deferred (mission/wait/load) or the train is holding until a departure.
+     */
+    private boolean completePendingCommands() {
         while (!pendingCommands.isEmpty()) {
             WaypointCommand cmd = pendingCommands.remove(0);
             if (executeCommand(cmd)) {
-                return;
+                return false;
             }
         }
 
@@ -117,14 +177,14 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         if (autopilot != null && autopilot.itinerary().isPresent()) {
             if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
                 log.info("Train {} autopilot IDLE", train.getId());
-                return;
+                return false;
             }
 
             // ADR-022 phase 2b: hold at the waypoint until its departure; when the time is due or
             // already past, the release completes the stop and measures the departure delta.
             if (autopilot.retainUntilDeparture()) {
                 holdTrainAtWaypoint();
-                return;
+                return false;
             }
             Waypoint waypoint = autopilot.currentWaypoint().orElse(null);
             if (waypoint != null && waypoint.departure().isPresent()) {
@@ -138,37 +198,7 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             train.setSpeed(savedTargetSpeed);
             savedTargetSpeed = 0;
         }
-
-        if (autopilot != null && autopilot.itinerary().isPresent()) {
-            autopilot.advanceWaypoint();
-            autopilot.clearRoute();
-            currentProcessingWaypoint = null;
-
-            // A consecutive waypoint is processed once per arrival: an itinerary repeating the
-            // same station (A, A) would otherwise recurse forever (advance -> onWaypointReached ->
-            // advance...) and blow the stack.
-            if (!processingConsecutiveWaypoint) {
-                autopilot.currentWaypoint().ifPresent(wp -> {
-                    if (train.isCurrentlyOn(wp)) {
-                        log.info("Train {} consecutive waypoint reached", train.getId());
-                        // Full waypoint entry so the consecutive stop measures its schedule too.
-                        processingConsecutiveWaypoint = true;
-                        try {
-                            onWaypointReached(train, wp);
-                        } finally {
-                            processingConsecutiveWaypoint = false;
-                        }
-                    }
-                });
-            }
-
-            if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING
-                    && this.train.getSafetyManager() != null) {
-                this.train
-                        .notifyAutopilotSegmentEntered(this.train.resolveCurrentSegmentFromGraph());
-                this.train.getSafetyManager().acquireInitialLocks();
-            }
-        }
+        return true;
     }
 
     /** Keeps the train stopped while the schedule holds it; the departure will resume it. */
