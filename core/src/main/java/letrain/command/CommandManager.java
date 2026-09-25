@@ -335,30 +335,9 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 ForkRailTrack f = model.getFork(id);
                 if (f != null) {
                     if ("straight".equals(dirText)) {
-                        if (f.getOriginalRoute() != null && f.getOriginalRoute().getFirst()
-                                .isStraight(f.getOriginalRoute().getSecond())) {
-                            f.setNormalRoute();
-                        } else if (f.getAlternativeRoute() != null && f.getAlternativeRoute()
-                                .getFirst().isStraight(f.getAlternativeRoute().getSecond())) {
-                            f.setAlternativeRoute();
-                        } else {
-                            f.setNormalRoute();
-                        }
+                        f.setStraightRoute();
                     } else if ("curved".equals(dirText)) {
-                        boolean originalIsStraight =
-                                f.getOriginalRoute() != null && f.getOriginalRoute().getFirst()
-                                        .isStraight(f.getOriginalRoute().getSecond());
-                        boolean alternativeIsStraight =
-                                f.getAlternativeRoute() != null && f.getAlternativeRoute()
-                                        .getFirst().isStraight(f.getAlternativeRoute().getSecond());
-
-                        if (f.getOriginalRoute() != null && !originalIsStraight) {
-                            f.setNormalRoute();
-                        } else if (f.getAlternativeRoute() != null && !alternativeIsStraight) {
-                            f.setAlternativeRoute();
-                        } else {
-                            f.setAlternativeRoute();
-                        }
+                        f.setCurvedRoute();
                     } else {
                         f.flipRoute();
                     }
@@ -484,37 +463,58 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     }
 
     /**
-     * Builds a one-shot mission order (issue #619): {@code stop at sensor 5 speed 2},
-     * {@code stop at station "A"}, {@code stop at end}, {@code stop when blocked}. Speed 0 (or
-     * absent) means "keep the train's current speed".
+     * Destination and speed of a {@code stopOrder}, shared by loose orders and waypoint actions.
      */
-    private ExecutableCommand buildStopOrder(ScriptLogicParser.StopOrderContext ctx) {
+    private record MissionSpec(TrainMission.Kind kind, int targetId, int speed) {}
+
+    /**
+     * Resolves a {@code stopOrder} into a mission spec, or null (after warning) when the target is
+     * unknown. The waypoint actions (ADR-022 phase 2f) and the loose orders share this.
+     */
+    private MissionSpec resolveMissionSpec(ScriptLogicParser.StopOrderContext ctx) {
         int speed = ctx.missionSpeed() != null
                 ? Integer.parseInt(ctx.missionSpeed().trainSpeed().getText())
                 : 0;
         int clamped = Math.max(0, Math.min(10, speed));
-        TrainMission mission;
         if (ctx.stopTarget().WHEN() != null) {
-            mission = TrainMission.stopWhenBlocked(clamped);
-        } else if (ctx.stopTarget().END() != null) {
-            mission = TrainMission.stopAtEndOfTrack(clamped);
-        } else if (ctx.stopTarget().stationRef() != null) {
+            return new MissionSpec(TrainMission.Kind.WHEN_BLOCKED, -1, clamped);
+        }
+        if (ctx.stopTarget().END() != null) {
+            return new MissionSpec(TrainMission.Kind.END_OF_TRACK, -1, clamped);
+        }
+        if (ctx.stopTarget().stationRef() != null) {
             Station st = resolveStation(ctx.stopTarget().stationRef());
             if (st == null) {
                 warnUser("Station not found in 'stop at' order");
-                return (t) -> {
-                };
+                return null;
             }
-            mission = TrainMission.stopAtStation(st.getId(), clamped);
-        } else {
-            Sensor se = resolveSensor(ctx.stopTarget().sensorRef());
-            if (se == null) {
-                warnUser("Sensor not found in 'stop at' order");
-                return (t) -> {
-                };
-            }
-            mission = TrainMission.stopAtSensor(se.getId(), clamped);
+            return new MissionSpec(TrainMission.Kind.STATION, st.getId(), clamped);
         }
+        Sensor se = resolveSensor(ctx.stopTarget().sensorRef());
+        if (se == null) {
+            warnUser("Sensor not found in 'stop at' order");
+            return null;
+        }
+        return new MissionSpec(TrainMission.Kind.SENSOR, se.getId(), clamped);
+    }
+
+    /**
+     * Builds a loose one-shot mission order (issue #619): {@code stop at sensor 5 speed 2},
+     * {@code stop at station "A"}, {@code stop at end}, {@code stop when blocked}. Speed 0 (or
+     * absent) means "keep the train's current speed".
+     */
+    private ExecutableCommand buildStopOrder(ScriptLogicParser.StopOrderContext ctx) {
+        MissionSpec spec = resolveMissionSpec(ctx);
+        if (spec == null) {
+            return (t) -> {
+            };
+        }
+        TrainMission mission = switch (spec.kind()) {
+            case WHEN_BLOCKED -> TrainMission.stopWhenBlocked(spec.speed());
+            case END_OF_TRACK -> TrainMission.stopAtEndOfTrack(spec.speed());
+            case STATION -> TrainMission.stopAtStation(spec.targetId(), spec.speed());
+            case SENSOR -> TrainMission.stopAtSensor(spec.targetId(), spec.speed());
+        };
         return (t) -> {
             if (t.getAutopilot() == null) {
                 return;
@@ -854,6 +854,37 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     }
 
     private List<WaypointCommand> toCommands(ScriptLogicParser.ActionContext ctx) {
+        // ADR-022 phase 2f: train orders and fork actions are waypoint actions too.
+        if (ctx.coupleAction() != null) {
+            ScriptLogicParser.CoupleActionContext couple = ctx.coupleAction();
+            boolean forward = couple.sense().getText().startsWith("f");
+            int count = couple.NUMBER() != null ? Integer.parseInt(couple.NUMBER().getText()) : 0;
+            return List.of(WaypointCommand.couple(forward, count));
+        }
+        if (ctx.uncoupleAction() != null) {
+            ScriptLogicParser.UncoupleActionContext uncouple = ctx.uncoupleAction();
+            boolean forward = uncouple.sense().getText().startsWith("f");
+            int count =
+                    uncouple.NUMBER() != null ? Integer.parseInt(uncouple.NUMBER().getText()) : 1;
+            return List.of(WaypointCommand.uncouple(forward, count));
+        }
+        if (ctx.stopOrder() != null) {
+            MissionSpec spec = resolveMissionSpec(ctx.stopOrder());
+            if (spec == null) {
+                return List.of();
+            }
+            return List.of(WaypointCommand.mission(spec.kind(), spec.targetId(), spec.speed()));
+        }
+        if (ctx.forkSelector() != null) {
+            int forkId = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
+            String direction = ctx.forkAction().forkDirection() != null
+                    ? ctx.forkAction().forkDirection().getText().toLowerCase()
+                    : "flip";
+            if ("flip".equals(direction)) {
+                return List.of(WaypointCommand.forkFlip(forkId));
+            }
+            return List.of(WaypointCommand.forkSetDirection(forkId, direction));
+        }
         String text = ctx.getText().toLowerCase();
         return switch (text) {
             case "load" -> List.of(WaypointCommand.LOAD);

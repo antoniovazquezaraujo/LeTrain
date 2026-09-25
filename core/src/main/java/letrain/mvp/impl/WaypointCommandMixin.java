@@ -31,6 +31,18 @@ public abstract class WaypointCommandMixin {
             if (node.has("targetSpeed")) {
                 targetSpeed = node.get("targetSpeed").asInt();
             }
+            boolean forward = node.has("forward") && node.get("forward").asBoolean();
+            int count = node.has("count") ? node.get("count").asInt() : 0;
+            int targetId = node.has("targetId") ? node.get("targetId").asInt() : -1;
+            int forkId = node.has("forkId") ? node.get("forkId").asInt() : -1;
+            String forkDirection = node.has("forkDirection") && !node.get("forkDirection").isNull()
+                    ? node.get("forkDirection").asText()
+                    : null;
+            letrain.itinerary.TrainMission.Kind missionKind = null;
+            if (node.has("missionKind") && !node.get("missionKind").isNull()) {
+                missionKind = letrain.itinerary.TrainMission.Kind
+                        .valueOf(node.get("missionKind").asText());
+            }
             return switch (kind) {
                 case LOAD -> WaypointCommand.LOAD;
                 case UNLOAD -> WaypointCommand.UNLOAD;
@@ -39,6 +51,11 @@ public abstract class WaypointCommandMixin {
                 case PARK -> WaypointCommand.PARK;
                 case WAIT -> WaypointCommand.waitSeconds(seconds);
                 case SPEED -> WaypointCommand.speed(targetSpeed);
+                case COUPLE -> WaypointCommand.couple(forward, count);
+                case UNCOUPLE -> WaypointCommand.uncouple(forward, count);
+                case MISSION -> WaypointCommand.mission(missionKind, targetId, targetSpeed);
+                case FORK_SET_DIRECTION -> WaypointCommand.forkSetDirection(forkId, forkDirection);
+                case FORK_FLIP -> WaypointCommand.forkFlip(forkId);
                 default -> WaypointCommand.NONE;
             };
         }
