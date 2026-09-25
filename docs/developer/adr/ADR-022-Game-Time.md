@@ -295,24 +295,28 @@ add station "B" arrival 06:27,
   `fork 3 flip`) para forzar un camino o dejarlo preparado.
 - **Cantones y maniobra**: al dividir el tren, las dos partes **comparten** el cantón que ocupan
   (no hay parada de emergencia; el cantón sigue ocupado hasta que la última parte lo abandone). Una
-  maniobra de waypoint cuyo destino está en un cantón ocupado por **una parte propia sin locomotora**
-  (los vagones desenganchados) puede **entrar en ese cantón** como una maniobra manual y comparte la
-  propiedad; las comprobaciones físicas siguen parando el tren antes de cualquier vehículo. Si el
-  cantón lo ocupa un **tren ajeno** (con locomotora), la exención no aplica: la maniobra espera en la
-  frontera y reanuda al liberarse, nunca invade. Al cargar una partida, los trenes solo-vagones
-  también reclaman su cantón (antes solo se recorrían las locomotoras).
+  maniobra de waypoint cuyo destino está en un cantón bloqueado **cuyos ocupantes ajenos no tienen
+  locomotora** (p. ej. los vagones desenganchados) puede **entrar en ese cantón** como una maniobra
+  manual y comparte la propiedad; las comprobaciones físicas siguen parando el tren antes de
+  cualquier vehículo. Si el cantón lo ocupa un **tren ajeno** (con locomotora), la exención no
+  aplica: la maniobra espera en la frontera y reanuda al liberarse, nunca invade. Al cargar una
+  partida, los trenes solo-vagones también reclaman su cantón (antes solo se recorrían las
+  locomotoras).
 - **Aproximación de enganche (`stop on contact`, issue #645)**: `stop on contact [speed N]` conduce a
   la velocidad de la orden hasta el **primer contacto físico** con el vehículo de delante y completa
   parado y **pegado** a él, listo para `couple` (éxito silencioso: solo log; a velocidad igual o
   superior al umbral de choque el contacto es un choque real y la misión falla con aviso). Para los
   cantones el destino se resuelve **dinámicamente al vehículo de delante** (el primer ocupante ajeno
   del paseo físico con las agujas tal y como estén), así que reutiliza la exención de maniobra: puede
-  entrar en el cantón de su propia parte desenganchada (ocupantes ajenos todos sin locomotora) y
-  comparte la propiedad; un tren ajeno (con locomotora) mantiene el bloqueo y la maniobra espera en la
-  frontera hasta liberarse. **Decisión**: la exención vale igual para la orden suelta que para la
-  acción de waypoint — el run-around desde consola/script es la misma maniobra manual y el criterio de
-  seguridad (ningún ocupante ajeno con locomotora) no depende del origen. No auto-invierte: el cambio
-  de sentido lo escribe el autor de la coreografía. Tests: `StopOnContactIntegrationTest`.
+  entrar en un cantón cuyos ocupantes ajenos son todos **trenes sin locomotora** (p. ej. su propia
+  parte desenganchada) y comparte la propiedad; un tren ajeno (con locomotora) mantiene el bloqueo y
+  la maniobra espera en la frontera hasta liberarse. **Decisión**: la exención vale igual para la
+  orden suelta que para la acción de waypoint — el run-around desde consola/script es la misma
+  maniobra manual y el criterio de seguridad (ningún ocupante ajeno con locomotora) no depende del
+  origen. No auto-invierte: el cambio de sentido lo escribe el autor de la coreografía. Si el tren
+  **ya está pegado** (a un vehículo o al tope), la orden completa en el sitio: el contacto es a
+  velocidad real 0 (el chequeo instantáneo de arranque reporta esa velocidad, no la pedida), así que
+  pedir una velocidad alta no inventa un choque. Tests: `StopOnContactIntegrationTest`.
 - **Maniobra rechazada**: si la orden no puede empezar (sin ruta desde el sentido actual, sin
   velocidad, destino inexistente), se emite el aviso y se **abortan las acciones restantes de ese
   waypoint** para no seguir la coreografía en un estado raro; el `departure` y la ruta al siguiente

@@ -39,7 +39,10 @@ acaba parado; no son un plan que se repita, sino un trabajo puntual.
   `Train.notifyContact` al autopilot **antes** del dispatcher de eventos, para que las acciones del
   waypoint pendientes de la misión (p. ej. `couple`) se reanuden con la misión ya terminada. A
   velocidad ≥ umbral de choque no hay contacto: `crashDestroy` falla la misión con aviso (física
-  normal). Éxito silencioso (solo log), como el resto de misiones.
+  normal). Si el tren **ya está pegado** (a un vehículo o al tope), la orden completa en el sitio:
+  el chequeo instantáneo de arranque reporta la **velocidad real** (0), no la pedida (review M1), y
+  arrancar pegado al tope completa sin esperar evento (review M2). Éxito silencioso (solo log),
+  como el resto de misiones.
 - **Planificación**: para estación/sensor se decide primero con un **paseo físico** (`RailIterator`)
   si el destino está delante o detrás (A* es por segmentos y no distingue el sentido dentro de un
   cantón); si solo está detrás, la orden invierte el tren una vez. `stop at end`/`stop when blocked`
@@ -85,8 +88,8 @@ de fork (`fork N set straight|curved`, `fork N flip`). Detalles de implementaci�
 - **Cantones**: al dividir un tren (`divideTrain`) las dos partes registran su presencia con
   `claimSharedPresence`/`rebindShared` (`BlockManager.addOwner`), **sin** parada de emergencia: el
   cantón queda ocupado por ambas hasta que la última lo abandone. Una misión de waypoint cuyo
-  destino está en el cantón bloqueado **y cuyos ocupantes son solo partes propias sin locomotora**
-  (los vagones desenganchados) lo **entra** como una maniobra manual y comparte la propiedad
+  destino está en el cantón bloqueado **y cuyos ocupantes ajenos no tienen locomotora** (p. ej. los
+  vagones desenganchados) lo **entra** como una maniobra manual y comparte la propiedad
   (`isShuntingMissionTarget`); con un tren ajeno (con locomotora) no hay exención y la misión espera
   y reanuda. Las comprobaciones físicas de movimiento siguen parando el tren antes de cualquier
   vehículo. Al cargar, los trenes solo-vagones también reclaman su cantón. Para `stop on contact`
