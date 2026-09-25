@@ -881,6 +881,26 @@ public class Train implements Renderable {
         }
     }
 
+    /**
+     * One real rail advance of the head (issue #619). Missions use it to watch their destination
+     * and to apply the braking curve; only called while the autopilot is active.
+     */
+    public void notifyAutopilotRailAdvanced() {
+        if (isAutoMode() && autopilot != null) {
+            autopilot.onRailAdvanced();
+        }
+    }
+
+    /**
+     * One simulation tick of the train (issue #619). Missions use it as a stall watchdog; only
+     * called while the autopilot is active.
+     */
+    public void notifyAutopilotTick() {
+        if (isAutoMode() && autopilot != null) {
+            autopilot.onTick();
+        }
+    }
+
     public void checkAndNotifyWaypointReached() {
         if (isAutoMode()) {
             letrain.itinerary.AutoPilot ap = getAutopilot();

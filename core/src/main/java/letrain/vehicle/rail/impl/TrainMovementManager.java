@@ -515,6 +515,10 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         if (moved && !train.isStalled() && train.getSafetyManager() != null) {
             train.getSafetyManager().onRailAdvanced();
         }
+        // Issue #619: missions watch the destination and the braking curve per rail too.
+        if (moved && !train.isStalled()) {
+            train.notifyAutopilotRailAdvanced();
+        }
 
         if (!moved || train.isStalled()) {
             Linker first = train.getLinkers().isEmpty() ? null : train.getLinkers().getFirst();

@@ -160,6 +160,8 @@ public class Locomotive extends Linker implements Tractor {
             // Un tick de simulación por actualización de la locomotora directora.
             if (getTrain() != null) {
                 getTrain().advanceSimulationTick();
+                // Issue #619: watchdog de estancamiento de misiones (no-op sin misión).
+                getTrain().notifyAutopilotTick();
             }
 
             // Motor apagado: no puede moverse

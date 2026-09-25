@@ -67,6 +67,13 @@ public interface TrainSafetyManager {
     void acquireInitialLocks();
 
     /**
+     * Cancela la espera de bloque y cualquier plan de frenada asociado. Se usa cuando una orden
+     * nueva sustituye a la espera anterior (issue #619): la evaluación de seguridad se rehace al
+     * arrancar. No restaura ninguna velocidad guardada.
+     */
+    void cancelBlockWait();
+
+    /**
      * Evento reactivo que se dispara cuando la cabeza del tren entra en un desvío (Fork).
      *
      * @param fork el desvío físico.

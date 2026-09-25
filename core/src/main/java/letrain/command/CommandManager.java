@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import letrain.itinerary.Itinerary;
+import letrain.itinerary.TrainMission;
 import letrain.itinerary.Waypoint;
 import letrain.itinerary.WaypointCommand;
 import letrain.itinerary.impl.ItineraryImpl;
@@ -37,8 +38,19 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     /** Current itinerary being constructed. */
     private ItineraryImpl currentItinerary;
 
+    /**
+     * Sink for user-facing problem notices (rejection, unreachable, lost route, stall). The console
+     * sets it (typed orders warn on screen); scripts and the program replay leave it null, so their
+     * messages go to the log only. Mission success never uses it (issue #619).
+     */
+    private java.util.function.BiConsumer<String, String> warningSink;
+
     public CommandManager(Model model) {
         this.model = model;
+    }
+
+    public void setWarningSink(java.util.function.BiConsumer<String, String> sink) {
+        this.warningSink = sink;
     }
 
     interface ExecutableCommand {
@@ -387,7 +399,9 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
 
     private ExecutableCommand buildTrainAction(ScriptLogicParser.TrainActionContext ctx) {
         String actionText = ctx.getText();
-        if (ctx.trainSpeed() != null) {
+        if (ctx.stopOrder() != null) {
+            return buildStopOrder(ctx.stopOrder());
+        } else if (ctx.trainSpeed() != null) {
             int speed = Integer.parseInt(ctx.trainSpeed().getText());
             int clampedSpeed = Math.max(0, Math.min(10, speed));
             return (t) -> {
@@ -466,6 +480,57 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         } else {
             return (t) -> {
             };
+        }
+    }
+
+    /**
+     * Builds a one-shot mission order (issue #619): {@code stop at sensor 5 speed 2},
+     * {@code stop at station "A"}, {@code stop at end}, {@code stop when blocked}. Speed 0 (or
+     * absent) means "keep the train's current speed".
+     */
+    private ExecutableCommand buildStopOrder(ScriptLogicParser.StopOrderContext ctx) {
+        int speed = ctx.missionSpeed() != null
+                ? Integer.parseInt(ctx.missionSpeed().trainSpeed().getText())
+                : 0;
+        int clamped = Math.max(0, Math.min(10, speed));
+        TrainMission mission;
+        if (ctx.stopTarget().WHEN() != null) {
+            mission = TrainMission.stopWhenBlocked(clamped);
+        } else if (ctx.stopTarget().END() != null) {
+            mission = TrainMission.stopAtEndOfTrack(clamped);
+        } else if (ctx.stopTarget().stationRef() != null) {
+            Station st = resolveStation(ctx.stopTarget().stationRef());
+            if (st == null) {
+                warnUser("Station not found in 'stop at' order");
+                return (t) -> {
+                };
+            }
+            mission = TrainMission.stopAtStation(st.getId(), clamped);
+        } else {
+            Sensor se = resolveSensor(ctx.stopTarget().sensorRef());
+            if (se == null) {
+                warnUser("Sensor not found in 'stop at' order");
+                return (t) -> {
+                };
+            }
+            mission = TrainMission.stopAtSensor(se.getId(), clamped);
+        }
+        return (t) -> {
+            if (t.getAutopilot() == null) {
+                return;
+            }
+            java.util.function.BiConsumer<String, String> sink = this.warningSink;
+            t.getAutopilot().setMissionNotifier(
+                    sink != null ? text -> sink.accept("Autopilot", text) : null);
+            t.getAutopilot().startMission(mission);
+        };
+    }
+
+    /** Immediate user notice: console when there is a sink, log otherwise (issue #619). */
+    private void warnUser(String text) {
+        log.warn("[DSL] {}", text);
+        if (warningSink != null) {
+            warningSink.accept("Autopilot", text);
         }
     }
 

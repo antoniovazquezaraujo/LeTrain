@@ -108,6 +108,11 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     }
 
     @Override
+    public void cancelBlockWait() {
+        clearBlockWait();
+    }
+
+    @Override
     public void onEmergencyStop() {
         this.isWaitingForBlock = true;
         // The emergency brake replaces any boundary plan: it is stopping anyway.

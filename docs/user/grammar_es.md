@@ -14,11 +14,31 @@ Se ejecutan inmediatamente. **Requieren punto y coma (`;`) al final**.
 - `train [ID] decelerate;`
 - `train [ID] set speed [NUM];` o `train [ID] set [NUM];`
 - `train [ID] invert;`
+- `train [ID] stop at station [ID|"nombre"] [speed NUM];`
+- `train [ID] stop at sensor [ID|"nombre"] [speed NUM];`
+- `train [ID] stop at end [speed NUM];`
+- `train [ID] stop when blocked [speed NUM];`
 - `train [ID] set engine on;` / `train [ID] set engine off;`
 - `train [ID] set forward;` / `train [ID] set backward;`
 - `train [ID] load;`
 - `train [ID] unload;`
 - `train [ID] couple forward [NUM];` / `train [ID] uncouple backward;`
+
+**Misiones de un solo uso (`stop at …`)**: el destino y la velocidad viajan en la misma orden, así
+el tren no arranca antes de recibir el destino. La velocidad se aplica al empezar la maniobra (sin
+`speed`, o con `speed 0`, se usa la que el tren tenga puesta; si es 0 la orden se rechaza con aviso)
+y el tren acaba siempre parado. El destino puede ser una estación, un sensor, el fin de vía **por
+delante del tren** (frena en la última vía, sin tocar el tope; un bucle cerrado sin final por delante
+avisa y no mueve) o el primer bloqueo (`stop when blocked` rueda con la curva del #633 hasta la
+última vía de su cantón ante el bloqueo y completa parado ahí; **no** reanuda al liberarse y, si el
+bloqueo se libera antes de parar, sigue). Si el destino solo es alcanzable en sentido contrario, la
+orden invierte el
+tren una vez al empezar. Una orden recibida mientras el tren cumple un itinerario se rechaza con
+aviso (no se pausa nada): usa `train N set autopilot false;` o escribe la maniobra en el itinerario.
+Si el destino se vuelve inalcanzable a mitad de misión (se pierde la ruta) o el tren se queda parado
+sin espera de bloque/horario/carga durante aproximadamente una hora de juego, la misión falla con
+aviso. Las señales y los cantones siguen mandando: la curva de frenado de la misión solo baja la
+velocidad, nunca la sube. Una orden nueva reemplaza a la misión en curso.
 
 **Nombrar Elementos:**
 - `station [ID] set name "Mi Estacion";`
