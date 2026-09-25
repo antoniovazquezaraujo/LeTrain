@@ -354,7 +354,7 @@ class TrainMissionIntegrationTest {
             other.getSafetyManager().claimOccupiedSegments();
 
             console("train " + train.getId() + " stop when blocked speed 3;");
-            runUntil(() -> missionFinished(train), 600);
+            runUntil(() -> missionFinished(train), 1200);
 
             assertEquals(TrainMission.State.COMPLETED, mission(train).state(),
                     "the block must complete the mission");
@@ -364,13 +364,15 @@ class TrainMissionIntegrationTest {
 
             assertEquals(0, train.getSpeed());
             assertEquals(world.b.get(world.b.size() - 1), headTrack(train),
-                    "the train must stop on the last rail of its segment");
+                    "the train must roll to the last rail of its canton, not stop at the fork");
+            assertEquals(1, train.getSafetyManager().railsToBoundary().orElse(-1),
+                    "stopped on the last rail before the canton boundary");
 
             // Free the block: the mission is over, the train must stay stopped (no resume).
             int xBefore = headX(train);
             console("train " + other.getId() + " set engine on;");
             console("train " + other.getId() + " set speed 3;");
-            runUntil(() -> headX(other) >= 18, 600);
+            runUntil(() -> headX(other) >= world.d.get(2).getPosition().getX(), 600);
             other.setSpeed(0);
             runTicks(200);
 
@@ -388,7 +390,7 @@ class TrainMissionIntegrationTest {
             runUntil(() -> train.getSpeed() == 0, 300);
 
             // A new mission also runs: the train must accept orders after its maneuver.
-            Sensor sensor = sensor(world.c.get(3), "S10");
+            Sensor sensor = sensor(world.c.get(3), "S20");
             console("train " + train.getId() + " stop at sensor " + sensor.getId() + " speed 2;");
             runUntil(() -> missionFinished(train), 900);
 
@@ -398,27 +400,73 @@ class TrainMissionIntegrationTest {
         }
 
         @Test
+        @DisplayName("stop when blocked ordered while already blocked completes in place")
+        void stopWhenBlocked_alreadyBlocked_completesInPlace() {
+            World world = twoSegmentWorld();
+            Train train = placeTrain(world.a.get(0), Dir.W);
+            Train other = placeTrain(world.b.get(5), Dir.W); // the next canton is occupied
+            other.getSafetyManager().claimOccupiedSegments();
+
+            console("train " + train.getId() + " stop when blocked speed 3;");
+            runTicks(50);
+
+            assertEquals(TrainMission.State.COMPLETED, mission(train).state(),
+                    "an already blocked train completes without moving");
+            assertEquals(world.a.get(0), headTrack(train), "the train must not move");
+            assertEquals(0, train.getSpeed());
+        }
+
+        @Test
+        @DisplayName("a block freed while rolling lets the train keep going to the next one")
+        void stopWhenBlocked_releasedWhileRolling_keepsGoing() {
+            World world = twoSegmentWorld();
+            Train train = placeTrain(world.a.get(0), Dir.W);
+            Train other = placeTrain(world.c.get(1), Dir.W); // occupies segment C
+            other.getSafetyManager().claimOccupiedSegments();
+
+            console("train " + train.getId() + " stop when blocked speed 3;");
+            // Rolling inside its canton, already blocked by C but far from the boundary.
+            runUntil(() -> train.getSafetyManager().isWaitingForBlock() && train.getSpeed() > 0
+                    && headX(train) >= 5, 1200);
+
+            // Free C before the train reaches its boundary: it was not really blocked.
+            console("train " + other.getId() + " set engine on;");
+            console("train " + other.getId() + " set speed 3;");
+            runUntil(() -> !train.getSafetyManager().isWaitingForBlock(), 600);
+            assertTrue(mission(train).isActive(), "the mission must survive the release");
+
+            // It keeps rolling and completes at the next block (D, now occupied by the other).
+            runUntil(() -> missionFinished(train), 2500);
+            assertEquals(TrainMission.State.COMPLETED, mission(train).state());
+            assertEquals(world.c.get(world.c.size() - 1), headTrack(train),
+                    "the train must stop on the last rail of the next canton");
+            assertEquals(0, train.getSpeed());
+        }
+
+        @Test
         @DisplayName("a stop at sensor blocked on the way waits and arrives after the release")
         void stopAtSensor_waitsForTheBlock_thenArrives() {
             World world = twoSegmentWorld();
-            Sensor sensor = sensor(world.c.get(3), "S10");
+            Sensor sensor = sensor(world.c.get(3), "S20");
             Train train = placeTrain(world.a.get(0), Dir.W);
             Train other = placeTrain(world.c.get(1), Dir.W); // blocks segment C
             other.getSafetyManager().claimOccupiedSegments();
 
             console("train " + train.getId() + " stop at sensor " + sensor.getId() + " speed 3;");
             runUntil(() -> train.getSafetyManager().isWaitingForBlock() && train.getSpeed() == 0,
-                    600);
+                    1200);
             assertTrue(mission(train).isActive(), "the mission must survive the block wait");
             assertEquals(0, train.getSpeed(), "the train should be waiting at its segment end");
+            assertEquals(world.b.get(world.b.size() - 1), headTrack(train),
+                    "the wait must roll to the last rail of the canton before the block");
 
             // The other train leaves segment C, freeing the block.
             console("train " + other.getId() + " set engine on;");
             console("train " + other.getId() + " set speed 3;");
-            runUntil(() -> headX(other) >= 18, 600);
+            runUntil(() -> headX(other) >= world.d.get(2).getPosition().getX(), 600);
             other.setSpeed(0);
 
-            runUntil(() -> missionFinished(train), 900);
+            runUntil(() -> missionFinished(train), 1500);
             assertEquals(TrainMission.State.COMPLETED, mission(train).state(),
                     "the mission must finish after the block is released");
             assertEquals(world.c.get(3), headTrack(train), "the head must stop on the sensor");
@@ -593,11 +641,11 @@ class TrainMissionIntegrationTest {
         World world = new World();
         world.a = line(0, 3, 0); // x = 0..2
         ForkRailTrack f1 = fork(3, 0, Dir.W, Dir.E);
-        world.b = line(4, 2, 0); // x = 4..5
-        ForkRailTrack f2 = fork(6, 0, Dir.W, Dir.E);
-        world.c = line(7, 8, 0); // x = 7..14
-        ForkRailTrack f3 = fork(15, 0, Dir.W, Dir.E);
-        world.d = line(16, 5, 0); // x = 16..20
+        world.b = line(4, 12, 0); // x = 4..15: the long canton of the stop-when-blocked tests
+        ForkRailTrack f2 = fork(16, 0, Dir.W, Dir.E);
+        world.c = line(17, 6, 0); // x = 17..22
+        ForkRailTrack f3 = fork(23, 0, Dir.W, Dir.E);
+        world.d = line(24, 5, 0); // x = 24..28
         connect(world.a.get(world.a.size() - 1), Dir.E, f1, Dir.W);
         connect(f1, Dir.E, world.b.get(0), Dir.W);
         connect(world.b.get(world.b.size() - 1), Dir.E, f2, Dir.W);
