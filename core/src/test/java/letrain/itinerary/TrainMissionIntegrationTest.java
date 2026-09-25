@@ -145,6 +145,24 @@ class TrainMissionIntegrationTest {
                     "the saved desired speed should have been used, got: " + messages);
             assertTrue(mission(train).isActive());
         }
+
+        @Test
+        @DisplayName("explicit speed 0 behaves like no speed and uses the current target")
+        void speedZero_usesCurrentTargetSpeed() {
+            List<RailTrack> rails = line(0, 9, 0);
+            Sensor sensor = sensor(rails.get(6), "S6");
+            Train train = placeTrain(rails.get(0), Dir.W);
+            console("train " + train.getId() + " set speed 3;");
+            runTicks(5);
+
+            console("train " + train.getId() + " stop at sensor " + sensor.getId() + " speed 0;");
+            runUntil(() -> missionFinished(train), 600);
+
+            assertEquals(TrainMission.State.COMPLETED, mission(train).state(),
+                    "speed 0 must use the current target (review m2)");
+            assertEquals(rails.get(6), headTrack(train));
+            assertEquals(0, train.getSpeed());
+        }
     }
 
     @Nested
@@ -194,6 +212,79 @@ class TrainMissionIntegrationTest {
 
             assertEquals(TrainMission.State.COMPLETED, mission(train).state());
             assertEquals(approach.get(1), headTrack(train), "the head must stop on the station");
+            assertEquals(0, train.getSpeed());
+        }
+
+        @Test
+        @DisplayName("the physical walk alone is not enough: without an A* route the order is rejected")
+        void walkWithoutAStarRoute_isRejected() {
+            World world = twoSegmentWorld();
+            Sensor sensor = sensor(world.c.get(3), "S10");
+            Train train = placeTrain(world.a.get(0), Dir.W);
+            AutoPilot autopilot = train.getAutopilot();
+            autopilot.setPathfinder((from, to, entryDir) -> List.of());
+            List<String> messages = new ArrayList<>();
+            autopilot.setMissionNotifier(messages::add);
+
+            boolean accepted = autopilot.startMission(TrainMission.stopAtSensor(sensor.getId(), 2));
+
+            assertFalse(accepted, "an empty A* route must reject the mission (review m3)");
+            assertTrue(autopilot.mission().isEmpty());
+            assertTrue(messages.stream().anyMatch(m -> m.contains("no route")),
+                    messages.toString());
+            assertEquals(world.a.get(0), headTrack(train), "the train must not move");
+        }
+
+        @Test
+        @DisplayName("when the route is lost and cannot be re-planned the mission fails with a warning")
+        void lostRouteWithoutReplan_failsWithWarning() {
+            World world = twoSegmentWorld();
+            Sensor sensor = sensor(world.c.get(3), "S10");
+            Train train = placeTrain(world.a.get(0), Dir.W);
+            AutoPilot autopilot = train.getAutopilot();
+            letrain.segments.Segment startSegment =
+                    model.getRailwayGraph().getSegment(world.a.get(0));
+            java.util.concurrent.atomic.AtomicInteger calls =
+                    new java.util.concurrent.atomic.AtomicInteger();
+            autopilot.setPathfinder((from, to,
+                    entryDir) -> calls.getAndIncrement() == 0 ? List.of(startSegment) : List.of());
+            List<String> messages = new ArrayList<>();
+            autopilot.setMissionNotifier(messages::add);
+
+            assertTrue(autopilot.startMission(TrainMission.stopAtSensor(sensor.getId(), 3)),
+                    "the mission must start with the mocked route");
+            runUntil(() -> missionFinished(train), 600);
+
+            assertEquals(TrainMission.State.FAILED, mission(train).state(),
+                    "leaving the route without a re-plan must fail the mission (review m3)");
+            assertTrue(messages.stream().anyMatch(m -> m.contains("lost the route")),
+                    "expected a lost-route warning, got: " + messages);
+            runUntil(() -> train.getSpeed() == 0, 300);
+            assertEquals(0, train.getSpeed());
+        }
+
+        @Test
+        @DisplayName("a destination that disappears mid-mission fails the mission after the stall grace")
+        void lostDestination_failsWithWarning() {
+            List<RailTrack> approach = line(0, 3, 0);
+            ForkRailTrack fork = fork(3, 0, Dir.W, Dir.E);
+            List<RailTrack> branch = line(4, 4, 0);
+            connect(approach.get(2), Dir.E, fork, Dir.W);
+            connect(fork, Dir.E, branch.get(0), Dir.W);
+            Sensor sensor = sensor(branch.get(2), "S6");
+            Train train = placeTrain(approach.get(0), Dir.W);
+
+            List<String> messages = console(
+                    "train " + train.getId() + " stop at sensor " + sensor.getId() + " speed 3;");
+            runTicks(5);
+            console("del sensor " + sensor.getId() + ";");
+
+            runUntil(() -> missionFinished(train), 2600);
+
+            assertEquals(TrainMission.State.FAILED, mission(train).state(),
+                    "the mission must fail when it cannot reach the destination (review m3)");
+            assertTrue(messages.stream().anyMatch(m -> m.contains("stalled")),
+                    "expected a stalled warning, got: " + messages);
             assertEquals(0, train.getSpeed());
         }
     }
@@ -267,14 +358,15 @@ class TrainMissionIntegrationTest {
 
             assertEquals(TrainMission.State.COMPLETED, mission(train).state(),
                     "the block must complete the mission");
-            assertTrue(train.getSafetyManager().isWaitingForBlock(), "train should be waiting");
+            assertFalse(train.getSafetyManager().isWaitingForBlock(),
+                    "the stale block wait must be cleared when the mission ends (review M1)");
             runUntil(() -> train.getSpeed() == 0, 300);
 
             assertEquals(0, train.getSpeed());
             assertEquals(world.b.get(world.b.size() - 1), headTrack(train),
                     "the train must stop on the last rail of its segment");
 
-            // Free the block: the mission is over, the train must stay stopped.
+            // Free the block: the mission is over, the train must stay stopped (no resume).
             int xBefore = headX(train);
             console("train " + other.getId() + " set engine on;");
             console("train " + other.getId() + " set speed 3;");
@@ -286,9 +378,18 @@ class TrainMissionIntegrationTest {
                     "a finished stop-when-blocked mission must not resume");
             assertEquals(xBefore, headX(train), "the train must not move after the block is freed");
 
-            // A new order supersedes the finished mission: the stale block wait must not strand it.
+            // Review M1 regression: a plain speed order must move the train again.
+            console("train " + train.getId() + " set speed 3;");
+            runUntil(() -> headX(train) > xBefore + 1, 400);
+            assertTrue(headX(train) > xBefore,
+                    "a plain speed order must move the train after the mission (review M1)");
+            assertTrue(train.getSpeed() > 0, "the train must be rolling");
+            console("train " + train.getId() + " set speed 0;");
+            runUntil(() -> train.getSpeed() == 0, 300);
+
+            // A new mission also runs: the train must accept orders after its maneuver.
             Sensor sensor = sensor(world.c.get(3), "S10");
-            console("train " + train.getId() + " stop at sensor " + sensor.getId() + " speed 3;");
+            console("train " + train.getId() + " stop at sensor " + sensor.getId() + " speed 2;");
             runUntil(() -> missionFinished(train), 900);
 
             assertEquals(TrainMission.State.COMPLETED, mission(train).state());
