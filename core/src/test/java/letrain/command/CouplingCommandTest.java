@@ -109,4 +109,54 @@ class CouplingCommandTest {
         assertEquals(1, model.getTrainFromLocomotiveId(locoId).getLinkers().size(),
                 "train must have only the loco after uncouple");
     }
+
+    @Test
+    @DisplayName("uncouple backward all leaves the loco alone with every wagon in a new train")
+    void uncoupleBackwardAll() {
+        assertEquals(null, run("""
+                go -13,0; face e; write 5;
+                go -10,0; face e; new locomotive A red;
+                go -11,0; face e; new wagon c coal;
+                go -12,0; face e; new wagon d gold;
+                """), "world must build");
+        int locoId = model.getLocomotives().get(1).getId();
+        assertEquals(null, run("train " + locoId + " couple backward all;"),
+                "couple backward all must run");
+
+        var train = model.getTrainFromLocomotiveId(locoId);
+        assertEquals(3, train.getLinkers().size(), "loco + two wagons behind");
+
+        assertEquals(null, run("train " + locoId + " uncouple backward all;"),
+                "uncouple backward all must run");
+        assertEquals(1, train.getLinkers().size(), "the loco must stay alone");
+        var wagonTrain = model.getWagons().stream()
+                .filter(w -> w.getTrain() != null && w.getTrain() != train).findFirst()
+                .orElseThrow().getTrain();
+        assertEquals(2, wagonTrain.getLinkers().size(), "the wagons must travel together");
+    }
+
+    @Test
+    @DisplayName("couple forward all joins every wagon ahead and uncouple forward all splits them")
+    void coupleAndUncoupleForwardAll() {
+        assertEquals(null, run("""
+                go 10,0; face e; write 4;
+                go 10,0; face e; new locomotive A red;
+                go 11,0; face e; new wagon c coal;
+                go 12,0; face e; new wagon d gold;
+                """), "world must build");
+        int locoId = model.getLocomotives().get(1).getId();
+        assertEquals(null, run("train " + locoId + " couple forward all;"),
+                "couple forward all must run");
+
+        var train = model.getTrainFromLocomotiveId(locoId);
+        assertEquals(3, train.getLinkers().size(), "loco + the two wagons ahead");
+
+        assertEquals(null, run("train " + locoId + " uncouple forward all;"),
+                "uncouple forward all must run");
+        assertEquals(1, train.getLinkers().size(), "the loco must stay alone");
+        var wagonTrain = model.getWagons().stream()
+                .filter(w -> w.getTrain() != null && w.getTrain() != train).findFirst()
+                .orElseThrow().getTrain();
+        assertEquals(2, wagonTrain.getLinkers().size(), "the wagons must travel together");
+    }
 }

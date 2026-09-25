@@ -607,6 +607,99 @@ class WaypointManeuverIntegrationTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // Coupling actions with 'all'
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("Coupling actions (all)")
+    class CouplingAll {
+
+        private List<RailTrack> rails;
+
+        /**
+         * Loco at (1,0) facing east with two wagons behind at (0,0) and (-1,0). They share the
+         * train ({@code sameTrain}) or the wagons travel as their own train.
+         */
+        private Train placeLocoWithTwoWagonsBehind(boolean sameTrain) {
+            rails = line(-1, 4, 0); // x = -1..2
+            RailTrack locoTrack = rails.get(2); // x = 1
+            RailTrack wagon1Track = rails.get(1); // x = 0
+            RailTrack wagon2Track = rails.get(0); // x = -1
+            Station station = station(locoTrack, "a");
+
+            Locomotive loco = new Locomotive(model.nextLocomotiveId(), "A");
+            loco.setEngineOn(true);
+            Wagon wagon1 = new Wagon("b");
+            Wagon wagon2 = new Wagon("c");
+            Train train = new Train(model.nextTrainId());
+            train.setModel(model);
+            train.pushBack(loco);
+            train.setDirectorLinker(loco);
+            model.addLocomotive(loco);
+            model.addWagon(wagon1);
+            model.addWagon(wagon2);
+            locoTrack.enterLinkerFromDir(Dir.W, loco);
+            wagon1Track.enterLinkerFromDir(Dir.W, wagon1);
+            wagon2Track.enterLinkerFromDir(Dir.W, wagon2);
+            if (sameTrain) {
+                train.pushBack(wagon1);
+                train.pushBack(wagon2);
+            } else {
+                Train wagonTrain = new Train(model.nextTrainId());
+                wagonTrain.setModel(model);
+                wagonTrain.pushBack(wagon1);
+                wagonTrain.pushBack(wagon2);
+            }
+            train.rebind();
+            train.getMovementManager().refreshLinkersDirection();
+            train.setStationId(station.getId());
+            return train;
+        }
+
+        @Test
+        @DisplayName("a waypoint uncouple backward all detaches every wagon")
+        void waypointUncoupleAll_detachesEveryWagon() {
+            Train train = placeLocoWithTwoWagonsBehind(true);
+            assertEquals(3, train.getLinkers().size(), "loco + two wagons");
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "shunt" {
+                        add station "a" uncouple backward all
+                        add station "a"
+                    }
+                    assign itinerary "shunt" to train %d;
+                    train %d set autopilot true;
+                    """.formatted(train.getId(), train.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            assertEquals(1, train.getLinkers().size(), "the loco must stay alone");
+            Train wagonTrain = model.getWagons().stream()
+                    .filter(w -> w.getTrain() != null && w.getTrain() != train).findFirst()
+                    .orElseThrow().getTrain();
+            assertEquals(2, wagonTrain.getLinkers().size(), "all the wagons travel together");
+        }
+
+        @Test
+        @DisplayName("a waypoint couple backward all joins every wagon behind")
+        void waypointCoupleAll_joinsEveryWagon() {
+            Train train = placeLocoWithTwoWagonsBehind(false);
+            assertEquals(1, train.getLinkers().size(), "only the loco at the start");
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "shunt" {
+                        add station "a" couple backward all
+                        add station "a"
+                    }
+                    assign itinerary "shunt" to train %d;
+                    train %d set autopilot true;
+                    """.formatted(train.getId(), train.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            assertEquals(3, train.getLinkers().size(), "the loco and all the wagons behind");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // Curved-fork map (user report: simple.json)
     // ═══════════════════════════════════════════════════════════════════
 

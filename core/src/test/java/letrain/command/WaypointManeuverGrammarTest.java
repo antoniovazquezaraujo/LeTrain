@@ -150,6 +150,48 @@ class WaypointManeuverGrammarTest {
     }
 
     @Test
+    @DisplayName("couple/uncouple accept 'all' as the count")
+    void couplingAll_isParsed() {
+        Itinerary itinerary = run("""
+                create itinerary "all" {
+                    add station "a"
+                        uncouple backward all,
+                        couple forward all
+                    add station "b"
+                }
+                assign itinerary "all" to train 1;
+                """);
+
+        List<WaypointCommand> commands = itinerary.waypoints().get(0).commands();
+        assertEquals(List.of(
+                WaypointCommand.uncouple(false, letrain.vehicle.rail.TrainCouplingManager.ALL),
+                WaypointCommand.couple(true, letrain.vehicle.rail.TrainCouplingManager.ALL)),
+                commands);
+    }
+
+    @Test
+    @DisplayName("an 'all' command survives a savegame round-trip")
+    void couplingAll_survivesGameSaveRoundTrip() {
+        run("""
+                create itinerary "all" {
+                    add station "a" uncouple backward all
+                    add station "b"
+                }
+                assign itinerary "all" to train 1;
+                """);
+
+        GameSaveService saves = new GameSaveService();
+        Model restored = saves.fromBytes(saves.toBytes(model));
+        Itinerary itinerary =
+                restored.getTrainFromLocomotiveId(1).getAutopilot().itinerary().orElseThrow();
+
+        assertEquals(
+                List.of(WaypointCommand.uncouple(false,
+                        letrain.vehicle.rail.TrainCouplingManager.ALL)),
+                itinerary.waypoints().get(0).commands());
+    }
+
+    @Test
     @DisplayName("the new waypoint commands survive a savegame round-trip")
     void commands_surviveGameSaveRoundTrip() {
         run("""
