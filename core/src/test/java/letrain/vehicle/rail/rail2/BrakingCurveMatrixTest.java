@@ -46,16 +46,18 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Braking curve regression matrix (issue #633)")
 class BrakingCurveMatrixTest {
 
-    private static final int MAX_B = 12;
+    /** Long enough for the planned branch at MAX_SPEED (brakingRails(10) = 55). */
+    private static final int MAX_B = 60;
 
     @Test
     @DisplayName("B x speed x state: no crossing when planned, stop on the last rail before the node")
     void matrix() throws Exception {
         List<String> failures = new ArrayList<>();
         for (String state : List.of("cruise", "accel", "decel")) {
-            for (int speed = 1; speed <= 5; speed++) {
+            for (int speed = 1; speed <= Locomotive.MAX_SPEED; speed++) {
                 int target = state.equals("cruise") ? speed
-                        : state.equals("accel") ? Math.min(5, speed + 2) : Math.max(1, speed - 2);
+                        : state.equals("accel") ? Math.min(Locomotive.MAX_SPEED, speed + 2)
+                                : Math.max(1, speed - 2);
                 int counter = state.equals("cruise") ? 0
                         : Math.max(1, speed * (state.equals("accel") ? 2 : 1)) - 1;
                 for (int b = 1; b <= MAX_B; b++) {
@@ -81,7 +83,7 @@ class BrakingCurveMatrixTest {
     }
 
     @Test
-    @DisplayName("accelerating entry (1 -> 3): global no-cross and finalB==1 for B=3..12")
+    @DisplayName("accelerating entry (1 -> 3): global no-cross and finalB==1 for B=3..60")
     void acceleratingEntry_neverCrosses() throws Exception {
         for (int b = 3; b <= MAX_B; b++) {
             Row row = run("accel", 1, 3, 1, b);
@@ -108,23 +110,23 @@ class BrakingCurveMatrixTest {
         model.postLoadInit();
 
         List<RailTrack> s0 = new ArrayList<>();
-        for (int x = 0; x <= 12; x++) {
+        for (int x = 0; x < MAX_B; x++) {
             s0.add(track(model, x, 0));
         }
         ForkRailTrack fork = new ForkRailTrack(model.nextForkId());
-        fork.setPosition(new Point(13, 0));
+        fork.setPosition(new Point(MAX_B, 0));
         fork.addRoute(Dir.W, Dir.E);
         fork.addRoute(Dir.E, Dir.W);
-        model.getRailMap().addTrack(new Point(13, 0), fork);
+        model.getRailMap().addTrack(new Point(MAX_B, 0), fork);
         model.addFork(fork);
         List<RailTrack> s1 = new ArrayList<>();
-        for (int x = 14; x <= 16; x++) {
+        for (int x = MAX_B + 1; x <= MAX_B + 3; x++) {
             s1.add(track(model, x, 0));
         }
         for (int i = 0; i + 1 < s0.size(); i++) {
             connect(s0.get(i), s0.get(i + 1));
         }
-        connect(s0.get(12), fork);
+        connect(s0.get(MAX_B - 1), fork);
         connect(fork, s1.get(0));
         connect(s1.get(0), s1.get(1));
         connect(s1.get(1), s1.get(2));
@@ -133,7 +135,7 @@ class BrakingCurveMatrixTest {
         ((Locomotive) blocker.getDirectorLinker()).setEngineOn(false);
         blocker.getSafetyManager().claimOccupiedSegments();
 
-        Train subject = place(model, 1, s0.get(13 - b));
+        Train subject = place(model, 1, s0.get(MAX_B - b));
         Locomotive loco = (Locomotive) subject.getDirectorLinker();
         ((letrain.itinerary.impl.AutoPilotImpl) subject.getAutopilot())
                 .setMode(letrain.itinerary.AutoPilot.Mode.FOLLOWING);

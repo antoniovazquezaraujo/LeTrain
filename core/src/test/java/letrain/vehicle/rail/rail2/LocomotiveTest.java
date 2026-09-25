@@ -80,7 +80,7 @@ class LocomotiveTest {
     @Test
     @DisplayName("brakingRailsFromCurrentState matches a real deceleration from a partway counter")
     void brakingRailsFromCurrentState_matchesRealDeceleration() {
-        for (int speed = 1; speed <= 5; speed++) {
+        for (int speed = 1; speed <= Locomotive.MAX_SPEED; speed++) {
             for (int preRails = 0; preRails < speed * 2; preRails++) {
                 Simulation simulation = new Simulation(speed);
                 simulation.developCounter(preRails);
