@@ -157,5 +157,10 @@ STOP: 'stop';
 // ADR-022 phase 2b: hold at the waypoint with the engine off, keeping the autopilot
 PARK: 'park';
 
+// Issue #619: one-shot "stop at ..." / "stop when blocked" train orders
+AT: 'at';
+WHEN: 'when';
+BLOCKED: 'blocked';
+
 // Identifiers
 ID : [a-zA-Z0-9_]+ ;

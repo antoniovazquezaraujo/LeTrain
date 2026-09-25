@@ -3,12 +3,14 @@ package letrain.itinerary.impl;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import letrain.itinerary.AutoPilot;
 import letrain.itinerary.Itinerary;
 import letrain.itinerary.Punctuality;
 import letrain.itinerary.SegmentPathfinder;
 import letrain.itinerary.Timetable;
 import letrain.itinerary.TrainActionManager;
+import letrain.itinerary.TrainMission;
 import letrain.itinerary.Waypoint;
 import letrain.itinerary.WaypointCommand;
 import letrain.map.Dir;
@@ -18,9 +20,15 @@ import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.time.GameClock;
 import letrain.time.GameTime;
+import letrain.track.Sensor;
+import letrain.track.Station;
+import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.utils.SimulationScheduler;
+import letrain.vehicle.rail.Linker;
+import letrain.vehicle.rail.RailIterator;
+import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +58,17 @@ public class AutoPilotImpl implements AutoPilot {
     /** Last departure recorded for the current stop; avoids a duplicate after a reload. */
     private Waypoint lastDepartureWaypoint;
     private long lastDepartureTarget = NO_SCHEDULE_EVENT;
+
+    // Issue #619: one-shot mission state (in memory only: a mission is a maneuver, not a plan that
+    // survives a reload; the command journal keeps the order so a replay can start it again).
+    /** Active or last finished mission. */
+    private transient TrainMission mission;
+    /** The mission reversed the train at start because the destination was only reachable back. */
+    private transient boolean missionReversed;
+    /** Console sink for mission messages; null in scripts (log only). */
+    private transient Consumer<String> missionNotifier;
+    /** Guard for the physical walks that look for the destination / the end of the track. */
+    private static final int MISSION_MAX_WALK = 1000;
 
     public AutoPilotImpl() {
         this.train = null;
@@ -83,6 +102,12 @@ public class AutoPilotImpl implements AutoPilot {
 
     public void reinitialize(Train train, TrainActionManager actionManager) {
         this.train = train;
+        if (mission == null && mode == Mode.FOLLOWING && itinerary == null) {
+            // Missions are not serialized: a train saved in the middle of one would load "auto"
+            // with nothing to follow. Fall back to manual instead of staying stuck.
+            log.info("[AP] reinitialize: no mission or itinerary after load → IDLE");
+            mode = Mode.IDLE;
+        }
         if (mode == Mode.WAITING) {
             // The delayed release lives in the transient scheduler: re-arm it after a load so a
             // train saved while holding does not stay stuck forever.
@@ -136,6 +161,10 @@ public class AutoPilotImpl implements AutoPilot {
 
     @Override
     public Optional<Waypoint> currentWaypoint() {
+        if (mission != null && mission.isActive()) {
+            // A mission is not an itinerary: no waypoint events while it runs.
+            return Optional.empty();
+        }
         if (itinerary != null && currentIndex < itinerary.waypoints().size()) {
             return Optional.of(itinerary.waypoints().get(currentIndex));
         }
@@ -166,6 +195,7 @@ public class AutoPilotImpl implements AutoPilot {
     @Override
     public void setItinerary(Itinerary it) {
         log.info("[AP] setItinerary waypoints={}", it != null ? it.waypoints().size() : 0);
+        cancelMissionQuietly();
         this.itinerary = it;
         this.mode = Mode.IDLE;
         this.currentRoute = List.of();
@@ -194,6 +224,8 @@ public class AutoPilotImpl implements AutoPilot {
         if (pathfinder == null) {
             return false;
         }
+        // The itinerary takes over any running mission.
+        cancelMissionQuietly();
         mode = Mode.FOLLOWING;
         currentRoute = List.of();
         waitTicks = 0;
@@ -236,29 +268,31 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     private Segment getTrainTargetSegment(Waypoint wp) {
-        if (train == null || train.getModel() == null) {
+        letrain.mvp.Model model = train != null ? train.getModel() : null;
+        if (model == null) {
+            return null;
+        }
+        switch (wp.type()) {
+            case STATION:
+                Station st = model.getStation(wp.targetId());
+                return st != null ? segmentAtPosition(st.getPosition()) : null;
+            case SENSOR:
+                letrain.track.Sensor se = model.getSensor(wp.targetId());
+                return se != null ? segmentAtPosition(se.getPosition()) : null;
+            default:
+                return null;
+        }
+    }
+
+    /** Segment that contains the given map position, or null when there is no track/graph. */
+    private Segment segmentAtPosition(letrain.map.Point pos) {
+        if (pos == null || train == null || train.getModel() == null) {
             return null;
         }
         letrain.segments.RailwayGraph graph = train.getModel().getRailwayGraph();
         if (graph == null) {
             return null;
         }
-
-        letrain.map.Point pos = null;
-        switch (wp.type()) {
-            case STATION:
-                letrain.track.Station st = train.getModel().getStation(wp.targetId());
-                pos = st != null ? st.getPosition() : null;
-                break;
-            case SENSOR:
-                var sensor = train.getModel().getSensor(wp.targetId());
-                pos = sensor != null ? sensor.getPosition() : null;
-                break;
-        }
-        if (pos == null) {
-            return null;
-        }
-
         letrain.track.rail.RailTrack track = train.getModel().getRailMap().getTrackAt(pos);
         return track != null ? graph.getSegment(track) : null;
     }
@@ -277,7 +311,10 @@ public class AutoPilotImpl implements AutoPilot {
         if (mode != Mode.FOLLOWING) {
             return;
         }
-
+        if (mission != null && mission.isActive()) {
+            onMissionSegmentEntered(currentSeg);
+            return;
+        }
 
         Optional<Waypoint> currentWpOpt = currentWaypoint();
         if (currentWpOpt.isEmpty()) {
@@ -538,6 +575,7 @@ public class AutoPilotImpl implements AutoPilot {
     @Override
     public void deactivate() {
         log.info("[AP] deactivate → IDLE");
+        cancelMission();
         mode = Mode.IDLE;
         waitTicks = 0;
         pendingCommands.clear();
@@ -636,5 +674,478 @@ public class AutoPilotImpl implements AutoPilot {
                 currentRoute.isEmpty() ? " → ROUTE NOT FOUND" : "",
                 currentRoute.stream().map(Segment::getId).toList());
         return !currentRoute.isEmpty();
+    }
+
+    /***********************************************************
+     * Issue #619: one-shot missions (stop at / stop when blocked)
+     **********************************************************/
+
+    @Override
+    public Optional<TrainMission> mission() {
+        return Optional.ofNullable(mission);
+    }
+
+    @Override
+    public void setMissionNotifier(Consumer<String> notifier) {
+        this.missionNotifier = notifier;
+    }
+
+    @Override
+    public boolean startMission(TrainMission m) {
+        if (train == null || m == null) {
+            return false;
+        }
+        if (mission != null && mission.isActive()) {
+            // One-shot orders are replaceable: the new one cancels the running mission.
+            mission.cancel();
+        } else if (itinerary != null && mode != Mode.IDLE) {
+            m.fail();
+            warnMission("Train " + train.getId() + " is running an itinerary; use 'train "
+                    + train.getId() + " set autopilot false;' or add it to the itinerary");
+            return false;
+        }
+
+        int desired = m.speed() > 0 ? m.speed() : currentDesiredSpeed();
+        if (desired <= 0) {
+            m.fail();
+            warnMission("Train " + train.getId() + " has no speed set; add 'speed N' to the order");
+            return false;
+        }
+
+        // The physical front direction must be consistent with the current sense before planning:
+        // the linkers refresh their dirs at every advance, and a stopped train may have them stale.
+        train.getMovementManager().refreshLinkersDirection();
+
+        // A previous wait (e.g. a finished "stop when blocked" mission) is superseded by the new
+        // order: clear it while the train is stopped, acquireInitialLocks will re-evaluate the
+        // block with the new desired speed.
+        if (train.getSpeed() == 0 && train.getSafetyManager() != null
+                && train.getSafetyManager().isWaitingForBlock()) {
+            train.getSafetyManager().cancelBlockWait();
+        }
+
+        boolean reverse = false;
+        currentRoute = List.of();
+        missionReversed = false;
+        if (m.kind() == TrainMission.Kind.STATION || m.kind() == TrainMission.Kind.SENSOR) {
+            if (getTrainCurrentSegment() == null || getMissionTargetSegment(m) == null) {
+                m.fail();
+                warnMission("Train " + train.getId() + ": " + m.description() + " not found");
+                return false;
+            }
+            if (!planMissionRoute(m)) {
+                m.fail();
+                warnMission("Train " + train.getId() + ": no route to " + m.description()
+                        + " in either direction");
+                return false;
+            }
+            reverse = missionReversed;
+        } else if (m.kind() == TrainMission.Kind.END_OF_TRACK) {
+            if (walkRailsToEnd(travelDir()) < 0) {
+                m.fail();
+                warnMission("Train " + train.getId() + ": no end of track ahead");
+                return false;
+            }
+        }
+
+        mission = m;
+        m.start();
+        mode = Mode.FOLLOWING;
+        if (headOnTarget()) {
+            completeMission("already at " + m.description());
+            return true;
+        }
+        // On the first switch there is no re-entry event: orient it before moving.
+        if (currentRoute.size() >= 2) {
+            ensureForkRoute(currentRoute.get(0), currentRoute.get(1));
+        }
+        train.setSpeed(desired);
+        if (reverse) {
+            train.reverse();
+        }
+        applyMissionStopPlan();
+        if (m.kind() == TrainMission.Kind.WHEN_BLOCKED && train.getSafetyManager() != null
+                && train.getSafetyManager().isWaitingForBlock()) {
+            completeMission("blocked");
+        } else if ((m.kind() == TrainMission.Kind.END_OF_TRACK
+                || m.kind() == TrainMission.Kind.WHEN_BLOCKED) && missionRailsToStop() == 0) {
+            completeMission("already at the end of track");
+        }
+        log.info("[AP] mission started: train {} {}, speed {}", train.getId(), m.description(),
+                desired);
+        return true;
+    }
+
+    @Override
+    public void onRailAdvanced() {
+        if (mission == null || !mission.isActive() || mode != Mode.FOLLOWING) {
+            return;
+        }
+        switch (mission.kind()) {
+            case STATION, SENSOR -> {
+                if (headOnTarget()) {
+                    completeMission("arrived at " + mission.description());
+                    return;
+                }
+                applyMissionStopPlan();
+            }
+            case END_OF_TRACK -> {
+                int rails = missionRailsToStop();
+                if (rails < 0) {
+                    failMission("lost the end of track ahead");
+                } else if (rails == 0) {
+                    completeMission("reached the end of track");
+                } else {
+                    applyStopPlan(rails);
+                }
+            }
+            case WHEN_BLOCKED -> {
+                if (train.getSafetyManager() != null
+                        && train.getSafetyManager().isWaitingForBlock()) {
+                    completeMission("blocked");
+                    return;
+                }
+                int rails = missionRailsToStop();
+                if (rails == 0) {
+                    completeMission("blocked at the end of track");
+                } else if (rails > 0) {
+                    applyStopPlan(rails);
+                }
+            }
+        }
+    }
+
+    /**
+     * Plans the route to a station/sensor. The physical walk decides first (the destination may be
+     * inside the current segment, where A* cannot tell the sense): ahead → forward; only behind →
+     * the order reverses once. When neither walk sees the destination, A* decides trusting that
+     * switches will be oriented on the way.
+     */
+    private boolean planMissionRoute(TrainMission m) {
+        ensurePathfinder();
+        Segment currentSeg = getTrainCurrentSegment();
+        Segment targetSeg = getMissionTargetSegment(m);
+        if (pathfinder == null || currentSeg == null || targetSeg == null) {
+            return false;
+        }
+        RailTrack targetTrack = missionTargetTrack(m);
+        Dir dir = travelDir();
+        if (targetTrack != null && dir != null && walkRailsToTrack(targetTrack, dir) >= 0) {
+            currentRoute = pathfinder.find(currentSeg,
+                    Optional.ofNullable(getTrainExitPort(currentSeg)), targetSeg, Optional.empty());
+            return true;
+        }
+        if (targetTrack != null && dir != null
+                && walkRailsToTrack(targetTrack, dir.inverse()) >= 0) {
+            missionReversed = true;
+            currentRoute = pathfinder.find(currentSeg,
+                    Optional.ofNullable(oppositePort(currentSeg)), targetSeg, Optional.empty());
+            return true;
+        }
+        currentRoute = pathfinder.find(currentSeg,
+                Optional.ofNullable(getTrainExitPort(currentSeg)), targetSeg, Optional.empty());
+        if (!currentRoute.isEmpty()) {
+            return true;
+        }
+        currentRoute = pathfinder.find(currentSeg, Optional.ofNullable(oppositePort(currentSeg)),
+                targetSeg, Optional.empty());
+        if (!currentRoute.isEmpty()) {
+            missionReversed = true;
+            return true;
+        }
+        currentRoute = List.of();
+        return false;
+    }
+
+    private void onMissionSegmentEntered(Segment currentSeg) {
+        if (mission.kind() != TrainMission.Kind.STATION
+                && mission.kind() != TrainMission.Kind.SENSOR) {
+            return;
+        }
+        if (pathfinder != null && (currentRoute.isEmpty() || !currentRoute.contains(currentSeg))) {
+            Segment targetSeg = getMissionTargetSegment(mission);
+            if (targetSeg != null) {
+                List<Segment> route = pathfinder.find(currentSeg,
+                        Optional.ofNullable(getTrainExitPort(currentSeg)), targetSeg,
+                        Optional.empty());
+                if (!route.isEmpty()) {
+                    currentRoute = route;
+                }
+            }
+        }
+        int index = currentRoute.indexOf(currentSeg);
+        if (index != -1 && index + 1 < currentRoute.size()) {
+            ensureForkRoute(currentSeg, currentRoute.get(index + 1));
+        }
+    }
+
+    /**
+     * Applies the braking curve towards the mission stop point, using the same helpers as the
+     * safety layer (issue #633). It only caps the target speed down and engages the brake; the
+     * block wait gate always wins, so safety is never overridden.
+     */
+    private void applyMissionStopPlan() {
+        if (mission == null || !mission.isActive() || mode != Mode.FOLLOWING) {
+            return;
+        }
+        if (train.isPendingReverse()) {
+            // The reversal has not happened yet: the walk would use the old sense.
+            return;
+        }
+        // No isWaitingForBlock guard is needed: the plan only caps the target down and brakes, so
+        // it can never raise the safety layer's own boundary plan (issue #619).
+        int railsToStop = missionRailsToStop();
+        if (railsToStop >= 0) {
+            applyStopPlan(railsToStop);
+        }
+    }
+
+    private void applyStopPlan(int railsToStop) {
+        Locomotive loco = directorLocomotive();
+        if (loco == null) {
+            return;
+        }
+        if (railsToStop <= 0) {
+            loco.setTargetSpeedDirect(0);
+            return;
+        }
+        int cap = Locomotive.maxSpeedForRails(railsToStop);
+        if (loco.getTargetSpeed() > cap) {
+            loco.setTargetSpeedDirect(cap);
+        }
+        if (loco.brakingRailsFromCurrentState() > railsToStop) {
+            loco.setTargetSpeedDirect(0);
+        }
+    }
+
+    /**
+     * Advances from the head to the mission's stop point walking the physical route with the
+     * switches as they are now. {@code -1} when it cannot be determined (target not on the walk,
+     * loop, head without direction). For end of track / blocked it returns the standoff one rail
+     * before the buffer, so the train does not contact it.
+     */
+    private int missionRailsToStop() {
+        if (mission == null || train == null || train.isPendingReverse()) {
+            return -1;
+        }
+        Dir dir = travelDir();
+        if (dir == null) {
+            return -1;
+        }
+        if (mission.kind() == TrainMission.Kind.STATION
+                || mission.kind() == TrainMission.Kind.SENSOR) {
+            return walkRailsToTrack(missionTargetTrack(mission), dir);
+        }
+        int railsToEnd = walkRailsToEnd(dir);
+        return railsToEnd < 0 ? -1 : Math.max(0, railsToEnd - 1);
+    }
+
+    /** Rails ahead until the given track is reached, following the physical route. -1 unknown. */
+    private int walkRailsToTrack(RailTrack target, Dir dir) {
+        if (target == null || dir == null) {
+            return -1;
+        }
+        Linker head = train != null ? train.getPhysicalFront() : null;
+        if (head == null || !(head.getTrack() instanceof RailTrack headTrack)) {
+            return -1;
+        }
+        if (headTrack == target) {
+            return 0;
+        }
+        RailIterator it = new RailIterator(headTrack, dir);
+        int steps = 0;
+        while (steps < MISSION_MAX_WALK && it.advance()) {
+            steps++;
+            if (it.getTrack() == target) {
+                return steps;
+            }
+        }
+        return -1;
+    }
+
+    /** Rails ahead until the track ends. 0 = head on the last rail. -1 unknown (loop/guard). */
+    private int walkRailsToEnd(Dir dir) {
+        if (dir == null) {
+            return -1;
+        }
+        Linker head = train != null ? train.getPhysicalFront() : null;
+        if (head == null || !(head.getTrack() instanceof RailTrack headTrack)) {
+            return -1;
+        }
+        RailIterator it = new RailIterator(headTrack, dir);
+        int steps = 0;
+        while (steps < MISSION_MAX_WALK && it.advance()) {
+            steps++;
+        }
+        return steps >= MISSION_MAX_WALK ? -1 : steps;
+    }
+
+    /** Track of the station/sensor the mission drives to, or null. */
+    private RailTrack missionTargetTrack(TrainMission m) {
+        letrain.mvp.Model model = train != null ? train.getModel() : null;
+        if (model == null) {
+            return null;
+        }
+        letrain.map.Point pos = null;
+        if (m.kind() == TrainMission.Kind.STATION) {
+            Station st = model.getStation(m.targetId());
+            pos = st != null ? st.getPosition() : null;
+        } else if (m.kind() == TrainMission.Kind.SENSOR) {
+            letrain.track.Sensor se = model.getSensor(m.targetId());
+            pos = se != null ? se.getPosition() : null;
+        }
+        if (pos == null) {
+            return null;
+        }
+        Track track = model.getRailMap().getTrackAt(pos);
+        return track instanceof RailTrack rt ? rt : null;
+    }
+
+    private Segment getMissionTargetSegment(TrainMission m) {
+        letrain.mvp.Model model = train != null ? train.getModel() : null;
+        if (model == null) {
+            return null;
+        }
+        if (m.kind() == TrainMission.Kind.STATION) {
+            Station st = model.getStation(m.targetId());
+            return st != null ? segmentAtPosition(st.getPosition()) : null;
+        }
+        if (m.kind() == TrainMission.Kind.SENSOR) {
+            letrain.track.Sensor se = model.getSensor(m.targetId());
+            return se != null ? segmentAtPosition(se.getPosition()) : null;
+        }
+        return null;
+    }
+
+    /** The head (leading vehicle) is on the mission's station/sensor cell. */
+    private boolean headOnTarget() {
+        if (mission == null || train == null) {
+            return false;
+        }
+        Linker head = train.getPhysicalFront();
+        if (head == null || !(head.getTrack() instanceof RailTrack rt)) {
+            return false;
+        }
+        Sensor component = rt.getComponent();
+        if (mission.kind() == TrainMission.Kind.STATION) {
+            return component instanceof Station st && st.getId() == mission.targetId();
+        }
+        // Plain sensor only: speed signals and stations have their own id counters and could share
+        // the numeric id.
+        return component != null && !(component instanceof Station)
+                && !(component instanceof letrain.track.SpeedSignal)
+                && component.getId() == mission.targetId();
+    }
+
+    private void completeMission(String reason) {
+        if (mission == null) {
+            return;
+        }
+        mission.complete();
+        mode = Mode.IDLE;
+        stopTrainForMission();
+        notifyMission("Train " + train.getId() + " " + reason);
+    }
+
+    private void failMission(String reason) {
+        if (mission == null) {
+            return;
+        }
+        mission.fail();
+        mode = Mode.IDLE;
+        stopTrainForMission();
+        warnMission("Train " + train.getId() + " " + reason);
+    }
+
+    private void cancelMission() {
+        if (mission != null && mission.isActive()) {
+            mission.cancel();
+            notifyMission("Train " + train.getId() + " mission cancelled");
+        }
+    }
+
+    private void cancelMissionQuietly() {
+        if (mission != null && mission.isActive()) {
+            mission.cancel();
+        }
+    }
+
+    /** The mission is over: forget the deferred speed and brake to a full stop. */
+    private void stopTrainForMission() {
+        if (train == null) {
+            return;
+        }
+        train.setSavedTargetSpeed(-1);
+        train.setSpeed(0);
+    }
+
+    private Locomotive directorLocomotive() {
+        return train != null && train.getDirectorLinker() instanceof Locomotive loco ? loco : null;
+    }
+
+    /** Travel direction of the physical front (leading vehicle), or null. */
+    private Dir travelDir() {
+        Linker head = train != null ? train.getPhysicalFront() : null;
+        return head != null ? head.getRealDir() : null;
+    }
+
+    /** The other port of the current segment (the one not used by the current sense). */
+    private Port oppositePort(Segment seg) {
+        if (seg == null) {
+            return null;
+        }
+        var ports = seg.getPorts();
+        if (ports == null) {
+            return null;
+        }
+        Port first = ports.getFirst();
+        Port second = ports.getSecond();
+        Port exit = getTrainExitPort(seg);
+        if (exit != null) {
+            if (first != null && first.getNode().equals(exit.getNode())) {
+                return second;
+            }
+            if (second != null && second.getNode().equals(exit.getNode())) {
+                return first;
+            }
+        }
+        return second != null ? second : first;
+    }
+
+    private void ensurePathfinder() {
+        if (pathfinder != null || train == null || train.getModel() == null) {
+            return;
+        }
+        if (train.getModel().getRailwayGraph() == null) {
+            return;
+        }
+        pathfinder = new letrain.itinerary.AStarPathfinder(train.getModel().getRailwayGraph(),
+                train.getModel().getBlockManager(), train);
+    }
+
+    /** Speed the mission runs at when the order has no explicit one. */
+    private int currentDesiredSpeed() {
+        if (train == null || train.getDirectorLinker() == null) {
+            return 0;
+        }
+        int target = train.getDirectorLinker().getTargetSpeed();
+        if (target == 0 && train.hasSavedTargetSpeed()) {
+            target = train.getSavedTargetSpeed();
+        }
+        return target;
+    }
+
+    private void notifyMission(String text) {
+        log.info("[AP] {}", text);
+        if (missionNotifier != null) {
+            missionNotifier.accept(text);
+        }
+    }
+
+    private void warnMission(String text) {
+        log.warn("[AP] {}", text);
+        if (missionNotifier != null) {
+            missionNotifier.accept(text);
+        }
     }
 }

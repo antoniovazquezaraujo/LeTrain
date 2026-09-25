@@ -291,6 +291,10 @@ public class GrammarReference {
         trainAct.add(new Node("accelerate", "train # accelerate;"));
         trainAct.add(new Node("decelerate", "train # decelerate;"));
         trainAct.add(new Node("stop", "train # stop;"));
+        trainAct.add(new Node("stop at station", "train # stop at station # speed #;"));
+        trainAct.add(new Node("stop at sensor", "train # stop at sensor # speed #;"));
+        trainAct.add(new Node("stop at end", "train # stop at end speed #;"));
+        trainAct.add(new Node("stop when blocked", "train # stop when blocked speed #;"));
         trainAct.add(new Node("invert", "train # invert;"));
         trainAct.add(new Node("set forward", "train # set forward;"));
         trainAct.add(new Node("set backward", "train # set backward;"));

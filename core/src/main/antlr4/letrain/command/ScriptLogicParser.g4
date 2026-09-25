@@ -98,7 +98,16 @@ placeSelector  : forkSelector | semaphoreSelector | stationSelector | sensorSele
 semaphoreAction : OPEN | CLOSED | CLOSE | SET semaphoreStatus | INVERT ;
 forkAction      : SET forkDirection | FLIP ;
 engineAction    : SET ENGINE (ON | OFF);
-trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED? trainSpeed | INVERT | coupleAction | uncoupleAction | SET NAME STRING | LOAD | UNLOAD | engineAction;
+trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED? trainSpeed | INVERT | coupleAction | uncoupleAction | SET NAME STRING | LOAD | UNLOAD | engineAction | stopOrder;
+/**
+ * Issue #619: one-shot "advance until X and stop" order. The destination is a station or sensor
+ * (by number or quoted name), the end of the track, or the first block that stops the train. The
+ * optional speed belongs to the order: it is set when the mission starts and the train ends
+ * stopped; without it the train's current target speed is used.
+ */
+stopOrder       : STOP stopTarget missionSpeed?;
+stopTarget      : AT (STATION stationRef | SENSOR sensorRef | END) | WHEN BLOCKED;
+missionSpeed    : SPEED trainSpeed;
 coupleAction    : COUPLE sense (NUMBER)?;
 uncoupleAction  : UNCOUPLE sense (NUMBER)?;
 

@@ -26,6 +26,34 @@ public interface AutoPilot {
     /** Stop and return to manual control. */
     void deactivate();
 
+    /**
+     * Starts a one-shot mission (issue #619): drive to the destination and stop. Returns false
+     * without touching the train when the order is rejected (the train is running an itinerary, the
+     * destination is unreachable from both senses or there is no speed to run at); the reason is
+     * reported through the mission notifier and the log. A new mission replaces the previous one.
+     */
+    default boolean startMission(TrainMission mission) {
+        return false;
+    }
+
+    /** Last mission accepted by this autopilot (running or finished), if any. */
+    default Optional<TrainMission> mission() {
+        return Optional.empty();
+    }
+
+    /**
+     * Called after every real rail advance, right after the safety hook (issue #619). Missions use
+     * it to watch the destination and to apply the braking curve towards the stop point. No-op when
+     * there is no mission running.
+     */
+    default void onRailAdvanced() {}
+
+    /**
+     * Sink for mission messages (arrival, rejection, unreachable). The console sets it so typed
+     * orders warn on screen; scripts leave it null and warnings go to the log only.
+     */
+    default void setMissionNotifier(java.util.function.Consumer<String> notifier) {}
+
     /** The currently targeted waypoint. */
     Optional<Waypoint> currentWaypoint();
 

@@ -489,6 +489,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 new CommonTokenStream(new LeTrainLexer(CharStreams.fromString(originalText))));
         ScriptLogicParser.ScriptStartContext scriptTree = scriptParser.scriptStart();
         CommandManager scriptManager = new CommandManager(model);
+        scriptManager.setWarningSink(onMessage);
         scriptManager.visit(scriptTree);
         return null;
     }
