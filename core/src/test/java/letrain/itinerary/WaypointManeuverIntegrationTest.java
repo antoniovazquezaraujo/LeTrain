@@ -94,7 +94,8 @@ class WaypointManeuverIntegrationTest {
             List<String> errors = model.setProgram("""
                     create itinerary "maneuver" {
                         add station "a"
-                            stop at sensor %d speed 2
+                            stop at sensor %d speed 2,
+                            reverse
                         add station "b"
                     }
                     assign itinerary "maneuver" to train %d;
@@ -108,6 +109,68 @@ class WaypointManeuverIntegrationTest {
                     "expected the no-reverse warning, got: " + messages);
             assertEquals(line.get(4), headTrack(train), "the train must not move");
             assertEquals(0, train.getSpeed());
+            assertFalse(((Locomotive) train.getDirectorLinker()).isReversed(),
+                    "a rejected maneuver must abort the remaining waypoint actions (review)");
+        }
+
+        @Test
+        @DisplayName("a mission already satisfied does not block the action list")
+        void alreadyAtTarget_doesNotBlockTheList() {
+            List<RailTrack> line = line(0, 8, 0);
+            Station a = station(line.get(0), "a");
+            station(line.get(7), "b");
+            Train train = placeTrain(line.get(0), Dir.W);
+            train.setStationId(a.getId());
+            setTime(8, 0);
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "maneuver" {
+                        add station "a" arrival 08:00,
+                            stop at station "a" speed 2,
+                            reverse,
+                            departure 09:00
+                        add station "b"
+                    }
+                    assign itinerary "maneuver" to train %d;
+                    train %d set autopilot true;
+                    """.formatted(train.getId(), train.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+            runTicks(40);
+
+            assertTrue(((Locomotive) train.getDirectorLinker()).isReversed(),
+                    "the action after an already-satisfied mission must run (review M1)");
+            assertEquals(line.get(0), headTrack(train), "the train must not move");
+            assertEquals(AutoPilot.Mode.WAITING, train.getAutopilot().mode(),
+                    "the departure must hold after the maneuver");
+        }
+
+        @Test
+        @DisplayName("a missing A* route with the destination ahead does not blame the sense")
+        void aheadButNoRoute_doesNotBlameTheSense() {
+            List<RailTrack> line = line(0, 6, 0);
+            RailTrack stub = track(3, 1);
+            ForkRailTrack fork = fork(3, 0, Dir.W, Dir.E);
+            fork.addRoute(Dir.W, Dir.S);
+            connect(line.get(2), Dir.E, fork, Dir.W);
+            connect(fork, Dir.E, line.get(4), Dir.W);
+            fork.connect(Dir.S, stub);
+            stub.connect(Dir.N, fork);
+            fork.setAlternativeRoute(); // the physical walk diverges into the dead-end stub
+            Sensor sensor = sensor(line.get(4), "s4");
+            Train train = placeTrain(line.get(0), Dir.W);
+            AutoPilot autopilot = train.getAutopilot();
+            autopilot.setPathfinder((from, to, entryDir) -> List.of());
+            List<String> messages = new ArrayList<>();
+            autopilot.setMissionNotifier(messages::add);
+
+            boolean accepted = autopilot.startMission(
+                    TrainMission.forItinerary(TrainMission.Kind.SENSOR, sensor.getId(), 2));
+
+            assertFalse(accepted, "without any route the maneuver must be rejected");
+            assertTrue(messages.stream().anyMatch(m -> m.contains("no route to sensor")),
+                    "expected the no-route warning, got: " + messages);
+            assertFalse(messages.stream().anyMatch(m -> m.contains("add 'reverse'")),
+                    "the reverse hint must only appear when the destination is behind");
         }
 
         @Test
@@ -265,6 +328,93 @@ class WaypointManeuverIntegrationTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // Shunting and blocks
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("Shunting and blocks")
+    class ShuntingAndBlocks {
+
+        @Test
+        @DisplayName("a destination canton occupied by an unrelated train waits instead of invading")
+        void targetCantonWithIntruder_waitsAndResumes() {
+            List<RailTrack> approach = line(0, 3, 0);
+            ForkRailTrack fork = fork(3, 0, Dir.W, Dir.E);
+            List<RailTrack> target = line(4, 6, 0); // x = 4..9
+            ForkRailTrack exit = fork(10, 0, Dir.W, Dir.E);
+            List<RailTrack> far = line(11, 4, 0); // x = 11..14, where the intruder parks
+            connect(approach.get(2), Dir.E, fork, Dir.W);
+            connect(fork, Dir.E, target.get(0), Dir.W);
+            connect(target.get(5), Dir.E, exit, Dir.W);
+            connect(exit, Dir.E, far.get(0), Dir.W);
+            Station a = station(approach.get(0), "a");
+            Station b = station(approach.get(2), "b");
+            Sensor sensor = sensor(target.get(2), "s6");
+            Train subject = placeTrain(approach.get(0), Dir.W);
+            subject.setStationId(a.getId());
+            Train intruder = placeTrain(target.get(1), Dir.W); // parked in the target canton
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "maneuver" {
+                        add station "a"
+                            stop at sensor %d speed 2
+                        add station "b"
+                    }
+                    assign itinerary "maneuver" to train %d;
+                    train %d set autopilot true;
+                    """.formatted(sensor.getId(), subject.getId(), subject.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            runUntil(() -> subject.getSafetyManager().isWaitingForBlock(), 600);
+            runTicks(200);
+
+            assertEquals(0, subject.getSpeed(), "the mission must wait for the intruder");
+            assertFalse(subject.isPendingManualMode(),
+                    "an unrelated train must not trigger the shunting exemption (review M2)");
+            assertTrue(headX(subject) < 4, "the subject must stay before the blocked canton");
+            assertFalse(subject.isStalled(), "no contact");
+            assertTrue(subject.getAutopilot().mission().orElseThrow().isActive(),
+                    "the mission must survive the wait");
+
+            // The intruder leaves the canton: the mission resumes and reaches the sensor.
+            intruder.setSpeed(3);
+            runUntil(() -> !subject.getSafetyManager().isWaitingForBlock(), 1200);
+            assertFalse(subject.getSafetyManager().isWaitingForBlock(),
+                    "the release must wake the waiting train");
+
+            runUntil(() -> subject.getAutopilot().mission().map(m -> !m.isActive()).orElse(false),
+                    1200);
+            assertEquals(TrainMission.State.COMPLETED,
+                    subject.getAutopilot().mission().orElseThrow().state());
+            assertEquals(target.get(2), headTrack(subject));
+            assertFalse(subject.isStalled(), "no contact");
+        }
+
+        @Test
+        @DisplayName("a wagon-only train keeps its canton after a reload")
+        void wagonOnlyTrain_claimsItsCantonAfterLoad() {
+            List<RailTrack> line = line(0, 4, 0);
+            RailTrack wagonRail = line.get(1);
+            Wagon wagon = new Wagon("b");
+            Train wagonTrain = new Train(model.nextTrainId());
+            wagonTrain.setModel(model);
+            wagonTrain.pushBack(wagon);
+            wagon.setTrain(wagonTrain);
+            model.addWagon(wagon);
+            wagonRail.enterLinkerFromDir(Dir.W, wagon);
+
+            // Simulate a reload: the block manager is recreated and the trains are re-claimed
+            // from their linkers (locomotives and wagon-only parts).
+            model.getBlockManager().clearAll();
+            model.postLoadInit();
+
+            letrain.segments.Segment segment = model.getRailwayGraph().getSegment(wagonRail);
+            assertTrue(model.getBlockManager().getOwners(segment).contains(wagonTrain),
+                    "the wagon-only part must claim its canton after a load (review minor)");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // Run-around (the contract of the issue)
     // ═══════════════════════════════════════════════════════════════════
 
@@ -391,6 +541,10 @@ class WaypointManeuverIntegrationTest {
                     "the loco must stop at sensor 6 to couple (other side of the wagon)");
             assertTrue(train.getLinkers().stream().anyMatch(l -> l.getTrack() == railWagon),
                     "the wagon must be part of the train after coupling");
+            assertEquals(List.of(train),
+                    model.getBlockManager()
+                            .getOwners(model.getRailwayGraph().getSegment(railWagon)),
+                    "the vanished wagon part must release its share of the canton");
             assertTrue(eastJunction.isUsingAlternativeRoute(),
                     "the fork action must have forced the curved route");
             assertEquals(Dir.W, loco.getDir(),
@@ -527,5 +681,9 @@ class WaypointManeuverIntegrationTest {
 
     private RailTrack headTrack(Train train) {
         return (RailTrack) train.getPhysicalFront().getTrack();
+    }
+
+    private int headX(Train train) {
+        return headTrack(train).getPosition().getX();
     }
 }
