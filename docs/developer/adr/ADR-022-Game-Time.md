@@ -295,11 +295,12 @@ Consecuencias:
 
 - **Apartadero de verdad** (dos desvíos con su vía de apartado): la vía principal y la de apartado
   son cantones distintos entre los desvíos, así que dos trenes pueden estar a la vez en el tramo
-  (uno en la principal, otro en el apartado) y el que espera lo hace **en el desvío**, a la entrada
-  del apartadero. La espera es corta: lo que tarda el otro en recorrer el tramo.
+  (uno en la principal, otro en el apartado) y el que espera lo hace **dentro de su cantón: rueda
+  hasta el final y frena para quedar justo delante del fork**. La espera es corta: lo que tarda el
+  otro en recorrer el tramo.
 - **Línea A—B sin nodos intermedios**: todo el trayecto es **un solo cantón**; el primero que lo
-  reclama entra (`BlockManager.tryLock` da un dueño por cantón) y el otro espera en el nodo
-  anterior —su estación de origen— el cruce completo. No puede "avanzar hasta el apartadero"
+  reclama entra (`BlockManager.tryLock` da un dueño por cantón) y el otro espera **al final de su
+  cantón, justo delante de la frontera**, el cruce completo. No puede "avanzar hasta el apartadero"
   porque, para los cantones, ese apartadero no delimita nada: es el mismo segmento.
 
 **Hoy (a sustituir por la decisión de abajo)**: cuando el cantón se libera, `Model` avisa a los que
@@ -339,7 +340,11 @@ La clase vive en el tren (todos `DEFAULT` mientras no haya pasajeros) y conviene
 **Los apartaderos se usan solos**: el jugador construye la infraestructura (dos desvíos con su vía de
 apartado) y el sistema la aprovecha automáticamente: un tren que no puede continuar (cantón ocupado)
 **se aparta a la vía libre** —el cantón paralelo entre los mismos nodos, que
-`tryAlternativeSegment` ya sabe detectar— y cede la directa al que pasa. El itinerario **no** necesita
+`tryAlternativeSegment` ya sabe detectar— y cede la directa al que pasa. El que espera **rueda hasta
+el final de su cantón y frena con la curva de frenado que le deja parado justo delante del fork**
+(nunca un frenazo en seco); si no le da tiempo a parar, **entra sin permiso** (no hay muros
+artificiales), y si el tren es más largo que el apartadero, sobresale: cuanto más grandes los
+desvíos, mejor. El itinerario **no** necesita
 sensores ni waypoints en los apartaderos: los cruces se resuelven con las horas de las estaciones y
 la seguridad. Un punto de control (sensor) en un apartadero es opcional, solo para medir el paso o
 forzar una retención ahí.
