@@ -43,16 +43,18 @@ class StopOrderGrammarTest {
     }
 
     @Test
-    @DisplayName("accepts station, sensor, end of track and blocked, with and without speed")
+    @DisplayName("accepts station, sensor, end of track, blocked and contact, with and without speed")
     void acceptsTheFourForms() {
         assertTrue(run("train 1 stop at sensor 1 speed 2;\n").isEmpty());
         assertTrue(run("train 1 stop at station \"A\" speed 4;\n").isEmpty());
         assertTrue(run("train 1 stop at end speed 2;\n").isEmpty());
         assertTrue(run("train 1 stop when blocked speed 2;\n").isEmpty());
+        assertTrue(run("train 1 stop on contact speed 2;\n").isEmpty());
         assertTrue(run("train 1 stop at sensor \"S1\";\n").isEmpty());
         assertTrue(run("train 1 stop at station 1;\n").isEmpty());
         assertTrue(run("train 1 stop at end;\n").isEmpty());
         assertTrue(run("train 1 stop when blocked;\n").isEmpty());
+        assertTrue(run("train 1 stop on contact;\n").isEmpty());
     }
 
     @Test
@@ -64,6 +66,10 @@ class StopOrderGrammarTest {
         assertFalse(run("train 1 stop at end of track;\n").isEmpty(), "extra words");
         assertFalse(run("train 1 stop when;\n").isEmpty(), "missing blocked");
         assertFalse(run("train 1 stop when blocked 2;\n").isEmpty(), "speed needs the keyword");
+        assertFalse(run("train 1 stop on;\n").isEmpty(), "missing contact");
+        assertFalse(run("train 1 stop on contact 2;\n").isEmpty(),
+                "contact speed needs the keyword");
+        assertFalse(run("train 1 stop on contact speed;\n").isEmpty(), "speed without value");
         assertFalse(run("train 1 stop at end speed;\n").isEmpty(), "speed without value");
         assertFalse(run("train 1 stop at sensor 1 speed fast;\n").isEmpty(),
                 "speed must be numeric");

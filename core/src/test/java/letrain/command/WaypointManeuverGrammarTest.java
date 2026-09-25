@@ -93,7 +93,7 @@ class WaypointManeuverGrammarTest {
     }
 
     @Test
-    @DisplayName("stop at station/end, stop when blocked and fork flip are accepted")
+    @DisplayName("stop at station/end, stop when blocked, stop on contact and fork flip are accepted")
     void otherTrainOrders_areAccepted() {
         Itinerary itinerary = run("""
                 create itinerary "orders" {
@@ -101,6 +101,7 @@ class WaypointManeuverGrammarTest {
                         stop at station "b" speed 3,
                         stop at end,
                         stop when blocked speed 2,
+                        stop on contact speed 2,
                         fork 3 flip
                     add station "b"
                 }
@@ -111,7 +112,34 @@ class WaypointManeuverGrammarTest {
         assertEquals(List.of(WaypointCommand.mission(TrainMission.Kind.STATION, 2, 3),
                 WaypointCommand.mission(TrainMission.Kind.END_OF_TRACK, -1, 0),
                 WaypointCommand.mission(TrainMission.Kind.WHEN_BLOCKED, -1, 2),
+                WaypointCommand.mission(TrainMission.Kind.ON_CONTACT, -1, 2),
                 WaypointCommand.forkFlip(3)), commands);
+    }
+
+    @Test
+    @DisplayName("a 'stop on contact' waypoint action survives a savegame round-trip (issue #645)")
+    void stopOnContact_survivesGameSaveRoundTrip() {
+        Itinerary itinerary = run("""
+                create itinerary "coupling" {
+                    add station "a"
+                        stop on contact speed 2,
+                        couple forward all
+                    add station "b"
+                }
+                assign itinerary "coupling" to train 1;
+                """);
+
+        List<WaypointCommand> commands = itinerary.waypoints().get(0).commands();
+        assertEquals(List.of(WaypointCommand.mission(TrainMission.Kind.ON_CONTACT, -1, 2),
+                WaypointCommand.couple(true, letrain.vehicle.rail.TrainCouplingManager.ALL)),
+                commands);
+
+        GameSaveService saves = new GameSaveService();
+        Model restored = saves.fromBytes(saves.toBytes(model));
+        Itinerary restoredItinerary =
+                restored.getTrainFromLocomotiveId(1).getAutopilot().itinerary().orElseThrow();
+
+        assertEquals(commands, restoredItinerary.waypoints().get(0).commands());
     }
 
     @Test
