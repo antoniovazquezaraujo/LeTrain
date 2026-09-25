@@ -156,8 +156,11 @@ class BrakeAtBoundaryIntegrationTest {
     void cannotStopInTime_crossesIntoTheBlock() {
         park(placeTrain(2, List.of(world.tMain), List.of(true)));
         park(placeTrain(3, List.of(world.tB), List.of(true)));
-        Train subject = placeTrain(1, List.of(world.headStart(), world.second(), world.third()),
-                List.of(true, false, false));
+        // 7 acceleration rails before f1: the train arrives at speed 3, so B=4 <= brakingRails(3)=6
+        // and the "no time" frontier brakes immediately (se joda) instead of planning.
+        relocateStationA(world.approach.get(1));
+        Train subject = placeTrain(1, List.of(world.approach.get(1), world.approach.get(0)),
+                List.of(true, false));
         programSubject(subject, 3);
 
         boolean[] stoppedOnSiding = {false};
@@ -172,6 +175,58 @@ class BrakeAtBoundaryIntegrationTest {
                 "the train must have crossed the boundary (no wall)");
         assertSame(east(), subject.getSafetyManager().getCurrentSegment());
         assertFalse(stoppedOnSiding[0], "it must not have stopped in the siding");
+    }
+
+    @Test
+    @DisplayName("accelerating entry + blocker at the next block entry: curve caps and no contact")
+    void acceleratingEntry_blockerAtNextEntry_noContact() {
+        park(placeTrain(2, List.of(world.tMain), List.of(true)));
+        Train blockerEast = park(placeTrain(3, List.of(world.tB1), List.of(true)));
+        // One rail before f1: the head enters the siding at speed 1 still accelerating to 2.
+        relocateStationA(world.approach.get(7));
+        Train subject = placeTrain(1,
+                List.of(world.approach.get(7), world.approach.get(6), world.approach.get(5)),
+                List.of(true, false, false));
+        programSubject(subject, 2);
+
+        runUntil(() -> subject.getSafetyManager().isWaitingForBlock() && subject.getSpeed() == 0,
+                4000);
+
+        assertSame(world.s3, subject.getPhysicalFront().getTrack(),
+                "the curve must stop the accelerating train on the last siding rail");
+        assertEquals(0, subject.getSpeed());
+        assertEquals(OptionalInt.of(1), subject.getSafetyManager().railsToBoundary());
+        assertFalse(subject.isStalled(), "no contact with the blocker parked at the next entry");
+        assertSame(world.tB1, blockerEast.getPhysicalFront().getTrack(),
+                "the parked blocker must not be moved");
+        assertTrue(subject.isAutoMode(), "no invasion: the autopilot must stay on");
+    }
+
+    @Test
+    @DisplayName("block released mid-curve restores the desired speed and keeps going")
+    void blockReleasedMidCurve_restoresDesiredSpeed() {
+        park(placeTrain(2, List.of(world.tMain), List.of(true)));
+        Train blockerEast = park(placeTrain(3, List.of(world.tB), List.of(true)));
+        relocateStationA(world.approach.get(7));
+        Train subject = placeTrain(1,
+                List.of(world.approach.get(7), world.approach.get(6), world.approach.get(5)),
+                List.of(true, false, false));
+        programSubject(subject, 2);
+
+        runUntil(() -> subject.getPhysicalFront().getTrack() == world.s1, 2000);
+        assertTrue(subject.getSafetyManager().isWaitingForBlock());
+        assertEquals(1, ((Locomotive) subject.getDirectorLinker()).getTargetSpeed(),
+                "the braking curve must have capped the target while rolling");
+
+        model.getBlockManager().release(blockerEast, east());
+
+        assertFalse(subject.getSafetyManager().isWaitingForBlock(), "the release must wake it up");
+        assertEquals(2, ((Locomotive) subject.getDirectorLinker()).getTargetSpeed(),
+                "the release must restore the desired speed, not the capped one");
+
+        runUntil(() -> subject.getPhysicalFront().getTrack() == world.tB1, 2000);
+        assertSame(world.tB1, subject.getPhysicalFront().getTrack(),
+                "the train must keep going after the release");
     }
 
     @Test
@@ -337,6 +392,13 @@ class BrakeAtBoundaryIntegrationTest {
         track.setComponent(station);
         model.addStation(station);
         return station;
+    }
+
+    /** Moves station A to another rail (tests with a different starting position for the head). */
+    private void relocateStationA(RailTrack newTrack) {
+        world.headStart().setComponent(null);
+        newTrack.setComponent(world.a);
+        world.a.setTrack(newTrack);
     }
 
     private Segment segmentOf(RailTrack uniqueTrack) {
