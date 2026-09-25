@@ -13,6 +13,13 @@ public interface BlockManager {
      */
     boolean tryLock(Train train, Segment segment);
 
+    /**
+     * Registra la presencia física de un tren en un segmento sin comprobar exclusividad (ADR-022
+     * phase 2f): al dividir un tren, las dos partes comparten cantón hasta que una lo abandone. El
+     * segmento sigue ocupado para el resto de trenes.
+     */
+    void addOwner(Train train, Segment segment);
+
     /** Libera la propiedad de un segmento para un tren específico. */
     void release(Train train, Segment segment);
 

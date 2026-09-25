@@ -197,6 +197,42 @@ public class ForkRailTrack extends RailTrack implements DynamicRouter {
         }
     }
 
+    /**
+     * Orients the switch to its straightest available route (ADR-022 phase 2f waypoint fork
+     * actions). Falls back to the normal route when no route is straight.
+     */
+    @JsonIgnore
+    public void setStraightRoute() {
+        if (getOriginalRoute() != null
+                && getOriginalRoute().getFirst().isStraight(getOriginalRoute().getSecond())) {
+            setNormalRoute();
+        } else if (getAlternativeRoute() != null
+                && getAlternativeRoute().getFirst().isStraight(getAlternativeRoute().getSecond())) {
+            setAlternativeRoute();
+        } else {
+            setNormalRoute();
+        }
+    }
+
+    /**
+     * Orients the switch to its curved route (ADR-022 phase 2f waypoint fork actions). Falls back
+     * to the alternative route when no route is curved.
+     */
+    @JsonIgnore
+    public void setCurvedRoute() {
+        boolean originalStraight = getOriginalRoute() != null
+                && getOriginalRoute().getFirst().isStraight(getOriginalRoute().getSecond());
+        boolean alternativeStraight = getAlternativeRoute() != null
+                && getAlternativeRoute().getFirst().isStraight(getAlternativeRoute().getSecond());
+        if (getOriginalRoute() != null && !originalStraight) {
+            setNormalRoute();
+        } else if (getAlternativeRoute() != null && !alternativeStraight) {
+            setAlternativeRoute();
+        } else {
+            setAlternativeRoute();
+        }
+    }
+
     @Override
     public boolean flipRoute() {
         // ADR-005 Mandamiento 6: Bloqueo Físico de Agujas.

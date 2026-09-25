@@ -65,6 +65,8 @@ public class AutoPilotImpl implements AutoPilot {
     private transient TrainMission mission;
     /** The mission reversed the train at start because the destination was only reachable back. */
     private transient boolean missionReversed;
+    /** Last plan failure was because the destination is physically behind the current sense. */
+    private transient boolean missionPlanFailedBehind;
     /** Console sink for mission messages; null in scripts (log only). */
     private transient Consumer<String> missionNotifier;
     /** Ticks the mission train has been stopped without a block/schedule/loading reason. */
@@ -698,6 +700,14 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     @Override
+    public Optional<Segment> missionTargetSegment() {
+        if (mission == null || !mission.isActive()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(getMissionTargetSegment(mission));
+    }
+
+    @Override
     public boolean startMission(TrainMission m) {
         if (train == null || m == null) {
             return false;
@@ -705,7 +715,8 @@ public class AutoPilotImpl implements AutoPilot {
         if (mission != null && mission.isActive()) {
             // One-shot orders are replaceable: the new one cancels the running mission.
             mission.cancel();
-        } else if (itinerary != null && mode != Mode.IDLE) {
+        } else if (m.origin() == TrainMission.Origin.LOOSE && itinerary != null
+                && mode != Mode.IDLE) {
             m.fail();
             warnMission("Train " + train.getId() + " is running an itinerary; use 'train "
                     + train.getId() + " set autopilot false;' or add it to the itinerary");
@@ -742,8 +753,15 @@ public class AutoPilotImpl implements AutoPilot {
             }
             if (!planMissionRoute(m)) {
                 m.fail();
-                warnMission("Train " + train.getId() + ": no route to " + m.description()
-                        + " in either direction");
+                if (m.isItineraryManeuver() && missionPlanFailedBehind) {
+                    warnMission("Train " + train.getId() + ": no route to " + m.description()
+                            + " from the current sense; add 'reverse' to the itinerary");
+                } else if (m.isItineraryManeuver()) {
+                    warnMission("Train " + train.getId() + ": no route to " + m.description());
+                } else {
+                    warnMission("Train " + train.getId() + ": no route to " + m.description()
+                            + " in either direction");
+                }
                 return false;
             }
             reverse = missionReversed;
@@ -791,6 +809,7 @@ public class AutoPilotImpl implements AutoPilot {
         if (mission == null || !mission.isActive() || mode != Mode.FOLLOWING) {
             return;
         }
+
         switch (mission.kind()) {
             case STATION, SENSOR -> {
                 if (headOnTarget()) {
@@ -863,6 +882,7 @@ public class AutoPilotImpl implements AutoPilot {
      */
     private boolean planMissionRoute(TrainMission m) {
         ensurePathfinder();
+        missionPlanFailedBehind = false;
         Segment currentSeg = getTrainCurrentSegment();
         Segment targetSeg = getMissionTargetSegment(m);
         if (pathfinder == null || currentSeg == null || targetSeg == null) {
@@ -870,35 +890,61 @@ public class AutoPilotImpl implements AutoPilot {
         }
         RailTrack targetTrack = missionTargetTrack(m);
         Dir dir = travelDir();
-        if (targetTrack != null && dir != null && walkRailsToTrack(targetTrack, dir) >= 0) {
+        // Itinerary maneuvers never auto-reverse: the author writes the 'reverse' explicitly.
+        boolean allowReverse = !m.isItineraryManeuver();
+        boolean sameSegment = currentSeg.equals(targetSeg);
+        boolean ahead =
+                targetTrack != null && dir != null && walkRailsToTrack(targetTrack, dir) >= 0;
+        boolean behind = targetTrack != null && dir != null
+                && walkRailsToTrack(targetTrack, dir.inverse()) >= 0;
+        if (ahead) {
+            if (m.isItineraryManeuver()) {
+                // The author prepares switches with fork actions (ADR-022 phase 2f): follow the
+                // physical walk so a forced switch is respected instead of A* re-orienting it.
+                List<Segment> walked = walkRouteToTrack(targetTrack, dir);
+                if (!walked.isEmpty()) {
+                    currentRoute = walked;
+                    return true;
+                }
+            }
             currentRoute = pathfinder.find(currentSeg,
                     Optional.ofNullable(getTrainExitPort(currentSeg)), targetSeg, Optional.empty());
-            if (!currentRoute.isEmpty()) {
+            if (!currentRoute.isEmpty() || sameSegment) {
                 return true;
             }
             // The physical walk found it, but A* cannot route from here (e.g. the destination is
             // beyond a switch it would have to orient): fall through so the order fails loudly
             // instead of starting a mission that cannot be followed (review m3).
         }
-        if (targetTrack != null && dir != null
-                && walkRailsToTrack(targetTrack, dir.inverse()) >= 0) {
+        if (allowReverse && behind) {
+            currentRoute = pathfinder.find(currentSeg,
+                    Optional.ofNullable(oppositePort(currentSeg)), targetSeg, Optional.empty());
+            if (!currentRoute.isEmpty() || sameSegment) {
+                missionReversed = true;
+                return true;
+            }
+        }
+        if (!allowReverse && behind) {
+            // The destination is physically behind the current sense (inside the same segment A*
+            // cannot tell): an itinerary maneuver needs an explicit 'reverse' (ADR-022 phase 2f).
+            missionPlanFailedBehind = true;
+            currentRoute = List.of();
+            return false;
+        }
+        if (!sameSegment) {
+            currentRoute = pathfinder.find(currentSeg,
+                    Optional.ofNullable(getTrainExitPort(currentSeg)), targetSeg, Optional.empty());
+            if (!currentRoute.isEmpty()) {
+                return true;
+            }
+        }
+        if (allowReverse) {
             currentRoute = pathfinder.find(currentSeg,
                     Optional.ofNullable(oppositePort(currentSeg)), targetSeg, Optional.empty());
             if (!currentRoute.isEmpty()) {
                 missionReversed = true;
                 return true;
             }
-        }
-        currentRoute = pathfinder.find(currentSeg,
-                Optional.ofNullable(getTrainExitPort(currentSeg)), targetSeg, Optional.empty());
-        if (!currentRoute.isEmpty()) {
-            return true;
-        }
-        currentRoute = pathfinder.find(currentSeg, Optional.ofNullable(oppositePort(currentSeg)),
-                targetSeg, Optional.empty());
-        if (!currentRoute.isEmpty()) {
-            missionReversed = true;
-            return true;
         }
         currentRoute = List.of();
         return false;
@@ -1012,7 +1058,9 @@ public class AutoPilotImpl implements AutoPilot {
         return -1;
     }
 
-    /** Rails ahead until the track ends. 0 = head on the last rail. -1 unknown (loop/guard). */
+    /**
+     * Rails ahead until the track ends. 0 = head on the last rail. -1 unknown (loop/guard).
+     */
     private int walkRailsToEnd(Dir dir) {
         if (dir == null) {
             return -1;
@@ -1027,6 +1075,45 @@ public class AutoPilotImpl implements AutoPilot {
             steps++;
         }
         return steps >= MISSION_MAX_WALK ? -1 : steps;
+    }
+
+    /**
+     * Route (segments from the current one to the target) following the physical walk with the
+     * switches as they are now. Empty when the walk cannot reach the target. Itinerary maneuvers
+     * use it so a switch forced by a fork action is respected (ADR-022 phase 2f).
+     */
+    private List<Segment> walkRouteToTrack(RailTrack target, Dir dir) {
+        if (target == null || dir == null || train == null || train.getModel() == null) {
+            return List.of();
+        }
+        RailwayGraph graph = train.getModel().getRailwayGraph();
+        Linker head = train.getPhysicalFront();
+        if (graph == null || head == null || !(head.getTrack() instanceof RailTrack headTrack)) {
+            return List.of();
+        }
+        List<Segment> route = new java.util.ArrayList<>();
+        RailIterator it = new RailIterator(headTrack, dir);
+        int steps = 0;
+        while (steps <= MISSION_MAX_WALK) {
+            // Fork rails are nodes shared by two segments: skip them so the route lists the
+            // segments actually travelled (a fork's own segment would repeat the neighbour).
+            if (!(it.getTrack() instanceof ForkRailTrack)
+                    && it.getTrack() instanceof RailTrack rail) {
+                Segment segment = graph.getSegment(rail);
+                if (segment != null
+                        && (route.isEmpty() || !route.get(route.size() - 1).equals(segment))) {
+                    route.add(segment);
+                }
+            }
+            if (it.getTrack() == target) {
+                return route;
+            }
+            if (!it.advance()) {
+                return List.of();
+            }
+            steps++;
+        }
+        return List.of();
     }
 
     /** Track of the station/sensor the mission drives to, or null. */
@@ -1091,7 +1178,7 @@ public class AutoPilotImpl implements AutoPilot {
             return;
         }
         mission.complete();
-        mode = Mode.IDLE;
+        mode = modeAfterMission(mission);
         stopTrainForMission();
         notifyMission("Train " + train.getId() + " " + reason);
     }
@@ -1101,9 +1188,17 @@ public class AutoPilotImpl implements AutoPilot {
             return;
         }
         mission.fail();
-        mode = Mode.IDLE;
+        mode = modeAfterMission(mission);
         stopTrainForMission();
         warnMission("Train " + train.getId() + " " + reason);
+    }
+
+    /**
+     * A loose mission returns the train to manual; an itinerary maneuver keeps the autopilot
+     * following the plan (the waypoint action flow continues with the next action/departure).
+     */
+    private Mode modeAfterMission(TrainMission finished) {
+        return finished.isItineraryManeuver() ? Mode.FOLLOWING : Mode.IDLE;
     }
 
     private void cancelMission() {

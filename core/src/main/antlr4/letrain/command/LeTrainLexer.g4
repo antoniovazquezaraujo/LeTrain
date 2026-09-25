@@ -31,6 +31,7 @@ ENTER: 'enter';
 EXIT: 'exit';
 COUPLE: 'couple';
 UNCOUPLE: 'uncouple';
+ALL: 'all';
 FORK: 'fork' | 'fk';
 SEMAPHORE: 'semaphore' | 'sm';
 SIGNAL: 'signal' | 'sg';

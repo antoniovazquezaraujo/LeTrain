@@ -61,9 +61,19 @@ sensorRef  : STRING | NUMBER ;
 
 direction : dir ;
 
+/**
+ * ADR-022 phase 2f: waypoint actions are the same train orders as scripts, executed in order on
+ * arrival. Movement orders (`stop at …`, `stop when blocked …`) are missions that must complete
+ * before the next action; fork actions force or prepare switches; `couple`/`uncouple` leave or
+ * pick up vehicles. Commas are mandatory between actions.
+ */
 action : LOAD | UNLOAD | REVERSE | STOP | PARK
        | WAIT NUMBER
        | SPEED NUMBER
+       | coupleAction
+       | uncoupleAction
+       | stopOrder
+       | forkSelector forkAction
        ;
 
 trigger :
@@ -108,8 +118,9 @@ trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED? trainSpe
 stopOrder       : STOP stopTarget missionSpeed?;
 stopTarget      : AT (STATION stationRef | SENSOR sensorRef | END) | WHEN BLOCKED;
 missionSpeed    : SPEED trainSpeed;
-coupleAction    : COUPLE sense (NUMBER)?;
-uncoupleAction  : UNCOUPLE sense (NUMBER)?;
+coupleAction    : COUPLE sense vehicleCount?;
+uncoupleAction  : UNCOUPLE sense vehicleCount?;
+vehicleCount    : NUMBER | ALL;
 
 
 semaphoreStatus : OPEN | CLOSED;

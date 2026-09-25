@@ -257,27 +257,55 @@ Las maniobras "pro" (run-around, apartarse, mover la locomotora sola) se escribe
 del waypoint**, con las mismas órdenes de tren que los scripts. El autopilot las ejecuta **en
 orden** al llegar a la parada; las de movimiento (`stop at …`) son misiones que deben completarse
 antes de pasar a la siguiente acción, y el `departure` libera cuando la maniobra ha terminado (si
-tarda más, el tren sale tarde y se mide).
+tarda más, el tren sale tarde y se mide). **Implementado en la issue #626**: el plan del waypoint
+acepta `uncouple`/`couple`, `stop at …`, `stop at end`, `stop when blocked …` y las acciones de
+fork (`fork N set straight|curved`, `fork N flip`).
 
 ```letrain
 add station "B" arrival 06:27,
-               uncouple forward 1,
-               stop at sensor 5 speed 2,     // entra en el bucle
-               reverse,                      // el cambio de sentido lo escribe el autor
-               fork 3 set curved,            // si hace falta, fuerza el desvío de vuelta
-               stop at sensor 6 speed 2,     // vuelve por el otro lado del tren
+               uncouple backward 1,           // los vagones quedan detrás (ver nota)
+               stop at sensor 5 speed 2,      // entra en el bucle
+               reverse,                       // el cambio de sentido lo escribe el autor
+               fork 3 set curved,             // fuerza el desvío de vuelta
+               stop at sensor 6 speed 2,      // vuelve por el otro lado del tren
                couple forward 1,
-               reverse,                      // queda mirando hacia la salida
+               reverse,                       // queda mirando hacia la salida
                departure 06:45;
 ```
 
+- **Dirección de `uncouple`**: la orden desengancha por el **frente físico** del tren
+  (`uncouple forward`) o por su cola (`uncouple backward`). Con la locomotora en cabeza tirando de
+  los vagones, los vagones van detrás: el run-around se escribe `uncouple backward 1` (o
+  `uncouple backward all` para soltar todos los de ese lado; el ejemplo original de la issue usaba
+  `forward 1`, que solo encaja si los vagones van delante). El motor solo
+  divide o engancha con el tren parado: la acción frena y espera a que se detenga.
 - **Los cambios de sentido son explícitos**: cada `reverse` va escrito entre tramos. Dentro del
   itinerario, `stop at` **no** auto-invierte: si falta un `reverse`, no hay ruta desde el sentido
-  actual y se avisa. La auto-inversión (opción B de la issue #619) es para órdenes sueltas de
-  scripts/consola, donde no hay coreografía escrita.
+  actual y se avisa (*"no route to … from the current sense; add 'reverse' to the itinerary"*). La
+  auto-inversión (opción B de la issue #619) es para órdenes sueltas de scripts/consola, donde no
+  hay coreografía escrita.
+- **La ruta de la maniobra respeta las agujas preparadas**: para las misiones de un waypoint la
+  ruta se construye con el **paseo físico** desde la cabeza (los desvíos tal y como estén), no con
+  el A* puro: un `fork N set curved` del autor no lo pisa después el autopilot al recalcular. Si el
+  paseo no encuentra el destino (agujas más adelante sin preparar), se cae al A* + `ensureForkRoute`
+  como en los itinerarios.
 - **Agujas**: el autopilot ya orienta los desvíos a lo largo de la ruta que calcula
   (`ensureForkRoute`); además, el waypoint puede llevar acciones de fork (`fork 3 set curved`,
   `fork 3 flip`) para forzar un camino o dejarlo preparado.
+- **Cantones y maniobra**: al dividir el tren, las dos partes **comparten** el cantón que ocupan
+  (no hay parada de emergencia; el cantón sigue ocupado hasta que la última parte lo abandone). Una
+  maniobra de waypoint cuyo destino está en un cantón ocupado por **una parte propia sin locomotora**
+  (los vagones desenganchados) puede **entrar en ese cantón** como una maniobra manual y comparte la
+  propiedad; las comprobaciones físicas siguen parando el tren antes de cualquier vehículo. Si el
+  cantón lo ocupa un **tren ajeno** (con locomotora), la exención no aplica: la maniobra espera en la
+  frontera y reanuda al liberarse, nunca invade. Al cargar una partida, los trenes solo-vagones
+  también reclaman su cantón (antes solo se recorrían las locomotoras).
+- **Maniobra rechazada**: si la orden no puede empezar (sin ruta desde el sentido actual, sin
+  velocidad, destino inexistente), se emite el aviso y se **abortan las acciones restantes de ese
+  waypoint** para no seguir la coreografía en un estado raro; el `departure` y la ruta al siguiente
+  waypoint siguen su curso.
+- **Después de la maniobra** la ruta al siguiente waypoint se recalcula desde donde haya quedado el
+  tren (posición y sentido).
 - **Las órdenes sueltas no pisan el plan**: si el tren está cumpliendo un itinerario, una orden
   suelta de consola o script (`stop at …`, `invert`, etc.) se **rechaza con aviso** (consola y
   log: "está en itinerario; quítale el autopilot o escríbela en el itinerario"). Nada de pausar y

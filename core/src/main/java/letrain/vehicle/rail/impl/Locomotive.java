@@ -250,6 +250,11 @@ public class Locomotive extends Linker implements Tractor {
                     updateInertia();
                     resetTurns();
                 }
+            } else if (currentSpeed == 0 && targetSpeed == 0) {
+                // Fully stopped after a move: turns is -1 and no advance will run, so a pending
+                // manual switch (emergency stop / invasion) must be resolved here or the train
+                // would stay in auto forever (ADR-022 phase 2f review M2).
+                updateInertia();
             }
         } else {
             // No somos el director, pero consumimos turnos para animación suave

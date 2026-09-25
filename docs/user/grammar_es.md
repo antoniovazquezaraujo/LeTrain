@@ -22,7 +22,13 @@ Se ejecutan inmediatamente. **Requieren punto y coma (`;`) al final**.
 - `train [ID] set forward;` / `train [ID] set backward;`
 - `train [ID] load;`
 - `train [ID] unload;`
-- `train [ID] couple forward [NUM];` / `train [ID] uncouple backward;`
+- `train [ID] couple forward [NUM|all];` / `train [ID] uncouple backward [NUM|all];`
+  (`all` engancha o desengancha todos los vehículos de ese lado; `uncouple backward all` deja la
+  locomotora sola y los vagones en su propio tren)`
+
+**Palabra reservada `all`**: `all` es el contador de `couple`/`uncouple` (`uncouple backward all`), así
+que un nombre desnudo `all` en otra orden es un error de sintaxis (`info station all;`); entrecomíllalo
+para usarlo como nombre: `info station "all";`.
 
 **Misiones de un solo uso (`stop at …`)**: el destino y la velocidad viajan en la misma orden, así
 el tren no arranca antes de recibir el destino. La velocidad se aplica al empezar la maniobra (sin
@@ -62,8 +68,12 @@ create itinerary "RutaCarbon" {
 ```
 *Reglas de los waypoints:*
 
+- **Al menos dos waypoints**: un itinerario es un bucle, así que un plan con un único waypoint se rechaza con aviso y no se asigna (el autopilot queda apagado). Para un único destino usa una orden suelta `stop at …` (o una acción de waypoint dentro de un servicio); repetir la misma estación está permitido.
 - Las **comas son obligatorias** entre las acciones del waypoint. La referencia a la estación/sensor y la dirección de entrada opcional (una dirección de brújula como `n`, `e`, `s`, `w`) **no** llevan coma.
-- El **orden es obligatorio**: `arrival` primero, después las acciones en su orden de ejecución (`load`, `unload`, `reverse`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`) y `departure` al final. Escribir un atributo fuera de orden es un error de sintaxis.
+- El **orden es obligatorio**: `arrival` primero, después las acciones en su orden de ejecución (`load`, `unload`, `reverse`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`, `uncouple forward|backward [NUM|all]`, `couple forward|backward [NUM|all]`, `stop at station|sensor [REF] [speed NUM]`, `stop at end [speed NUM]`, `stop when blocked [speed NUM]`, `fork [ID] set straight|curved`, `fork [ID] flip`) y `departure` al final. Escribir un atributo fuera de orden es un error de sintaxis.
+- **Maniobras**: las órdenes de movimiento (`stop at …`, `stop when blocked …`) son **misiones** que se ejecutan al llegar al waypoint y deben completarse antes de la siguiente acción: el tren conduce y acaba parado. `stop at` usa el sentido actual y **no auto-invierte**: escribe el `reverse` que necesites o la orden se rechaza con un aviso de "sin ruta desde el sentido actual". Una maniobra rechazada **aborta las acciones restantes de ese waypoint** (el `departure` y la ruta al siguiente waypoint siguen), para que la coreografía no continúe en un estado raro. Las acciones de fork fuerzan o preparan una aguja; el autopilot sigue orientando las agujas a lo largo de la ruta que calcula. El `departure` libera cuando la maniobra ha terminado (si acaba tarde, el tren sale tarde y se mide el desfase); después, la ruta al siguiente waypoint se recalcula desde donde haya quedado el tren.
+- **Maniobras y cantones**: una maniobra cuyo destino está dentro de un cantón ocupado por **su propia parte desenganchada** (enganchar los vagones que acaba de dejar) puede entrar en ese cantón como una maniobra manual; las comprobaciones físicas siguen parando el tren antes de cualquier vehículo. Un cantón ocupado por un tren ajeno mantiene el bloqueo: la maniobra espera en la frontera y reanuda al liberarse.
+- **Dirección de `uncouple`**: `uncouple forward` desengancha por el **lado de la cabeza** y `uncouple backward` por la cola. Con la locomotora en cabeza tirando de los vagones, los vagones van detrás: el run-around se escribe `uncouple backward 1`.
 - `arrival` se mide al llegar al waypoint; `departure` es la hora programada de salida: al llegar se ejecutan las acciones, el tren espera hasta ella y la salida programada arranca el motor. La estancia es `departure − arrival` en tiempo de juego. Las horas se leen en secuencia: una hora menor que la anterior pertenece al día siguiente (`arrival 23:50, departure 00:10`). Si el tren llega tarde, sale de inmediato y se mide el desfase. Sin horas, el waypoint se comporta exactamente como antes.
 - `park` frena, apaga el motor y **mantiene el autopilot activo** (a diferencia de `stop`, que frena y desactiva el autopilot). La siguiente salida programada arranca el motor y recupera la velocidad de crucero, de modo que un servicio diario que se repite puede terminar con `park` y volver a salir a la mañana siguiente. Un `park` **sin salida programada posterior** deja el tren aparcado (motor apagado, plan conservado): no vuelve a moverse hasta que una salida programada lo arranque o lo conduzcas manualmente.
 - El tren muestra su puntualidad en `info train N`: desfases de llegada y salida por parada en minutos de juego (`+` = tarde, `−` = adelantado), más el desfase actual, medio y máximo. Un tren sin horas no muestra nada.

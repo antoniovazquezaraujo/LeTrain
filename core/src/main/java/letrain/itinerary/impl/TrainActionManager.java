@@ -2,6 +2,7 @@ package letrain.itinerary.impl;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import letrain.itinerary.TrainMission;
 import letrain.itinerary.Waypoint;
 import letrain.itinerary.WaypointCommand;
 import letrain.track.Station;
@@ -18,6 +19,8 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     private transient int waitTicks = 0;
     private transient int savedTargetSpeed = 0;
     private transient WaypointCommand pendingCommandToResume = null;
+    /** Mission started by the current waypoint action (ADR-022 phase 2f), if any. */
+    private transient TrainMission pendingMission = null;
     private letrain.itinerary.Waypoint currentProcessingWaypoint;
 
     public TrainActionManager(Train train) {
@@ -30,7 +33,17 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         if (waypoint == currentProcessingWaypoint) {
             return;
         }
+        startWaypoint(waypoint);
+        runPendingCommands();
+    }
+
+    /**
+     * Arrival bookkeeping shared by the arrival callback and the consecutive-waypoint chain:
+     * measures the arrival, brakes for a scheduled departure and loads the waypoint's actions.
+     */
+    private void startWaypoint(Waypoint waypoint) {
         currentProcessingWaypoint = waypoint;
+        pendingMission = null;
         letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
         if (autopilot != null && autopilot.itinerary().isPresent()) {
             // ADR-022 phase 2b: measure the arrival and, when the stop has a departure, start
@@ -40,7 +53,6 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         }
         pendingCommands.clear();
         pendingCommands.addAll(waypoint.commands());
-        runPendingCommands();
     }
 
     /** A waypoint with a departure is a scheduled stop: brake on arrival (safety first). */
@@ -100,10 +112,64 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     }
 
     private void runPendingCommands() {
+        if (!completePendingCommands()) {
+            return;
+        }
+
+        letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
+        if (autopilot == null || autopilot.itinerary().isEmpty()) {
+            return;
+        }
+
+        int startIndex = autopilot.currentWaypointIndex();
+        autopilot.advanceWaypoint();
+        autopilot.clearRoute();
+        currentProcessingWaypoint = null;
+
+        // Consecutive waypoints: the train is already on the next stop, so its actions run now.
+        // The chain is a bounded loop over the waypoints not processed yet in this pass: a
+        // repeated stop neither recurses nor replays its actions.
+        java.util.Set<Integer> processed = new java.util.HashSet<>();
+        processed.add(startIndex);
+        int waypointCount = autopilot.itinerary().map(it -> it.waypoints().size()).orElse(0);
+        while (processed.size() < waypointCount) {
+            int index = autopilot.currentWaypointIndex();
+            if (processed.contains(index)) {
+                break;
+            }
+            Waypoint wp = autopilot.currentWaypoint().orElse(null);
+            if (wp == null || !train.isCurrentlyOn(wp)) {
+                break;
+            }
+            processed.add(index);
+            log.info("Train {} consecutive waypoint reached", train.getId());
+            startWaypoint(wp);
+            if (!completePendingCommands()) {
+                return;
+            }
+            autopilot.advanceWaypoint();
+            autopilot.clearRoute();
+            currentProcessingWaypoint = null;
+        }
+
+        if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING
+                && this.train.getSafetyManager() != null) {
+            this.train.notifyAutopilotSegmentEntered(this.train.resolveCurrentSegmentFromGraph());
+            this.train.getSafetyManager().acquireInitialLocks();
+        }
+    }
+
+    /**
+     * Runs the pending actions and the departure handling of the current waypoint.
+     *
+     * @return true when the waypoint is complete and the flow may advance; false when a command
+     *         deferred (mission/wait/load) or the train is holding until a departure.
+     */
+    private boolean completePendingCommands() {
         while (!pendingCommands.isEmpty()) {
             WaypointCommand cmd = pendingCommands.remove(0);
             if (executeCommand(cmd)) {
-                return;
+                return false;
             }
         }
 
@@ -111,14 +177,14 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         if (autopilot != null && autopilot.itinerary().isPresent()) {
             if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.IDLE) {
                 log.info("Train {} autopilot IDLE", train.getId());
-                return;
+                return false;
             }
 
             // ADR-022 phase 2b: hold at the waypoint until its departure; when the time is due or
             // already past, the release completes the stop and measures the departure delta.
             if (autopilot.retainUntilDeparture()) {
                 holdTrainAtWaypoint();
-                return;
+                return false;
             }
             Waypoint waypoint = autopilot.currentWaypoint().orElse(null);
             if (waypoint != null && waypoint.departure().isPresent()) {
@@ -132,27 +198,7 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             train.setSpeed(savedTargetSpeed);
             savedTargetSpeed = 0;
         }
-
-        if (autopilot != null && autopilot.itinerary().isPresent()) {
-            autopilot.advanceWaypoint();
-            autopilot.clearRoute();
-            currentProcessingWaypoint = null;
-
-            autopilot.currentWaypoint().ifPresent(wp -> {
-                if (train.isCurrentlyOn(wp)) {
-                    log.info("Train {} consecutive waypoint reached", train.getId());
-                    // Full waypoint entry so the consecutive stop measures its schedule too.
-                    onWaypointReached(train, wp);
-                }
-            });
-
-            if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING
-                    && this.train.getSafetyManager() != null) {
-                this.train
-                        .notifyAutopilotSegmentEntered(this.train.resolveCurrentSegmentFromGraph());
-                this.train.getSafetyManager().acquireInitialLocks();
-            }
-        }
+        return true;
     }
 
     /** Keeps the train stopped while the schedule holds it; the departure will resume it. */
@@ -274,9 +320,144 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
                 turnOffEngines();
                 return false;
             }
+            case COUPLE:
+            case UNCOUPLE:
+                return executeCouplingCommand(command);
+            case MISSION:
+                return executeMissionCommand(command);
+            case FORK_SET_DIRECTION:
+            case FORK_FLIP:
+                executeForkCommand(command);
+                return false;
             default:
                 return false;
         }
+    }
+
+    /**
+     * ADR-022 phase 2f: {@code uncouple}/{@code couple} waypoint actions. The engine only splits or
+     * joins when the train is stopped, so a rolling train brakes first and the command is resumed
+     * once it halts.
+     */
+    private boolean executeCouplingCommand(WaypointCommand command) {
+        if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
+            pendingCommandToResume = command;
+            train.getMovementManager().initiateBraking();
+            return true;
+        }
+        letrain.vehicle.rail.TrainCouplingManager coupling = train.getTrainCouplingManager();
+        if (coupling == null) {
+            return false;
+        }
+        String count = command.count() == letrain.vehicle.rail.TrainCouplingManager.ALL ? "all"
+                : String.valueOf(command.count());
+        if (command.kind() == WaypointCommand.Kind.COUPLE) {
+            coupling.prepareLink(train, command.forward(), command.count());
+            coupling.joinLinkers(train);
+            log.info("Train {} waypoint action: coupled {} vehicle(s) {}", train.getId(), count,
+                    command.forward() ? "forward" : "backward");
+        } else {
+            coupling.prepareUnlink(train, command.forward(), command.count());
+            coupling.divideTrain(train,
+                    () -> train.getModel() != null ? train.getModel().nextTrainId() : 0);
+            log.info("Train {} waypoint action: uncoupled {} vehicle(s) {}", train.getId(), count,
+                    command.forward() ? "forward" : "backward");
+        }
+        return false;
+    }
+
+    /**
+     * ADR-022 phase 2f: a movement order is a mission that must complete before the next action
+     * runs. The mission is itinerary-origin: it does not auto-reverse, and the autopilot keeps
+     * following the plan when it ends. The next action only runs with the train fully stopped.
+     */
+    private boolean executeMissionCommand(WaypointCommand command) {
+        letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
+        if (autopilot == null || command.missionKind() == null) {
+            return false;
+        }
+        if (pendingMission != null) {
+            if (pendingMission.isActive()) {
+                pendingCommandToResume = command;
+                return true;
+            }
+            if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
+                // Mission finished but the train is still braking to a stop.
+                pendingCommandToResume = command;
+                train.getMovementManager().initiateBraking();
+                return true;
+            }
+            pendingMission = null;
+            return false;
+        }
+        TrainMission mission = TrainMission.forItinerary(command.missionKind(), command.targetId(),
+                command.targetSpeed());
+        if (!autopilot.startMission(mission)) {
+            // Rejected with a warning (no route from the current sense, no speed, unknown target):
+            // abort the rest of the waypoint's actions so the choreography does not continue in a
+            // wrong state. The departure and the route to the next waypoint still run.
+            if (!pendingCommands.isEmpty()) {
+                log.warn(
+                        "Train {} waypoint action: mission rejected, aborting the remaining {} action(s) of the waypoint",
+                        train.getId(), pendingCommands.size());
+                pendingCommands.clear();
+            }
+            return false;
+        }
+        pendingMission = mission;
+        if (!mission.isActive()) {
+            // The mission completed synchronously (already at the destination, already blocked or
+            // already at the end of track): only wait if the train is still rolling to a stop.
+            if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
+                pendingCommandToResume = command;
+                train.getMovementManager().initiateBraking();
+                return true;
+            }
+            pendingMission = null;
+            return false;
+        }
+        pendingCommandToResume = command;
+        return true;
+    }
+
+    /** ADR-022 phase 2f: forces or prepares the switch before the train gets to it. */
+    private void executeForkCommand(WaypointCommand command) {
+        if (train.getModel() == null) {
+            return;
+        }
+        letrain.track.rail.ForkRailTrack fork = train.getModel().getFork(command.forkId());
+        if (fork == null) {
+            log.warn("Train {} waypoint action: fork {} not found", train.getId(),
+                    command.forkId());
+            return;
+        }
+        if (command.kind() == WaypointCommand.Kind.FORK_FLIP) {
+            fork.flipRoute();
+            log.info("Train {} waypoint action: fork {} flipped", train.getId(), command.forkId());
+            return;
+        }
+        String direction = command.forkDirection() == null ? "" : command.forkDirection();
+        switch (direction) {
+            case "straight" -> fork.setStraightRoute();
+            case "curved" -> fork.setCurvedRoute();
+            default -> {
+                try {
+                    letrain.map.Dir dir = letrain.map.Dir.valueOf(direction.toUpperCase());
+                    if (fork.getOriginalRoute() != null
+                            && fork.getOriginalRoute().getValue() == dir) {
+                        fork.setNormalRoute();
+                    } else if (fork.getAlternativeRoute() != null
+                            && fork.getAlternativeRoute().getValue() == dir) {
+                        fork.setAlternativeRoute();
+                    }
+                } catch (IllegalArgumentException e) {
+                    log.warn("Train {} waypoint action: unknown fork direction '{}'", train.getId(),
+                            direction);
+                }
+            }
+        }
+        log.info("Train {} waypoint action: fork {} set {}", train.getId(), command.forkId(),
+                direction);
     }
 
     /** Explicit engine off for the whole consist; the autopilot keeps running (ADR-022 2b). */

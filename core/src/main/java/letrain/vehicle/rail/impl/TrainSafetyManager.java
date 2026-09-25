@@ -113,6 +113,28 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     }
 
     @Override
+    public void claimSharedPresence() {
+        letrain.mvp.Model model = this.train.getModel();
+        if (model == null || model.getBlockManager() == null || model.getRailwayGraph() == null) {
+            return;
+        }
+        BlockManager bm = model.getBlockManager();
+        RailwayGraph graph = model.getRailwayGraph();
+        for (Linker linker : train.getLinkers()) {
+            if (linker.getTrack() instanceof RailTrack track) {
+                Segment segment = graph.getSegment(track);
+                if (segment != null) {
+                    bm.addOwner(train, segment);
+                }
+                letrain.track.Sensor sensor = track.getComponent();
+                if (sensor != null && !train.getActiveSensors().contains(sensor)) {
+                    train.notifyEnterSensor(sensor, true);
+                }
+            }
+        }
+    }
+
+    @Override
     public void onEmergencyStop() {
         this.isWaitingForBlock = true;
         // The emergency brake replaces any boundary plan: it is stopping anyway.
@@ -229,7 +251,11 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 shouldLockNext = false;
             }
         }
-        if (train.getDirectorLinker() != null && train.getDirectorLinker().getTargetSpeed() == 0) {
+        // A train that is really stopping does not lock ahead. A target 0 with a deferred speed
+        // (block/schedule wait gate) still wants to move later: keep the wait alive so the release
+        // wakes it (ADR-022 phase 2f review M2).
+        if (train.getDirectorLinker() != null && train.getDirectorLinker().getTargetSpeed() == 0
+                && !train.hasSavedTargetSpeed()) {
             shouldLockNext = false;
         }
 
@@ -406,29 +432,39 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             log.info("Train {} onSegmentEntered: tryLock current segment {} returned {}",
                     train.getId(), currentSegment.getId(), entryLocked);
             if (!entryLocked) {
-                log.warn(
-                        "Train {} onSegmentEntered: failed lock on current segment {}. Invasión: iniciando frenada.",
-                        train.getId(), currentSegment.getId());
-                cancelScheduledStop();
-                brakedForBlock = true;
-                // Direct brake: Train.brake() would save the current target, which may be the one
-                // the braking curve already capped, over the desired speed (issue #633).
-                Locomotive invasionDirector = directorLocomotive();
-                if (invasionDirector != null) {
-                    invasionDirector.setTargetSpeedDirect(0);
+                if (isShuntingMissionTarget(currentSegment)) {
+                    // Shunting into the canton of our own detached part: share it instead of
+                    // invading (ADR-022 phase 2f). The physical checks still stop the train before
+                    // any vehicle.
+                    bm.addOwner(train, currentSegment);
+                    log.info(
+                            "Train {} onSegmentEntered: shunting maneuver shares canton {} with its own detached part",
+                            train.getId(), currentSegment.getId());
                 } else {
-                    train.getMovementManager().initiateBraking();
-                }
-                train.setPendingManualMode(true);
-                for (Train owner : bm.getOwners(currentSegment)) {
-                    if (owner != train) {
-                        log.warn("Train {} onSegmentEntered: frenando también el tren {}",
-                                train.getId(), owner.getId());
-                        owner.getMovementManager().initiateBraking();
+                    log.warn(
+                            "Train {} onSegmentEntered: failed lock on current segment {}. Invasión: iniciando frenada.",
+                            train.getId(), currentSegment.getId());
+                    cancelScheduledStop();
+                    brakedForBlock = true;
+                    // Direct brake: Train.brake() would save the current target, which may be the
+                    // one the braking curve already capped, over the desired speed (issue #633).
+                    Locomotive invasionDirector = directorLocomotive();
+                    if (invasionDirector != null) {
+                        invasionDirector.setTargetSpeedDirect(0);
+                    } else {
+                        train.getMovementManager().initiateBraking();
                     }
+                    train.setPendingManualMode(true);
+                    for (Train owner : bm.getOwners(currentSegment)) {
+                        if (owner != train) {
+                            log.warn("Train {} onSegmentEntered: frenando también el tren {}",
+                                    train.getId(), owner.getId());
+                            owner.getMovementManager().initiateBraking();
+                        }
+                    }
+                    isWaitingForBlock = true;
+                    return;
                 }
-                isWaitingForBlock = true;
-                return;
             }
         }
 
@@ -441,7 +477,11 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 shouldLockNext = false;
             }
         }
-        if (train.getDirectorLinker() != null && train.getDirectorLinker().getTargetSpeed() == 0) {
+        // A train that is really stopping does not lock ahead. A target 0 with a deferred speed
+        // (block/schedule wait gate) still wants to move later: keep the wait alive so the release
+        // wakes it (ADR-022 phase 2f review M2).
+        if (train.getDirectorLinker() != null && train.getDirectorLinker().getTargetSpeed() == 0
+                && !train.hasSavedTargetSpeed()) {
             shouldLockNext = false;
         }
 
@@ -617,7 +657,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                     || ap.mode() == letrain.itinerary.AutoPilot.Mode.WAITING) {
                 // Consultamos la ruta real planificada del piloto automático
                 List<Segment> route = ap.currentRoute();
-                int index = route.indexOf(currentSegment);
+                int index = currentSegment == null ? -1 : route.indexOf(currentSegment);
                 log.info("Train {} findNextSegment: ap route index={}, routeSize={}", train.getId(),
                         index, route.size());
                 if (index >= 0 && index + 1 < route.size()) {
@@ -831,6 +871,16 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             clearBlockWait();
             return;
         }
+        if (isShuntingMissionTarget(blockedSegment)) {
+            // ADR-022 phase 2f: a waypoint maneuver may enter the canton where its destination is
+            // (the part of its own train it must reach). The physical collision checks still guard
+            // the movement; the mission stops at its target.
+            log.info(
+                    "Train {} (AUTO) shunting maneuver may enter blocked segment {}: it is the mission target",
+                    train.getId(), segmentId(blockedSegment));
+            clearBlockWait();
+            return;
+        }
         isWaitingForBlock = true;
         int speed = train.getSpeed();
         if (speed == 0) {
@@ -869,6 +919,36 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         log.info(
                 "Train {} (AUTO) next segment {} blocked: boundary stop planned {} rails ahead ({} to the boundary node)",
                 train.getId(), segmentId(blockedSegment), railsToStop, railsToBoundary);
+    }
+
+    /**
+     * True when the blocked segment is the destination of the active itinerary maneuver and every
+     * other occupant is our own detached part (a train with no locomotive). An unrelated train must
+     * keep the block exclusivity, so the maneuver waits for it instead of invading (ADR-022 phase
+     * 2f).
+     */
+    private boolean isShuntingMissionTarget(Segment segment) {
+        if (segment == null || train.getAutopilot() == null) {
+            return false;
+        }
+        letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
+        letrain.itinerary.TrainMission mission = autopilot.mission().orElse(null);
+        if (mission == null || !mission.isActive() || !mission.isItineraryManeuver()) {
+            return false;
+        }
+        if (!autopilot.missionTargetSegment().map(segment::equals).orElse(false)) {
+            return false;
+        }
+        BlockManager bm = train.getModel() != null ? train.getModel().getBlockManager() : null;
+        if (bm == null) {
+            return false;
+        }
+        for (Train owner : bm.getOwners(segment)) {
+            if (owner != train && !owner.getLocomotives().isEmpty()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** Frena ya para la espera actual y recuerda que hay velocidad que restaurar al liberarse. */

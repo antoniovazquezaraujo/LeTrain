@@ -20,33 +20,53 @@ public final class TrainMission {
         ACTIVE, COMPLETED, FAILED, CANCELLED
     }
 
+    /**
+     * Where the order comes from. A loose order (console/script) may auto-reverse once and returns
+     * the train to manual when it ends; an itinerary maneuver (ADR-022 phase 2f waypoint action)
+     * uses the current sense (the author writes the {@code reverse}) and keeps the autopilot
+     * following the plan.
+     */
+    public enum Origin {
+        LOOSE, ITINERARY
+    }
+
     private final Kind kind;
     /** Station/sensor id; unused ({@code -1}) for END_OF_TRACK and WHEN_BLOCKED. */
     private final int targetId;
     /** Order speed, or 0 to keep the train's current target. */
     private final int speed;
+    private final Origin origin;
     private State state = State.ACTIVE;
 
-    private TrainMission(Kind kind, int targetId, int speed) {
+    private TrainMission(Kind kind, int targetId, int speed, Origin origin) {
         this.kind = kind;
         this.targetId = targetId;
         this.speed = speed;
+        this.origin = origin;
     }
 
     public static TrainMission stopAtStation(int stationId, int speed) {
-        return new TrainMission(Kind.STATION, stationId, speed);
+        return new TrainMission(Kind.STATION, stationId, speed, Origin.LOOSE);
     }
 
     public static TrainMission stopAtSensor(int sensorId, int speed) {
-        return new TrainMission(Kind.SENSOR, sensorId, speed);
+        return new TrainMission(Kind.SENSOR, sensorId, speed, Origin.LOOSE);
     }
 
     public static TrainMission stopAtEndOfTrack(int speed) {
-        return new TrainMission(Kind.END_OF_TRACK, -1, speed);
+        return new TrainMission(Kind.END_OF_TRACK, -1, speed, Origin.LOOSE);
     }
 
     public static TrainMission stopWhenBlocked(int speed) {
-        return new TrainMission(Kind.WHEN_BLOCKED, -1, speed);
+        return new TrainMission(Kind.WHEN_BLOCKED, -1, speed, Origin.LOOSE);
+    }
+
+    /**
+     * A waypoint action mission (ADR-022 phase 2f): no auto-reversal and the autopilot keeps
+     * following the itinerary when the maneuver ends.
+     */
+    public static TrainMission forItinerary(Kind kind, int targetId, int speed) {
+        return new TrainMission(kind, targetId, speed, Origin.ITINERARY);
     }
 
     public Kind kind() {
@@ -60,6 +80,14 @@ public final class TrainMission {
     /** Order speed, or 0 when the mission must use the train's current target speed. */
     public int speed() {
         return speed;
+    }
+
+    public Origin origin() {
+        return origin;
+    }
+
+    public boolean isItineraryManeuver() {
+        return origin == Origin.ITINERARY;
     }
 
     public State state() {

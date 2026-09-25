@@ -293,6 +293,22 @@ public class Model implements letrain.mvp.Model {
         });
     }
 
+    /**
+     * Post-load initialization of one train: model, transient state, shared listeners and physical
+     * claim of the cantons it occupies (ADR-022 phase 2f: wagon-only trains too).
+     */
+    private void initializeTrainAfterLoad(Train train) {
+        train.setModel(this);
+        train.postLoadInit();
+        for (ScriptTrainEventListener l : scriptTrainEventListeners) {
+            train.addScriptTrainEventListener(l);
+        }
+        for (CoreTrainEventListener l : coreTrainEventListeners) {
+            train.addCoreTrainEventListener(l);
+        }
+        train.getSafetyManager().claimOccupiedSegments();
+    }
+
     public void postLoadInit() {
         // NOTE: the economy/settings are NOT reloaded from the local file here on purpose: a
         // savegame or an imported scenario carries its own settings, and those must win over the
@@ -339,23 +355,28 @@ public class Model implements letrain.mvp.Model {
         }
 
         setupModelTrainEventListeners();
+        java.util.Set<Train> initializedTrains = new java.util.HashSet<>();
         if (locomotives != null) {
             // Pass 1: Set model, post-load init, setup listeners, and claim physically occupied
-            // segments
+            // segments. Trains are initialized once even with several locomotives.
             for (Locomotive loco : locomotives) {
                 Train train = loco.getTrain();
-                if (train != null) {
-                    train.setModel(this);
-                    train.postLoadInit();
-                    for (ScriptTrainEventListener l : scriptTrainEventListeners) {
-                        train.addScriptTrainEventListener(l);
-                    }
-                    for (CoreTrainEventListener l : coreTrainEventListeners) {
-                        train.addCoreTrainEventListener(l);
-                    }
-                    train.getSafetyManager().claimOccupiedSegments();
+                if (train != null && initializedTrains.add(train)) {
+                    initializeTrainAfterLoad(train);
                 }
             }
+        }
+        if (wagons != null) {
+            // A detached wagon part has no locomotive to reach it: without this it would lose the
+            // canton it physically occupies after a load (ADR-022 phase 2f review).
+            for (Wagon wagon : wagons) {
+                Train train = wagon.getTrain();
+                if (train != null && initializedTrains.add(train)) {
+                    initializeTrainAfterLoad(train);
+                }
+            }
+        }
+        if (locomotives != null) {
             // Pass 2: Acquire initial lookahead locks for all active autopilot trains
             for (Locomotive loco : locomotives) {
                 Train train = loco.getTrain();

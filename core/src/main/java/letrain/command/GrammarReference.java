@@ -216,6 +216,13 @@ public class GrammarReference {
         addSt.add(new Node("park", "add station # park"));
         addSt.add(new Node("wait n", "add station # wait #"));
         addSt.add(new Node("speed n", "add station # speed #"));
+        addSt.add(new Node("stop at sensor", "add station # stop at sensor # speed #"));
+        addSt.add(new Node("stop when blocked", "add station # stop when blocked speed #"));
+        addSt.add(new Node("uncouple", "add station # uncouple backward 1"));
+        addSt.add(new Node("uncouple all", "add station # uncouple backward all"));
+        addSt.add(new Node("couple", "add station # couple forward 1"));
+        addSt.add(new Node("fork curved", "add station # fork # set curved"));
+        addSt.add(new Node("fork flip", "add station # fork # flip"));
         addSt.add(new Node("arrival hh:mm", "add station # arrival 9:20"));
         addSt.add(new Node("departure hh:mm", "add station # departure 9:30"));
         addSt.add(new Node("timed stop", "add station # arrival 9:20, load, departure 9:30"));
@@ -226,6 +233,9 @@ public class GrammarReference {
         addSe.add(new Node("unload", "add sensor # unload"));
         addSe.add(new Node("park", "add sensor # park"));
         addSe.add(new Node("wait n", "add sensor # wait #"));
+        addSe.add(new Node("stop at sensor", "add sensor # stop at sensor # speed #"));
+        addSe.add(new Node("uncouple", "add sensor # uncouple backward 1"));
+        addSe.add(new Node("uncouple all", "add sensor # uncouple backward all"));
         addSe.add(new Node("arrival hh:mm", "add sensor # arrival 10:37"));
         addSe.add(new Node("departure hh:mm", "add sensor # departure 10:40"));
         root.add(addSe);
@@ -301,8 +311,10 @@ public class GrammarReference {
         trainAct.add(new Node("engine", "train # set engine on;"));
         trainAct.add(new Node("load", "train # load;"));
         trainAct.add(new Node("unload", "train # unload;"));
-        trainAct.add(new Node("link", "train # link forward #;"));
-        trainAct.add(new Node("unlink", "train # unlink backward #;"));
+        trainAct.add(new Node("couple", "train # couple forward #;"));
+        trainAct.add(new Node("couple all", "train # couple forward all;"));
+        trainAct.add(new Node("uncouple", "train # uncouple backward #;"));
+        trainAct.add(new Node("uncouple all", "train # uncouple backward all;"));
         root.add(trainAct);
 
         Node trainAt = new Node("train at");

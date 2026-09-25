@@ -108,8 +108,8 @@
 
 | Base Command | Action | Example |
 | :--- | :--- | :--- |
-| `train <id> couple <dir> [n];` | Couple wagons in the given direction (`forward`/`fw` or `backward`/`bw`). If `n` is omitted, couples all wagons. | `train 1 couple forward 2;` or `train 1 couple backward;` |
-| `train <id> uncouple <dir> [n];` | Uncouple wagons in the given direction (`forward`/`fw` or `backward`/`bw`). | `train 1 uncouple fw 1;` |
+| `train <id> couple <dir> [n\|all];` | Couple wagons in the given direction (`forward`/`fw` or `backward`/`bw`). If `n` is omitted, couples all wagons; `all` is explicit. | `train 1 couple forward 2;` or `train 1 couple backward all;` |
+| `train <id> uncouple <dir> [n\|all];` | Uncouple wagons in the given direction (`forward`/`fw` or `backward`/`bw`); `all` detaches every vehicle on that side. | `train 1 uncouple backward all;` |
 | `train <id> set speed <n>;` | Set target train speed. | `train 1 set speed 5;` |
 | `train <id> stop at station <id\|"name"> [speed <n>];` | Drives to the station and stops there; the speed belongs to the order. | `train 1 stop at station "B" speed 3;` |
 | `train <id> stop at sensor <id\|"name"> [speed <n>];` | Drives to the sensor and stops on it. | `train 1 stop at sensor 5 speed 2;` |
@@ -119,6 +119,13 @@
 | `train <id> set engine on;` / `off;` | Turn locomotive engine on or off. | `train 1 set engine on;` |
 | `train <id> set autopilot true;` | Enable autopilot mode. | `train 1 set autopilot true;` |
 | `train <id> load;` / `unload;` | Load or unload cargo (must be stopped at a station). | `train 1 load;` |
+
+> `couple`/`uncouple` work by the **physical sense** of the train: `forward` is the head side and
+> `backward` the tail. With the locomotive leading and pulling the wagons, the wagons are behind:
+> use `uncouple backward 1` to leave them (the same orders are available as waypoint actions).
+>
+> `all` is a reserved word (`uncouple backward all`); to use it as a name you must quote it:
+> `info station "all";`.
 
 ---
 
