@@ -528,9 +528,14 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
 
     /** Immediate user notice: console when there is a sink, log otherwise (issue #619). */
     private void warnUser(String text) {
+        warnUser("Autopilot", text);
+    }
+
+    /** Same with an explicit console title (e.g. "Itinerary"). */
+    private void warnUser(String title, String text) {
         log.warn("[DSL] {}", text);
         if (warningSink != null) {
-            warningSink.accept("Autopilot", text);
+            warningSink.accept(title, text);
         }
     }
 
@@ -548,7 +553,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             log.info("[DSL] Created itinerary '{}' with {} waypoints", name,
                     currentItinerary.waypoints().size());
         } else {
-            log.warn("[DSL] Itinerary '{}' is invalid (<2 waypoints)", name);
+            warnUser("Itinerary",
+                    "Itinerary '" + name + "' is invalid: an itinerary needs at least 2 waypoints");
         }
         currentItinerary = null;
         return null;
@@ -631,7 +637,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         String itName = stripQuotes(ctx.STRING().getText());
         Itinerary it = itineraries.get(itName);
         if (it == null) {
-            log.warn("[DSL] Itinerary '{}' not found", itName);
+            warnUser("Itinerary", "Itinerary '" + itName + "' not found");
             return null;
         }
         Train train = resolveTrain(ctx.trainRef());
@@ -660,6 +666,11 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             boolean on = "true".equals(ctx.bool().getText());
             if (on != train.isAutoMode()) {
                 train.toggleAutoMode();
+            }
+            if (on && !train.isAutoMode()) {
+                // The most common cause of "the train does not go": no assigned/valid itinerary.
+                warnUser("Itinerary", "Train " + train.getId()
+                        + " has no itinerary assigned (or it is invalid); the autopilot stays off");
             }
             log.info("[DSL] Train {} autopilot = {}", train.getId(), on);
         }
