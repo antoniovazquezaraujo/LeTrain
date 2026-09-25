@@ -350,10 +350,28 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
                 command.targetSpeed());
         if (!autopilot.startMission(mission)) {
             // Rejected with a warning (no route from the current sense, no speed, unknown target):
-            // the maneuver is skipped so the itinerary keeps its plan.
+            // abort the rest of the waypoint's actions so the choreography does not continue in a
+            // wrong state. The departure and the route to the next waypoint still run.
+            if (!pendingCommands.isEmpty()) {
+                log.warn(
+                        "Train {} waypoint action: mission rejected, aborting the remaining {} action(s) of the waypoint",
+                        train.getId(), pendingCommands.size());
+                pendingCommands.clear();
+            }
             return false;
         }
         pendingMission = mission;
+        if (!mission.isActive()) {
+            // The mission completed synchronously (already at the destination, already blocked or
+            // already at the end of track): only wait if the train is still rolling to a stop.
+            if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
+                pendingCommandToResume = command;
+                train.getMovementManager().initiateBraking();
+                return true;
+            }
+            pendingMission = null;
+            return false;
+        }
         pendingCommandToResume = command;
         return true;
     }

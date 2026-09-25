@@ -65,6 +65,8 @@ public class AutoPilotImpl implements AutoPilot {
     private transient TrainMission mission;
     /** The mission reversed the train at start because the destination was only reachable back. */
     private transient boolean missionReversed;
+    /** Last plan failure was because the destination is physically behind the current sense. */
+    private transient boolean missionPlanFailedBehind;
     /** Console sink for mission messages; null in scripts (log only). */
     private transient Consumer<String> missionNotifier;
     /** Ticks the mission train has been stopped without a block/schedule/loading reason. */
@@ -751,9 +753,11 @@ public class AutoPilotImpl implements AutoPilot {
             }
             if (!planMissionRoute(m)) {
                 m.fail();
-                if (m.isItineraryManeuver()) {
+                if (m.isItineraryManeuver() && missionPlanFailedBehind) {
                     warnMission("Train " + train.getId() + ": no route to " + m.description()
                             + " from the current sense; add 'reverse' to the itinerary");
+                } else if (m.isItineraryManeuver()) {
+                    warnMission("Train " + train.getId() + ": no route to " + m.description());
                 } else {
                     warnMission("Train " + train.getId() + ": no route to " + m.description()
                             + " in either direction");
@@ -878,6 +882,7 @@ public class AutoPilotImpl implements AutoPilot {
      */
     private boolean planMissionRoute(TrainMission m) {
         ensurePathfinder();
+        missionPlanFailedBehind = false;
         Segment currentSeg = getTrainCurrentSegment();
         Segment targetSeg = getMissionTargetSegment(m);
         if (pathfinder == null || currentSeg == null || targetSeg == null) {
@@ -922,6 +927,7 @@ public class AutoPilotImpl implements AutoPilot {
         if (!allowReverse && behind) {
             // The destination is physically behind the current sense (inside the same segment A*
             // cannot tell): an itinerary maneuver needs an explicit 'reverse' (ADR-022 phase 2f).
+            missionPlanFailedBehind = true;
             currentRoute = List.of();
             return false;
         }
