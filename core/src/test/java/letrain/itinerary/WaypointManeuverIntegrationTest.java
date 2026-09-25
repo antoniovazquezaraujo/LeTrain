@@ -569,6 +569,141 @@ class WaypointManeuverIntegrationTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // Curved-fork map (user report: simple.json)
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("Curved-fork map (user report)")
+    class CurvedForkMap {
+
+        private List<RailTrack> east;
+        private List<RailTrack> middle;
+        private ForkRailTrack fork1;
+        private Station station;
+
+        /**
+         * Equivalent of the user's simple.json: a main line with a station in the middle, two forks
+         * whose <b>normal route curves away</b> to a bypass, and a loose locomotive east of the
+         * station facing west.
+         *
+         * <pre>
+         *   y=0:  loco(-1..-9)  F1(-10)  middle(-11..-27, station at -16)  F2(-28)  west stub(-29..-31)
+         *   y=1:                 bypass(-10..-28)
+         * </pre>
+         */
+        private Train worldAndTrain() {
+            east = new ArrayList<>();
+            for (int x = -1; x >= -9; x--) {
+                east.add(track(x, 0));
+            }
+            fork1 = fork(-10, 0, Dir.E, Dir.S);
+            fork1.addRoute(Dir.E, Dir.W); // alternative: straight to the station
+            fork1.setNormalRoute(); // normal: curves south to the bypass
+            middle = new ArrayList<>();
+            for (int x = -11; x >= -27; x--) {
+                middle.add(track(x, 0));
+            }
+            ForkRailTrack fork2 = fork(-28, 0, Dir.W, Dir.S);
+            fork2.addRoute(Dir.W, Dir.E);
+            fork2.setNormalRoute();
+            List<RailTrack> west = new ArrayList<>();
+            for (int x = -29; x >= -31; x--) {
+                west.add(track(x, 0));
+            }
+            RailTrack bypassWest = corner(-10, 1, Dir.N, Dir.W);
+            RailTrack bypassEast = corner(-28, 1, Dir.N, Dir.E);
+            List<RailTrack> bypass = new ArrayList<>();
+            for (int x = -11; x >= -27; x--) {
+                bypass.add(track(x, 1));
+            }
+
+            for (int i = 0; i + 1 < east.size(); i++) {
+                connect(east.get(i), Dir.W, east.get(i + 1), Dir.E);
+            }
+            connect(east.get(east.size() - 1), Dir.W, fork1, Dir.E);
+            connect(fork1, Dir.W, middle.get(0), Dir.E);
+            for (int i = 0; i + 1 < middle.size(); i++) {
+                connect(middle.get(i), Dir.W, middle.get(i + 1), Dir.E);
+            }
+            connect(middle.get(middle.size() - 1), Dir.W, fork2, Dir.E);
+            connect(fork2, Dir.W, west.get(0), Dir.E);
+            for (int i = 0; i + 1 < west.size(); i++) {
+                connect(west.get(i), Dir.W, west.get(i + 1), Dir.E);
+            }
+            fork1.connect(Dir.S, bypassWest);
+            bypassWest.connect(Dir.N, fork1);
+            connect(bypassWest, Dir.W, bypass.get(0), Dir.E);
+            for (int i = 0; i + 1 < bypass.size(); i++) {
+                connect(bypass.get(i), Dir.W, bypass.get(i + 1), Dir.E);
+            }
+            connect(bypass.get(bypass.size() - 1), Dir.W, bypassEast, Dir.E);
+            fork2.connect(Dir.S, bypassEast);
+            bypassEast.connect(Dir.N, fork2);
+
+            station = station(middle.get(5), "s"); // x = -16
+            return placeTrain(east.get(0), Dir.E); // facing west
+        }
+
+        @Test
+        @DisplayName("a loose stop-at order orients the normal-curved fork and reaches the station")
+        void looseStopAt_reachesStation() {
+            Train train = worldAndTrain();
+            assertFalse(fork1.isUsingAlternativeRoute(), "fork 1 starts on its curved route");
+
+            String error = PlayerCommandExecutor.execute(
+                    "train " + train.getId() + " stop at station " + station.getId() + " speed 4;",
+                    model);
+            assertNull(error, error);
+            assertTrue(fork1.isUsingAlternativeRoute(),
+                    "the route to the station must orient the curved fork straight");
+
+            runUntil(() -> train.getStationId() == station.getId(), 900);
+            assertEquals(station.getId(), train.getStationId());
+            assertEquals(0, train.getSpeed());
+        }
+
+        @Test
+        @DisplayName("an itinerary repeating the same station works (no recursion)")
+        void repeatedWaypointItinerary_doesNotRecurse() {
+            Train train = worldAndTrain();
+            List<String> errors = model.setProgram("""
+                    create itinerary "loop" {
+                        add station "s"
+                        add station "s"
+                    }
+                    assign itinerary "loop" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 4;
+                    """.formatted(train.getId(), train.getId(), train.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+            assertTrue(train.isAutoMode(), "the itinerary must activate the autopilot");
+
+            runUntil(() -> train.getStationId() == station.getId(), 900);
+            assertEquals(station.getId(), train.getStationId(),
+                    "the repeated-waypoint loop must run without blowing the stack");
+        }
+
+        @Test
+        @DisplayName("autopilot on without a valid itinerary warns on the console")
+        void autopilotWithoutItinerary_warns() {
+            Train train = worldAndTrain();
+            List<String> messages = new ArrayList<>();
+            String error = PlayerCommandExecutor.execute(
+                    "train " + train.getId() + " set autopilot true;", model, null, null, null,
+                    (title, text) -> messages.add(text), null, null, null);
+            assertNull(error, error);
+            assertTrue(messages.stream().anyMatch(m -> m.contains("has no itinerary assigned")),
+                    "expected the no-itinerary warning, got: " + messages);
+
+            messages.clear();
+            PlayerCommandExecutor.execute("create itinerary \"x\" { add station \"s\" }", model,
+                    null, null, null, (title, text) -> messages.add(text), null, null, null);
+            assertTrue(messages.stream().anyMatch(m -> m.contains("at least 2 waypoints")),
+                    "expected the invalid-itinerary warning, got: " + messages);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // Fixture helpers
     // ═══════════════════════════════════════════════════════════════════
 
