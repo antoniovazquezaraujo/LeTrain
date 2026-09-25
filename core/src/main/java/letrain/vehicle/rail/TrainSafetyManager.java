@@ -74,6 +74,13 @@ public interface TrainSafetyManager {
     void cancelBlockWait();
 
     /**
+     * Registra la presencia física del tren compartiendo los cantones ocupados con otra parte del
+     * tren (ADR-022 phase 2f: división). No hay conflicto ni parada de emergencia porque las dos
+     * partes están realmente en el mismo cantón hasta que una lo abandone.
+     */
+    void claimSharedPresence();
+
+    /**
      * Evento reactivo que se dispara cuando la cabeza del tren entra en un desvío (Fork).
      *
      * @param fork el desvío físico.

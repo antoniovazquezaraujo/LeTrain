@@ -466,6 +466,27 @@ public class Train implements Renderable {
         }
     }
 
+    /**
+     * Rebind after a split (ADR-022 phase 2f): both parts of the train physically share the cantons
+     * they occupy, so the presence is registered without the exclusive-lock conflict that would
+     * emergency-stop the trains. Safe: the canton stays occupied for the rest of the network until
+     * both parts leave it.
+     */
+    public void rebindShared() {
+        if (model == null) {
+            log.warn("Cannot rebind train {}: model is null", id);
+            return;
+        }
+        safetyManager.claimSharedPresence();
+        if (isAutoMode()) {
+            letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
+            if (seg != null) {
+                notifyAutopilotSegmentEntered(seg);
+            }
+            safetyManager.acquireInitialLocks();
+        }
+    }
+
     /** Reinitializes transient fields after deserialization. */
     public void postLoadInit() {
         this.activeSensors = new java.util.HashSet<>();

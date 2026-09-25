@@ -113,6 +113,28 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     }
 
     @Override
+    public void claimSharedPresence() {
+        letrain.mvp.Model model = this.train.getModel();
+        if (model == null || model.getBlockManager() == null || model.getRailwayGraph() == null) {
+            return;
+        }
+        BlockManager bm = model.getBlockManager();
+        RailwayGraph graph = model.getRailwayGraph();
+        for (Linker linker : train.getLinkers()) {
+            if (linker.getTrack() instanceof RailTrack track) {
+                Segment segment = graph.getSegment(track);
+                if (segment != null) {
+                    bm.addOwner(train, segment);
+                }
+                letrain.track.Sensor sensor = track.getComponent();
+                if (sensor != null) {
+                    train.notifyEnterSensor(sensor, true);
+                }
+            }
+        }
+    }
+
+    @Override
     public void onEmergencyStop() {
         this.isWaitingForBlock = true;
         // The emergency brake replaces any boundary plan: it is stopping anyway.
@@ -617,7 +639,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                     || ap.mode() == letrain.itinerary.AutoPilot.Mode.WAITING) {
                 // Consultamos la ruta real planificada del piloto automático
                 List<Segment> route = ap.currentRoute();
-                int index = route.indexOf(currentSegment);
+                int index = currentSegment == null ? -1 : route.indexOf(currentSegment);
                 log.info("Train {} findNextSegment: ap route index={}, routeSize={}", train.getId(),
                         index, route.size());
                 if (index >= 0 && index + 1 < route.size()) {
@@ -831,6 +853,16 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             clearBlockWait();
             return;
         }
+        if (isShuntingMissionTarget(blockedSegment)) {
+            // ADR-022 phase 2f: a waypoint maneuver may enter the canton where its destination is
+            // (the part of its own train it must reach). The physical collision checks still guard
+            // the movement; the mission stops at its target.
+            log.info(
+                    "Train {} (AUTO) shunting maneuver may enter blocked segment {}: it is the mission target",
+                    train.getId(), segmentId(blockedSegment));
+            clearBlockWait();
+            return;
+        }
         isWaitingForBlock = true;
         int speed = train.getSpeed();
         if (speed == 0) {
@@ -869,6 +901,22 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         log.info(
                 "Train {} (AUTO) next segment {} blocked: boundary stop planned {} rails ahead ({} to the boundary node)",
                 train.getId(), segmentId(blockedSegment), railsToStop, railsToBoundary);
+    }
+
+    /**
+     * True when the blocked segment is the destination of the active itinerary maneuver (ADR-022
+     * phase 2f): the shunting order may enter the canton where the part it must reach is.
+     */
+    private boolean isShuntingMissionTarget(Segment segment) {
+        if (segment == null || train.getAutopilot() == null) {
+            return false;
+        }
+        letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
+        letrain.itinerary.TrainMission mission = autopilot.mission().orElse(null);
+        if (mission == null || !mission.isActive() || !mission.isItineraryManeuver()) {
+            return false;
+        }
+        return autopilot.missionTargetSegment().map(segment::equals).orElse(false);
     }
 
     /** Frena ya para la espera actual y recuerda que hay velocidad que restaurar al liberarse. */
