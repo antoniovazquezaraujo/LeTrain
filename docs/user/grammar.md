@@ -14,11 +14,27 @@ These are executed immediately. **They require a semicolon (`;`) at the end**.
 - `train [ID] decelerate;`
 - `train [ID] set speed [NUM];` or `train [ID] set [NUM];`
 - `train [ID] invert;`
+- `train [ID] stop at station [ID|"name"] [speed NUM];`
+- `train [ID] stop at sensor [ID|"name"] [speed NUM];`
+- `train [ID] stop at end [speed NUM];`
+- `train [ID] stop when blocked [speed NUM];`
 - `train [ID] set engine on;` / `train [ID] set engine off;`
 - `train [ID] set forward;` / `train [ID] set backward;`
 - `train [ID] load;`
 - `train [ID] unload;`
 - `train [ID] couple forward [NUM];` / `train [ID] uncouple backward;`
+
+**One-shot missions (`stop at …`)**: destination and speed travel in the same order, so the train
+does not start before receiving the destination. The speed is applied when the maneuver starts
+(without `speed` the train keeps its current target; at 0 the order is rejected with a warning) and
+the train always ends stopped. The destination can be a station, a sensor, the end of track (the
+train brakes on the last rail, without touching the buffer) or the first block (`stop when blocked`
+ends the mission at the block and does **not** resume when it is released). If the destination is
+only reachable in the opposite sense, the order reverses the train once at the start. An order
+received while the train is running an itinerary is rejected with a warning (nothing is paused):
+use `train N set autopilot false;` or write the maneuver in the itinerary. Speed signals and blocks
+keep ruling on top: the mission's braking curve only lowers the speed, never raises it. A new order
+replaces the running mission.
 
 **Naming Elements:**
 - `station [ID] set name "My Station";`

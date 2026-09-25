@@ -25,6 +25,32 @@ assign itinerary "RutaCarbon" to train 1;
 train 1 set autopilot true;
 ```
 
+## Misiones de un solo uso (issue #619)
+Además de los itinerarios, el DSL puede ordenar **maniobras de un solo uso**: `stop at station|sensor`,
+`stop at end` y `stop when blocked`. La velocidad viaja en la orden y el tren acaba parado; no son un
+plan que se repita, sino un trabajo puntual.
+
+- **`TrainMission`** (`letrain.itinerary.TrainMission`): valor con tipo, destino, velocidad y estado
+  (`ACTIVE`/`COMPLETED`/`FAILED`/`CANCELLED`). Se ejecuta dentro de `AutoPilotImpl` y es transitorio:
+  no se serializa (al cargar una partida sin misión ni itinerario el autopilot vuelve a manual).
+- **Planificación**: para estación/sensor se decide primero con un **paseo físico** (`RailIterator`)
+  si el destino está delante o detrás (A* es por segmentos y no distingue el sentido dentro de un
+  cantón); si solo está detrás, la orden invierte el tren una vez. `stop at end`/`stop when blocked`
+  no usan A*: siguen la topología hasta que la vía se acaba (`stop at end`) o manda el bloqueo.
+- **Frenada**: la misión camina la vía física hasta el destino y aplica la misma curva que la capa de
+  seguridad (issue #633): capa el target a `maxSpeedForRails(vías restantes)` y engancha el freno con
+  `setTargetSpeedDirect(0)` cuando `brakingRailsFromCurrentState() > vías restantes`. `stop at end`
+  apunta a la vía anterior al tope (sin contacto); estación/sensor paran encima del componente.
+- **Seguridad**: la curva de la misión solo **baja** el target; cuando el bloque siguiente no se puede
+  reservar manda el plan de frontera del `TrainSafetyManager` (el tren rueda hasta el final de su
+  cantón). Un bloqueo en una misión `stop at sensor` no la cancela: espera y reanuda al liberarse.
+  Una orden nueva descarta la espera anterior al arrancar (`cancelBlockWait`) y rehace el cálculo.
+- **Rechazo**: con un itinerario en curso (modo distinto de `IDLE`) la orden se rechaza con aviso;
+  destino inalcanzable en ambos sentidos o sin velocidad → aviso y sin tocar el tren. La consola
+  recibe los avisos por `CommandManager.setWarningSink`; los scripts solo al log.
+- **Determinismo**: la misión no usa reloj de pared ni azar; el comando se journaliza y se reproduce
+  igual sobre una copia (test en `TrainMissionIntegrationTest`).
+
 ## Enlaces Relacionados
 - [[../architecture/AutoPilotAnalysis|Análisis Detallado del AutoPilot]]
 - [[../adr/ADR-008-Itinerary-Redesigned|ADR-008: Rediseño del Itinerario]]

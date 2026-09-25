@@ -14,11 +14,26 @@ Se ejecutan inmediatamente. **Requieren punto y coma (`;`) al final**.
 - `train [ID] decelerate;`
 - `train [ID] set speed [NUM];` o `train [ID] set [NUM];`
 - `train [ID] invert;`
+- `train [ID] stop at station [ID|"nombre"] [speed NUM];`
+- `train [ID] stop at sensor [ID|"nombre"] [speed NUM];`
+- `train [ID] stop at end [speed NUM];`
+- `train [ID] stop when blocked [speed NUM];`
 - `train [ID] set engine on;` / `train [ID] set engine off;`
 - `train [ID] set forward;` / `train [ID] set backward;`
 - `train [ID] load;`
 - `train [ID] unload;`
 - `train [ID] couple forward [NUM];` / `train [ID] uncouple backward;`
+
+**Misiones de un solo uso (`stop at …`)**: el destino y la velocidad viajan en la misma orden, así
+el tren no arranca antes de recibir el destino. La velocidad se aplica al empezar la maniobra (sin
+`speed` se usa la que el tren tenga puesta; si es 0 la orden se rechaza con aviso) y el tren acaba
+siempre parado. El destino puede ser una estación, un sensor, el fin de vía (frena en la última vía,
+sin tocar el tope) o el primer bloqueo (`stop when blocked` termina la misión en el bloqueo y **no**
+reanuda al liberarse). Si el destino solo es alcanzable en sentido contrario, la orden invierte el
+tren una vez al empezar. Una orden recibida mientras el tren cumple un itinerario se rechaza con
+aviso (no se pausa nada): usa `train N set autopilot false;` o escribe la maniobra en el itinerario.
+Las señales y los cantones siguen mandando: la curva de frenado de la misión solo baja la velocidad,
+nunca la sube. Una orden nueva reemplaza a la misión en curso.
 
 **Nombrar Elementos:**
 - `station [ID] set name "Mi Estacion";`
