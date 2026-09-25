@@ -85,6 +85,12 @@ de fork (`fork N set straight|curved`, `fork N flip`). Detalles de implementaci�
   vehículo. Al cargar, los trenes solo-vagones también reclaman su cantón.
 - Tras la maniobra, `advanceWaypoint` + `clearRoute` recalculan la ruta al siguiente waypoint desde
   la posición y el sentido en que haya quedado el tren.
+- **Itinerarios desde consola**: cada sentencia tecleada se ejecuta con un `CommandManager` nuevo,
+  así que `create itinerary` y `assign itinerary` deben ir en el mismo script/programa (el editor de
+  programa y los escenarios usan un único `CommandManager`). Es un límite pre-existente, candidato a
+  issue aparte.
+- **Un itinerario necesita ≥2 waypoints** (es un bucle): un plan de un solo waypoint se rechaza con
+  aviso y no se asigna; `set autopilot true` avisa si el tren no tiene itinerario válido.
 
 ## Enlaces Relacionados
 - [[../architecture/AutoPilotAnalysis|Análisis Detallado del AutoPilot]]
