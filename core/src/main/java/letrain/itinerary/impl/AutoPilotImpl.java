@@ -1191,13 +1191,15 @@ public class AutoPilotImpl implements AutoPilot {
         return target;
     }
 
+    /**
+     * Success notice: log only. A completed maneuver is not a problem, so it is not shown on the
+     * console (user UX decision); problems still go through {@link #warnMission}.
+     */
     private void notifyMission(String text) {
         log.info("[AP] {}", text);
-        if (missionNotifier != null) {
-            missionNotifier.accept(text);
-        }
     }
 
+    /** Problem notice: log plus the console sink when there is one (scripts stay log-only). */
     private void warnMission(String text) {
         log.warn("[AP] {}", text);
         if (missionNotifier != null) {

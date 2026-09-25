@@ -39,8 +39,9 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     private ItineraryImpl currentItinerary;
 
     /**
-     * Sink for user-facing notices. The console sets it (typed orders warn on screen); scripts and
-     * the program replay leave it null, so their messages go to the log only (issue #619).
+     * Sink for user-facing problem notices (rejection, unreachable, lost route, stall). The console
+     * sets it (typed orders warn on screen); scripts and the program replay leave it null, so their
+     * messages go to the log only. Mission success never uses it (issue #619).
      */
     private java.util.function.BiConsumer<String, String> warningSink;
 

@@ -67,8 +67,8 @@ class TrainMissionIntegrationTest {
             assertEquals(TrainMission.State.COMPLETED, mission(train).state());
             assertEquals(rails.get(5), headTrack(train), "the head must stop on the sensor rail");
             assertEquals(0, train.getSpeed(), "the train must end stopped");
-            assertTrue(messages.stream().anyMatch(m -> m.contains("arrived at sensor")),
-                    "expected an arrival notice, got: " + messages);
+            assertTrue(messages.isEmpty(),
+                    "a successful mission must not notify on the console, got: " + messages);
         }
 
         @Test
@@ -162,6 +162,27 @@ class TrainMissionIntegrationTest {
                     "speed 0 must use the current target (review m2)");
             assertEquals(rails.get(6), headTrack(train));
             assertEquals(0, train.getSpeed());
+        }
+
+        @Test
+        @DisplayName("mission success is silent; problems still notify")
+        void successIsSilent_problemsNotify() {
+            List<RailTrack> rails = line(0, 9, 0);
+            Sensor sensor = sensor(rails.get(6), "S6");
+            Train train = placeTrain(rails.get(0), Dir.W);
+
+            List<String> success = console(
+                    "train " + train.getId() + " stop at sensor " + sensor.getId() + " speed 2;");
+            runUntil(() -> missionFinished(train), 600);
+
+            assertEquals(TrainMission.State.COMPLETED, mission(train).state());
+            assertTrue(success.isEmpty(),
+                    "the arrival notice must stay in the log, got: " + success);
+
+            List<String> problem =
+                    console("train " + train.getId() + " stop at sensor " + sensor.getId() + ";");
+            assertTrue(problem.stream().anyMatch(m -> m.contains("no speed set")),
+                    "problems must still notify the console, got: " + problem);
         }
     }
 

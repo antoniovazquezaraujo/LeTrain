@@ -56,8 +56,9 @@ public interface AutoPilot {
     default void onTick() {}
 
     /**
-     * Sink for mission messages (arrival, rejection, unreachable). The console sets it so typed
-     * orders warn on screen; scripts leave it null and warnings go to the log only.
+     * Sink for mission problem messages (rejection, unreachable, lost route, stall). The console
+     * sets it so typed orders warn on screen; scripts leave it null and warnings go to the log
+     * only. Success notices are log-only and never reach this sink (user UX decision).
      */
     default void setMissionNotifier(java.util.function.Consumer<String> notifier) {}
 
