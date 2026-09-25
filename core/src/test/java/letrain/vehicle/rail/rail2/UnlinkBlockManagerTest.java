@@ -86,8 +86,9 @@ class UnlinkBlockManagerTest {
         train.getTrainCouplingManager().divideTrain(train, () -> 2);
 
         // 1. We should have two trains now.
-        // 2. The old train should still own segment1.
-        // 3. The new train should be stopped and in manual mode, and not own the segment.
+        // 2. Both parts physically share the canton, so both own it (ADR-022 phase 2f): the
+        // canton stays occupied for the rest of the network until the last part leaves.
+        // 3. The new train (wagons) is stopped and in manual mode.
 
         assertEquals(1, train.size(), "Original train should have 1 linker (loco)");
         Train newTrain = wagon.getTrain();
@@ -96,10 +97,15 @@ class UnlinkBlockManagerTest {
         assertEquals(1, newTrain.size(), "New train should have 1 linker (wagon)");
 
         List<Train> owners = blockManager.getOwners(segment1);
-        assertEquals(1, owners.size(), "Segment should be owned by original train after unlink");
+        assertEquals(2, owners.size(), "Both parts share the canton after the split");
         assertTrue(owners.contains(train));
-        assertFalse(owners.contains(newTrain));
-        assertFalse(newTrain.isAutoMode(),
-                "New train should be in manual mode due to block conflict");
+        assertTrue(owners.contains(newTrain));
+        assertFalse(newTrain.isAutoMode(), "New train (wagons) should be in manual mode");
+
+        // The part left behind keeps the canton occupied when the other one leaves it.
+        blockManager.release(train, segment1);
+        assertFalse(blockManager.getOwners(segment1).contains(train));
+        assertTrue(blockManager.getOwners(segment1).contains(newTrain),
+                "The canton must stay occupied for the wagons left behind");
     }
 }
