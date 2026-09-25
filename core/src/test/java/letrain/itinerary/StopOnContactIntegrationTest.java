@@ -371,6 +371,88 @@ class StopOnContactIntegrationTest {
             assertTrue(messages.stream().anyMatch(m -> m.contains("crashed")),
                     "the crash must warn: " + messages);
         }
+
+        @Test
+        @DisplayName("M1: a high speed ordered while already touching reports the real speed")
+        void alreadyTouching_highSpeedOrder_isAnHonestLowSpeedContact() {
+            List<RailTrack> west = line(0, 2, 0);
+            ForkRailTrack boundary = fork(2, 0, Dir.W, Dir.E);
+            List<RailTrack> east = line(3, 3, 0);
+            connect(west.get(1), Dir.E, boundary, Dir.W);
+            connect(boundary, Dir.E, east.get(0), Dir.W);
+            Train subject = placeTrain(east.get(2), Dir.E); // faces west
+            Locomotive loco = (Locomotive) subject.getDirectorLinker();
+            wagonOnlyTrain(west.get(0), Dir.W);
+            List<String> events = new ArrayList<>();
+            subject.addScriptTrainEventListener(new ScriptTrainEventListener() {
+                @Override
+                public void onContact(Train train, Point pos, int speed) {
+                    events.add("contact:" + speed);
+                }
+
+                @Override
+                public void onCrash(Train train, Point pos, int speed) {
+                    events.add("crash:" + speed);
+                }
+            });
+
+            String error = PlayerCommandExecutor
+                    .execute("train " + loco.getId() + " stop on contact speed 2;", model);
+            assertNull(error, error);
+            runUntil(() -> missionFinished(subject), 2000);
+            assertEquals(TrainMission.State.COMPLETED,
+                    subject.getAutopilot().mission().orElseThrow().state(),
+                    "the first approach must complete pressed against the wagon");
+
+            // Already pressed: the ordered 8 can never become impact energy (the train does not
+            // move), so the instant contact check reports the real speed 0 and the order completes
+            // again. The event must not lie with the ordered target.
+            error = PlayerCommandExecutor
+                    .execute("train " + loco.getId() + " stop on contact speed 8;", model);
+            assertNull(error, error);
+            runTicks(200);
+
+            assertEquals(TrainMission.State.COMPLETED,
+                    subject.getAutopilot().mission().orElseThrow().state(),
+                    "already touching at real speed 0 is a contact, not a crash");
+            assertEquals(List.of("contact:2", "contact:0"), events,
+                    "the already-touching contact must report the real speed, not the ordered 8");
+            assertFalse(subject.isStalled(), "a stationary train cannot crash");
+            assertEquals(0, subject.getSpeed());
+        }
+
+        @Test
+        @DisplayName("M2: repeating 'stop on contact' already pressed against the buffer completes")
+        void alreadyPressedAgainstBuffer_repeatingTheOrderCompletes() {
+            List<RailTrack> rails = line(0, 3, 0);
+            Train subject = placeTrain(rails.get(0), Dir.W);
+            Locomotive loco = (Locomotive) subject.getDirectorLinker();
+            List<String> messages = new ArrayList<>();
+
+            String error = PlayerCommandExecutor.execute(
+                    "train " + loco.getId() + " stop on contact speed 2;", model, null, null, null,
+                    (title, text) -> messages.add(text), null, null, null);
+            assertNull(error, error);
+            runUntil(() -> missionFinished(subject), 600);
+            assertEquals(TrainMission.State.COMPLETED,
+                    subject.getAutopilot().mission().orElseThrow().state());
+            assertEquals(rails.get(2), headTrack(subject));
+
+            // Pressed against the buffer there is no rail ahead and no contact event will ever
+            // fire: the repeated order must complete in place instead of staying active forever.
+            error = PlayerCommandExecutor.execute(
+                    "train " + loco.getId() + " stop on contact speed 2;", model, null, null, null,
+                    (title, text) -> messages.add(text), null, null, null);
+            assertNull(error, error);
+            runTicks(1500); // beyond the stall guard window
+
+            assertEquals(TrainMission.State.COMPLETED,
+                    subject.getAutopilot().mission().orElseThrow().state(),
+                    "already at the buffer must complete the order in place");
+            assertEquals(0, subject.getSpeed());
+            assertFalse(subject.isStalled());
+            assertTrue(messages.isEmpty(), "completing in place must stay silent: " + messages);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════

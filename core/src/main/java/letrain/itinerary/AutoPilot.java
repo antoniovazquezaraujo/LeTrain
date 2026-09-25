@@ -50,8 +50,8 @@ public interface AutoPilot {
 
     /**
      * Segment the active mission drives to, if any (ADR-022 phase 2f). The safety layer uses it to
-     * let a shunting maneuver enter the canton where its destination is (the wagons it must couple
-     * to), instead of waiting forever for that block.
+     * let a shunting maneuver enter the canton where its destination is (e.g. the loco-less part it
+     * must couple to), instead of waiting forever for that block.
      */
     default java.util.Optional<Segment> missionTargetSegment() {
         return java.util.Optional.empty();

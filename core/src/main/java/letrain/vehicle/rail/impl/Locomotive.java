@@ -193,7 +193,13 @@ public class Locomotive extends Linker implements Tractor {
                                     blocked = true;
                                     log.info(
                                             "[CONTACT-TIMING] Instant contact check on start: next cell is occupied. Firing contact sound immediately.");
-                                    getTrain().notifyContact(nextTrack.getPosition(), targetSpeed);
+                                    // Issue #645 review M1: report the real contact speed. The
+                                    // train is stopped at this instant check, so an order with a
+                                    // high target (e.g. speed 8) must not lie as a crash-threshold
+                                    // contact: already touching at 0 is a low-speed contact that
+                                    // completes the approach. Real crashes always come from the
+                                    // movement manager with the actual movement speed.
+                                    getTrain().notifyContact(nextTrack.getPosition(), currentSpeed);
 
                                     // Stop the train immediately
                                     setCurrentSpeed(0);

@@ -923,7 +923,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
 
     /**
      * True when the blocked segment is the destination of the active shunting mission and every
-     * other occupant is our own detached part (a train with no locomotive). An unrelated train must
+     * other occupant is a loco-less train (e.g. our own detached part). An unrelated train must
      * keep the block exclusivity, so the maneuver waits for it instead of invading (ADR-022 phase
      * 2f).
      *

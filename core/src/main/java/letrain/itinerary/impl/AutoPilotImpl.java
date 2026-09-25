@@ -785,6 +785,15 @@ public class AutoPilotImpl implements AutoPilot {
             completeMission("already at " + m.description());
             return true;
         }
+        if (m.kind() == TrainMission.Kind.ON_CONTACT && !hasRailAhead()) {
+            // Issue #645 review M2: repeating the order while already pressed against the buffer
+            // (no rail ahead) must complete again: the train cannot drive into anything, no
+            // contact event will ever fire and the mission would stay active forever. Being
+            // already pressed against a vehicle is completed by the instant contact check at
+            // start (Locomotive.update).
+            completeMission("already at the contact");
+            return true;
+        }
         // On the first switch there is no re-entry event: orient it before moving.
         if (currentRoute.size() >= 2) {
             ensureForkRoute(currentRoute.get(0), currentRoute.get(1));
@@ -1199,7 +1208,8 @@ public class AutoPilotImpl implements AutoPilot {
         if (m.kind() == TrainMission.Kind.ON_CONTACT) {
             // Issue #645: the approach target is resolved dynamically to the first vehicle ahead
             // (the physical walk with the switches as they are now). The safety layer uses it to
-            // let the maneuver enter the canton occupied by its own detached part.
+            // let the maneuver enter the canton occupied by loco-less trains (e.g. its own
+            // detached part).
             return approachedVehicleSegment();
         }
         return null;
@@ -1318,6 +1328,17 @@ public class AutoPilotImpl implements AutoPilot {
     private Dir travelDir() {
         Linker head = train != null ? train.getPhysicalFront() : null;
         return head != null ? head.getRealDir() : null;
+    }
+
+    /**
+     * True when the physical front has a rail connected ahead (issue #645 review M2): when it has
+     * none the train is pressed against a buffer and cannot drive into anything, so a contact
+     * approach is already satisfied.
+     */
+    private boolean hasRailAhead() {
+        Linker head = train != null ? train.getPhysicalFront() : null;
+        return head != null && head.getTrack() != null
+                && head.getTrack().getConnected(head.getDir()) != null;
     }
 
     /** The other port of the current segment (the one not used by the current sense). */
