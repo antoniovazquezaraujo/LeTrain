@@ -67,8 +67,15 @@ public class AutoPilotImpl implements AutoPilot {
     private transient boolean missionReversed;
     /** Console sink for mission messages; null in scripts (log only). */
     private transient Consumer<String> missionNotifier;
+    /** Ticks the mission train has been stopped without a block/schedule/loading reason. */
+    private transient int missionStalledTicks;
     /** Guard for the physical walks that look for the destination / the end of the track. */
     private static final int MISSION_MAX_WALK = 1000;
+    /**
+     * Grace a mission train may stay stopped without a block/schedule/loading reason before the
+     * mission fails with a warning (review m3). 1200 ticks = one game hour (ADR-022 clock).
+     */
+    private static final int MISSION_STALL_TICKS = 1200;
 
     public AutoPilotImpl() {
         this.train = null;
@@ -751,6 +758,7 @@ public class AutoPilotImpl implements AutoPilot {
         mission = m;
         m.start();
         mode = Mode.FOLLOWING;
+        missionStalledTicks = 0;
         if (headOnTarget()) {
             completeMission("already at " + m.description());
             return true;
@@ -815,6 +823,27 @@ public class AutoPilotImpl implements AutoPilot {
         }
     }
 
+    @Override
+    public void onTick() {
+        if (mission == null || !mission.isActive() || mode != Mode.FOLLOWING) {
+            missionStalledTicks = 0;
+            return;
+        }
+        boolean stoppedWithoutReason = train.getSpeed() == 0
+                && (train.getSafetyManager() == null
+                        || !train.getSafetyManager().isWaitingForBlock())
+                && !train.isHeldBySchedule() && (train.getLogisticsManager() == null
+                        || !train.getLogisticsManager().isLoading());
+        if (!stoppedWithoutReason) {
+            missionStalledTicks = 0;
+            return;
+        }
+        missionStalledTicks++;
+        if (missionStalledTicks >= MISSION_STALL_TICKS) {
+            failMission("could not reach " + mission.description() + " (stalled)");
+        }
+    }
+
     /**
      * Plans the route to a station/sensor. The physical walk decides first (the destination may be
      * inside the current segment, where A* cannot tell the sense): ahead → forward; only behind →
@@ -833,14 +862,21 @@ public class AutoPilotImpl implements AutoPilot {
         if (targetTrack != null && dir != null && walkRailsToTrack(targetTrack, dir) >= 0) {
             currentRoute = pathfinder.find(currentSeg,
                     Optional.ofNullable(getTrainExitPort(currentSeg)), targetSeg, Optional.empty());
-            return true;
+            if (!currentRoute.isEmpty()) {
+                return true;
+            }
+            // The physical walk found it, but A* cannot route from here (e.g. the destination is
+            // beyond a switch it would have to orient): fall through so the order fails loudly
+            // instead of starting a mission that cannot be followed (review m3).
         }
         if (targetTrack != null && dir != null
                 && walkRailsToTrack(targetTrack, dir.inverse()) >= 0) {
-            missionReversed = true;
             currentRoute = pathfinder.find(currentSeg,
                     Optional.ofNullable(oppositePort(currentSeg)), targetSeg, Optional.empty());
-            return true;
+            if (!currentRoute.isEmpty()) {
+                missionReversed = true;
+                return true;
+            }
         }
         currentRoute = pathfinder.find(currentSeg,
                 Optional.ofNullable(getTrainExitPort(currentSeg)), targetSeg, Optional.empty());
@@ -863,15 +899,17 @@ public class AutoPilotImpl implements AutoPilot {
             return;
         }
         if (pathfinder != null && (currentRoute.isEmpty() || !currentRoute.contains(currentSeg))) {
+            // The train left the planned route: try to re-plan from here and, when there is no way
+            // to the destination, fail with a warning instead of rolling on forever (review m3).
             Segment targetSeg = getMissionTargetSegment(mission);
-            if (targetSeg != null) {
-                List<Segment> route = pathfinder.find(currentSeg,
-                        Optional.ofNullable(getTrainExitPort(currentSeg)), targetSeg,
-                        Optional.empty());
-                if (!route.isEmpty()) {
-                    currentRoute = route;
-                }
+            List<Segment> route = targetSeg == null ? List.of()
+                    : pathfinder.find(currentSeg, Optional.ofNullable(getTrainExitPort(currentSeg)),
+                            targetSeg, Optional.empty());
+            if (route.isEmpty()) {
+                failMission("lost the route to " + mission.description());
+                return;
             }
+            currentRoute = route;
         }
         int index = currentRoute.indexOf(currentSeg);
         if (index != -1 && index + 1 < currentRoute.size()) {
@@ -1077,6 +1115,13 @@ public class AutoPilotImpl implements AutoPilot {
         }
         train.setSavedTargetSpeed(-1);
         train.setSpeed(0);
+        // A "stop when blocked" mission may end while the safety layer holds a block wait. The
+        // autopilot is now IDLE, so onBlockReleased would never clear it and the wait gate would
+        // swallow later manual speed orders. Clearing it here is inert: the target is already 0
+        // and a manual train cannot resume on release (review M1).
+        if (train.getSafetyManager() != null && train.getSafetyManager().isWaitingForBlock()) {
+            train.getSafetyManager().cancelBlockWait();
+        }
     }
 
     private Locomotive directorLocomotive() {

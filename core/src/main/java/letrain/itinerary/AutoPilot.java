@@ -49,6 +49,13 @@ public interface AutoPilot {
     default void onRailAdvanced() {}
 
     /**
+     * One simulation tick of the train (issue #619). Missions use it as a stall watchdog: a mission
+     * train stopped without a block/schedule/loading reason fails after a grace period. No-op when
+     * there is no mission running.
+     */
+    default void onTick() {}
+
+    /**
      * Sink for mission messages (arrival, rejection, unreachable). The console sets it so typed
      * orders warn on screen; scripts leave it null and warnings go to the log only.
      */

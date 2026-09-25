@@ -891,6 +891,16 @@ public class Train implements Renderable {
         }
     }
 
+    /**
+     * One simulation tick of the train (issue #619). Missions use it as a stall watchdog; only
+     * called while the autopilot is active.
+     */
+    public void notifyAutopilotTick() {
+        if (isAutoMode() && autopilot != null) {
+            autopilot.onTick();
+        }
+    }
+
     public void checkAndNotifyWaypointReached() {
         if (isAutoMode()) {
             letrain.itinerary.AutoPilot ap = getAutopilot();
