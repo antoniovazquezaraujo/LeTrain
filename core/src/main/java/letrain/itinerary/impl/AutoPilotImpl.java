@@ -772,8 +772,10 @@ public class AutoPilotImpl implements AutoPilot {
             train.reverse();
         }
         applyMissionStopPlan();
-        if (m.kind() == TrainMission.Kind.WHEN_BLOCKED && train.getSafetyManager() != null
+        if (m.kind() == TrainMission.Kind.WHEN_BLOCKED && train.getSpeed() == 0
+                && train.getSafetyManager() != null
                 && train.getSafetyManager().isWaitingForBlock()) {
+            // Already blocked and stopped when the order arrived: complete in place.
             completeMission("blocked");
         } else if ((m.kind() == TrainMission.Kind.END_OF_TRACK
                 || m.kind() == TrainMission.Kind.WHEN_BLOCKED) && missionRailsToStop() == 0) {
@@ -808,8 +810,10 @@ public class AutoPilotImpl implements AutoPilot {
                 }
             }
             case WHEN_BLOCKED -> {
-                if (train.getSafetyManager() != null
-                        && train.getSafetyManager().isWaitingForBlock()) {
+                // The mission ends when the train is actually stopped at the boundary: the #633
+                // plan rolls it and brakes on the last rail of its canton first (user decision).
+                if (train.getSafetyManager() != null && train.getSafetyManager().isWaitingForBlock()
+                        && train.getSpeed() == 0) {
                     completeMission("blocked");
                     return;
                 }
@@ -827,6 +831,13 @@ public class AutoPilotImpl implements AutoPilot {
     public void onTick() {
         if (mission == null || !mission.isActive() || mode != Mode.FOLLOWING) {
             missionStalledTicks = 0;
+            return;
+        }
+        // A stop-when-blocked mission completes once the train is stopped at its canton boundary
+        // (the safety plan rolls it there; there is no rail hook after the last move).
+        if (mission.kind() == TrainMission.Kind.WHEN_BLOCKED && train.getSafetyManager() != null
+                && train.getSafetyManager().isWaitingForBlock() && train.getSpeed() == 0) {
+            completeMission("blocked");
             return;
         }
         boolean stoppedWithoutReason = train.getSpeed() == 0
