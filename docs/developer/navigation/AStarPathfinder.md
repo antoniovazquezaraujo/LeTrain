@@ -59,6 +59,28 @@ plan que se repita, sino un trabajo puntual.
 - **Determinismo**: la misión no usa reloj de pared ni azar; el comando se journaliza y se reproduce
   igual sobre una copia (test en `TrainMissionIntegrationTest`).
 
+### Maniobras en waypoints (issue #626, ADR-022 phase 2f)
+El plan del waypoint acepta las mismas órdenes de tren que los scripts y las ejecuta **en orden** al
+llegar: `uncouple`/`couple`, misiones (`stop at …`, `stop at end`, `stop when blocked …`) y acciones
+de fork (`fork N set straight|curved`, `fork N flip`). Detalles de implementación:
+
+- Las misiones de waypoint son `TrainMission` con `Origin.ITINERARY`: **no auto-invierten** (aviso
+  *"no route … from the current sense; add 'reverse'"*) y al terminar devuelven el autopilot a
+  `FOLLOWING` (no a `IDLE`), porque la maniobra es un paso del plan. El flujo espera a que el tren
+  esté **totalmente parado** antes de la siguiente acción.
+- Para misiones de waypoint la ruta se construye con el **paseo físico** (`walkRouteToTrack`), no con
+  A*: así un `fork set curved` del autor no lo pisa `ensureForkRoute` al recalcular. Los tramos de
+  las agujas se saltan al listar segmentos (son nodos compartidos). Si el paseo no encuentra el
+  destino se cae al A* + `ensureForkRoute` como en los itinerarios.
+- **Cantones**: al dividir un tren (`divideTrain`) las dos partes registran su presencia con
+  `claimSharedPresence`/`rebindShared` (`BlockManager.addOwner`), **sin** parada de emergencia: el
+  cantón queda ocupado por ambas hasta que la última lo abandone. Una misión de waypoint cuyo
+  destino está en el cantón bloqueado que debe alcanzar (enganchar los vagones) lo **entra** como
+  una maniobra manual (`isShuntingMissionTarget`); las comprobaciones físicas de movimiento siguen
+  parando el tren antes de cualquier vehículo.
+- Tras la maniobra, `advanceWaypoint` + `clearRoute` recalculan la ruta al siguiente waypoint desde
+  la posición y el sentido en que haya quedado el tren.
+
 ## Enlaces Relacionados
 - [[../architecture/AutoPilotAnalysis|Análisis Detallado del AutoPilot]]
 - [[../adr/ADR-008-Itinerary-Redesigned|ADR-008: Rediseño del Itinerario]]
