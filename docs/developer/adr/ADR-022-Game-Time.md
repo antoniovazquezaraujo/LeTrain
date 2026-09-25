@@ -259,7 +259,8 @@ orden** al llegar a la parada; las de movimiento (`stop at …`) son misiones qu
 antes de pasar a la siguiente acción, y el `departure` libera cuando la maniobra ha terminado (si
 tarda más, el tren sale tarde y se mide). **Implementado en la issue #626**: el plan del waypoint
 acepta `uncouple`/`couple`, `stop at …`, `stop at end`, `stop when blocked …` y las acciones de
-fork (`fork N set straight|curved`, `fork N flip`).
+fork (`fork N set straight|curved`, `fork N flip`). La issue #645 añade `stop on contact [speed N]`
+(aproximación de enganche, ver más abajo).
 
 ```letrain
 add station "B" arrival 06:27,
@@ -300,6 +301,18 @@ add station "B" arrival 06:27,
   cantón lo ocupa un **tren ajeno** (con locomotora), la exención no aplica: la maniobra espera en la
   frontera y reanuda al liberarse, nunca invade. Al cargar una partida, los trenes solo-vagones
   también reclaman su cantón (antes solo se recorrían las locomotoras).
+- **Aproximación de enganche (`stop on contact`, issue #645)**: `stop on contact [speed N]` conduce a
+  la velocidad de la orden hasta el **primer contacto físico** con el vehículo de delante y completa
+  parado y **pegado** a él, listo para `couple` (éxito silencioso: solo log; a velocidad igual o
+  superior al umbral de choque el contacto es un choque real y la misión falla con aviso). Para los
+  cantones el destino se resuelve **dinámicamente al vehículo de delante** (el primer ocupante ajeno
+  del paseo físico con las agujas tal y como estén), así que reutiliza la exención de maniobra: puede
+  entrar en el cantón de su propia parte desenganchada (ocupantes ajenos todos sin locomotora) y
+  comparte la propiedad; un tren ajeno (con locomotora) mantiene el bloqueo y la maniobra espera en la
+  frontera hasta liberarse. **Decisión**: la exención vale igual para la orden suelta que para la
+  acción de waypoint — el run-around desde consola/script es la misma maniobra manual y el criterio de
+  seguridad (ningún ocupante ajeno con locomotora) no depende del origen. No auto-invierte: el cambio
+  de sentido lo escribe el autor de la coreografía. Tests: `StopOnContactIntegrationTest`.
 - **Maniobra rechazada**: si la orden no puede empezar (sin ruta desde el sentido actual, sin
   velocidad, destino inexistente), se emite el aviso y se **abortan las acciones restantes de ese
   waypoint** para no seguir la coreografía en un estado raro; el `departure` y la ruta al siguiente

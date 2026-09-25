@@ -18,6 +18,7 @@ Se ejecutan inmediatamente. **Requieren punto y coma (`;`) al final**.
 - `train [ID] stop at sensor [ID|"nombre"] [speed NUM];`
 - `train [ID] stop at end [speed NUM];`
 - `train [ID] stop when blocked [speed NUM];`
+- `train [ID] stop on contact [speed NUM];`
 - `train [ID] set engine on;` / `train [ID] set engine off;`
 - `train [ID] set forward;` / `train [ID] set backward;`
 - `train [ID] load;`
@@ -37,14 +38,19 @@ y el tren acaba siempre parado. El destino puede ser una estación, un sensor, e
 delante del tren** (frena en la última vía, sin tocar el tope; un bucle cerrado sin final por delante
 avisa y no mueve) o el primer bloqueo (`stop when blocked` rueda con la curva del #633 hasta la
 última vía de su cantón ante el bloqueo y completa parado ahí; **no** reanuda al liberarse y, si el
-bloqueo se libera antes de parar, sigue). Si el destino solo es alcanzable en sentido contrario, la
-orden invierte el
-tren una vez al empezar. Una orden recibida mientras el tren cumple un itinerario se rechaza con
+bloqueo se libera antes de parar, sigue) o el **vehículo de delante** (`stop on contact`): conduce a
+la velocidad de la orden y completa en el **primer contacto físico** de baja velocidad, quedándose
+**pegado** al vehículo, listo para `couple`. A la velocidad de choque o más (≥ 5) el contacto es un
+**choque** (física normal: el tren se destruye y la misión falla con aviso). Si el destino solo es
+alcanzable en sentido contrario, la orden invierte el tren una vez al empezar (`stop on contact`
+queda fuera: no auto-invierte, conduce hacia delante hasta tocar).
+Una orden recibida mientras el tren cumple un itinerario se rechaza con
 aviso (no se pausa nada): usa `train N set autopilot false;` o escribe la maniobra en el itinerario.
 Si el destino se vuelve inalcanzable a mitad de misión (se pierde la ruta) o el tren se queda parado
 sin espera de bloque/horario/carga durante aproximadamente una hora de juego, la misión falla con
 aviso. Las señales y los cantones siguen mandando: la curva de frenado de la misión solo baja la
-velocidad, nunca la sube. Una orden nueva reemplaza a la misión en curso.
+velocidad, nunca la sube (`stop on contact` no frena: su objetivo es el toque). Una orden nueva
+reemplaza a la misión en curso.
 
 **Nombrar Elementos:**
 - `station [ID] set name "Mi Estacion";`
@@ -70,9 +76,9 @@ create itinerary "RutaCarbon" {
 
 - **Al menos dos waypoints**: un itinerario es un bucle, así que un plan con un único waypoint se rechaza con aviso y no se asigna (el autopilot queda apagado). Para un único destino usa una orden suelta `stop at …` (o una acción de waypoint dentro de un servicio); repetir la misma estación está permitido.
 - Las **comas son obligatorias** entre las acciones del waypoint. La referencia a la estación/sensor y la dirección de entrada opcional (una dirección de brújula como `n`, `e`, `s`, `w`) **no** llevan coma.
-- El **orden es obligatorio**: `arrival` primero, después las acciones en su orden de ejecución (`load`, `unload`, `reverse`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`, `uncouple forward|backward [NUM|all]`, `couple forward|backward [NUM|all]`, `stop at station|sensor [REF] [speed NUM]`, `stop at end [speed NUM]`, `stop when blocked [speed NUM]`, `fork [ID] set straight|curved`, `fork [ID] flip`) y `departure` al final. Escribir un atributo fuera de orden es un error de sintaxis.
-- **Maniobras**: las órdenes de movimiento (`stop at …`, `stop when blocked …`) son **misiones** que se ejecutan al llegar al waypoint y deben completarse antes de la siguiente acción: el tren conduce y acaba parado. `stop at` usa el sentido actual y **no auto-invierte**: escribe el `reverse` que necesites o la orden se rechaza con un aviso de "sin ruta desde el sentido actual". Una maniobra rechazada **aborta las acciones restantes de ese waypoint** (el `departure` y la ruta al siguiente waypoint siguen), para que la coreografía no continúe en un estado raro. Las acciones de fork fuerzan o preparan una aguja; el autopilot sigue orientando las agujas a lo largo de la ruta que calcula. El `departure` libera cuando la maniobra ha terminado (si acaba tarde, el tren sale tarde y se mide el desfase); después, la ruta al siguiente waypoint se recalcula desde donde haya quedado el tren.
-- **Maniobras y cantones**: una maniobra cuyo destino está dentro de un cantón ocupado por **su propia parte desenganchada** (enganchar los vagones que acaba de dejar) puede entrar en ese cantón como una maniobra manual; las comprobaciones físicas siguen parando el tren antes de cualquier vehículo. Un cantón ocupado por un tren ajeno mantiene el bloqueo: la maniobra espera en la frontera y reanuda al liberarse.
+- El **orden es obligatorio**: `arrival` primero, después las acciones en su orden de ejecución (`load`, `unload`, `reverse`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`, `uncouple forward|backward [NUM|all]`, `couple forward|backward [NUM|all]`, `stop at station|sensor [REF] [speed NUM]`, `stop at end [speed NUM]`, `stop when blocked [speed NUM]`, `stop on contact [speed NUM]`, `fork [ID] set straight|curved`, `fork [ID] flip`) y `departure` al final. Escribir un atributo fuera de orden es un error de sintaxis.
+- **Maniobras**: las órdenes de movimiento (`stop at …`, `stop when blocked …`, `stop on contact …`) son **misiones** que se ejecutan al llegar al waypoint y deben completarse antes de la siguiente acción: el tren conduce y acaba parado. `stop at` usa el sentido actual y **no auto-invierte**: escribe el `reverse` que necesites o la orden se rechaza con un aviso de "sin ruta desde el sentido actual". `stop on contact` tampoco auto-invierte: conduce hasta tocar al vehículo de delante a la velocidad de la orden y queda pegado a él, listo para el `couple` de la siguiente acción (si toca a velocidad de choque, el choque es real y la maniobra falla con aviso). Una maniobra rechazada **aborta las acciones restantes de ese waypoint** (el `departure` y la ruta al siguiente waypoint siguen), para que la coreografía no continúe en un estado raro. Las acciones de fork fuerzan o preparan una aguja; el autopilot sigue orientando las agujas a lo largo de la ruta que calcula. El `departure` libera cuando la maniobra ha terminado (si acaba tarde, el tren sale tarde y se mide el desfase); después, la ruta al siguiente waypoint se recalcula desde donde haya quedado el tren.
+- **Maniobras y cantones**: una maniobra cuyo destino está dentro de un cantón ocupado por **su propia parte desenganchada** (enganchar los vagones que acaba de dejar, o acercarse a ellos con `stop on contact`) puede entrar en ese cantón como una maniobra manual; las comprobaciones físicas siguen parando el tren antes de cualquier vehículo. Un cantón ocupado por un tren ajeno (con locomotora) mantiene el bloqueo: la maniobra espera en la frontera y reanuda al liberarse. La exención vale igual para la orden suelta `stop on contact` (el run-around desde la consola o un script).
 - **Dirección de `uncouple`**: `uncouple forward` desengancha por el **lado de la cabeza** y `uncouple backward` por la cola. Con la locomotora en cabeza tirando de los vagones, los vagones van detrás: el run-around se escribe `uncouple backward 1`.
 - `arrival` se mide al llegar al waypoint; `departure` es la hora programada de salida: al llegar se ejecutan las acciones, el tren espera hasta ella y la salida programada arranca el motor. La estancia es `departure − arrival` en tiempo de juego. Las horas se leen en secuencia: una hora menor que la anterior pertenece al día siguiente (`arrival 23:50, departure 00:10`). Si el tren llega tarde, sale de inmediato y se mide el desfase. Sin horas, el waypoint se comporta exactamente como antes.
 - `park` frena, apaga el motor y **mantiene el autopilot activo** (a diferencia de `stop`, que frena y desactiva el autopilot). La siguiente salida programada arranca el motor y recupera la velocidad de crucero, de modo que un servicio diario que se repite puede terminar con `park` y volver a salir a la mañana siguiente. Un `park` **sin salida programada posterior** deja el tren aparcado (motor apagado, plan conservado): no vuelve a moverse hasta que una salida programada lo arranque o lo conduzcas manualmente.

@@ -118,6 +118,7 @@ Si no se incluye una distancia después de un giro, se avanza por defecto un pas
 | `train <id> stop at sensor <id\|"nombre"> [speed <n>];` | Va al sensor y para encima de él. | `train 1 stop at sensor 5 speed 2;` |
 | `train <id> stop at end [speed <n>];` | Va al fin de vía y frena en la última vía. | `train 1 stop at end speed 2;` |
 | `train <id> stop when blocked [speed <n>];` | Avanza y para en el primer bloqueo (no reanuda). | `train 1 stop when blocked speed 2;` |
+| `train <id> stop on contact [speed <n>];` | Avanza hasta tocar al vehículo de delante y queda pegado (listo para `couple`); a velocidad de choque el toque es choque. | `train 1 stop on contact speed 2;` |
 | `train <id> reverse;` | Invierte la dirección de la marcha. | `train 1 reverse;` |
 | `train <id> set engine on;` / `off;` | Enciende o apaga el motor de la locomotora . | `train 1 set engine on;` |
 | `train <id> set autopilot true;` | Activa el autopiloto. | `train 1 set autopilot true;` |

@@ -27,12 +27,19 @@ train 1 set autopilot true;
 
 ## Misiones de un solo uso (issue #619)
 Además de los itinerarios, el DSL puede ordenar **maniobras de un solo uso**: `stop at station|sensor`,
-`stop at end` y `stop when blocked`. La velocidad viaja en la orden y el tren acaba parado; no son un
-plan que se repita, sino un trabajo puntual.
+`stop at end`, `stop when blocked` y `stop on contact` (#645). La velocidad viaja en la orden y el tren
+acaba parado; no son un plan que se repita, sino un trabajo puntual.
 
 - **`TrainMission`** (`letrain.itinerary.TrainMission`): valor con tipo, destino, velocidad y estado
   (`ACTIVE`/`COMPLETED`/`FAILED`/`CANCELLED`). Se ejecuta dentro de `AutoPilotImpl` y es transitorio:
   no se serializa (al cargar una partida sin misión ni itinerario el autopilot vuelve a manual).
+- **Aproximación de enganche (`stop on contact`, #645)**: sin ruta, sin curva de frenado y sin
+  auto-inversión; el tren conduce a la velocidad de la orden hasta el primer contacto físico y
+  completa parado y pegado al vehículo de delante (listo para `couple`). El contacto lo entrega
+  `Train.notifyContact` al autopilot **antes** del dispatcher de eventos, para que las acciones del
+  waypoint pendientes de la misión (p. ej. `couple`) se reanuden con la misión ya terminada. A
+  velocidad ≥ umbral de choque no hay contacto: `crashDestroy` falla la misión con aviso (física
+  normal). Éxito silencioso (solo log), como el resto de misiones.
 - **Planificación**: para estación/sensor se decide primero con un **paseo físico** (`RailIterator`)
   si el destino está delante o detrás (A* es por segmentos y no distingue el sentido dentro de un
   cantón); si solo está detrás, la orden invierte el tren una vez. `stop at end`/`stop when blocked`
@@ -82,7 +89,11 @@ de fork (`fork N set straight|curved`, `fork N flip`). Detalles de implementaci�
   (los vagones desenganchados) lo **entra** como una maniobra manual y comparte la propiedad
   (`isShuntingMissionTarget`); con un tren ajeno (con locomotora) no hay exención y la misión espera
   y reanuda. Las comprobaciones físicas de movimiento siguen parando el tren antes de cualquier
-  vehículo. Al cargar, los trenes solo-vagones también reclaman su cantón.
+  vehículo. Al cargar, los trenes solo-vagones también reclaman su cantón. Para `stop on contact`
+  (#645) el destino se resuelve **dinámicamente al vehículo de delante** (`missionTargetSegment` →
+  paseo físico), de modo que la exención funciona sin estación/sensor; y vale igual para la orden
+  suelta que para la acción de waypoint (mismo criterio de seguridad: ningún ocupante ajeno con
+  locomotora).
 - Tras la maniobra, `advanceWaypoint` + `clearRoute` recalculan la ruta al siguiente waypoint desde
   la posición y el sentido en que haya quedado el tren.
 - **Itinerarios desde consola**: cada sentencia tecleada se ejecuta con un `CommandManager` nuevo,
