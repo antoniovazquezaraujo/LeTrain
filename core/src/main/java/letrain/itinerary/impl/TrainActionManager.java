@@ -349,17 +349,19 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         if (coupling == null) {
             return false;
         }
+        String count = command.count() == letrain.vehicle.rail.TrainCouplingManager.ALL ? "all"
+                : String.valueOf(command.count());
         if (command.kind() == WaypointCommand.Kind.COUPLE) {
             coupling.prepareLink(train, command.forward(), command.count());
             coupling.joinLinkers(train);
-            log.info("Train {} waypoint action: coupled {} vehicle(s) {}", train.getId(),
-                    command.count(), command.forward() ? "forward" : "backward");
+            log.info("Train {} waypoint action: coupled {} vehicle(s) {}", train.getId(), count,
+                    command.forward() ? "forward" : "backward");
         } else {
             coupling.prepareUnlink(train, command.forward(), command.count());
             coupling.divideTrain(train,
                     () -> train.getModel() != null ? train.getModel().nextTrainId() : 0);
-            log.info("Train {} waypoint action: uncoupled {} vehicle(s) {}", train.getId(),
-                    command.count(), command.forward() ? "forward" : "backward");
+            log.info("Train {} waypoint action: uncoupled {} vehicle(s) {}", train.getId(), count,
+                    command.forward() ? "forward" : "backward");
         }
         return false;
     }

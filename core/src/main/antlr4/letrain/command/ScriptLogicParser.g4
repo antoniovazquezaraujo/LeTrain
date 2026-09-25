@@ -118,8 +118,9 @@ trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED? trainSpe
 stopOrder       : STOP stopTarget missionSpeed?;
 stopTarget      : AT (STATION stationRef | SENSOR sensorRef | END) | WHEN BLOCKED;
 missionSpeed    : SPEED trainSpeed;
-coupleAction    : COUPLE sense (NUMBER)?;
-uncoupleAction  : UNCOUPLE sense (NUMBER)?;
+coupleAction    : COUPLE sense vehicleCount?;
+uncoupleAction  : UNCOUPLE sense vehicleCount?;
+vehicleCount    : NUMBER | ALL;
 
 
 semaphoreStatus : OPEN | CLOSED;

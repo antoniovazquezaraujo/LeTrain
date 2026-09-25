@@ -418,7 +418,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         } else if (ctx.coupleAction() != null) {
             ScriptLogicParser.CoupleActionContext lCtx = ctx.coupleAction();
             boolean forward = lCtx.sense().getText().startsWith("f");
-            int count = lCtx.NUMBER() != null ? Integer.parseInt(lCtx.NUMBER().getText()) : 0;
+            int count = resolveVehicleCount(lCtx.vehicleCount(), 0);
             return (t) -> {
                 t.getTrainCouplingManager().prepareLink(t, forward, count);
                 t.getTrainCouplingManager().joinLinkers(t);
@@ -426,7 +426,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         } else if (ctx.uncoupleAction() != null) {
             ScriptLogicParser.UncoupleActionContext uCtx = ctx.uncoupleAction();
             boolean forward = uCtx.sense().getText().startsWith("f");
-            int count = uCtx.NUMBER() != null ? Integer.parseInt(uCtx.NUMBER().getText()) : 1;
+            int count = resolveVehicleCount(uCtx.vehicleCount(), 1);
             return (t) -> {
                 t.getTrainCouplingManager().prepareUnlink(t, forward, count);
                 t.getTrainCouplingManager().divideTrain(t, () -> model.nextTrainId());
@@ -460,6 +460,17 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             return (t) -> {
             };
         }
+    }
+
+    /** Couple/uncouple count: a number, or {@code all} (every vehicle on that side). */
+    private int resolveVehicleCount(ScriptLogicParser.VehicleCountContext ctx, int defaultValue) {
+        if (ctx == null) {
+            return defaultValue;
+        }
+        if (ctx.ALL() != null) {
+            return letrain.vehicle.rail.TrainCouplingManager.ALL;
+        }
+        return Integer.parseInt(ctx.NUMBER().getText());
     }
 
     /**
@@ -869,14 +880,13 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         if (ctx.coupleAction() != null) {
             ScriptLogicParser.CoupleActionContext couple = ctx.coupleAction();
             boolean forward = couple.sense().getText().startsWith("f");
-            int count = couple.NUMBER() != null ? Integer.parseInt(couple.NUMBER().getText()) : 0;
+            int count = resolveVehicleCount(couple.vehicleCount(), 0);
             return List.of(WaypointCommand.couple(forward, count));
         }
         if (ctx.uncoupleAction() != null) {
             ScriptLogicParser.UncoupleActionContext uncouple = ctx.uncoupleAction();
             boolean forward = uncouple.sense().getText().startsWith("f");
-            int count =
-                    uncouple.NUMBER() != null ? Integer.parseInt(uncouple.NUMBER().getText()) : 1;
+            int count = resolveVehicleCount(uncouple.vehicleCount(), 1);
             return List.of(WaypointCommand.uncouple(forward, count));
         }
         if (ctx.stopOrder() != null) {
