@@ -111,8 +111,8 @@ Si no se incluye una distancia después de un giro, se avanza por defecto un pas
 
 | Comando Base | Acción | Ejemplo |
 | :--- | :--- | :--- |
-| `train <id> couple <dir> [n];` | Engancha vagones en la dirección indicada (`forward`/`fw` o `backward`/`bw`). Si no se indica `n`, engancha todos. | `train 1 couple forward 2;` o `train 1 couple backward;` |
-| `train <id> uncouple <dir> [n];` | Desengancha vagones en la dirección indicada (`forward`/`fw` o `backward`/`bw`). | `train 1 uncouple fw 1;` |
+| `train <id> couple <dir> [n\|all];` | Engancha vagones en la dirección indicada (`forward`/`fw` o `backward`/`bw`). Si no se indica `n`, engancha todos; `all` es explícito. | `train 1 couple forward 2;` o `train 1 couple backward all;` |
+| `train <id> uncouple <dir> [n\|all];` | Desengancha vagones en la dirección indicada (`forward`/`fw` o `backward`/`bw`); `all` desengancha todos los de ese lado. | `train 1 uncouple backward all;` |
 | `train <id> set speed <n>;` | Asigna velocidad. | `train 1 set speed 5;` |
 | `train <id> stop at station <id\|"nombre"> [speed <n>];` | Va a la estación y para en ella; la velocidad va en la orden. | `train 1 stop at station "B" speed 3;` |
 | `train <id> stop at sensor <id\|"nombre"> [speed <n>];` | Va al sensor y para encima de él. | `train 1 stop at sensor 5 speed 2;` |

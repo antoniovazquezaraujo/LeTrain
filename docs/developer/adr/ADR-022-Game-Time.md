@@ -275,8 +275,9 @@ add station "B" arrival 06:27,
 
 - **Dirección de `uncouple`**: la orden desengancha por el **frente físico** del tren
   (`uncouple forward`) o por su cola (`uncouple backward`). Con la locomotora en cabeza tirando de
-  los vagones, los vagones van detrás: el run-around se escribe `uncouple backward 1` (el ejemplo
-  original de la issue usaba `forward 1`, que solo encaja si los vagones van delante). El motor solo
+  los vagones, los vagones van detrás: el run-around se escribe `uncouple backward 1` (o
+  `uncouple backward all` para soltar todos los de ese lado; el ejemplo original de la issue usaba
+  `forward 1`, que solo encaja si los vagones van delante). El motor solo
   divide o engancha con el tren parado: la acción frena y espera a que se detenga.
 - **Los cambios de sentido son explícitos**: cada `reverse` va escrito entre tramos. Dentro del
   itinerario, `stop at` **no** auto-invierte: si falta un `reverse`, no hay ruta desde el sentido

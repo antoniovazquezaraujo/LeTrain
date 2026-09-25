@@ -108,8 +108,8 @@
 
 | Base Command | Action | Example |
 | :--- | :--- | :--- |
-| `train <id> couple <dir> [n];` | Couple wagons in the given direction (`forward`/`fw` or `backward`/`bw`). If `n` is omitted, couples all wagons. | `train 1 couple forward 2;` or `train 1 couple backward;` |
-| `train <id> uncouple <dir> [n];` | Uncouple wagons in the given direction (`forward`/`fw` or `backward`/`bw`). | `train 1 uncouple fw 1;` |
+| `train <id> couple <dir> [n\|all];` | Couple wagons in the given direction (`forward`/`fw` or `backward`/`bw`). If `n` is omitted, couples all wagons; `all` is explicit. | `train 1 couple forward 2;` or `train 1 couple backward all;` |
+| `train <id> uncouple <dir> [n\|all];` | Uncouple wagons in the given direction (`forward`/`fw` or `backward`/`bw`); `all` detaches every vehicle on that side. | `train 1 uncouple backward all;` |
 | `train <id> set speed <n>;` | Set target train speed. | `train 1 set speed 5;` |
 | `train <id> stop at station <id\|"name"> [speed <n>];` | Drives to the station and stops there; the speed belongs to the order. | `train 1 stop at station "B" speed 3;` |
 | `train <id> stop at sensor <id\|"name"> [speed <n>];` | Drives to the sensor and stops on it. | `train 1 stop at sensor 5 speed 2;` |
