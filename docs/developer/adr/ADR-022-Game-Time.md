@@ -293,9 +293,16 @@ add station "B" arrival 06:27,
   `fork 3 flip`) para forzar un camino o dejarlo preparado.
 - **Cantones y maniobra**: al dividir el tren, las dos partes **comparten** el cantón que ocupan
   (no hay parada de emergencia; el cantón sigue ocupado hasta que la última parte lo abandone). Una
-  maniobra de waypoint cuyo destino está en un cantón ocupado por la parte que debe alcanzar
-  (enganchar los vagones) puede **entrar en ese cantón** como una maniobra manual; las
-  comprobaciones físicas siguen parando el tren antes de cualquier vehículo.
+  maniobra de waypoint cuyo destino está en un cantón ocupado por **una parte propia sin locomotora**
+  (los vagones desenganchados) puede **entrar en ese cantón** como una maniobra manual y comparte la
+  propiedad; las comprobaciones físicas siguen parando el tren antes de cualquier vehículo. Si el
+  cantón lo ocupa un **tren ajeno** (con locomotora), la exención no aplica: la maniobra espera en la
+  frontera y reanuda al liberarse, nunca invade. Al cargar una partida, los trenes solo-vagones
+  también reclaman su cantón (antes solo se recorrían las locomotoras).
+- **Maniobra rechazada**: si la orden no puede empezar (sin ruta desde el sentido actual, sin
+  velocidad, destino inexistente), se emite el aviso y se **abortan las acciones restantes de ese
+  waypoint** para no seguir la coreografía en un estado raro; el `departure` y la ruta al siguiente
+  waypoint siguen su curso.
 - **Después de la maniobra** la ruta al siguiente waypoint se recalcula desde donde haya quedado el
   tren (posición y sentido).
 - **Las órdenes sueltas no pisan el plan**: si el tren está cumpliendo un itinerario, una orden

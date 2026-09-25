@@ -123,6 +123,11 @@ Si no se incluye una distancia después de un giro, se avanza por defecto un pas
 | `train <id> set autopilot true;` | Activa el autopiloto. | `train 1 set autopilot true;` |
 | `train <id> load;` / `unload;` | Carga o descarga mercancías (requiere estar en estación). | `train 1 load;` |
 
+> `couple`/`uncouple` funcionan por el **sentido físico** del tren: `forward` es el lado de la
+> cabeza y `backward` la cola. Con la locomotora en cabeza tirando de los vagones, los vagones van
+> detrás: usa `uncouple backward 1` para dejarlos (las mismas órdenes valen como acciones de
+> waypoint).
+
 ---
 
 ## 8. Guardado y Carga

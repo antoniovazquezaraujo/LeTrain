@@ -120,6 +120,10 @@
 | `train <id> set autopilot true;` | Enable autopilot mode. | `train 1 set autopilot true;` |
 | `train <id> load;` / `unload;` | Load or unload cargo (must be stopped at a station). | `train 1 load;` |
 
+> `couple`/`uncouple` work by the **physical sense** of the train: `forward` is the head side and
+> `backward` the tail. With the locomotive leading and pulling the wagons, the wagons are behind:
+> use `uncouple backward 1` to leave them (the same orders are available as waypoint actions).
+
 ---
 
 ## 8. Saving and Loading

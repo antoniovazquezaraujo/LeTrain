@@ -65,9 +65,12 @@ llegar: `uncouple`/`couple`, misiones (`stop at …`, `stop at end`, `stop when 
 de fork (`fork N set straight|curved`, `fork N flip`). Detalles de implementación:
 
 - Las misiones de waypoint son `TrainMission` con `Origin.ITINERARY`: **no auto-invierten** (aviso
-  *"no route … from the current sense; add 'reverse'"*) y al terminar devuelven el autopilot a
-  `FOLLOWING` (no a `IDLE`), porque la maniobra es un paso del plan. El flujo espera a que el tren
-  esté **totalmente parado** antes de la siguiente acción.
+  *"no route … from the current sense; add 'reverse'"*, solo cuando el destino está físicamente
+  detrás) y al terminar devuelven el autopilot a `FOLLOWING` (no a `IDLE`), porque la maniobra es un
+  paso del plan. El flujo espera a que el tren esté **totalmente parado** antes de la siguiente
+  acción; si la misión completa **sincrónicamente** (ya en el destino, ya bloqueado, ya en el final)
+  la acción siguiente arranca en el mismo paso (no se espera una parada que no va a llegar). Una
+  maniobra **rechazada** aborta las acciones restantes de ese waypoint.
 - Para misiones de waypoint la ruta se construye con el **paseo físico** (`walkRouteToTrack`), no con
   A*: así un `fork set curved` del autor no lo pisa `ensureForkRoute` al recalcular. Los tramos de
   las agujas se saltan al listar segmentos (son nodos compartidos). Si el paseo no encuentra el
@@ -75,9 +78,11 @@ de fork (`fork N set straight|curved`, `fork N flip`). Detalles de implementaci�
 - **Cantones**: al dividir un tren (`divideTrain`) las dos partes registran su presencia con
   `claimSharedPresence`/`rebindShared` (`BlockManager.addOwner`), **sin** parada de emergencia: el
   cantón queda ocupado por ambas hasta que la última lo abandone. Una misión de waypoint cuyo
-  destino está en el cantón bloqueado que debe alcanzar (enganchar los vagones) lo **entra** como
-  una maniobra manual (`isShuntingMissionTarget`); las comprobaciones físicas de movimiento siguen
-  parando el tren antes de cualquier vehículo.
+  destino está en el cantón bloqueado **y cuyos ocupantes son solo partes propias sin locomotora**
+  (los vagones desenganchados) lo **entra** como una maniobra manual y comparte la propiedad
+  (`isShuntingMissionTarget`); con un tren ajeno (con locomotora) no hay exención y la misión espera
+  y reanuda. Las comprobaciones físicas de movimiento siguen parando el tren antes de cualquier
+  vehículo. Al cargar, los trenes solo-vagones también reclaman su cantón.
 - Tras la maniobra, `advanceWaypoint` + `clearRoute` recalculan la ruta al siguiente waypoint desde
   la posición y el sentido en que haya quedado el tren.
 
